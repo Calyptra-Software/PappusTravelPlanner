@@ -433,4 +433,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noCostReasons => 'Noch keine gespeicherten Kategorien';
+
+  @override
+  String get checklist => 'Checkliste';
+
+  @override
+  String get checklistAddHint => 'Eintrag hinzufügen…';
+
+  @override
+  String get checklistEditTitle => 'Eintrag bearbeiten';
+
+  @override
+  String get checklistRenameTitle => 'Checkliste umbenennen';
 }

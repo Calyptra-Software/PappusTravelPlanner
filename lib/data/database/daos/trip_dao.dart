@@ -38,4 +38,10 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   Future<int> deleteTrip(int id) =>
       (delete(trips)..where((t) => t.id.equals(id))).go();
+
+  /// Sets the custom checklist heading (null restores the default label).
+  Future<void> setChecklistTitle(int tripId, String? title) {
+    return (update(trips)..where((t) => t.id.equals(tripId)))
+        .write(TripsCompanion(checklistTitle: Value(title)));
+  }
 }

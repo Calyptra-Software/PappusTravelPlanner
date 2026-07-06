@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/database_location.dart';
+import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
 import 'daos/itinerary_dao.dart';
 import 'daos/trip_dao.dart';
@@ -9,8 +10,8 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Trips, ItineraryItems, Costs, CostReasons],
-  daos: [TripDao, ItineraryDao, CostDao],
+  tables: [Trips, ItineraryItems, Costs, CostReasons, ChecklistItems],
+  daos: [TripDao, ItineraryDao, CostDao, ChecklistDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (or creates) the database file at [path].
@@ -21,7 +22,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -39,6 +40,14 @@ class AppDatabase extends _$AppDatabase {
           // v4 added an optional icon to each saved cost reason.
           if (from < 4) {
             await m.addColumn(costReasons, costReasons.iconId);
+          }
+          // v5 added a per-trip checklist.
+          if (from < 5) {
+            await m.createTable(checklistItems);
+          }
+          // v6 added an optional custom heading for the checklist.
+          if (from < 6) {
+            await m.addColumn(trips, trips.checklistTitle);
           }
         },
         beforeOpen: (details) async {

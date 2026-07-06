@@ -161,5 +161,9 @@
   "@costReasonDeleteConfirmBody": {
     "placeholders": { "reason": { "type": "String" } }
   },
-  "noCostReasons": "No saved categories yet"
+  "noCostReasons": "No saved categories yet",
+  "checklist": "Checklist",
+  "checklistAddHint": "Add an item…",
+  "checklistEditTitle": "Edit item",
+  "checklistRenameTitle": "Rename checklist"
 }

@@ -9,6 +9,7 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../checklist/presentation/trip_checklist_card.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
@@ -142,6 +143,7 @@ class TripDetailScreen extends ConsumerWidget {
                       existing: cost,
                     ),
                   ),
+                  TripChecklistCard(tripId: tripId, accent: accent),
                   ItineraryTimeline(
                     items: items,
                     accent: accent,

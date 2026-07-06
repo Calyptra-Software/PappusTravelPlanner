@@ -68,6 +68,9 @@ class Trips extends Table {
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
 
+  /// Custom heading for the trip's checklist, or null to use the default label.
+  TextColumn get checklistTitle => text().nullable()();
+
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   IntColumn get colorValue =>
       integer().withDefault(const Constant(0xFF00695C))();
@@ -124,6 +127,20 @@ class Costs extends Table {
   IntColumn get amountMinor => integer()();
   IntColumn get currency => intEnum<Currency>()();
   TextColumn get reason => text()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A checklist entry belonging to a trip: a piece of text that can be ticked
+/// off (packing list, to-dos, …). Shown in the trip's detail header.
+class ChecklistItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get tripId =>
+      integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+  TextColumn get label => text()();
+  BoolColumn get done => boolean().withDefault(const Constant(false))();
+
+  /// Manual ordering within the trip's checklist (appended to the end).
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

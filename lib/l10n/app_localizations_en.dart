@@ -429,4 +429,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCostReasons => 'No saved categories yet';
+
+  @override
+  String get checklist => 'Checklist';
+
+  @override
+  String get checklistAddHint => 'Add an item…';
+
+  @override
+  String get checklistEditTitle => 'Edit item';
+
+  @override
+  String get checklistRenameTitle => 'Rename checklist';
 }

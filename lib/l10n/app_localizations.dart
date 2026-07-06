@@ -847,6 +847,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No saved categories yet'**
   String get noCostReasons;
+
+  /// No description provided for @checklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist'**
+  String get checklist;
+
+  /// No description provided for @checklistAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an item…'**
+  String get checklistAddHint;
+
+  /// No description provided for @checklistEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit item'**
+  String get checklistEditTitle;
+
+  /// No description provided for @checklistRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename checklist'**
+  String get checklistRenameTitle;
 }
 
 class _AppLocalizationsDelegate

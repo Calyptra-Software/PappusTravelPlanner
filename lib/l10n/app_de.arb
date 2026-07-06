@@ -124,5 +124,9 @@
   "costReasonChooseIcon": "Symbol auswählen",
   "costReasonDeleteConfirmTitle": "Kategorie löschen?",
   "costReasonDeleteConfirmBody": "„{reason}“ wird aus der Liste der Kategorien entfernt. Bestehende Ausgaben behalten ihren Text.",
-  "noCostReasons": "Noch keine gespeicherten Kategorien"
+  "noCostReasons": "Noch keine gespeicherten Kategorien",
+  "checklist": "Checkliste",
+  "checklistAddHint": "Eintrag hinzufügen…",
+  "checklistEditTitle": "Eintrag bearbeiten",
+  "checklistRenameTitle": "Checkliste umbenennen"
 }
