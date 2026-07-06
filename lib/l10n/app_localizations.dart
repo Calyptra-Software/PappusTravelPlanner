@@ -751,6 +751,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Total'**
   String get costsTotal;
+
+  /// No description provided for @costs.
+  ///
+  /// In en, this message translates to:
+  /// **'Costs'**
+  String get costs;
 }
 
 class _AppLocalizationsDelegate

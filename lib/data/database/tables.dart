@@ -9,7 +9,8 @@ enum ItemKind { place, transport }
 enum Currency {
   eur,
   usd,
-  gbp;
+  gbp,
+  chf;
 
   /// Symbol shown next to amounts.
   String get symbol {
@@ -20,6 +21,8 @@ enum Currency {
         return 'US\$';
       case Currency.gbp:
         return '£';
+      case Currency.chf:
+        return 'CHF';
     }
   }
 
@@ -32,6 +35,8 @@ enum Currency {
         return 'USD';
       case Currency.gbp:
         return 'GBP';
+      case Currency.chf:
+        return 'CHF';
     }
   }
 }

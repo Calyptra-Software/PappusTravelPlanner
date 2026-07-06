@@ -135,5 +135,6 @@
   "costReasonLabel": "Reason name",
   "costAmountInvalid": "Enter a valid amount",
   "costReasonRequired": "Enter a reason",
-  "costsTotal": "Total"
+  "costsTotal": "Total",
+  "costs": "Costs"
 }

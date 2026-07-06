@@ -132,8 +132,6 @@ class TripDetailScreen extends ConsumerWidget {
                       kind: ItemKind.transport,
                       day: day,
                     ),
-                    onAddCost: (item) =>
-                        showCostFormSheet(context, itemId: item.id),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
                       itemId: cost.itemId,
@@ -181,8 +179,9 @@ class _TripHeader extends StatelessWidget {
           children: [
             Text(
               trip.title,
-              style: theme.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             if (trip.destination.isNotEmpty) ...[
               const SizedBox(height: 6),
@@ -191,8 +190,10 @@ class _TripHeader extends StatelessWidget {
                   Icon(Icons.place_outlined, size: 18, color: accent),
                   const SizedBox(width: 6),
                   Expanded(
-                    child: Text(trip.destination,
-                        style: theme.textTheme.titleMedium),
+                    child: Text(
+                      trip.destination,
+                      style: theme.textTheme.titleMedium,
+                    ),
                   ),
                 ],
               ),
@@ -200,19 +201,29 @@ class _TripHeader extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                Icon(Icons.calendar_today_outlined,
-                    size: 16, color: theme.colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.calendar_today_outlined,
+                  size: 16,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   formatDateRange(
-                      l10n, localeName, trip.startDate, trip.endDate),
+                    l10n,
+                    localeName,
+                    trip.startDate,
+                    trip.endDate,
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (days != null) ...[
                   const SizedBox(width: 8),
-                  Text('· ${l10n.days(days)}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    '· ${l10n.days(days)}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ],
             ),
@@ -224,16 +235,22 @@ class _TripHeader extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Icon(Icons.payments_outlined,
-                      size: 18, color: theme.colorScheme.primary),
+                  Icon(
+                    Icons.payments_outlined,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
                   const SizedBox(width: 6),
-                  Text('${l10n.costsTotal}: ',
-                      style: theme.textTheme.titleSmall),
+                  Text(
+                    '${l10n.costsTotal}: ',
+                    style: theme.textTheme.titleSmall,
+                  ),
                   Expanded(
                     child: Text(
                       formatTotals(totals, localeName),
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],

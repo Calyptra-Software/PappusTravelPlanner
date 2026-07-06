@@ -380,4 +380,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get costsTotal => 'Gesamt';
+
+  @override
+  String get costs => 'Kosten';
 }

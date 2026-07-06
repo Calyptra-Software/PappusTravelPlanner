@@ -17,7 +17,6 @@ class TimelineTile extends StatelessWidget {
     required this.onTap,
     required this.costs,
     required this.localeName,
-    required this.onAddCost,
     required this.onTapCost,
     this.dragHandle,
   });
@@ -27,7 +26,6 @@ class TimelineTile extends StatelessWidget {
   final VoidCallback onTap;
   final List<Cost> costs;
   final String localeName;
-  final VoidCallback onAddCost;
   final ValueChanged<Cost> onTapCost;
   final Widget? dragHandle;
 
@@ -36,7 +34,6 @@ class TimelineTile extends StatelessWidget {
     final costsSection = _CostsSection(
       costs: costs,
       localeName: localeName,
-      onAddCost: onAddCost,
       onTapCost: onTapCost,
     );
     return item.kind == ItemKind.transport
@@ -70,9 +67,7 @@ class _Gutter extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Positioned.fill(
-            child: Center(
-              child: Container(width: 2, color: line),
-            ),
+            child: Center(child: Container(width: 2, color: line)),
           ),
           child,
         ],
@@ -103,7 +98,8 @@ class _PlaceRow extends StatelessWidget {
     final title = (item.title != null && item.title!.isNotEmpty)
         ? item.title!
         : (item.location ?? 'Place');
-    final hasSubLocation = item.title != null &&
+    final hasSubLocation =
+        item.title != null &&
         item.title!.isNotEmpty &&
         item.location != null &&
         item.location!.isNotEmpty;
@@ -150,22 +146,27 @@ class _PlaceRow extends StatelessWidget {
                                 ),
                               Text(
                                 title,
-                                style: theme.textTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.w600),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               if (hasSubLocation)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.place_outlined,
-                                          size: 14,
-                                          color:
-                                              theme.colorScheme.onSurfaceVariant),
+                                      Icon(
+                                        Icons.place_outlined,
+                                        size: 14,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
                                       const SizedBox(width: 4),
                                       Expanded(
-                                        child: Text(item.location!,
-                                            style: theme.textTheme.bodySmall),
+                                        child: Text(
+                                          item.location!,
+                                          style: theme.textTheme.bodySmall,
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -233,8 +234,11 @@ class _TransportRow extends StatelessWidget {
                 color: theme.colorScheme.secondaryContainer,
                 shape: BoxShape.circle,
               ),
-              child: Icon(mode.icon,
-                  size: 17, color: theme.colorScheme.onSecondaryContainer),
+              child: Icon(
+                mode.icon,
+                size: 17,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -243,41 +247,64 @@ class _TransportRow extends StatelessWidget {
               onTap: onTap,
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 4,
+                ),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(mode.label(l10n),
+                      // IntrinsicHeight (needed for the rail) hands this branch a
+                      // height equal to the *intrinsic* text height; on web the
+                      // laid-out text is ~1px taller, which would overflow the
+                      // row. OverflowBox lets that sub-pixel overrun paint into
+                      // the padding instead of asserting.
+                      child: OverflowBox(
+                        maxHeight: double.infinity,
+                        alignment: Alignment.topLeft,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  mode.label(l10n),
                                   style: theme.textTheme.labelLarge?.copyWith(
-                                      fontWeight: FontWeight.w600)),
-                              if (time.isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Text(time,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (time.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    time,
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant)),
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
-                          ),
-                          if (route.isNotEmpty)
-                            Text(route,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant)),
-                          if (item.notes != null && item.notes!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(item.notes!,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                      color:
-                                          theme.colorScheme.onSurfaceVariant)),
                             ),
-                          costsSection,
-                        ],
+                            if (route.isNotEmpty)
+                              Text(
+                                route,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            if (item.notes != null && item.notes!.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  item.notes!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            costsSection,
+                          ],
+                        ),
                       ),
                     ),
                     ?dragHandle,
@@ -292,23 +319,23 @@ class _TransportRow extends StatelessWidget {
   }
 }
 
-/// Cost chips under an itinerary item, a per-currency subtotal when there is
-/// more than one, and an "add cost" action.
+/// Cost chips under an itinerary item plus a per-currency subtotal when there
+/// is more than one. Renders nothing when the item has no costs; costs are
+/// added from the item's detail sheet.
 class _CostsSection extends StatelessWidget {
   const _CostsSection({
     required this.costs,
     required this.localeName,
-    required this.onAddCost,
     required this.onTapCost,
   });
 
   final List<Cost> costs;
   final String localeName;
-  final VoidCallback onAddCost;
   final ValueChanged<Cost> onTapCost;
 
   @override
   Widget build(BuildContext context) {
+    if (costs.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     return Padding(
@@ -331,12 +358,6 @@ class _CostsSection extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   onPressed: () => onTapCost(cost),
                 ),
-              ActionChip(
-                avatar: const Icon(Icons.add, size: 16),
-                label: Text(l10n.addCost),
-                visualDensity: VisualDensity.compact,
-                onPressed: onAddCost,
-              ),
             ],
           ),
           if (costs.length > 1)

@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 
 import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import 'timeline_tile.dart';
@@ -23,7 +24,6 @@ class ItineraryTimeline extends StatelessWidget {
     required this.onReorder,
     required this.costsByItem,
     required this.localeName,
-    required this.onAddCost,
     required this.onTapCost,
   });
 
@@ -36,17 +36,13 @@ class ItineraryTimeline extends StatelessWidget {
   final ValueChanged<DateTime> onAddTransport;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
-  final ValueChanged<ItineraryItem> onAddCost;
   final ValueChanged<Cost> onTapCost;
 
   /// Called when a tile is dragged within a day. [dayItems] is that day's list
   /// in its current order; [newIndex] is the item's final position (already
   /// adjusted for the removal at [oldIndex], per ReorderableListView.onReorderItem).
-  final void Function(
-    List<ItineraryItem> dayItems,
-    int oldIndex,
-    int newIndex,
-  ) onReorder;
+  final void Function(List<ItineraryItem> dayItems, int oldIndex, int newIndex)
+  onReorder;
 
   List<DateTime> _daysToShow() {
     final days = SplayTreeSet<DateTime>();
@@ -82,7 +78,6 @@ class ItineraryTimeline extends StatelessWidget {
         onReorder: onReorder,
         costsByItem: costsByItem,
         localeName: localeName,
-        onAddCost: onAddCost,
         onTapCost: onTapCost,
       );
     }
@@ -105,7 +100,6 @@ class ItineraryTimeline extends StatelessWidget {
             onReorder: onReorder,
             costsByItem: costsByItem,
             localeName: localeName,
-            onAddCost: onAddCost,
             onTapCost: onTapCost,
           ),
       ],
@@ -126,7 +120,6 @@ class _DaySection extends StatefulWidget {
     required this.onReorder,
     required this.costsByItem,
     required this.localeName,
-    required this.onAddCost,
     required this.onTapCost,
   });
 
@@ -140,7 +133,6 @@ class _DaySection extends StatefulWidget {
   final void Function(List<ItineraryItem>, int, int) onReorder;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
-  final ValueChanged<ItineraryItem> onAddCost;
   final ValueChanged<Cost> onTapCost;
 
   @override
@@ -158,6 +150,10 @@ class _DaySectionState extends State<_DaySection> {
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
     final count = widget.items.length;
+    final dayCosts = [
+      for (final item in widget.items) ...?widget.costsByItem[item.id],
+    ];
+    final dayTotals = sumByCurrency(dayCosts);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,13 +172,31 @@ class _DaySectionState extends State<_DaySection> {
                   child: Text(
                     '${widget.dayNumber}',
                     style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(formatDay(widget.day, localeName),
-                      style: theme.textTheme.titleMedium),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        formatDay(widget.day, localeName),
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      if (dayTotals.isNotEmpty)
+                        Text(
+                          '${l10n.costsTotal}: '
+                          '${formatTotals(dayTotals, localeName)}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 if (!_expanded && count > 0)
                   Padding(
@@ -190,14 +204,16 @@ class _DaySectionState extends State<_DaySection> {
                     child: Text(
                       l10n.entries(count),
                       style: theme.textTheme.labelMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant),
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 Icon(
                   _expanded ? Icons.expand_less : Icons.expand_more,
                   color: theme.colorScheme.onSurfaceVariant,
-                  semanticLabel:
-                      _expanded ? l10n.hideEntries : l10n.showEntries,
+                  semanticLabel: _expanded
+                      ? l10n.hideEntries
+                      : l10n.showEntries,
                 ),
               ],
             ),
@@ -226,8 +242,9 @@ class _DaySectionState extends State<_DaySection> {
             padding: const EdgeInsets.fromLTRB(48, 4, 4, 4),
             child: Text(
               l10n.nothingPlanned,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           )
         else
@@ -247,14 +264,15 @@ class _DaySectionState extends State<_DaySection> {
                 onTap: () => widget.onTapItem(item),
                 costs: widget.costsByItem[item.id] ?? const [],
                 localeName: widget.localeName,
-                onAddCost: () => widget.onAddCost(item),
                 onTapCost: widget.onTapCost,
                 dragHandle: ReorderableDragStartListener(
                   index: index,
                   child: Padding(
                     padding: const EdgeInsets.only(left: 4),
-                    child: Icon(Icons.drag_indicator,
-                        color: theme.colorScheme.onSurfaceVariant),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               );

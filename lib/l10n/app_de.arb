@@ -108,5 +108,6 @@
   "costReasonLabel": "Bezeichnung",
   "costAmountInvalid": "Bitte einen gültigen Betrag eingeben",
   "costReasonRequired": "Bitte einen Grund eingeben",
-  "costsTotal": "Gesamt"
+  "costsTotal": "Gesamt",
+  "costs": "Kosten"
 }

@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/application/cost_providers.dart';
+import '../../costs/presentation/cost_form_sheet.dart';
 import '../widgets/transport_mode.dart';
 
 /// Opens the add/edit sheet for an itinerary item and persists on save.
@@ -69,8 +72,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _date = normalizeDay(
-        existing?.date ?? widget.day ?? DateTime.now());
+    _date = normalizeDay(existing?.date ?? widget.day ?? DateTime.now());
     if (existing != null) {
       _titleController.text = existing.title ?? '';
       _locationController.text = existing.location ?? '';
@@ -261,8 +263,8 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     ),
                     validator: (value) =>
                         (value == null || value.trim().isEmpty)
-                            ? l10n.placeValidator
-                            : null,
+                        ? l10n.placeValidator
+                        : null,
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -326,6 +328,14 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     prefixIcon: const Icon(Icons.notes),
                   ),
                 ),
+                if (_isEditing) ...[
+                  const SizedBox(height: 20),
+                  _CostsEditor(
+                    tripId: widget.tripId,
+                    itemId: widget.existing!.id,
+                    localeName: localeName,
+                  ),
+                ],
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -359,6 +369,73 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   }
 }
 
+/// Cost list for the item being edited: existing costs as tappable chips plus
+/// an "add cost" action. Managing costs lives here, in the item's detail sheet,
+/// rather than on the trip overview.
+class _CostsEditor extends ConsumerWidget {
+  const _CostsEditor({
+    required this.tripId,
+    required this.itemId,
+    required this.localeName,
+  });
+
+  final int tripId;
+  final int itemId;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final costs =
+        ref.watch(costsForTripProvider(tripId)).value?[itemId] ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.costs, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final cost in costs)
+              ActionChip(
+                avatar: const Icon(Icons.payments_outlined, size: 16),
+                label: Text(
+                  '${cost.reason}  '
+                  '${formatMoney(cost.amountMinor, cost.currency, localeName)}',
+                ),
+                visualDensity: VisualDensity.compact,
+                onPressed: () =>
+                    showCostFormSheet(context, itemId: itemId, existing: cost),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 16),
+              label: Text(l10n.addCost),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => showCostFormSheet(context, itemId: itemId),
+            ),
+          ],
+        ),
+        if (costs.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${l10n.costsTotal}: '
+              '${formatTotals(sumByCurrency(costs), localeName)}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _TimeField extends StatelessWidget {
   const _TimeField({
     required this.label,
@@ -385,7 +462,9 @@ class _TimeField extends StatelessWidget {
           prefixIcon: const Icon(Icons.schedule, size: 18),
           suffixIcon: onClear != null
               ? IconButton(
-                  icon: const Icon(Icons.clear, size: 18), onPressed: onClear)
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: onClear,
+                )
               : null,
         ),
         child: Text(minutes == null ? emptyLabel : formatMinutes(minutes)),
