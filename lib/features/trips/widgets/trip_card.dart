@@ -1,0 +1,114 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/format/date_format.dart';
+import '../../../data/database/app_database.dart';
+import '../../../l10n/app_localizations.dart';
+
+/// Overview card summarising a single trip, with a colour accent stripe.
+class TripCard extends StatelessWidget {
+  const TripCard({super.key, required this.trip, required this.onTap});
+
+  final Trip trip;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final localeName = Localizations.localeOf(context).languageCode;
+    final accent = Color(trip.colorValue);
+    final days = tripDayCount(trip.startDate, trip.endDate);
+
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(width: 6, color: accent),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        trip.title,
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (trip.destination.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.place_outlined,
+                                size: 16, color: theme.colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                trip.destination,
+                                style: theme.textTheme.bodyMedium,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today_outlined,
+                              size: 14,
+                              color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              formatDateRange(
+                                  l10n, localeName, trip.startDate, trip.endDate),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          if (days != null) _Pill(label: l10n.days(days)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: scheme.onSecondaryContainer,
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+    );
+  }
+}

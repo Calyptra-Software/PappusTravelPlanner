@@ -1,0 +1,32 @@
+# App launcher icons, generated from a single source with flutter_launcher_icons.
+# Regenerate after changing the source image with:
+#   dart run flutter_launcher_icons
+flutter_launcher_icons:
+  image_path: "assets/icon/travelplanner.png"
+
+  android: true
+  min_sdk_android: 21
+  # Android 8+ adaptive icon: the artwork already fills a rounded square on a
+  # white margin, so a white background keeps it looking like the source.
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/travelplanner.png"
+
+  ios: true
+  # iOS icons must be opaque; flatten any transparency onto white.
+  remove_alpha_ios: true
+  background_color_ios: "#FFFFFF"
+
+  web:
+    generate: true
+    image_path: "assets/icon/travelplanner.png"
+    background_color: "#FFFFFF"
+    theme_color: "#1565C0"
+
+  windows:
+    generate: true
+    image_path: "assets/icon/travelplanner.png"
+    icon_size: 256
+
+  macos:
+    generate: true
+    image_path: "assets/icon/travelplanner.png"

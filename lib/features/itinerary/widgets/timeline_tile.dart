@@ -1,0 +1,358 @@
+import 'package:flutter/material.dart';
+
+import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
+import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
+import '../../../l10n/app_localizations.dart';
+import 'transport_mode.dart';
+
+/// A single row in the itinerary timeline. Renders as a place stop or, for
+/// transport items, as a lighter connector between stops.
+class TimelineTile extends StatelessWidget {
+  const TimelineTile({
+    super.key,
+    required this.item,
+    required this.accent,
+    required this.onTap,
+    required this.costs,
+    required this.localeName,
+    required this.onAddCost,
+    required this.onTapCost,
+    this.dragHandle,
+  });
+
+  final ItineraryItem item;
+  final Color accent;
+  final VoidCallback onTap;
+  final List<Cost> costs;
+  final String localeName;
+  final VoidCallback onAddCost;
+  final ValueChanged<Cost> onTapCost;
+  final Widget? dragHandle;
+
+  @override
+  Widget build(BuildContext context) {
+    final costsSection = _CostsSection(
+      costs: costs,
+      localeName: localeName,
+      onAddCost: onAddCost,
+      onTapCost: onTapCost,
+    );
+    return item.kind == ItemKind.transport
+        ? _TransportRow(
+            item: item,
+            onTap: onTap,
+            dragHandle: dragHandle,
+            costsSection: costsSection,
+          )
+        : _PlaceRow(
+            item: item,
+            accent: accent,
+            onTap: onTap,
+            dragHandle: dragHandle,
+            costsSection: costsSection,
+          );
+  }
+}
+
+/// Left gutter with a continuous rail line and a node marker.
+class _Gutter extends StatelessWidget {
+  const _Gutter({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = Theme.of(context).colorScheme.outlineVariant;
+    return SizedBox(
+      width: 40,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: Center(
+              child: Container(width: 2, color: line),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _PlaceRow extends StatelessWidget {
+  const _PlaceRow({
+    required this.item,
+    required this.accent,
+    required this.onTap,
+    required this.dragHandle,
+    required this.costsSection,
+  });
+
+  final ItineraryItem item;
+  final Color accent;
+  final VoidCallback onTap;
+  final Widget? dragHandle;
+  final Widget costsSection;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final time = formatTimeRange(item.startMinutes, item.endMinutes);
+    final title = (item.title != null && item.title!.isNotEmpty)
+        ? item.title!
+        : (item.location ?? 'Place');
+    final hasSubLocation = item.title != null &&
+        item.title!.isNotEmpty &&
+        item.location != null &&
+        item.location!.isNotEmpty;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Gutter(
+            child: Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: accent,
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.colorScheme.surface, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Card(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: InkWell(
+                  onTap: onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (time.isNotEmpty)
+                                Text(
+                                  time,
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              Text(
+                                title,
+                                style: theme.textTheme.titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w600),
+                              ),
+                              if (hasSubLocation)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.place_outlined,
+                                          size: 14,
+                                          color:
+                                              theme.colorScheme.onSurfaceVariant),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(item.location!,
+                                            style: theme.textTheme.bodySmall),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              if (item.notes != null && item.notes!.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(
+                                    item.notes!,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              costsSection,
+                            ],
+                          ),
+                        ),
+                        ?dragHandle,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransportRow extends StatelessWidget {
+  const _TransportRow({
+    required this.item,
+    required this.onTap,
+    required this.dragHandle,
+    required this.costsSection,
+  });
+
+  final ItineraryItem item;
+  final VoidCallback onTap;
+  final Widget? dragHandle;
+  final Widget costsSection;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final mode = item.mode ?? TransportMode.other;
+    final time = formatTimeRange(item.startMinutes, item.endMinutes);
+    final from = item.fromLocation ?? '';
+    final to = item.toLocation ?? '';
+    final route = [from, to].where((s) => s.isNotEmpty).join('  →  ');
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Gutter(
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(mode.icon,
+                  size: 17, color: theme.colorScheme.onSecondaryContainer),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(mode.label(l10n),
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w600)),
+                              if (time.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text(time,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant)),
+                              ],
+                            ],
+                          ),
+                          if (route.isNotEmpty)
+                            Text(route,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant)),
+                          if (item.notes != null && item.notes!.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(item.notes!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                      color:
+                                          theme.colorScheme.onSurfaceVariant)),
+                            ),
+                          costsSection,
+                        ],
+                      ),
+                    ),
+                    ?dragHandle,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Cost chips under an itinerary item, a per-currency subtotal when there is
+/// more than one, and an "add cost" action.
+class _CostsSection extends StatelessWidget {
+  const _CostsSection({
+    required this.costs,
+    required this.localeName,
+    required this.onAddCost,
+    required this.onTapCost,
+  });
+
+  final List<Cost> costs;
+  final String localeName;
+  final VoidCallback onAddCost;
+  final ValueChanged<Cost> onTapCost;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 2,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              for (final cost in costs)
+                ActionChip(
+                  avatar: const Icon(Icons.payments_outlined, size: 16),
+                  label: Text(
+                    '${cost.reason}  '
+                    '${formatMoney(cost.amountMinor, cost.currency, localeName)}',
+                  ),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => onTapCost(cost),
+                ),
+              ActionChip(
+                avatar: const Icon(Icons.add, size: 16),
+                label: Text(l10n.addCost),
+                visualDensity: VisualDensity.compact,
+                onPressed: onAddCost,
+              ),
+            ],
+          ),
+          if (costs.length > 1)
+            Padding(
+              padding: const EdgeInsets.only(top: 2, left: 4),
+              child: Text(
+                '${l10n.costsTotal}: '
+                '${formatTotals(sumByCurrency(costs), localeName)}',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
