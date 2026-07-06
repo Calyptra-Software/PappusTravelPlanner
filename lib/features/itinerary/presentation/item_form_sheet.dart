@@ -192,9 +192,13 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       heading = _isEditing ? l10n.editPlace : l10n.addPlace;
     }
 
+    final media = MediaQuery.of(context);
     return Padding(
+      // Keyboard inset (viewInsets) plus the Android system navigation-bar
+      // inset (padding.bottom), so the save button clears the nav buttons.
+      // With the keyboard up, padding.bottom collapses to 0, so no double count.
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+        bottom: media.viewInsets.bottom + media.padding.bottom,
       ),
       child: SingleChildScrollView(
         child: Padding(
