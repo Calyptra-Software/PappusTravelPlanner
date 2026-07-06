@@ -71,4 +71,25 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// Forgets a saved reason. Existing costs keep their stored reason text.
   Future<int> deleteReason(String label) =>
       (delete(costReasons)..where((r) => r.label.equals(label))).go();
+
+  /// Renames a saved reason [from] -> [to], repointing every cost that uses it
+  /// so all appearances follow. If [to] already exists the two are merged: the
+  /// costs are repointed and the old label is dropped (the existing label keeps
+  /// its icon). Runs in a transaction so costs never end up orphaned.
+  Future<void> renameReason(String from, String to) async {
+    if (from == to) return;
+    await transaction(() async {
+      await (update(costs)..where((c) => c.reason.equals(from)))
+          .write(CostsCompanion(reason: Value(to)));
+      final targetExists = await (select(costReasons)
+            ..where((r) => r.label.equals(to)))
+          .getSingleOrNull();
+      if (targetExists != null) {
+        await (delete(costReasons)..where((r) => r.label.equals(from))).go();
+      } else {
+        await (update(costReasons)..where((r) => r.label.equals(from)))
+            .write(CostReasonsCompanion(label: Value(to)));
+      }
+    });
+  }
 }

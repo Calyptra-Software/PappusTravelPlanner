@@ -818,6 +818,12 @@ abstract class AppLocalizations {
   /// **'New category'**
   String get costReasonAddTitle;
 
+  /// No description provided for @costReasonRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename category'**
+  String get costReasonRenameTitle;
+
   /// No description provided for @costReasonChooseIcon.
   ///
   /// In en, this message translates to:

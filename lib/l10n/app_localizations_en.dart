@@ -414,6 +414,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costReasonAddTitle => 'New category';
 
   @override
+  String get costReasonRenameTitle => 'Rename category';
+
+  @override
   String get costReasonChooseIcon => 'Choose an icon';
 
   @override

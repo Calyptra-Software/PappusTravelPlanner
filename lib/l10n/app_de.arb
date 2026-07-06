@@ -120,6 +120,7 @@
   "costReasonDisplayHelp": "Wie Kategorien auf Ausgaben-Chips erscheinen – Symbol: nur das Symbol; Text: nur der Name; Beides: Symbol und Name. Der Betrag wird immer angezeigt.",
   "costReasonAdd": "Kategorie hinzufügen",
   "costReasonAddTitle": "Neue Kategorie",
+  "costReasonRenameTitle": "Kategorie umbenennen",
   "costReasonChooseIcon": "Symbol auswählen",
   "costReasonDeleteConfirmTitle": "Kategorie löschen?",
   "costReasonDeleteConfirmBody": "„{reason}“ wird aus der Liste der Kategorien entfernt. Bestehende Ausgaben behalten ihren Text.",

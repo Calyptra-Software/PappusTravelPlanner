@@ -154,6 +154,7 @@
   "costReasonDisplayHelp": "How categories appear on expense chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.",
   "costReasonAdd": "Add category",
   "costReasonAddTitle": "New category",
+  "costReasonRenameTitle": "Rename category",
   "costReasonChooseIcon": "Choose an icon",
   "costReasonDeleteConfirmTitle": "Delete category?",
   "costReasonDeleteConfirmBody": "\"{reason}\" will be removed from the category list. Existing expenses keep their text.",

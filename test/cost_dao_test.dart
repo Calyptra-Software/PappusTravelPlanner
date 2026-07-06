@@ -123,6 +123,39 @@ void main() {
     expect(await db.costDao.watchReasons().first, ['Dinner']);
   });
 
+  test('renameReason repoints every cost and keeps the icon', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final item = await makeItem(tripId);
+    await db.costDao.setReasonIcon('Hotel', 5);
+    await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
+    await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Hotel'));
+
+    await db.costDao.renameReason('Hotel', 'Lodging');
+
+    final costs = await db.costDao.watchCostsForTrip(tripId).first;
+    expect(costs.map((c) => c.reason), everyElement('Lodging'));
+    final rows = await db.costDao.watchReasonRows().first;
+    expect(rows.single.label, 'Lodging');
+    expect(rows.single.iconId, 5); // icon carried over
+  });
+
+  test('renameReason onto an existing reason merges them', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final item = await makeItem(tripId);
+    await db.costDao.addCost(cost(item, 1000, Currency.eur, 'Food'));
+    await db.costDao.upsertReason('Dinner');
+    await db.costDao.addCost(tripCost(tripId, 2000, Currency.eur, 'Dinner'));
+
+    await db.costDao.renameReason('Food', 'Dinner');
+
+    // Only one reason survives, and both costs now point at it.
+    expect(await db.costDao.watchReasons().first, ['Dinner']);
+    final costs = await db.costDao.watchCostsForTrip(tripId).first;
+    expect(costs.map((c) => c.reason), everyElement('Dinner'));
+  });
+
   test('deleting an item cascades to its costs', () async {
     final tripId =
         await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));

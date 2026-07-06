@@ -110,4 +110,9 @@ class CostController {
 
   Future<void> deleteReason(String label) =>
       _ref.read(repositoryProvider).deleteReason(label);
+
+  /// Renames a reason, repointing every cost that uses it (see
+  /// [TripRepository.renameReason]).
+  Future<void> renameReason(String from, String to) =>
+      _ref.read(repositoryProvider).renameReason(from, to);
 }

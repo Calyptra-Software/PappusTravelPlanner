@@ -75,6 +75,7 @@ class CostReasonsSettings extends ConsumerWidget {
                 onPressed: () => _chooseIcon(context, ref, row.label),
               ),
               title: Text(row.label),
+              onTap: () => _renameReason(context, ref, row.label),
               trailing: IconButton(
                 icon: const Icon(Icons.delete_outline),
                 color: theme.colorScheme.error,
@@ -129,6 +130,41 @@ class CostReasonsSettings extends ConsumerWidget {
     controller.dispose();
     if (label == null || label.isEmpty) return;
     await ref.read(costControllerProvider).addReason(label);
+  }
+
+  Future<void> _renameReason(
+    BuildContext context,
+    WidgetRef ref,
+    String current,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController(text: current);
+    final label = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.costReasonRenameTitle),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(labelText: l10n.costReasonLabel),
+          onSubmitted: (value) => Navigator.pop(context, value.trim()),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (label == null || label.isEmpty || label == current) return;
+    await ref.read(costControllerProvider).renameReason(current, label);
   }
 
   Future<void> _chooseIcon(

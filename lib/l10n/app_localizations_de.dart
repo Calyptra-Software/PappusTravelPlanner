@@ -418,6 +418,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get costReasonAddTitle => 'Neue Kategorie';
 
   @override
+  String get costReasonRenameTitle => 'Kategorie umbenennen';
+
+  @override
   String get costReasonChooseIcon => 'Symbol auswählen';
 
   @override

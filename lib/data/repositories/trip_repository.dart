@@ -39,4 +39,6 @@ class TripRepository {
   Future<void> setReasonIcon(String label, int? iconId) =>
       _db.costDao.setReasonIcon(label, iconId);
   Future<int> deleteReason(String label) => _db.costDao.deleteReason(label);
+  Future<void> renameReason(String from, String to) =>
+      _db.costDao.renameReason(from, to);
 }
