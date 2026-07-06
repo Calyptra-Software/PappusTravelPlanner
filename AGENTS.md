@@ -88,3 +88,28 @@ in-memory database.
 
 Android Gradle Plugin is pinned to **8.x** (AGP 8.11.1 / Gradle 8.13). The Flutter scaffold's
 default AGP 9 breaks `file_picker` — do not bump it.
+
+### Web
+
+The database layer is split by platform via conditional imports in
+`lib/core/database/database_location.dart`: native (`_io.dart`) opens a `NativeDatabase` over
+a file path exactly as before; web (`_web.dart`) ignores the path and opens a
+`WasmDatabase` (via `drift_flutter`'s `driftDatabase`) backed by browser storage (OPFS,
+falling back to IndexedDB) keyed by a fixed name. `dart:io`/`path_provider` live only in the
+`_io.dart` branch. Two prebuilt assets in `web/` are **required** for web and must be
+regenerated if `drift`/`sqlite3` are upgraded:
+
+- `web/sqlite3.wasm` — download the tag matching the resolved `sqlite3` version from
+  `github.com/simolus3/sqlite3.dart/releases` (e.g. `sqlite3-3.3.4/sqlite3.wasm`).
+- `web/drift_worker.js` — `dart compile js -O2 -o web/drift_worker.js <tmp>` where `<tmp>`
+  is a one-line entrypoint calling `WasmDatabase.workerMainForOpen()` from
+  `package:drift/wasm.dart` (must be compiled from inside this project so `package:drift`
+  resolves).
+
+The web has no filesystem, so the settings screen hides the desktop open/create actions
+there, but import/export **are** supported: `DatabaseController.exportBytes` /
+`importFromBytes` close the live connection and go through `WasmDatabase.probe` (OPFS grants
+exclusive single-handle access, so nothing else may be open). Export reads the stored bytes
+via `probe.exportDatabase`; import deletes the store, queues the picked file's bytes via
+`webSetPendingImport`, and reopens — drift's `initializeDatabase` hook seeds the fresh store.
+`file_picker` yields bytes (not a path) on web, so `_import` passes `withData: kIsWeb`.

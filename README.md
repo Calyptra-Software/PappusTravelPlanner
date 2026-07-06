@@ -83,6 +83,12 @@ Pick a device with `-d`. List what's available with `flutter devices`.
     flutter run -d chrome
     ```
 
+- Web (headless server, open the printed URL in any browser):
+
+    ```bash
+    flutter run -d web-server --web-port 8080
+    ```
+
 - Linux desktop:
 
     ```bash
@@ -149,8 +155,9 @@ Open the in-app **Settings → Database** section to:
 
 - **Desktop:** *Open* an existing `.sqlite` file or create a *New* one at any path;
   the choice is remembered across launches.
-- **Android:** *Import* a `.sqlite` file (replaces the current data) or *Export* the
-  current database to a location you choose (via the system file picker).
+- **Android / Web:** *Import* a `.sqlite` file (replaces the current data) or *Export*
+  the current database. On web the data lives in browser storage (OPFS, falling back to
+  IndexedDB); import seeds that storage from the picked file and export downloads it.
 
 The file is a standard SQLite database, so you can copy it between devices/platforms
 and open it directly. Deleting a trip cascades to its itinerary items and their costs.

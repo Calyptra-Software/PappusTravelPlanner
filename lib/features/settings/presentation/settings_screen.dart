@@ -1,11 +1,9 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart' as p;
 
+import '../../../core/database/database_location.dart';
 import '../../../core/providers.dart';
 import '../../../core/settings/language_dialog.dart';
 import '../../../l10n/app_localizations.dart';
@@ -16,9 +14,13 @@ class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   /// Desktop platforms open/create a database file in place; mobile uses
-  /// import/export (SAF) instead.
+  /// import/export (SAF) instead. The web has no filesystem, so it offers
+  /// neither — only the reset action below.
   bool get _isDesktop =>
-      !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,14 +116,14 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // --- mobile: import / export via SAF ---
+  // --- mobile & web: import / export ---
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final result = await FilePicker.pickFiles();
-    final path = result?.files.single.path;
-    if (path == null) return;
-    if (!context.mounted) return;
+    // The web has no file paths, so load the picked file's bytes there instead.
+    final result = await FilePicker.pickFiles(withData: kIsWeb);
+    final file = result?.files.single;
+    if (file == null || !context.mounted) return;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -142,10 +144,19 @@ class SettingsScreen extends ConsumerWidget {
     );
     if (confirmed != true || !context.mounted) return;
 
+    final controller = ref.read(databaseControllerProvider);
     await _run(
       context,
       ref,
-      () => ref.read(databaseControllerProvider).importFrom(path),
+      () async {
+        if (kIsWeb) {
+          final bytes = file.bytes;
+          if (bytes == null) throw StateError('Could not read the file.');
+          await controller.importFromBytes(bytes);
+        } else {
+          await controller.importFrom(file.path!);
+        }
+      },
       l10n.dbImported,
     );
   }
@@ -153,12 +164,16 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final file = await ref.read(databaseControllerProvider).exportFile();
-      final bytes = await file.readAsBytes();
+      final bytes = await ref.read(databaseControllerProvider).exportBytes();
       if (!context.mounted) return;
+      // The web storage key has no extension; the browser's download picker
+      // requires one, so always suggest a `.sqlite` file name.
+      final fileName = kDatabaseFileName.endsWith('.sqlite')
+          ? kDatabaseFileName
+          : '$kDatabaseFileName.sqlite';
       final saved = await FilePicker.saveFile(
         dialogTitle: l10n.dbExport,
-        fileName: p.basename(file.path),
+        fileName: fileName,
         bytes: bytes,
       );
       if (saved == null || !context.mounted) return;
