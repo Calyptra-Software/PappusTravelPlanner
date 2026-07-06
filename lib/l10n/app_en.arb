@@ -41,6 +41,11 @@
   "delete": "Delete",
   "nothingPlanned": "Nothing planned yet.",
   "addPlace": "Add place",
+  "addArrival": "Add {place}",
+  "@addArrival": {
+    "description": "Quick-add chip that creates a place matching the destination of the day's last transport leg.",
+    "placeholders": { "place": { "type": "String" } }
+  },
   "addTransport": "Add transport",
   "hideEntries": "Hide entries",
   "showEntries": "Show entries",

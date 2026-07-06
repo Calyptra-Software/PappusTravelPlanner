@@ -117,6 +117,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addPlace => 'Add place';
 
   @override
+  String addArrival(String place) {
+    return 'Add $place';
+  }
+
+  @override
   String get addTransport => 'Add transport';
 
   @override

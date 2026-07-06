@@ -118,6 +118,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addPlace => 'Ort hinzufügen';
 
   @override
+  String addArrival(String place) {
+    return '$place hinzufügen';
+  }
+
+  @override
   String get addTransport => 'Transport hinzufügen';
 
   @override

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import 'timeline_tile.dart';
 
@@ -20,6 +21,7 @@ class ItineraryTimeline extends StatelessWidget {
     required this.tripEnd,
     required this.onTapItem,
     required this.onAddPlace,
+    required this.onQuickAddPlace,
     required this.onAddTransport,
     required this.onReorder,
     required this.costsByItem,
@@ -33,7 +35,15 @@ class ItineraryTimeline extends StatelessWidget {
   final DateTime? tripEnd;
   final ValueChanged<ItineraryItem> onTapItem;
   final ValueChanged<DateTime> onAddPlace;
-  final ValueChanged<DateTime> onAddTransport;
+
+  /// Creates a place for [day] pre-named with the given location, with no form
+  /// step. Used by the "you just arrived here" quick-add chip.
+  final void Function(DateTime day, String location) onQuickAddPlace;
+
+  /// Opens the add-transport form for [day]. [fromDefault] is the day's current
+  /// location (where the previous entry left you), pre-filled into the "from"
+  /// field, or null if the day has no usable location yet.
+  final void Function(DateTime day, String? fromDefault) onAddTransport;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -74,6 +84,7 @@ class ItineraryTimeline extends StatelessWidget {
         accent: accent,
         onTapItem: onTapItem,
         onAddPlace: onAddPlace,
+        onQuickAddPlace: onQuickAddPlace,
         onAddTransport: onAddTransport,
         onReorder: onReorder,
         costsByItem: costsByItem,
@@ -96,6 +107,7 @@ class ItineraryTimeline extends StatelessWidget {
             accent: accent,
             onTapItem: onTapItem,
             onAddPlace: onAddPlace,
+            onQuickAddPlace: onQuickAddPlace,
             onAddTransport: onAddTransport,
             onReorder: onReorder,
             costsByItem: costsByItem,
@@ -116,6 +128,7 @@ class _DaySection extends StatefulWidget {
     required this.accent,
     required this.onTapItem,
     required this.onAddPlace,
+    required this.onQuickAddPlace,
     required this.onAddTransport,
     required this.onReorder,
     required this.costsByItem,
@@ -129,7 +142,8 @@ class _DaySection extends StatefulWidget {
   final Color accent;
   final ValueChanged<ItineraryItem> onTapItem;
   final ValueChanged<DateTime> onAddPlace;
-  final ValueChanged<DateTime> onAddTransport;
+  final void Function(DateTime day, String location) onQuickAddPlace;
+  final void Function(DateTime day, String? fromDefault) onAddTransport;
   final void Function(List<ItineraryItem>, int, int) onReorder;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
@@ -234,6 +248,23 @@ class _DaySectionState extends State<_DaySection> {
 
   Widget _buildBody(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
+    final lastItem = widget.items.isEmpty ? null : widget.items.last;
+    // The day's current location: where the last entry leaves you — a place's
+    // location, or a leg's destination. Used to pre-fill the next leg's "from"
+    // and, when it comes from a leg, to offer the arrival quick-add chip.
+    final currentLocation = switch (lastItem?.kind) {
+      ItemKind.place => lastItem!.location?.trim(),
+      ItemKind.transport => lastItem!.toLocation?.trim(),
+      null => null,
+    };
+    final hasCurrentLocation =
+        currentLocation != null && currentLocation.isNotEmpty;
+    // If the day ends on a transport leg with a destination, offer a one-tap
+    // chip to add that arrival as a place — no typing the same name again.
+    final arrival =
+        hasCurrentLocation && lastItem!.kind == ItemKind.transport
+        ? currentLocation
+        : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -288,8 +319,18 @@ class _DaySectionState extends State<_DaySection> {
                 icon: const Icon(Icons.add_location_alt_outlined, size: 18),
                 label: Text(l10n.addPlace),
               ),
+              if (arrival != null)
+                ActionChip(
+                  avatar: const Icon(Icons.place, size: 16),
+                  label: Text(l10n.addArrival(arrival)),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => widget.onQuickAddPlace(widget.day, arrival),
+                ),
               TextButton.icon(
-                onPressed: () => widget.onAddTransport(widget.day),
+                onPressed: () => widget.onAddTransport(
+                  widget.day,
+                  hasCurrentLocation ? currentLocation : null,
+                ),
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: Text(l10n.addTransport),
               ),

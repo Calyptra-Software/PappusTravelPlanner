@@ -272,6 +272,12 @@ abstract class AppLocalizations {
   /// **'Add place'**
   String get addPlace;
 
+  /// Quick-add chip that creates a place matching the destination of the day's last transport leg.
+  ///
+  /// In en, this message translates to:
+  /// **'Add {place}'**
+  String addArrival(String place);
+
   /// No description provided for @addTransport.
   ///
   /// In en, this message translates to:

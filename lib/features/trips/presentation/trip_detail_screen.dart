@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -64,6 +65,28 @@ class TripDetailScreen extends ConsumerWidget {
     }
   }
 
+  /// Adds a place to [day] named [location] with no form step — used by the
+  /// "you just arrived here" quick-add chip, which reuses the previous leg's
+  /// destination so the name isn't typed twice.
+  Future<void> _quickAddPlace(
+    WidgetRef ref,
+    DateTime day,
+    String location,
+  ) async {
+    final repo = ref.read(repositoryProvider);
+    final normalized = normalizeDay(day);
+    final sortOrder = await repo.nextSortOrder(tripId, normalized);
+    await repo.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: normalized,
+        kind: ItemKind.place,
+        sortOrder: Value(sortOrder),
+        location: Value(location),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tripAsync = ref.watch(tripProvider(tripId));
@@ -126,11 +149,14 @@ class TripDetailScreen extends ConsumerWidget {
                       kind: ItemKind.place,
                       day: day,
                     ),
-                    onAddTransport: (day) => showItemFormSheet(
+                    onQuickAddPlace: (day, location) =>
+                        _quickAddPlace(ref, day, location),
+                    onAddTransport: (day, fromDefault) => showItemFormSheet(
                       context,
                       tripId: tripId,
                       kind: ItemKind.transport,
                       day: day,
+                      defaultFromLocation: fromDefault,
                     ),
                     onTapCost: (cost) => showCostFormSheet(
                       context,

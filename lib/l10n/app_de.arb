@@ -29,6 +29,7 @@
   "delete": "Löschen",
   "nothingPlanned": "Noch nichts geplant.",
   "addPlace": "Ort hinzufügen",
+  "addArrival": "{place} hinzufügen",
   "addTransport": "Transport hinzufügen",
   "hideEntries": "Einträge ausblenden",
   "showEntries": "Einträge anzeigen",

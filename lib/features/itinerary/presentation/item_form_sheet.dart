@@ -19,6 +19,7 @@ Future<void> showItemFormSheet(
   required ItemKind kind,
   DateTime? day,
   ItineraryItem? existing,
+  String? defaultFromLocation,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -30,6 +31,7 @@ Future<void> showItemFormSheet(
       kind: existing?.kind ?? kind,
       day: day,
       existing: existing,
+      defaultFromLocation: defaultFromLocation,
     ),
   );
 }
@@ -41,12 +43,17 @@ class ItemFormSheet extends ConsumerStatefulWidget {
     required this.kind,
     this.day,
     this.existing,
+    this.defaultFromLocation,
   });
 
   final int tripId;
   final ItemKind kind;
   final DateTime? day;
   final ItineraryItem? existing;
+
+  /// Pre-fills the "from" field when adding a new transport leg, so the day's
+  /// current location isn't typed again. Ignored when editing.
+  final String? defaultFromLocation;
 
   @override
   ConsumerState<ItemFormSheet> createState() => _ItemFormSheetState();
@@ -82,6 +89,8 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _startMinutes = existing.startMinutes;
       _endMinutes = existing.endMinutes;
       _mode = existing.mode ?? TransportMode.train;
+    } else if (_isTransport) {
+      _fromController.text = widget.defaultFromLocation ?? '';
     }
   }
 
