@@ -145,5 +145,21 @@
   "generalCosts": "General costs",
   "@generalCosts": {
     "description": "Heading for trip-wide costs not tied to a specific place or transport"
-  }
+  },
+  "costReasonsSection": "Cost reasons",
+  "costReasonsManageSubtitle": "Add reasons, assign icons, and choose how they show on cost chips",
+  "costReasonDisplay": "Show on cost chips",
+  "costReasonDisplayIcon": "Icon",
+  "costReasonDisplayText": "Text",
+  "costReasonDisplayBoth": "Both",
+  "costReasonDisplayHelp": "How reasons appear on cost chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.",
+  "costReasonAdd": "Add reason",
+  "costReasonAddTitle": "New reason",
+  "costReasonChooseIcon": "Choose an icon",
+  "costReasonDeleteConfirmTitle": "Delete reason?",
+  "costReasonDeleteConfirmBody": "\"{reason}\" will be removed from the reason list. Existing costs keep their text.",
+  "@costReasonDeleteConfirmBody": {
+    "placeholders": { "reason": { "type": "String" } }
+  },
+  "noCostReasons": "No saved reasons yet"
 }

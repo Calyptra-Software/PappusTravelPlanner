@@ -387,4 +387,47 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generalCosts => 'General costs';
+
+  @override
+  String get costReasonsSection => 'Cost reasons';
+
+  @override
+  String get costReasonsManageSubtitle =>
+      'Add reasons, assign icons, and choose how they show on cost chips';
+
+  @override
+  String get costReasonDisplay => 'Show on cost chips';
+
+  @override
+  String get costReasonDisplayIcon => 'Icon';
+
+  @override
+  String get costReasonDisplayText => 'Text';
+
+  @override
+  String get costReasonDisplayBoth => 'Both';
+
+  @override
+  String get costReasonDisplayHelp =>
+      'How reasons appear on cost chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.';
+
+  @override
+  String get costReasonAdd => 'Add reason';
+
+  @override
+  String get costReasonAddTitle => 'New reason';
+
+  @override
+  String get costReasonChooseIcon => 'Choose an icon';
+
+  @override
+  String get costReasonDeleteConfirmTitle => 'Delete reason?';
+
+  @override
+  String costReasonDeleteConfirmBody(String reason) {
+    return '\"$reason\" will be removed from the reason list. Existing costs keep their text.';
+  }
+
+  @override
+  String get noCostReasons => 'No saved reasons yet';
 }

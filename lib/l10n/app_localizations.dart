@@ -769,6 +769,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'General costs'**
   String get generalCosts;
+
+  /// No description provided for @costReasonsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost reasons'**
+  String get costReasonsSection;
+
+  /// No description provided for @costReasonsManageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reasons, assign icons, and choose how they show on cost chips'**
+  String get costReasonsManageSubtitle;
+
+  /// No description provided for @costReasonDisplay.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on cost chips'**
+  String get costReasonDisplay;
+
+  /// No description provided for @costReasonDisplayIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get costReasonDisplayIcon;
+
+  /// No description provided for @costReasonDisplayText.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get costReasonDisplayText;
+
+  /// No description provided for @costReasonDisplayBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get costReasonDisplayBoth;
+
+  /// No description provided for @costReasonDisplayHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'How reasons appear on cost chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.'**
+  String get costReasonDisplayHelp;
+
+  /// No description provided for @costReasonAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add reason'**
+  String get costReasonAdd;
+
+  /// No description provided for @costReasonAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New reason'**
+  String get costReasonAddTitle;
+
+  /// No description provided for @costReasonChooseIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get costReasonChooseIcon;
+
+  /// No description provided for @costReasonDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete reason?'**
+  String get costReasonDeleteConfirmTitle;
+
+  /// No description provided for @costReasonDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{reason}\" will be removed from the reason list. Existing costs keep their text.'**
+  String costReasonDeleteConfirmBody(String reason);
+
+  /// No description provided for @noCostReasons.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved reasons yet'**
+  String get noCostReasons;
 }
 
 class _AppLocalizationsDelegate

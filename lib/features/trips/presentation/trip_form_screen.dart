@@ -10,6 +10,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
+import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 
 /// Create a new trip, or edit an existing one when [tripId] is provided.
@@ -249,14 +250,9 @@ class _TripCostsEditor extends ConsumerWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             for (final cost in costs)
-              ActionChip(
-                avatar: const Icon(Icons.payments_outlined, size: 16),
-                label: Text(
-                  '${cost.reason}  '
-                  '${formatMoney(cost.amountMinor, cost.currency, localeName)}',
-                ),
-                visualDensity: VisualDensity.compact,
-                onPressed: () =>
+              CostChip(
+                cost: cost,
+                onTap: () =>
                     showCostFormSheet(context, tripId: tripId, existing: cost),
               ),
             ActionChip(

@@ -10,6 +10,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
+import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
@@ -312,15 +313,7 @@ class _TripHeader extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     for (final cost in tripLevelCosts)
-                      ActionChip(
-                        avatar: const Icon(Icons.payments_outlined, size: 16),
-                        label: Text(
-                          '${cost.reason}  '
-                          '${formatMoney(cost.amountMinor, cost.currency, localeName)}',
-                        ),
-                        visualDensity: VisualDensity.compact,
-                        onPressed: () => onTapCost(cost),
-                      ),
+                      CostChip(cost: cost, onTap: () => onTapCost(cost)),
                   ],
                 ),
               ],

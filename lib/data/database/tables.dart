@@ -132,4 +132,8 @@ class Costs extends Table {
 class CostReasons extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get label => text().unique()();
+
+  /// Stable key into the curated icon set (`kCostReasonIcons`), or null to use
+  /// the default icon. Not a font code point, so the set can change safely.
+  IntColumn get iconId => integer().nullable()();
 }

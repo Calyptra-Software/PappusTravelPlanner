@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -35,6 +35,10 @@ class AppDatabase extends _$AppDatabase {
           // cost can be attached to the whole trip instead of a single item.
           if (from < 3) {
             await m.alterTable(TableMigration(costs, newColumns: [costs.tripId]));
+          }
+          // v4 added an optional icon to each saved cost reason.
+          if (from < 4) {
+            await m.addColumn(costReasons, costReasons.iconId);
           }
         },
         beforeOpen: (details) async {

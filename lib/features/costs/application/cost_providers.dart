@@ -33,6 +33,18 @@ final reasonsProvider = StreamProvider.autoDispose<List<String>>((ref) {
   return ref.watch(repositoryProvider).watchReasons();
 });
 
+/// Saved reasons with their icons, for the settings management list.
+final reasonRowsProvider = StreamProvider.autoDispose<List<CostReason>>((ref) {
+  return ref.watch(repositoryProvider).watchReasonRows();
+});
+
+/// Maps a reason label to its assigned icon id, so a cost (which stores its
+/// reason as text) can resolve the icon to show on its chip.
+final reasonIconsProvider = Provider.autoDispose<Map<String, int?>>((ref) {
+  final rows = ref.watch(reasonRowsProvider).value ?? const [];
+  return {for (final r in rows) r.label: r.iconId};
+});
+
 final costControllerProvider =
     Provider<CostController>((ref) => CostController(ref));
 
@@ -79,4 +91,23 @@ class CostController {
 
   Future<void> deleteCost(int id) =>
       _ref.read(repositoryProvider).deleteCost(id);
+
+  // --- reason management (settings) ---
+
+  /// Adds a reusable reason (a no-op if it already exists), optionally with an
+  /// icon assigned right away.
+  Future<void> addReason(String label, {int? iconId}) async {
+    final repo = _ref.read(repositoryProvider);
+    if (iconId == null) {
+      await repo.upsertReason(label);
+    } else {
+      await repo.setReasonIcon(label, iconId);
+    }
+  }
+
+  Future<void> setReasonIcon(String label, int? iconId) =>
+      _ref.read(repositoryProvider).setReasonIcon(label, iconId);
+
+  Future<void> deleteReason(String label) =>
+      _ref.read(repositoryProvider).deleteReason(label);
 }

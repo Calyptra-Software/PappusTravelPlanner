@@ -35,4 +35,8 @@ class TripRepository {
   Future<int> deleteCost(int id) => _db.costDao.deleteCost(id);
   Future<void> upsertReason(String label) => _db.costDao.upsertReason(label);
   Stream<List<String>> watchReasons() => _db.costDao.watchReasons();
+  Stream<List<CostReason>> watchReasonRows() => _db.costDao.watchReasonRows();
+  Future<void> setReasonIcon(String label, int? iconId) =>
+      _db.costDao.setReasonIcon(label, iconId);
+  Future<int> deleteReason(String label) => _db.costDao.deleteReason(label);
 }

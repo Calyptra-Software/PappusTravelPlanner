@@ -1771,8 +1771,17 @@ class $CostReasonsTable extends CostReasons
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _iconIdMeta = const VerificationMeta('iconId');
   @override
-  List<GeneratedColumn> get $columns => [id, label];
+  late final GeneratedColumn<int> iconId = GeneratedColumn<int>(
+    'icon_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, label, iconId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1796,6 +1805,12 @@ class $CostReasonsTable extends CostReasons
     } else if (isInserting) {
       context.missing(_labelMeta);
     }
+    if (data.containsKey('icon_id')) {
+      context.handle(
+        _iconIdMeta,
+        iconId.isAcceptableOrUnknown(data['icon_id']!, _iconIdMeta),
+      );
+    }
     return context;
   }
 
@@ -1813,6 +1828,10 @@ class $CostReasonsTable extends CostReasons
         DriftSqlType.string,
         data['${effectivePrefix}label'],
       )!,
+      iconId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}icon_id'],
+      ),
     );
   }
 
@@ -1825,17 +1844,30 @@ class $CostReasonsTable extends CostReasons
 class CostReason extends DataClass implements Insertable<CostReason> {
   final int id;
   final String label;
-  const CostReason({required this.id, required this.label});
+
+  /// Stable key into the curated icon set (`kCostReasonIcons`), or null to use
+  /// the default icon. Not a font code point, so the set can change safely.
+  final int? iconId;
+  const CostReason({required this.id, required this.label, this.iconId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['label'] = Variable<String>(label);
+    if (!nullToAbsent || iconId != null) {
+      map['icon_id'] = Variable<int>(iconId);
+    }
     return map;
   }
 
   CostReasonsCompanion toCompanion(bool nullToAbsent) {
-    return CostReasonsCompanion(id: Value(id), label: Value(label));
+    return CostReasonsCompanion(
+      id: Value(id),
+      label: Value(label),
+      iconId: iconId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconId),
+    );
   }
 
   factory CostReason.fromJson(
@@ -1846,6 +1878,7 @@ class CostReason extends DataClass implements Insertable<CostReason> {
     return CostReason(
       id: serializer.fromJson<int>(json['id']),
       label: serializer.fromJson<String>(json['label']),
+      iconId: serializer.fromJson<int?>(json['iconId']),
     );
   }
   @override
@@ -1854,15 +1887,24 @@ class CostReason extends DataClass implements Insertable<CostReason> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'label': serializer.toJson<String>(label),
+      'iconId': serializer.toJson<int?>(iconId),
     };
   }
 
-  CostReason copyWith({int? id, String? label}) =>
-      CostReason(id: id ?? this.id, label: label ?? this.label);
+  CostReason copyWith({
+    int? id,
+    String? label,
+    Value<int?> iconId = const Value.absent(),
+  }) => CostReason(
+    id: id ?? this.id,
+    label: label ?? this.label,
+    iconId: iconId.present ? iconId.value : this.iconId,
+  );
   CostReason copyWithCompanion(CostReasonsCompanion data) {
     return CostReason(
       id: data.id.present ? data.id.value : this.id,
       label: data.label.present ? data.label.value : this.label,
+      iconId: data.iconId.present ? data.iconId.value : this.iconId,
     );
   }
 
@@ -1870,42 +1912,59 @@ class CostReason extends DataClass implements Insertable<CostReason> {
   String toString() {
     return (StringBuffer('CostReason(')
           ..write('id: $id, ')
-          ..write('label: $label')
+          ..write('label: $label, ')
+          ..write('iconId: $iconId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, label);
+  int get hashCode => Object.hash(id, label, iconId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is CostReason && other.id == this.id && other.label == this.label);
+      (other is CostReason &&
+          other.id == this.id &&
+          other.label == this.label &&
+          other.iconId == this.iconId);
 }
 
 class CostReasonsCompanion extends UpdateCompanion<CostReason> {
   final Value<int> id;
   final Value<String> label;
+  final Value<int?> iconId;
   const CostReasonsCompanion({
     this.id = const Value.absent(),
     this.label = const Value.absent(),
+    this.iconId = const Value.absent(),
   });
   CostReasonsCompanion.insert({
     this.id = const Value.absent(),
     required String label,
+    this.iconId = const Value.absent(),
   }) : label = Value(label);
   static Insertable<CostReason> custom({
     Expression<int>? id,
     Expression<String>? label,
+    Expression<int>? iconId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (label != null) 'label': label,
+      if (iconId != null) 'icon_id': iconId,
     });
   }
 
-  CostReasonsCompanion copyWith({Value<int>? id, Value<String>? label}) {
-    return CostReasonsCompanion(id: id ?? this.id, label: label ?? this.label);
+  CostReasonsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? label,
+    Value<int?>? iconId,
+  }) {
+    return CostReasonsCompanion(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      iconId: iconId ?? this.iconId,
+    );
   }
 
   @override
@@ -1917,6 +1976,9 @@ class CostReasonsCompanion extends UpdateCompanion<CostReason> {
     if (label.present) {
       map['label'] = Variable<String>(label.value);
     }
+    if (iconId.present) {
+      map['icon_id'] = Variable<int>(iconId.value);
+    }
     return map;
   }
 
@@ -1924,7 +1986,8 @@ class CostReasonsCompanion extends UpdateCompanion<CostReason> {
   String toString() {
     return (StringBuffer('CostReasonsCompanion(')
           ..write('id: $id, ')
-          ..write('label: $label')
+          ..write('label: $label, ')
+          ..write('iconId: $iconId')
           ..write(')'))
         .toString();
   }
@@ -3422,9 +3485,17 @@ typedef $$CostsTableProcessedTableManager =
       PrefetchHooks Function({bool itemId, bool tripId})
     >;
 typedef $$CostReasonsTableCreateCompanionBuilder =
-    CostReasonsCompanion Function({Value<int> id, required String label});
+    CostReasonsCompanion Function({
+      Value<int> id,
+      required String label,
+      Value<int?> iconId,
+    });
 typedef $$CostReasonsTableUpdateCompanionBuilder =
-    CostReasonsCompanion Function({Value<int> id, Value<String> label});
+    CostReasonsCompanion Function({
+      Value<int> id,
+      Value<String> label,
+      Value<int?> iconId,
+    });
 
 class $$CostReasonsTableFilterComposer
     extends Composer<_$AppDatabase, $CostReasonsTable> {
@@ -3442,6 +3513,11 @@ class $$CostReasonsTableFilterComposer
 
   ColumnFilters<String> get label => $composableBuilder(
     column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get iconId => $composableBuilder(
+    column: $table.iconId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -3464,6 +3540,11 @@ class $$CostReasonsTableOrderingComposer
     column: $table.label,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get iconId => $composableBuilder(
+    column: $table.iconId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CostReasonsTableAnnotationComposer
@@ -3480,6 +3561,9 @@ class $$CostReasonsTableAnnotationComposer
 
   GeneratedColumn<String> get label =>
       $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<int> get iconId =>
+      $composableBuilder(column: $table.iconId, builder: (column) => column);
 }
 
 class $$CostReasonsTableTableManager
@@ -3515,10 +3599,18 @@ class $$CostReasonsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> label = const Value.absent(),
-              }) => CostReasonsCompanion(id: id, label: label),
+                Value<int?> iconId = const Value.absent(),
+              }) => CostReasonsCompanion(id: id, label: label, iconId: iconId),
           createCompanionCallback:
-              ({Value<int> id = const Value.absent(), required String label}) =>
-                  CostReasonsCompanion.insert(id: id, label: label),
+              ({
+                Value<int> id = const Value.absent(),
+                required String label,
+                Value<int?> iconId = const Value.absent(),
+              }) => CostReasonsCompanion.insert(
+                id: id,
+                label: label,
+                iconId: iconId,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),

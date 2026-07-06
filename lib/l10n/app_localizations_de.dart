@@ -391,4 +391,47 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get generalCosts => 'Allgemeine Kosten';
+
+  @override
+  String get costReasonsSection => 'Kostengründe';
+
+  @override
+  String get costReasonsManageSubtitle =>
+      'Gründe hinzufügen, Symbole zuweisen und festlegen, wie sie auf Kosten-Chips erscheinen';
+
+  @override
+  String get costReasonDisplay => 'Auf Kosten-Chips anzeigen';
+
+  @override
+  String get costReasonDisplayIcon => 'Symbol';
+
+  @override
+  String get costReasonDisplayText => 'Text';
+
+  @override
+  String get costReasonDisplayBoth => 'Beides';
+
+  @override
+  String get costReasonDisplayHelp =>
+      'Wie Gründe auf Kosten-Chips erscheinen – Symbol: nur das Symbol; Text: nur der Name; Beides: Symbol und Name. Der Betrag wird immer angezeigt.';
+
+  @override
+  String get costReasonAdd => 'Grund hinzufügen';
+
+  @override
+  String get costReasonAddTitle => 'Neuer Grund';
+
+  @override
+  String get costReasonChooseIcon => 'Symbol auswählen';
+
+  @override
+  String get costReasonDeleteConfirmTitle => 'Grund löschen?';
+
+  @override
+  String costReasonDeleteConfirmBody(String reason) {
+    return '„$reason“ wird aus der Liste der Gründe entfernt. Bestehende Kosten behalten ihren Text.';
+  }
+
+  @override
+  String get noCostReasons => 'Noch keine gespeicherten Gründe';
 }

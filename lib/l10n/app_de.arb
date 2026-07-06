@@ -111,5 +111,18 @@
   "costReasonRequired": "Bitte einen Grund eingeben",
   "costsTotal": "Gesamt",
   "costs": "Kosten",
-  "generalCosts": "Allgemeine Kosten"
+  "generalCosts": "Allgemeine Kosten",
+  "costReasonsSection": "Kostengründe",
+  "costReasonsManageSubtitle": "Gründe hinzufügen, Symbole zuweisen und festlegen, wie sie auf Kosten-Chips erscheinen",
+  "costReasonDisplay": "Auf Kosten-Chips anzeigen",
+  "costReasonDisplayIcon": "Symbol",
+  "costReasonDisplayText": "Text",
+  "costReasonDisplayBoth": "Beides",
+  "costReasonDisplayHelp": "Wie Gründe auf Kosten-Chips erscheinen – Symbol: nur das Symbol; Text: nur der Name; Beides: Symbol und Name. Der Betrag wird immer angezeigt.",
+  "costReasonAdd": "Grund hinzufügen",
+  "costReasonAddTitle": "Neuer Grund",
+  "costReasonChooseIcon": "Symbol auswählen",
+  "costReasonDeleteConfirmTitle": "Grund löschen?",
+  "costReasonDeleteConfirmBody": "„{reason}“ wird aus der Liste der Gründe entfernt. Bestehende Kosten behalten ihren Text.",
+  "noCostReasons": "Noch keine gespeicherten Gründe"
 }

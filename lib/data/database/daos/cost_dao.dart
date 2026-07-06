@@ -33,7 +33,8 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   Future<int> deleteCost(int id) =>
       (delete(costs)..where((c) => c.id.equals(id))).go();
 
-  /// Remembers a reason label for reuse; a no-op if it already exists.
+  /// Remembers a reason label for reuse; a no-op if it already exists. Leaves
+  /// an existing reason's icon untouched.
   Future<void> upsertReason(String label) {
     return into(costReasons).insert(
       CostReasonsCompanion.insert(label: label),
@@ -48,4 +49,26 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         .watch()
         .map((rows) => rows.map((r) => r.label).toList());
   }
+
+  /// All saved reasons with their icons, alphabetical by label. Used by the
+  /// settings management list and by the chip's label -> icon lookup.
+  Stream<List<CostReason>> watchReasonRows() {
+    return (select(costReasons)
+          ..orderBy([(r) => OrderingTerm(expression: r.label)]))
+        .watch();
+  }
+
+  /// Creates the reason if needed and sets its icon (null = default icon).
+  Future<void> setReasonIcon(String label, int? iconId) {
+    return into(costReasons).insert(
+      CostReasonsCompanion.insert(label: label, iconId: Value(iconId)),
+      onConflict: DoUpdate((_) =>
+          CostReasonsCompanion(iconId: Value(iconId)),
+          target: [costReasons.label]),
+    );
+  }
+
+  /// Forgets a saved reason. Existing costs keep their stored reason text.
+  Future<int> deleteReason(String label) =>
+      (delete(costReasons)..where((r) => r.label.equals(label))).go();
 }

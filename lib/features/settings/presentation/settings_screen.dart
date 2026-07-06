@@ -8,6 +8,7 @@ import '../../../core/database/database_location.dart';
 import '../../../core/providers.dart';
 import '../../../core/settings/language_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/presentation/cost_reasons_settings.dart';
 import '../application/database_providers.dart';
 
 /// Settings: language and database location/portability.
@@ -40,6 +41,9 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: Text(currentLanguageLabel(context, ref)),
             onTap: () => showLanguageDialog(context, ref),
           ),
+          const Divider(),
+          _SectionHeader(title: l10n.costReasonsSection),
+          const CostReasonsSettings(),
           const Divider(),
           _SectionHeader(title: l10n.databaseSection),
           ListTile(

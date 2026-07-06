@@ -94,6 +94,35 @@ void main() {
     expect(await db.costDao.watchReasons().first, ['Dinner', 'Hotel']);
   });
 
+  test('setReasonIcon creates a reason and assigns its icon', () async {
+    await db.costDao.setReasonIcon('Hotel', 6);
+
+    final rows = await db.costDao.watchReasonRows().first;
+    expect(rows.single.label, 'Hotel');
+    expect(rows.single.iconId, 6);
+  });
+
+  test('setReasonIcon updates an existing reason without duplicating it',
+      () async {
+    await db.costDao.upsertReason('Hotel');
+    await db.costDao.setReasonIcon('Hotel', 6);
+    await db.costDao.setReasonIcon('Hotel', 8); // change icon
+    await db.costDao.setReasonIcon('Hotel', null); // clear icon
+
+    final rows = await db.costDao.watchReasonRows().first;
+    expect(rows.length, 1);
+    expect(rows.single.iconId, null);
+  });
+
+  test('deleteReason forgets a saved reason', () async {
+    await db.costDao.upsertReason('Hotel');
+    await db.costDao.upsertReason('Dinner');
+
+    await db.costDao.deleteReason('Hotel');
+
+    expect(await db.costDao.watchReasons().first, ['Dinner']);
+  });
+
   test('deleting an item cascades to its costs', () async {
     final tripId =
         await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
