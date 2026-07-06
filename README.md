@@ -2,6 +2,7 @@
 
 [![Flutter 3.44+](https://img.shields.io/badge/Flutter-3.44%2B-blue)](https://flutter.dev)
 [![Dart 3.12+](https://img.shields.io/badge/Dart-3.12%2B-blue)](https://dart.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Travel Planner is a modern, **offline-first** Flutter app for planning trips. Create
 trips, build a day-by-day itinerary from places and transport legs, track what each
