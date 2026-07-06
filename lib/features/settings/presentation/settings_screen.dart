@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -88,11 +89,12 @@ class SettingsScreen extends ConsumerWidget {
   // --- desktop: open / create in place ---
 
   Future<void> _openExisting(BuildContext context, WidgetRef ref) async {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['sqlite', 'db'],
-    );
-    final path = result?.files.single.path;
+    // Use file_selector (not file_picker) on desktop: its native GTK chooser
+    // parents the dialog to the app window on Linux, so it opens in front
+    // instead of behind. file_picker's XDG-portal path passes no parent handle.
+    const typeGroup = XTypeGroup(label: 'SQLite', extensions: ['sqlite', 'db']);
+    final file = await openFile(acceptedTypeGroups: [typeGroup]);
+    final path = file?.path;
     if (path == null || !context.mounted) return;
     await _run(
       context,
@@ -103,10 +105,12 @@ class SettingsScreen extends ConsumerWidget {
   }
 
   Future<void> _createNew(BuildContext context, WidgetRef ref) async {
-    final path = await FilePicker.saveFile(
-      dialogTitle: AppLocalizations.of(context).dbNew,
-      fileName: 'travelplanner.sqlite',
+    // file_selector parents the save dialog to the app window on Linux; see
+    // _openExisting.
+    final location = await getSaveLocation(
+      suggestedName: 'travelplanner.sqlite',
     );
+    final path = location?.path;
     if (path == null || !context.mounted) return;
     await _run(
       context,
@@ -145,20 +149,15 @@ class SettingsScreen extends ConsumerWidget {
     if (confirmed != true || !context.mounted) return;
 
     final controller = ref.read(databaseControllerProvider);
-    await _run(
-      context,
-      ref,
-      () async {
-        if (kIsWeb) {
-          final bytes = file.bytes;
-          if (bytes == null) throw StateError('Could not read the file.');
-          await controller.importFromBytes(bytes);
-        } else {
-          await controller.importFrom(file.path!);
-        }
-      },
-      l10n.dbImported,
-    );
+    await _run(context, ref, () async {
+      if (kIsWeb) {
+        final bytes = file.bytes;
+        if (bytes == null) throw StateError('Could not read the file.');
+        await controller.importFromBytes(bytes);
+      } else {
+        await controller.importFrom(file.path!);
+      }
+    }, l10n.dbImported);
   }
 
   Future<void> _export(BuildContext context, WidgetRef ref) async {
