@@ -350,10 +350,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get addCost => 'Add cost';
+  String get addCost => 'Add expense';
 
   @override
-  String get editCost => 'Edit cost';
+  String get editCost => 'Edit expense';
 
   @override
   String get costAmount => 'Amount';
@@ -362,41 +362,37 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costCurrency => 'Currency';
 
   @override
-  String get costReason => 'Reason';
+  String get costReason => 'Category';
 
   @override
-  String get costReasonNew => 'New reason…';
+  String get costReasonNew => 'New category…';
 
   @override
   String get costReasonHint => 'e.g. Hotel, Dinner, Train ticket';
 
   @override
-  String get costReasonLabel => 'Reason name';
+  String get costReasonLabel => 'Category name';
 
   @override
   String get costAmountInvalid => 'Enter a valid amount';
 
   @override
-  String get costReasonRequired => 'Enter a reason';
+  String get costReasonRequired => 'Enter a category';
 
   @override
   String get costsTotal => 'Total';
 
   @override
-  String get costs => 'Costs';
+  String get costs => 'Expenses';
 
   @override
-  String get generalCosts => 'General costs';
+  String get generalCosts => 'General expenses';
 
   @override
-  String get costReasonsSection => 'Cost reasons';
+  String get costReasonsSection => 'Expense categories';
 
   @override
-  String get costReasonsManageSubtitle =>
-      'Add reasons, assign icons, and choose how they show on cost chips';
-
-  @override
-  String get costReasonDisplay => 'Show on cost chips';
+  String get costReasonDisplay => 'Show on expense chips';
 
   @override
   String get costReasonDisplayIcon => 'Icon';
@@ -409,25 +405,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get costReasonDisplayHelp =>
-      'How reasons appear on cost chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.';
+      'How categories appear on expense chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.';
 
   @override
-  String get costReasonAdd => 'Add reason';
+  String get costReasonAdd => 'Add category';
 
   @override
-  String get costReasonAddTitle => 'New reason';
+  String get costReasonAddTitle => 'New category';
 
   @override
   String get costReasonChooseIcon => 'Choose an icon';
 
   @override
-  String get costReasonDeleteConfirmTitle => 'Delete reason?';
+  String get costReasonDeleteConfirmTitle => 'Delete category?';
 
   @override
   String costReasonDeleteConfirmBody(String reason) {
-    return '\"$reason\" will be removed from the reason list. Existing costs keep their text.';
+    return '\"$reason\" will be removed from the category list. Existing expenses keep their text.';
   }
 
   @override
-  String get noCostReasons => 'No saved reasons yet';
+  String get noCostReasons => 'No saved categories yet';
 }

@@ -354,10 +354,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get addCost => 'Kosten hinzufügen';
+  String get addCost => 'Ausgabe hinzufügen';
 
   @override
-  String get editCost => 'Kosten bearbeiten';
+  String get editCost => 'Ausgabe bearbeiten';
 
   @override
   String get costAmount => 'Betrag';
@@ -366,41 +366,37 @@ class AppLocalizationsDe extends AppLocalizations {
   String get costCurrency => 'Währung';
 
   @override
-  String get costReason => 'Grund';
+  String get costReason => 'Kategorie';
 
   @override
-  String get costReasonNew => 'Neuer Grund…';
+  String get costReasonNew => 'Neue Kategorie…';
 
   @override
   String get costReasonHint => 'z. B. Hotel, Abendessen, Zugticket';
 
   @override
-  String get costReasonLabel => 'Bezeichnung';
+  String get costReasonLabel => 'Kategoriename';
 
   @override
   String get costAmountInvalid => 'Bitte einen gültigen Betrag eingeben';
 
   @override
-  String get costReasonRequired => 'Bitte einen Grund eingeben';
+  String get costReasonRequired => 'Bitte eine Kategorie eingeben';
 
   @override
   String get costsTotal => 'Gesamt';
 
   @override
-  String get costs => 'Kosten';
+  String get costs => 'Ausgaben';
 
   @override
-  String get generalCosts => 'Allgemeine Kosten';
+  String get generalCosts => 'Allgemeine Ausgaben';
 
   @override
-  String get costReasonsSection => 'Kostengründe';
+  String get costReasonsSection => 'Ausgabenkategorien';
 
   @override
-  String get costReasonsManageSubtitle =>
-      'Gründe hinzufügen, Symbole zuweisen und festlegen, wie sie auf Kosten-Chips erscheinen';
-
-  @override
-  String get costReasonDisplay => 'Auf Kosten-Chips anzeigen';
+  String get costReasonDisplay => 'Auf Ausgaben-Chips anzeigen';
 
   @override
   String get costReasonDisplayIcon => 'Symbol';
@@ -413,25 +409,25 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get costReasonDisplayHelp =>
-      'Wie Gründe auf Kosten-Chips erscheinen – Symbol: nur das Symbol; Text: nur der Name; Beides: Symbol und Name. Der Betrag wird immer angezeigt.';
+      'Wie Kategorien auf Ausgaben-Chips erscheinen – Symbol: nur das Symbol; Text: nur der Name; Beides: Symbol und Name. Der Betrag wird immer angezeigt.';
 
   @override
-  String get costReasonAdd => 'Grund hinzufügen';
+  String get costReasonAdd => 'Kategorie hinzufügen';
 
   @override
-  String get costReasonAddTitle => 'Neuer Grund';
+  String get costReasonAddTitle => 'Neue Kategorie';
 
   @override
   String get costReasonChooseIcon => 'Symbol auswählen';
 
   @override
-  String get costReasonDeleteConfirmTitle => 'Grund löschen?';
+  String get costReasonDeleteConfirmTitle => 'Kategorie löschen?';
 
   @override
   String costReasonDeleteConfirmBody(String reason) {
-    return '„$reason“ wird aus der Liste der Gründe entfernt. Bestehende Kosten behalten ihren Text.';
+    return '„$reason“ wird aus der Liste der Kategorien entfernt. Bestehende Ausgaben behalten ihren Text.';
   }
 
   @override
-  String get noCostReasons => 'Noch keine gespeicherten Gründe';
+  String get noCostReasons => 'Noch keine gespeicherten Kategorien';
 }

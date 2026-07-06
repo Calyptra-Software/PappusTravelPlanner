@@ -130,36 +130,35 @@
   "@widgetMoreItems": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "addCost": "Add cost",
-  "editCost": "Edit cost",
+  "addCost": "Add expense",
+  "editCost": "Edit expense",
   "costAmount": "Amount",
   "costCurrency": "Currency",
-  "costReason": "Reason",
-  "costReasonNew": "New reason…",
+  "costReason": "Category",
+  "costReasonNew": "New category…",
   "costReasonHint": "e.g. Hotel, Dinner, Train ticket",
-  "costReasonLabel": "Reason name",
+  "costReasonLabel": "Category name",
   "costAmountInvalid": "Enter a valid amount",
-  "costReasonRequired": "Enter a reason",
+  "costReasonRequired": "Enter a category",
   "costsTotal": "Total",
-  "costs": "Costs",
-  "generalCosts": "General costs",
+  "costs": "Expenses",
+  "generalCosts": "General expenses",
   "@generalCosts": {
-    "description": "Heading for trip-wide costs not tied to a specific place or transport"
+    "description": "Heading for trip-wide expenses not tied to a specific place or transport"
   },
-  "costReasonsSection": "Cost reasons",
-  "costReasonsManageSubtitle": "Add reasons, assign icons, and choose how they show on cost chips",
-  "costReasonDisplay": "Show on cost chips",
+  "costReasonsSection": "Expense categories",
+  "costReasonDisplay": "Show on expense chips",
   "costReasonDisplayIcon": "Icon",
   "costReasonDisplayText": "Text",
   "costReasonDisplayBoth": "Both",
-  "costReasonDisplayHelp": "How reasons appear on cost chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.",
-  "costReasonAdd": "Add reason",
-  "costReasonAddTitle": "New reason",
+  "costReasonDisplayHelp": "How categories appear on expense chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.",
+  "costReasonAdd": "Add category",
+  "costReasonAddTitle": "New category",
   "costReasonChooseIcon": "Choose an icon",
-  "costReasonDeleteConfirmTitle": "Delete reason?",
-  "costReasonDeleteConfirmBody": "\"{reason}\" will be removed from the reason list. Existing costs keep their text.",
+  "costReasonDeleteConfirmTitle": "Delete category?",
+  "costReasonDeleteConfirmBody": "\"{reason}\" will be removed from the category list. Existing expenses keep their text.",
   "@costReasonDeleteConfirmBody": {
     "placeholders": { "reason": { "type": "String" } }
   },
-  "noCostReasons": "No saved reasons yet"
+  "noCostReasons": "No saved categories yet"
 }

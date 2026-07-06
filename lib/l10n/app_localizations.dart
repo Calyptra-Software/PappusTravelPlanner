@@ -695,13 +695,13 @@ abstract class AppLocalizations {
   /// No description provided for @addCost.
   ///
   /// In en, this message translates to:
-  /// **'Add cost'**
+  /// **'Add expense'**
   String get addCost;
 
   /// No description provided for @editCost.
   ///
   /// In en, this message translates to:
-  /// **'Edit cost'**
+  /// **'Edit expense'**
   String get editCost;
 
   /// No description provided for @costAmount.
@@ -719,13 +719,13 @@ abstract class AppLocalizations {
   /// No description provided for @costReason.
   ///
   /// In en, this message translates to:
-  /// **'Reason'**
+  /// **'Category'**
   String get costReason;
 
   /// No description provided for @costReasonNew.
   ///
   /// In en, this message translates to:
-  /// **'New reason…'**
+  /// **'New category…'**
   String get costReasonNew;
 
   /// No description provided for @costReasonHint.
@@ -737,7 +737,7 @@ abstract class AppLocalizations {
   /// No description provided for @costReasonLabel.
   ///
   /// In en, this message translates to:
-  /// **'Reason name'**
+  /// **'Category name'**
   String get costReasonLabel;
 
   /// No description provided for @costAmountInvalid.
@@ -749,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @costReasonRequired.
   ///
   /// In en, this message translates to:
-  /// **'Enter a reason'**
+  /// **'Enter a category'**
   String get costReasonRequired;
 
   /// No description provided for @costsTotal.
@@ -761,31 +761,25 @@ abstract class AppLocalizations {
   /// No description provided for @costs.
   ///
   /// In en, this message translates to:
-  /// **'Costs'**
+  /// **'Expenses'**
   String get costs;
 
-  /// Heading for trip-wide costs not tied to a specific place or transport
+  /// Heading for trip-wide expenses not tied to a specific place or transport
   ///
   /// In en, this message translates to:
-  /// **'General costs'**
+  /// **'General expenses'**
   String get generalCosts;
 
   /// No description provided for @costReasonsSection.
   ///
   /// In en, this message translates to:
-  /// **'Cost reasons'**
+  /// **'Expense categories'**
   String get costReasonsSection;
-
-  /// No description provided for @costReasonsManageSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add reasons, assign icons, and choose how they show on cost chips'**
-  String get costReasonsManageSubtitle;
 
   /// No description provided for @costReasonDisplay.
   ///
   /// In en, this message translates to:
-  /// **'Show on cost chips'**
+  /// **'Show on expense chips'**
   String get costReasonDisplay;
 
   /// No description provided for @costReasonDisplayIcon.
@@ -809,19 +803,19 @@ abstract class AppLocalizations {
   /// No description provided for @costReasonDisplayHelp.
   ///
   /// In en, this message translates to:
-  /// **'How reasons appear on cost chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.'**
+  /// **'How categories appear on expense chips — Icon: only the symbol; Text: only the name; Both: symbol and name. The amount is always shown.'**
   String get costReasonDisplayHelp;
 
   /// No description provided for @costReasonAdd.
   ///
   /// In en, this message translates to:
-  /// **'Add reason'**
+  /// **'Add category'**
   String get costReasonAdd;
 
   /// No description provided for @costReasonAddTitle.
   ///
   /// In en, this message translates to:
-  /// **'New reason'**
+  /// **'New category'**
   String get costReasonAddTitle;
 
   /// No description provided for @costReasonChooseIcon.
@@ -833,19 +827,19 @@ abstract class AppLocalizations {
   /// No description provided for @costReasonDeleteConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete reason?'**
+  /// **'Delete category?'**
   String get costReasonDeleteConfirmTitle;
 
   /// No description provided for @costReasonDeleteConfirmBody.
   ///
   /// In en, this message translates to:
-  /// **'\"{reason}\" will be removed from the reason list. Existing costs keep their text.'**
+  /// **'\"{reason}\" will be removed from the category list. Existing expenses keep their text.'**
   String costReasonDeleteConfirmBody(String reason);
 
   /// No description provided for @noCostReasons.
   ///
   /// In en, this message translates to:
-  /// **'No saved reasons yet'**
+  /// **'No saved categories yet'**
   String get noCostReasons;
 }
 
