@@ -105,11 +105,20 @@ class ItineraryItems extends Table {
   TextColumn get toLocation => text().nullable()();
 }
 
-/// A single cost attached to an itinerary item (0..n per item).
+/// A single cost. Attached either to an itinerary item (via [itemId]) or to the
+/// trip as a whole (via [tripId]) for costs that don't belong to any one place
+/// or transport leg. Exactly one of the two is set; both count toward the
+/// trip's total.
 class Costs extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get itemId =>
-      integer().references(ItineraryItems, #id, onDelete: KeyAction.cascade)();
+  IntColumn get itemId => integer()
+      .nullable()
+      .references(ItineraryItems, #id, onDelete: KeyAction.cascade)();
+
+  /// Set for trip-level costs that aren't tied to a specific itinerary item.
+  IntColumn get tripId => integer()
+      .nullable()
+      .references(Trips, #id, onDelete: KeyAction.cascade)();
 
   /// Amount in the currency's minor unit (e.g. cents) to avoid float rounding.
   IntColumn get amountMinor => integer()();

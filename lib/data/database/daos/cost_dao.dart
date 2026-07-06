@@ -9,12 +9,17 @@ part 'cost_dao.g.dart';
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   CostDao(super.db);
 
-  /// All costs belonging to a trip's itinerary items, oldest first.
+  /// All costs for a trip, oldest first: both those attached to the trip's
+  /// itinerary items and trip-level costs attached to the trip directly. The
+  /// left join lets a single query pick up trip-level costs (no matching item)
+  /// alongside item costs.
   Stream<List<Cost>> watchCostsForTrip(int tripId) {
     final query = select(costs).join([
-      innerJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
     ])
-      ..where(itineraryItems.tripId.equals(tripId))
+      ..where(
+        itineraryItems.tripId.equals(tripId) | costs.tripId.equals(tripId),
+      )
       ..orderBy([OrderingTerm(expression: costs.createdAt)]);
     return query.watch().map(
           (rows) => rows.map((row) => row.readTable(costs)).toList(),

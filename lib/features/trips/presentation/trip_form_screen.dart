@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/application/cost_providers.dart';
+import '../../costs/presentation/cost_form_sheet.dart';
 
 /// Create a new trip, or edit an existing one when [tripId] is provided.
 class TripFormScreen extends ConsumerStatefulWidget {
@@ -196,6 +199,13 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
               selected: _colorValue,
               onSelected: (value) => setState(() => _colorValue = value),
             ),
+            if (widget.isEditing) ...[
+              const SizedBox(height: 24),
+              _TripCostsEditor(
+                tripId: widget.tripId!,
+                localeName: localeName,
+              ),
+            ],
             const SizedBox(height: 32),
             FilledButton.icon(
               onPressed: _save,
@@ -208,6 +218,68 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Trip-level costs: costs that belong to the whole trip rather than a single
+/// place or transport leg. Managing them lives here, on the trip's edit page,
+/// mirroring how item costs are managed from the item's detail sheet.
+class _TripCostsEditor extends ConsumerWidget {
+  const _TripCostsEditor({required this.tripId, required this.localeName});
+
+  final int tripId;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final costs =
+        ref.watch(costsForTripProvider(tripId)).value?.tripLevel ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.generalCosts, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final cost in costs)
+              ActionChip(
+                avatar: const Icon(Icons.payments_outlined, size: 16),
+                label: Text(
+                  '${cost.reason}  '
+                  '${formatMoney(cost.amountMinor, cost.currency, localeName)}',
+                ),
+                visualDensity: VisualDensity.compact,
+                onPressed: () =>
+                    showCostFormSheet(context, tripId: tripId, existing: cost),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 16),
+              label: Text(l10n.addCost),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => showCostFormSheet(context, tripId: tripId),
+            ),
+          ],
+        ),
+        if (costs.length > 1)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              '${l10n.costsTotal}: '
+              '${formatTotals(sumByCurrency(costs), localeName)}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

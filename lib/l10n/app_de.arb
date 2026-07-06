@@ -110,5 +110,6 @@
   "costAmountInvalid": "Bitte einen gültigen Betrag eingeben",
   "costReasonRequired": "Bitte einen Grund eingeben",
   "costsTotal": "Gesamt",
-  "costs": "Kosten"
+  "costs": "Kosten",
+  "generalCosts": "Allgemeine Kosten"
 }

@@ -21,7 +21,15 @@ void main() {
 
   CostsCompanion cost(int itemId, int minor, Currency c, String reason) =>
       CostsCompanion.insert(
-        itemId: itemId,
+        itemId: Value(itemId),
+        amountMinor: minor,
+        currency: c,
+        reason: reason,
+      );
+
+  CostsCompanion tripCost(int tripId, int minor, Currency c, String reason) =>
+      CostsCompanion.insert(
+        tripId: Value(tripId),
         amountMinor: minor,
         currency: c,
         reason: reason,
@@ -40,6 +48,42 @@ void main() {
     expect(costs.length, 3);
     expect(costs.map((c) => c.reason),
         containsAll(['Hotel', 'Dinner', 'Train ticket']));
+  });
+
+  test('watchCostsForTrip includes trip-level costs not tied to an item',
+      () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final item = await makeItem(tripId);
+    await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
+    await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Insurance'));
+
+    final costs = await db.costDao.watchCostsForTrip(tripId).first;
+    expect(costs.length, 2);
+    expect(costs.map((c) => c.reason), containsAll(['Hotel', 'Insurance']));
+    final tripLevel = costs.singleWhere((c) => c.itemId == null);
+    expect(tripLevel.tripId, tripId);
+    expect(tripLevel.reason, 'Insurance');
+  });
+
+  test('trip-level costs stay scoped to their trip', () async {
+    final tripA =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'A'));
+    final tripB =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'B'));
+    await db.costDao.addCost(tripCost(tripA, 3000, Currency.eur, 'Insurance'));
+
+    expect(await db.costDao.watchCostsForTrip(tripB).first, isEmpty);
+  });
+
+  test('deleting a trip cascades to its trip-level costs', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Insurance'));
+
+    await db.tripDao.deleteTrip(tripId);
+
+    expect(await db.costDao.watchCostsForTrip(tripId).first, isEmpty);
   });
 
   test('upsertReason dedupes and watchReasons is sorted', () async {

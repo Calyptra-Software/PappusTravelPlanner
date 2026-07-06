@@ -21,7 +21,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -30,6 +30,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 2) {
             await m.createTable(costs);
             await m.createTable(costReasons);
+          }
+          // v3 relaxed costs.itemId to nullable and added costs.tripId so a
+          // cost can be attached to the whole trip instead of a single item.
+          if (from < 3) {
+            await m.alterTable(TableMigration(costs, newColumns: [costs.tripId]));
           }
         },
         beforeOpen: (details) async {

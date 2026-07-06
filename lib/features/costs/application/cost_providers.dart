@@ -1,18 +1,30 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 
-/// Costs for a trip, grouped by the itinerary item they belong to.
+/// Item-attached costs grouped by item id, plus trip-level costs that aren't
+/// tied to any item. Both count toward the trip's total.
+typedef TripCosts = ({Map<int, List<Cost>> byItem, List<Cost> tripLevel});
+
+/// Costs for a trip: grouped by the itinerary item they belong to, with
+/// trip-level costs collected separately.
 final costsForTripProvider =
-    StreamProvider.autoDispose.family<Map<int, List<Cost>>, int>((ref, tripId) {
+    StreamProvider.autoDispose.family<TripCosts, int>((ref, tripId) {
   return ref.watch(repositoryProvider).watchCostsForTrip(tripId).map((costs) {
     final byItem = <int, List<Cost>>{};
+    final tripLevel = <Cost>[];
     for (final cost in costs) {
-      byItem.putIfAbsent(cost.itemId, () => []).add(cost);
+      final itemId = cost.itemId;
+      if (itemId == null) {
+        tripLevel.add(cost);
+      } else {
+        byItem.putIfAbsent(itemId, () => []).add(cost);
+      }
     }
-    return byItem;
+    return (byItem: byItem, tripLevel: tripLevel);
   });
 });
 
@@ -29,8 +41,12 @@ class CostController {
   CostController(this._ref);
   final Ref _ref;
 
+  /// Adds a cost attached to an itinerary item ([itemId]) or, for costs that
+  /// belong to the whole trip, to the trip directly ([tripId]). Exactly one
+  /// should be provided.
   Future<void> addCost({
-    required int itemId,
+    int? itemId,
+    int? tripId,
     required int amountMinor,
     required Currency currency,
     required String reason,
@@ -38,7 +54,8 @@ class CostController {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
     await repo.addCost(CostsCompanion.insert(
-      itemId: itemId,
+      itemId: Value(itemId),
+      tripId: Value(tripId),
       amountMinor: amountMinor,
       currency: currency,
       reason: reason,

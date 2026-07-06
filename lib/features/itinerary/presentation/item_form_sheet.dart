@@ -401,7 +401,8 @@ class _CostsEditor extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final costs =
-        ref.watch(costsForTripProvider(tripId)).value?[itemId] ?? const [];
+        ref.watch(costsForTripProvider(tripId)).value?.byItem[itemId] ??
+            const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

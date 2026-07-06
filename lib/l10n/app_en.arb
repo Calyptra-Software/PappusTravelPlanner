@@ -141,5 +141,9 @@
   "costAmountInvalid": "Enter a valid amount",
   "costReasonRequired": "Enter a reason",
   "costsTotal": "Total",
-  "costs": "Costs"
+  "costs": "Costs",
+  "generalCosts": "General costs",
+  "@generalCosts": {
+    "description": "Heading for trip-wide costs not tied to a specific place or transport"
+  }
 }

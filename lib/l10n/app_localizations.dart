@@ -763,6 +763,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Costs'**
   String get costs;
+
+  /// Heading for trip-wide costs not tied to a specific place or transport
+  ///
+  /// In en, this message translates to:
+  /// **'General costs'**
+  String get generalCosts;
 }
 
 class _AppLocalizationsDelegate

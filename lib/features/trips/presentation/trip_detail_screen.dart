@@ -91,8 +91,9 @@ class TripDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tripAsync = ref.watch(tripProvider(tripId));
     final itemsAsync = ref.watch(itineraryProvider(tripId));
-    final costsByItem =
-        ref.watch(costsForTripProvider(tripId)).value ?? const {};
+    final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
+    final costsByItem = tripCosts?.byItem ?? const {};
+    final tripLevelCosts = tripCosts?.tripLevel ?? const <Cost>[];
     final localeName = Localizations.localeOf(context).languageCode;
     final l10n = AppLocalizations.of(context);
 
@@ -127,8 +128,18 @@ class TripDetailScreen extends ConsumerWidget {
                   _TripHeader(
                     trip: trip,
                     accent: accent,
-                    allCosts: costsByItem.values.expand((c) => c).toList(),
+                    allCosts: [
+                      ...costsByItem.values.expand((c) => c),
+                      ...tripLevelCosts,
+                    ],
+                    tripLevelCosts: tripLevelCosts,
                     localeName: localeName,
+                    onEdit: () => context.push('/trip/$tripId/edit'),
+                    onTapCost: (cost) => showCostFormSheet(
+                      context,
+                      tripId: tripId,
+                      existing: cost,
+                    ),
                   ),
                   ItineraryTimeline(
                     items: items,
@@ -181,13 +192,19 @@ class _TripHeader extends StatelessWidget {
     required this.trip,
     required this.accent,
     required this.allCosts,
+    required this.tripLevelCosts,
     required this.localeName,
+    required this.onEdit,
+    required this.onTapCost,
   });
 
   final Trip trip;
   final Color accent;
   final List<Cost> allCosts;
+  final List<Cost> tripLevelCosts;
   final String localeName;
+  final VoidCallback onEdit;
+  final ValueChanged<Cost> onTapCost;
 
   @override
   Widget build(BuildContext context) {
@@ -198,91 +215,117 @@ class _TripHeader extends StatelessWidget {
 
     return Card(
       color: accent.withValues(alpha: 0.10),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              trip.title,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            if (trip.destination.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(Icons.place_outlined, size: 18, color: accent),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      trip.destination,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(
-                  Icons.calendar_today_outlined,
-                  size: 16,
-                  color: theme.colorScheme.onSurfaceVariant,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                trip.title,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  formatDateRange(
-                    l10n,
-                    localeName,
-                    trip.startDate,
-                    trip.endDate,
-                  ),
-                  style: theme.textTheme.bodyMedium,
-                ),
-                if (days != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '· ${l10n.days(days)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+              ),
+              if (trip.destination.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(Icons.place_outlined, size: 18, color: accent),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        trip.destination,
+                        style: theme.textTheme.titleMedium,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ],
-            ),
-            if (trip.notes != null && trip.notes!.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(trip.notes!, style: theme.textTheme.bodyMedium),
-            ],
-            if (totals.isNotEmpty) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Icon(
-                    Icons.payments_outlined,
-                    size: 18,
-                    color: theme.colorScheme.primary,
+                    Icons.calendar_today_outlined,
+                    size: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    '${l10n.costsTotal}: ',
-                    style: theme.textTheme.titleSmall,
+                    formatDateRange(
+                      l10n,
+                      localeName,
+                      trip.startDate,
+                      trip.endDate,
+                    ),
+                    style: theme.textTheme.bodyMedium,
                   ),
-                  Expanded(
-                    child: Text(
-                      formatTotals(totals, localeName),
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+                  if (days != null) ...[
+                    const SizedBox(width: 8),
+                    Text(
+                      '· ${l10n.days(days)}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
+              if (trip.notes != null && trip.notes!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(trip.notes!, style: theme.textTheme.bodyMedium),
+              ],
+              if (totals.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.payments_outlined,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${l10n.costsTotal}: ',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    Expanded(
+                      child: Text(
+                        formatTotals(totals, localeName),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (tripLevelCosts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(l10n.generalCosts, style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (final cost in tripLevelCosts)
+                      ActionChip(
+                        avatar: const Icon(Icons.payments_outlined, size: 16),
+                        label: Text(
+                          '${cost.reason}  '
+                          '${formatMoney(cost.amountMinor, cost.currency, localeName)}',
+                        ),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => onTapCost(cost),
+                      ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
