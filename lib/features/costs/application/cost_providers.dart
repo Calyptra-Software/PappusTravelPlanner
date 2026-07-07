@@ -50,6 +50,12 @@ final peopleProvider = StreamProvider.autoDispose<List<String>>((ref) {
   return ref.watch(repositoryProvider).watchPeople();
 });
 
+/// The people a cost was paid for, keyed by cost id.
+final costBeneficiariesProvider =
+    StreamProvider.autoDispose.family<List<Person>, int>((ref, costId) {
+  return ref.watch(repositoryProvider).watchBeneficiaries(costId);
+});
+
 final costControllerProvider =
     Provider<CostController>((ref) => CostController(ref));
 
@@ -68,11 +74,12 @@ class CostController {
     required Currency currency,
     required String reason,
     String? paidBy,
+    List<String> paidFor = const [],
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
     if (paidBy != null && paidBy.isNotEmpty) await repo.upsertPerson(paidBy);
-    await repo.addCost(CostsCompanion.insert(
+    final id = await repo.addCost(CostsCompanion.insert(
       itemId: Value(itemId),
       tripId: Value(tripId),
       amountMinor: amountMinor,
@@ -80,6 +87,7 @@ class CostController {
       reason: reason,
       paidBy: Value(paidBy),
     ));
+    await repo.setBeneficiaries(id, paidFor);
   }
 
   Future<void> updateCost(
@@ -88,6 +96,7 @@ class CostController {
     required Currency currency,
     required String reason,
     String? paidBy,
+    List<String> paidFor = const [],
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
@@ -98,6 +107,7 @@ class CostController {
       reason: reason,
       paidBy: Value(paidBy),
     ));
+    await repo.setBeneficiaries(existing.id, paidFor);
   }
 
   Future<void> deleteCost(int id) =>

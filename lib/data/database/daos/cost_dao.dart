@@ -5,7 +5,8 @@ import '../tables.dart';
 
 part 'cost_dao.g.dart';
 
-@DriftAccessor(tables: [Costs, CostReasons, People, ItineraryItems])
+@DriftAccessor(
+    tables: [Costs, CostReasons, People, CostBeneficiaries, ItineraryItems])
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   CostDao(super.db);
 
@@ -71,6 +72,57 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// Forgets a saved reason. Existing costs keep their stored reason text.
   Future<int> deleteReason(String label) =>
       (delete(costReasons)..where((r) => r.label.equals(label))).go();
+
+  // --- beneficiaries (who a cost was paid for) ---
+
+  /// The people a cost was paid for, alphabetical by name.
+  Stream<List<Person>> watchBeneficiaries(int costId) {
+    final query = select(people).join([
+      innerJoin(
+        costBeneficiaries,
+        costBeneficiaries.personId.equalsExp(people.id),
+      ),
+    ])
+      ..where(costBeneficiaries.costId.equals(costId))
+      ..orderBy([OrderingTerm(expression: people.name)]);
+    return query
+        .watch()
+        .map((rows) => rows.map((row) => row.readTable(people)).toList());
+  }
+
+  /// Replaces a cost's beneficiaries with exactly [names], creating any missing
+  /// people in the shared roster. Runs in a transaction so the set is never left
+  /// half-updated.
+  Future<void> setBeneficiaries(int costId, List<String> names) async {
+    await transaction(() async {
+      final ids = <int>[];
+      for (final name in names) {
+        await into(people).insert(
+          PeopleCompanion.insert(name: name),
+          mode: InsertMode.insertOrIgnore,
+        );
+        final person = await (select(people)..where((p) => p.name.equals(name)))
+            .getSingle();
+        ids.add(person.id);
+      }
+      if (ids.isEmpty) {
+        await (delete(costBeneficiaries)..where((cb) => cb.costId.equals(costId)))
+            .go();
+        return;
+      }
+      // Drop links no longer wanted, then add the new ones (ignoring dupes).
+      await (delete(costBeneficiaries)
+            ..where(
+                (cb) => cb.costId.equals(costId) & cb.personId.isNotIn(ids)))
+          .go();
+      for (final id in ids) {
+        await into(costBeneficiaries).insert(
+          CostBeneficiariesCompanion.insert(costId: costId, personId: id),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+    });
+  }
 
   // --- people (settings) ---
 

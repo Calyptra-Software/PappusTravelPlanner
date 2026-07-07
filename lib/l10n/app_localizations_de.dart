@@ -438,6 +438,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get costPaidBy => 'Bezahlt von';
 
   @override
+  String get costPaidFor => 'Bezahlt für';
+
+  @override
   String get costPaidByNone => 'Nicht zugewiesen';
 
   @override

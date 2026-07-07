@@ -192,3 +192,17 @@ class TripParticipants extends Table {
   @override
   Set<Column> get primaryKey => {tripId, personId};
 }
+
+/// Links a person to a cost as a beneficiary: the people an expense was paid
+/// *for* (its split). A many-to-many between [Costs] and [People]; the pair is
+/// unique and deleting either side removes the link. Independent of
+/// [Costs.paidBy], which records who *paid*.
+class CostBeneficiaries extends Table {
+  IntColumn get costId =>
+      integer().references(Costs, #id, onDelete: KeyAction.cascade)();
+  IntColumn get personId =>
+      integer().references(People, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {costId, personId};
+}

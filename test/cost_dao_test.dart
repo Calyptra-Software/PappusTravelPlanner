@@ -221,6 +221,73 @@ void main() {
     expect(costs.single.paidBy, 'Bob');
   });
 
+  test('setBeneficiaries creates people, links them, and is sorted', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final id =
+        await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Taxi'));
+
+    await db.costDao.setBeneficiaries(id, ['Bob', 'Alex']);
+
+    final people = await db.costDao.watchBeneficiaries(id).first;
+    expect(people.map((p) => p.name), ['Alex', 'Bob']);
+    // The people also land in the shared roster.
+    expect(await db.costDao.watchPeople().first, ['Alex', 'Bob']);
+  });
+
+  test('setBeneficiaries reconciles the set: adds and removes links', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final id =
+        await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Taxi'));
+
+    await db.costDao.setBeneficiaries(id, ['Alex', 'Bob']);
+    await db.costDao.setBeneficiaries(id, ['Bob', 'Cara']); // drop Alex, add Cara
+
+    final people = await db.costDao.watchBeneficiaries(id).first;
+    expect(people.map((p) => p.name), ['Bob', 'Cara']);
+  });
+
+  test('setBeneficiaries with an empty list clears the split', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final id =
+        await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Taxi'));
+    await db.costDao.setBeneficiaries(id, ['Alex']);
+
+    await db.costDao.setBeneficiaries(id, const []);
+
+    expect(await db.costDao.watchBeneficiaries(id).first, isEmpty);
+    // The person stays in the shared roster.
+    expect(await db.costDao.watchPeople().first, ['Alex']);
+  });
+
+  test('deleting a cost cascades to its beneficiary links', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final id =
+        await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Taxi'));
+    await db.costDao.setBeneficiaries(id, ['Alex']);
+
+    await db.costDao.deleteCost(id);
+
+    // The link is gone (no orphan), but the person remains in the roster.
+    expect(await db.costDao.watchPeople().first, ['Alex']);
+  });
+
+  test('deleting a person removes them from every cost split', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final id =
+        await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Taxi'));
+    await db.costDao.setBeneficiaries(id, ['Alex', 'Bob']);
+
+    await db.costDao.deletePerson('Alex');
+
+    final people = await db.costDao.watchBeneficiaries(id).first;
+    expect(people.map((p) => p.name), ['Bob']);
+  });
+
   test('deleting an item cascades to its costs', () async {
     final tripId =
         await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));

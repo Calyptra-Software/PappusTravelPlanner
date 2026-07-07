@@ -9,6 +9,8 @@ mixin _$CostDaoMixin on DatabaseAccessor<AppDatabase> {
   $CostsTable get costs => attachedDatabase.costs;
   $CostReasonsTable get costReasons => attachedDatabase.costReasons;
   $PeopleTable get people => attachedDatabase.people;
+  $CostBeneficiariesTable get costBeneficiaries =>
+      attachedDatabase.costBeneficiaries;
   CostDaoManager get managers => CostDaoManager(this);
 }
 
@@ -28,4 +30,9 @@ class CostDaoManager {
       $$CostReasonsTableTableManager(_db.attachedDatabase, _db.costReasons);
   $$PeopleTableTableManager get people =>
       $$PeopleTableTableManager(_db.attachedDatabase, _db.people);
+  $$CostBeneficiariesTableTableManager get costBeneficiaries =>
+      $$CostBeneficiariesTableTableManager(
+        _db.attachedDatabase,
+        _db.costBeneficiaries,
+      );
 }

@@ -17,6 +17,7 @@ part 'app_database.g.dart';
     CostReasons,
     People,
     TripParticipants,
+    CostBeneficiaries,
     Checklists,
     ChecklistItems,
   ],
@@ -31,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -98,6 +99,10 @@ class AppDatabase extends _$AppDatabase {
           // v9 added trip participants: a many-to-many linking people to trips.
           if (from < 9) {
             await m.createTable(tripParticipants);
+          }
+          // v10 added cost beneficiaries: the people a cost was paid *for*.
+          if (from < 10) {
+            await m.createTable(costBeneficiaries);
           }
         },
         beforeOpen: (details) async {

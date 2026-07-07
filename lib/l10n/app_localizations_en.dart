@@ -434,6 +434,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costPaidBy => 'Paid by';
 
   @override
+  String get costPaidFor => 'Paid for';
+
+  @override
   String get costPaidByNone => 'Unassigned';
 
   @override

@@ -2457,6 +2457,227 @@ class TripParticipantsCompanion extends UpdateCompanion<TripParticipant> {
   }
 }
 
+class $CostBeneficiariesTable extends CostBeneficiaries
+    with TableInfo<$CostBeneficiariesTable, CostBeneficiary> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CostBeneficiariesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _costIdMeta = const VerificationMeta('costId');
+  @override
+  late final GeneratedColumn<int> costId = GeneratedColumn<int>(
+    'cost_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES costs (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _personIdMeta = const VerificationMeta(
+    'personId',
+  );
+  @override
+  late final GeneratedColumn<int> personId = GeneratedColumn<int>(
+    'person_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES people (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [costId, personId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'cost_beneficiaries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CostBeneficiary> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cost_id')) {
+      context.handle(
+        _costIdMeta,
+        costId.isAcceptableOrUnknown(data['cost_id']!, _costIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_costIdMeta);
+    }
+    if (data.containsKey('person_id')) {
+      context.handle(
+        _personIdMeta,
+        personId.isAcceptableOrUnknown(data['person_id']!, _personIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_personIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {costId, personId};
+  @override
+  CostBeneficiary map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CostBeneficiary(
+      costId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cost_id'],
+      )!,
+      personId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}person_id'],
+      )!,
+    );
+  }
+
+  @override
+  $CostBeneficiariesTable createAlias(String alias) {
+    return $CostBeneficiariesTable(attachedDatabase, alias);
+  }
+}
+
+class CostBeneficiary extends DataClass implements Insertable<CostBeneficiary> {
+  final int costId;
+  final int personId;
+  const CostBeneficiary({required this.costId, required this.personId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cost_id'] = Variable<int>(costId);
+    map['person_id'] = Variable<int>(personId);
+    return map;
+  }
+
+  CostBeneficiariesCompanion toCompanion(bool nullToAbsent) {
+    return CostBeneficiariesCompanion(
+      costId: Value(costId),
+      personId: Value(personId),
+    );
+  }
+
+  factory CostBeneficiary.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CostBeneficiary(
+      costId: serializer.fromJson<int>(json['costId']),
+      personId: serializer.fromJson<int>(json['personId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'costId': serializer.toJson<int>(costId),
+      'personId': serializer.toJson<int>(personId),
+    };
+  }
+
+  CostBeneficiary copyWith({int? costId, int? personId}) => CostBeneficiary(
+    costId: costId ?? this.costId,
+    personId: personId ?? this.personId,
+  );
+  CostBeneficiary copyWithCompanion(CostBeneficiariesCompanion data) {
+    return CostBeneficiary(
+      costId: data.costId.present ? data.costId.value : this.costId,
+      personId: data.personId.present ? data.personId.value : this.personId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CostBeneficiary(')
+          ..write('costId: $costId, ')
+          ..write('personId: $personId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(costId, personId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CostBeneficiary &&
+          other.costId == this.costId &&
+          other.personId == this.personId);
+}
+
+class CostBeneficiariesCompanion extends UpdateCompanion<CostBeneficiary> {
+  final Value<int> costId;
+  final Value<int> personId;
+  final Value<int> rowid;
+  const CostBeneficiariesCompanion({
+    this.costId = const Value.absent(),
+    this.personId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CostBeneficiariesCompanion.insert({
+    required int costId,
+    required int personId,
+    this.rowid = const Value.absent(),
+  }) : costId = Value(costId),
+       personId = Value(personId);
+  static Insertable<CostBeneficiary> custom({
+    Expression<int>? costId,
+    Expression<int>? personId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (costId != null) 'cost_id': costId,
+      if (personId != null) 'person_id': personId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CostBeneficiariesCompanion copyWith({
+    Value<int>? costId,
+    Value<int>? personId,
+    Value<int>? rowid,
+  }) {
+    return CostBeneficiariesCompanion(
+      costId: costId ?? this.costId,
+      personId: personId ?? this.personId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (costId.present) {
+      map['cost_id'] = Variable<int>(costId.value);
+    }
+    if (personId.present) {
+      map['person_id'] = Variable<int>(personId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CostBeneficiariesCompanion(')
+          ..write('costId: $costId, ')
+          ..write('personId: $personId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ChecklistsTable extends Checklists
     with TableInfo<$ChecklistsTable, Checklist> {
   @override
@@ -3218,6 +3439,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $TripParticipantsTable tripParticipants = $TripParticipantsTable(
     this,
   );
+  late final $CostBeneficiariesTable costBeneficiaries =
+      $CostBeneficiariesTable(this);
   late final $ChecklistsTable checklists = $ChecklistsTable(this);
   late final $ChecklistItemsTable checklistItems = $ChecklistItemsTable(this);
   late final TripDao tripDao = TripDao(this as AppDatabase);
@@ -3235,6 +3458,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     costReasons,
     people,
     tripParticipants,
+    costBeneficiaries,
     checklists,
     checklistItems,
   ];
@@ -3274,6 +3498,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('trip_participants', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'costs',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('cost_beneficiaries', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'people',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('cost_beneficiaries', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -4555,6 +4793,27 @@ final class $$CostsTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$CostBeneficiariesTable, List<CostBeneficiary>>
+  _costBeneficiariesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.costBeneficiaries,
+        aliasName: 'costs__id__cost_beneficiaries__cost_id',
+      );
+
+  $$CostBeneficiariesTableProcessedTableManager get costBeneficiariesRefs {
+    final manager = $$CostBeneficiariesTableTableManager(
+      $_db,
+      $_db.costBeneficiaries,
+    ).filter((f) => f.costId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _costBeneficiariesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
@@ -4640,6 +4899,31 @@ class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
           ),
     );
     return composer;
+  }
+
+  Expression<bool> costBeneficiariesRefs(
+    Expression<bool> Function($$CostBeneficiariesTableFilterComposer f) f,
+  ) {
+    final $$CostBeneficiariesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.costBeneficiaries,
+      getReferencedColumn: (t) => t.costId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostBeneficiariesTableFilterComposer(
+            $db: $db,
+            $table: $db.costBeneficiaries,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -4803,6 +5087,32 @@ class $$CostsTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> costBeneficiariesRefs<T extends Object>(
+    Expression<T> Function($$CostBeneficiariesTableAnnotationComposer a) f,
+  ) {
+    final $$CostBeneficiariesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.costBeneficiaries,
+          getReferencedColumn: (t) => t.costId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CostBeneficiariesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.costBeneficiaries,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$CostsTableTableManager
@@ -4818,7 +5128,11 @@ class $$CostsTableTableManager
           $$CostsTableUpdateCompanionBuilder,
           (Cost, $$CostsTableReferences),
           Cost,
-          PrefetchHooks Function({bool itemId, bool tripId})
+          PrefetchHooks Function({
+            bool itemId,
+            bool tripId,
+            bool costBeneficiariesRefs,
+          })
         > {
   $$CostsTableTableManager(_$AppDatabase db, $CostsTable table)
     : super(
@@ -4877,60 +5191,89 @@ class $$CostsTableTableManager
                     (e.readTable(table), $$CostsTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({itemId = false, tripId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (itemId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.itemId,
-                                referencedTable: $$CostsTableReferences
-                                    ._itemIdTable(db),
-                                referencedColumn: $$CostsTableReferences
-                                    ._itemIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-                    if (tripId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.tripId,
-                                referencedTable: $$CostsTableReferences
-                                    ._tripIdTable(db),
-                                referencedColumn: $$CostsTableReferences
-                                    ._tripIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({
+                itemId = false,
+                tripId = false,
+                costBeneficiariesRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (costBeneficiariesRefs) db.costBeneficiaries,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (itemId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.itemId,
+                                    referencedTable: $$CostsTableReferences
+                                        ._itemIdTable(db),
+                                    referencedColumn: $$CostsTableReferences
+                                        ._itemIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (tripId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.tripId,
+                                    referencedTable: $$CostsTableReferences
+                                        ._tripIdTable(db),
+                                    referencedColumn: $$CostsTableReferences
+                                        ._tripIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (costBeneficiariesRefs)
+                        await $_getPrefetchedData<
+                          Cost,
+                          $CostsTable,
+                          CostBeneficiary
+                        >(
+                          currentTable: table,
+                          referencedTable: $$CostsTableReferences
+                              ._costBeneficiariesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$CostsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).costBeneficiariesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.costId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -4947,7 +5290,11 @@ typedef $$CostsTableProcessedTableManager =
       $$CostsTableUpdateCompanionBuilder,
       (Cost, $$CostsTableReferences),
       Cost,
-      PrefetchHooks Function({bool itemId, bool tripId})
+      PrefetchHooks Function({
+        bool itemId,
+        bool tripId,
+        bool costBeneficiariesRefs,
+      })
     >;
 typedef $$CostReasonsTableCreateCompanionBuilder =
     CostReasonsCompanion Function({
@@ -5129,6 +5476,27 @@ final class $$PeopleTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$CostBeneficiariesTable, List<CostBeneficiary>>
+  _costBeneficiariesRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.costBeneficiaries,
+        aliasName: 'people__id__cost_beneficiaries__person_id',
+      );
+
+  $$CostBeneficiariesTableProcessedTableManager get costBeneficiariesRefs {
+    final manager = $$CostBeneficiariesTableTableManager(
+      $_db,
+      $_db.costBeneficiaries,
+    ).filter((f) => f.personId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _costBeneficiariesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$PeopleTableFilterComposer
@@ -5166,6 +5534,31 @@ class $$PeopleTableFilterComposer
           }) => $$TripParticipantsTableFilterComposer(
             $db: $db,
             $table: $db.tripParticipants,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> costBeneficiariesRefs(
+    Expression<bool> Function($$CostBeneficiariesTableFilterComposer f) f,
+  ) {
+    final $$CostBeneficiariesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.costBeneficiaries,
+      getReferencedColumn: (t) => t.personId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostBeneficiariesTableFilterComposer(
+            $db: $db,
+            $table: $db.costBeneficiaries,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5235,6 +5628,32 @@ class $$PeopleTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> costBeneficiariesRefs<T extends Object>(
+    Expression<T> Function($$CostBeneficiariesTableAnnotationComposer a) f,
+  ) {
+    final $$CostBeneficiariesTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.costBeneficiaries,
+          getReferencedColumn: (t) => t.personId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$CostBeneficiariesTableAnnotationComposer(
+                $db: $db,
+                $table: $db.costBeneficiaries,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$PeopleTableTableManager
@@ -5250,7 +5669,10 @@ class $$PeopleTableTableManager
           $$PeopleTableUpdateCompanionBuilder,
           (Person, $$PeopleTableReferences),
           Person,
-          PrefetchHooks Function({bool tripParticipantsRefs})
+          PrefetchHooks Function({
+            bool tripParticipantsRefs,
+            bool costBeneficiariesRefs,
+          })
         > {
   $$PeopleTableTableManager(_$AppDatabase db, $PeopleTable table)
     : super(
@@ -5277,37 +5699,63 @@ class $$PeopleTableTableManager
                     (e.readTable(table), $$PeopleTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({tripParticipantsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [
-                if (tripParticipantsRefs) db.tripParticipants,
-              ],
-              addJoins: null,
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (tripParticipantsRefs)
-                    await $_getPrefetchedData<
-                      Person,
-                      $PeopleTable,
-                      TripParticipant
-                    >(
-                      currentTable: table,
-                      referencedTable: $$PeopleTableReferences
-                          ._tripParticipantsRefsTable(db),
-                      managerFromTypedResult: (p0) => $$PeopleTableReferences(
-                        db,
-                        table,
-                        p0,
-                      ).tripParticipantsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.personId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+          prefetchHooksCallback:
+              ({tripParticipantsRefs = false, costBeneficiariesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (tripParticipantsRefs) db.tripParticipants,
+                    if (costBeneficiariesRefs) db.costBeneficiaries,
+                  ],
+                  addJoins: null,
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (tripParticipantsRefs)
+                        await $_getPrefetchedData<
+                          Person,
+                          $PeopleTable,
+                          TripParticipant
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PeopleTableReferences
+                              ._tripParticipantsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PeopleTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tripParticipantsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.personId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (costBeneficiariesRefs)
+                        await $_getPrefetchedData<
+                          Person,
+                          $PeopleTable,
+                          CostBeneficiary
+                        >(
+                          currentTable: table,
+                          referencedTable: $$PeopleTableReferences
+                              ._costBeneficiariesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$PeopleTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).costBeneficiariesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.personId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -5324,7 +5772,10 @@ typedef $$PeopleTableProcessedTableManager =
       $$PeopleTableUpdateCompanionBuilder,
       (Person, $$PeopleTableReferences),
       Person,
-      PrefetchHooks Function({bool tripParticipantsRefs})
+      PrefetchHooks Function({
+        bool tripParticipantsRefs,
+        bool costBeneficiariesRefs,
+      })
     >;
 typedef $$TripParticipantsTableCreateCompanionBuilder =
     TripParticipantsCompanion Function({
@@ -5682,6 +6133,370 @@ typedef $$TripParticipantsTableProcessedTableManager =
       (TripParticipant, $$TripParticipantsTableReferences),
       TripParticipant,
       PrefetchHooks Function({bool tripId, bool personId})
+    >;
+typedef $$CostBeneficiariesTableCreateCompanionBuilder =
+    CostBeneficiariesCompanion Function({
+      required int costId,
+      required int personId,
+      Value<int> rowid,
+    });
+typedef $$CostBeneficiariesTableUpdateCompanionBuilder =
+    CostBeneficiariesCompanion Function({
+      Value<int> costId,
+      Value<int> personId,
+      Value<int> rowid,
+    });
+
+final class $$CostBeneficiariesTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $CostBeneficiariesTable,
+          CostBeneficiary
+        > {
+  $$CostBeneficiariesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $CostsTable _costIdTable(_$AppDatabase db) =>
+      db.costs.createAlias('cost_beneficiaries__cost_id__costs__id');
+
+  $$CostsTableProcessedTableManager get costId {
+    final $_column = $_itemColumn<int>('cost_id')!;
+
+    final manager = $$CostsTableTableManager(
+      $_db,
+      $_db.costs,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_costIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $PeopleTable _personIdTable(_$AppDatabase db) =>
+      db.people.createAlias('cost_beneficiaries__person_id__people__id');
+
+  $$PeopleTableProcessedTableManager get personId {
+    final $_column = $_itemColumn<int>('person_id')!;
+
+    final manager = $$PeopleTableTableManager(
+      $_db,
+      $_db.people,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_personIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CostBeneficiariesTableFilterComposer
+    extends Composer<_$AppDatabase, $CostBeneficiariesTable> {
+  $$CostBeneficiariesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CostsTableFilterComposer get costId {
+    final $$CostsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.costId,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableFilterComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PeopleTableFilterComposer get personId {
+    final $$PeopleTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personId,
+      referencedTable: $db.people,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeopleTableFilterComposer(
+            $db: $db,
+            $table: $db.people,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CostBeneficiariesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CostBeneficiariesTable> {
+  $$CostBeneficiariesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CostsTableOrderingComposer get costId {
+    final $$CostsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.costId,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableOrderingComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PeopleTableOrderingComposer get personId {
+    final $$PeopleTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personId,
+      referencedTable: $db.people,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeopleTableOrderingComposer(
+            $db: $db,
+            $table: $db.people,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CostBeneficiariesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CostBeneficiariesTable> {
+  $$CostBeneficiariesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$CostsTableAnnotationComposer get costId {
+    final $$CostsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.costId,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$PeopleTableAnnotationComposer get personId {
+    final $$PeopleTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.personId,
+      referencedTable: $db.people,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PeopleTableAnnotationComposer(
+            $db: $db,
+            $table: $db.people,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CostBeneficiariesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CostBeneficiariesTable,
+          CostBeneficiary,
+          $$CostBeneficiariesTableFilterComposer,
+          $$CostBeneficiariesTableOrderingComposer,
+          $$CostBeneficiariesTableAnnotationComposer,
+          $$CostBeneficiariesTableCreateCompanionBuilder,
+          $$CostBeneficiariesTableUpdateCompanionBuilder,
+          (CostBeneficiary, $$CostBeneficiariesTableReferences),
+          CostBeneficiary,
+          PrefetchHooks Function({bool costId, bool personId})
+        > {
+  $$CostBeneficiariesTableTableManager(
+    _$AppDatabase db,
+    $CostBeneficiariesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CostBeneficiariesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CostBeneficiariesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CostBeneficiariesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> costId = const Value.absent(),
+                Value<int> personId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CostBeneficiariesCompanion(
+                costId: costId,
+                personId: personId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int costId,
+                required int personId,
+                Value<int> rowid = const Value.absent(),
+              }) => CostBeneficiariesCompanion.insert(
+                costId: costId,
+                personId: personId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CostBeneficiariesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({costId = false, personId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (costId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.costId,
+                                referencedTable:
+                                    $$CostBeneficiariesTableReferences
+                                        ._costIdTable(db),
+                                referencedColumn:
+                                    $$CostBeneficiariesTableReferences
+                                        ._costIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+                    if (personId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.personId,
+                                referencedTable:
+                                    $$CostBeneficiariesTableReferences
+                                        ._personIdTable(db),
+                                referencedColumn:
+                                    $$CostBeneficiariesTableReferences
+                                        ._personIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CostBeneficiariesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CostBeneficiariesTable,
+      CostBeneficiary,
+      $$CostBeneficiariesTableFilterComposer,
+      $$CostBeneficiariesTableOrderingComposer,
+      $$CostBeneficiariesTableAnnotationComposer,
+      $$CostBeneficiariesTableCreateCompanionBuilder,
+      $$CostBeneficiariesTableUpdateCompanionBuilder,
+      (CostBeneficiary, $$CostBeneficiariesTableReferences),
+      CostBeneficiary,
+      PrefetchHooks Function({bool costId, bool personId})
     >;
 typedef $$ChecklistsTableCreateCompanionBuilder =
     ChecklistsCompanion Function({
@@ -6441,6 +7256,8 @@ class $AppDatabaseManager {
       $$PeopleTableTableManager(_db, _db.people);
   $$TripParticipantsTableTableManager get tripParticipants =>
       $$TripParticipantsTableTableManager(_db, _db.tripParticipants);
+  $$CostBeneficiariesTableTableManager get costBeneficiaries =>
+      $$CostBeneficiariesTableTableManager(_db, _db.costBeneficiaries);
   $$ChecklistsTableTableManager get checklists =>
       $$ChecklistsTableTableManager(_db, _db.checklists);
   $$ChecklistItemsTableTableManager get checklistItems =>
