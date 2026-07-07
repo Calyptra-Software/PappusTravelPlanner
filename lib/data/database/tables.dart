@@ -178,6 +178,11 @@ class CostReasons extends Table {
 class People extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().unique()();
+
+  /// Marks the single person the app's user identifies as, used to filter the
+  /// trip overview down to "my" expenses. At most one row is true; setting a new
+  /// "me" clears the previous one. Travels with the database file.
+  BoolColumn get isMe => boolean().withDefault(const Constant(false))();
 }
 
 /// Links a person to a trip as a participant: a many-to-many between [Trips]

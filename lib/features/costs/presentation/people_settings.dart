@@ -13,7 +13,7 @@ class PeopleSettings extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final people = ref.watch(peopleProvider).value ?? const [];
+    final people = ref.watch(peopleRowsProvider).value ?? const [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -27,16 +27,36 @@ class PeopleSettings extends ConsumerWidget {
             ),
           )
         else
-          for (final name in people)
+          for (final person in people)
             ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: Text(name),
-              onTap: () => _renamePerson(context, ref, name),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline),
-                color: theme.colorScheme.error,
-                tooltip: l10n.delete,
-                onPressed: () => _confirmDelete(context, ref, name),
+              leading: Icon(
+                person.isMe ? Icons.person : Icons.person_outline,
+                color: person.isMe ? theme.colorScheme.primary : null,
+              ),
+              title: Text(person.name),
+              subtitle: person.isMe ? Text(l10n.personIsMe) : null,
+              onTap: () => _renamePerson(context, ref, person.name),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(person.isMe
+                        ? Icons.how_to_reg
+                        : Icons.person_add_alt_outlined),
+                    color: person.isMe ? theme.colorScheme.primary : null,
+                    tooltip:
+                        person.isMe ? l10n.personIsMe : l10n.personMarkAsMe,
+                    onPressed: () => ref
+                        .read(costControllerProvider)
+                        .setMePerson(person.isMe ? null : person.id),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    color: theme.colorScheme.error,
+                    tooltip: l10n.delete,
+                    onPressed: () => _confirmDelete(context, ref, person.name),
+                  ),
+                ],
               ),
             ),
         Padding(

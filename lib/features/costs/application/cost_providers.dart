@@ -50,6 +50,17 @@ final peopleProvider = StreamProvider.autoDispose<List<String>>((ref) {
   return ref.watch(repositoryProvider).watchPeople();
 });
 
+/// Saved people as rows (with their id and `isMe` flag), for the settings list.
+final peopleRowsProvider = StreamProvider.autoDispose<List<Person>>((ref) {
+  return ref.watch(repositoryProvider).watchPeopleRows();
+});
+
+/// The person the user has marked as themselves, or null if none is set. Used
+/// to filter the trip overview down to "my" expenses.
+final mePersonProvider = StreamProvider.autoDispose<Person?>((ref) {
+  return ref.watch(repositoryProvider).watchMePerson();
+});
+
 /// The people a cost was paid for, keyed by cost id.
 final costBeneficiariesProvider =
     StreamProvider.autoDispose.family<List<Person>, int>((ref, costId) {
@@ -150,4 +161,9 @@ class CostController {
   /// [TripRepository.renamePerson]).
   Future<void> renamePerson(String from, String to) =>
       _ref.read(repositoryProvider).renamePerson(from, to);
+
+  /// Marks [personId] as the "me" person (clearing any previous), or clears the
+  /// flag entirely when passed null.
+  Future<void> setMePerson(int? personId) =>
+      _ref.read(repositoryProvider).setMePerson(personId);
 }

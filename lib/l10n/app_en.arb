@@ -182,6 +182,11 @@
   "@personDeleteConfirmBody": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "personMarkAsMe": "Mark as me",
+  "personIsMe": "This is me",
+  "myCostsTotal": "My expenses",
+  "expenseScopeAll": "All",
+  "expenseScopeMine": "Mine",
   "participants": "Participants",
   "addParticipant": "Add participant",
   "checklist": "Checklist",

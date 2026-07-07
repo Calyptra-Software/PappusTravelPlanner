@@ -10,6 +10,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../checklist/presentation/trip_checklists_section.dart';
+import '../../costs/application/cost_display_provider.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
@@ -193,7 +194,7 @@ class TripDetailScreen extends ConsumerWidget {
   }
 }
 
-class _TripHeader extends StatelessWidget {
+class _TripHeader extends ConsumerWidget {
   const _TripHeader({
     required this.trip,
     required this.accent,
@@ -215,11 +216,21 @@ class _TripHeader extends StatelessWidget {
   final ValueChanged<Cost> onTapCost;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final days = tripDayCount(trip.startDate, trip.endDate);
-    final totals = sumByCurrency(allCosts);
+
+    // "My expenses" filter: only offered when a person is marked as "me"; the
+    // toggle otherwise collapses to the plain all-expenses total.
+    final meName = ref.watch(mePersonProvider).value?.name;
+    final scope = meName == null
+        ? ExpenseScope.all
+        : ref.watch(expenseScopeProvider);
+    final scopedCosts = scope == ExpenseScope.mine
+        ? allCosts.where((c) => c.paidBy == meName)
+        : allCosts;
+    final totals = sumByCurrency(scopedCosts);
 
     return Card(
       color: accent.withValues(alpha: 0.10),
@@ -303,31 +314,6 @@ class _TripHeader extends StatelessWidget {
                   ],
                 ),
               ],
-              if (totals.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.payments_outlined,
-                      size: 18,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${l10n.costsTotal}: ',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    Expanded(
-                      child: Text(
-                        formatTotals(totals, localeName),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
               if (tripLevelCosts.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(l10n.generalCosts, style: theme.textTheme.labelLarge),
@@ -339,6 +325,55 @@ class _TripHeader extends StatelessWidget {
                   children: [
                     for (final cost in tripLevelCosts)
                       CostChip(cost: cost, onTap: () => onTapCost(cost)),
+                  ],
+                ),
+              ],
+              if (allCosts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                if (meName != null) ...[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: SegmentedButton<ExpenseScope>(
+                      segments: [
+                        ButtonSegment(
+                          value: ExpenseScope.all,
+                          label: Text(l10n.expenseScopeAll),
+                        ),
+                        ButtonSegment(
+                          value: ExpenseScope.mine,
+                          label: Text(l10n.expenseScopeMine),
+                        ),
+                      ],
+                      selected: {scope},
+                      onSelectionChanged: (selection) => ref
+                          .read(expenseScopeProvider.notifier)
+                          .setScope(selection.first),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Row(
+                  children: [
+                    Icon(
+                      Icons.payments_outlined,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${scope == ExpenseScope.mine ? l10n.myCostsTotal : l10n.costsTotal}: ',
+                      style: theme.textTheme.titleSmall,
+                    ),
+                    Expanded(
+                      child: Text(
+                        totals.isEmpty
+                            ? '—'
+                            : formatTotals(totals, localeName),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],

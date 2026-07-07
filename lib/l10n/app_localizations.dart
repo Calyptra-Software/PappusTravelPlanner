@@ -932,6 +932,36 @@ abstract class AppLocalizations {
   /// **'\"{name}\" will be removed from the people list. Existing expenses keep their payer.'**
   String personDeleteConfirmBody(String name);
 
+  /// No description provided for @personMarkAsMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as me'**
+  String get personMarkAsMe;
+
+  /// No description provided for @personIsMe.
+  ///
+  /// In en, this message translates to:
+  /// **'This is me'**
+  String get personIsMe;
+
+  /// No description provided for @myCostsTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'My expenses'**
+  String get myCostsTotal;
+
+  /// No description provided for @expenseScopeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get expenseScopeAll;
+
+  /// No description provided for @expenseScopeMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get expenseScopeMine;
+
   /// No description provided for @participants.
   ///
   /// In en, this message translates to:

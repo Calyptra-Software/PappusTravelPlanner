@@ -30,3 +30,32 @@ class CostReasonDisplayController extends Notifier<CostReasonDisplay> {
     state = display;
   }
 }
+
+/// Which expenses the trip overview totals: [all] of them, or only [mine]
+/// (those paid by the person marked as "me"). Stored by index in
+/// SharedPreferences, so only append new values at the end.
+enum ExpenseScope { all, mine }
+
+/// The user's chosen expense scope for the trip overview, persisted across
+/// launches. Mirrors [CostReasonDisplayController].
+final expenseScopeProvider =
+    NotifierProvider<ExpenseScopeController, ExpenseScope>(
+        ExpenseScopeController.new);
+
+class ExpenseScopeController extends Notifier<ExpenseScope> {
+  static const _key = 'expense_scope';
+
+  @override
+  ExpenseScope build() {
+    final index = ref.read(sharedPreferencesProvider).getInt(_key);
+    if (index == null || index < 0 || index >= ExpenseScope.values.length) {
+      return ExpenseScope.all;
+    }
+    return ExpenseScope.values[index];
+  }
+
+  Future<void> setScope(ExpenseScope scope) async {
+    await ref.read(sharedPreferencesProvider).setInt(_key, scope.index);
+    state = scope;
+  }
+}

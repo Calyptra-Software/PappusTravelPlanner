@@ -481,6 +481,21 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get personMarkAsMe => 'Als mich markieren';
+
+  @override
+  String get personIsMe => 'Das bin ich';
+
+  @override
+  String get myCostsTotal => 'Meine Ausgaben';
+
+  @override
+  String get expenseScopeAll => 'Alle';
+
+  @override
+  String get expenseScopeMine => 'Meine';
+
+  @override
   String get participants => 'Teilnehmer';
 
   @override

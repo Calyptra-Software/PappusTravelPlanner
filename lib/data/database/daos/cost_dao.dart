@@ -141,6 +141,35 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         .map((rows) => rows.map((p) => p.name).toList());
   }
 
+  /// All saved people as rows (carrying their id and [Person.isMe] flag),
+  /// alphabetical. Used by the settings list to show and set who "me" is.
+  Stream<List<Person>> watchPeopleRows() {
+    return (select(people)..orderBy([(p) => OrderingTerm(expression: p.name)]))
+        .watch();
+  }
+
+  /// The person the user has marked as themselves, or null if none is set.
+  Stream<Person?> watchMePerson() {
+    return (select(people)
+          ..where((p) => p.isMe.equals(true))
+          ..limit(1))
+        .watchSingleOrNull();
+  }
+
+  /// Marks [personId] as the "me" person, clearing any previous one. Passing
+  /// null just clears the flag so no one is "me". Runs in a transaction so at
+  /// most one person is ever flagged.
+  Future<void> setMePerson(int? personId) async {
+    await transaction(() async {
+      await (update(people)..where((p) => p.isMe.equals(true)))
+          .write(const PeopleCompanion(isMe: Value(false)));
+      if (personId != null) {
+        await (update(people)..where((p) => p.id.equals(personId)))
+            .write(const PeopleCompanion(isMe: Value(true)));
+      }
+    });
+  }
+
   /// Forgets a saved person. Existing costs keep their stored payer text.
   Future<int> deletePerson(String name) =>
       (delete(people)..where((p) => p.name.equals(name))).go();

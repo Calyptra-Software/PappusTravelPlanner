@@ -2079,8 +2079,21 @@ class $PeopleTable extends People with TableInfo<$PeopleTable, Person> {
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
+  static const VerificationMeta _isMeMeta = const VerificationMeta('isMe');
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  late final GeneratedColumn<bool> isMe = GeneratedColumn<bool>(
+    'is_me',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_me" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, isMe];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2104,6 +2117,12 @@ class $PeopleTable extends People with TableInfo<$PeopleTable, Person> {
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('is_me')) {
+      context.handle(
+        _isMeMeta,
+        isMe.isAcceptableOrUnknown(data['is_me']!, _isMeMeta),
+      );
+    }
     return context;
   }
 
@@ -2121,6 +2140,10 @@ class $PeopleTable extends People with TableInfo<$PeopleTable, Person> {
         DriftSqlType.string,
         data['${effectivePrefix}name'],
       )!,
+      isMe: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_me'],
+      )!,
     );
   }
 
@@ -2133,17 +2156,23 @@ class $PeopleTable extends People with TableInfo<$PeopleTable, Person> {
 class Person extends DataClass implements Insertable<Person> {
   final int id;
   final String name;
-  const Person({required this.id, required this.name});
+
+  /// Marks the single person the app's user identifies as, used to filter the
+  /// trip overview down to "my" expenses. At most one row is true; setting a new
+  /// "me" clears the previous one. Travels with the database file.
+  final bool isMe;
+  const Person({required this.id, required this.name, required this.isMe});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    map['is_me'] = Variable<bool>(isMe);
     return map;
   }
 
   PeopleCompanion toCompanion(bool nullToAbsent) {
-    return PeopleCompanion(id: Value(id), name: Value(name));
+    return PeopleCompanion(id: Value(id), name: Value(name), isMe: Value(isMe));
   }
 
   factory Person.fromJson(
@@ -2154,6 +2183,7 @@ class Person extends DataClass implements Insertable<Person> {
     return Person(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      isMe: serializer.fromJson<bool>(json['isMe']),
     );
   }
   @override
@@ -2162,15 +2192,20 @@ class Person extends DataClass implements Insertable<Person> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'isMe': serializer.toJson<bool>(isMe),
     };
   }
 
-  Person copyWith({int? id, String? name}) =>
-      Person(id: id ?? this.id, name: name ?? this.name);
+  Person copyWith({int? id, String? name, bool? isMe}) => Person(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    isMe: isMe ?? this.isMe,
+  );
   Person copyWithCompanion(PeopleCompanion data) {
     return Person(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      isMe: data.isMe.present ? data.isMe.value : this.isMe,
     );
   }
 
@@ -2178,40 +2213,59 @@ class Person extends DataClass implements Insertable<Person> {
   String toString() {
     return (StringBuffer('Person(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('isMe: $isMe')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode => Object.hash(id, name, isMe);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Person && other.id == this.id && other.name == this.name);
+      (other is Person &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.isMe == this.isMe);
 }
 
 class PeopleCompanion extends UpdateCompanion<Person> {
   final Value<int> id;
   final Value<String> name;
+  final Value<bool> isMe;
   const PeopleCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.isMe = const Value.absent(),
   });
-  PeopleCompanion.insert({this.id = const Value.absent(), required String name})
-    : name = Value(name);
+  PeopleCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.isMe = const Value.absent(),
+  }) : name = Value(name);
   static Insertable<Person> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<bool>? isMe,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (isMe != null) 'is_me': isMe,
     });
   }
 
-  PeopleCompanion copyWith({Value<int>? id, Value<String>? name}) {
-    return PeopleCompanion(id: id ?? this.id, name: name ?? this.name);
+  PeopleCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<bool>? isMe,
+  }) {
+    return PeopleCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      isMe: isMe ?? this.isMe,
+    );
   }
 
   @override
@@ -2223,6 +2277,9 @@ class PeopleCompanion extends UpdateCompanion<Person> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (isMe.present) {
+      map['is_me'] = Variable<bool>(isMe.value);
+    }
     return map;
   }
 
@@ -2230,7 +2287,8 @@ class PeopleCompanion extends UpdateCompanion<Person> {
   String toString() {
     return (StringBuffer('PeopleCompanion(')
           ..write('id: $id, ')
-          ..write('name: $name')
+          ..write('name: $name, ')
+          ..write('isMe: $isMe')
           ..write(')'))
         .toString();
   }
@@ -5449,9 +5507,17 @@ typedef $$CostReasonsTableProcessedTableManager =
       PrefetchHooks Function()
     >;
 typedef $$PeopleTableCreateCompanionBuilder =
-    PeopleCompanion Function({Value<int> id, required String name});
+    PeopleCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<bool> isMe,
+    });
 typedef $$PeopleTableUpdateCompanionBuilder =
-    PeopleCompanion Function({Value<int> id, Value<String> name});
+    PeopleCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<bool> isMe,
+    });
 
 final class $$PeopleTableReferences
     extends BaseReferences<_$AppDatabase, $PeopleTable, Person> {
@@ -5515,6 +5581,11 @@ class $$PeopleTableFilterComposer
 
   ColumnFilters<String> get name => $composableBuilder(
     column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isMe => $composableBuilder(
+    column: $table.isMe,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5587,6 +5658,11 @@ class $$PeopleTableOrderingComposer
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get isMe => $composableBuilder(
+    column: $table.isMe,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$PeopleTableAnnotationComposer
@@ -5603,6 +5679,9 @@ class $$PeopleTableAnnotationComposer
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<bool> get isMe =>
+      $composableBuilder(column: $table.isMe, builder: (column) => column);
 
   Expression<T> tripParticipantsRefs<T extends Object>(
     Expression<T> Function($$TripParticipantsTableAnnotationComposer a) f,
@@ -5689,10 +5768,14 @@ class $$PeopleTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-              }) => PeopleCompanion(id: id, name: name),
+                Value<bool> isMe = const Value.absent(),
+              }) => PeopleCompanion(id: id, name: name, isMe: isMe),
           createCompanionCallback:
-              ({Value<int> id = const Value.absent(), required String name}) =>
-                  PeopleCompanion.insert(id: id, name: name),
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<bool> isMe = const Value.absent(),
+              }) => PeopleCompanion.insert(id: id, name: name, isMe: isMe),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) =>

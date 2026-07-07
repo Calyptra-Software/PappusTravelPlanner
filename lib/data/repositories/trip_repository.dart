@@ -56,6 +56,9 @@ class TripRepository {
 
   // --- people ---
   Stream<List<String>> watchPeople() => _db.costDao.watchPeople();
+  Stream<List<Person>> watchPeopleRows() => _db.costDao.watchPeopleRows();
+  Stream<Person?> watchMePerson() => _db.costDao.watchMePerson();
+  Future<void> setMePerson(int? personId) => _db.costDao.setMePerson(personId);
   Future<void> upsertPerson(String name) => _db.costDao.upsertPerson(name);
   Future<int> deletePerson(String name) => _db.costDao.deletePerson(name);
   Future<void> renamePerson(String from, String to) =>

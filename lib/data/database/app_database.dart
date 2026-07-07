@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -103,6 +103,13 @@ class AppDatabase extends _$AppDatabase {
           // v10 added cost beneficiaries: the people a cost was paid *for*.
           if (from < 10) {
             await m.createTable(costBeneficiaries);
+          }
+          // v11 added people.is_me: marks which person the user is, for the
+          // "my expenses" view. Only add it when the people table predates this
+          // version; a from-scratch createTable above (from < 8) already
+          // includes the column.
+          if (from >= 8 && from < 11) {
+            await m.addColumn(people, people.isMe);
           }
         },
         beforeOpen: (details) async {

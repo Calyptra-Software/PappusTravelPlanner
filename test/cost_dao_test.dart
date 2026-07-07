@@ -173,6 +173,31 @@ void main() {
     expect(await db.costDao.watchPeople().first, ['Bob']);
   });
 
+  test('setMePerson marks one person and clears any previous', () async {
+    await db.costDao.upsertPerson('Alex');
+    await db.costDao.upsertPerson('Bob');
+    final rows = await db.costDao.watchPeopleRows().first;
+    final alex = rows.firstWhere((p) => p.name == 'Alex');
+    final bob = rows.firstWhere((p) => p.name == 'Bob');
+
+    // No one is "me" initially.
+    expect(await db.costDao.watchMePerson().first, equals(null));
+
+    await db.costDao.setMePerson(alex.id);
+    expect((await db.costDao.watchMePerson().first)?.name, 'Alex');
+
+    // Switching "me" clears the previous one, so only Bob is flagged.
+    await db.costDao.setMePerson(bob.id);
+    expect((await db.costDao.watchMePerson().first)?.name, 'Bob');
+    final flagged =
+        (await db.costDao.watchPeopleRows().first).where((p) => p.isMe);
+    expect(flagged.map((p) => p.name), ['Bob']);
+
+    // Passing null clears the flag entirely.
+    await db.costDao.setMePerson(null);
+    expect(await db.costDao.watchMePerson().first, equals(null));
+  });
+
   test('renamePerson repoints every cost they paid', () async {
     final tripId =
         await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
