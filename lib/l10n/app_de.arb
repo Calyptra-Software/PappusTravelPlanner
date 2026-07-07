@@ -128,5 +128,12 @@
   "checklist": "Checkliste",
   "checklistAddHint": "Eintrag hinzufügen…",
   "checklistEditTitle": "Eintrag bearbeiten",
-  "checklistRenameTitle": "Checkliste umbenennen"
+  "checklistRenameTitle": "Checkliste umbenennen",
+  "checklistNewTitle": "Neue Checkliste",
+  "checklistAdd": "Checkliste hinzufügen",
+  "checklistDeleteTitle": "Checkliste löschen?",
+  "checklistDeleteBody": "„{name}“ und alle ihre Einträge werden entfernt.",
+  "@checklistDeleteBody": {
+    "placeholders": { "name": { "type": "String" } }
+  }
 }

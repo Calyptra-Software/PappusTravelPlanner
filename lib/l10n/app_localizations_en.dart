@@ -441,4 +441,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checklistRenameTitle => 'Rename checklist';
+
+  @override
+  String get checklistNewTitle => 'New checklist';
+
+  @override
+  String get checklistAdd => 'Add checklist';
+
+  @override
+  String get checklistDeleteTitle => 'Delete checklist?';
+
+  @override
+  String checklistDeleteBody(String name) {
+    return '\"$name\" and all its items will be removed.';
+  }
 }

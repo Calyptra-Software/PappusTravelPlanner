@@ -165,5 +165,12 @@
   "checklist": "Checklist",
   "checklistAddHint": "Add an item…",
   "checklistEditTitle": "Edit item",
-  "checklistRenameTitle": "Rename checklist"
+  "checklistRenameTitle": "Rename checklist",
+  "checklistNewTitle": "New checklist",
+  "checklistAdd": "Add checklist",
+  "checklistDeleteTitle": "Delete checklist?",
+  "checklistDeleteBody": "\"{name}\" and all its items will be removed.",
+  "@checklistDeleteBody": {
+    "placeholders": { "name": { "type": "String" } }
+  }
 }

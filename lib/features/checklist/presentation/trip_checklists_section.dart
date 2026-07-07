@@ -3,14 +3,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../trips/application/trip_providers.dart';
 import '../application/checklist_providers.dart';
 
-/// A per-trip checklist shown in the trip detail header: tickable, reorderable
-/// items with free text, a customisable heading, an inline field to add more,
-/// and a collapsible body.
-class TripChecklistCard extends ConsumerStatefulWidget {
-  const TripChecklistCard({
+/// Shows a single-field text dialog, returning the entered value, or null if
+/// dismissed.
+Future<String?> _promptText(
+  BuildContext context, {
+  required String title,
+  String initial = '',
+  String? hint,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final controller = TextEditingController(text: initial);
+  final result = await showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: hint == null ? null : InputDecoration(hintText: hint),
+        onSubmitted: (v) => Navigator.pop(context, v),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text),
+          child: Text(l10n.save),
+        ),
+      ],
+    ),
+  );
+  controller.dispose();
+  return result;
+}
+
+/// The trip's checklists shown in the detail header: any number of named,
+/// collapsible checklists plus a button to add another.
+class TripChecklistsSection extends ConsumerWidget {
+  const TripChecklistsSection({
     super.key,
     required this.tripId,
     required this.accent,
@@ -19,11 +54,63 @@ class TripChecklistCard extends ConsumerStatefulWidget {
   final int tripId;
   final Color accent;
 
+  Future<void> _addChecklist(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final name = await _promptText(
+      context,
+      title: l10n.checklistNewTitle,
+      hint: l10n.checklist,
+    );
+    if (name == null) return;
+    await ref
+        .read(checklistControllerProvider)
+        .addChecklist(tripId, title: name);
+  }
+
   @override
-  ConsumerState<TripChecklistCard> createState() => _TripChecklistCardState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final checklists = ref.watch(checklistsProvider(tripId)).value ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final checklist in checklists)
+          _ChecklistCard(
+            key: ValueKey(checklist.id),
+            checklist: checklist,
+            accent: accent,
+          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: OutlinedButton.icon(
+            onPressed: () => _addChecklist(context, ref),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.checklistAdd),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _TripChecklistCardState extends ConsumerState<TripChecklistCard> {
+/// One collapsible checklist card: tickable, reorderable items with an inline
+/// add field, plus rename/delete of the checklist itself.
+class _ChecklistCard extends ConsumerStatefulWidget {
+  const _ChecklistCard({
+    super.key,
+    required this.checklist,
+    required this.accent,
+  });
+
+  final Checklist checklist;
+  final Color accent;
+
+  @override
+  ConsumerState<_ChecklistCard> createState() => _ChecklistCardState();
+}
+
+class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _expanded = true;
@@ -38,83 +125,79 @@ class _TripChecklistCardState extends ConsumerState<TripChecklistCard> {
   Future<void> _add() async {
     final label = _controller.text.trim();
     if (label.isEmpty) return;
-    await ref.read(checklistControllerProvider).add(widget.tripId, label);
+    await ref
+        .read(checklistControllerProvider)
+        .addItem(widget.checklist.id, label);
     _controller.clear();
     // Keep the field focused so several items can be added in a row.
     _focusNode.requestFocus();
   }
 
-  Future<void> _edit(ChecklistItem item) async {
+  Future<void> _editItem(ChecklistItem item) async {
     final l10n = AppLocalizations.of(context);
     final result = await _promptText(
+      context,
       title: l10n.checklistEditTitle,
       initial: item.label,
     );
     if (result == null) return;
     final trimmed = result.trim();
     if (trimmed.isEmpty || trimmed == item.label) return;
-    await ref.read(checklistControllerProvider).rename(item, trimmed);
+    await ref.read(checklistControllerProvider).renameItem(item, trimmed);
   }
 
-  Future<void> _renameList(String currentTitle) async {
+  Future<void> _rename() async {
     final l10n = AppLocalizations.of(context);
     final result = await _promptText(
+      context,
       title: l10n.checklistRenameTitle,
-      initial: currentTitle,
+      initial: widget.checklist.title,
       hint: l10n.checklist,
     );
-    if (result == null) return;
+    if (result == null || result.trim() == widget.checklist.title) return;
     await ref
         .read(checklistControllerProvider)
-        .setTitle(widget.tripId, result);
+        .renameChecklist(widget.checklist, result);
   }
 
-  /// Shows a single-field text dialog, returning the entered value or null if
-  /// dismissed.
-  Future<String?> _promptText({
-    required String title,
-    required String initial,
-    String? hint,
-  }) async {
+  Future<void> _delete(int itemCount) async {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: initial);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: hint == null ? null : InputDecoration(hintText: hint),
-          onSubmitted: (v) => Navigator.pop(context, v),
+    if (itemCount > 0) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(l10n.checklistDeleteTitle),
+          content: Text(l10n.checklistDeleteBody(_displayTitle(l10n))),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.delete),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
-    );
-    controller.dispose();
-    return result;
+      );
+      if (confirmed != true) return;
+    }
+    await ref
+        .read(checklistControllerProvider)
+        .deleteChecklist(widget.checklist.id);
   }
+
+  String _displayTitle(AppLocalizations l10n) => widget.checklist.title.isNotEmpty
+      ? widget.checklist.title
+      : l10n.checklist;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final items = ref.watch(checklistProvider(widget.tripId)).value ?? const [];
-    final customTitle =
-        ref.watch(tripProvider(widget.tripId)).value?.checklistTitle;
-    final title = (customTitle != null && customTitle.isNotEmpty)
-        ? customTitle
-        : l10n.checklist;
+    final items =
+        ref.watch(checklistItemsProvider(widget.checklist.id)).value ??
+            const [];
     final doneCount = items.where((i) => i.done).length;
 
     return Card(
@@ -135,7 +218,10 @@ class _TripChecklistCardState extends ConsumerState<TripChecklistCard> {
                         size: 20, color: widget.accent),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text(title, style: theme.textTheme.titleMedium),
+                      child: Text(
+                        _displayTitle(l10n),
+                        style: theme.textTheme.titleMedium,
+                      ),
                     ),
                     if (items.isNotEmpty)
                       Text(
@@ -148,7 +234,13 @@ class _TripChecklistCardState extends ConsumerState<TripChecklistCard> {
                       tooltip: l10n.checklistRenameTitle,
                       visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.edit_outlined, size: 18),
-                      onPressed: () => _renameList(customTitle ?? ''),
+                      onPressed: _rename,
+                    ),
+                    IconButton(
+                      tooltip: l10n.checklistDeleteTitle,
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.delete_outline, size: 18),
+                      onPressed: () => _delete(items.length),
                     ),
                     Icon(
                       _expanded ? Icons.expand_less : Icons.expand_more,
@@ -189,7 +281,7 @@ class _TripChecklistCardState extends ConsumerState<TripChecklistCard> {
             // newIndex is already adjusted for the removal at oldIndex.
             onReorderItem: (oldIndex, newIndex) => ref
                 .read(checklistControllerProvider)
-                .reorder(items, oldIndex, newIndex),
+                .reorderItems(items, oldIndex, newIndex),
             itemBuilder: (context, index) {
               final item = items[index];
               return _ChecklistTile(
@@ -199,9 +291,9 @@ class _TripChecklistCardState extends ConsumerState<TripChecklistCard> {
                 onToggle: (v) => ref
                     .read(checklistControllerProvider)
                     .setDone(item, v ?? false),
-                onEdit: () => _edit(item),
+                onEdit: () => _editItem(item),
                 onDelete: () =>
-                    ref.read(checklistControllerProvider).delete(item.id),
+                    ref.read(checklistControllerProvider).deleteItem(item.id),
               );
             },
           ),

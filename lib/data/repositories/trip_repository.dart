@@ -15,8 +15,6 @@ class TripRepository {
   Future<int> createTrip(TripsCompanion trip) => _db.tripDao.createTrip(trip);
   Future<bool> updateTrip(Trip trip) => _db.tripDao.updateTrip(trip);
   Future<int> deleteTrip(int id) => _db.tripDao.deleteTrip(id);
-  Future<void> setChecklistTitle(int tripId, String? title) =>
-      _db.tripDao.setChecklistTitle(tripId, title);
 
   // --- itinerary items ---
   Stream<List<ItineraryItem>> watchItems(int tripId) =>
@@ -44,15 +42,26 @@ class TripRepository {
   Future<void> renameReason(String from, String to) =>
       _db.costDao.renameReason(from, to);
 
-  // --- checklist ---
-  Stream<List<ChecklistItem>> watchChecklist(int tripId) =>
-      _db.checklistDao.watchChecklist(tripId);
-  Future<int> addChecklistItem(ChecklistItemsCompanion item) =>
-      _db.checklistDao.addChecklistItem(item);
-  Future<bool> updateChecklistItem(ChecklistItem item) =>
-      _db.checklistDao.updateChecklistItem(item);
-  Future<int> deleteChecklistItem(int id) =>
-      _db.checklistDao.deleteChecklistItem(id);
+  // --- checklists ---
+  Stream<List<Checklist>> watchChecklists(int tripId) =>
+      _db.checklistDao.watchChecklists(tripId);
+  Future<int> addChecklist(ChecklistsCompanion checklist) =>
+      _db.checklistDao.addChecklist(checklist);
+  Future<bool> updateChecklist(Checklist checklist) =>
+      _db.checklistDao.updateChecklist(checklist);
+  Future<int> deleteChecklist(int id) => _db.checklistDao.deleteChecklist(id);
   Future<int> nextChecklistSortOrder(int tripId) =>
-      _db.checklistDao.nextSortOrder(tripId);
+      _db.checklistDao.nextChecklistSortOrder(tripId);
+
+  // --- checklist items ---
+  Stream<List<ChecklistItem>> watchChecklistItems(int checklistId) =>
+      _db.checklistDao.watchItems(checklistId);
+  Future<int> addChecklistItem(ChecklistItemsCompanion item) =>
+      _db.checklistDao.addItem(item);
+  Future<bool> updateChecklistItem(ChecklistItem item) =>
+      _db.checklistDao.updateItem(item);
+  Future<int> deleteChecklistItem(int id) =>
+      _db.checklistDao.deleteItem(id);
+  Future<int> nextChecklistItemSortOrder(int checklistId) =>
+      _db.checklistDao.nextItemSortOrder(checklistId);
 }

@@ -68,9 +68,6 @@ class Trips extends Table {
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
 
-  /// Custom heading for the trip's checklist, or null to use the default label.
-  TextColumn get checklistTitle => text().nullable()();
-
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   IntColumn get colorValue =>
       integer().withDefault(const Constant(0xFF00695C))();
@@ -130,16 +127,30 @@ class Costs extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
-/// A checklist entry belonging to a trip: a piece of text that can be ticked
-/// off (packing list, to-dos, …). Shown in the trip's detail header.
-class ChecklistItems extends Table {
+/// A named checklist belonging to a trip. A trip can have any number of these
+/// (packing list, to-dos, …); each holds its own [ChecklistItems]. An empty
+/// [title] falls back to the default label in the UI.
+class Checklists extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get tripId =>
       integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+  TextColumn get title => text().withDefault(const Constant(''))();
+
+  /// Manual ordering of a trip's checklists (appended to the end).
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// A checklist entry: a piece of text that can be ticked off, belonging to one
+/// [Checklists] row.
+class ChecklistItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get checklistId =>
+      integer().references(Checklists, #id, onDelete: KeyAction.cascade)();
   TextColumn get label => text()();
   BoolColumn get done => boolean().withDefault(const Constant(false))();
 
-  /// Manual ordering within the trip's checklist (appended to the end).
+  /// Manual ordering within the checklist (appended to the end).
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }

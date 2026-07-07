@@ -60,6 +60,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  sqlite3: ^3.3.4 # used by tests to build an old-schema DB for migration checks
   build_runner: ^2.15.0
   drift_dev: ^2.34.0
   riverpod_generator: ^4.0.4

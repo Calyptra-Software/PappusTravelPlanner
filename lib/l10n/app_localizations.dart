@@ -871,6 +871,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rename checklist'**
   String get checklistRenameTitle;
+
+  /// No description provided for @checklistNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New checklist'**
+  String get checklistNewTitle;
+
+  /// No description provided for @checklistAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add checklist'**
+  String get checklistAdd;
+
+  /// No description provided for @checklistDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete checklist?'**
+  String get checklistDeleteTitle;
+
+  /// No description provided for @checklistDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" and all its items will be removed.'**
+  String checklistDeleteBody(String name);
 }
 
 class _AppLocalizationsDelegate

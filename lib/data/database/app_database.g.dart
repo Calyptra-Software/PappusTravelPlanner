@@ -77,17 +77,6 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _checklistTitleMeta = const VerificationMeta(
-    'checklistTitle',
-  );
-  @override
-  late final GeneratedColumn<String> checklistTitle = GeneratedColumn<String>(
-    'checklist_title',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _colorValueMeta = const VerificationMeta(
     'colorValue',
   );
@@ -120,7 +109,6 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     startDate,
     endDate,
     notes,
-    checklistTitle,
     colorValue,
     createdAt,
   ];
@@ -174,15 +162,6 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
-    if (data.containsKey('checklist_title')) {
-      context.handle(
-        _checklistTitleMeta,
-        checklistTitle.isAcceptableOrUnknown(
-          data['checklist_title']!,
-          _checklistTitleMeta,
-        ),
-      );
-    }
     if (data.containsKey('color_value')) {
       context.handle(
         _colorValueMeta,
@@ -228,10 +207,6 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
-      checklistTitle: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}checklist_title'],
-      ),
       colorValue: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}color_value'],
@@ -257,9 +232,6 @@ class Trip extends DataClass implements Insertable<Trip> {
   final DateTime? endDate;
   final String? notes;
 
-  /// Custom heading for the trip's checklist, or null to use the default label.
-  final String? checklistTitle;
-
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   final int colorValue;
   final DateTime createdAt;
@@ -270,7 +242,6 @@ class Trip extends DataClass implements Insertable<Trip> {
     this.startDate,
     this.endDate,
     this.notes,
-    this.checklistTitle,
     required this.colorValue,
     required this.createdAt,
   });
@@ -288,9 +259,6 @@ class Trip extends DataClass implements Insertable<Trip> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
-    }
-    if (!nullToAbsent || checklistTitle != null) {
-      map['checklist_title'] = Variable<String>(checklistTitle);
     }
     map['color_value'] = Variable<int>(colorValue);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -311,9 +279,6 @@ class Trip extends DataClass implements Insertable<Trip> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
-      checklistTitle: checklistTitle == null && nullToAbsent
-          ? const Value.absent()
-          : Value(checklistTitle),
       colorValue: Value(colorValue),
       createdAt: Value(createdAt),
     );
@@ -331,7 +296,6 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: serializer.fromJson<DateTime?>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
       notes: serializer.fromJson<String?>(json['notes']),
-      checklistTitle: serializer.fromJson<String?>(json['checklistTitle']),
       colorValue: serializer.fromJson<int>(json['colorValue']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -346,7 +310,6 @@ class Trip extends DataClass implements Insertable<Trip> {
       'startDate': serializer.toJson<DateTime?>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
       'notes': serializer.toJson<String?>(notes),
-      'checklistTitle': serializer.toJson<String?>(checklistTitle),
       'colorValue': serializer.toJson<int>(colorValue),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -359,7 +322,6 @@ class Trip extends DataClass implements Insertable<Trip> {
     Value<DateTime?> startDate = const Value.absent(),
     Value<DateTime?> endDate = const Value.absent(),
     Value<String?> notes = const Value.absent(),
-    Value<String?> checklistTitle = const Value.absent(),
     int? colorValue,
     DateTime? createdAt,
   }) => Trip(
@@ -369,9 +331,6 @@ class Trip extends DataClass implements Insertable<Trip> {
     startDate: startDate.present ? startDate.value : this.startDate,
     endDate: endDate.present ? endDate.value : this.endDate,
     notes: notes.present ? notes.value : this.notes,
-    checklistTitle: checklistTitle.present
-        ? checklistTitle.value
-        : this.checklistTitle,
     colorValue: colorValue ?? this.colorValue,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -385,9 +344,6 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       notes: data.notes.present ? data.notes.value : this.notes,
-      checklistTitle: data.checklistTitle.present
-          ? data.checklistTitle.value
-          : this.checklistTitle,
       colorValue: data.colorValue.present
           ? data.colorValue.value
           : this.colorValue,
@@ -404,7 +360,6 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
-          ..write('checklistTitle: $checklistTitle, ')
           ..write('colorValue: $colorValue, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -419,7 +374,6 @@ class Trip extends DataClass implements Insertable<Trip> {
     startDate,
     endDate,
     notes,
-    checklistTitle,
     colorValue,
     createdAt,
   );
@@ -433,7 +387,6 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.notes == this.notes &&
-          other.checklistTitle == this.checklistTitle &&
           other.colorValue == this.colorValue &&
           other.createdAt == this.createdAt);
 }
@@ -445,7 +398,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<DateTime?> startDate;
   final Value<DateTime?> endDate;
   final Value<String?> notes;
-  final Value<String?> checklistTitle;
   final Value<int> colorValue;
   final Value<DateTime> createdAt;
   const TripsCompanion({
@@ -455,7 +407,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
-    this.checklistTitle = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -466,7 +417,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
-    this.checklistTitle = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title);
@@ -477,7 +427,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<String>? notes,
-    Expression<String>? checklistTitle,
     Expression<int>? colorValue,
     Expression<DateTime>? createdAt,
   }) {
@@ -488,7 +437,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (notes != null) 'notes': notes,
-      if (checklistTitle != null) 'checklist_title': checklistTitle,
       if (colorValue != null) 'color_value': colorValue,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -501,7 +449,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Value<DateTime?>? startDate,
     Value<DateTime?>? endDate,
     Value<String?>? notes,
-    Value<String?>? checklistTitle,
     Value<int>? colorValue,
     Value<DateTime>? createdAt,
   }) {
@@ -512,7 +459,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       notes: notes ?? this.notes,
-      checklistTitle: checklistTitle ?? this.checklistTitle,
       colorValue: colorValue ?? this.colorValue,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -539,9 +485,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
-    if (checklistTitle.present) {
-      map['checklist_title'] = Variable<String>(checklistTitle.value);
-    }
     if (colorValue.present) {
       map['color_value'] = Variable<int>(colorValue.value);
     }
@@ -560,7 +503,6 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
-          ..write('checklistTitle: $checklistTitle, ')
           ..write('colorValue: $colorValue, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -2051,12 +1993,12 @@ class CostReasonsCompanion extends UpdateCompanion<CostReason> {
   }
 }
 
-class $ChecklistItemsTable extends ChecklistItems
-    with TableInfo<$ChecklistItemsTable, ChecklistItem> {
+class $ChecklistsTable extends Checklists
+    with TableInfo<$ChecklistsTable, Checklist> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $ChecklistItemsTable(this.attachedDatabase, [this._alias]);
+  $ChecklistsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -2080,6 +2022,355 @@ class $ChecklistItemsTable extends ChecklistItems
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tripId,
+    title,
+    sortOrder,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'checklists';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Checklist> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Checklist map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Checklist(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ChecklistsTable createAlias(String alias) {
+    return $ChecklistsTable(attachedDatabase, alias);
+  }
+}
+
+class Checklist extends DataClass implements Insertable<Checklist> {
+  final int id;
+  final int tripId;
+  final String title;
+
+  /// Manual ordering of a trip's checklists (appended to the end).
+  final int sortOrder;
+  final DateTime createdAt;
+  const Checklist({
+    required this.id,
+    required this.tripId,
+    required this.title,
+    required this.sortOrder,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trip_id'] = Variable<int>(tripId);
+    map['title'] = Variable<String>(title);
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ChecklistsCompanion toCompanion(bool nullToAbsent) {
+    return ChecklistsCompanion(
+      id: Value(id),
+      tripId: Value(tripId),
+      title: Value(title),
+      sortOrder: Value(sortOrder),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Checklist.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Checklist(
+      id: serializer.fromJson<int>(json['id']),
+      tripId: serializer.fromJson<int>(json['tripId']),
+      title: serializer.fromJson<String>(json['title']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tripId': serializer.toJson<int>(tripId),
+      'title': serializer.toJson<String>(title),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Checklist copyWith({
+    int? id,
+    int? tripId,
+    String? title,
+    int? sortOrder,
+    DateTime? createdAt,
+  }) => Checklist(
+    id: id ?? this.id,
+    tripId: tripId ?? this.tripId,
+    title: title ?? this.title,
+    sortOrder: sortOrder ?? this.sortOrder,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  Checklist copyWithCompanion(ChecklistsCompanion data) {
+    return Checklist(
+      id: data.id.present ? data.id.value : this.id,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      title: data.title.present ? data.title.value : this.title,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Checklist(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('title: $title, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tripId, title, sortOrder, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Checklist &&
+          other.id == this.id &&
+          other.tripId == this.tripId &&
+          other.title == this.title &&
+          other.sortOrder == this.sortOrder &&
+          other.createdAt == this.createdAt);
+}
+
+class ChecklistsCompanion extends UpdateCompanion<Checklist> {
+  final Value<int> id;
+  final Value<int> tripId;
+  final Value<String> title;
+  final Value<int> sortOrder;
+  final Value<DateTime> createdAt;
+  const ChecklistsCompanion({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  ChecklistsCompanion.insert({
+    this.id = const Value.absent(),
+    required int tripId,
+    this.title = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : tripId = Value(tripId);
+  static Insertable<Checklist> custom({
+    Expression<int>? id,
+    Expression<int>? tripId,
+    Expression<String>? title,
+    Expression<int>? sortOrder,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tripId != null) 'trip_id': tripId,
+      if (title != null) 'title': title,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  ChecklistsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? tripId,
+    Value<String>? title,
+    Value<int>? sortOrder,
+    Value<DateTime>? createdAt,
+  }) {
+    return ChecklistsCompanion(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      title: title ?? this.title,
+      sortOrder: sortOrder ?? this.sortOrder,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ChecklistsCompanion(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('title: $title, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ChecklistItemsTable extends ChecklistItems
+    with TableInfo<$ChecklistItemsTable, ChecklistItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ChecklistItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _checklistIdMeta = const VerificationMeta(
+    'checklistId',
+  );
+  @override
+  late final GeneratedColumn<int> checklistId = GeneratedColumn<int>(
+    'checklist_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES checklists (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _labelMeta = const VerificationMeta('label');
@@ -2131,7 +2422,7 @@ class $ChecklistItemsTable extends ChecklistItems
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tripId,
+    checklistId,
     label,
     done,
     sortOrder,
@@ -2152,13 +2443,16 @@ class $ChecklistItemsTable extends ChecklistItems
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
-    if (data.containsKey('trip_id')) {
+    if (data.containsKey('checklist_id')) {
       context.handle(
-        _tripIdMeta,
-        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+        _checklistIdMeta,
+        checklistId.isAcceptableOrUnknown(
+          data['checklist_id']!,
+          _checklistIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_tripIdMeta);
+      context.missing(_checklistIdMeta);
     }
     if (data.containsKey('label')) {
       context.handle(
@@ -2199,9 +2493,9 @@ class $ChecklistItemsTable extends ChecklistItems
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
-      tripId: attachedDatabase.typeMapping.read(
+      checklistId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}trip_id'],
+        data['${effectivePrefix}checklist_id'],
       )!,
       label: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2230,16 +2524,16 @@ class $ChecklistItemsTable extends ChecklistItems
 
 class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
   final int id;
-  final int tripId;
+  final int checklistId;
   final String label;
   final bool done;
 
-  /// Manual ordering within the trip's checklist (appended to the end).
+  /// Manual ordering within the checklist (appended to the end).
   final int sortOrder;
   final DateTime createdAt;
   const ChecklistItem({
     required this.id,
-    required this.tripId,
+    required this.checklistId,
     required this.label,
     required this.done,
     required this.sortOrder,
@@ -2249,7 +2543,7 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
-    map['trip_id'] = Variable<int>(tripId);
+    map['checklist_id'] = Variable<int>(checklistId);
     map['label'] = Variable<String>(label);
     map['done'] = Variable<bool>(done);
     map['sort_order'] = Variable<int>(sortOrder);
@@ -2260,7 +2554,7 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
   ChecklistItemsCompanion toCompanion(bool nullToAbsent) {
     return ChecklistItemsCompanion(
       id: Value(id),
-      tripId: Value(tripId),
+      checklistId: Value(checklistId),
       label: Value(label),
       done: Value(done),
       sortOrder: Value(sortOrder),
@@ -2275,7 +2569,7 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ChecklistItem(
       id: serializer.fromJson<int>(json['id']),
-      tripId: serializer.fromJson<int>(json['tripId']),
+      checklistId: serializer.fromJson<int>(json['checklistId']),
       label: serializer.fromJson<String>(json['label']),
       done: serializer.fromJson<bool>(json['done']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
@@ -2287,7 +2581,7 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
-      'tripId': serializer.toJson<int>(tripId),
+      'checklistId': serializer.toJson<int>(checklistId),
       'label': serializer.toJson<String>(label),
       'done': serializer.toJson<bool>(done),
       'sortOrder': serializer.toJson<int>(sortOrder),
@@ -2297,14 +2591,14 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
 
   ChecklistItem copyWith({
     int? id,
-    int? tripId,
+    int? checklistId,
     String? label,
     bool? done,
     int? sortOrder,
     DateTime? createdAt,
   }) => ChecklistItem(
     id: id ?? this.id,
-    tripId: tripId ?? this.tripId,
+    checklistId: checklistId ?? this.checklistId,
     label: label ?? this.label,
     done: done ?? this.done,
     sortOrder: sortOrder ?? this.sortOrder,
@@ -2313,7 +2607,9 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
   ChecklistItem copyWithCompanion(ChecklistItemsCompanion data) {
     return ChecklistItem(
       id: data.id.present ? data.id.value : this.id,
-      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      checklistId: data.checklistId.present
+          ? data.checklistId.value
+          : this.checklistId,
       label: data.label.present ? data.label.value : this.label,
       done: data.done.present ? data.done.value : this.done,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
@@ -2325,7 +2621,7 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
   String toString() {
     return (StringBuffer('ChecklistItem(')
           ..write('id: $id, ')
-          ..write('tripId: $tripId, ')
+          ..write('checklistId: $checklistId, ')
           ..write('label: $label, ')
           ..write('done: $done, ')
           ..write('sortOrder: $sortOrder, ')
@@ -2336,13 +2632,13 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
 
   @override
   int get hashCode =>
-      Object.hash(id, tripId, label, done, sortOrder, createdAt);
+      Object.hash(id, checklistId, label, done, sortOrder, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ChecklistItem &&
           other.id == this.id &&
-          other.tripId == this.tripId &&
+          other.checklistId == this.checklistId &&
           other.label == this.label &&
           other.done == this.done &&
           other.sortOrder == this.sortOrder &&
@@ -2351,14 +2647,14 @@ class ChecklistItem extends DataClass implements Insertable<ChecklistItem> {
 
 class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
   final Value<int> id;
-  final Value<int> tripId;
+  final Value<int> checklistId;
   final Value<String> label;
   final Value<bool> done;
   final Value<int> sortOrder;
   final Value<DateTime> createdAt;
   const ChecklistItemsCompanion({
     this.id = const Value.absent(),
-    this.tripId = const Value.absent(),
+    this.checklistId = const Value.absent(),
     this.label = const Value.absent(),
     this.done = const Value.absent(),
     this.sortOrder = const Value.absent(),
@@ -2366,16 +2662,16 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
   });
   ChecklistItemsCompanion.insert({
     this.id = const Value.absent(),
-    required int tripId,
+    required int checklistId,
     required String label,
     this.done = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
-  }) : tripId = Value(tripId),
+  }) : checklistId = Value(checklistId),
        label = Value(label);
   static Insertable<ChecklistItem> custom({
     Expression<int>? id,
-    Expression<int>? tripId,
+    Expression<int>? checklistId,
     Expression<String>? label,
     Expression<bool>? done,
     Expression<int>? sortOrder,
@@ -2383,7 +2679,7 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tripId != null) 'trip_id': tripId,
+      if (checklistId != null) 'checklist_id': checklistId,
       if (label != null) 'label': label,
       if (done != null) 'done': done,
       if (sortOrder != null) 'sort_order': sortOrder,
@@ -2393,7 +2689,7 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
 
   ChecklistItemsCompanion copyWith({
     Value<int>? id,
-    Value<int>? tripId,
+    Value<int>? checklistId,
     Value<String>? label,
     Value<bool>? done,
     Value<int>? sortOrder,
@@ -2401,7 +2697,7 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
   }) {
     return ChecklistItemsCompanion(
       id: id ?? this.id,
-      tripId: tripId ?? this.tripId,
+      checklistId: checklistId ?? this.checklistId,
       label: label ?? this.label,
       done: done ?? this.done,
       sortOrder: sortOrder ?? this.sortOrder,
@@ -2415,8 +2711,8 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
-    if (tripId.present) {
-      map['trip_id'] = Variable<int>(tripId.value);
+    if (checklistId.present) {
+      map['checklist_id'] = Variable<int>(checklistId.value);
     }
     if (label.present) {
       map['label'] = Variable<String>(label.value);
@@ -2437,7 +2733,7 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
   String toString() {
     return (StringBuffer('ChecklistItemsCompanion(')
           ..write('id: $id, ')
-          ..write('tripId: $tripId, ')
+          ..write('checklistId: $checklistId, ')
           ..write('label: $label, ')
           ..write('done: $done, ')
           ..write('sortOrder: $sortOrder, ')
@@ -2454,6 +2750,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ItineraryItemsTable itineraryItems = $ItineraryItemsTable(this);
   late final $CostsTable costs = $CostsTable(this);
   late final $CostReasonsTable costReasons = $CostReasonsTable(this);
+  late final $ChecklistsTable checklists = $ChecklistsTable(this);
   late final $ChecklistItemsTable checklistItems = $ChecklistItemsTable(this);
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ItineraryDao itineraryDao = ItineraryDao(this as AppDatabase);
@@ -2468,6 +2765,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     itineraryItems,
     costs,
     costReasons,
+    checklists,
     checklistItems,
   ];
   @override
@@ -2498,6 +2796,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'trips',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('checklists', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'checklists',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('checklist_items', kind: UpdateKind.delete)],
     ),
   ]);
@@ -2511,7 +2816,6 @@ typedef $$TripsTableCreateCompanionBuilder =
       Value<DateTime?> startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
-      Value<String?> checklistTitle,
       Value<int> colorValue,
       Value<DateTime> createdAt,
     });
@@ -2523,7 +2827,6 @@ typedef $$TripsTableUpdateCompanionBuilder =
       Value<DateTime?> startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
-      Value<String?> checklistTitle,
       Value<int> colorValue,
       Value<DateTime> createdAt,
     });
@@ -2569,19 +2872,19 @@ final class $$TripsTableReferences
     );
   }
 
-  static MultiTypedResultKey<$ChecklistItemsTable, List<ChecklistItem>>
-  _checklistItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.checklistItems,
-    aliasName: 'trips__id__checklist_items__trip_id',
+  static MultiTypedResultKey<$ChecklistsTable, List<Checklist>>
+  _checklistsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.checklists,
+    aliasName: 'trips__id__checklists__trip_id',
   );
 
-  $$ChecklistItemsTableProcessedTableManager get checklistItemsRefs {
-    final manager = $$ChecklistItemsTableTableManager(
+  $$ChecklistsTableProcessedTableManager get checklistsRefs {
+    final manager = $$ChecklistsTableTableManager(
       $_db,
-      $_db.checklistItems,
+      $_db.checklists,
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
-    final cache = $_typedResult.readTableOrNull(_checklistItemsRefsTable($_db));
+    final cache = $_typedResult.readTableOrNull(_checklistsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2623,11 +2926,6 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get checklistTitle => $composableBuilder(
-    column: $table.checklistTitle,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2691,22 +2989,22 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
     return f(composer);
   }
 
-  Expression<bool> checklistItemsRefs(
-    Expression<bool> Function($$ChecklistItemsTableFilterComposer f) f,
+  Expression<bool> checklistsRefs(
+    Expression<bool> Function($$ChecklistsTableFilterComposer f) f,
   ) {
-    final $$ChecklistItemsTableFilterComposer composer = $composerBuilder(
+    final $$ChecklistsTableFilterComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.checklistItems,
+      referencedTable: $db.checklists,
       getReferencedColumn: (t) => t.tripId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ChecklistItemsTableFilterComposer(
+          }) => $$ChecklistsTableFilterComposer(
             $db: $db,
-            $table: $db.checklistItems,
+            $table: $db.checklists,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2756,11 +3054,6 @@ class $$TripsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get checklistTitle => $composableBuilder(
-    column: $table.checklistTitle,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
     builder: (column) => ColumnOrderings(column),
@@ -2800,11 +3093,6 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
-
-  GeneratedColumn<String> get checklistTitle => $composableBuilder(
-    column: $table.checklistTitle,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
@@ -2864,22 +3152,22 @@ class $$TripsTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> checklistItemsRefs<T extends Object>(
-    Expression<T> Function($$ChecklistItemsTableAnnotationComposer a) f,
+  Expression<T> checklistsRefs<T extends Object>(
+    Expression<T> Function($$ChecklistsTableAnnotationComposer a) f,
   ) {
-    final $$ChecklistItemsTableAnnotationComposer composer = $composerBuilder(
+    final $$ChecklistsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
       getCurrentColumn: (t) => t.id,
-      referencedTable: $db.checklistItems,
+      referencedTable: $db.checklists,
       getReferencedColumn: (t) => t.tripId,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$ChecklistItemsTableAnnotationComposer(
+          }) => $$ChecklistsTableAnnotationComposer(
             $db: $db,
-            $table: $db.checklistItems,
+            $table: $db.checklists,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -2906,7 +3194,7 @@ class $$TripsTableTableManager
           PrefetchHooks Function({
             bool itineraryItemsRefs,
             bool costsRefs,
-            bool checklistItemsRefs,
+            bool checklistsRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -2928,7 +3216,6 @@ class $$TripsTableTableManager
                 Value<DateTime?> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
-                Value<String?> checklistTitle = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion(
@@ -2938,7 +3225,6 @@ class $$TripsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
-                checklistTitle: checklistTitle,
                 colorValue: colorValue,
                 createdAt: createdAt,
               ),
@@ -2950,7 +3236,6 @@ class $$TripsTableTableManager
                 Value<DateTime?> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
-                Value<String?> checklistTitle = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion.insert(
@@ -2960,7 +3245,6 @@ class $$TripsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
-                checklistTitle: checklistTitle,
                 colorValue: colorValue,
                 createdAt: createdAt,
               ),
@@ -2974,14 +3258,14 @@ class $$TripsTableTableManager
               ({
                 itineraryItemsRefs = false,
                 costsRefs = false,
-                checklistItemsRefs = false,
+                checklistsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (itineraryItemsRefs) db.itineraryItems,
                     if (costsRefs) db.costs,
-                    if (checklistItemsRefs) db.checklistItems,
+                    if (checklistsRefs) db.checklists,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3020,21 +3304,17 @@ class $$TripsTableTableManager
                               ),
                           typedResults: items,
                         ),
-                      if (checklistItemsRefs)
-                        await $_getPrefetchedData<
-                          Trip,
-                          $TripsTable,
-                          ChecklistItem
-                        >(
+                      if (checklistsRefs)
+                        await $_getPrefetchedData<Trip, $TripsTable, Checklist>(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
-                              ._checklistItemsRefsTable(db),
+                              ._checklistsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TripsTableReferences(
                                 db,
                                 table,
                                 p0,
-                              ).checklistItemsRefs,
+                              ).checklistsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.tripId == item.id,
@@ -3064,7 +3344,7 @@ typedef $$TripsTableProcessedTableManager =
       PrefetchHooks Function({
         bool itineraryItemsRefs,
         bool costsRefs,
-        bool checklistItemsRefs,
+        bool checklistsRefs,
       })
     >;
 typedef $$ItineraryItemsTableCreateCompanionBuilder =
@@ -4223,10 +4503,415 @@ typedef $$CostReasonsTableProcessedTableManager =
       CostReason,
       PrefetchHooks Function()
     >;
+typedef $$ChecklistsTableCreateCompanionBuilder =
+    ChecklistsCompanion Function({
+      Value<int> id,
+      required int tripId,
+      Value<String> title,
+      Value<int> sortOrder,
+      Value<DateTime> createdAt,
+    });
+typedef $$ChecklistsTableUpdateCompanionBuilder =
+    ChecklistsCompanion Function({
+      Value<int> id,
+      Value<int> tripId,
+      Value<String> title,
+      Value<int> sortOrder,
+      Value<DateTime> createdAt,
+    });
+
+final class $$ChecklistsTableReferences
+    extends BaseReferences<_$AppDatabase, $ChecklistsTable, Checklist> {
+  $$ChecklistsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('checklists__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ChecklistItemsTable, List<ChecklistItem>>
+  _checklistItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.checklistItems,
+    aliasName: 'checklists__id__checklist_items__checklist_id',
+  );
+
+  $$ChecklistItemsTableProcessedTableManager get checklistItemsRefs {
+    final manager = $$ChecklistItemsTableTableManager(
+      $_db,
+      $_db.checklistItems,
+    ).filter((f) => f.checklistId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_checklistItemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ChecklistsTableFilterComposer
+    extends Composer<_$AppDatabase, $ChecklistsTable> {
+  $$ChecklistsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> checklistItemsRefs(
+    Expression<bool> Function($$ChecklistItemsTableFilterComposer f) f,
+  ) {
+    final $$ChecklistItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.checklistItems,
+      getReferencedColumn: (t) => t.checklistId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChecklistItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.checklistItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChecklistsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ChecklistsTable> {
+  $$ChecklistsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ChecklistsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ChecklistsTable> {
+  $$ChecklistsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> checklistItemsRefs<T extends Object>(
+    Expression<T> Function($$ChecklistItemsTableAnnotationComposer a) f,
+  ) {
+    final $$ChecklistItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.checklistItems,
+      getReferencedColumn: (t) => t.checklistId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ChecklistItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.checklistItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ChecklistsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ChecklistsTable,
+          Checklist,
+          $$ChecklistsTableFilterComposer,
+          $$ChecklistsTableOrderingComposer,
+          $$ChecklistsTableAnnotationComposer,
+          $$ChecklistsTableCreateCompanionBuilder,
+          $$ChecklistsTableUpdateCompanionBuilder,
+          (Checklist, $$ChecklistsTableReferences),
+          Checklist,
+          PrefetchHooks Function({bool tripId, bool checklistItemsRefs})
+        > {
+  $$ChecklistsTableTableManager(_$AppDatabase db, $ChecklistsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ChecklistsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ChecklistsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ChecklistsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> tripId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ChecklistsCompanion(
+                id: id,
+                tripId: tripId,
+                title: title,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int tripId,
+                Value<String> title = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+              }) => ChecklistsCompanion.insert(
+                id: id,
+                tripId: tripId,
+                title: title,
+                sortOrder: sortOrder,
+                createdAt: createdAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ChecklistsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({tripId = false, checklistItemsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (checklistItemsRefs) db.checklistItems,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (tripId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.tripId,
+                                    referencedTable: $$ChecklistsTableReferences
+                                        ._tripIdTable(db),
+                                    referencedColumn:
+                                        $$ChecklistsTableReferences
+                                            ._tripIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (checklistItemsRefs)
+                        await $_getPrefetchedData<
+                          Checklist,
+                          $ChecklistsTable,
+                          ChecklistItem
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ChecklistsTableReferences
+                              ._checklistItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ChecklistsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).checklistItemsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.checklistId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ChecklistsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ChecklistsTable,
+      Checklist,
+      $$ChecklistsTableFilterComposer,
+      $$ChecklistsTableOrderingComposer,
+      $$ChecklistsTableAnnotationComposer,
+      $$ChecklistsTableCreateCompanionBuilder,
+      $$ChecklistsTableUpdateCompanionBuilder,
+      (Checklist, $$ChecklistsTableReferences),
+      Checklist,
+      PrefetchHooks Function({bool tripId, bool checklistItemsRefs})
+    >;
 typedef $$ChecklistItemsTableCreateCompanionBuilder =
     ChecklistItemsCompanion Function({
       Value<int> id,
-      required int tripId,
+      required int checklistId,
       required String label,
       Value<bool> done,
       Value<int> sortOrder,
@@ -4235,7 +4920,7 @@ typedef $$ChecklistItemsTableCreateCompanionBuilder =
 typedef $$ChecklistItemsTableUpdateCompanionBuilder =
     ChecklistItemsCompanion Function({
       Value<int> id,
-      Value<int> tripId,
+      Value<int> checklistId,
       Value<String> label,
       Value<bool> done,
       Value<int> sortOrder,
@@ -4250,17 +4935,17 @@ final class $$ChecklistItemsTableReferences
     super.$_typedResult,
   );
 
-  static $TripsTable _tripIdTable(_$AppDatabase db) =>
-      db.trips.createAlias('checklist_items__trip_id__trips__id');
+  static $ChecklistsTable _checklistIdTable(_$AppDatabase db) => db.checklists
+      .createAlias('checklist_items__checklist_id__checklists__id');
 
-  $$TripsTableProcessedTableManager get tripId {
-    final $_column = $_itemColumn<int>('trip_id')!;
+  $$ChecklistsTableProcessedTableManager get checklistId {
+    final $_column = $_itemColumn<int>('checklist_id')!;
 
-    final manager = $$TripsTableTableManager(
+    final manager = $$ChecklistsTableTableManager(
       $_db,
-      $_db.trips,
+      $_db.checklists,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_checklistIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -4302,20 +4987,20 @@ class $$ChecklistItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$TripsTableFilterComposer get tripId {
-    final $$TripsTableFilterComposer composer = $composerBuilder(
+  $$ChecklistsTableFilterComposer get checklistId {
+    final $$ChecklistsTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.tripId,
-      referencedTable: $db.trips,
+      getCurrentColumn: (t) => t.checklistId,
+      referencedTable: $db.checklists,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TripsTableFilterComposer(
+          }) => $$ChecklistsTableFilterComposer(
             $db: $db,
-            $table: $db.trips,
+            $table: $db.checklists,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4360,20 +5045,20 @@ class $$ChecklistItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$TripsTableOrderingComposer get tripId {
-    final $$TripsTableOrderingComposer composer = $composerBuilder(
+  $$ChecklistsTableOrderingComposer get checklistId {
+    final $$ChecklistsTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.tripId,
-      referencedTable: $db.trips,
+      getCurrentColumn: (t) => t.checklistId,
+      referencedTable: $db.checklists,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TripsTableOrderingComposer(
+          }) => $$ChecklistsTableOrderingComposer(
             $db: $db,
-            $table: $db.trips,
+            $table: $db.checklists,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4408,20 +5093,20 @@ class $$ChecklistItemsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
-  $$TripsTableAnnotationComposer get tripId {
-    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+  $$ChecklistsTableAnnotationComposer get checklistId {
+    final $$ChecklistsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.tripId,
-      referencedTable: $db.trips,
+      getCurrentColumn: (t) => t.checklistId,
+      referencedTable: $db.checklists,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$TripsTableAnnotationComposer(
+          }) => $$ChecklistsTableAnnotationComposer(
             $db: $db,
-            $table: $db.trips,
+            $table: $db.checklists,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4445,7 +5130,7 @@ class $$ChecklistItemsTableTableManager
           $$ChecklistItemsTableUpdateCompanionBuilder,
           (ChecklistItem, $$ChecklistItemsTableReferences),
           ChecklistItem,
-          PrefetchHooks Function({bool tripId})
+          PrefetchHooks Function({bool checklistId})
         > {
   $$ChecklistItemsTableTableManager(
     _$AppDatabase db,
@@ -4463,14 +5148,14 @@ class $$ChecklistItemsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                Value<int> tripId = const Value.absent(),
+                Value<int> checklistId = const Value.absent(),
                 Value<String> label = const Value.absent(),
                 Value<bool> done = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ChecklistItemsCompanion(
                 id: id,
-                tripId: tripId,
+                checklistId: checklistId,
                 label: label,
                 done: done,
                 sortOrder: sortOrder,
@@ -4479,14 +5164,14 @@ class $$ChecklistItemsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
-                required int tripId,
+                required int checklistId,
                 required String label,
                 Value<bool> done = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ChecklistItemsCompanion.insert(
                 id: id,
-                tripId: tripId,
+                checklistId: checklistId,
                 label: label,
                 done: done,
                 sortOrder: sortOrder,
@@ -4500,7 +5185,7 @@ class $$ChecklistItemsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({tripId = false}) {
+          prefetchHooksCallback: ({checklistId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -4520,16 +5205,16 @@ class $$ChecklistItemsTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (tripId) {
+                    if (checklistId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.tripId,
+                                currentColumn: table.checklistId,
                                 referencedTable: $$ChecklistItemsTableReferences
-                                    ._tripIdTable(db),
+                                    ._checklistIdTable(db),
                                 referencedColumn:
                                     $$ChecklistItemsTableReferences
-                                        ._tripIdTable(db)
+                                        ._checklistIdTable(db)
                                         .id,
                               )
                               as T;
@@ -4558,7 +5243,7 @@ typedef $$ChecklistItemsTableProcessedTableManager =
       $$ChecklistItemsTableUpdateCompanionBuilder,
       (ChecklistItem, $$ChecklistItemsTableReferences),
       ChecklistItem,
-      PrefetchHooks Function({bool tripId})
+      PrefetchHooks Function({bool checklistId})
     >;
 
 class $AppDatabaseManager {
@@ -4572,6 +5257,8 @@ class $AppDatabaseManager {
       $$CostsTableTableManager(_db, _db.costs);
   $$CostReasonsTableTableManager get costReasons =>
       $$CostReasonsTableTableManager(_db, _db.costReasons);
+  $$ChecklistsTableTableManager get checklists =>
+      $$ChecklistsTableTableManager(_db, _db.checklists);
   $$ChecklistItemsTableTableManager get checklistItems =>
       $$ChecklistItemsTableTableManager(_db, _db.checklistItems);
 }

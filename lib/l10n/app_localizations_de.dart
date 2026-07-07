@@ -445,4 +445,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get checklistRenameTitle => 'Checkliste umbenennen';
+
+  @override
+  String get checklistNewTitle => 'Neue Checkliste';
+
+  @override
+  String get checklistAdd => 'Checkliste hinzufügen';
+
+  @override
+  String get checklistDeleteTitle => 'Checkliste löschen?';
+
+  @override
+  String checklistDeleteBody(String name) {
+    return '„$name“ und alle ihre Einträge werden entfernt.';
+  }
 }
