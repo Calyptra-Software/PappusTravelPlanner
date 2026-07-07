@@ -13,3 +13,9 @@ final tripProvider =
     StreamProvider.autoDispose.family<Trip, int>((ref, id) {
   return ref.watch(repositoryProvider).watchTrip(id);
 });
+
+/// Live participants for a trip, keyed by trip id.
+final tripParticipantsProvider =
+    StreamProvider.autoDispose.family<List<Person>, int>((ref, tripId) {
+  return ref.watch(repositoryProvider).watchParticipants(tripId);
+});

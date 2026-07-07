@@ -45,6 +45,11 @@ final reasonIconsProvider = Provider.autoDispose<Map<String, int?>>((ref) {
   return {for (final r in rows) r.label: r.iconId};
 });
 
+/// Saved people for the expense payer dropdown.
+final peopleProvider = StreamProvider.autoDispose<List<String>>((ref) {
+  return ref.watch(repositoryProvider).watchPeople();
+});
+
 final costControllerProvider =
     Provider<CostController>((ref) => CostController(ref));
 
@@ -62,15 +67,18 @@ class CostController {
     required int amountMinor,
     required Currency currency,
     required String reason,
+    String? paidBy,
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
+    if (paidBy != null && paidBy.isNotEmpty) await repo.upsertPerson(paidBy);
     await repo.addCost(CostsCompanion.insert(
       itemId: Value(itemId),
       tripId: Value(tripId),
       amountMinor: amountMinor,
       currency: currency,
       reason: reason,
+      paidBy: Value(paidBy),
     ));
   }
 
@@ -79,13 +87,16 @@ class CostController {
     required int amountMinor,
     required Currency currency,
     required String reason,
+    String? paidBy,
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
+    if (paidBy != null && paidBy.isNotEmpty) await repo.upsertPerson(paidBy);
     await repo.updateCost(existing.copyWith(
       amountMinor: amountMinor,
       currency: currency,
       reason: reason,
+      paidBy: Value(paidBy),
     ));
   }
 
@@ -115,4 +126,18 @@ class CostController {
   /// [TripRepository.renameReason]).
   Future<void> renameReason(String from, String to) =>
       _ref.read(repositoryProvider).renameReason(from, to);
+
+  // --- people management (settings) ---
+
+  /// Adds a reusable person (a no-op if they already exist).
+  Future<void> addPerson(String name) =>
+      _ref.read(repositoryProvider).upsertPerson(name);
+
+  Future<void> deletePerson(String name) =>
+      _ref.read(repositoryProvider).deletePerson(name);
+
+  /// Renames a person, repointing every expense they paid (see
+  /// [TripRepository.renamePerson]).
+  Future<void> renamePerson(String from, String to) =>
+      _ref.read(repositoryProvider).renamePerson(from, to);
 }

@@ -125,6 +125,27 @@
   "costReasonDeleteConfirmTitle": "Kategorie löschen?",
   "costReasonDeleteConfirmBody": "„{reason}“ wird aus der Liste der Kategorien entfernt. Bestehende Ausgaben behalten ihren Text.",
   "noCostReasons": "Noch keine gespeicherten Kategorien",
+  "costPaidBy": "Bezahlt von",
+  "costPaidByNone": "Nicht zugewiesen",
+  "costPaidByNew": "Neue Person…",
+  "costPaidByName": "Bezahlt von {name}",
+  "@costPaidByName": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "peopleSection": "Personen",
+  "noPeople": "Noch keine gespeicherten Personen",
+  "personAdd": "Person hinzufügen",
+  "personAddTitle": "Neue Person",
+  "personRenameTitle": "Person umbenennen",
+  "personLabel": "Name",
+  "personHint": "z. B. Alex",
+  "personDeleteConfirmTitle": "Person löschen?",
+  "personDeleteConfirmBody": "„{name}“ wird aus der Personenliste entfernt. Bestehende Ausgaben behalten ihren Zahler.",
+  "@personDeleteConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "participants": "Teilnehmer",
+  "addParticipant": "Teilnehmer hinzufügen",
   "checklist": "Checkliste",
   "checklistAddHint": "Eintrag hinzufügen…",
   "checklistEditTitle": "Eintrag bearbeiten",

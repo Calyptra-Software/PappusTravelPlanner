@@ -16,6 +16,14 @@ class TripRepository {
   Future<bool> updateTrip(Trip trip) => _db.tripDao.updateTrip(trip);
   Future<int> deleteTrip(int id) => _db.tripDao.deleteTrip(id);
 
+  // --- participants ---
+  Stream<List<Person>> watchParticipants(int tripId) =>
+      _db.tripDao.watchParticipants(tripId);
+  Future<void> addParticipant(int tripId, String name) =>
+      _db.tripDao.addParticipant(tripId, name);
+  Future<int> removeParticipant(int tripId, int personId) =>
+      _db.tripDao.removeParticipant(tripId, personId);
+
   // --- itinerary items ---
   Stream<List<ItineraryItem>> watchItems(int tripId) =>
       _db.itineraryDao.watchItemsForTrip(tripId);
@@ -41,6 +49,13 @@ class TripRepository {
   Future<int> deleteReason(String label) => _db.costDao.deleteReason(label);
   Future<void> renameReason(String from, String to) =>
       _db.costDao.renameReason(from, to);
+
+  // --- people ---
+  Stream<List<String>> watchPeople() => _db.costDao.watchPeople();
+  Future<void> upsertPerson(String name) => _db.costDao.upsertPerson(name);
+  Future<int> deletePerson(String name) => _db.costDao.deletePerson(name);
+  Future<void> renamePerson(String from, String to) =>
+      _db.costDao.renamePerson(from, to);
 
   // --- checklists ---
   Stream<List<Checklist>> watchChecklists(int tripId) =>

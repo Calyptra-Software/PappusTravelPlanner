@@ -162,6 +162,27 @@
     "placeholders": { "reason": { "type": "String" } }
   },
   "noCostReasons": "No saved categories yet",
+  "costPaidBy": "Paid by",
+  "costPaidByNone": "Unassigned",
+  "costPaidByNew": "New person…",
+  "costPaidByName": "Paid by {name}",
+  "@costPaidByName": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "peopleSection": "People",
+  "noPeople": "No saved people yet",
+  "personAdd": "Add person",
+  "personAddTitle": "New person",
+  "personRenameTitle": "Rename person",
+  "personLabel": "Name",
+  "personHint": "e.g. Alex",
+  "personDeleteConfirmTitle": "Delete person?",
+  "personDeleteConfirmBody": "\"{name}\" will be removed from the people list. Existing expenses keep their payer.",
+  "@personDeleteConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "participants": "Participants",
+  "addParticipant": "Add participant",
   "checklist": "Checklist",
   "checklistAddHint": "Add an item…",
   "checklistEditTitle": "Edit item",

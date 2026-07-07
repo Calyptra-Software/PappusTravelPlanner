@@ -5,7 +5,7 @@ import '../tables.dart';
 
 part 'cost_dao.g.dart';
 
-@DriftAccessor(tables: [Costs, CostReasons, ItineraryItems])
+@DriftAccessor(tables: [Costs, CostReasons, People, ItineraryItems])
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   CostDao(super.db);
 
@@ -71,6 +71,48 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// Forgets a saved reason. Existing costs keep their stored reason text.
   Future<int> deleteReason(String label) =>
       (delete(costReasons)..where((r) => r.label.equals(label))).go();
+
+  // --- people (settings) ---
+
+  /// Remembers a person for reuse; a no-op if they already exist.
+  Future<void> upsertPerson(String name) {
+    return into(people).insert(
+      PeopleCompanion.insert(name: name),
+      mode: InsertMode.insertOrIgnore,
+    );
+  }
+
+  /// All saved people, alphabetical.
+  Stream<List<String>> watchPeople() {
+    return (select(people)..orderBy([(p) => OrderingTerm(expression: p.name)]))
+        .watch()
+        .map((rows) => rows.map((p) => p.name).toList());
+  }
+
+  /// Forgets a saved person. Existing costs keep their stored payer text.
+  Future<int> deletePerson(String name) =>
+      (delete(people)..where((p) => p.name.equals(name))).go();
+
+  /// Renames a saved person [from] -> [to], repointing every cost they paid so
+  /// all appearances follow. If [to] already exists the two are merged: the
+  /// costs are repointed and the old name is dropped. Runs in a transaction so
+  /// costs never end up pointing at a forgotten payer.
+  Future<void> renamePerson(String from, String to) async {
+    if (from == to) return;
+    await transaction(() async {
+      await (update(costs)..where((c) => c.paidBy.equals(from)))
+          .write(CostsCompanion(paidBy: Value(to)));
+      final targetExists =
+          await (select(people)..where((p) => p.name.equals(to)))
+              .getSingleOrNull();
+      if (targetExists != null) {
+        await (delete(people)..where((p) => p.name.equals(from))).go();
+      } else {
+        await (update(people)..where((p) => p.name.equals(from)))
+            .write(PeopleCompanion(name: Value(to)));
+      }
+    });
+  }
 
   /// Renames a saved reason [from] -> [to], repointing every cost that uses it
   /// so all appearances follow. If [to] already exists the two are merged: the

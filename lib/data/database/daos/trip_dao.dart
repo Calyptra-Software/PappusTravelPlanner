@@ -5,7 +5,7 @@ import '../tables.dart';
 
 part 'trip_dao.g.dart';
 
-@DriftAccessor(tables: [Trips])
+@DriftAccessor(tables: [Trips, People, TripParticipants])
 class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   TripDao(super.db);
 
@@ -38,4 +38,46 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   Future<int> deleteTrip(int id) =>
       (delete(trips)..where((t) => t.id.equals(id))).go();
+
+  // --- participants ---
+
+  /// The people taking part in a trip, alphabetical by name.
+  Stream<List<Person>> watchParticipants(int tripId) {
+    final query = select(people).join([
+      innerJoin(
+        tripParticipants,
+        tripParticipants.personId.equalsExp(people.id),
+      ),
+    ])
+      ..where(tripParticipants.tripId.equals(tripId))
+      ..orderBy([OrderingTerm(expression: people.name)]);
+    return query
+        .watch()
+        .map((rows) => rows.map((row) => row.readTable(people)).toList());
+  }
+
+  /// Adds a participant to a trip by name: creates the person in the shared
+  /// roster if needed, then links them to the trip. A no-op if already linked.
+  Future<void> addParticipant(int tripId, String name) async {
+    await transaction(() async {
+      await into(people).insert(
+        PeopleCompanion.insert(name: name),
+        mode: InsertMode.insertOrIgnore,
+      );
+      final person =
+          await (select(people)..where((p) => p.name.equals(name))).getSingle();
+      await into(tripParticipants).insert(
+        TripParticipantsCompanion.insert(tripId: tripId, personId: person.id),
+        mode: InsertMode.insertOrIgnore,
+      );
+    });
+  }
+
+  /// Removes a participant from a trip. The person stays in the shared roster.
+  Future<int> removeParticipant(int tripId, int personId) {
+    return (delete(tripParticipants)
+          ..where((tp) =>
+              tp.tripId.equals(tripId) & tp.personId.equals(personId)))
+        .go();
+  }
 }

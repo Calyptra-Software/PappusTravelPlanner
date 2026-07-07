@@ -96,6 +96,8 @@ class TripDetailScreen extends ConsumerWidget {
     final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
     final costsByItem = tripCosts?.byItem ?? const {};
     final tripLevelCosts = tripCosts?.tripLevel ?? const <Cost>[];
+    final participants =
+        ref.watch(tripParticipantsProvider(tripId)).value ?? const <Person>[];
     final localeName = Localizations.localeOf(context).languageCode;
     final l10n = AppLocalizations.of(context);
 
@@ -135,6 +137,7 @@ class TripDetailScreen extends ConsumerWidget {
                       ...tripLevelCosts,
                     ],
                     tripLevelCosts: tripLevelCosts,
+                    participants: participants,
                     localeName: localeName,
                     onEdit: () => context.push('/trip/$tripId/edit'),
                     onTapCost: (cost) => showCostFormSheet(
@@ -196,6 +199,7 @@ class _TripHeader extends StatelessWidget {
     required this.accent,
     required this.allCosts,
     required this.tripLevelCosts,
+    required this.participants,
     required this.localeName,
     required this.onEdit,
     required this.onTapCost,
@@ -205,6 +209,7 @@ class _TripHeader extends StatelessWidget {
   final Color accent;
   final List<Cost> allCosts;
   final List<Cost> tripLevelCosts;
+  final List<Person> participants;
   final String localeName;
   final VoidCallback onEdit;
   final ValueChanged<Cost> onTapCost;
@@ -279,6 +284,24 @@ class _TripHeader extends StatelessWidget {
               if (trip.notes != null && trip.notes!.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(trip.notes!, style: theme.textTheme.bodyMedium),
+              ],
+              if (participants.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(l10n.participants, style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    for (final person in participants)
+                      Chip(
+                        avatar: const Icon(Icons.person_outline, size: 16),
+                        label: Text(person.name),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
               ],
               if (totals.isNotEmpty) ...[
                 const SizedBox(height: 12),

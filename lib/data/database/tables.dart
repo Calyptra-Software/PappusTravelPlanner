@@ -124,6 +124,11 @@ class Costs extends Table {
   IntColumn get amountMinor => integer()();
   IntColumn get currency => intEnum<Currency>()();
   TextColumn get reason => text()();
+
+  /// Name of the person who paid, or null if unassigned. Stored as text (like
+  /// [reason]) so an expense keeps its payer even if the person is later
+  /// removed; renaming a person repoints every expense they paid.
+  TextColumn get paidBy => text().nullable()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -164,4 +169,26 @@ class CostReasons extends Table {
   /// Stable key into the curated icon set (`kCostReasonIcons`), or null to use
   /// the default icon. Not a font code point, so the set can change safely.
   IntColumn get iconId => integer().nullable()();
+}
+
+/// Distinct people who can pay for expenses, managed in settings and reused in
+/// the expense form's payer dropdown. Kept independently of whether any expense
+/// currently names them, mirroring [CostReasons].
+@DataClassName('Person')
+class People extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().unique()();
+}
+
+/// Links a person to a trip as a participant: a many-to-many between [Trips]
+/// and [People]. A person can join many trips and a trip can have many
+/// participants; the pair is unique. Deleting either side removes the link.
+class TripParticipants extends Table {
+  IntColumn get tripId =>
+      integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+  IntColumn get personId =>
+      integer().references(People, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {tripId, personId};
 }

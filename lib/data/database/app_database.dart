@@ -10,7 +10,16 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Trips, ItineraryItems, Costs, CostReasons, Checklists, ChecklistItems],
+  tables: [
+    Trips,
+    ItineraryItems,
+    Costs,
+    CostReasons,
+    People,
+    TripParticipants,
+    Checklists,
+    ChecklistItems,
+  ],
   daos: [TripDao, ItineraryDao, CostDao, ChecklistDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -22,7 +31,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -79,6 +88,16 @@ class AppDatabase extends _$AppDatabase {
               FROM _checklist_items_old o
             ''');
             await customStatement('DROP TABLE _checklist_items_old');
+          }
+          // v8 added a reusable list of people and an optional payer on each
+          // cost (costs.paid_by), so an expense can record who paid it.
+          if (from < 8) {
+            await m.createTable(people);
+            await m.addColumn(costs, costs.paidBy);
+          }
+          // v9 added trip participants: a many-to-many linking people to trips.
+          if (from < 9) {
+            await m.createTable(tripParticipants);
           }
         },
         beforeOpen: (details) async {

@@ -431,6 +431,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCostReasons => 'No saved categories yet';
 
   @override
+  String get costPaidBy => 'Paid by';
+
+  @override
+  String get costPaidByNone => 'Unassigned';
+
+  @override
+  String get costPaidByNew => 'New person…';
+
+  @override
+  String costPaidByName(String name) {
+    return 'Paid by $name';
+  }
+
+  @override
+  String get peopleSection => 'People';
+
+  @override
+  String get noPeople => 'No saved people yet';
+
+  @override
+  String get personAdd => 'Add person';
+
+  @override
+  String get personAddTitle => 'New person';
+
+  @override
+  String get personRenameTitle => 'Rename person';
+
+  @override
+  String get personLabel => 'Name';
+
+  @override
+  String get personHint => 'e.g. Alex';
+
+  @override
+  String get personDeleteConfirmTitle => 'Delete person?';
+
+  @override
+  String personDeleteConfirmBody(String name) {
+    return '\"$name\" will be removed from the people list. Existing expenses keep their payer.';
+  }
+
+  @override
+  String get participants => 'Participants';
+
+  @override
+  String get addParticipant => 'Add participant';
+
+  @override
   String get checklist => 'Checklist';
 
   @override

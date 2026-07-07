@@ -848,6 +848,96 @@ abstract class AppLocalizations {
   /// **'No saved categories yet'**
   String get noCostReasons;
 
+  /// No description provided for @costPaidBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by'**
+  String get costPaidBy;
+
+  /// No description provided for @costPaidByNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Unassigned'**
+  String get costPaidByNone;
+
+  /// No description provided for @costPaidByNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New person…'**
+  String get costPaidByNew;
+
+  /// No description provided for @costPaidByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid by {name}'**
+  String costPaidByName(String name);
+
+  /// No description provided for @peopleSection.
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get peopleSection;
+
+  /// No description provided for @noPeople.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved people yet'**
+  String get noPeople;
+
+  /// No description provided for @personAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add person'**
+  String get personAdd;
+
+  /// No description provided for @personAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New person'**
+  String get personAddTitle;
+
+  /// No description provided for @personRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename person'**
+  String get personRenameTitle;
+
+  /// No description provided for @personLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get personLabel;
+
+  /// No description provided for @personHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Alex'**
+  String get personHint;
+
+  /// No description provided for @personDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete person?'**
+  String get personDeleteConfirmTitle;
+
+  /// No description provided for @personDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{name}\" will be removed from the people list. Existing expenses keep their payer.'**
+  String personDeleteConfirmBody(String name);
+
+  /// No description provided for @participants.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get participants;
+
+  /// No description provided for @addParticipant.
+  ///
+  /// In en, this message translates to:
+  /// **'Add participant'**
+  String get addParticipant;
+
   /// No description provided for @checklist.
   ///
   /// In en, this message translates to:

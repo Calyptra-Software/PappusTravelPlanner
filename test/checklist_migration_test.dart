@@ -47,6 +47,20 @@ void main() {
         sort_order INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT 0
       );
+      CREATE TABLE cost_reasons (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        label TEXT NOT NULL UNIQUE,
+        icon_id INTEGER
+      );
+      CREATE TABLE costs (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER,
+        trip_id INTEGER,
+        amount_minor INTEGER NOT NULL,
+        currency INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
     ''');
     // Trip 1: a custom checklist title and two items.
     // Trip 2: no title but has an item (so it still gets a checklist).

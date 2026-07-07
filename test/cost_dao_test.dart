@@ -156,6 +156,71 @@ void main() {
     expect(costs.map((c) => c.reason), everyElement('Dinner'));
   });
 
+  test('upsertPerson dedupes and watchPeople is sorted', () async {
+    await db.costDao.upsertPerson('Bob');
+    await db.costDao.upsertPerson('Bob'); // duplicate, ignored
+    await db.costDao.upsertPerson('Alex');
+
+    expect(await db.costDao.watchPeople().first, ['Alex', 'Bob']);
+  });
+
+  test('deletePerson forgets a saved person', () async {
+    await db.costDao.upsertPerson('Alex');
+    await db.costDao.upsertPerson('Bob');
+
+    await db.costDao.deletePerson('Alex');
+
+    expect(await db.costDao.watchPeople().first, ['Bob']);
+  });
+
+  test('renamePerson repoints every cost they paid', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final item = await makeItem(tripId);
+    await db.costDao.upsertPerson('Alex');
+    await db.costDao.addCost(CostsCompanion.insert(
+      itemId: Value(item),
+      amountMinor: 4990,
+      currency: Currency.eur,
+      reason: 'Hotel',
+      paidBy: const Value('Alex'),
+    ));
+    await db.costDao.addCost(CostsCompanion.insert(
+      tripId: Value(tripId),
+      amountMinor: 3000,
+      currency: Currency.eur,
+      reason: 'Insurance',
+      paidBy: const Value('Alex'),
+    ));
+
+    await db.costDao.renamePerson('Alex', 'Alexandra');
+
+    expect(await db.costDao.watchPeople().first, ['Alexandra']);
+    final costs = await db.costDao.watchCostsForTrip(tripId).first;
+    expect(costs.map((c) => c.paidBy), everyElement('Alexandra'));
+  });
+
+  test('renamePerson onto an existing person merges them', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final item = await makeItem(tripId);
+    await db.costDao.addCost(CostsCompanion.insert(
+      itemId: Value(item),
+      amountMinor: 1000,
+      currency: Currency.eur,
+      reason: 'Food',
+      paidBy: const Value('Alex'),
+    ));
+    await db.costDao.upsertPerson('Bob');
+
+    await db.costDao.renamePerson('Alex', 'Bob');
+
+    // Only one person survives, and the cost now points at them.
+    expect(await db.costDao.watchPeople().first, ['Bob']);
+    final costs = await db.costDao.watchCostsForTrip(tripId).first;
+    expect(costs.single.paidBy, 'Bob');
+  });
+
   test('deleting an item cascades to its costs', () async {
     final tripId =
         await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));

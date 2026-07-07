@@ -12,6 +12,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
+import '../application/trip_providers.dart';
 
 /// Create a new trip, or edit an existing one when [tripId] is provided.
 class TripFormScreen extends ConsumerStatefulWidget {
@@ -202,6 +203,8 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
             ),
             if (widget.isEditing) ...[
               const SizedBox(height: 24),
+              _TripParticipantsEditor(tripId: widget.tripId!),
+              const SizedBox(height: 24),
               _TripCostsEditor(
                 tripId: widget.tripId!,
                 localeName: localeName,
@@ -275,6 +278,177 @@ class _TripCostsEditor extends ConsumerWidget {
               ),
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Trip participants: the people taking part in the trip. Managed here on the
+/// trip's edit page, mirroring how general expenses are managed just below.
+/// Adding a participant reuses the shared people roster (also used by the
+/// expense payer), creating the person on the fly if they are new.
+class _TripParticipantsEditor extends ConsumerWidget {
+  const _TripParticipantsEditor({required this.tripId});
+
+  final int tripId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final participants =
+        ref.watch(tripParticipantsProvider(tripId)).value ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.participants, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final person in participants)
+              InputChip(
+                avatar: const Icon(Icons.person_outline, size: 16),
+                label: Text(person.name),
+                visualDensity: VisualDensity.compact,
+                onDeleted: () => ref
+                    .read(repositoryProvider)
+                    .removeParticipant(tripId, person.id),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 16),
+              label: Text(l10n.addParticipant),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _addParticipant(context, ref, participants),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addParticipant(
+    BuildContext context,
+    WidgetRef ref,
+    List<Person> current,
+  ) async {
+    final currentNames = current.map((p) => p.name).toSet();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => _AddParticipantDialog(currentNames: currentNames),
+    );
+    if (name == null || name.isEmpty) return;
+    await ref.read(repositoryProvider).addParticipant(tripId, name);
+  }
+}
+
+/// Sentinel dropdown value meaning "type a new person".
+const String _kNewParticipant = ' new_participant';
+
+/// Dialog to add a trip participant: pick an existing person from the shared
+/// roster via the dropdown, or choose "New person…" to type a new name.
+/// Watches the roster live so the dropdown fills in as soon as it loads.
+/// Resolves to the chosen name, or null if dismissed.
+class _AddParticipantDialog extends ConsumerStatefulWidget {
+  const _AddParticipantDialog({required this.currentNames});
+
+  /// Names already on the trip, excluded from the dropdown.
+  final Set<String> currentNames;
+
+  @override
+  ConsumerState<_AddParticipantDialog> createState() =>
+      _AddParticipantDialogState();
+}
+
+class _AddParticipantDialogState extends ConsumerState<_AddParticipantDialog> {
+  final _controller = TextEditingController();
+
+  String? _selected;
+  bool _creatingNew = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// The chosen name — typed or picked — or null if nothing usable is entered.
+  String? _result({required bool typing}) {
+    final raw = typing ? _controller.text : (_selected ?? '');
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final roster = ref.watch(peopleProvider).value ?? const <String>[];
+    final suggestions =
+        roster.where((name) => !widget.currentNames.contains(name)).toList();
+    // Fall back to the text field when there's no one left to pick.
+    final showTextField = _creatingNew || suggestions.isEmpty;
+
+    return AlertDialog(
+      title: Text(l10n.addParticipant),
+      // A dropdown of roster people, or — when adding a new one — a single text
+      // field with an X to return to the dropdown. Never both at once.
+      content: showTextField
+          ? TextField(
+              controller: _controller,
+              autofocus: true,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(
+                labelText: l10n.personLabel,
+                hintText: l10n.personHint,
+                suffixIcon: suggestions.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: l10n.cancel,
+                        icon: const Icon(Icons.close),
+                        onPressed: () => setState(() {
+                          _creatingNew = false;
+                          _controller.clear();
+                        }),
+                      ),
+              ),
+              onSubmitted: (_) =>
+                  Navigator.pop(context, _result(typing: true)),
+            )
+          : DropdownButtonFormField<String>(
+              initialValue: _selected,
+              decoration: InputDecoration(labelText: l10n.personLabel),
+              items: [
+                for (final name in suggestions)
+                  DropdownMenuItem(value: name, child: Text(name)),
+                DropdownMenuItem(
+                  value: _kNewParticipant,
+                  child: Text(l10n.costPaidByNew),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  if (value == _kNewParticipant) {
+                    _creatingNew = true;
+                    _selected = null;
+                  } else {
+                    _selected = value;
+                  }
+                });
+              },
+            ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(context, _result(typing: showTextField)),
+          child: Text(l10n.add),
+        ),
       ],
     );
   }
