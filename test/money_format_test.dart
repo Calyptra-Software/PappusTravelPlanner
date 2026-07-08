@@ -20,10 +20,14 @@ void main() {
       expect(parseAmountToMinor(' 12.5 '), 1250);
     });
 
-    test('rejects invalid or negative input', () {
+    test('accepts a leading minus as an income', () {
+      expect(parseAmountToMinor('-5'), -500);
+      expect(parseAmountToMinor('-49,90'), -4990);
+    });
+
+    test('rejects invalid input', () {
       expect(parseAmountToMinor(''), isNull);
       expect(parseAmountToMinor('abc'), isNull);
-      expect(parseAmountToMinor('-5'), isNull);
     });
   });
 

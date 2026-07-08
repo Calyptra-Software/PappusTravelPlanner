@@ -15,12 +15,13 @@ String formatMoney(int amountMinor, Currency currency, String localeName) {
 }
 
 /// Parses user input into minor units (cents), accepting both ',' and '.' as
-/// the decimal separator. Returns null when the input isn't a positive amount.
+/// the decimal separator. A leading '-' yields a negative amount (an income).
+/// Returns null when the input isn't a finite number.
 int? parseAmountToMinor(String input) {
   final cleaned = input.trim().replaceAll(',', '.');
   if (cleaned.isEmpty) return null;
   final value = double.tryParse(cleaned);
-  if (value == null || value < 0 || value.isNaN || value.isInfinite) return null;
+  if (value == null || value.isNaN || value.isInfinite) return null;
   return (value * 100).round();
 }
 
