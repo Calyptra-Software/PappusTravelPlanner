@@ -19,6 +19,10 @@ class TimelineTile extends StatelessWidget {
     required this.costs,
     required this.localeName,
     required this.onTapCost,
+    this.group,
+    this.isFirstInGroup = false,
+    this.isLastInGroup = false,
+    this.groupCosts = const [],
     this.dragHandle,
   });
 
@@ -28,6 +32,15 @@ class TimelineTile extends StatelessWidget {
   final List<Cost> costs;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
+
+  /// The item's group, or null when it stands alone. When set, the tile is part
+  /// of a contiguous group run: [isFirstInGroup] / [isLastInGroup] mark its ends.
+  final ItemGroup? group;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+
+  /// The group's shared costs, rendered once under the run's last member.
+  final List<Cost> groupCosts;
   final Widget? dragHandle;
 
   @override
@@ -37,7 +50,7 @@ class TimelineTile extends StatelessWidget {
       localeName: localeName,
       onTapCost: onTapCost,
     );
-    return item.kind == ItemKind.transport
+    final row = item.kind == ItemKind.transport
         ? _TransportRow(
             item: item,
             onTap: onTap,
@@ -51,6 +64,99 @@ class TimelineTile extends StatelessWidget {
             dragHandle: dragHandle,
             costsSection: costsSection,
           );
+
+    if (group == null) return row;
+    return _GroupBand(
+      accent: accent,
+      isFirst: isFirstInGroup,
+      isLast: isLastInGroup,
+      label: group!.label,
+      groupCosts: groupCosts,
+      localeName: localeName,
+      onTapCost: onTapCost,
+      child: row,
+    );
+  }
+}
+
+/// Wraps a grouped item's row, bracketing a contiguous run with the group's
+/// label above its first member and its shared costs below its last. A tinted
+/// left rail and background make the run read as one unit (e.g. a train journey
+/// on a single ticket).
+class _GroupBand extends StatelessWidget {
+  const _GroupBand({
+    required this.accent,
+    required this.isFirst,
+    required this.isLast,
+    required this.label,
+    required this.groupCosts,
+    required this.localeName,
+    required this.onTapCost,
+    required this.child,
+  });
+
+  final Color accent;
+  final bool isFirst;
+  final bool isLast;
+  final String? label;
+  final List<Cost> groupCosts;
+  final String localeName;
+  final ValueChanged<Cost> onTapCost;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final radius = const Radius.circular(12);
+    return Container(
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.06),
+        border: Border(left: BorderSide(color: accent, width: 3)),
+        borderRadius: BorderRadius.only(
+          topLeft: isFirst ? radius : Radius.zero,
+          topRight: isFirst ? radius : Radius.zero,
+          bottomLeft: isLast ? radius : Radius.zero,
+          bottomRight: isLast ? radius : Radius.zero,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isFirst)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
+              child: Row(
+                children: [
+                  Icon(Icons.link, size: 16, color: accent),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      (label != null && label!.isNotEmpty)
+                          ? label!
+                          : l10n.groupDefaultLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          child,
+          if (isLast && groupCosts.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(48, 0, 8, 10),
+              child: _CostsSection(
+                costs: groupCosts,
+                localeName: localeName,
+                onTapCost: onTapCost,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

@@ -224,5 +224,14 @@
   "checklistDeleteBody": "\"{name}\" and all its items will be removed.",
   "@checklistDeleteBody": {
     "placeholders": { "name": { "type": "String" } }
-  }
+  },
+  "grouping": "Grouping",
+  "groupWithNext": "Group with next item",
+  "groupRemoveItem": "Remove from group",
+  "groupUngroup": "Ungroup",
+  "groupNameLabel": "Group name (optional)",
+  "groupNameHint": "e.g. Train to Rome",
+  "groupDefaultLabel": "Grouped",
+  "groupSharedExpenses": "Shared expenses",
+  "groupMemberHint": "Part of a group — shared expenses apply to all its items."
 }

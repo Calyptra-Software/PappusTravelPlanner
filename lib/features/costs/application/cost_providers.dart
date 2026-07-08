@@ -7,26 +7,33 @@ import '../../../data/database/tables.dart';
 import '../../trips/application/trip_providers.dart';
 import '../trip_stats.dart';
 
-/// Item-attached costs grouped by item id, plus trip-level costs that aren't
-/// tied to any item. Both count toward the trip's total.
-typedef TripCosts = ({Map<int, List<Cost>> byItem, List<Cost> tripLevel});
+/// A trip's costs bucketed by how they attach: to a single itinerary item
+/// ([byItem]), to a group of items sharing one expense ([byGroup]), or to the
+/// trip as a whole ([tripLevel]). Each cost lands in exactly one bucket, so
+/// concatenating all three yields every cost once — no double counting.
+typedef TripCosts = ({
+  Map<int, List<Cost>> byItem,
+  Map<int, List<Cost>> byGroup,
+  List<Cost> tripLevel,
+});
 
-/// Costs for a trip: grouped by the itinerary item they belong to, with
-/// trip-level costs collected separately.
+/// Costs for a trip, bucketed by their attachment ([TripCosts]).
 final costsForTripProvider =
     StreamProvider.autoDispose.family<TripCosts, int>((ref, tripId) {
   return ref.watch(repositoryProvider).watchCostsForTrip(tripId).map((costs) {
     final byItem = <int, List<Cost>>{};
+    final byGroup = <int, List<Cost>>{};
     final tripLevel = <Cost>[];
     for (final cost in costs) {
-      final itemId = cost.itemId;
-      if (itemId == null) {
-        tripLevel.add(cost);
+      if (cost.groupId != null) {
+        byGroup.putIfAbsent(cost.groupId!, () => []).add(cost);
+      } else if (cost.itemId != null) {
+        byItem.putIfAbsent(cost.itemId!, () => []).add(cost);
       } else {
-        byItem.putIfAbsent(itemId, () => []).add(cost);
+        tripLevel.add(cost);
       }
     }
-    return (byItem: byItem, tripLevel: tripLevel);
+    return (byItem: byItem, byGroup: byGroup, tripLevel: tripLevel);
   });
 });
 
@@ -88,6 +95,7 @@ final tripStatsProvider =
   if (tripCosts == null) return const TripStats([]);
   final costs = [
     ...tripCosts.byItem.values.expand((c) => c),
+    ...tripCosts.byGroup.values.expand((c) => c),
     ...tripCosts.tripLevel,
   ];
   return computeTripStats(
@@ -105,11 +113,12 @@ class CostController {
   CostController(this._ref);
   final Ref _ref;
 
-  /// Adds a cost attached to an itinerary item ([itemId]) or, for costs that
-  /// belong to the whole trip, to the trip directly ([tripId]). Exactly one
+  /// Adds a cost attached to an itinerary item ([itemId]), a group of items
+  /// sharing one expense ([groupId]), or the whole trip ([tripId]). Exactly one
   /// should be provided.
   Future<void> addCost({
     int? itemId,
+    int? groupId,
     int? tripId,
     required int amountMinor,
     required Currency currency,
@@ -122,6 +131,7 @@ class CostController {
     if (paidBy != null && paidBy.isNotEmpty) await repo.upsertPerson(paidBy);
     final id = await repo.addCost(CostsCompanion.insert(
       itemId: Value(itemId),
+      groupId: Value(groupId),
       tripId: Value(tripId),
       amountMinor: amountMinor,
       currency: currency,

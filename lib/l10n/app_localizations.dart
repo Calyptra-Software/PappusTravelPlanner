@@ -1117,6 +1117,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'\"{name}\" and all its items will be removed.'**
   String checklistDeleteBody(String name);
+
+  /// No description provided for @grouping.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouping'**
+  String get grouping;
+
+  /// No description provided for @groupWithNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Group with next item'**
+  String get groupWithNext;
+
+  /// No description provided for @groupRemoveItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from group'**
+  String get groupRemoveItem;
+
+  /// No description provided for @groupUngroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Ungroup'**
+  String get groupUngroup;
+
+  /// No description provided for @groupNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name (optional)'**
+  String get groupNameLabel;
+
+  /// No description provided for @groupNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Train to Rome'**
+  String get groupNameHint;
+
+  /// No description provided for @groupDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped'**
+  String get groupDefaultLabel;
+
+  /// No description provided for @groupSharedExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Shared expenses'**
+  String get groupSharedExpenses;
+
+  /// No description provided for @groupMemberHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of a group — shared expenses apply to all its items.'**
+  String get groupMemberHint;
 }
 
 class _AppLocalizationsDelegate

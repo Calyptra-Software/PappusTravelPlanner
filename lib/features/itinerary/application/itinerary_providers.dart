@@ -15,3 +15,10 @@ final collapsedDaysProvider =
     StreamProvider.autoDispose.family<Set<DateTime>, int>((ref, tripId) {
   return ref.watch(repositoryProvider).watchCollapsedDays(tripId);
 });
+
+/// A trip's item groups, keyed by id, so the timeline and item sheet can resolve
+/// an item's group (its label and collapsed state) by [ItineraryItem.groupId].
+final groupsProvider =
+    StreamProvider.autoDispose.family<Map<int, ItemGroup>, int>((ref, tripId) {
+  return ref.watch(repositoryProvider).watchGroups(tripId);
+});

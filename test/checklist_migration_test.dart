@@ -47,6 +47,21 @@ void main() {
         sort_order INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT 0
       );
+      CREATE TABLE itinerary_items (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        trip_id INTEGER NOT NULL REFERENCES trips (id),
+        date INTEGER NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        kind INTEGER NOT NULL,
+        title TEXT,
+        start_minutes INTEGER,
+        end_minutes INTEGER,
+        notes TEXT,
+        location TEXT,
+        mode INTEGER,
+        from_location TEXT,
+        to_location TEXT
+      );
       CREATE TABLE cost_reasons (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         label TEXT NOT NULL UNIQUE,
@@ -126,6 +141,31 @@ void main() {
         trip_id INTEGER NOT NULL REFERENCES trips (id),
         title TEXT NOT NULL DEFAULT '',
         sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE itinerary_items (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        trip_id INTEGER NOT NULL REFERENCES trips (id),
+        date INTEGER NOT NULL,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        kind INTEGER NOT NULL,
+        title TEXT,
+        start_minutes INTEGER,
+        end_minutes INTEGER,
+        notes TEXT,
+        location TEXT,
+        mode INTEGER,
+        from_location TEXT,
+        to_location TEXT
+      );
+      CREATE TABLE costs (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER,
+        trip_id INTEGER,
+        amount_minor INTEGER NOT NULL,
+        currency INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        paid_by TEXT,
         created_at INTEGER NOT NULL DEFAULT 0
       );
       INSERT INTO trips (id, title) VALUES (1, 'Paris');

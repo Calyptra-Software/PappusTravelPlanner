@@ -98,7 +98,10 @@ class TripDetailScreen extends ConsumerWidget {
         ref.watch(collapsedDaysProvider(tripId)).value ?? const <DateTime>{};
     final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
     final costsByItem = tripCosts?.byItem ?? const {};
+    final costsByGroup = tripCosts?.byGroup ?? const {};
     final tripLevelCosts = tripCosts?.tripLevel ?? const <Cost>[];
+    final groups =
+        ref.watch(groupsProvider(tripId)).value ?? const <int, ItemGroup>{};
     final participants =
         ref.watch(tripParticipantsProvider(tripId)).value ?? const <Person>[];
     final localeName = Localizations.localeOf(context).languageCode;
@@ -142,6 +145,7 @@ class TripDetailScreen extends ConsumerWidget {
                     accent: accent,
                     allCosts: [
                       ...costsByItem.values.expand((c) => c),
+                      ...costsByGroup.values.expand((c) => c),
                       ...tripLevelCosts,
                     ],
                     tripLevelCosts: tripLevelCosts,
@@ -161,6 +165,8 @@ class TripDetailScreen extends ConsumerWidget {
                     tripStart: trip.startDate,
                     tripEnd: trip.endDate,
                     costsByItem: costsByItem,
+                    groups: groups,
+                    costsByGroup: costsByGroup,
                     localeName: localeName,
                     collapsedDays: collapsedDays,
                     onToggleDayCollapsed: (day, collapsed) => ref
@@ -190,6 +196,7 @@ class TripDetailScreen extends ConsumerWidget {
                     onTapCost: (cost) => showCostFormSheet(
                       context,
                       itemId: cost.itemId,
+                      groupId: cost.groupId,
                       existing: cost,
                     ),
                     onReorder: (dayItems, oldIndex, newIndex) =>

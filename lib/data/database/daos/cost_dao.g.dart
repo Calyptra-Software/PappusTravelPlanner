@@ -5,6 +5,7 @@ part of 'cost_dao.dart';
 // ignore_for_file: type=lint
 mixin _$CostDaoMixin on DatabaseAccessor<AppDatabase> {
   $TripsTable get trips => attachedDatabase.trips;
+  $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   $CostsTable get costs => attachedDatabase.costs;
   $CostReasonsTable get costReasons => attachedDatabase.costReasons;
@@ -19,6 +20,8 @@ class CostDaoManager {
   CostDaoManager(this._db);
   $$TripsTableTableManager get trips =>
       $$TripsTableTableManager(_db.attachedDatabase, _db.trips);
+  $$ItemGroupsTableTableManager get itemGroups =>
+      $$ItemGroupsTableTableManager(_db.attachedDatabase, _db.itemGroups);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(
         _db.attachedDatabase,

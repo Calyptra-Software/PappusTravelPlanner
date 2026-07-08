@@ -510,6 +510,312 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   }
 }
 
+class $ItemGroupsTable extends ItemGroups
+    with TableInfo<$ItemGroupsTable, ItemGroup> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ItemGroupsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _collapsedMeta = const VerificationMeta(
+    'collapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> collapsed = GeneratedColumn<bool>(
+    'collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, tripId, label, collapsed];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'item_groups';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ItemGroup> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    if (data.containsKey('collapsed')) {
+      context.handle(
+        _collapsedMeta,
+        collapsed.isAcceptableOrUnknown(data['collapsed']!, _collapsedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ItemGroup map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ItemGroup(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+      collapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}collapsed'],
+      )!,
+    );
+  }
+
+  @override
+  $ItemGroupsTable createAlias(String alias) {
+    return $ItemGroupsTable(attachedDatabase, alias);
+  }
+}
+
+class ItemGroup extends DataClass implements Insertable<ItemGroup> {
+  final int id;
+  final int tripId;
+
+  /// Optional display name (e.g. "Train to Rome"); falls back to a default label.
+  final String? label;
+
+  /// Whether the group is shown collapsed in the itinerary overview. Persisted
+  /// like [Checklists.collapsed] so the state survives reopening.
+  final bool collapsed;
+  const ItemGroup({
+    required this.id,
+    required this.tripId,
+    this.label,
+    required this.collapsed,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trip_id'] = Variable<int>(tripId);
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    map['collapsed'] = Variable<bool>(collapsed);
+    return map;
+  }
+
+  ItemGroupsCompanion toCompanion(bool nullToAbsent) {
+    return ItemGroupsCompanion(
+      id: Value(id),
+      tripId: Value(tripId),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+      collapsed: Value(collapsed),
+    );
+  }
+
+  factory ItemGroup.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ItemGroup(
+      id: serializer.fromJson<int>(json['id']),
+      tripId: serializer.fromJson<int>(json['tripId']),
+      label: serializer.fromJson<String?>(json['label']),
+      collapsed: serializer.fromJson<bool>(json['collapsed']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tripId': serializer.toJson<int>(tripId),
+      'label': serializer.toJson<String?>(label),
+      'collapsed': serializer.toJson<bool>(collapsed),
+    };
+  }
+
+  ItemGroup copyWith({
+    int? id,
+    int? tripId,
+    Value<String?> label = const Value.absent(),
+    bool? collapsed,
+  }) => ItemGroup(
+    id: id ?? this.id,
+    tripId: tripId ?? this.tripId,
+    label: label.present ? label.value : this.label,
+    collapsed: collapsed ?? this.collapsed,
+  );
+  ItemGroup copyWithCompanion(ItemGroupsCompanion data) {
+    return ItemGroup(
+      id: data.id.present ? data.id.value : this.id,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      label: data.label.present ? data.label.value : this.label,
+      collapsed: data.collapsed.present ? data.collapsed.value : this.collapsed,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItemGroup(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('label: $label, ')
+          ..write('collapsed: $collapsed')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tripId, label, collapsed);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ItemGroup &&
+          other.id == this.id &&
+          other.tripId == this.tripId &&
+          other.label == this.label &&
+          other.collapsed == this.collapsed);
+}
+
+class ItemGroupsCompanion extends UpdateCompanion<ItemGroup> {
+  final Value<int> id;
+  final Value<int> tripId;
+  final Value<String?> label;
+  final Value<bool> collapsed;
+  const ItemGroupsCompanion({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.collapsed = const Value.absent(),
+  });
+  ItemGroupsCompanion.insert({
+    this.id = const Value.absent(),
+    required int tripId,
+    this.label = const Value.absent(),
+    this.collapsed = const Value.absent(),
+  }) : tripId = Value(tripId);
+  static Insertable<ItemGroup> custom({
+    Expression<int>? id,
+    Expression<int>? tripId,
+    Expression<String>? label,
+    Expression<bool>? collapsed,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tripId != null) 'trip_id': tripId,
+      if (label != null) 'label': label,
+      if (collapsed != null) 'collapsed': collapsed,
+    });
+  }
+
+  ItemGroupsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? tripId,
+    Value<String?>? label,
+    Value<bool>? collapsed,
+  }) {
+    return ItemGroupsCompanion(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      label: label ?? this.label,
+      collapsed: collapsed ?? this.collapsed,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (collapsed.present) {
+      map['collapsed'] = Variable<bool>(collapsed.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ItemGroupsCompanion(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('label: $label, ')
+          ..write('collapsed: $collapsed')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ItineraryItemsTable extends ItineraryItems
     with TableInfo<$ItineraryItemsTable, ItineraryItem> {
   @override
@@ -539,6 +845,20 @@ class $ItineraryItemsTable extends ItineraryItems
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_groups (id) ON DELETE SET NULL',
     ),
   );
   static const VerificationMeta _dateMeta = const VerificationMeta('date');
@@ -657,6 +977,7 @@ class $ItineraryItemsTable extends ItineraryItems
   List<GeneratedColumn> get $columns => [
     id,
     tripId,
+    groupId,
     date,
     sortOrder,
     kind,
@@ -691,6 +1012,12 @@ class $ItineraryItemsTable extends ItineraryItems
       );
     } else if (isInserting) {
       context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
     }
     if (data.containsKey('date')) {
       context.handle(
@@ -771,6 +1098,10 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.int,
         data['${effectivePrefix}trip_id'],
       )!,
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      ),
       date: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}date'],
@@ -839,6 +1170,11 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final int id;
   final int tripId;
 
+  /// The group this item belongs to, or null when it stands alone. On group
+  /// deletion this is set to null (see [ItemGroups]) rather than cascading, so
+  /// dissolving a group never removes the underlying places/legs.
+  final int? groupId;
+
   /// The day this entry belongs to (time component ignored, normalised to midnight).
   final DateTime date;
 
@@ -858,6 +1194,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   const ItineraryItem({
     required this.id,
     required this.tripId,
+    this.groupId,
     required this.date,
     required this.sortOrder,
     required this.kind,
@@ -875,6 +1212,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['trip_id'] = Variable<int>(tripId);
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = Variable<int>(groupId);
+    }
     map['date'] = Variable<DateTime>(date);
     map['sort_order'] = Variable<int>(sortOrder);
     {
@@ -915,6 +1255,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     return ItineraryItemsCompanion(
       id: Value(id),
       tripId: Value(tripId),
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
       date: Value(date),
       sortOrder: Value(sortOrder),
       kind: Value(kind),
@@ -951,6 +1294,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     return ItineraryItem(
       id: serializer.fromJson<int>(json['id']),
       tripId: serializer.fromJson<int>(json['tripId']),
+      groupId: serializer.fromJson<int?>(json['groupId']),
       date: serializer.fromJson<DateTime>(json['date']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       kind: $ItineraryItemsTable.$converterkind.fromJson(
@@ -974,6 +1318,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'tripId': serializer.toJson<int>(tripId),
+      'groupId': serializer.toJson<int?>(groupId),
       'date': serializer.toJson<DateTime>(date),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'kind': serializer.toJson<int>(
@@ -995,6 +1340,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   ItineraryItem copyWith({
     int? id,
     int? tripId,
+    Value<int?> groupId = const Value.absent(),
     DateTime? date,
     int? sortOrder,
     ItemKind? kind,
@@ -1009,6 +1355,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   }) => ItineraryItem(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
+    groupId: groupId.present ? groupId.value : this.groupId,
     date: date ?? this.date,
     sortOrder: sortOrder ?? this.sortOrder,
     kind: kind ?? this.kind,
@@ -1025,6 +1372,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     return ItineraryItem(
       id: data.id.present ? data.id.value : this.id,
       tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
       date: data.date.present ? data.date.value : this.date,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       kind: data.kind.present ? data.kind.value : this.kind,
@@ -1052,6 +1400,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     return (StringBuffer('ItineraryItem(')
           ..write('id: $id, ')
           ..write('tripId: $tripId, ')
+          ..write('groupId: $groupId, ')
           ..write('date: $date, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('kind: $kind, ')
@@ -1071,6 +1420,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   int get hashCode => Object.hash(
     id,
     tripId,
+    groupId,
     date,
     sortOrder,
     kind,
@@ -1089,6 +1439,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       (other is ItineraryItem &&
           other.id == this.id &&
           other.tripId == this.tripId &&
+          other.groupId == this.groupId &&
           other.date == this.date &&
           other.sortOrder == this.sortOrder &&
           other.kind == this.kind &&
@@ -1105,6 +1456,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
 class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<int> id;
   final Value<int> tripId;
+  final Value<int?> groupId;
   final Value<DateTime> date;
   final Value<int> sortOrder;
   final Value<ItemKind> kind;
@@ -1119,6 +1471,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   const ItineraryItemsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
+    this.groupId = const Value.absent(),
     this.date = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.kind = const Value.absent(),
@@ -1134,6 +1487,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   ItineraryItemsCompanion.insert({
     this.id = const Value.absent(),
     required int tripId,
+    this.groupId = const Value.absent(),
     required DateTime date,
     this.sortOrder = const Value.absent(),
     required ItemKind kind,
@@ -1151,6 +1505,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   static Insertable<ItineraryItem> custom({
     Expression<int>? id,
     Expression<int>? tripId,
+    Expression<int>? groupId,
     Expression<DateTime>? date,
     Expression<int>? sortOrder,
     Expression<int>? kind,
@@ -1166,6 +1521,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (tripId != null) 'trip_id': tripId,
+      if (groupId != null) 'group_id': groupId,
       if (date != null) 'date': date,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (kind != null) 'kind': kind,
@@ -1183,6 +1539,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   ItineraryItemsCompanion copyWith({
     Value<int>? id,
     Value<int>? tripId,
+    Value<int?>? groupId,
     Value<DateTime>? date,
     Value<int>? sortOrder,
     Value<ItemKind>? kind,
@@ -1198,6 +1555,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     return ItineraryItemsCompanion(
       id: id ?? this.id,
       tripId: tripId ?? this.tripId,
+      groupId: groupId ?? this.groupId,
       date: date ?? this.date,
       sortOrder: sortOrder ?? this.sortOrder,
       kind: kind ?? this.kind,
@@ -1220,6 +1578,9 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     }
     if (tripId.present) {
       map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
     }
     if (date.present) {
       map['date'] = Variable<DateTime>(date.value);
@@ -1266,6 +1627,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     return (StringBuffer('ItineraryItemsCompanion(')
           ..write('id: $id, ')
           ..write('tripId: $tripId, ')
+          ..write('groupId: $groupId, ')
           ..write('date: $date, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('kind: $kind, ')
@@ -1310,6 +1672,20 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES itinerary_items (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _groupIdMeta = const VerificationMeta(
+    'groupId',
+  );
+  @override
+  late final GeneratedColumn<int> groupId = GeneratedColumn<int>(
+    'group_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES item_groups (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
@@ -1378,6 +1754,7 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
   List<GeneratedColumn> get $columns => [
     id,
     itemId,
+    groupId,
     tripId,
     amountMinor,
     currency,
@@ -1404,6 +1781,12 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
       context.handle(
         _itemIdMeta,
         itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    }
+    if (data.containsKey('group_id')) {
+      context.handle(
+        _groupIdMeta,
+        groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
       );
     }
     if (data.containsKey('trip_id')) {
@@ -1460,6 +1843,10 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
         DriftSqlType.int,
         data['${effectivePrefix}item_id'],
       ),
+      groupId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}group_id'],
+      ),
       tripId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}trip_id'],
@@ -1502,6 +1889,9 @@ class Cost extends DataClass implements Insertable<Cost> {
   final int id;
   final int? itemId;
 
+  /// Set for costs shared across an [ItemGroups] group instead of a single item.
+  final int? groupId;
+
   /// Set for trip-level costs that aren't tied to a specific itinerary item.
   final int? tripId;
 
@@ -1518,6 +1908,7 @@ class Cost extends DataClass implements Insertable<Cost> {
   const Cost({
     required this.id,
     this.itemId,
+    this.groupId,
     this.tripId,
     required this.amountMinor,
     required this.currency,
@@ -1531,6 +1922,9 @@ class Cost extends DataClass implements Insertable<Cost> {
     map['id'] = Variable<int>(id);
     if (!nullToAbsent || itemId != null) {
       map['item_id'] = Variable<int>(itemId);
+    }
+    if (!nullToAbsent || groupId != null) {
+      map['group_id'] = Variable<int>(groupId);
     }
     if (!nullToAbsent || tripId != null) {
       map['trip_id'] = Variable<int>(tripId);
@@ -1555,6 +1949,9 @@ class Cost extends DataClass implements Insertable<Cost> {
       itemId: itemId == null && nullToAbsent
           ? const Value.absent()
           : Value(itemId),
+      groupId: groupId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(groupId),
       tripId: tripId == null && nullToAbsent
           ? const Value.absent()
           : Value(tripId),
@@ -1576,6 +1973,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     return Cost(
       id: serializer.fromJson<int>(json['id']),
       itemId: serializer.fromJson<int?>(json['itemId']),
+      groupId: serializer.fromJson<int?>(json['groupId']),
       tripId: serializer.fromJson<int?>(json['tripId']),
       amountMinor: serializer.fromJson<int>(json['amountMinor']),
       currency: $CostsTable.$convertercurrency.fromJson(
@@ -1592,6 +1990,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'itemId': serializer.toJson<int?>(itemId),
+      'groupId': serializer.toJson<int?>(groupId),
       'tripId': serializer.toJson<int?>(tripId),
       'amountMinor': serializer.toJson<int>(amountMinor),
       'currency': serializer.toJson<int>(
@@ -1606,6 +2005,7 @@ class Cost extends DataClass implements Insertable<Cost> {
   Cost copyWith({
     int? id,
     Value<int?> itemId = const Value.absent(),
+    Value<int?> groupId = const Value.absent(),
     Value<int?> tripId = const Value.absent(),
     int? amountMinor,
     Currency? currency,
@@ -1615,6 +2015,7 @@ class Cost extends DataClass implements Insertable<Cost> {
   }) => Cost(
     id: id ?? this.id,
     itemId: itemId.present ? itemId.value : this.itemId,
+    groupId: groupId.present ? groupId.value : this.groupId,
     tripId: tripId.present ? tripId.value : this.tripId,
     amountMinor: amountMinor ?? this.amountMinor,
     currency: currency ?? this.currency,
@@ -1626,6 +2027,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     return Cost(
       id: data.id.present ? data.id.value : this.id,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      groupId: data.groupId.present ? data.groupId.value : this.groupId,
       tripId: data.tripId.present ? data.tripId.value : this.tripId,
       amountMinor: data.amountMinor.present
           ? data.amountMinor.value
@@ -1642,6 +2044,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     return (StringBuffer('Cost(')
           ..write('id: $id, ')
           ..write('itemId: $itemId, ')
+          ..write('groupId: $groupId, ')
           ..write('tripId: $tripId, ')
           ..write('amountMinor: $amountMinor, ')
           ..write('currency: $currency, ')
@@ -1656,6 +2059,7 @@ class Cost extends DataClass implements Insertable<Cost> {
   int get hashCode => Object.hash(
     id,
     itemId,
+    groupId,
     tripId,
     amountMinor,
     currency,
@@ -1669,6 +2073,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       (other is Cost &&
           other.id == this.id &&
           other.itemId == this.itemId &&
+          other.groupId == this.groupId &&
           other.tripId == this.tripId &&
           other.amountMinor == this.amountMinor &&
           other.currency == this.currency &&
@@ -1680,6 +2085,7 @@ class Cost extends DataClass implements Insertable<Cost> {
 class CostsCompanion extends UpdateCompanion<Cost> {
   final Value<int> id;
   final Value<int?> itemId;
+  final Value<int?> groupId;
   final Value<int?> tripId;
   final Value<int> amountMinor;
   final Value<Currency> currency;
@@ -1689,6 +2095,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   const CostsCompanion({
     this.id = const Value.absent(),
     this.itemId = const Value.absent(),
+    this.groupId = const Value.absent(),
     this.tripId = const Value.absent(),
     this.amountMinor = const Value.absent(),
     this.currency = const Value.absent(),
@@ -1699,6 +2106,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   CostsCompanion.insert({
     this.id = const Value.absent(),
     this.itemId = const Value.absent(),
+    this.groupId = const Value.absent(),
     this.tripId = const Value.absent(),
     required int amountMinor,
     required Currency currency,
@@ -1711,6 +2119,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   static Insertable<Cost> custom({
     Expression<int>? id,
     Expression<int>? itemId,
+    Expression<int>? groupId,
     Expression<int>? tripId,
     Expression<int>? amountMinor,
     Expression<int>? currency,
@@ -1721,6 +2130,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (itemId != null) 'item_id': itemId,
+      if (groupId != null) 'group_id': groupId,
       if (tripId != null) 'trip_id': tripId,
       if (amountMinor != null) 'amount_minor': amountMinor,
       if (currency != null) 'currency': currency,
@@ -1733,6 +2143,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   CostsCompanion copyWith({
     Value<int>? id,
     Value<int?>? itemId,
+    Value<int?>? groupId,
     Value<int?>? tripId,
     Value<int>? amountMinor,
     Value<Currency>? currency,
@@ -1743,6 +2154,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     return CostsCompanion(
       id: id ?? this.id,
       itemId: itemId ?? this.itemId,
+      groupId: groupId ?? this.groupId,
       tripId: tripId ?? this.tripId,
       amountMinor: amountMinor ?? this.amountMinor,
       currency: currency ?? this.currency,
@@ -1760,6 +2172,9 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     }
     if (itemId.present) {
       map['item_id'] = Variable<int>(itemId.value);
+    }
+    if (groupId.present) {
+      map['group_id'] = Variable<int>(groupId.value);
     }
     if (tripId.present) {
       map['trip_id'] = Variable<int>(tripId.value);
@@ -1789,6 +2204,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     return (StringBuffer('CostsCompanion(')
           ..write('id: $id, ')
           ..write('itemId: $itemId, ')
+          ..write('groupId: $groupId, ')
           ..write('tripId: $tripId, ')
           ..write('amountMinor: $amountMinor, ')
           ..write('currency: $currency, ')
@@ -3755,6 +4171,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $TripsTable trips = $TripsTable(this);
+  late final $ItemGroupsTable itemGroups = $ItemGroupsTable(this);
   late final $ItineraryItemsTable itineraryItems = $ItineraryItemsTable(this);
   late final $CostsTable costs = $CostsTable(this);
   late final $CostReasonsTable costReasons = $CostReasonsTable(this);
@@ -3771,12 +4188,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final ItineraryDao itineraryDao = ItineraryDao(this as AppDatabase);
   late final CostDao costDao = CostDao(this as AppDatabase);
   late final ChecklistDao checklistDao = ChecklistDao(this as AppDatabase);
+  late final GroupDao groupDao = GroupDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     trips,
+    itemGroups,
     itineraryItems,
     costs,
     costReasons,
@@ -3794,11 +4213,32 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'trips',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('item_groups', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('itinerary_items', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'item_groups',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('itinerary_items', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'itinerary_items',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('costs', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'item_groups',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('costs', kind: UpdateKind.delete)],
@@ -3888,6 +4328,24 @@ typedef $$TripsTableUpdateCompanionBuilder =
 final class $$TripsTableReferences
     extends BaseReferences<_$AppDatabase, $TripsTable, Trip> {
   $$TripsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$ItemGroupsTable, List<ItemGroup>>
+  _itemGroupsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itemGroups,
+    aliasName: 'trips__id__item_groups__trip_id',
+  );
+
+  $$ItemGroupsTableProcessedTableManager get itemGroupsRefs {
+    final manager = $$ItemGroupsTableTableManager(
+      $_db,
+      $_db.itemGroups,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itemGroupsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 
   static MultiTypedResultKey<$ItineraryItemsTable, List<ItineraryItem>>
   _itineraryItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -4030,6 +4488,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> itemGroupsRefs(
+    Expression<bool> Function($$ItemGroupsTableFilterComposer f) f,
+  ) {
+    final $$ItemGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableFilterComposer(
+            $db: $db,
+            $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 
   Expression<bool> itineraryItemsRefs(
     Expression<bool> Function($$ItineraryItemsTableFilterComposer f) f,
@@ -4244,6 +4727,31 @@ class $$TripsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
+  Expression<T> itemGroupsRefs<T extends Object>(
+    Expression<T> Function($$ItemGroupsTableAnnotationComposer a) f,
+  ) {
+    final $$ItemGroupsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> itineraryItemsRefs<T extends Object>(
     Expression<T> Function($$ItineraryItemsTableAnnotationComposer a) f,
   ) {
@@ -4384,6 +4892,7 @@ class $$TripsTableTableManager
           (Trip, $$TripsTableReferences),
           Trip,
           PrefetchHooks Function({
+            bool itemGroupsRefs,
             bool itineraryItemsRefs,
             bool costsRefs,
             bool tripParticipantsRefs,
@@ -4450,6 +4959,7 @@ class $$TripsTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                itemGroupsRefs = false,
                 itineraryItemsRefs = false,
                 costsRefs = false,
                 tripParticipantsRefs = false,
@@ -4459,6 +4969,7 @@ class $$TripsTableTableManager
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
+                    if (itemGroupsRefs) db.itemGroups,
                     if (itineraryItemsRefs) db.itineraryItems,
                     if (costsRefs) db.costs,
                     if (tripParticipantsRefs) db.tripParticipants,
@@ -4468,6 +4979,23 @@ class $$TripsTableTableManager
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
                     return [
+                      if (itemGroupsRefs)
+                        await $_getPrefetchedData<Trip, $TripsTable, ItemGroup>(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._itemGroupsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).itemGroupsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                       if (itineraryItemsRefs)
                         await $_getPrefetchedData<
                           Trip,
@@ -4582,6 +5110,7 @@ typedef $$TripsTableProcessedTableManager =
       (Trip, $$TripsTableReferences),
       Trip,
       PrefetchHooks Function({
+        bool itemGroupsRefs,
         bool itineraryItemsRefs,
         bool costsRefs,
         bool tripParticipantsRefs,
@@ -4589,10 +5118,500 @@ typedef $$TripsTableProcessedTableManager =
         bool collapsedDaysRefs,
       })
     >;
+typedef $$ItemGroupsTableCreateCompanionBuilder =
+    ItemGroupsCompanion Function({
+      Value<int> id,
+      required int tripId,
+      Value<String?> label,
+      Value<bool> collapsed,
+    });
+typedef $$ItemGroupsTableUpdateCompanionBuilder =
+    ItemGroupsCompanion Function({
+      Value<int> id,
+      Value<int> tripId,
+      Value<String?> label,
+      Value<bool> collapsed,
+    });
+
+final class $$ItemGroupsTableReferences
+    extends BaseReferences<_$AppDatabase, $ItemGroupsTable, ItemGroup> {
+  $$ItemGroupsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('item_groups__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ItineraryItemsTable, List<ItineraryItem>>
+  _itineraryItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itineraryItems,
+    aliasName: 'item_groups__id__itinerary_items__group_id',
+  );
+
+  $$ItineraryItemsTableProcessedTableManager get itineraryItemsRefs {
+    final manager = $$ItineraryItemsTableTableManager(
+      $_db,
+      $_db.itineraryItems,
+    ).filter((f) => f.groupId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryItemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CostsTable, List<Cost>> _costsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.costs,
+    aliasName: 'item_groups__id__costs__group_id',
+  );
+
+  $$CostsTableProcessedTableManager get costsRefs {
+    final manager = $$CostsTableTableManager(
+      $_db,
+      $_db.costs,
+    ).filter((f) => f.groupId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_costsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$ItemGroupsTableFilterComposer
+    extends Composer<_$AppDatabase, $ItemGroupsTable> {
+  $$ItemGroupsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> itineraryItemsRefs(
+    Expression<bool> Function($$ItineraryItemsTableFilterComposer f) f,
+  ) {
+    final $$ItineraryItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> costsRefs(
+    Expression<bool> Function($$CostsTableFilterComposer f) f,
+  ) {
+    final $$CostsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableFilterComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ItemGroupsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ItemGroupsTable> {
+  $$ItemGroupsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ItemGroupsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ItemGroupsTable> {
+  $$ItemGroupsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<bool> get collapsed =>
+      $composableBuilder(column: $table.collapsed, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> itineraryItemsRefs<T extends Object>(
+    Expression<T> Function($$ItineraryItemsTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> costsRefs<T extends Object>(
+    Expression<T> Function($$CostsTableAnnotationComposer a) f,
+  ) {
+    final $$CostsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.groupId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$ItemGroupsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ItemGroupsTable,
+          ItemGroup,
+          $$ItemGroupsTableFilterComposer,
+          $$ItemGroupsTableOrderingComposer,
+          $$ItemGroupsTableAnnotationComposer,
+          $$ItemGroupsTableCreateCompanionBuilder,
+          $$ItemGroupsTableUpdateCompanionBuilder,
+          (ItemGroup, $$ItemGroupsTableReferences),
+          ItemGroup,
+          PrefetchHooks Function({
+            bool tripId,
+            bool itineraryItemsRefs,
+            bool costsRefs,
+          })
+        > {
+  $$ItemGroupsTableTableManager(_$AppDatabase db, $ItemGroupsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ItemGroupsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ItemGroupsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ItemGroupsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> tripId = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+              }) => ItemGroupsCompanion(
+                id: id,
+                tripId: tripId,
+                label: label,
+                collapsed: collapsed,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int tripId,
+                Value<String?> label = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
+              }) => ItemGroupsCompanion.insert(
+                id: id,
+                tripId: tripId,
+                label: label,
+                collapsed: collapsed,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ItemGroupsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({
+                tripId = false,
+                itineraryItemsRefs = false,
+                costsRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (itineraryItemsRefs) db.itineraryItems,
+                    if (costsRefs) db.costs,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (tripId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.tripId,
+                                    referencedTable: $$ItemGroupsTableReferences
+                                        ._tripIdTable(db),
+                                    referencedColumn:
+                                        $$ItemGroupsTableReferences
+                                            ._tripIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (itineraryItemsRefs)
+                        await $_getPrefetchedData<
+                          ItemGroup,
+                          $ItemGroupsTable,
+                          ItineraryItem
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ItemGroupsTableReferences
+                              ._itineraryItemsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ItemGroupsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).itineraryItemsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.groupId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (costsRefs)
+                        await $_getPrefetchedData<
+                          ItemGroup,
+                          $ItemGroupsTable,
+                          Cost
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ItemGroupsTableReferences
+                              ._costsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ItemGroupsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).costsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.groupId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ItemGroupsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ItemGroupsTable,
+      ItemGroup,
+      $$ItemGroupsTableFilterComposer,
+      $$ItemGroupsTableOrderingComposer,
+      $$ItemGroupsTableAnnotationComposer,
+      $$ItemGroupsTableCreateCompanionBuilder,
+      $$ItemGroupsTableUpdateCompanionBuilder,
+      (ItemGroup, $$ItemGroupsTableReferences),
+      ItemGroup,
+      PrefetchHooks Function({
+        bool tripId,
+        bool itineraryItemsRefs,
+        bool costsRefs,
+      })
+    >;
 typedef $$ItineraryItemsTableCreateCompanionBuilder =
     ItineraryItemsCompanion Function({
       Value<int> id,
       required int tripId,
+      Value<int?> groupId,
       required DateTime date,
       Value<int> sortOrder,
       required ItemKind kind,
@@ -4609,6 +5628,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
     ItineraryItemsCompanion Function({
       Value<int> id,
       Value<int> tripId,
+      Value<int?> groupId,
       Value<DateTime> date,
       Value<int> sortOrder,
       Value<ItemKind> kind,
@@ -4641,6 +5661,23 @@ final class $$ItineraryItemsTableReferences
       $_db.trips,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ItemGroupsTable _groupIdTable(_$AppDatabase db) =>
+      db.itemGroups.createAlias('itinerary_items__group_id__item_groups__id');
+
+  $$ItemGroupsTableProcessedTableManager? get groupId {
+    final $_column = $_itemColumn<int>('group_id');
+    if ($_column == null) return null;
+    final manager = $$ItemGroupsTableTableManager(
+      $_db,
+      $_db.itemGroups,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -4752,6 +5789,29 @@ class $$ItineraryItemsTableFilterComposer
           }) => $$TripsTableFilterComposer(
             $db: $db,
             $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ItemGroupsTableFilterComposer get groupId {
+    final $$ItemGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableFilterComposer(
+            $db: $db,
+            $table: $db.itemGroups,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4878,6 +5938,29 @@ class $$ItineraryItemsTableOrderingComposer
     );
     return composer;
   }
+
+  $$ItemGroupsTableOrderingComposer get groupId {
+    final $$ItemGroupsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableOrderingComposer(
+            $db: $db,
+            $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ItineraryItemsTableAnnotationComposer
@@ -4956,6 +6039,29 @@ class $$ItineraryItemsTableAnnotationComposer
     return composer;
   }
 
+  $$ItemGroupsTableAnnotationComposer get groupId {
+    final $$ItemGroupsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> costsRefs<T extends Object>(
     Expression<T> Function($$CostsTableAnnotationComposer a) f,
   ) {
@@ -4995,7 +6101,7 @@ class $$ItineraryItemsTableTableManager
           $$ItineraryItemsTableUpdateCompanionBuilder,
           (ItineraryItem, $$ItineraryItemsTableReferences),
           ItineraryItem,
-          PrefetchHooks Function({bool tripId, bool costsRefs})
+          PrefetchHooks Function({bool tripId, bool groupId, bool costsRefs})
         > {
   $$ItineraryItemsTableTableManager(
     _$AppDatabase db,
@@ -5014,6 +6120,7 @@ class $$ItineraryItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int> tripId = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<ItemKind> kind = const Value.absent(),
@@ -5028,6 +6135,7 @@ class $$ItineraryItemsTableTableManager
               }) => ItineraryItemsCompanion(
                 id: id,
                 tripId: tripId,
+                groupId: groupId,
                 date: date,
                 sortOrder: sortOrder,
                 kind: kind,
@@ -5044,6 +6152,7 @@ class $$ItineraryItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required int tripId,
+                Value<int?> groupId = const Value.absent(),
                 required DateTime date,
                 Value<int> sortOrder = const Value.absent(),
                 required ItemKind kind,
@@ -5058,6 +6167,7 @@ class $$ItineraryItemsTableTableManager
               }) => ItineraryItemsCompanion.insert(
                 id: id,
                 tripId: tripId,
+                groupId: groupId,
                 date: date,
                 sortOrder: sortOrder,
                 kind: kind,
@@ -5078,68 +6188,87 @@ class $$ItineraryItemsTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({tripId = false, costsRefs = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [if (costsRefs) db.costs],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (tripId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.tripId,
-                                referencedTable: $$ItineraryItemsTableReferences
-                                    ._tripIdTable(db),
-                                referencedColumn:
-                                    $$ItineraryItemsTableReferences
-                                        ._tripIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({tripId = false, groupId = false, costsRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [if (costsRefs) db.costs],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (tripId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.tripId,
+                                    referencedTable:
+                                        $$ItineraryItemsTableReferences
+                                            ._tripIdTable(db),
+                                    referencedColumn:
+                                        $$ItineraryItemsTableReferences
+                                            ._tripIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (groupId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.groupId,
+                                    referencedTable:
+                                        $$ItineraryItemsTableReferences
+                                            ._groupIdTable(db),
+                                    referencedColumn:
+                                        $$ItineraryItemsTableReferences
+                                            ._groupIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (costsRefs)
+                        await $_getPrefetchedData<
+                          ItineraryItem,
+                          $ItineraryItemsTable,
+                          Cost
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ItineraryItemsTableReferences
+                              ._costsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ItineraryItemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).costsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.itemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [
-                  if (costsRefs)
-                    await $_getPrefetchedData<
-                      ItineraryItem,
-                      $ItineraryItemsTable,
-                      Cost
-                    >(
-                      currentTable: table,
-                      referencedTable: $$ItineraryItemsTableReferences
-                          ._costsRefsTable(db),
-                      managerFromTypedResult: (p0) =>
-                          $$ItineraryItemsTableReferences(
-                            db,
-                            table,
-                            p0,
-                          ).costsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.itemId == item.id),
-                      typedResults: items,
-                    ),
-                ];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -5156,12 +6285,13 @@ typedef $$ItineraryItemsTableProcessedTableManager =
       $$ItineraryItemsTableUpdateCompanionBuilder,
       (ItineraryItem, $$ItineraryItemsTableReferences),
       ItineraryItem,
-      PrefetchHooks Function({bool tripId, bool costsRefs})
+      PrefetchHooks Function({bool tripId, bool groupId, bool costsRefs})
     >;
 typedef $$CostsTableCreateCompanionBuilder =
     CostsCompanion Function({
       Value<int> id,
       Value<int?> itemId,
+      Value<int?> groupId,
       Value<int?> tripId,
       required int amountMinor,
       required Currency currency,
@@ -5173,6 +6303,7 @@ typedef $$CostsTableUpdateCompanionBuilder =
     CostsCompanion Function({
       Value<int> id,
       Value<int?> itemId,
+      Value<int?> groupId,
       Value<int?> tripId,
       Value<int> amountMinor,
       Value<Currency> currency,
@@ -5196,6 +6327,23 @@ final class $$CostsTableReferences
       $_db.itineraryItems,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_itemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $ItemGroupsTable _groupIdTable(_$AppDatabase db) =>
+      db.itemGroups.createAlias('costs__group_id__item_groups__id');
+
+  $$ItemGroupsTableProcessedTableManager? get groupId {
+    final $_column = $_itemColumn<int>('group_id');
+    if ($_column == null) return null;
+    final manager = $$ItemGroupsTableTableManager(
+      $_db,
+      $_db.itemGroups,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -5294,6 +6442,29 @@ class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
           }) => $$ItineraryItemsTableFilterComposer(
             $db: $db,
             $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$ItemGroupsTableFilterComposer get groupId {
+    final $$ItemGroupsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableFilterComposer(
+            $db: $db,
+            $table: $db.itemGroups,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -5414,6 +6585,29 @@ class $$CostsTableOrderingComposer
     return composer;
   }
 
+  $$ItemGroupsTableOrderingComposer get groupId {
+    final $$ItemGroupsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableOrderingComposer(
+            $db: $db,
+            $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -5490,6 +6684,29 @@ class $$CostsTableAnnotationComposer
     return composer;
   }
 
+  $$ItemGroupsTableAnnotationComposer get groupId {
+    final $$ItemGroupsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.groupId,
+      referencedTable: $db.itemGroups,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItemGroupsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -5555,6 +6772,7 @@ class $$CostsTableTableManager
           Cost,
           PrefetchHooks Function({
             bool itemId,
+            bool groupId,
             bool tripId,
             bool costBeneficiariesRefs,
           })
@@ -5574,6 +6792,7 @@ class $$CostsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int?> itemId = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
                 Value<int?> tripId = const Value.absent(),
                 Value<int> amountMinor = const Value.absent(),
                 Value<Currency> currency = const Value.absent(),
@@ -5583,6 +6802,7 @@ class $$CostsTableTableManager
               }) => CostsCompanion(
                 id: id,
                 itemId: itemId,
+                groupId: groupId,
                 tripId: tripId,
                 amountMinor: amountMinor,
                 currency: currency,
@@ -5594,6 +6814,7 @@ class $$CostsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<int?> itemId = const Value.absent(),
+                Value<int?> groupId = const Value.absent(),
                 Value<int?> tripId = const Value.absent(),
                 required int amountMinor,
                 required Currency currency,
@@ -5603,6 +6824,7 @@ class $$CostsTableTableManager
               }) => CostsCompanion.insert(
                 id: id,
                 itemId: itemId,
+                groupId: groupId,
                 tripId: tripId,
                 amountMinor: amountMinor,
                 currency: currency,
@@ -5619,6 +6841,7 @@ class $$CostsTableTableManager
           prefetchHooksCallback:
               ({
                 itemId = false,
+                groupId = false,
                 tripId = false,
                 costBeneficiariesRefs = false,
               }) {
@@ -5652,6 +6875,19 @@ class $$CostsTableTableManager
                                         ._itemIdTable(db),
                                     referencedColumn: $$CostsTableReferences
                                         ._itemIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+                        if (groupId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.groupId,
+                                    referencedTable: $$CostsTableReferences
+                                        ._groupIdTable(db),
+                                    referencedColumn: $$CostsTableReferences
+                                        ._groupIdTable(db)
                                         .id,
                                   )
                                   as T;
@@ -5717,6 +6953,7 @@ typedef $$CostsTableProcessedTableManager =
       Cost,
       PrefetchHooks Function({
         bool itemId,
+        bool groupId,
         bool tripId,
         bool costBeneficiariesRefs,
       })
@@ -7979,6 +9216,8 @@ class $AppDatabaseManager {
   $AppDatabaseManager(this._db);
   $$TripsTableTableManager get trips =>
       $$TripsTableTableManager(_db, _db.trips);
+  $$ItemGroupsTableTableManager get itemGroups =>
+      $$ItemGroupsTableTableManager(_db, _db.itemGroups);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(_db, _db.itineraryItems);
   $$CostsTableTableManager get costs =>

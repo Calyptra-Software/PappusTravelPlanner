@@ -31,13 +31,29 @@ class TripRepository {
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>
       _db.itineraryDao.updateItem(item);
-  Future<int> deleteItem(int id) => _db.itineraryDao.deleteItem(id);
+  // Routes through GroupDao so deleting a grouped item also tidies its group
+  // (dissolving a group left with <2 members, preserving its shared costs).
+  Future<void> deleteItem(int id) => _db.groupDao.deleteItem(id);
   Future<int> nextSortOrder(int tripId, DateTime date) =>
       _db.itineraryDao.nextSortOrder(tripId, date);
   Stream<Set<DateTime>> watchCollapsedDays(int tripId) =>
       _db.itineraryDao.watchCollapsedDays(tripId);
   Future<void> setDayCollapsed(int tripId, DateTime day, bool collapsed) =>
       _db.itineraryDao.setDayCollapsed(tripId, day, collapsed);
+
+  // --- item groups ---
+  Stream<Map<int, ItemGroup>> watchGroups(int tripId) =>
+      _db.groupDao.watchGroupsForTrip(tripId);
+  Future<int> groupItems(int firstItemId, int secondItemId) =>
+      _db.groupDao.groupItems(firstItemId, secondItemId);
+  Future<void> removeFromGroup(int itemId) =>
+      _db.groupDao.removeFromGroup(itemId);
+  Future<void> dissolveGroup(int groupId) =>
+      _db.groupDao.dissolveGroup(groupId);
+  Future<void> setGroupLabel(int groupId, String? label) =>
+      _db.groupDao.setGroupLabel(groupId, label);
+  Future<void> setGroupCollapsed(int groupId, bool collapsed) =>
+      _db.groupDao.setGroupCollapsed(groupId, collapsed);
 
   // --- costs ---
   Stream<List<Cost>> watchCostsForTrip(int tripId) =>

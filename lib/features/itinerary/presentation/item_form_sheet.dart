@@ -7,10 +7,12 @@ import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
+import '../../../data/repositories/trip_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
+import '../application/itinerary_providers.dart';
 import '../widgets/transport_mode.dart';
 
 /// Opens the add/edit sheet for an itinerary item and persists on save.
@@ -146,10 +148,26 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
 
     if (_isEditing) {
       final existing = widget.existing!;
+      // Preserve the item's current group membership. `widget.existing` is a
+      // snapshot from when the sheet opened, so if the item was grouped while
+      // the sheet was open (via "Group with next"), its groupId lives only in
+      // live data — reading it back here keeps this full-row update from
+      // clobbering the membership.
+      final live = ref.read(itineraryProvider(widget.tripId)).value;
+      var currentGroupId = existing.groupId;
+      if (live != null) {
+        for (final it in live) {
+          if (it.id == existing.id) {
+            currentGroupId = it.groupId;
+            break;
+          }
+        }
+      }
       await repo.updateItem(
         ItineraryItem(
           id: existing.id,
           tripId: existing.tripId,
+          groupId: currentGroupId,
           date: _date,
           sortOrder: existing.sortOrder,
           kind: widget.kind,
@@ -344,7 +362,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                 ),
                 if (_isEditing) ...[
                   const SizedBox(height: 20),
-                  _CostsEditor(
+                  _GroupingAndCosts(
                     tripId: widget.tripId,
                     itemId: widget.existing!.id,
                     localeName: localeName,
@@ -383,11 +401,12 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   }
 }
 
-/// Cost list for the item being edited: existing costs as tappable chips plus
-/// an "add cost" action. Managing costs lives here, in the item's detail sheet,
-/// rather than on the trip overview.
-class _CostsEditor extends ConsumerWidget {
-  const _CostsEditor({
+/// Grouping controls plus the cost list for the item being edited. Grouping
+/// bundles adjacent items so a single expense (e.g. a train ticket) covers them
+/// all; when the item belongs to a group, the cost list manages that shared
+/// group expense instead of a per-item one.
+class _GroupingAndCosts extends ConsumerWidget {
+  const _GroupingAndCosts({
     required this.tripId,
     required this.itemId,
     required this.localeName,
@@ -401,14 +420,178 @@ class _CostsEditor extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final costs =
-        ref.watch(costsForTripProvider(tripId)).value?.byItem[itemId] ??
-            const [];
+    final repo = ref.read(repositoryProvider);
+    final items = ref.watch(itineraryProvider(tripId)).value ?? const [];
+    final groups = ref.watch(groupsProvider(tripId)).value ?? const {};
+
+    // Resolve the item from live data so its group membership stays current
+    // after grouping without closing the sheet.
+    ItineraryItem? current;
+    for (final it in items) {
+      if (it.id == itemId) {
+        current = it;
+        break;
+      }
+    }
+    final groupId = current?.groupId;
+
+    // The next item on the same day, in itinerary order — the "group with next"
+    // target. Items arrive already ordered by day / sort / time.
+    ItineraryItem? next;
+    if (current != null) {
+      final day = normalizeDay(current.date);
+      final sameDay =
+          items.where((it) => normalizeDay(it.date) == day).toList();
+      final index = sameDay.indexWhere((it) => it.id == itemId);
+      if (index >= 0 && index + 1 < sameDay.length) next = sameDay[index + 1];
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(l10n.costs, style: theme.textTheme.labelLarge),
+        Text(l10n.grouping, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        if (groupId == null) ...[
+          if (next != null)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.link, size: 18),
+                label: Text(l10n.groupWithNext),
+                onPressed: () => repo.groupItems(itemId, next!.id),
+              ),
+            ),
+        ] else ...[
+          Text(
+            l10n.groupMemberHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              if (next != null && next.groupId != groupId)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.link, size: 18),
+                  label: Text(l10n.groupWithNext),
+                  onPressed: () => repo.groupItems(itemId, next!.id),
+                ),
+              TextButton.icon(
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: Text(l10n.groupNameLabel),
+                onPressed: () => _renameGroup(
+                  context,
+                  repo,
+                  groupId,
+                  groups[groupId]?.label,
+                ),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.link_off, size: 18),
+                label: Text(l10n.groupRemoveItem),
+                onPressed: () => repo.removeFromGroup(itemId),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.layers_clear_outlined, size: 18),
+                label: Text(l10n.groupUngroup),
+                onPressed: () => repo.dissolveGroup(groupId),
+              ),
+            ],
+          ),
+        ],
+        const SizedBox(height: 20),
+        // The item always has its own expenses; a grouped item additionally has
+        // the group's shared expenses. Both are managed here, independently.
+        _CostsEditor(
+          tripId: tripId,
+          itemId: itemId,
+          groupId: null,
+          localeName: localeName,
+        ),
+        if (groupId != null) ...[
+          const SizedBox(height: 20),
+          _CostsEditor(
+            tripId: tripId,
+            itemId: null,
+            groupId: groupId,
+            localeName: localeName,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _renameGroup(
+    BuildContext context,
+    TripRepository repo,
+    int groupId,
+    String? current,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final controller = TextEditingController(text: current ?? '');
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.groupNameLabel),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(hintText: l10n.groupNameHint),
+          onSubmitted: (value) => Navigator.pop(context, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (result != null) await repo.setGroupLabel(groupId, result);
+  }
+}
+
+/// Cost list for the item or group being edited: existing costs as tappable
+/// chips plus an "add cost" action. Managing costs lives here, in the detail
+/// sheet, rather than on the trip overview. Attaches to a single item ([itemId])
+/// or, when the item is grouped, to the shared group expense ([groupId]).
+class _CostsEditor extends ConsumerWidget {
+  const _CostsEditor({
+    required this.tripId,
+    required this.itemId,
+    required this.groupId,
+    required this.localeName,
+  });
+
+  final int tripId;
+  final int? itemId;
+  final int? groupId;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
+    final costs = (groupId != null
+            ? tripCosts?.byGroup[groupId]
+            : tripCosts?.byItem[itemId]) ??
+        const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(groupId != null ? l10n.groupSharedExpenses : l10n.costs,
+            style: theme.textTheme.labelLarge),
         const SizedBox(height: 8),
         Wrap(
           spacing: 6,
@@ -418,14 +601,17 @@ class _CostsEditor extends ConsumerWidget {
             for (final cost in costs)
               CostChip(
                 cost: cost,
-                onTap: () =>
-                    showCostFormSheet(context, itemId: itemId, existing: cost),
+                onTap: () => showCostFormSheet(context, existing: cost),
               ),
             ActionChip(
               avatar: const Icon(Icons.add, size: 16),
               label: Text(l10n.addCost),
               visualDensity: VisualDensity.compact,
-              onPressed: () => showCostFormSheet(context, itemId: itemId),
+              onPressed: () => showCostFormSheet(
+                context,
+                itemId: itemId,
+                groupId: groupId,
+              ),
             ),
           ],
         ),

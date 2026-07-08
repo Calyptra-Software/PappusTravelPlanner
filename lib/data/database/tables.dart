@@ -75,12 +75,36 @@ class Trips extends Table {
       dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Groups several adjacent itinerary items into one logical unit — e.g. a train
+/// journey made up of multiple legs and intermediate stops that share a single
+/// ticket. A group's costs (attached via [Costs.groupId]) cover all its members
+/// at once. Deleting the group leaves its members intact (their [groupId] is set
+/// to null); deleting the trip cascades.
+class ItemGroups extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get tripId =>
+      integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+
+  /// Optional display name (e.g. "Train to Rome"); falls back to a default label.
+  TextColumn get label => text().nullable()();
+
+  /// Whether the group is shown collapsed in the itinerary overview. Persisted
+  /// like [Checklists.collapsed] so the state survives reopening.
+  BoolColumn get collapsed => boolean().withDefault(const Constant(false))();
+}
+
 /// A single itinerary entry belonging to a trip. Columns are shared across both
 /// [ItemKind]s; the ones that only apply to one kind are nullable.
 class ItineraryItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get tripId =>
       integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+
+  /// The group this item belongs to, or null when it stands alone. On group
+  /// deletion this is set to null (see [ItemGroups]) rather than cascading, so
+  /// dissolving a group never removes the underlying places/legs.
+  IntColumn get groupId =>
+      integer().nullable().references(ItemGroups, #id, onDelete: KeyAction.setNull)();
 
   /// The day this entry belongs to (time component ignored, normalised to midnight).
   DateTimeColumn get date => dateTime()();
@@ -105,15 +129,22 @@ class ItineraryItems extends Table {
   TextColumn get toLocation => text().nullable()();
 }
 
-/// A single cost. Attached either to an itinerary item (via [itemId]) or to the
-/// trip as a whole (via [tripId]) for costs that don't belong to any one place
-/// or transport leg. Exactly one of the two is set; both count toward the
-/// trip's total.
+/// A single cost. Attached to exactly one of: a single itinerary item (via
+/// [itemId]), a group of items sharing one expense (via [groupId], e.g. a train
+/// ticket covering several legs), or the trip as a whole (via [tripId]) for
+/// costs that don't belong to any one place or leg. All three count toward the
+/// trip's total the same way — the statistics engine only ever sees one row per
+/// cost, so how it is attached never affects the maths.
 class Costs extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get itemId => integer()
       .nullable()
       .references(ItineraryItems, #id, onDelete: KeyAction.cascade)();
+
+  /// Set for costs shared across an [ItemGroups] group instead of a single item.
+  IntColumn get groupId => integer()
+      .nullable()
+      .references(ItemGroups, #id, onDelete: KeyAction.cascade)();
 
   /// Set for trip-level costs that aren't tied to a specific itinerary item.
   IntColumn get tripId => integer()

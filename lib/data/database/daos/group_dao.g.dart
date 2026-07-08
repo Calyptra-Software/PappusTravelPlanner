@@ -1,19 +1,19 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'itinerary_dao.dart';
+part of 'group_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$ItineraryDaoMixin on DatabaseAccessor<AppDatabase> {
+mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $TripsTable get trips => attachedDatabase.trips;
   $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
-  $CollapsedDaysTable get collapsedDays => attachedDatabase.collapsedDays;
-  ItineraryDaoManager get managers => ItineraryDaoManager(this);
+  $CostsTable get costs => attachedDatabase.costs;
+  GroupDaoManager get managers => GroupDaoManager(this);
 }
 
-class ItineraryDaoManager {
-  final _$ItineraryDaoMixin _db;
-  ItineraryDaoManager(this._db);
+class GroupDaoManager {
+  final _$GroupDaoMixin _db;
+  GroupDaoManager(this._db);
   $$TripsTableTableManager get trips =>
       $$TripsTableTableManager(_db.attachedDatabase, _db.trips);
   $$ItemGroupsTableTableManager get itemGroups =>
@@ -23,6 +23,6 @@ class ItineraryDaoManager {
         _db.attachedDatabase,
         _db.itineraryItems,
       );
-  $$CollapsedDaysTableTableManager get collapsedDays =>
-      $$CollapsedDaysTableTableManager(_db.attachedDatabase, _db.collapsedDays);
+  $$CostsTableTableManager get costs =>
+      $$CostsTableTableManager(_db.attachedDatabase, _db.costs);
 }

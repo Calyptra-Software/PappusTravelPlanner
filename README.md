@@ -13,11 +13,10 @@ Linux, Windows, macOS, and iOS.
 ## Features
 
 - **Trips overview** — create, edit, and delete trips with a destination, date range,
-  notes, participants, and an accent colour. Collapsed days and checklist cards are
-  remembered.
+  notes, participants, and an accent colour.
 - **Structured itinerary** — a vertical, day-by-day timeline of **places** and
   **transport legs** (walk, bike, ski, car, taxi, bus, train, tram, subway, ferry,
-  flight, …) with times and notes. Reorder items within a day; collapse/expand days.
+  flight, …) with times and notes. Reorder and group items within a day; collapse/expand days.
 - **Checklists** — any number of named checklists per trip (packing list, to-dos, …),
   with reorderable, tickable items and collapsible cards.
 - **Costs & expense splitting** — attach costs to any place, transport, or the trip as a

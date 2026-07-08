@@ -25,6 +25,8 @@ class ItineraryTimeline extends StatelessWidget {
     required this.onAddTransport,
     required this.onReorder,
     required this.costsByItem,
+    required this.groups,
+    required this.costsByGroup,
     required this.localeName,
     required this.onTapCost,
     required this.collapsedDays,
@@ -35,6 +37,13 @@ class ItineraryTimeline extends StatelessWidget {
   final Color accent;
   final DateTime? tripStart;
   final DateTime? tripEnd;
+
+  /// The trip's item groups, keyed by id, to resolve a grouped item's label.
+  final Map<int, ItemGroup> groups;
+
+  /// Costs attached to a group, keyed by group id. Shown once under the group's
+  /// last member and counted once toward the day total.
+  final Map<int, List<Cost>> costsByGroup;
 
   /// The days (normalized to midnight) currently shown collapsed.
   final Set<DateTime> collapsedDays;
@@ -98,6 +107,8 @@ class ItineraryTimeline extends StatelessWidget {
         onAddTransport: onAddTransport,
         onReorder: onReorder,
         costsByItem: costsByItem,
+        groups: groups,
+        costsByGroup: costsByGroup,
         localeName: localeName,
         onTapCost: onTapCost,
       );
@@ -123,6 +134,8 @@ class ItineraryTimeline extends StatelessWidget {
             onAddTransport: onAddTransport,
             onReorder: onReorder,
             costsByItem: costsByItem,
+            groups: groups,
+            costsByGroup: costsByGroup,
             localeName: localeName,
             onTapCost: onTapCost,
           ),
@@ -146,6 +159,8 @@ class _DaySection extends StatelessWidget {
     required this.onAddTransport,
     required this.onReorder,
     required this.costsByItem,
+    required this.groups,
+    required this.costsByGroup,
     required this.localeName,
     required this.onTapCost,
   });
@@ -154,6 +169,8 @@ class _DaySection extends StatelessWidget {
   final int dayNumber;
   final List<ItineraryItem> items;
   final Color accent;
+  final Map<int, ItemGroup> groups;
+  final Map<int, List<Cost>> costsByGroup;
 
   /// Whether this day is shown collapsed.
   final bool collapsed;
@@ -176,8 +193,15 @@ class _DaySection extends StatelessWidget {
     final localeName = Localizations.localeOf(context).languageCode;
     final expanded = !collapsed;
     final count = items.length;
+    // Per-item costs for the day, plus each group's shared costs counted once
+    // (a group may have several members on the day, but one expense).
+    final groupIdsToday = {
+      for (final item in items)
+        if (item.groupId != null) item.groupId!,
+    };
     final dayCosts = [
       for (final item in items) ...?costsByItem[item.id],
+      for (final groupId in groupIdsToday) ...?costsByGroup[groupId],
     ];
     final dayTotals = sumByCurrency(dayCosts);
 
@@ -300,12 +324,25 @@ class _DaySection extends StatelessWidget {
                 onReorder(items, oldIndex, newIndex),
             itemBuilder: (context, index) {
               final item = items[index];
+              // A group renders as a contiguous run within the day: its label
+              // heads the first member and its shared costs sit under the last.
+              final groupId = item.groupId;
+              final inGroup = groupId != null;
+              final isFirstInGroup = inGroup &&
+                  (index == 0 || items[index - 1].groupId != groupId);
+              final isLastInGroup = inGroup &&
+                  (index == items.length - 1 ||
+                      items[index + 1].groupId != groupId);
               return TimelineTile(
                 key: ValueKey(item.id),
                 item: item,
                 accent: accent,
                 onTap: () => onTapItem(item),
                 costs: costsByItem[item.id] ?? const [],
+                group: inGroup ? groups[groupId] : null,
+                isFirstInGroup: isFirstInGroup,
+                isLastInGroup: isLastInGroup,
+                groupCosts: inGroup ? (costsByGroup[groupId] ?? const []) : const [],
                 localeName: localeName,
                 onTapCost: onTapCost,
                 dragHandle: ReorderableDragStartListener(

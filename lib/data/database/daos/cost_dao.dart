@@ -5,21 +5,30 @@ import '../tables.dart';
 
 part 'cost_dao.g.dart';
 
-@DriftAccessor(
-    tables: [Costs, CostReasons, People, CostBeneficiaries, ItineraryItems])
+@DriftAccessor(tables: [
+  Costs,
+  CostReasons,
+  People,
+  CostBeneficiaries,
+  ItineraryItems,
+  ItemGroups,
+])
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   CostDao(super.db);
 
-  /// All costs for a trip, oldest first: both those attached to the trip's
-  /// itinerary items and trip-level costs attached to the trip directly. The
-  /// left join lets a single query pick up trip-level costs (no matching item)
-  /// alongside item costs.
+  /// All costs for a trip, oldest first, whichever way they are attached: to one
+  /// of the trip's itinerary items, to a group of its items, or to the trip
+  /// directly. The left joins let a single query reach every kind — a cost
+  /// matches when its item, its group, or the cost itself belongs to the trip.
   Stream<List<Cost>> watchCostsForTrip(int tripId) {
     final query = select(costs).join([
       leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
     ])
       ..where(
-        itineraryItems.tripId.equals(tripId) | costs.tripId.equals(tripId),
+        itineraryItems.tripId.equals(tripId) |
+            itemGroups.tripId.equals(tripId) |
+            costs.tripId.equals(tripId),
       )
       ..orderBy([OrderingTerm(expression: costs.createdAt)]);
     return query.watch().map(
@@ -100,9 +109,12 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
       innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
       innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
       leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
     ])
       ..where(
-        itineraryItems.tripId.equals(tripId) | costs.tripId.equals(tripId),
+        itineraryItems.tripId.equals(tripId) |
+            itemGroups.tripId.equals(tripId) |
+            costs.tripId.equals(tripId),
       )
       ..orderBy([OrderingTerm(expression: people.name)]);
     return query.watch().map((rows) {

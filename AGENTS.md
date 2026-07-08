@@ -53,12 +53,19 @@ UI (features/*/presentation, *widgets)
 - **Single `ItineraryItems` table** holds both places and transport legs, discriminated by
   `ItemKind`; kind-specific columns are nullable. This lets a day read as one ordered timeline
   (place → transport → place). Items are ordered by `date` → `sortOrder` → `startMinutes`.
+- **Item groups** (`ItemGroups`, with `ItineraryItems.groupId`) bundle adjacent items — e.g.
+  a train journey of several legs sharing one ticket — so a single cost covers them all. A
+  `Cost` attaches to exactly one of an item (`itemId`), a group (`groupId`), or the trip
+  (`tripId`); the stats engine only sees one row per cost, so grouping never affects the maths.
+  `groupId` on items is `setNull` on group delete (dissolving a group keeps its items); a
+  group's costs are re-pointed onto its first member before the group is deleted so the expense
+  survives. Grouping ops live in `GroupDao`.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
   `Currency` and `TransportMode` enums (in `tables.dart`) and the SharedPreferences-backed
   `CostReasonDisplay` / `ExpenseScope` enums are all persisted by **integer index** — only
   ever append new values at the end, never reorder.
-- Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItineraryItems`, `Costs`,
+- Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItemGroups`, `ItineraryItems`, `Costs`,
   `CostReasons` (reusable reason labels with an optional icon id), `People` (reusable payer/
   beneficiary names; one flagged `isMe`), `TripParticipants` and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
@@ -78,7 +85,7 @@ UI (features/*/presentation, *widgets)
   `DatabaseController` (`lib/features/settings/application/database_providers.dart`) coordinates
   switching/importing/exporting. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 13) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 15) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

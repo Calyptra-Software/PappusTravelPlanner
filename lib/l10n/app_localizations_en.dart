@@ -580,4 +580,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String checklistDeleteBody(String name) {
     return '\"$name\" and all its items will be removed.';
   }
+
+  @override
+  String get grouping => 'Grouping';
+
+  @override
+  String get groupWithNext => 'Group with next item';
+
+  @override
+  String get groupRemoveItem => 'Remove from group';
+
+  @override
+  String get groupUngroup => 'Ungroup';
+
+  @override
+  String get groupNameLabel => 'Group name (optional)';
+
+  @override
+  String get groupNameHint => 'e.g. Train to Rome';
+
+  @override
+  String get groupDefaultLabel => 'Grouped';
+
+  @override
+  String get groupSharedExpenses => 'Shared expenses';
+
+  @override
+  String get groupMemberHint =>
+      'Part of a group — shared expenses apply to all its items.';
 }

@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../core/database/database_location.dart';
 import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
+import 'daos/group_dao.dart';
 import 'daos/itinerary_dao.dart';
 import 'daos/trip_dao.dart';
 import 'tables.dart';
@@ -12,6 +13,7 @@ part 'app_database.g.dart';
 @DriftDatabase(
   tables: [
     Trips,
+    ItemGroups,
     ItineraryItems,
     Costs,
     CostReasons,
@@ -22,7 +24,7 @@ part 'app_database.g.dart';
     ChecklistItems,
     CollapsedDays,
   ],
-  daos: [TripDao, ItineraryDao, CostDao, ChecklistDao],
+  daos: [TripDao, ItineraryDao, CostDao, ChecklistDao, GroupDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (or creates) the database file at [path].
@@ -33,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -122,6 +124,32 @@ class AppDatabase extends _$AppDatabase {
           // the trip overview.
           if (from < 13) {
             await m.createTable(collapsedDays);
+          }
+          // v14 added item groups: several adjacent itinerary items sharing one
+          // expense (e.g. a train ticket). Create the group table first, then
+          // the nullable foreign keys pointing at it on items and costs.
+          if (from < 14) {
+            await m.createTable(itemGroups);
+            await m.addColumn(itineraryItems, itineraryItems.groupId);
+            await m.addColumn(costs, costs.groupId);
+          }
+          // v15 cleans up orphaned groups: a group left with no members (e.g.
+          // after deleting all its items in an earlier build that didn't tidy
+          // the group) still carried its shared costs, which were counted in the
+          // trip total but shown nowhere. Drop those costs, then the empty
+          // groups. Foreign keys may be off during migration, so delete the
+          // costs explicitly rather than relying on the cascade.
+          if (from < 15) {
+            await customStatement('''
+              DELETE FROM costs WHERE group_id IS NOT NULL AND group_id IN (
+                SELECT g.id FROM item_groups g
+                WHERE NOT EXISTS (
+                  SELECT 1 FROM itinerary_items i WHERE i.group_id = g.id))
+            ''');
+            await customStatement('''
+              DELETE FROM item_groups WHERE NOT EXISTS (
+                SELECT 1 FROM itinerary_items i WHERE i.group_id = item_groups.id)
+            ''');
           }
         },
         beforeOpen: (details) async {

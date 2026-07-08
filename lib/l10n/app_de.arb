@@ -187,5 +187,14 @@
   "checklistDeleteBody": "„{name}“ und alle ihre Einträge werden entfernt.",
   "@checklistDeleteBody": {
     "placeholders": { "name": { "type": "String" } }
-  }
+  },
+  "grouping": "Gruppierung",
+  "groupWithNext": "Mit nächstem Element gruppieren",
+  "groupRemoveItem": "Aus Gruppe entfernen",
+  "groupUngroup": "Gruppierung aufheben",
+  "groupNameLabel": "Gruppenname (optional)",
+  "groupNameHint": "z. B. Zug nach Rom",
+  "groupDefaultLabel": "Gruppe",
+  "groupSharedExpenses": "Gemeinsame Ausgaben",
+  "groupMemberHint": "Teil einer Gruppe – die gemeinsamen Ausgaben werden auf alle Elemente angewendet."
 }
