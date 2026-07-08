@@ -37,6 +37,10 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
   DateTime? _endDate;
   late int _colorValue = AppTheme.tripAccents.first.toARGB32();
 
+  /// Participants chosen while creating a new trip, before it has an id. Once
+  /// the trip exists (edit mode) participants are managed live via the repo.
+  final List<String> _participants = [];
+
   Trip? _editing;
   bool _loading = false;
 
@@ -114,7 +118,7 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
         ),
       );
     } else {
-      await repo.createTrip(
+      final tripId = await repo.createTrip(
         TripsCompanion.insert(
           title: title,
           destination: Value(destination),
@@ -124,6 +128,9 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
           colorValue: Value(_colorValue),
         ),
       );
+      for (final name in _participants) {
+        await repo.addParticipant(tripId, name);
+      }
     }
     if (mounted) context.pop();
   }
@@ -202,15 +209,20 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
               selected: _colorValue,
               onSelected: (value) => setState(() => _colorValue = value),
             ),
+            const SizedBox(height: 24),
             if (widget.isEditing) ...[
-              const SizedBox(height: 24),
               _TripParticipantsEditor(tripId: widget.tripId!),
               const SizedBox(height: 24),
               _TripCostsEditor(
                 tripId: widget.tripId!,
                 localeName: localeName,
               ),
-            ],
+            ] else
+              _NewTripParticipantsEditor(
+                participants: _participants,
+                onAdd: (name) => setState(() => _participants.add(name)),
+                onRemove: (name) => setState(() => _participants.remove(name)),
+              ),
             const SizedBox(height: 32),
             FilledButton.icon(
               onPressed: _save,
@@ -344,6 +356,67 @@ class _TripParticipantsEditor extends ConsumerWidget {
     );
     if (name == null || name.isEmpty) return;
     await ref.read(repositoryProvider).addParticipant(tripId, name);
+  }
+}
+
+/// Trip participants while creating a new trip, before it has an id. Holds the
+/// chosen names in the parent form's state (via [onAdd] / [onRemove]); they are
+/// linked to the trip once it is saved. Mirrors [_TripParticipantsEditor], but
+/// backed by a plain in-memory list rather than the live repository.
+class _NewTripParticipantsEditor extends ConsumerWidget {
+  const _NewTripParticipantsEditor({
+    required this.participants,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<String> participants;
+  final ValueChanged<String> onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.participants, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          runSpacing: 2,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            for (final name in participants)
+              InputChip(
+                avatar: const Icon(Icons.person_outline, size: 16),
+                label: Text(name),
+                visualDensity: VisualDensity.compact,
+                onDeleted: () => onRemove(name),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 16),
+              label: Text(l10n.addParticipant),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _addParticipant(context),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _addParticipant(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final name = await showPersonPicker(
+      context,
+      currentNames: participants.toSet(),
+      title: l10n.addParticipant,
+    );
+    if (name == null || name.isEmpty) return;
+    onAdd(name);
   }
 }
 
