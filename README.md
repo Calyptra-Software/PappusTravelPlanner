@@ -13,14 +13,20 @@ Linux, Windows, macOS, and iOS.
 ## Features
 
 - **Trips overview** — create, edit, and delete trips with a destination, date range,
-  notes, and an accent colour.
+  notes, participants, and an accent colour. Collapsed days and checklist cards are
+  remembered.
 - **Structured itinerary** — a vertical, day-by-day timeline of **places** and
   **transport legs** (walk, bike, ski, car, taxi, bus, train, tram, subway, ferry,
   flight, …) with times and notes. Reorder items within a day; collapse/expand days.
-- **Costs** — attach costs to any place or transport, each with an
-  amount, a currency (€ / US-$ / £), and a reason. Previously used reasons are
-  remembered and offered in a dropdown. Per-item subtotals and a per-trip total
-  (grouped by currency) are shown automatically.
+- **Checklists** — any number of named checklists per trip (packing list, to-dos, …),
+  with reorderable, tickable items and collapsible cards.
+- **Costs & expense splitting** — attach costs to any place, transport, or the trip as a
+  whole, each with an amount, a currency (€ / US-$ / £ /
+  CHF), a category, who paid, and who it was for. Per-item subtotals and a per-trip total (grouped by currency) are
+  shown automatically, and the overview can be scoped to *my* expenses.
+- **Trip statistics & settle-up** — a per-trip stats screen breaks spending down by
+  category and by person (paid vs. fair share) and suggests a minimal set of payments to
+  settle up, computed per currency (no conversion between currencies).
 - **Portable database** — all data lives in a single SQLite file. On desktop you can
   open/create the database anywhere; on Android you can import/export it. Copy the
   file between devices and platforms and open it as-is.
@@ -135,13 +141,14 @@ lib/
   app.dart                  # MaterialApp.router, theme, localization
   core/                     # theme, router, providers, settings, formatting helpers
   data/
-    database/               # Drift tables, database, DAOs (trips, itinerary, costs)
+    database/               # Drift tables, database, DAOs (trips, itinerary, costs, checklists)
     repositories/           # thin repository over the DAOs
   features/
-    trips/                  # overview, create/edit, detail
+    trips/                  # overview, create/edit, detail, participants
     itinerary/              # timeline, item form, transport modes
-    costs/                  # cost form and providers
-    settings/               # language + database location screen
+    costs/                  # cost form, splitting/stats, reasons & people settings
+    checklist/              # per-trip named checklists
+    settings/               # language, cost reasons, people + database location screen
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
 android/ ios/ linux/ ...    # per-platform host projects
