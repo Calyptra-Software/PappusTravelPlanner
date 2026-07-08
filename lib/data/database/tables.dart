@@ -164,6 +164,22 @@ class ChecklistItems extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Records which itinerary days the user has collapsed in the trip overview.
+/// A day is derived from the itinerary (not its own entity), so only collapsed
+/// days are stored, keyed by trip and the day normalized to midnight; the
+/// absence of a row means the day is expanded (the default). Persisted so the
+/// collapse state is restored when reopening the trip or the app.
+class CollapsedDays extends Table {
+  IntColumn get tripId =>
+      integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+
+  /// The day, normalized to midnight (see `normalizeDay`).
+  DateTimeColumn get day => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {tripId, day};
+}
+
 /// Distinct reason labels the user has entered, kept for reuse in the dropdown
 /// independently of whether any cost currently uses them.
 class CostReasons extends Table {

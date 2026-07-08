@@ -5,7 +5,7 @@ import '../tables.dart';
 
 part 'itinerary_dao.g.dart';
 
-@DriftAccessor(tables: [ItineraryItems])
+@DriftAccessor(tables: [ItineraryItems, CollapsedDays])
 class ItineraryDao extends DatabaseAccessor<AppDatabase>
     with _$ItineraryDaoMixin {
   ItineraryDao(super.db);
@@ -44,5 +44,30 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
     final row = await query.getSingleOrNull();
     final current = row?.read(maxExpr);
     return (current ?? -1) + 1;
+  }
+
+  // --- collapsed days ---
+
+  /// The set of a trip's days (normalized to midnight) shown collapsed. Days
+  /// without a row are expanded.
+  Stream<Set<DateTime>> watchCollapsedDays(int tripId) {
+    return (select(collapsedDays)..where((d) => d.tripId.equals(tripId)))
+        .watch()
+        .map((rows) => rows.map((r) => r.day).toSet());
+  }
+
+  /// Marks [day] (of [tripId]) collapsed or expanded, inserting or deleting the
+  /// backing row accordingly.
+  Future<void> setDayCollapsed(int tripId, DateTime day, bool collapsed) async {
+    if (collapsed) {
+      await into(collapsedDays).insert(
+        CollapsedDaysCompanion.insert(tripId: tripId, day: day),
+        mode: InsertMode.insertOrIgnore,
+      );
+    } else {
+      await (delete(collapsedDays)
+            ..where((d) => d.tripId.equals(tripId) & d.day.equals(day)))
+          .go();
+    }
   }
 }

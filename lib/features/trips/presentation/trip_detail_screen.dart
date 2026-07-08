@@ -94,6 +94,8 @@ class TripDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tripAsync = ref.watch(tripProvider(tripId));
     final itemsAsync = ref.watch(itineraryProvider(tripId));
+    final collapsedDays =
+        ref.watch(collapsedDaysProvider(tripId)).value ?? const <DateTime>{};
     final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
     final costsByItem = tripCosts?.byItem ?? const {};
     final tripLevelCosts = tripCosts?.tripLevel ?? const <Cost>[];
@@ -160,6 +162,10 @@ class TripDetailScreen extends ConsumerWidget {
                     tripEnd: trip.endDate,
                     costsByItem: costsByItem,
                     localeName: localeName,
+                    collapsedDays: collapsedDays,
+                    onToggleDayCollapsed: (day, collapsed) => ref
+                        .read(repositoryProvider)
+                        .setDayCollapsed(tripId, day, collapsed),
                     onTapItem: (item) => showItemFormSheet(
                       context,
                       tripId: tripId,

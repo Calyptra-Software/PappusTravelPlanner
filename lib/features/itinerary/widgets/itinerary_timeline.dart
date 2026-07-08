@@ -27,12 +27,20 @@ class ItineraryTimeline extends StatelessWidget {
     required this.costsByItem,
     required this.localeName,
     required this.onTapCost,
+    required this.collapsedDays,
+    required this.onToggleDayCollapsed,
   });
 
   final List<ItineraryItem> items;
   final Color accent;
   final DateTime? tripStart;
   final DateTime? tripEnd;
+
+  /// The days (normalized to midnight) currently shown collapsed.
+  final Set<DateTime> collapsedDays;
+
+  /// Called when a day header is tapped, with the new collapsed state.
+  final void Function(DateTime day, bool collapsed) onToggleDayCollapsed;
   final ValueChanged<ItineraryItem> onTapItem;
   final ValueChanged<DateTime> onAddPlace;
 
@@ -82,6 +90,8 @@ class ItineraryTimeline extends StatelessWidget {
         dayNumber: 1,
         items: const [],
         accent: accent,
+        collapsed: collapsedDays.contains(today),
+        onToggleCollapsed: onToggleDayCollapsed,
         onTapItem: onTapItem,
         onAddPlace: onAddPlace,
         onQuickAddPlace: onQuickAddPlace,
@@ -105,6 +115,8 @@ class ItineraryTimeline extends StatelessWidget {
                 .where((it) => normalizeDay(it.date) == days[i])
                 .toList(),
             accent: accent,
+            collapsed: collapsedDays.contains(days[i]),
+            onToggleCollapsed: onToggleDayCollapsed,
             onTapItem: onTapItem,
             onAddPlace: onAddPlace,
             onQuickAddPlace: onQuickAddPlace,
@@ -119,13 +131,15 @@ class ItineraryTimeline extends StatelessWidget {
   }
 }
 
-class _DaySection extends StatefulWidget {
+class _DaySection extends StatelessWidget {
   const _DaySection({
     super.key,
     required this.day,
     required this.dayNumber,
     required this.items,
     required this.accent,
+    required this.collapsed,
+    required this.onToggleCollapsed,
     required this.onTapItem,
     required this.onAddPlace,
     required this.onQuickAddPlace,
@@ -140,6 +154,12 @@ class _DaySection extends StatefulWidget {
   final int dayNumber;
   final List<ItineraryItem> items;
   final Color accent;
+
+  /// Whether this day is shown collapsed.
+  final bool collapsed;
+
+  /// Called when the header is tapped, with the new collapsed state.
+  final void Function(DateTime day, bool collapsed) onToggleCollapsed;
   final ValueChanged<ItineraryItem> onTapItem;
   final ValueChanged<DateTime> onAddPlace;
   final void Function(DateTime day, String location) onQuickAddPlace;
@@ -150,22 +170,14 @@ class _DaySection extends StatefulWidget {
   final ValueChanged<Cost> onTapCost;
 
   @override
-  State<_DaySection> createState() => _DaySectionState();
-}
-
-class _DaySectionState extends State<_DaySection> {
-  bool _expanded = true;
-
-  void _toggle() => setState(() => _expanded = !_expanded);
-
-  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
-    final count = widget.items.length;
+    final expanded = !collapsed;
+    final count = items.length;
     final dayCosts = [
-      for (final item in widget.items) ...?widget.costsByItem[item.id],
+      for (final item in items) ...?costsByItem[item.id],
     ];
     final dayTotals = sumByCurrency(dayCosts);
 
@@ -174,7 +186,7 @@ class _DaySectionState extends State<_DaySection> {
       children: [
         // Tappable header that collapses/expands the whole day.
         InkWell(
-          onTap: _toggle,
+          onTap: () => onToggleCollapsed(day, expanded),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(4, 16, 8, 8),
@@ -182,9 +194,9 @@ class _DaySectionState extends State<_DaySection> {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: widget.accent,
+                  backgroundColor: accent,
                   child: Text(
-                    '${widget.dayNumber}',
+                    '$dayNumber',
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -197,7 +209,7 @@ class _DaySectionState extends State<_DaySection> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        formatDay(widget.day, localeName),
+                        formatDay(day, localeName),
                         style: theme.textTheme.titleMedium,
                       ),
                       if (dayTotals.isNotEmpty)
@@ -212,7 +224,7 @@ class _DaySectionState extends State<_DaySection> {
                     ],
                   ),
                 ),
-                if (!_expanded && count > 0)
+                if (!expanded && count > 0)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: Text(
@@ -223,9 +235,9 @@ class _DaySectionState extends State<_DaySection> {
                     ),
                   ),
                 Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more,
+                  expanded ? Icons.expand_less : Icons.expand_more,
                   color: theme.colorScheme.onSurfaceVariant,
-                  semanticLabel: _expanded
+                  semanticLabel: expanded
                       ? l10n.hideEntries
                       : l10n.showEntries,
                 ),
@@ -238,7 +250,7 @@ class _DaySectionState extends State<_DaySection> {
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
-          child: _expanded
+          child: expanded
               ? _buildBody(context, theme)
               : const SizedBox(width: double.infinity),
         ),
@@ -248,7 +260,7 @@ class _DaySectionState extends State<_DaySection> {
 
   Widget _buildBody(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
-    final lastItem = widget.items.isEmpty ? null : widget.items.last;
+    final lastItem = items.isEmpty ? null : items.last;
     // The day's current location: where the last entry leaves you — a place's
     // location, or a leg's destination. Used to pre-fill the next leg's "from"
     // and, when it comes from a leg, to offer the arrival quick-add chip.
@@ -268,7 +280,7 @@ class _DaySectionState extends State<_DaySection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.items.isEmpty)
+        if (items.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(48, 4, 4, 4),
             child: Text(
@@ -283,19 +295,19 @@ class _DaySectionState extends State<_DaySection> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
-            itemCount: widget.items.length,
+            itemCount: items.length,
             onReorderItem: (oldIndex, newIndex) =>
-                widget.onReorder(widget.items, oldIndex, newIndex),
+                onReorder(items, oldIndex, newIndex),
             itemBuilder: (context, index) {
-              final item = widget.items[index];
+              final item = items[index];
               return TimelineTile(
                 key: ValueKey(item.id),
                 item: item,
-                accent: widget.accent,
-                onTap: () => widget.onTapItem(item),
-                costs: widget.costsByItem[item.id] ?? const [],
-                localeName: widget.localeName,
-                onTapCost: widget.onTapCost,
+                accent: accent,
+                onTap: () => onTapItem(item),
+                costs: costsByItem[item.id] ?? const [],
+                localeName: localeName,
+                onTapCost: onTapCost,
                 dragHandle: ReorderableDragStartListener(
                   index: index,
                   child: Padding(
@@ -315,7 +327,7 @@ class _DaySectionState extends State<_DaySection> {
             spacing: 8,
             children: [
               TextButton.icon(
-                onPressed: () => widget.onAddPlace(widget.day),
+                onPressed: () => onAddPlace(day),
                 icon: const Icon(Icons.add_location_alt_outlined, size: 18),
                 label: Text(l10n.addPlace),
               ),
@@ -324,11 +336,11 @@ class _DaySectionState extends State<_DaySection> {
                   avatar: const Icon(Icons.place, size: 16),
                   label: Text(l10n.addArrival(arrival)),
                   visualDensity: VisualDensity.compact,
-                  onPressed: () => widget.onQuickAddPlace(widget.day, arrival),
+                  onPressed: () => onQuickAddPlace(day, arrival),
                 ),
               TextButton.icon(
-                onPressed: () => widget.onAddTransport(
-                  widget.day,
+                onPressed: () => onAddTransport(
+                  day,
                   hasCurrentLocation ? currentLocation : null,
                 ),
                 icon: const Icon(Icons.alt_route, size: 18),

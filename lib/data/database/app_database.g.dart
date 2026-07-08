@@ -3538,6 +3538,219 @@ class ChecklistItemsCompanion extends UpdateCompanion<ChecklistItem> {
   }
 }
 
+class $CollapsedDaysTable extends CollapsedDays
+    with TableInfo<$CollapsedDaysTable, CollapsedDay> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CollapsedDaysTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dayMeta = const VerificationMeta('day');
+  @override
+  late final GeneratedColumn<DateTime> day = GeneratedColumn<DateTime>(
+    'day',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [tripId, day];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'collapsed_days';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CollapsedDay> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('day')) {
+      context.handle(
+        _dayMeta,
+        day.isAcceptableOrUnknown(data['day']!, _dayMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dayMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {tripId, day};
+  @override
+  CollapsedDay map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CollapsedDay(
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      day: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}day'],
+      )!,
+    );
+  }
+
+  @override
+  $CollapsedDaysTable createAlias(String alias) {
+    return $CollapsedDaysTable(attachedDatabase, alias);
+  }
+}
+
+class CollapsedDay extends DataClass implements Insertable<CollapsedDay> {
+  final int tripId;
+
+  /// The day, normalized to midnight (see `normalizeDay`).
+  final DateTime day;
+  const CollapsedDay({required this.tripId, required this.day});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trip_id'] = Variable<int>(tripId);
+    map['day'] = Variable<DateTime>(day);
+    return map;
+  }
+
+  CollapsedDaysCompanion toCompanion(bool nullToAbsent) {
+    return CollapsedDaysCompanion(tripId: Value(tripId), day: Value(day));
+  }
+
+  factory CollapsedDay.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CollapsedDay(
+      tripId: serializer.fromJson<int>(json['tripId']),
+      day: serializer.fromJson<DateTime>(json['day']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tripId': serializer.toJson<int>(tripId),
+      'day': serializer.toJson<DateTime>(day),
+    };
+  }
+
+  CollapsedDay copyWith({int? tripId, DateTime? day}) =>
+      CollapsedDay(tripId: tripId ?? this.tripId, day: day ?? this.day);
+  CollapsedDay copyWithCompanion(CollapsedDaysCompanion data) {
+    return CollapsedDay(
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      day: data.day.present ? data.day.value : this.day,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CollapsedDay(')
+          ..write('tripId: $tripId, ')
+          ..write('day: $day')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(tripId, day);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CollapsedDay &&
+          other.tripId == this.tripId &&
+          other.day == this.day);
+}
+
+class CollapsedDaysCompanion extends UpdateCompanion<CollapsedDay> {
+  final Value<int> tripId;
+  final Value<DateTime> day;
+  final Value<int> rowid;
+  const CollapsedDaysCompanion({
+    this.tripId = const Value.absent(),
+    this.day = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  CollapsedDaysCompanion.insert({
+    required int tripId,
+    required DateTime day,
+    this.rowid = const Value.absent(),
+  }) : tripId = Value(tripId),
+       day = Value(day);
+  static Insertable<CollapsedDay> custom({
+    Expression<int>? tripId,
+    Expression<DateTime>? day,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (tripId != null) 'trip_id': tripId,
+      if (day != null) 'day': day,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  CollapsedDaysCompanion copyWith({
+    Value<int>? tripId,
+    Value<DateTime>? day,
+    Value<int>? rowid,
+  }) {
+    return CollapsedDaysCompanion(
+      tripId: tripId ?? this.tripId,
+      day: day ?? this.day,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (day.present) {
+      map['day'] = Variable<DateTime>(day.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CollapsedDaysCompanion(')
+          ..write('tripId: $tripId, ')
+          ..write('day: $day, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3553,6 +3766,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CostBeneficiariesTable(this);
   late final $ChecklistsTable checklists = $ChecklistsTable(this);
   late final $ChecklistItemsTable checklistItems = $ChecklistItemsTable(this);
+  late final $CollapsedDaysTable collapsedDays = $CollapsedDaysTable(this);
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ItineraryDao itineraryDao = ItineraryDao(this as AppDatabase);
   late final CostDao costDao = CostDao(this as AppDatabase);
@@ -3571,6 +3785,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     costBeneficiaries,
     checklists,
     checklistItems,
+    collapsedDays,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3636,6 +3851,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('checklist_items', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('collapsed_days', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -3737,6 +3959,24 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_checklistsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$CollapsedDaysTable, List<CollapsedDay>>
+  _collapsedDaysRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.collapsedDays,
+    aliasName: 'trips__id__collapsed_days__trip_id',
+  );
+
+  $$CollapsedDaysTableProcessedTableManager get collapsedDaysRefs {
+    final manager = $$CollapsedDaysTableTableManager(
+      $_db,
+      $_db.collapsedDays,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_collapsedDaysRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -3882,6 +4122,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$ChecklistsTableFilterComposer(
             $db: $db,
             $table: $db.checklists,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> collapsedDaysRefs(
+    Expression<bool> Function($$CollapsedDaysTableFilterComposer f) f,
+  ) {
+    final $$CollapsedDaysTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.collapsedDays,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CollapsedDaysTableFilterComposer(
+            $db: $db,
+            $table: $db.collapsedDays,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4078,6 +4343,31 @@ class $$TripsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> collapsedDaysRefs<T extends Object>(
+    Expression<T> Function($$CollapsedDaysTableAnnotationComposer a) f,
+  ) {
+    final $$CollapsedDaysTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.collapsedDays,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CollapsedDaysTableAnnotationComposer(
+            $db: $db,
+            $table: $db.collapsedDays,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager
@@ -4098,6 +4388,7 @@ class $$TripsTableTableManager
             bool costsRefs,
             bool tripParticipantsRefs,
             bool checklistsRefs,
+            bool collapsedDaysRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -4163,6 +4454,7 @@ class $$TripsTableTableManager
                 costsRefs = false,
                 tripParticipantsRefs = false,
                 checklistsRefs = false,
+                collapsedDaysRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -4171,6 +4463,7 @@ class $$TripsTableTableManager
                     if (costsRefs) db.costs,
                     if (tripParticipantsRefs) db.tripParticipants,
                     if (checklistsRefs) db.checklists,
+                    if (collapsedDaysRefs) db.collapsedDays,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -4247,6 +4540,27 @@ class $$TripsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (collapsedDaysRefs)
+                        await $_getPrefetchedData<
+                          Trip,
+                          $TripsTable,
+                          CollapsedDay
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._collapsedDaysRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).collapsedDaysRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -4272,6 +4586,7 @@ typedef $$TripsTableProcessedTableManager =
         bool costsRefs,
         bool tripParticipantsRefs,
         bool checklistsRefs,
+        bool collapsedDaysRefs,
       })
     >;
 typedef $$ItineraryItemsTableCreateCompanionBuilder =
@@ -7394,6 +7709,270 @@ typedef $$ChecklistItemsTableProcessedTableManager =
       ChecklistItem,
       PrefetchHooks Function({bool checklistId})
     >;
+typedef $$CollapsedDaysTableCreateCompanionBuilder =
+    CollapsedDaysCompanion Function({
+      required int tripId,
+      required DateTime day,
+      Value<int> rowid,
+    });
+typedef $$CollapsedDaysTableUpdateCompanionBuilder =
+    CollapsedDaysCompanion Function({
+      Value<int> tripId,
+      Value<DateTime> day,
+      Value<int> rowid,
+    });
+
+final class $$CollapsedDaysTableReferences
+    extends BaseReferences<_$AppDatabase, $CollapsedDaysTable, CollapsedDay> {
+  $$CollapsedDaysTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('collapsed_days__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$CollapsedDaysTableFilterComposer
+    extends Composer<_$AppDatabase, $CollapsedDaysTable> {
+  $$CollapsedDaysTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CollapsedDaysTableOrderingComposer
+    extends Composer<_$AppDatabase, $CollapsedDaysTable> {
+  $$CollapsedDaysTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<DateTime> get day => $composableBuilder(
+    column: $table.day,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CollapsedDaysTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CollapsedDaysTable> {
+  $$CollapsedDaysTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<DateTime> get day =>
+      $composableBuilder(column: $table.day, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$CollapsedDaysTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CollapsedDaysTable,
+          CollapsedDay,
+          $$CollapsedDaysTableFilterComposer,
+          $$CollapsedDaysTableOrderingComposer,
+          $$CollapsedDaysTableAnnotationComposer,
+          $$CollapsedDaysTableCreateCompanionBuilder,
+          $$CollapsedDaysTableUpdateCompanionBuilder,
+          (CollapsedDay, $$CollapsedDaysTableReferences),
+          CollapsedDay,
+          PrefetchHooks Function({bool tripId})
+        > {
+  $$CollapsedDaysTableTableManager(_$AppDatabase db, $CollapsedDaysTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CollapsedDaysTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CollapsedDaysTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CollapsedDaysTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> tripId = const Value.absent(),
+                Value<DateTime> day = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CollapsedDaysCompanion(
+                tripId: tripId,
+                day: day,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int tripId,
+                required DateTime day,
+                Value<int> rowid = const Value.absent(),
+              }) => CollapsedDaysCompanion.insert(
+                tripId: tripId,
+                day: day,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CollapsedDaysTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tripId,
+                                referencedTable: $$CollapsedDaysTableReferences
+                                    ._tripIdTable(db),
+                                referencedColumn: $$CollapsedDaysTableReferences
+                                    ._tripIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CollapsedDaysTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CollapsedDaysTable,
+      CollapsedDay,
+      $$CollapsedDaysTableFilterComposer,
+      $$CollapsedDaysTableOrderingComposer,
+      $$CollapsedDaysTableAnnotationComposer,
+      $$CollapsedDaysTableCreateCompanionBuilder,
+      $$CollapsedDaysTableUpdateCompanionBuilder,
+      (CollapsedDay, $$CollapsedDaysTableReferences),
+      CollapsedDay,
+      PrefetchHooks Function({bool tripId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7416,4 +7995,6 @@ class $AppDatabaseManager {
       $$ChecklistsTableTableManager(_db, _db.checklists);
   $$ChecklistItemsTableTableManager get checklistItems =>
       $$ChecklistItemsTableTableManager(_db, _db.checklistItems);
+  $$CollapsedDaysTableTableManager get collapsedDays =>
+      $$CollapsedDaysTableTableManager(_db, _db.collapsedDays);
 }

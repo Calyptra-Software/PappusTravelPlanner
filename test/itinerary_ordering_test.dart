@@ -81,4 +81,44 @@ void main() {
     final remaining = await db.itineraryDao.watchItemsForTrip(tripId).first;
     expect(remaining, isEmpty);
   });
+
+  test('collapsed days are toggled, defaulting to none (expanded)', () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'Trip'));
+
+    // No rows yet: every day is expanded.
+    expect(await db.itineraryDao.watchCollapsedDays(tripId).first, isEmpty);
+
+    await db.itineraryDao.setDayCollapsed(tripId, day(1), true);
+    await db.itineraryDao.setDayCollapsed(tripId, day(2), true);
+    expect(await db.itineraryDao.watchCollapsedDays(tripId).first,
+        {day(1), day(2)});
+
+    // Collapsing an already-collapsed day is idempotent.
+    await db.itineraryDao.setDayCollapsed(tripId, day(1), true);
+    expect(await db.itineraryDao.watchCollapsedDays(tripId).first,
+        {day(1), day(2)});
+
+    // Expanding removes just that day.
+    await db.itineraryDao.setDayCollapsed(tripId, day(1), false);
+    expect(await db.itineraryDao.watchCollapsedDays(tripId).first, {day(2)});
+  });
+
+  test('collapsed days are scoped per trip and cascade on trip delete',
+      () async {
+    final tripA =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'A'));
+    final tripB =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'B'));
+
+    await db.itineraryDao.setDayCollapsed(tripA, day(1), true);
+    await db.itineraryDao.setDayCollapsed(tripB, day(1), true);
+
+    expect(await db.itineraryDao.watchCollapsedDays(tripA).first, {day(1)});
+
+    await db.tripDao.deleteTrip(tripA);
+    expect(await db.itineraryDao.watchCollapsedDays(tripA).first, isEmpty);
+    // Deleting trip A leaves trip B's collapse state intact.
+    expect(await db.itineraryDao.watchCollapsedDays(tripB).first, {day(1)});
+  });
 }

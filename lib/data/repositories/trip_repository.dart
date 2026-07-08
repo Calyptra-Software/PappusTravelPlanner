@@ -34,6 +34,10 @@ class TripRepository {
   Future<int> deleteItem(int id) => _db.itineraryDao.deleteItem(id);
   Future<int> nextSortOrder(int tripId, DateTime date) =>
       _db.itineraryDao.nextSortOrder(tripId, date);
+  Stream<Set<DateTime>> watchCollapsedDays(int tripId) =>
+      _db.itineraryDao.watchCollapsedDays(tripId);
+  Future<void> setDayCollapsed(int tripId, DateTime day, bool collapsed) =>
+      _db.itineraryDao.setDayCollapsed(tripId, day, collapsed);
 
   // --- costs ---
   Stream<List<Cost>> watchCostsForTrip(int tripId) =>

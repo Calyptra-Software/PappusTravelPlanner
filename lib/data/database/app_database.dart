@@ -20,6 +20,7 @@ part 'app_database.g.dart';
     CostBeneficiaries,
     Checklists,
     ChecklistItems,
+    CollapsedDays,
   ],
   daos: [TripDao, ItineraryDao, CostDao, ChecklistDao],
 )
@@ -32,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -116,6 +117,11 @@ class AppDatabase extends _$AppDatabase {
           // a from-scratch createTable above (from < 7) already includes it.
           if (from >= 7 && from < 12) {
             await m.addColumn(checklists, checklists.collapsed);
+          }
+          // v13 added a table recording which itinerary days are collapsed in
+          // the trip overview.
+          if (from < 13) {
+            await m.createTable(collapsedDays);
           }
         },
         beforeOpen: (details) async {
