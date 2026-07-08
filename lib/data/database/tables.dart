@@ -144,6 +144,10 @@ class Checklists extends Table {
   /// Manual ordering of a trip's checklists (appended to the end).
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+
+  /// Whether the card is shown collapsed in the trip overview. Persisted so the
+  /// collapse state is restored when reopening the trip or the app.
+  BoolColumn get collapsed => boolean().withDefault(const Constant(false))();
 }
 
 /// A checklist entry: a piece of text that can be ticked off, belonging to one

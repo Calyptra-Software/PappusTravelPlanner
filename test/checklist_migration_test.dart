@@ -105,4 +105,43 @@ void main() {
     final romeItems = await db.checklistDao.watchItems(rome.single.id).first;
     expect(romeItems.map((i) => i.label), ['Camera']);
   });
+
+  /// Builds a database file at [path] with a v11 checklists table (no
+  /// `collapsed` column yet) and one checklist.
+  void seedV11Checklists() {
+    final raw = sqlite3.open(path);
+    raw.execute('''
+      CREATE TABLE trips (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        destination TEXT NOT NULL DEFAULT '',
+        start_date INTEGER,
+        end_date INTEGER,
+        notes TEXT,
+        color_value INTEGER NOT NULL DEFAULT 4278216540,
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE checklists (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        trip_id INTEGER NOT NULL REFERENCES trips (id),
+        title TEXT NOT NULL DEFAULT '',
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
+      INSERT INTO trips (id, title) VALUES (1, 'Paris');
+      INSERT INTO checklists (id, trip_id, title) VALUES (1, 1, 'Packing');
+    ''');
+    raw.execute('PRAGMA user_version = 11');
+    raw.close();
+  }
+
+  test('v11 -> v12 adds collapsed defaulting to false (expanded)', () async {
+    seedV11Checklists();
+
+    final db = AppDatabase.forTesting(NativeDatabase(File(path)));
+    addTearDown(db.close);
+
+    final lists = await db.checklistDao.watchChecklists(1).first;
+    expect(lists.single.collapsed, isFalse);
+  });
 }

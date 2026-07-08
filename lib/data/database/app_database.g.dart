@@ -2801,6 +2801,21 @@ class $ChecklistsTable extends Checklists
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _collapsedMeta = const VerificationMeta(
+    'collapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> collapsed = GeneratedColumn<bool>(
+    'collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2808,6 +2823,7 @@ class $ChecklistsTable extends Checklists
     title,
     sortOrder,
     createdAt,
+    collapsed,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2850,6 +2866,12 @@ class $ChecklistsTable extends Checklists
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('collapsed')) {
+      context.handle(
+        _collapsedMeta,
+        collapsed.isAcceptableOrUnknown(data['collapsed']!, _collapsedMeta),
+      );
+    }
     return context;
   }
 
@@ -2879,6 +2901,10 @@ class $ChecklistsTable extends Checklists
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      collapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}collapsed'],
+      )!,
     );
   }
 
@@ -2896,12 +2922,17 @@ class Checklist extends DataClass implements Insertable<Checklist> {
   /// Manual ordering of a trip's checklists (appended to the end).
   final int sortOrder;
   final DateTime createdAt;
+
+  /// Whether the card is shown collapsed in the trip overview. Persisted so the
+  /// collapse state is restored when reopening the trip or the app.
+  final bool collapsed;
   const Checklist({
     required this.id,
     required this.tripId,
     required this.title,
     required this.sortOrder,
     required this.createdAt,
+    required this.collapsed,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2911,6 +2942,7 @@ class Checklist extends DataClass implements Insertable<Checklist> {
     map['title'] = Variable<String>(title);
     map['sort_order'] = Variable<int>(sortOrder);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['collapsed'] = Variable<bool>(collapsed);
     return map;
   }
 
@@ -2921,6 +2953,7 @@ class Checklist extends DataClass implements Insertable<Checklist> {
       title: Value(title),
       sortOrder: Value(sortOrder),
       createdAt: Value(createdAt),
+      collapsed: Value(collapsed),
     );
   }
 
@@ -2935,6 +2968,7 @@ class Checklist extends DataClass implements Insertable<Checklist> {
       title: serializer.fromJson<String>(json['title']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      collapsed: serializer.fromJson<bool>(json['collapsed']),
     );
   }
   @override
@@ -2946,6 +2980,7 @@ class Checklist extends DataClass implements Insertable<Checklist> {
       'title': serializer.toJson<String>(title),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'collapsed': serializer.toJson<bool>(collapsed),
     };
   }
 
@@ -2955,12 +2990,14 @@ class Checklist extends DataClass implements Insertable<Checklist> {
     String? title,
     int? sortOrder,
     DateTime? createdAt,
+    bool? collapsed,
   }) => Checklist(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
     title: title ?? this.title,
     sortOrder: sortOrder ?? this.sortOrder,
     createdAt: createdAt ?? this.createdAt,
+    collapsed: collapsed ?? this.collapsed,
   );
   Checklist copyWithCompanion(ChecklistsCompanion data) {
     return Checklist(
@@ -2969,6 +3006,7 @@ class Checklist extends DataClass implements Insertable<Checklist> {
       title: data.title.present ? data.title.value : this.title,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      collapsed: data.collapsed.present ? data.collapsed.value : this.collapsed,
     );
   }
 
@@ -2979,13 +3017,15 @@ class Checklist extends DataClass implements Insertable<Checklist> {
           ..write('tripId: $tripId, ')
           ..write('title: $title, ')
           ..write('sortOrder: $sortOrder, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('collapsed: $collapsed')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, tripId, title, sortOrder, createdAt);
+  int get hashCode =>
+      Object.hash(id, tripId, title, sortOrder, createdAt, collapsed);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2994,7 +3034,8 @@ class Checklist extends DataClass implements Insertable<Checklist> {
           other.tripId == this.tripId &&
           other.title == this.title &&
           other.sortOrder == this.sortOrder &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.collapsed == this.collapsed);
 }
 
 class ChecklistsCompanion extends UpdateCompanion<Checklist> {
@@ -3003,12 +3044,14 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
   final Value<String> title;
   final Value<int> sortOrder;
   final Value<DateTime> createdAt;
+  final Value<bool> collapsed;
   const ChecklistsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
     this.title = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.collapsed = const Value.absent(),
   });
   ChecklistsCompanion.insert({
     this.id = const Value.absent(),
@@ -3016,6 +3059,7 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
     this.title = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.collapsed = const Value.absent(),
   }) : tripId = Value(tripId);
   static Insertable<Checklist> custom({
     Expression<int>? id,
@@ -3023,6 +3067,7 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
     Expression<String>? title,
     Expression<int>? sortOrder,
     Expression<DateTime>? createdAt,
+    Expression<bool>? collapsed,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3030,6 +3075,7 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
       if (title != null) 'title': title,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (createdAt != null) 'created_at': createdAt,
+      if (collapsed != null) 'collapsed': collapsed,
     });
   }
 
@@ -3039,6 +3085,7 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
     Value<String>? title,
     Value<int>? sortOrder,
     Value<DateTime>? createdAt,
+    Value<bool>? collapsed,
   }) {
     return ChecklistsCompanion(
       id: id ?? this.id,
@@ -3046,6 +3093,7 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
       title: title ?? this.title,
       sortOrder: sortOrder ?? this.sortOrder,
       createdAt: createdAt ?? this.createdAt,
+      collapsed: collapsed ?? this.collapsed,
     );
   }
 
@@ -3067,6 +3115,9 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (collapsed.present) {
+      map['collapsed'] = Variable<bool>(collapsed.value);
+    }
     return map;
   }
 
@@ -3077,7 +3128,8 @@ class ChecklistsCompanion extends UpdateCompanion<Checklist> {
           ..write('tripId: $tripId, ')
           ..write('title: $title, ')
           ..write('sortOrder: $sortOrder, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('collapsed: $collapsed')
           ..write(')'))
         .toString();
   }
@@ -6588,6 +6640,7 @@ typedef $$ChecklistsTableCreateCompanionBuilder =
       Value<String> title,
       Value<int> sortOrder,
       Value<DateTime> createdAt,
+      Value<bool> collapsed,
     });
 typedef $$ChecklistsTableUpdateCompanionBuilder =
     ChecklistsCompanion Function({
@@ -6596,6 +6649,7 @@ typedef $$ChecklistsTableUpdateCompanionBuilder =
       Value<String> title,
       Value<int> sortOrder,
       Value<DateTime> createdAt,
+      Value<bool> collapsed,
     });
 
 final class $$ChecklistsTableReferences
@@ -6664,6 +6718,11 @@ class $$ChecklistsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6745,6 +6804,11 @@ class $$ChecklistsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get collapsed => $composableBuilder(
+    column: $table.collapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -6789,6 +6853,9 @@ class $$ChecklistsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get collapsed =>
+      $composableBuilder(column: $table.collapsed, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -6872,12 +6939,14 @@ class $$ChecklistsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
               }) => ChecklistsCompanion(
                 id: id,
                 tripId: tripId,
                 title: title,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
+                collapsed: collapsed,
               ),
           createCompanionCallback:
               ({
@@ -6886,12 +6955,14 @@ class $$ChecklistsTableTableManager
                 Value<String> title = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> collapsed = const Value.absent(),
               }) => ChecklistsCompanion.insert(
                 id: id,
                 tripId: tripId,
                 title: title,
                 sortOrder: sortOrder,
                 createdAt: createdAt,
+                collapsed: collapsed,
               ),
           withReferenceMapper: (p0) => p0
               .map(

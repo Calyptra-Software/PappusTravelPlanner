@@ -32,7 +32,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -110,6 +110,12 @@ class AppDatabase extends _$AppDatabase {
           // includes the column.
           if (from >= 8 && from < 11) {
             await m.addColumn(people, people.isMe);
+          }
+          // v12 added checklists.collapsed to persist each card's collapse
+          // state. Only add it when the checklists table predates this version;
+          // a from-scratch createTable above (from < 7) already includes it.
+          if (from >= 7 && from < 12) {
+            await m.addColumn(checklists, checklists.collapsed);
           }
         },
         beforeOpen: (details) async {

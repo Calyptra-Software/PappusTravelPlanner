@@ -47,6 +47,12 @@ class ChecklistController {
   Future<void> deleteChecklist(int id) =>
       _ref.read(repositoryProvider).deleteChecklist(id);
 
+  /// Persists whether a checklist card is shown collapsed.
+  Future<void> setCollapsed(Checklist checklist, bool collapsed) =>
+      _ref.read(repositoryProvider).updateChecklist(
+            checklist.copyWith(collapsed: collapsed),
+          );
+
   // --- items ---
 
   /// Appends a new unchecked item with [label] to [checklistId].

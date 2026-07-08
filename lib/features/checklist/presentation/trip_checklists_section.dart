@@ -113,7 +113,6 @@ class _ChecklistCard extends ConsumerStatefulWidget {
 class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
-  bool _expanded = true;
 
   @override
   void dispose() {
@@ -199,6 +198,7 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
         ref.watch(checklistItemsProvider(widget.checklist.id)).value ??
             const [];
     final doneCount = items.where((i) => i.done).length;
+    final expanded = !widget.checklist.collapsed;
 
     return Card(
       margin: const EdgeInsets.only(top: 12),
@@ -208,7 +208,9 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              onTap: () => setState(() => _expanded = !_expanded),
+              onTap: () => ref
+                  .read(checklistControllerProvider)
+                  .setCollapsed(widget.checklist, expanded),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
@@ -243,7 +245,7 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
                       onPressed: () => _delete(items.length),
                     ),
                     Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      expanded ? Icons.expand_less : Icons.expand_more,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ],
@@ -252,7 +254,7 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
             ),
             AnimatedCrossFade(
               duration: const Duration(milliseconds: 180),
-              crossFadeState: _expanded
+              crossFadeState: expanded
                   ? CrossFadeState.showFirst
                   : CrossFadeState.showSecond,
               firstChild: _buildBody(context, items, l10n),
