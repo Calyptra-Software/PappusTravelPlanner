@@ -4,8 +4,9 @@ This file provides guidance to coding agents (e.g. Claude Code, which reads it v
 `@AGENTS.md` import in `CLAUDE.md`) when working with code in this repository.
 
 Travel Planner is an offline-first Flutter app for planning trips (trips → day-by-day
-itinerary of places and transport legs → costs), storing everything in a single portable
-SQLite file. Primary target is Android; also runs on Web, Linux, Windows, macOS, iOS.
+itinerary of places and transport legs → costs, plus per-trip checklists and shared-expense
+splitting among participants), storing everything in a single portable SQLite file. Primary
+target is Android; also runs on Web, Linux, Windows, macOS, iOS.
 
 ## Commands
 
@@ -38,7 +39,7 @@ providers and downward through a single repository:
 UI (features/*/presentation, *widgets)
   → feature providers (features/*/application)   StreamProvider.autoDispose over the repo
     → repositoryProvider → TripRepository          thin passthrough to the DAOs
-      → databaseProvider → AppDatabase (Drift)     tripDao / itineraryDao / costDao
+      → databaseProvider → AppDatabase (Drift)     tripDao / itineraryDao / costDao / checklistDao
 ```
 
 - **`lib/core/providers.dart`** is the spine. `bootstrapDbPathProvider` is resolved once in
@@ -53,10 +54,23 @@ UI (features/*/presentation, *widgets)
   `ItemKind`; kind-specific columns are nullable. This lets a day read as one ordered timeline
   (place → transport → place). Items are ordered by `date` → `sortOrder` → `startMinutes`.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
-  (int cents) to avoid float rounding. `Currency` and `TransportMode` enums are persisted by
-  **integer index** — only ever append new values at the end, never reorder.
-- `Trips → ItineraryItems → Costs` cascade on delete. Cascades rely on
-  `PRAGMA foreign_keys = ON`, set in `AppDatabase.migration`'s `beforeOpen`.
+  (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
+  `Currency` and `TransportMode` enums (in `tables.dart`) and the SharedPreferences-backed
+  `CostReasonDisplay` / `ExpenseScope` enums are all persisted by **integer index** — only
+  ever append new values at the end, never reorder.
+- Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItineraryItems`, `Costs`,
+  `CostReasons` (reusable reason labels with an optional icon id), `People` (reusable payer/
+  beneficiary names; one flagged `isMe`), `TripParticipants` and `CostBeneficiaries`
+  (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
+  per trip), and `CollapsedDays` (persists which itinerary days are collapsed).
+- **Expense splitting** lives in `lib/features/costs/trip_stats.dart` as pure functions
+  (`computeTripStats`) so the per-currency category breakdown, per-person paid/share/balance,
+  and minimal settle-up transfers are unit-testable without a database. A cost splits among
+  its `CostBeneficiaries`, falling back to all trip participants. The app never converts
+  between currencies — everything is computed per `Currency`.
+- Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
+  participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
+  `AppDatabase.migration`'s `beforeOpen`.
 
 ### Database portability & schema changes
 
@@ -64,8 +78,8 @@ UI (features/*/presentation, *widgets)
   `DatabaseController` (`lib/features/settings/application/database_providers.dart`) coordinates
   switching/importing/exporting. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` and add an `onUpgrade` branch for **any** table/column
-  change — real user databases are migrated in place, not recreated.
+- Bump `AppDatabase.schemaVersion` (currently 13) and add an `onUpgrade` branch for **any**
+  table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget
 
