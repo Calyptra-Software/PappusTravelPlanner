@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
+import '../../trips/application/trip_providers.dart';
+import '../trip_stats.dart';
 
 /// Item-attached costs grouped by item id, plus trip-level costs that aren't
 /// tied to any item. Both count toward the trip's total.
@@ -65,6 +67,34 @@ final mePersonProvider = StreamProvider.autoDispose<Person?>((ref) {
 final costBeneficiariesProvider =
     StreamProvider.autoDispose.family<List<Person>, int>((ref, costId) {
   return ref.watch(repositoryProvider).watchBeneficiaries(costId);
+});
+
+/// Beneficiary split for every cost in a trip, keyed by cost id. Backs the
+/// statistics screen so it can compute shares without one stream per cost.
+final tripBeneficiariesProvider = StreamProvider.autoDispose
+    .family<Map<int, List<Person>>, int>((ref, tripId) {
+  return ref.watch(repositoryProvider).watchBeneficiariesForTrip(tripId);
+});
+
+/// Per-currency expense statistics for a trip: category breakdown, per-person
+/// paid/share/balance, and settle-up suggestions. Derives from the trip's
+/// costs, their beneficiary split, and the participant roster (the fallback
+/// split for costs with no explicit beneficiaries).
+final tripStatsProvider =
+    Provider.autoDispose.family<TripStats, int>((ref, tripId) {
+  final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
+  final beneficiaries = ref.watch(tripBeneficiariesProvider(tripId)).value;
+  final participants = ref.watch(tripParticipantsProvider(tripId)).value;
+  if (tripCosts == null) return const TripStats([]);
+  final costs = [
+    ...tripCosts.byItem.values.expand((c) => c),
+    ...tripCosts.tripLevel,
+  ];
+  return computeTripStats(
+    costs,
+    beneficiaries ?? const {},
+    [for (final p in participants ?? const <Person>[]) p.name],
+  );
 });
 
 final costControllerProvider =

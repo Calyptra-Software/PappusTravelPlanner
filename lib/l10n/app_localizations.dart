@@ -974,6 +974,102 @@ abstract class AppLocalizations {
   /// **'Add participant'**
   String get addParticipant;
 
+  /// No description provided for @statsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense statistics'**
+  String get statsTitle;
+
+  /// No description provided for @statsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics'**
+  String get statsOpen;
+
+  /// No description provided for @statsNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No expenses to analyze yet'**
+  String get statsNoData;
+
+  /// No description provided for @statsByCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'By category'**
+  String get statsByCategory;
+
+  /// No description provided for @statsByPerson.
+  ///
+  /// In en, this message translates to:
+  /// **'By person'**
+  String get statsByPerson;
+
+  /// No description provided for @statsScopePaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get statsScopePaid;
+
+  /// No description provided for @statsScopeBalances.
+  ///
+  /// In en, this message translates to:
+  /// **'Balances'**
+  String get statsScopeBalances;
+
+  /// No description provided for @statsPaidShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Paid'**
+  String get statsPaidShort;
+
+  /// No description provided for @statsShareShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get statsShareShort;
+
+  /// No description provided for @statsSettleUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle up'**
+  String get statsSettleUp;
+
+  /// No description provided for @statsSettledUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone\'s even — nothing to settle.'**
+  String get statsSettledUp;
+
+  /// No description provided for @statsGetsBack.
+  ///
+  /// In en, this message translates to:
+  /// **'gets back'**
+  String get statsGetsBack;
+
+  /// No description provided for @statsOwes.
+  ///
+  /// In en, this message translates to:
+  /// **'owes'**
+  String get statsOwes;
+
+  /// No description provided for @statsEven.
+  ///
+  /// In en, this message translates to:
+  /// **'even'**
+  String get statsEven;
+
+  /// No description provided for @statsExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 expense} other{{count} expenses}}'**
+  String statsExpenses(int count);
+
+  /// No description provided for @statsTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} pays {to}'**
+  String statsTransfer(String from, String to);
+
   /// No description provided for @checklist.
   ///
   /// In en, this message translates to:

@@ -107,6 +107,11 @@ class TripDetailScreen extends ConsumerWidget {
         title: Text(l10n.itineraryTitle),
         actions: [
           IconButton(
+            tooltip: l10n.statsOpen,
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () => context.push('/trip/$tripId/stats'),
+          ),
+          IconButton(
             tooltip: l10n.editTrip,
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => context.push('/trip/$tripId/edit'),
@@ -352,29 +357,40 @@ class _TripHeader extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                 ],
-                Row(
-                  children: [
-                    Icon(
-                      Icons.payments_outlined,
-                      size: 18,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${scope == ExpenseScope.mine ? l10n.myCostsTotal : l10n.costsTotal}: ',
-                      style: theme.textTheme.titleSmall,
-                    ),
-                    Expanded(
-                      child: Text(
-                        totals.isEmpty
-                            ? '—'
-                            : formatTotals(totals, localeName),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
+                InkWell(
+                  onTap: () => context.push('/trip/${trip.id}/stats'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.payments_outlined,
+                          size: 18,
+                          color: theme.colorScheme.primary,
                         ),
-                      ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${scope == ExpenseScope.mine ? l10n.myCostsTotal : l10n.costsTotal}: ',
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        Expanded(
+                          child: Text(
+                            totals.isEmpty
+                                ? '—'
+                                : formatTotals(totals, localeName),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ],

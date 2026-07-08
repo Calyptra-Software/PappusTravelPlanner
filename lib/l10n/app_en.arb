@@ -189,6 +189,31 @@
   "expenseScopeMine": "Mine",
   "participants": "Participants",
   "addParticipant": "Add participant",
+  "statsTitle": "Expense statistics",
+  "statsOpen": "Statistics",
+  "statsNoData": "No expenses to analyze yet",
+  "statsByCategory": "By category",
+  "statsByPerson": "By person",
+  "statsScopePaid": "Paid",
+  "statsScopeBalances": "Balances",
+  "statsPaidShort": "Paid",
+  "statsShareShort": "Share",
+  "statsSettleUp": "Settle up",
+  "statsSettledUp": "Everyone's even — nothing to settle.",
+  "statsGetsBack": "gets back",
+  "statsOwes": "owes",
+  "statsEven": "even",
+  "statsExpenses": "{count, plural, =1{1 expense} other{{count} expenses}}",
+  "@statsExpenses": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsTransfer": "{from} pays {to}",
+  "@statsTransfer": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
   "checklist": "Checklist",
   "checklistAddHint": "Add an item…",
   "checklistEditTitle": "Edit item",

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/costs/presentation/trip_stats_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
 import '../../features/trips/presentation/trip_form_screen.dart';
@@ -32,6 +33,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'edit',
                 builder: (context, state) => TripFormScreen(
+                  tripId: int.parse(state.pathParameters['id']!),
+                ),
+              ),
+              GoRoute(
+                path: 'stats',
+                builder: (context, state) => TripStatsScreen(
                   tripId: int.parse(state.pathParameters['id']!),
                 ),
               ),

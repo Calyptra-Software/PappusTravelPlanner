@@ -260,6 +260,30 @@ void main() {
     expect(await db.costDao.watchPeople().first, ['Alex', 'Bob']);
   });
 
+  test('watchBeneficiariesForTrip maps every cost in the trip, and only it',
+      () async {
+    final tripId =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final other =
+        await db.tripDao.createTrip(TripsCompanion.insert(title: 'Other'));
+    final item = await makeItem(tripId);
+    final itemCostId =
+        await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
+    final tripCostId =
+        await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Taxi'));
+    final otherCostId =
+        await db.costDao.addCost(tripCost(other, 1000, Currency.eur, 'Bus'));
+
+    await db.costDao.setBeneficiaries(itemCostId, ['Bob', 'Alex']);
+    await db.costDao.setBeneficiaries(tripCostId, ['Alex']);
+    await db.costDao.setBeneficiaries(otherCostId, ['Cara']);
+
+    final byCost = await db.costDao.watchBeneficiariesForTrip(tripId).first;
+    expect(byCost.keys.toSet(), {itemCostId, tripCostId});
+    expect(byCost[itemCostId]!.map((p) => p.name), ['Alex', 'Bob']);
+    expect(byCost[tripCostId]!.map((p) => p.name), ['Alex']);
+  });
+
   test('setBeneficiaries reconciles the set: adds and removes links', () async {
     final tripId =
         await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));

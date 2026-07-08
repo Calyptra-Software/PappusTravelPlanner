@@ -152,6 +152,31 @@
   "expenseScopeMine": "Meine",
   "participants": "Teilnehmer",
   "addParticipant": "Teilnehmer hinzufügen",
+  "statsTitle": "Ausgabenstatistik",
+  "statsOpen": "Statistik",
+  "statsNoData": "Noch keine Ausgaben zum Auswerten",
+  "statsByCategory": "Nach Kategorie",
+  "statsByPerson": "Nach Person",
+  "statsScopePaid": "Bezahlt",
+  "statsScopeBalances": "Salden",
+  "statsPaidShort": "Bezahlt",
+  "statsShareShort": "Anteil",
+  "statsSettleUp": "Ausgleichen",
+  "statsSettledUp": "Alle sind ausgeglichen — nichts zu begleichen.",
+  "statsGetsBack": "bekommt zurück",
+  "statsOwes": "schuldet",
+  "statsEven": "ausgeglichen",
+  "statsExpenses": "{count, plural, =1{1 Ausgabe} other{{count} Ausgaben}}",
+  "@statsExpenses": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsTransfer": "{from} zahlt an {to}",
+  "@statsTransfer": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
   "checklist": "Checkliste",
   "checklistAddHint": "Eintrag hinzufügen…",
   "checklistEditTitle": "Eintrag bearbeiten",

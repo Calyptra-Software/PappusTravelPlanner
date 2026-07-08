@@ -498,6 +498,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addParticipant => 'Add participant';
 
   @override
+  String get statsTitle => 'Expense statistics';
+
+  @override
+  String get statsOpen => 'Statistics';
+
+  @override
+  String get statsNoData => 'No expenses to analyze yet';
+
+  @override
+  String get statsByCategory => 'By category';
+
+  @override
+  String get statsByPerson => 'By person';
+
+  @override
+  String get statsScopePaid => 'Paid';
+
+  @override
+  String get statsScopeBalances => 'Balances';
+
+  @override
+  String get statsPaidShort => 'Paid';
+
+  @override
+  String get statsShareShort => 'Share';
+
+  @override
+  String get statsSettleUp => 'Settle up';
+
+  @override
+  String get statsSettledUp => 'Everyone\'s even — nothing to settle.';
+
+  @override
+  String get statsGetsBack => 'gets back';
+
+  @override
+  String get statsOwes => 'owes';
+
+  @override
+  String get statsEven => 'even';
+
+  @override
+  String statsExpenses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statsTransfer(String from, String to) {
+    return '$from pays $to';
+  }
+
+  @override
   String get checklist => 'Checklist';
 
   @override

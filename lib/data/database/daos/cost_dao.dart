@@ -90,6 +90,31 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         .map((rows) => rows.map((row) => row.readTable(people)).toList());
   }
 
+  /// Beneficiary links for every cost in a trip, keyed by cost id, so statistics
+  /// can compute each expense's split in a single pass instead of one stream per
+  /// cost. Mirrors [watchCostsForTrip]'s reach: costs on the trip's itinerary
+  /// items and trip-level costs alike. Costs with no beneficiaries are absent
+  /// from the map.
+  Stream<Map<int, List<Person>>> watchBeneficiariesForTrip(int tripId) {
+    final query = select(costBeneficiaries).join([
+      innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
+      innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
+      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+    ])
+      ..where(
+        itineraryItems.tripId.equals(tripId) | costs.tripId.equals(tripId),
+      )
+      ..orderBy([OrderingTerm(expression: people.name)]);
+    return query.watch().map((rows) {
+      final byCost = <int, List<Person>>{};
+      for (final row in rows) {
+        final costId = row.readTable(costBeneficiaries).costId;
+        byCost.putIfAbsent(costId, () => []).add(row.readTable(people));
+      }
+      return byCost;
+    });
+  }
+
   /// Replaces a cost's beneficiaries with exactly [names], creating any missing
   /// people in the shared roster. Runs in a transaction so the set is never left
   /// half-updated.

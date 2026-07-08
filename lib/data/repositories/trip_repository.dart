@@ -43,6 +43,8 @@ class TripRepository {
   Future<int> deleteCost(int id) => _db.costDao.deleteCost(id);
   Stream<List<Person>> watchBeneficiaries(int costId) =>
       _db.costDao.watchBeneficiaries(costId);
+  Stream<Map<int, List<Person>>> watchBeneficiariesForTrip(int tripId) =>
+      _db.costDao.watchBeneficiariesForTrip(tripId);
   Future<void> setBeneficiaries(int costId, List<String> names) =>
       _db.costDao.setBeneficiaries(costId, names);
   Future<void> upsertReason(String label) => _db.costDao.upsertReason(label);

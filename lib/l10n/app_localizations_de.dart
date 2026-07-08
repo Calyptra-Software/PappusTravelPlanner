@@ -502,6 +502,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addParticipant => 'Teilnehmer hinzufügen';
 
   @override
+  String get statsTitle => 'Ausgabenstatistik';
+
+  @override
+  String get statsOpen => 'Statistik';
+
+  @override
+  String get statsNoData => 'Noch keine Ausgaben zum Auswerten';
+
+  @override
+  String get statsByCategory => 'Nach Kategorie';
+
+  @override
+  String get statsByPerson => 'Nach Person';
+
+  @override
+  String get statsScopePaid => 'Bezahlt';
+
+  @override
+  String get statsScopeBalances => 'Salden';
+
+  @override
+  String get statsPaidShort => 'Bezahlt';
+
+  @override
+  String get statsShareShort => 'Anteil';
+
+  @override
+  String get statsSettleUp => 'Ausgleichen';
+
+  @override
+  String get statsSettledUp => 'Alle sind ausgeglichen — nichts zu begleichen.';
+
+  @override
+  String get statsGetsBack => 'bekommt zurück';
+
+  @override
+  String get statsOwes => 'schuldet';
+
+  @override
+  String get statsEven => 'ausgeglichen';
+
+  @override
+  String statsExpenses(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ausgaben',
+      one: '1 Ausgabe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statsTransfer(String from, String to) {
+    return '$from zahlt an $to';
+  }
+
+  @override
   String get checklist => 'Checkliste';
 
   @override
