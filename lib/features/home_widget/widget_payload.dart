@@ -136,7 +136,7 @@ WidgetPayload buildWidgetPayload(
   if (ongoing && todayItems.isNotEmpty) {
     rows = todayItems
         .map((i) => WidgetRow(
-              time: formatMinutes(i.startMinutes),
+              time: formatTimeRange(i.startMinutes, i.endMinutes),
               text: _itemText(i, l10n),
               note: i.notes?.trim() ?? '',
             ))

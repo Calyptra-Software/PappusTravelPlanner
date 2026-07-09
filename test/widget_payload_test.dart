@@ -31,7 +31,7 @@ void main() {
   }
 
   ItineraryItem placeItem(int id,
-      {int? minutes, String location = 'Place', String? notes}) {
+      {int? minutes, int? endMinutes, String location = 'Place', String? notes}) {
     return ItineraryItem(
       id: id,
       tripId: 1,
@@ -40,7 +40,7 @@ void main() {
       kind: ItemKind.place,
       title: null,
       startMinutes: minutes,
-      endMinutes: null,
+      endMinutes: endMinutes,
       notes: notes,
       location: location,
       mode: null,
@@ -133,6 +133,22 @@ void main() {
 
       expect(p.rows[0].note, 'Bring water');
       expect(p.rows[1].note, '');
+    });
+
+    test('shows a start–end time range when the item has an end time', () {
+      final t = trip(
+          id: 1,
+          title: 'Italy',
+          start: DateTime(2026, 7, 4),
+          end: DateTime(2026, 7, 9));
+      final items = [
+        placeItem(1, minutes: 9 * 60 + 2, endMinutes: 9 * 60 + 39),
+        placeItem(2, minutes: 12 * 60),
+      ];
+      final p = buildWidgetPayload([t], items, now, l10n, 'en');
+
+      expect(p.rows[0].time, '09:02 – 09:39');
+      expect(p.rows[1].time, '12:00');
     });
   });
 }
