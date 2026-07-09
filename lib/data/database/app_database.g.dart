@@ -1738,6 +1738,19 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _paidMeta = const VerificationMeta('paid');
+  @override
+  late final GeneratedColumn<bool> paid = GeneratedColumn<bool>(
+    'paid',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("paid" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -1760,6 +1773,7 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     currency,
     reason,
     paidBy,
+    paid,
     createdAt,
   ];
   @override
@@ -1820,6 +1834,12 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
         paidBy.isAcceptableOrUnknown(data['paid_by']!, _paidByMeta),
       );
     }
+    if (data.containsKey('paid')) {
+      context.handle(
+        _paidMeta,
+        paid.isAcceptableOrUnknown(data['paid']!, _paidMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -1869,6 +1889,10 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
         DriftSqlType.string,
         data['${effectivePrefix}paid_by'],
       ),
+      paid: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}paid'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -1904,6 +1928,9 @@ class Cost extends DataClass implements Insertable<Cost> {
   /// [reason]) so an expense keeps its payer even if the person is later
   /// removed; renaming a person repoints every expense they paid.
   final String? paidBy;
+
+  /// Whether this expense has already been paid/settled. Defaults to false.
+  final bool paid;
   final DateTime createdAt;
   const Cost({
     required this.id,
@@ -1914,6 +1941,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     required this.currency,
     required this.reason,
     this.paidBy,
+    required this.paid,
     required this.createdAt,
   });
   @override
@@ -1939,6 +1967,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     if (!nullToAbsent || paidBy != null) {
       map['paid_by'] = Variable<String>(paidBy);
     }
+    map['paid'] = Variable<bool>(paid);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -1961,6 +1990,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       paidBy: paidBy == null && nullToAbsent
           ? const Value.absent()
           : Value(paidBy),
+      paid: Value(paid),
       createdAt: Value(createdAt),
     );
   }
@@ -1981,6 +2011,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       ),
       reason: serializer.fromJson<String>(json['reason']),
       paidBy: serializer.fromJson<String?>(json['paidBy']),
+      paid: serializer.fromJson<bool>(json['paid']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -1998,6 +2029,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       ),
       'reason': serializer.toJson<String>(reason),
       'paidBy': serializer.toJson<String?>(paidBy),
+      'paid': serializer.toJson<bool>(paid),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -2011,6 +2043,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     Currency? currency,
     String? reason,
     Value<String?> paidBy = const Value.absent(),
+    bool? paid,
     DateTime? createdAt,
   }) => Cost(
     id: id ?? this.id,
@@ -2021,6 +2054,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     currency: currency ?? this.currency,
     reason: reason ?? this.reason,
     paidBy: paidBy.present ? paidBy.value : this.paidBy,
+    paid: paid ?? this.paid,
     createdAt: createdAt ?? this.createdAt,
   );
   Cost copyWithCompanion(CostsCompanion data) {
@@ -2035,6 +2069,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       currency: data.currency.present ? data.currency.value : this.currency,
       reason: data.reason.present ? data.reason.value : this.reason,
       paidBy: data.paidBy.present ? data.paidBy.value : this.paidBy,
+      paid: data.paid.present ? data.paid.value : this.paid,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -2050,6 +2085,7 @@ class Cost extends DataClass implements Insertable<Cost> {
           ..write('currency: $currency, ')
           ..write('reason: $reason, ')
           ..write('paidBy: $paidBy, ')
+          ..write('paid: $paid, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -2065,6 +2101,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     currency,
     reason,
     paidBy,
+    paid,
     createdAt,
   );
   @override
@@ -2079,6 +2116,7 @@ class Cost extends DataClass implements Insertable<Cost> {
           other.currency == this.currency &&
           other.reason == this.reason &&
           other.paidBy == this.paidBy &&
+          other.paid == this.paid &&
           other.createdAt == this.createdAt);
 }
 
@@ -2091,6 +2129,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   final Value<Currency> currency;
   final Value<String> reason;
   final Value<String?> paidBy;
+  final Value<bool> paid;
   final Value<DateTime> createdAt;
   const CostsCompanion({
     this.id = const Value.absent(),
@@ -2101,6 +2140,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     this.currency = const Value.absent(),
     this.reason = const Value.absent(),
     this.paidBy = const Value.absent(),
+    this.paid = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   CostsCompanion.insert({
@@ -2112,6 +2152,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     required Currency currency,
     required String reason,
     this.paidBy = const Value.absent(),
+    this.paid = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : amountMinor = Value(amountMinor),
        currency = Value(currency),
@@ -2125,6 +2166,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     Expression<int>? currency,
     Expression<String>? reason,
     Expression<String>? paidBy,
+    Expression<bool>? paid,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -2136,6 +2178,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
       if (currency != null) 'currency': currency,
       if (reason != null) 'reason': reason,
       if (paidBy != null) 'paid_by': paidBy,
+      if (paid != null) 'paid': paid,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -2149,6 +2192,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     Value<Currency>? currency,
     Value<String>? reason,
     Value<String?>? paidBy,
+    Value<bool>? paid,
     Value<DateTime>? createdAt,
   }) {
     return CostsCompanion(
@@ -2160,6 +2204,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
       currency: currency ?? this.currency,
       reason: reason ?? this.reason,
       paidBy: paidBy ?? this.paidBy,
+      paid: paid ?? this.paid,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -2193,6 +2238,9 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     if (paidBy.present) {
       map['paid_by'] = Variable<String>(paidBy.value);
     }
+    if (paid.present) {
+      map['paid'] = Variable<bool>(paid.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -2210,6 +2258,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
           ..write('currency: $currency, ')
           ..write('reason: $reason, ')
           ..write('paidBy: $paidBy, ')
+          ..write('paid: $paid, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -6297,6 +6346,7 @@ typedef $$CostsTableCreateCompanionBuilder =
       required Currency currency,
       required String reason,
       Value<String?> paidBy,
+      Value<bool> paid,
       Value<DateTime> createdAt,
     });
 typedef $$CostsTableUpdateCompanionBuilder =
@@ -6309,6 +6359,7 @@ typedef $$CostsTableUpdateCompanionBuilder =
       Value<Currency> currency,
       Value<String> reason,
       Value<String?> paidBy,
+      Value<bool> paid,
       Value<DateTime> createdAt,
     });
 
@@ -6420,6 +6471,11 @@ class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
 
   ColumnFilters<String> get paidBy => $composableBuilder(
     column: $table.paidBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get paid => $composableBuilder(
+    column: $table.paid,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6557,6 +6613,11 @@ class $$CostsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get paid => $composableBuilder(
+    column: $table.paid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -6657,6 +6718,9 @@ class $$CostsTableAnnotationComposer
 
   GeneratedColumn<String> get paidBy =>
       $composableBuilder(column: $table.paidBy, builder: (column) => column);
+
+  GeneratedColumn<bool> get paid =>
+      $composableBuilder(column: $table.paid, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -6798,6 +6862,7 @@ class $$CostsTableTableManager
                 Value<Currency> currency = const Value.absent(),
                 Value<String> reason = const Value.absent(),
                 Value<String?> paidBy = const Value.absent(),
+                Value<bool> paid = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CostsCompanion(
                 id: id,
@@ -6808,6 +6873,7 @@ class $$CostsTableTableManager
                 currency: currency,
                 reason: reason,
                 paidBy: paidBy,
+                paid: paid,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -6820,6 +6886,7 @@ class $$CostsTableTableManager
                 required Currency currency,
                 required String reason,
                 Value<String?> paidBy = const Value.absent(),
+                Value<bool> paid = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CostsCompanion.insert(
                 id: id,
@@ -6830,6 +6897,7 @@ class $$CostsTableTableManager
                 currency: currency,
                 reason: reason,
                 paidBy: paidBy,
+                paid: paid,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

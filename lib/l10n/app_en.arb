@@ -163,6 +163,7 @@
   },
   "noCostReasons": "No saved categories yet",
   "costPaidBy": "Paid by",
+  "costPaid": "Already paid",
   "costPaidFor": "Paid for",
   "costPaidByNone": "Unassigned",
   "costPaidByNew": "New person…",

@@ -35,7 +35,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -150,6 +150,11 @@ class AppDatabase extends _$AppDatabase {
               DELETE FROM item_groups WHERE NOT EXISTS (
                 SELECT 1 FROM itinerary_items i WHERE i.group_id = item_groups.id)
             ''');
+          }
+          // v16 added a "paid" flag on costs marking an expense as already
+          // settled.
+          if (from < 16) {
+            await m.addColumn(costs, costs.paid);
           }
         },
         beforeOpen: (details) async {

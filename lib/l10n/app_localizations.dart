@@ -854,6 +854,12 @@ abstract class AppLocalizations {
   /// **'Paid by'**
   String get costPaidBy;
 
+  /// No description provided for @costPaid.
+  ///
+  /// In en, this message translates to:
+  /// **'Already paid'**
+  String get costPaid;
+
   /// No description provided for @costPaidFor.
   ///
   /// In en, this message translates to:

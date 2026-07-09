@@ -126,6 +126,7 @@
   "costReasonDeleteConfirmBody": "„{reason}“ wird aus der Liste der Kategorien entfernt. Bestehende Ausgaben behalten ihren Text.",
   "noCostReasons": "Noch keine gespeicherten Kategorien",
   "costPaidBy": "Bezahlt von",
+  "costPaid": "Bereits bezahlt",
   "costPaidFor": "Bezahlt für",
   "costPaidByNone": "Nicht zugewiesen",
   "costPaidByNew": "Neue Person…",

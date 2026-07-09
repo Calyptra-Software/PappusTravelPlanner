@@ -125,6 +125,7 @@ class CostController {
     required String reason,
     String? paidBy,
     List<String> paidFor = const [],
+    bool paid = false,
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
@@ -137,6 +138,7 @@ class CostController {
       currency: currency,
       reason: reason,
       paidBy: Value(paidBy),
+      paid: Value(paid),
     ));
     await repo.setBeneficiaries(id, paidFor);
   }
@@ -148,6 +150,7 @@ class CostController {
     required String reason,
     String? paidBy,
     List<String> paidFor = const [],
+    bool paid = false,
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
@@ -157,6 +160,7 @@ class CostController {
       currency: currency,
       reason: reason,
       paidBy: Value(paidBy),
+      paid: paid,
     ));
     await repo.setBeneficiaries(existing.id, paidFor);
   }

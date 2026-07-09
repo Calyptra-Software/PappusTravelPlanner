@@ -160,6 +160,9 @@ class Costs extends Table {
   /// [reason]) so an expense keeps its payer even if the person is later
   /// removed; renaming a person repoints every expense they paid.
   TextColumn get paidBy => text().nullable()();
+
+  /// Whether this expense has already been paid/settled. Defaults to false.
+  BoolColumn get paid => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
