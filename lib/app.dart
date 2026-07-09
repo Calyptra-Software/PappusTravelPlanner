@@ -8,6 +8,7 @@ import 'core/router/app_router.dart';
 import 'core/settings/locale_provider.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home_widget/home_widget_service.dart';
+import 'features/sharing/trip_share_channel.dart';
 import 'l10n/app_localizations.dart';
 
 class TravelPlannerApp extends ConsumerStatefulWidget {
@@ -27,6 +28,10 @@ class _TravelPlannerAppState extends ConsumerState<TravelPlannerApp> {
     // Handle a launch from tapping the widget, plus taps while running.
     handleInitialWidgetLaunch(router);
     _widgetClicks = listenWidgetClicks(router);
+    // Handle a shared .tpt trip file that launched the app, plus files opened
+    // while it's running.
+    handleInitialSharedTrip(ref);
+    listenSharedTrips(ref);
     // Push an initial snapshot to the widget once the first frame is up.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) updateHomeWidget(ref);

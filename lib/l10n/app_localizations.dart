@@ -164,6 +164,54 @@ abstract class AppLocalizations {
   /// **'Edit trip'**
   String get editTrip;
 
+  /// No description provided for @shareTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Share trip'**
+  String get shareTrip;
+
+  /// No description provided for @shareTripSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip file saved.'**
+  String get shareTripSaved;
+
+  /// No description provided for @shareTripFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share this trip.'**
+  String get shareTripFailed;
+
+  /// No description provided for @importTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Import trip'**
+  String get importTrip;
+
+  /// No description provided for @importTripSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip imported.'**
+  String get importTripSuccess;
+
+  /// No description provided for @importTripInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'This file isn\'t a valid shared trip.'**
+  String get importTripInvalid;
+
+  /// No description provided for @importTripTooNew.
+  ///
+  /// In en, this message translates to:
+  /// **'This trip was shared from a newer version of the app. Please update to import it.'**
+  String get importTripTooNew;
+
+  /// No description provided for @importTripFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not import this trip.'**
+  String get importTripFailed;
+
   /// No description provided for @fieldTitle.
   ///
   /// In en, this message translates to:

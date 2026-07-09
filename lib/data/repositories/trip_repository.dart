@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
@@ -108,4 +111,18 @@ class TripRepository {
       _db.checklistDao.deleteItem(id);
   Future<int> nextChecklistItemSortOrder(int checklistId) =>
       _db.checklistDao.nextItemSortOrder(checklistId);
+
+  // --- sharing ---
+  /// Serializes the trip [id] and all its data to a portable bundle's bytes for
+  /// sharing. Returns null if the trip no longer exists.
+  Future<Uint8List?> exportTrip(int id) async {
+    final bundle = await _db.sharingDao.exportTrip(id);
+    return bundle?.encode();
+  }
+
+  /// Imports a shared trip bundle's [bytes] as a new trip, returning its id.
+  /// Throws [FormatException] if the bytes aren't a valid bundle, or
+  /// [IncompatibleBundleException] if they came from a newer app version.
+  Future<int> importTrip(Uint8List bytes) =>
+      _db.sharingDao.importTrip(TripBundle.decode(bytes));
 }

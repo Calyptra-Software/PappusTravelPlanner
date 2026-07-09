@@ -1,0 +1,382 @@
+import 'package:drift/drift.dart';
+
+import '../../../features/sharing/trip_bundle.dart';
+import '../app_database.dart';
+import '../tables.dart';
+
+part 'sharing_dao.g.dart';
+
+/// Reads a single trip and everything hanging off it into a portable
+/// [TripBundle] (and, later, writes one back). Spans every trip-scoped table
+/// plus the two global rosters ([People], [CostReasons]) it must denormalize,
+/// so it lives in its own accessor rather than any one feature's DAO.
+@DriftAccessor(tables: [
+  Trips,
+  ItemGroups,
+  ItineraryItems,
+  Costs,
+  CostReasons,
+  People,
+  TripParticipants,
+  CostBeneficiaries,
+  Checklists,
+  ChecklistItems,
+  CollapsedDays,
+])
+class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
+  SharingDao(super.db);
+
+  /// Assembles the trip [tripId] and all of its data into a [TripBundle].
+  /// Returns null if no such trip exists. Row IDs are carried through as the
+  /// bundle's opaque local keys; references to the shared [People] and
+  /// [CostReasons] rosters are denormalized to names / labels.
+  Future<TripBundle?> exportTrip(int tripId) async {
+    final trip =
+        await (select(trips)..where((t) => t.id.equals(tripId))).getSingleOrNull();
+    if (trip == null) return null;
+
+    final groupRows =
+        await (select(itemGroups)..where((g) => g.tripId.equals(tripId))).get();
+    final itemRows = await (select(itineraryItems)
+          ..where((i) => i.tripId.equals(tripId)))
+        .get();
+    final costRows = await _costsForTrip(tripId);
+    final beneficiariesByCost = await _beneficiaryNamesByCost(tripId);
+    final checklistRows = await (select(checklists)
+          ..where((c) => c.tripId.equals(tripId)))
+        .get();
+    final checklistItemRows = checklistRows.isEmpty
+        ? <ChecklistItem>[]
+        : await (select(checklistItems)
+              ..where((ci) => ci.checklistId.isIn(
+                    [for (final c in checklistRows) c.id],
+                  )))
+            .get();
+    final collapsedRows = await (select(collapsedDays)
+          ..where((d) => d.tripId.equals(tripId)))
+        .get();
+    final participantNames = await _participantNames(tripId);
+    final reasonIcons = await _reasonIconsFor(
+      {for (final c in costRows) c.reason},
+    );
+
+    return TripBundle(
+      schemaVersion: db.schemaVersion,
+      trip: BundleTrip(
+        title: trip.title,
+        destination: trip.destination,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        notes: trip.notes,
+        colorValue: trip.colorValue,
+        createdAt: trip.createdAt,
+      ),
+      groups: [
+        for (final g in groupRows)
+          BundleGroup(localId: g.id, label: g.label, collapsed: g.collapsed),
+      ],
+      items: [
+        for (final i in itemRows)
+          BundleItem(
+            localId: i.id,
+            groupLocalId: i.groupId,
+            date: i.date,
+            sortOrder: i.sortOrder,
+            kind: i.kind,
+            title: i.title,
+            startMinutes: i.startMinutes,
+            endMinutes: i.endMinutes,
+            notes: i.notes,
+            location: i.location,
+            mode: i.mode,
+            fromLocation: i.fromLocation,
+            toLocation: i.toLocation,
+          ),
+      ],
+      costs: [
+        for (final c in costRows)
+          BundleCost(
+            itemLocalId: c.itemId,
+            groupLocalId: c.groupId,
+            amountMinor: c.amountMinor,
+            currency: c.currency,
+            reason: c.reason,
+            paidBy: c.paidBy,
+            paid: c.paid,
+            createdAt: c.createdAt,
+            beneficiaries: beneficiariesByCost[c.id] ?? const [],
+          ),
+      ],
+      checklists: [
+        for (final c in checklistRows)
+          BundleChecklist(
+            localId: c.id,
+            title: c.title,
+            sortOrder: c.sortOrder,
+            collapsed: c.collapsed,
+            createdAt: c.createdAt,
+            items: [
+              for (final ci in checklistItemRows.where(
+                (ci) => ci.checklistId == c.id,
+              ))
+                BundleChecklistItem(
+                  label: ci.label,
+                  done: ci.done,
+                  sortOrder: ci.sortOrder,
+                  createdAt: ci.createdAt,
+                ),
+            ],
+          ),
+      ],
+      collapsedDays: [for (final d in collapsedRows) d.day],
+      participants: participantNames,
+      reasonIcons: reasonIcons,
+    );
+  }
+
+  /// Imports [bundle] as a brand-new trip, returning its id. Runs in a single
+  /// transaction so a failure leaves nothing behind.
+  ///
+  /// Global rosters are merged, not duplicated: [People] and [CostReasons] are
+  /// matched by their unique name / label, created only when missing. An
+  /// imported person never carries the sender's `isMe` flag, and an existing
+  /// reason keeps the importer's own icon. Every trip-internal reference is
+  /// remapped from the bundle's local keys to the freshly-inserted row ids.
+  Future<int> importTrip(TripBundle bundle) {
+    if (bundle.formatVersion > TripBundle.currentFormatVersion) {
+      throw IncompatibleBundleException(
+        'Bundle format v${bundle.formatVersion} is newer than supported '
+        'v${TripBundle.currentFormatVersion}.',
+      );
+    }
+    return transaction(() async {
+      // People for every referenced name: participants, beneficiaries, and
+      // payers. `paidBy` is stored as text on the cost, but seeding the roster
+      // keeps the payer selectable afterwards, as elsewhere in the app.
+      final personNames = <String>{
+        ...bundle.participants,
+        for (final c in bundle.costs) ...[
+          if (c.paidBy != null) c.paidBy!,
+          ...c.beneficiaries,
+        ],
+      };
+      final personIds = <String, int>{};
+      for (final name in personNames) {
+        personIds[name] = await _ensurePerson(name);
+      }
+
+      await _ensureReasons(bundle);
+
+      final tripId = await into(trips).insert(TripsCompanion.insert(
+        title: bundle.trip.title,
+        destination: Value(bundle.trip.destination),
+        startDate: Value(bundle.trip.startDate),
+        endDate: Value(bundle.trip.endDate),
+        notes: Value(bundle.trip.notes),
+        colorValue: Value(bundle.trip.colorValue),
+        createdAt: Value(bundle.trip.createdAt),
+      ));
+
+      // Groups first, so items and costs can point at their new ids.
+      final groupIds = <int, int>{};
+      for (final g in bundle.groups) {
+        groupIds[g.localId] = await into(itemGroups).insert(
+          ItemGroupsCompanion.insert(
+            tripId: tripId,
+            label: Value(g.label),
+            collapsed: Value(g.collapsed),
+          ),
+        );
+      }
+
+      final itemIds = <int, int>{};
+      for (final i in bundle.items) {
+        itemIds[i.localId] = await into(itineraryItems).insert(
+          ItineraryItemsCompanion.insert(
+            tripId: tripId,
+            groupId: Value(_mapId(groupIds, i.groupLocalId)),
+            date: i.date,
+            sortOrder: Value(i.sortOrder),
+            kind: i.kind,
+            title: Value(i.title),
+            startMinutes: Value(i.startMinutes),
+            endMinutes: Value(i.endMinutes),
+            notes: Value(i.notes),
+            location: Value(i.location),
+            mode: Value(i.mode),
+            fromLocation: Value(i.fromLocation),
+            toLocation: Value(i.toLocation),
+          ),
+        );
+      }
+
+      for (final c in bundle.costs) {
+        final itemId = _mapId(itemIds, c.itemLocalId);
+        final groupId = _mapId(groupIds, c.groupLocalId);
+        // A cost attaches to exactly one target. Fall back to the trip if it was
+        // a trip-level cost (or, defensively, if its item/group didn't resolve).
+        final tripLevel = itemId == null && groupId == null;
+        final costId = await into(costs).insert(CostsCompanion.insert(
+          itemId: Value(itemId),
+          groupId: Value(groupId),
+          tripId: Value(tripLevel ? tripId : null),
+          amountMinor: c.amountMinor,
+          currency: c.currency,
+          reason: c.reason,
+          paidBy: Value(c.paidBy),
+          paid: Value(c.paid),
+          createdAt: Value(c.createdAt),
+        ));
+        for (final name in c.beneficiaries) {
+          await into(costBeneficiaries).insert(
+            CostBeneficiariesCompanion.insert(
+              costId: costId,
+              personId: personIds[name]!,
+            ),
+            mode: InsertMode.insertOrIgnore,
+          );
+        }
+      }
+
+      for (final cl in bundle.checklists) {
+        final checklistId = await into(checklists).insert(
+          ChecklistsCompanion.insert(
+            tripId: tripId,
+            title: Value(cl.title),
+            sortOrder: Value(cl.sortOrder),
+            collapsed: Value(cl.collapsed),
+            createdAt: Value(cl.createdAt),
+          ),
+        );
+        for (final ci in cl.items) {
+          await into(checklistItems).insert(ChecklistItemsCompanion.insert(
+            checklistId: checklistId,
+            label: ci.label,
+            done: Value(ci.done),
+            sortOrder: Value(ci.sortOrder),
+            createdAt: Value(ci.createdAt),
+          ));
+        }
+      }
+
+      for (final day in bundle.collapsedDays) {
+        await into(collapsedDays).insert(
+          CollapsedDaysCompanion.insert(tripId: tripId, day: day),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+
+      for (final name in bundle.participants) {
+        await into(tripParticipants).insert(
+          TripParticipantsCompanion.insert(
+            tripId: tripId,
+            personId: personIds[name]!,
+          ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+
+      return tripId;
+    });
+  }
+
+  /// Resolves a person by their unique [name], creating the roster row if it
+  /// doesn't exist yet. The `isMe` flag is never imported.
+  Future<int> _ensurePerson(String name) async {
+    await into(people).insert(
+      PeopleCompanion.insert(name: name),
+      mode: InsertMode.insertOrIgnore,
+    );
+    final person =
+        await (select(people)..where((p) => p.name.equals(name))).getSingle();
+    return person.id;
+  }
+
+  /// Ensures a [CostReasons] row exists for every reason used by the bundle's
+  /// costs. A new reason adopts the bundle's icon; an existing one keeps the
+  /// icon the importer already chose.
+  Future<void> _ensureReasons(TripBundle bundle) async {
+    final labels = {for (final c in bundle.costs) c.reason};
+    if (labels.isEmpty) return;
+    final existing = await (select(costReasons)
+          ..where((r) => r.label.isIn(labels.toList())))
+        .get();
+    final existingLabels = {for (final r in existing) r.label};
+    for (final label in labels) {
+      if (existingLabels.contains(label)) continue;
+      await into(costReasons).insert(
+        CostReasonsCompanion.insert(
+          label: label,
+          iconId: Value(bundle.reasonIcons[label]),
+        ),
+      );
+    }
+  }
+
+  /// Maps a bundle-local key to its freshly-inserted id, or null when the key is
+  /// null. Assumes the referenced row was inserted earlier in the same import.
+  int? _mapId(Map<int, int> ids, int? localId) =>
+      localId == null ? null : ids[localId];
+
+  /// All costs belonging to the trip, whichever way they are attached (to an
+  /// item, a group, or the trip directly). Mirrors `CostDao.watchCostsForTrip`.
+  Future<List<Cost>> _costsForTrip(int tripId) {
+    final query = select(costs).join([
+      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+    ])
+      ..where(
+        itineraryItems.tripId.equals(tripId) |
+            itemGroups.tripId.equals(tripId) |
+            costs.tripId.equals(tripId),
+      )
+      ..orderBy([OrderingTerm(expression: costs.createdAt)]);
+    return query.map((row) => row.readTable(costs)).get();
+  }
+
+  /// Beneficiary person names for every cost in the trip, keyed by cost id.
+  Future<Map<int, List<String>>> _beneficiaryNamesByCost(int tripId) async {
+    final query = select(costBeneficiaries).join([
+      innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
+      innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
+      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+    ])
+      ..where(
+        itineraryItems.tripId.equals(tripId) |
+            itemGroups.tripId.equals(tripId) |
+            costs.tripId.equals(tripId),
+      )
+      ..orderBy([OrderingTerm(expression: people.name)]);
+    final rows = await query.get();
+    final byCost = <int, List<String>>{};
+    for (final row in rows) {
+      final costId = row.readTable(costBeneficiaries).costId;
+      byCost.putIfAbsent(costId, () => []).add(row.readTable(people).name);
+    }
+    return byCost;
+  }
+
+  /// Names of the trip's participants, alphabetical.
+  Future<List<String>> _participantNames(int tripId) {
+    final query = select(people).join([
+      innerJoin(
+        tripParticipants,
+        tripParticipants.personId.equalsExp(people.id),
+      ),
+    ])
+      ..where(tripParticipants.tripId.equals(tripId))
+      ..orderBy([OrderingTerm(expression: people.name)]);
+    return query.map((row) => row.readTable(people).name).get();
+  }
+
+  /// Icon id for each of [labels] that names a reason with a non-null icon, so
+  /// shared reasons keep their icon on import.
+  Future<Map<String, int>> _reasonIconsFor(Set<String> labels) async {
+    if (labels.isEmpty) return const {};
+    final rows = await (select(costReasons)
+          ..where((r) => r.label.isIn(labels.toList()) & r.iconId.isNotNull()))
+        .get();
+    return {for (final r in rows) r.label: r.iconId!};
+  }
+}

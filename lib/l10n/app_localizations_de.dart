@@ -63,6 +63,32 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editTrip => 'Reise bearbeiten';
 
   @override
+  String get shareTrip => 'Reise teilen';
+
+  @override
+  String get shareTripSaved => 'Reisedatei gespeichert.';
+
+  @override
+  String get shareTripFailed => 'Diese Reise konnte nicht geteilt werden.';
+
+  @override
+  String get importTrip => 'Reise importieren';
+
+  @override
+  String get importTripSuccess => 'Reise importiert.';
+
+  @override
+  String get importTripInvalid =>
+      'Diese Datei ist keine gültige geteilte Reise.';
+
+  @override
+  String get importTripTooNew =>
+      'Diese Reise wurde mit einer neueren Version der App geteilt. Bitte aktualisiere die App, um sie zu importieren.';
+
+  @override
+  String get importTripFailed => 'Diese Reise konnte nicht importiert werden.';
+
+  @override
   String get fieldTitle => 'Titel';
 
   @override

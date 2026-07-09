@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../sharing/presentation/trip_import.dart';
 import '../application/trip_providers.dart';
 import '../widgets/trip_card.dart';
 
@@ -19,6 +20,11 @@ class TripListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.tripsTitle),
         actions: [
+          IconButton(
+            tooltip: l10n.importTrip,
+            icon: const Icon(Icons.file_download_outlined),
+            onPressed: () => pickAndImportTrip(context, ref),
+          ),
           IconButton(
             tooltip: l10n.settingsTitle,
             icon: const Icon(Icons.settings_outlined),

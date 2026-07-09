@@ -1,7 +1,10 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:file_selector/file_selector.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
@@ -17,6 +20,7 @@ import '../../costs/presentation/cost_form_sheet.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
+import '../../sharing/trip_bundle.dart';
 import '../application/trip_providers.dart';
 
 /// Trip detail: header summary plus the day-by-day itinerary.
@@ -47,6 +51,56 @@ class TripDetailScreen extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(repositoryProvider).deleteTrip(tripId);
       if (context.mounted) context.go('/');
+    }
+  }
+
+  /// Whether this is a desktop platform, which has no OS share sheet (and where
+  /// `share_plus` can't share files on Linux). Desktop saves the bundle to a
+  /// file instead, mirroring the database export in settings.
+  bool get _isDesktop =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.macOS);
+
+  /// Exports the trip to a portable `.tpt` bundle: on mobile/web via the OS
+  /// share sheet, on desktop by saving it to a file. [title] names the file.
+  Future<void> _shareTrip(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bytes = await ref.read(repositoryProvider).exportTrip(tripId);
+      if (bytes == null) return;
+      final base = title.trim().isEmpty
+          ? 'trip'
+          : title.replaceAll(RegExp(r'[^\w\- ]'), '_').trim();
+      final fileName = '$base.tpt';
+      if (_isDesktop) {
+        // Use file_selector (not file_picker) on desktop, matching the database
+        // export in settings: its native chooser parents to the app window on
+        // Linux instead of opening behind it.
+        final location = await getSaveLocation(suggestedName: fileName);
+        if (location != null) {
+          await XFile.fromData(bytes).saveTo(location.path);
+          messenger.showSnackBar(SnackBar(content: Text(l10n.shareTripSaved)));
+        }
+      } else {
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [
+              XFile.fromData(bytes, name: fileName, mimeType: tripBundleMimeType),
+            ],
+            fileNameOverrides: [fileName],
+            subject: title,
+          ),
+        );
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.shareTripFailed)));
     }
   }
 
@@ -115,6 +169,12 @@ class TripDetailScreen extends ConsumerWidget {
             tooltip: l10n.statsOpen,
             icon: const Icon(Icons.bar_chart),
             onPressed: () => context.push('/trip/$tripId/stats'),
+          ),
+          IconButton(
+            tooltip: l10n.shareTrip,
+            icon: const Icon(Icons.ios_share),
+            onPressed: () =>
+                _shareTrip(context, ref, tripAsync.value?.title ?? ''),
           ),
           IconButton(
             tooltip: l10n.editTrip,

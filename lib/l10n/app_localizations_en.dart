@@ -62,6 +62,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editTrip => 'Edit trip';
 
   @override
+  String get shareTrip => 'Share trip';
+
+  @override
+  String get shareTripSaved => 'Trip file saved.';
+
+  @override
+  String get shareTripFailed => 'Could not share this trip.';
+
+  @override
+  String get importTrip => 'Import trip';
+
+  @override
+  String get importTripSuccess => 'Trip imported.';
+
+  @override
+  String get importTripInvalid => 'This file isn\'t a valid shared trip.';
+
+  @override
+  String get importTripTooNew =>
+      'This trip was shared from a newer version of the app. Please update to import it.';
+
+  @override
+  String get importTripFailed => 'Could not import this trip.';
+
+  @override
   String get fieldTitle => 'Title';
 
   @override

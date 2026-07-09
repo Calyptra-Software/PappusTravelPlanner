@@ -5,6 +5,7 @@ import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
 import 'daos/group_dao.dart';
 import 'daos/itinerary_dao.dart';
+import 'daos/sharing_dao.dart';
 import 'daos/trip_dao.dart';
 import 'tables.dart';
 
@@ -24,7 +25,7 @@ part 'app_database.g.dart';
     ChecklistItems,
     CollapsedDays,
   ],
-  daos: [TripDao, ItineraryDao, CostDao, ChecklistDao, GroupDao],
+  daos: [TripDao, ItineraryDao, CostDao, ChecklistDao, GroupDao, SharingDao],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (or creates) the database file at [path].

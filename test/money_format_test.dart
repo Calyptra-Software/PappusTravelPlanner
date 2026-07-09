@@ -46,6 +46,7 @@ void main() {
           amountMinor: minor,
           currency: c,
           reason: 'x',
+          paid: false,
           createdAt: DateTime(2026),
         );
 

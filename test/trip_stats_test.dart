@@ -18,6 +18,7 @@ void main() {
         currency: currency,
         reason: reason,
         paidBy: paidBy,
+        paid: false,
         createdAt: DateTime(2026),
       );
 
