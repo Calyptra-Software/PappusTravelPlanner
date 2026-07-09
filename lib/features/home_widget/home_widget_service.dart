@@ -82,13 +82,14 @@ Future<void> _save(WidgetPayload p) async {
     s<String>('countdown', p.countdown),
     s<bool>('is_ongoing', p.isOngoing),
     s<String>('today_header', p.todayHeader),
+    // Save every row; the native side reads item_count and renders as many as
+    // fit the widget's current height.
     s<int>('item_count', p.rows.length),
-    for (var i = 0; i < 3; i++) ...[
-      s<String>('item${i}_time', i < p.rows.length ? p.rows[i].time : ''),
-      s<String>('item${i}_text', i < p.rows.length ? p.rows[i].text : ''),
-      s<String>('item${i}_note', i < p.rows.length ? p.rows[i].note : ''),
+    for (var i = 0; i < p.rows.length; i++) ...[
+      s<String>('item${i}_time', p.rows[i].time),
+      s<String>('item${i}_text', p.rows[i].text),
+      s<String>('item${i}_note', p.rows[i].note),
     ],
-    s<String>('more_text', p.moreCount > 0 ? '+${p.moreCount}' : ''),
     s<String>('empty_title', p.emptyTitle),
     s<String>('empty_body', p.emptyBody),
   ]);

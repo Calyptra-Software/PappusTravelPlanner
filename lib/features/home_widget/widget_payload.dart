@@ -25,7 +25,6 @@ class WidgetPayload {
     this.isOngoing = false,
     this.todayHeader = '',
     this.rows = const [],
-    this.moreCount = 0,
     this.emptyTitle = '',
     this.emptyBody = '',
   });
@@ -39,7 +38,6 @@ class WidgetPayload {
   final bool isOngoing;
   final String todayHeader;
   final List<WidgetRow> rows;
-  final int moreCount;
   final String emptyTitle;
   final String emptyBody;
 }
@@ -132,18 +130,17 @@ WidgetPayload buildWidgetPayload(
     }
   }
 
+  // Send every item for today; the native widget decides how many fit its
+  // current size and renders a "+N" only when some genuinely don't fit.
   List<WidgetRow> rows = const [];
-  var moreCount = 0;
   if (ongoing && todayItems.isNotEmpty) {
     rows = todayItems
-        .take(3)
         .map((i) => WidgetRow(
               time: formatMinutes(i.startMinutes),
               text: _itemText(i, l10n),
               note: i.notes?.trim() ?? '',
             ))
         .toList();
-    moreCount = todayItems.length > 3 ? todayItems.length - 3 : 0;
   }
 
   return WidgetPayload(
@@ -156,6 +153,5 @@ WidgetPayload buildWidgetPayload(
     isOngoing: ongoing,
     todayHeader: l10n.widgetTodayHeader,
     rows: rows,
-    moreCount: moreCount,
   );
 }

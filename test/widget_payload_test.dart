@@ -96,7 +96,7 @@ void main() {
       expect(p.countdown, 'Starts tomorrow');
     });
 
-    test('ongoing trip shows "Day X of Y" and today items (capped at 3)', () {
+    test('ongoing trip shows "Day X of Y" and all today items (uncapped)', () {
       final t = trip(
           id: 1,
           title: 'Italy',
@@ -112,10 +112,11 @@ void main() {
 
       expect(p.isOngoing, isTrue);
       expect(p.countdown, 'Day 2 of 6');
-      expect(p.rows.length, 3);
+      // The native widget decides how many rows fit; the payload carries all.
+      expect(p.rows.length, 4);
       expect(p.rows.first.time, '09:00');
       expect(p.rows.first.text, 'Colosseum');
-      expect(p.moreCount, 1);
+      expect(p.rows.last.text, 'Dinner');
     });
 
     test('surfaces item notes (trimmed) on the row', () {

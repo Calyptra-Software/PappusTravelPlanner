@@ -82,113 +82,13 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
+            <!-- Rows are appended here at runtime (one per itinerary item that
+                 fits the widget's current height); see the provider. -->
             <LinearLayout
-                android:id="@+id/item0_row"
+                android:id="@+id/today_list_container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
-                <TextView
-                    android:id="@+id/item0_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="44dp"
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="12sp" />
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <TextView
-                        android:id="@+id/item0_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="13sp" />
-                    <TextView
-                        android:id="@+id/item0_note"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="2"
-                        android:ellipsize="end"
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/item1_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
-                <TextView
-                    android:id="@+id/item1_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="44dp"
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="12sp" />
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <TextView
-                        android:id="@+id/item1_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="13sp" />
-                    <TextView
-                        android:id="@+id/item1_note"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="2"
-                        android:ellipsize="end"
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/item2_row"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="4dp">
-                <TextView
-                    android:id="@+id/item2_time"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:minWidth="44dp"
-                    android:textColor="#B3FFFFFF"
-                    android:textSize="12sp" />
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-                    <TextView
-                        android:id="@+id/item2_text"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="1"
-                        android:ellipsize="end"
-                        android:textColor="#FFFFFFFF"
-                        android:textSize="13sp" />
-                    <TextView
-                        android:id="@+id/item2_note"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:maxLines="2"
-                        android:ellipsize="end"
-                        android:textColor="#B3FFFFFF"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </LinearLayout>
+                android:orientation="vertical" />
 
             <TextView
                 android:id="@+id/today_more"
