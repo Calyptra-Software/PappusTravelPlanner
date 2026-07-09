@@ -69,9 +69,9 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
 
         if (showToday) {
             setOrHide(views, R.id.today_header, data.getString("today_header", ""))
-            bindRow(views, data, 0, R.id.item0_row, R.id.item0_time, R.id.item0_text)
-            bindRow(views, data, 1, R.id.item1_row, R.id.item1_time, R.id.item1_text)
-            bindRow(views, data, 2, R.id.item2_row, R.id.item2_time, R.id.item2_text)
+            bindRow(views, data, 0, R.id.item0_row, R.id.item0_time, R.id.item0_text, R.id.item0_note)
+            bindRow(views, data, 1, R.id.item1_row, R.id.item1_time, R.id.item1_text, R.id.item1_note)
+            bindRow(views, data, 2, R.id.item2_row, R.id.item2_time, R.id.item2_text, R.id.item2_note)
             setOrHide(views, R.id.today_more, data.getString("more_text", ""))
         }
     }
@@ -83,6 +83,7 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         rowId: Int,
         timeId: Int,
         textId: Int,
+        noteId: Int,
     ) {
         val text = data.getString("item${index}_text", "") ?: ""
         if (text.isEmpty()) {
@@ -92,6 +93,7 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         views.setViewVisibility(rowId, View.VISIBLE)
         setOrHide(views, timeId, data.getString("item${index}_time", ""))
         views.setTextViewText(textId, text)
+        setOrHide(views, noteId, data.getString("item${index}_note", ""))
     }
 
     /** Sets the text, or hides the view when the value is blank. */

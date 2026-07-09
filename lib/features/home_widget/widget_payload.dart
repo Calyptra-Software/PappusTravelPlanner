@@ -6,9 +6,10 @@ import '../itinerary/widgets/transport_mode.dart';
 
 /// One line of "today's plan" shown on the widget.
 class WidgetRow {
-  const WidgetRow({required this.time, required this.text});
+  const WidgetRow({required this.time, required this.text, this.note = ''});
   final String time;
   final String text;
+  final String note;
 }
 
 /// Flat, pre-formatted data handed to the native Android widget. All strings are
@@ -139,6 +140,7 @@ WidgetPayload buildWidgetPayload(
         .map((i) => WidgetRow(
               time: formatMinutes(i.startMinutes),
               text: _itemText(i, l10n),
+              note: i.notes?.trim() ?? '',
             ))
         .toList();
     moreCount = todayItems.length > 3 ? todayItems.length - 3 : 0;

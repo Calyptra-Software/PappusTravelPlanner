@@ -86,6 +86,7 @@ Future<void> _save(WidgetPayload p) async {
     for (var i = 0; i < 3; i++) ...[
       s<String>('item${i}_time', i < p.rows.length ? p.rows[i].time : ''),
       s<String>('item${i}_text', i < p.rows.length ? p.rows[i].text : ''),
+      s<String>('item${i}_note', i < p.rows.length ? p.rows[i].note : ''),
     ],
     s<String>('more_text', p.moreCount > 0 ? '+${p.moreCount}' : ''),
     s<String>('empty_title', p.emptyTitle),
@@ -144,8 +145,14 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
 
       final signature = [
         for (final t in trips)
-          '${t.id}:${t.title}:${t.startDate}:${t.endDate}',
-        'items:${items?.length ?? 0}:${items?.map((i) => i.id).join(',') ?? ''}',
+          '${t.id}:${t.title}:${t.destination}:${t.startDate}:${t.endDate}',
+        // Include the fields the widget actually renders (time, the text-driving
+        // columns, and notes) so editing an existing item re-pushes — item ids
+        // alone would miss in-place edits.
+        'items:${items?.length ?? 0}:'
+            '${items?.map((i) => '${i.id}/${i.startMinutes}/${i.kind.index}/'
+                '${i.title}/${i.location}/${i.mode?.index}/'
+                '${i.fromLocation}/${i.toLocation}/${i.notes}').join(',') ?? ''}',
       ].join('|');
 
       if (signature != _lastSignature) {

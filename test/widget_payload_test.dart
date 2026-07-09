@@ -30,7 +30,8 @@ void main() {
     );
   }
 
-  ItineraryItem placeItem(int id, {int? minutes, String location = 'Place'}) {
+  ItineraryItem placeItem(int id,
+      {int? minutes, String location = 'Place', String? notes}) {
     return ItineraryItem(
       id: id,
       tripId: 1,
@@ -40,7 +41,7 @@ void main() {
       title: null,
       startMinutes: minutes,
       endMinutes: null,
-      notes: null,
+      notes: notes,
       location: location,
       mode: null,
       fromLocation: null,
@@ -115,6 +116,22 @@ void main() {
       expect(p.rows.first.time, '09:00');
       expect(p.rows.first.text, 'Colosseum');
       expect(p.moreCount, 1);
+    });
+
+    test('surfaces item notes (trimmed) on the row', () {
+      final t = trip(
+          id: 1,
+          title: 'Italy',
+          start: DateTime(2026, 7, 4),
+          end: DateTime(2026, 7, 9));
+      final items = [
+        placeItem(1, minutes: 9 * 60, location: 'Colosseum', notes: '  Bring water  '),
+        placeItem(2, minutes: 12 * 60, location: 'Lunch'),
+      ];
+      final p = buildWidgetPayload([t], items, now, l10n, 'en');
+
+      expect(p.rows[0].note, 'Bring water');
+      expect(p.rows[1].note, '');
     });
   });
 }
