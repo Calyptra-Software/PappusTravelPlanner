@@ -144,17 +144,13 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
           ? ref.watch(itineraryProvider(featured.id)).value
           : null;
 
+      // Use each row's full toString (Drift data classes include every column)
+      // so any in-place edit re-pushes — enumerating fields by hand has twice
+      // missed one (e.g. notes, then endMinutes).
       final signature = [
-        for (final t in trips)
-          '${t.id}:${t.title}:${t.destination}:${t.startDate}:${t.endDate}',
-        // Include the fields the widget actually renders (time, the text-driving
-        // columns, and notes) so editing an existing item re-pushes — item ids
-        // alone would miss in-place edits.
-        'items:${items?.length ?? 0}:'
-            '${items?.map((i) => '${i.id}/${i.startMinutes}/${i.kind.index}/'
-                '${i.title}/${i.location}/${i.mode?.index}/'
-                '${i.fromLocation}/${i.toLocation}/${i.notes}').join(',') ?? ''}',
-      ].join('|');
+        for (final t in trips) t.toString(),
+        'items:${items?.map((i) => i.toString()).join('|') ?? ''}',
+      ].join('~');
 
       if (signature != _lastSignature) {
         _lastSignature = signature;
