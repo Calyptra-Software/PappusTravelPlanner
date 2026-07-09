@@ -324,7 +324,10 @@ class _TripParticipantsEditor extends ConsumerWidget {
           children: [
             for (final person in participants)
               InputChip(
-                avatar: const Icon(Icons.person_outline, size: 16),
+                avatar: Icon(
+                  person.isMe ? Icons.person : Icons.person_outline,
+                  size: 16,
+                ),
                 label: Text(person.name),
                 visualDensity: VisualDensity.compact,
                 onDeleted: () => ref
@@ -378,6 +381,7 @@ class _NewTripParticipantsEditor extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final meName = ref.watch(mePersonProvider).value?.name;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,7 +395,10 @@ class _NewTripParticipantsEditor extends ConsumerWidget {
           children: [
             for (final name in participants)
               InputChip(
-                avatar: const Icon(Icons.person_outline, size: 16),
+                avatar: Icon(
+                  name == meName ? Icons.person : Icons.person_outline,
+                  size: 16,
+                ),
                 label: Text(name),
                 visualDensity: VisualDensity.compact,
                 onDeleted: () => onRemove(name),

@@ -33,6 +33,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
     final localeName = Localizations.localeOf(context).languageCode;
     final trip = ref.watch(tripProvider(widget.tripId)).value;
     final stats = ref.watch(tripStatsProvider(widget.tripId));
+    final meName = ref.watch(mePersonProvider).value?.name;
     final accent =
         trip != null ? Color(trip.colorValue) : Theme.of(context).colorScheme.primary;
 
@@ -96,11 +97,13 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
                     stats: current,
                     accent: accent,
                     localeName: localeName,
+                    meName: meName,
                   )
                 else
                   _BalancesSection(
                     stats: current,
                     localeName: localeName,
+                    meName: meName,
                   ),
               ],
             ),
@@ -216,11 +219,13 @@ class _PaidList extends StatelessWidget {
     required this.stats,
     required this.accent,
     required this.localeName,
+    required this.meName,
   });
 
   final CurrencyStats stats;
   final Color accent;
   final String localeName;
+  final String? meName;
 
   @override
   Widget build(BuildContext context) {
@@ -232,7 +237,10 @@ class _PaidList extends StatelessWidget {
       children: [
         for (final person in people)
           _BarRow(
-            leading: const Icon(Icons.person_outline, size: 20),
+            leading: Icon(
+              person.name == meName ? Icons.person : Icons.person_outline,
+              size: 20,
+            ),
             label: person.name,
             trailing: formatMoney(person.paidMinor, stats.currency, localeName),
             fraction: maxPaid == 0 ? 0 : person.paidMinor / maxPaid,
@@ -244,10 +252,15 @@ class _PaidList extends StatelessWidget {
 }
 
 class _BalancesSection extends StatelessWidget {
-  const _BalancesSection({required this.stats, required this.localeName});
+  const _BalancesSection({
+    required this.stats,
+    required this.localeName,
+    required this.meName,
+  });
 
   final CurrencyStats stats;
   final String localeName;
+  final String? meName;
 
   @override
   Widget build(BuildContext context) {
@@ -267,7 +280,10 @@ class _BalancesSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
               children: [
-                const Icon(Icons.person_outline, size: 20),
+                Icon(
+                  person.name == meName ? Icons.person : Icons.person_outline,
+                  size: 20,
+                ),
                 const SizedBox(width: 12),
                 Expanded(child: Text(person.name, style: theme.textTheme.bodyLarge)),
                 Text(

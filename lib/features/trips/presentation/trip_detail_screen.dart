@@ -325,7 +325,10 @@ class _TripHeader extends ConsumerWidget {
                   children: [
                     for (final person in participants)
                       Chip(
-                        avatar: const Icon(Icons.person_outline, size: 16),
+                        avatar: Icon(
+                          person.isMe ? Icons.person : Icons.person_outline,
+                          size: 16,
+                        ),
                         label: Text(person.name),
                         visualDensity: VisualDensity.compact,
                       ),
