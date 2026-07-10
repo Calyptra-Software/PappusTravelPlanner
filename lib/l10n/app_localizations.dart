@@ -260,6 +260,30 @@ abstract class AppLocalizations {
   /// **'Accent colour'**
   String get accentColour;
 
+  /// No description provided for @customColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom colour'**
+  String get customColour;
+
+  /// No description provided for @pickColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a colour'**
+  String get pickColour;
+
+  /// No description provided for @hexColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Hex'**
+  String get hexColour;
+
+  /// No description provided for @invalidHexColour.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid hex colour, e.g. 1565C0'**
+  String get invalidHexColour;
+
   /// No description provided for @createTrip.
   ///
   /// In en, this message translates to:

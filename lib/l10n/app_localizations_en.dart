@@ -111,6 +111,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accentColour => 'Accent colour';
 
   @override
+  String get customColour => 'Custom colour';
+
+  @override
+  String get pickColour => 'Pick a colour';
+
+  @override
+  String get hexColour => 'Hex';
+
+  @override
+  String get invalidHexColour => 'Enter a valid hex colour, e.g. 1565C0';
+
+  @override
   String get createTrip => 'Create trip';
 
   @override

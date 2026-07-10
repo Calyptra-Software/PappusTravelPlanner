@@ -7,6 +7,7 @@ import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/color_picker_dialog.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
@@ -469,6 +470,9 @@ class _ColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isPreset = AppTheme.tripAccents
+        .any((color) => color.toARGB32() == selected);
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -479,6 +483,21 @@ class _ColorPicker extends StatelessWidget {
             selected: color.toARGB32() == selected,
             onTap: () => onSelected(color.toARGB32()),
           ),
+        // Custom-colour swatch: shows the current custom colour when the
+        // selection is not one of the presets, otherwise a neutral "add" dot.
+        _ColorDot(
+          color: isPreset ? null : Color(selected),
+          selected: !isPreset,
+          icon: isPreset ? Icons.add : Icons.check,
+          tooltip: l10n.customColour,
+          onTap: () async {
+            final picked = await showColorPickerDialog(
+              context,
+              initial: Color(selected),
+            );
+            if (picked != null) onSelected(picked.toARGB32());
+          },
+        ),
       ],
     );
   }
@@ -489,34 +508,50 @@ class _ColorDot extends StatelessWidget {
     required this.color,
     required this.selected,
     required this.onTap,
+    this.icon,
+    this.tooltip,
   });
 
-  final Color color;
+  /// The swatch colour, or `null` to render a neutral outlined "add" dot.
+  final Color? color;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? icon;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final scheme = Theme.of(context).colorScheme;
+    final fill = color;
+    // Contrasting icon colour so the check mark stays legible on any swatch.
+    final iconColor = fill == null
+        ? scheme.onSurfaceVariant
+        : (fill.computeLuminance() > 0.5 ? Colors.black : Colors.white);
+    final showIcon = icon ?? (selected ? Icons.check : null);
+    Widget dot = InkWell(
       onTap: onTap,
       customBorder: const CircleBorder(),
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: color,
+          color: fill ?? scheme.surfaceContainerHighest,
           shape: BoxShape.circle,
           border: Border.all(
             color: selected
-                ? Theme.of(context).colorScheme.onSurface
-                : Colors.transparent,
+                ? scheme.onSurface
+                : (fill == null ? scheme.outline : Colors.transparent),
             width: 3,
           ),
         ),
-        child: selected
-            ? const Icon(Icons.check, color: Colors.white, size: 20)
+        child: showIcon != null
+            ? Icon(showIcon, color: iconColor, size: 20)
             : null,
       ),
     );
+    if (tooltip != null) {
+      dot = Tooltip(message: tooltip!, child: dot);
+    }
+    return dot;
   }
 }

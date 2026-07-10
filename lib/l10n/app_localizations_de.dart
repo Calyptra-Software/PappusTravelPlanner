@@ -113,6 +113,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get accentColour => 'Akzentfarbe';
 
   @override
+  String get customColour => 'Eigene Farbe';
+
+  @override
+  String get pickColour => 'Farbe auswählen';
+
+  @override
+  String get hexColour => 'Hex';
+
+  @override
+  String get invalidHexColour => 'Gültige Hex-Farbe eingeben, z. B. 1565C0';
+
+  @override
   String get createTrip => 'Reise erstellen';
 
   @override
