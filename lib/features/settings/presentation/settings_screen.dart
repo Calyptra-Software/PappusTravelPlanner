@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_location.dart';
 import '../../../core/providers.dart';
 import '../../../core/settings/language_dialog.dart';
+import '../../../core/settings/theme_mode_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_reasons_settings.dart';
 import '../../costs/presentation/people_settings.dart';
@@ -41,6 +42,14 @@ class SettingsScreen extends ConsumerWidget {
             title: Text(l10n.language),
             subtitle: Text(currentLanguageLabel(context, ref)),
             onTap: () => showLanguageDialog(context, ref),
+          ),
+          const Divider(),
+          _SectionHeader(title: l10n.theme),
+          ListTile(
+            leading: const Icon(Icons.brightness_6),
+            title: Text(l10n.theme),
+            subtitle: Text(currentThemeModeLabel(context, ref)),
+            onTap: () => showThemeModeDialog(context, ref),
           ),
           const Divider(),
           _SectionHeader(title: l10n.costReasonsSection),
