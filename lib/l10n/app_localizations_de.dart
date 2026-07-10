@@ -549,6 +549,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get statsScopePaid => 'Bezahlt';
 
   @override
+  String get statsScopeShare => 'Anteil';
+
+  @override
   String get statsScopeBalances => 'Salden';
 
   @override

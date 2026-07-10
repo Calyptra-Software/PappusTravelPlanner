@@ -1064,6 +1064,12 @@ abstract class AppLocalizations {
   /// **'Paid'**
   String get statsScopePaid;
 
+  /// No description provided for @statsScopeShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get statsScopeShare;
+
   /// No description provided for @statsScopeBalances.
   ///
   /// In en, this message translates to:

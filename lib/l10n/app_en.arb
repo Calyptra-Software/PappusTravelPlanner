@@ -204,6 +204,7 @@
   "statsByCategory": "By category",
   "statsByPerson": "By person",
   "statsScopePaid": "Paid",
+  "statsScopeShare": "Share",
   "statsScopeBalances": "Balances",
   "statsPaidShort": "Paid",
   "statsShareShort": "Share",

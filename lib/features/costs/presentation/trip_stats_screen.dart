@@ -10,7 +10,7 @@ import '../cost_reason_icons.dart';
 import '../trip_stats.dart';
 
 /// Which per-person figure the balances section shows.
-enum _PersonView { paid, balances }
+enum _PersonView { paid, share, balances }
 
 /// Per-trip expense statistics: a category breakdown plus per-person paid totals
 /// and settle-up balances, one section per currency the trip uses.
@@ -82,6 +82,10 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
                         label: Text(l10n.statsScopePaid),
                       ),
                       ButtonSegment(
+                        value: _PersonView.share,
+                        label: Text(l10n.statsScopeShare),
+                      ),
+                      ButtonSegment(
                         value: _PersonView.balances,
                         label: Text(l10n.statsScopeBalances),
                       ),
@@ -92,19 +96,27 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                if (_personView == _PersonView.paid)
-                  _PaidList(
-                    stats: current,
-                    accent: accent,
-                    localeName: localeName,
-                    meName: meName,
-                  )
-                else
-                  _BalancesSection(
-                    stats: current,
-                    localeName: localeName,
-                    meName: meName,
-                  ),
+                switch (_personView) {
+                  _PersonView.paid => _PersonAmountList(
+                      stats: current,
+                      accent: accent,
+                      localeName: localeName,
+                      meName: meName,
+                      amountOf: (p) => p.paidMinor,
+                    ),
+                  _PersonView.share => _PersonAmountList(
+                      stats: current,
+                      accent: accent,
+                      localeName: localeName,
+                      meName: meName,
+                      amountOf: (p) => p.shareMinor,
+                    ),
+                  _PersonView.balances => _BalancesSection(
+                      stats: current,
+                      localeName: localeName,
+                      meName: meName,
+                    ),
+                },
               ],
             ),
     );
@@ -214,25 +226,30 @@ class _CategoryList extends ConsumerWidget {
   }
 }
 
-class _PaidList extends StatelessWidget {
-  const _PaidList({
+/// Per-person breakdown of a single figure ([amountOf]) — either what each
+/// person paid or their share of the expenses — as bars sized against the
+/// largest amount. Shared by the "Paid" and "Share" views.
+class _PersonAmountList extends StatelessWidget {
+  const _PersonAmountList({
     required this.stats,
     required this.accent,
     required this.localeName,
     required this.meName,
+    required this.amountOf,
   });
 
   final CurrencyStats stats;
   final Color accent;
   final String localeName;
   final String? meName;
+  final int Function(PersonStat) amountOf;
 
   @override
   Widget build(BuildContext context) {
     final people = [...stats.byPerson]
-      ..sort((a, b) => b.paidMinor.compareTo(a.paidMinor));
-    final maxPaid =
-        people.fold<int>(0, (m, p) => p.paidMinor > m ? p.paidMinor : m);
+      ..sort((a, b) => amountOf(b).compareTo(amountOf(a)));
+    final maxAmount =
+        people.fold<int>(0, (m, p) => amountOf(p) > m ? amountOf(p) : m);
     return Column(
       children: [
         for (final person in people)
@@ -242,8 +259,8 @@ class _PaidList extends StatelessWidget {
               size: 20,
             ),
             label: person.name,
-            trailing: formatMoney(person.paidMinor, stats.currency, localeName),
-            fraction: maxPaid == 0 ? 0 : person.paidMinor / maxPaid,
+            trailing: formatMoney(amountOf(person), stats.currency, localeName),
+            fraction: maxAmount == 0 ? 0 : amountOf(person) / maxAmount,
             color: accent,
           ),
       ],
