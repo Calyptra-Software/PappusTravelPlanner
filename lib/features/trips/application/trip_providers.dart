@@ -19,3 +19,10 @@ final tripParticipantsProvider =
     StreamProvider.autoDispose.family<List<Person>, int>((ref, tripId) {
   return ref.watch(repositoryProvider).watchParticipants(tripId);
 });
+
+/// Live participants of every trip, keyed by trip id — powers the overview
+/// participant filter.
+final allParticipantsProvider =
+    StreamProvider.autoDispose<Map<int, List<Person>>>((ref) {
+  return ref.watch(repositoryProvider).watchAllParticipants();
+});

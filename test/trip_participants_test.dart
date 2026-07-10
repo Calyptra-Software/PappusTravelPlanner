@@ -49,6 +49,21 @@ void main() {
         ['Bob']);
   });
 
+  test('watchAllParticipants groups every trip\'s participants by trip id',
+      () async {
+    final a = await makeTrip('A');
+    final b = await makeTrip('B');
+    await makeTrip('C'); // no participants → absent from the map
+    await db.tripDao.addParticipant(a, 'Bob');
+    await db.tripDao.addParticipant(a, 'Alex');
+    await db.tripDao.addParticipant(b, 'Alex');
+
+    final byTrip = await db.tripDao.watchAllParticipants().first;
+    expect(byTrip.keys.toSet(), {a, b});
+    expect(byTrip[a]!.map((p) => p.name), ['Alex', 'Bob']); // sorted by name
+    expect(byTrip[b]!.map((p) => p.name), ['Alex']);
+  });
+
   test('removeParticipant unlinks but keeps the person in the roster',
       () async {
     final tripId = await makeTrip();

@@ -22,6 +22,8 @@ class TripRepository {
   // --- participants ---
   Stream<List<Person>> watchParticipants(int tripId) =>
       _db.tripDao.watchParticipants(tripId);
+  Stream<Map<int, List<Person>>> watchAllParticipants() =>
+      _db.tripDao.watchAllParticipants();
   Future<void> addParticipant(int tripId, String name) =>
       _db.tripDao.addParticipant(tripId, name);
   Future<int> removeParticipant(int tripId, int personId) =>

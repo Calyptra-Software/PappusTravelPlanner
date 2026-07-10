@@ -56,6 +56,23 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
         .map((rows) => rows.map((row) => row.readTable(people)).toList());
   }
 
+  /// Participants of every trip, keyed by trip id — used to filter the
+  /// overview list by travel companion.
+  Stream<Map<int, List<Person>>> watchAllParticipants() {
+    final query = select(tripParticipants).join([
+      innerJoin(people, people.id.equalsExp(tripParticipants.personId)),
+    ])
+      ..orderBy([OrderingTerm(expression: people.name)]);
+    return query.watch().map((rows) {
+      final byTrip = <int, List<Person>>{};
+      for (final row in rows) {
+        final tripId = row.readTable(tripParticipants).tripId;
+        byTrip.putIfAbsent(tripId, () => []).add(row.readTable(people));
+      }
+      return byTrip;
+    });
+  }
+
   /// Adds a participant to a trip by name: creates the person in the shared
   /// roster if needed, then links them to the trip. A no-op if already linked.
   Future<void> addParticipant(int tripId, String name) async {

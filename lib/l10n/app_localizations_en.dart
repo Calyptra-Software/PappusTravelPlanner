@@ -30,6 +30,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchTripsHint => 'Title, destination or notes';
 
   @override
+  String get filterTrips => 'Filter and sort';
+
+  @override
+  String get filterAndSort => 'Filter & sort';
+
+  @override
+  String get clearFilters => 'Clear';
+
+  @override
+  String get statusLabel => 'Status';
+
+  @override
+  String get tripStatusUpcoming => 'Upcoming';
+
+  @override
+  String get tripStatusOngoing => 'Ongoing';
+
+  @override
+  String get tripStatusPast => 'Past';
+
+  @override
+  String get tripStatusUndated => 'No dates';
+
+  @override
+  String get sortLabel => 'Sort';
+
+  @override
+  String get sortDateAsc => 'Date (soonest)';
+
+  @override
+  String get sortDateDesc => 'Date (latest)';
+
+  @override
+  String get sortNameAsc => 'Name (A–Z)';
+
+  @override
+  String get sortCreatedDesc => 'Recently added';
+
+  @override
+  String get anyDate => 'Any';
+
+  @override
   String get noTripsFoundTitle => 'No matching trips';
 
   @override

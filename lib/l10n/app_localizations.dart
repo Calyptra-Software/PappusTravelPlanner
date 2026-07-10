@@ -140,6 +140,90 @@ abstract class AppLocalizations {
   /// **'Title, destination or notes'**
   String get searchTripsHint;
 
+  /// No description provided for @filterTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter and sort'**
+  String get filterTrips;
+
+  /// No description provided for @filterAndSort.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter & sort'**
+  String get filterAndSort;
+
+  /// No description provided for @clearFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearFilters;
+
+  /// No description provided for @statusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get statusLabel;
+
+  /// No description provided for @tripStatusUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get tripStatusUpcoming;
+
+  /// No description provided for @tripStatusOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get tripStatusOngoing;
+
+  /// No description provided for @tripStatusPast.
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get tripStatusPast;
+
+  /// No description provided for @tripStatusUndated.
+  ///
+  /// In en, this message translates to:
+  /// **'No dates'**
+  String get tripStatusUndated;
+
+  /// No description provided for @sortLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sortLabel;
+
+  /// No description provided for @sortDateAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (soonest)'**
+  String get sortDateAsc;
+
+  /// No description provided for @sortDateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Date (latest)'**
+  String get sortDateDesc;
+
+  /// No description provided for @sortNameAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Name (A–Z)'**
+  String get sortNameAsc;
+
+  /// No description provided for @sortCreatedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Recently added'**
+  String get sortCreatedDesc;
+
+  /// No description provided for @anyDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get anyDate;
+
   /// No description provided for @noTripsFoundTitle.
   ///
   /// In en, this message translates to:
