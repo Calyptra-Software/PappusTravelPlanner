@@ -47,9 +47,13 @@ bool isTripOngoing(Trip trip, DateTime day) {
   final start = trip.startDate;
   if (start == null) return false;
   final end = trip.endDate ?? start;
+  // Normalize [day] too: callers may pass a raw `DateTime.now()` with a
+  // time-of-day, which would otherwise test as "after" the end day's midnight
+  // and wrongly report the last day as not ongoing.
+  final d = normalizeDay(day);
   final s = normalizeDay(start);
   final e = normalizeDay(end);
-  return !day.isBefore(s) && !day.isAfter(e);
+  return !d.isBefore(s) && !d.isAfter(e);
 }
 
 /// Picks the trip to feature: an ongoing trip first, then the nearest upcoming,

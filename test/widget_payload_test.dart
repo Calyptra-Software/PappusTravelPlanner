@@ -49,6 +49,22 @@ void main() {
     );
   }
 
+  group('isTripOngoing', () {
+    final t = trip(
+        id: 1, title: 'T', start: DateTime(2026, 7, 9), end: DateTime(2026, 7, 11));
+
+    test('is true on the last day even with a time-of-day', () {
+      // Raw DateTime.now() carries a time; the end day must still count as ongoing.
+      expect(isTripOngoing(t, DateTime(2026, 7, 11, 0, 41)), isTrue);
+      expect(isTripOngoing(t, DateTime(2026, 7, 11, 23, 59)), isTrue);
+    });
+
+    test('is true on the first day and false the day after the end', () {
+      expect(isTripOngoing(t, DateTime(2026, 7, 9, 8)), isTrue);
+      expect(isTripOngoing(t, DateTime(2026, 7, 12, 0, 1)), isFalse);
+    });
+  });
+
   group('pickFeaturedTrip', () {
     test('prefers an ongoing trip over a sooner-starting upcoming one', () {
       final ongoing = trip(
