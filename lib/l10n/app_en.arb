@@ -5,6 +5,13 @@
   "newTrip": "New trip",
   "noTripsTitle": "No trips yet",
   "noTripsBody": "Tap “New trip” to plan your first adventure.",
+  "searchTrips": "Search trips",
+  "searchTripsHint": "Title, destination or notes",
+  "noTripsFoundTitle": "No matching trips",
+  "noTripsFoundBody": "No trips match “{query}”.",
+  "@noTripsFoundBody": {
+    "placeholders": { "query": { "type": "String" } }
+  },
   "genericError": "Something went wrong:\n{error}",
   "@genericError": {
     "placeholders": { "error": { "type": "String" } }

@@ -25,6 +25,20 @@ class AppLocalizationsDe extends AppLocalizations {
       'Tippe auf „Neue Reise“, um dein erstes Abenteuer zu planen.';
 
   @override
+  String get searchTrips => 'Reisen suchen';
+
+  @override
+  String get searchTripsHint => 'Titel, Reiseziel oder Notizen';
+
+  @override
+  String get noTripsFoundTitle => 'Keine passenden Reisen';
+
+  @override
+  String noTripsFoundBody(String query) {
+    return 'Keine Reisen passen zu „$query“.';
+  }
+
+  @override
   String genericError(String error) {
     return 'Etwas ist schiefgelaufen:\n$error';
   }

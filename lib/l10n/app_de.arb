@@ -5,6 +5,13 @@
   "newTrip": "Neue Reise",
   "noTripsTitle": "Noch keine Reisen",
   "noTripsBody": "Tippe auf „Neue Reise“, um dein erstes Abenteuer zu planen.",
+  "searchTrips": "Reisen suchen",
+  "searchTripsHint": "Titel, Reiseziel oder Notizen",
+  "noTripsFoundTitle": "Keine passenden Reisen",
+  "noTripsFoundBody": "Keine Reisen passen zu „{query}“.",
+  "@noTripsFoundBody": {
+    "placeholders": { "query": { "type": "String" } }
+  },
   "genericError": "Etwas ist schiefgelaufen:\n{error}",
   "days": "{count, plural, =1{1 Tag} other{{count} Tage}}",
   "entries": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",

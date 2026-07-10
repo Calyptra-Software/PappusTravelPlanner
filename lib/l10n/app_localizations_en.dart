@@ -24,6 +24,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noTripsBody => 'Tap “New trip” to plan your first adventure.';
 
   @override
+  String get searchTrips => 'Search trips';
+
+  @override
+  String get searchTripsHint => 'Title, destination or notes';
+
+  @override
+  String get noTripsFoundTitle => 'No matching trips';
+
+  @override
+  String noTripsFoundBody(String query) {
+    return 'No trips match “$query”.';
+  }
+
+  @override
   String genericError(String error) {
     return 'Something went wrong:\n$error';
   }

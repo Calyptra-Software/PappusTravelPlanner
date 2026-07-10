@@ -128,6 +128,30 @@ abstract class AppLocalizations {
   /// **'Tap “New trip” to plan your first adventure.'**
   String get noTripsBody;
 
+  /// No description provided for @searchTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Search trips'**
+  String get searchTrips;
+
+  /// No description provided for @searchTripsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Title, destination or notes'**
+  String get searchTripsHint;
+
+  /// No description provided for @noTripsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching trips'**
+  String get noTripsFoundTitle;
+
+  /// No description provided for @noTripsFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No trips match “{query}”.'**
+  String noTripsFoundBody(String query);
+
   /// No description provided for @genericError.
   ///
   /// In en, this message translates to:
