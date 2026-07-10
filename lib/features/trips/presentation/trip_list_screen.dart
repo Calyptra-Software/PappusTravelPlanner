@@ -139,6 +139,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
             query: _query,
             participantsByTrip: idsByTrip,
             today: DateTime.now(),
+            totalsByTrip: totalsByTrip,
           );
           if (visible.isEmpty) return _NoResults(query: _query.text.trim());
           return ListView.separated(
@@ -199,6 +200,10 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
         return l10n.sortNameAsc;
       case TripSort.createdDesc:
         return l10n.sortCreatedDesc;
+      case TripSort.expenseDesc:
+        return l10n.sortExpenseDesc;
+      case TripSort.expenseAsc:
+        return l10n.sortExpenseAsc;
     }
   }
 

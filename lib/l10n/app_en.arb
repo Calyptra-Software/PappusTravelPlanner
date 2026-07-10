@@ -20,6 +20,8 @@
   "sortDateDesc": "Date (latest)",
   "sortNameAsc": "Name (A–Z)",
   "sortCreatedDesc": "Recently added",
+  "sortExpenseDesc": "Expenses (highest)",
+  "sortExpenseAsc": "Expenses (lowest)",
   "anyDate": "Any",
   "noTripsFoundTitle": "No matching trips",
   "noTripsFoundBody": "No trips match “{query}”.",

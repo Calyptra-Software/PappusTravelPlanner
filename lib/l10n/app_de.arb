@@ -20,6 +20,8 @@
   "sortDateDesc": "Datum (späteste zuerst)",
   "sortNameAsc": "Name (A–Z)",
   "sortCreatedDesc": "Zuletzt hinzugefügt",
+  "sortExpenseDesc": "Ausgaben (höchste)",
+  "sortExpenseAsc": "Ausgaben (niedrigste)",
   "anyDate": "Beliebig",
   "noTripsFoundTitle": "Keine passenden Reisen",
   "noTripsFoundBody": "Keine Reisen passen zu „{query}“.",

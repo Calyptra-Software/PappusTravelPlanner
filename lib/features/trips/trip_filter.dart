@@ -1,11 +1,21 @@
 import '../../core/format/date_format.dart';
 import '../../data/database/app_database.dart';
+import '../../data/database/tables.dart';
 
 /// Where a trip sits relative to today, derived from its dates.
 enum TripStatus { upcoming, ongoing, past, undated }
 
 /// Ordering options for the overview list.
-enum TripSort { dateAsc, dateDesc, nameAsc, createdDesc }
+enum TripSort { dateAsc, dateDesc, nameAsc, createdDesc, expenseDesc, expenseAsc }
+
+/// Collapses a trip's per-currency totals to one comparable number: its largest
+/// single-currency bucket (the app never converts between currencies, so cross-
+/// currency sums would be meaningless). A trip with no costs — or an absent
+/// entry — ranks as 0.
+int tripExpenseKey(Map<Currency, int>? totals) {
+  if (totals == null || totals.isEmpty) return 0;
+  return totals.values.reduce((a, b) => a > b ? a : b);
+}
 
 /// Classifies a trip against [today]. Mirrors [isTripOngoing]: a trip with no
 /// start date is [TripStatus.undated]; a missing end date is treated as a
@@ -98,7 +108,12 @@ bool _matchesDateRange(Trip trip, DateTime? from, DateTime? to) {
   return true;
 }
 
-int _compare(Trip a, Trip b, TripSort sort) {
+int _compare(
+  Trip a,
+  Trip b,
+  TripSort sort,
+  Map<int, Map<Currency, int>> totalsByTrip,
+) {
   switch (sort) {
     case TripSort.dateAsc:
     case TripSort.dateDesc:
@@ -117,6 +132,13 @@ int _compare(Trip a, Trip b, TripSort sort) {
       return a.title.toLowerCase().compareTo(b.title.toLowerCase());
     case TripSort.createdDesc:
       return b.createdAt.compareTo(a.createdAt);
+    case TripSort.expenseDesc:
+    case TripSort.expenseAsc:
+      final ka = tripExpenseKey(totalsByTrip[a.id]);
+      final kb = tripExpenseKey(totalsByTrip[b.id]);
+      final byExpense =
+          sort == TripSort.expenseDesc ? kb.compareTo(ka) : ka.compareTo(kb);
+      return byExpense != 0 ? byExpense : b.createdAt.compareTo(a.createdAt);
   }
 }
 
@@ -129,6 +151,7 @@ List<Trip> applyTripQuery(
   required TripQuery query,
   required Map<int, Set<int>> participantsByTrip,
   required DateTime today,
+  Map<int, Map<Currency, int>> totalsByTrip = const {},
 }) {
   final needle = query.text.trim().toLowerCase();
   final result = trips.where((trip) {
@@ -144,6 +167,6 @@ List<Trip> applyTripQuery(
     if (!_matchesDateRange(trip, query.from, query.to)) return false;
     return true;
   }).toList();
-  result.sort((a, b) => _compare(a, b, query.sort));
+  result.sort((a, b) => _compare(a, b, query.sort, totalsByTrip));
   return result;
 }

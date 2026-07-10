@@ -70,6 +70,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sortCreatedDesc => 'Zuletzt hinzugefügt';
 
   @override
+  String get sortExpenseDesc => 'Ausgaben (höchste)';
+
+  @override
+  String get sortExpenseAsc => 'Ausgaben (niedrigste)';
+
+  @override
   String get anyDate => 'Beliebig';
 
   @override

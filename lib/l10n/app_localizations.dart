@@ -218,6 +218,18 @@ abstract class AppLocalizations {
   /// **'Recently added'**
   String get sortCreatedDesc;
 
+  /// No description provided for @sortExpenseDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses (highest)'**
+  String get sortExpenseDesc;
+
+  /// No description provided for @sortExpenseAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses (lowest)'**
+  String get sortExpenseAsc;
+
   /// No description provided for @anyDate.
   ///
   /// In en, this message translates to:

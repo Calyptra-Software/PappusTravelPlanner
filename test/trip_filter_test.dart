@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/trip_filter.dart';
 
 void main() {
@@ -30,9 +31,13 @@ void main() {
     List<Trip> trips,
     TripQuery query, {
     Map<int, Set<int>> participants = const {},
+    Map<int, Map<Currency, int>> totals = const {},
   }) =>
       applyTripQuery(trips,
-          query: query, participantsByTrip: participants, today: today);
+          query: query,
+          participantsByTrip: participants,
+          today: today,
+          totalsByTrip: totals);
 
   group('tripStatus', () {
     test('classifies relative to today', () {
@@ -135,6 +140,39 @@ void main() {
     test('nameAsc orders alphabetically', () {
       expect(run(trips, const TripQuery(sort: TripSort.nameAsc)).map((t) => t.id),
           [2, 3, 1]);
+    });
+
+    // Trip 1 ranks by its largest bucket (GBP 500), not the EUR+USD sum;
+    // trip 3 has no costs and ranks as 0.
+    final totals = {
+      1: {Currency.eur: 30000, Currency.usd: 5000, Currency.gbp: 50000},
+      2: {Currency.eur: 40000},
+    };
+
+    test('expenseDesc orders by largest currency bucket, no-cost trips last', () {
+      expect(
+          run(trips, const TripQuery(sort: TripSort.expenseDesc), totals: totals)
+              .map((t) => t.id),
+          [1, 2, 3]);
+    });
+
+    test('expenseAsc orders ascending with no-cost trips first', () {
+      expect(
+          run(trips, const TripQuery(sort: TripSort.expenseAsc), totals: totals)
+              .map((t) => t.id),
+          [3, 2, 1]);
+    });
+  });
+
+  group('tripExpenseKey', () {
+    test('is the largest single-currency bucket, never a cross-currency sum', () {
+      expect(
+          tripExpenseKey({Currency.eur: 30000, Currency.gbp: 50000}), 50000);
+    });
+
+    test('is 0 for a trip with no costs', () {
+      expect(tripExpenseKey(null), 0);
+      expect(tripExpenseKey(const {}), 0);
     });
   });
 
