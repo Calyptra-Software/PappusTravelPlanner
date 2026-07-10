@@ -36,15 +36,27 @@ class CostChip extends ConsumerWidget {
     if (showText && hasPayer) label = '$label · $payer';
 
     // Tooltip carries whatever the label omits: the reason when text is hidden,
-    // and the payer ("Paid by …") whenever one is set.
+    // the payer ("Paid by …") whenever one is set, and the paid state.
     final tooltipParts = <String>[
       if (!showText) cost.reason,
       if (hasPayer) l10n.costPaidByName(payer),
+      if (cost.paid) l10n.costPaid,
     ];
 
     return ActionChip(
       avatar: showIcon ? Icon(iconForReason(iconId), size: 16) : null,
-      label: Text(label),
+      // A trailing check marks a settled expense; the icon inherits the chip's
+      // foreground colour.
+      label: cost.paid
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label),
+                const SizedBox(width: 4),
+                const Icon(Icons.check_circle, size: 14),
+              ],
+            )
+          : Text(label),
       tooltip: tooltipParts.isEmpty ? null : tooltipParts.join(' · '),
       visualDensity: VisualDensity.compact,
       onPressed: onTap,
