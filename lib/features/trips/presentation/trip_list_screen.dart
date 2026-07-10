@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../sharing/presentation/trip_import.dart';
 import '../application/trip_providers.dart';
 import '../trip_filter.dart';
+import '../widgets/trip_calendar.dart';
 import '../widgets/trip_card.dart';
 
 /// Overview screen: the list of all planned trips.
@@ -21,6 +22,7 @@ class TripListScreen extends ConsumerStatefulWidget {
 class _TripListScreenState extends ConsumerState<TripListScreen> {
   final _searchController = TextEditingController();
   bool _searching = false;
+  bool _calendarView = false;
   TripQuery _query = const TripQuery();
 
   @override
@@ -95,6 +97,14 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
               ]
             : [
                 IconButton(
+                  tooltip: _calendarView ? l10n.listView : l10n.calendarView,
+                  icon: Icon(_calendarView
+                      ? Icons.view_list_outlined
+                      : Icons.calendar_month_outlined),
+                  onPressed: () =>
+                      setState(() => _calendarView = !_calendarView),
+                ),
+                IconButton(
                   tooltip: l10n.searchTrips,
                   icon: const Icon(Icons.search),
                   onPressed: _startSearch,
@@ -142,6 +152,13 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
             totalsByTrip: totalsByTrip,
           );
           if (visible.isEmpty) return _NoResults(query: _query.text.trim());
+          if (_calendarView) {
+            return TripCalendar(
+              trips: visible,
+              totals: totalsByTrip,
+              onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
+            );
+          }
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
             itemCount: visible.length,

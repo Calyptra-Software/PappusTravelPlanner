@@ -735,4 +735,25 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get groupMemberHint =>
       'Part of a group — shared expenses apply to all its items.';
+
+  @override
+  String get calendarView => 'Calendar view';
+
+  @override
+  String get listView => 'List view';
+
+  @override
+  String get calendarToday => 'Today';
+
+  @override
+  String get calendarPreviousMonth => 'Previous month';
+
+  @override
+  String get calendarNextMonth => 'Next month';
+
+  @override
+  String get calendarUndatedTitle => 'Undated trips';
+
+  @override
+  String get calendarUndatedTooltip => 'Show undated trips';
 }

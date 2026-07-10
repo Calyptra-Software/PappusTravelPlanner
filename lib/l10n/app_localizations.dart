@@ -1411,6 +1411,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Part of a group — shared expenses apply to all its items.'**
   String get groupMemberHint;
+
+  /// No description provided for @calendarView.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar view'**
+  String get calendarView;
+
+  /// No description provided for @listView.
+  ///
+  /// In en, this message translates to:
+  /// **'List view'**
+  String get listView;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarToday;
+
+  /// No description provided for @calendarPreviousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get calendarPreviousMonth;
+
+  /// No description provided for @calendarNextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get calendarNextMonth;
+
+  /// No description provided for @calendarUndatedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Undated trips'**
+  String get calendarUndatedTitle;
+
+  /// No description provided for @calendarUndatedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Show undated trips'**
+  String get calendarUndatedTooltip;
 }
 
 class _AppLocalizationsDelegate

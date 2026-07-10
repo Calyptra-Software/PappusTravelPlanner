@@ -251,5 +251,12 @@
   "groupNameHint": "z. B. Zug nach Rom",
   "groupDefaultLabel": "Gruppe",
   "groupSharedExpenses": "Gemeinsame Ausgaben",
-  "groupMemberHint": "Teil einer Gruppe – die gemeinsamen Ausgaben werden auf alle Elemente angewendet."
+  "groupMemberHint": "Teil einer Gruppe – die gemeinsamen Ausgaben werden auf alle Elemente angewendet.",
+  "calendarView": "Kalenderansicht",
+  "listView": "Listenansicht",
+  "calendarToday": "Heute",
+  "calendarPreviousMonth": "Voriger Monat",
+  "calendarNextMonth": "Nächster Monat",
+  "calendarUndatedTitle": "Reisen ohne Datum",
+  "calendarUndatedTooltip": "Reisen ohne Datum anzeigen"
 }

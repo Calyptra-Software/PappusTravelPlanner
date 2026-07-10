@@ -288,5 +288,12 @@
   "groupNameHint": "e.g. Train to Rome",
   "groupDefaultLabel": "Grouped",
   "groupSharedExpenses": "Shared expenses",
-  "groupMemberHint": "Part of a group — shared expenses apply to all its items."
+  "groupMemberHint": "Part of a group — shared expenses apply to all its items.",
+  "calendarView": "Calendar view",
+  "listView": "List view",
+  "calendarToday": "Today",
+  "calendarPreviousMonth": "Previous month",
+  "calendarNextMonth": "Next month",
+  "calendarUndatedTitle": "Undated trips",
+  "calendarUndatedTooltip": "Show undated trips"
 }

@@ -740,4 +740,25 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get groupMemberHint =>
       'Teil einer Gruppe – die gemeinsamen Ausgaben werden auf alle Elemente angewendet.';
+
+  @override
+  String get calendarView => 'Kalenderansicht';
+
+  @override
+  String get listView => 'Listenansicht';
+
+  @override
+  String get calendarToday => 'Heute';
+
+  @override
+  String get calendarPreviousMonth => 'Voriger Monat';
+
+  @override
+  String get calendarNextMonth => 'Nächster Monat';
+
+  @override
+  String get calendarUndatedTitle => 'Reisen ohne Datum';
+
+  @override
+  String get calendarUndatedTooltip => 'Reisen ohne Datum anzeigen';
 }
