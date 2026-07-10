@@ -36,6 +36,33 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         );
   }
 
+  /// Per-currency cost totals for every trip, keyed by trip id (amounts stay in
+  /// minor units). Reaches costs the same three ways as [watchCostsForTrip] —
+  /// attached to an item, a group, or the trip directly — resolving each cost's
+  /// trip from whichever link it has. Powers the total shown on each overview
+  /// card in one query instead of a stream per trip. Trips with no costs are
+  /// absent from the map.
+  Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() {
+    final query = select(costs).join([
+      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+    ]);
+    return query.watch().map((rows) {
+      final byTrip = <int, Map<Currency, int>>{};
+      for (final row in rows) {
+        final cost = row.readTable(costs);
+        final tripId = cost.tripId ??
+            row.readTableOrNull(itineraryItems)?.tripId ??
+            row.readTableOrNull(itemGroups)?.tripId;
+        if (tripId == null) continue;
+        final totals = byTrip.putIfAbsent(tripId, () => {});
+        totals.update(cost.currency, (v) => v + cost.amountMinor,
+            ifAbsent: () => cost.amountMinor);
+      }
+      return byTrip;
+    });
+  }
+
   Future<int> addCost(CostsCompanion cost) => into(costs).insert(cost);
 
   Future<bool> updateCost(Cost cost) => update(costs).replace(cost);

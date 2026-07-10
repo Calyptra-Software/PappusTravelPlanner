@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Overview card summarising a single trip, with a colour accent stripe.
 class TripCard extends StatelessWidget {
-  const TripCard({super.key, required this.trip, required this.onTap});
+  const TripCard({
+    super.key,
+    required this.trip,
+    required this.onTap,
+    this.totals = const {},
+  });
 
   final Trip trip;
   final VoidCallback onTap;
+
+  /// Per-currency cost totals for this trip, in minor units. Empty when the
+  /// trip has no costs, in which case the total row is hidden.
+  final Map<Currency, int> totals;
 
   @override
   Widget build(BuildContext context) {
@@ -77,6 +88,28 @@ class TripCard extends StatelessWidget {
                           if (days != null) _Pill(label: l10n.days(days)),
                         ],
                       ),
+                      if (totals.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.account_balance_wallet_outlined,
+                                size: 14,
+                                color: theme.colorScheme.onSurfaceVariant),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                formatTotals(totals, localeName),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),

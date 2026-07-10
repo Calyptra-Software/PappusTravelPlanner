@@ -53,6 +53,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   Widget build(BuildContext context) {
     final tripsAsync = ref.watch(tripListProvider);
     final participantsAsync = ref.watch(allParticipantsProvider);
+    final totalsByTrip = ref.watch(tripTotalsProvider).value ?? const {};
     final l10n = AppLocalizations.of(context);
 
     final participantsByTrip = participantsAsync.value ?? const {};
@@ -148,6 +149,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
               final trip = visible[index];
               return TripCard(
                 trip: trip,
+                totals: totalsByTrip[trip.id] ?? const {},
                 onTap: () => context.push('/trip/${trip.id}'),
               );
             },

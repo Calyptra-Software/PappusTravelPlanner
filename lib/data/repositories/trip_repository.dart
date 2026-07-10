@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
+import '../database/tables.dart';
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -63,6 +64,8 @@ class TripRepository {
   // --- costs ---
   Stream<List<Cost>> watchCostsForTrip(int tripId) =>
       _db.costDao.watchCostsForTrip(tripId);
+  Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() =>
+      _db.costDao.watchTotalsByTrip();
   Future<int> addCost(CostsCompanion cost) => _db.costDao.addCost(cost);
   Future<bool> updateCost(Cost cost) => _db.costDao.updateCost(cost);
   Future<int> deleteCost(int id) => _db.costDao.deleteCost(id);
