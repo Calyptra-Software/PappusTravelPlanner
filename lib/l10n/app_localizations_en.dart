@@ -582,6 +582,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String statsPaidAmount(String amount, int percent) {
+    return '$amount paid ($percent%)';
+  }
+
+  @override
+  String statsOpenAmount(String amount, int percent) {
+    return '$amount open ($percent%)';
+  }
+
+  @override
   String statsTransfer(String from, String to) {
     return '$from pays $to';
   }

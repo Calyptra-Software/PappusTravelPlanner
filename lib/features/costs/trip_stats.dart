@@ -59,6 +59,7 @@ class CurrencyStats {
   const CurrencyStats({
     required this.currency,
     required this.totalMinor,
+    required this.paidMinor,
     required this.count,
     required this.byCategory,
     required this.byPerson,
@@ -67,6 +68,13 @@ class CurrencyStats {
 
   final Currency currency;
   final int totalMinor;
+
+  /// Portion of [totalMinor] from expenses already marked paid.
+  final int paidMinor;
+
+  /// Portion of [totalMinor] still outstanding (`totalMinor - paidMinor`).
+  int get openMinor => totalMinor - paidMinor;
+
   final int count;
 
   /// Reasons, largest spend first.
@@ -129,6 +137,8 @@ CurrencyStats _statsForCurrency(
   List<String> participantNames,
 ) {
   final total = costs.fold<int>(0, (sum, c) => sum + c.amountMinor);
+  final paidTotal =
+      costs.where((c) => c.paid).fold<int>(0, (sum, c) => sum + c.amountMinor);
 
   // By category (reason).
   final categoryAmounts = <String, int>{};
@@ -177,6 +187,7 @@ CurrencyStats _statsForCurrency(
   return CurrencyStats(
     currency: currency,
     totalMinor: total,
+    paidMinor: paidTotal,
     count: costs.length,
     byCategory: byCategory,
     byPerson: byPerson,

@@ -217,6 +217,20 @@
   "@statsExpenses": {
     "placeholders": { "count": { "type": "int" } }
   },
+  "statsPaidAmount": "{amount} paid ({percent}%)",
+  "@statsPaidAmount": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "percent": { "type": "int" }
+    }
+  },
+  "statsOpenAmount": "{amount} open ({percent}%)",
+  "@statsOpenAmount": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "percent": { "type": "int" }
+    }
+  },
   "statsTransfer": "{from} pays {to}",
   "@statsTransfer": {
     "placeholders": {

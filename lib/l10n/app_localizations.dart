@@ -1124,6 +1124,18 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 expense} other{{count} expenses}}'**
   String statsExpenses(int count);
 
+  /// No description provided for @statsPaidAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} paid ({percent}%)'**
+  String statsPaidAmount(String amount, int percent);
+
+  /// No description provided for @statsOpenAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} open ({percent}%)'**
+  String statsOpenAmount(String amount, int percent);
+
   /// No description provided for @statsTransfer.
   ///
   /// In en, this message translates to:

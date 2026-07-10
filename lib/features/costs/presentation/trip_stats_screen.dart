@@ -160,20 +160,54 @@ class _SummaryStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+    // Split the total into paid/open percentages; the open share takes the
+    // remainder so the two always add up to 100 (no rounding drift).
+    final paidPercent =
+        stats.totalMinor == 0 ? 0 : (stats.paidMinor * 100 / stats.totalMinor).round();
+    final openPercent = stats.totalMinor == 0 ? 0 : 100 - paidPercent;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          formatMoney(stats.totalMinor, stats.currency, localeName),
-          style: theme.textTheme.headlineMedium
-              ?.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              formatMoney(stats.totalMinor, stats.currency, localeName),
+              style: theme.textTheme.headlineMedium
+                  ?.copyWith(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              l10n.statsExpenses(stats.count),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Text(
-          l10n.statsExpenses(stats.count),
-          style: theme.textTheme.bodyMedium
-              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(Icons.check_circle,
+                size: 16, color: theme.colorScheme.primary),
+            const SizedBox(width: 6),
+            Text(
+              l10n.statsPaidAmount(
+                  formatMoney(stats.paidMinor, stats.currency, localeName),
+                  paidPercent),
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(width: 16),
+            Icon(Icons.pending_outlined,
+                size: 16, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text(
+              l10n.statsOpenAmount(
+                  formatMoney(stats.openMinor, stats.currency, localeName),
+                  openPercent),
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
         ),
       ],
     );

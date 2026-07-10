@@ -10,6 +10,7 @@ void main() {
     Currency currency = Currency.eur,
     String reason = 'Food',
     String? paidBy,
+    bool paid = false,
   }) =>
       Cost(
         id: ++nextId,
@@ -18,7 +19,7 @@ void main() {
         currency: currency,
         reason: reason,
         paidBy: paidBy,
-        paid: false,
+        paid: paid,
         createdAt: DateTime(2026),
       );
 
@@ -49,6 +50,49 @@ void main() {
       expect(cur.byCategory.first.fraction, closeTo(0.6, 1e-9));
       expect(cur.byCategory.first.count, 1);
       expect(cur.byCategory.last.count, 2);
+    });
+  });
+
+  group('paid vs open', () {
+    test('sums paid expenses into paidMinor, leaving the rest open', () {
+      final stats = computeTripStats(
+        [
+          cost(3000, paid: true),
+          cost(1000, paid: true),
+          cost(6000),
+        ],
+        const {},
+        const [],
+      );
+      final cur = onlyCurrency(stats);
+      expect(cur.totalMinor, 10000);
+      expect(cur.paidMinor, 4000);
+      expect(cur.openMinor, 6000);
+    });
+
+    test('paidMinor is zero and openMinor is the total when nothing is paid',
+        () {
+      final cur = onlyCurrency(computeTripStats([cost(2500)], const {}, const []));
+      expect(cur.paidMinor, 0);
+      expect(cur.openMinor, 2500);
+    });
+
+    test('tracks paid/open per currency', () {
+      final stats = computeTripStats(
+        [
+          cost(1000, paid: true),
+          cost(500, currency: Currency.usd, paid: true),
+          cost(500, currency: Currency.usd),
+        ],
+        const {},
+        const [],
+      );
+      final eur = stats.byCurrency.firstWhere((c) => c.currency == Currency.eur);
+      final usd = stats.byCurrency.firstWhere((c) => c.currency == Currency.usd);
+      expect(eur.paidMinor, 1000);
+      expect(eur.openMinor, 0);
+      expect(usd.paidMinor, 500);
+      expect(usd.openMinor, 500);
     });
   });
 
