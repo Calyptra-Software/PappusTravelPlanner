@@ -6,7 +6,15 @@ import '../itinerary/widgets/transport_mode.dart';
 
 /// One line of "today's plan" shown on the widget.
 class WidgetRow {
-  const WidgetRow({required this.time, required this.text, this.note = ''});
+  const WidgetRow({
+    required this.id,
+    required this.time,
+    required this.text,
+    this.note = '',
+  });
+
+  /// Itinerary item id, so a tapped row can deep-link into that specific item.
+  final int id;
   final String time;
   final String text;
   final String note;
@@ -140,6 +148,7 @@ WidgetPayload buildWidgetPayload(
   if (ongoing && todayItems.isNotEmpty) {
     rows = todayItems
         .map((i) => WidgetRow(
+              id: i.id,
               time: formatTimeRange(i.startMinutes, i.endMinutes),
               text: _itemText(i, l10n),
               note: i.notes?.trim() ?? '',

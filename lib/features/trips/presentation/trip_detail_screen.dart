@@ -25,9 +25,13 @@ import '../application/trip_providers.dart';
 
 /// Trip detail: header summary plus the day-by-day itinerary.
 class TripDetailScreen extends ConsumerWidget {
-  const TripDetailScreen({super.key, required this.tripId});
+  const TripDetailScreen({super.key, required this.tripId, this.initialItemId});
 
   final int tripId;
+
+  /// When set (from a widget row deep-link), opens this item's editor once the
+  /// itinerary has loaded.
+  final int? initialItemId;
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
@@ -200,6 +204,13 @@ class TripDetailScreen extends ConsumerWidget {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
+                  if (initialItemId != null)
+                    _OpenItemOnce(
+                      key: ValueKey('open-item-$initialItemId'),
+                      tripId: tripId,
+                      itemId: initialItemId!,
+                      items: items,
+                    ),
                   _TripHeader(
                     trip: trip,
                     accent: accent,
@@ -475,4 +486,52 @@ class _TripHeader extends ConsumerWidget {
       ),
     );
   }
+}
+
+/// Invisible list child that opens [itemId]'s editor once, after the itinerary
+/// has loaded — honoring a widget row deep-link into a specific item. Keyed by
+/// the item id in the parent, so a fresh deep-link to a different item builds a
+/// new instance and re-triggers.
+class _OpenItemOnce extends StatefulWidget {
+  const _OpenItemOnce({
+    super.key,
+    required this.tripId,
+    required this.itemId,
+    required this.items,
+  });
+
+  final int tripId;
+  final int itemId;
+  final List<ItineraryItem> items;
+
+  @override
+  State<_OpenItemOnce> createState() => _OpenItemOnceState();
+}
+
+class _OpenItemOnceState extends State<_OpenItemOnce> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ItineraryItem? item;
+      for (final i in widget.items) {
+        if (i.id == widget.itemId) {
+          item = i;
+          break;
+        }
+      }
+      if (item != null) {
+        showItemFormSheet(
+          context,
+          tripId: widget.tripId,
+          kind: item.kind,
+          existing: item,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }

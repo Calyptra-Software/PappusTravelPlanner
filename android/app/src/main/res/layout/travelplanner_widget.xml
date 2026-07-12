@@ -10,7 +10,7 @@
     <LinearLayout
         android:id="@+id/trip_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical">
 
         <TextView
@@ -57,11 +57,13 @@
             android:textSize="12sp"
             android:textStyle="bold" />
 
-        <!-- Today's plan -->
+        <!-- Today's plan. Takes the remaining height so the list below can
+             scroll within it. -->
         <LinearLayout
             android:id="@+id/today_section"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:orientation="vertical"
             android:layout_marginTop="12dp">
 
@@ -82,21 +84,16 @@
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <!-- Rows are appended here at runtime (one per itinerary item that
-                 fits the widget's current height); see the provider. -->
-            <LinearLayout
-                android:id="@+id/today_list_container"
+            <!-- Scrollable list of today's items, backed by a RemoteViewsService
+                 (see TodayItemsRemoteViewsService). Fills the remaining height. -->
+            <ListView
+                android:id="@+id/today_list"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
-
-            <TextView
-                android:id="@+id/today_more"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="0dp"
+                android:layout_weight="1"
                 android:layout_marginTop="4dp"
-                android:textColor="#8AFFFFFF"
-                android:textSize="11sp" />
+                android:divider="@null"
+                android:dividerHeight="0dp" />
         </LinearLayout>
     </LinearLayout>
 

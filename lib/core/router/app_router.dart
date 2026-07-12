@@ -28,6 +28,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: 'trip/:id',
             builder: (context, state) => TripDetailScreen(
               tripId: int.parse(state.pathParameters['id']!),
+              initialItemId: int.tryParse(state.uri.queryParameters['item'] ?? ''),
             ),
             routes: [
               GoRoute(

@@ -86,6 +86,7 @@ Future<void> _save(WidgetPayload p) async {
     // fit the widget's current height.
     s<int>('item_count', p.rows.length),
     for (var i = 0; i < p.rows.length; i++) ...[
+      s<int>('item${i}_id', p.rows[i].id),
       s<String>('item${i}_time', p.rows[i].time),
       s<String>('item${i}_text', p.rows[i].text),
       s<String>('item${i}_note', p.rows[i].note),
@@ -97,12 +98,19 @@ Future<void> _save(WidgetPayload p) async {
 
 // --- deep-link click handling ---
 
-/// Routes a widget-launch [uri] (`travelplanner://trip?id=N`) into the app.
+/// Routes a widget-launch [uri] into the app. The whole widget links to the
+/// trip (`travelplanner://trip?id=N`); a tapped item row adds `&item=M` to open
+/// that item's editor.
 void _navigate(GoRouter router, Uri? uri) {
   if (uri == null) return;
   final id = uri.queryParameters['id'];
   if (uri.host == 'trip' && id != null && id != '-1') {
-    router.go('/trip/$id');
+    final item = uri.queryParameters['item'];
+    if (item != null && item.isNotEmpty && item != '-1') {
+      router.go('/trip/$id?item=$item');
+    } else {
+      router.go('/trip/$id');
+    }
   } else {
     router.go('/');
   }

@@ -1,21 +1,23 @@
 package com.travelplanner.travelplanner
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.Bundle
+import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
-import es.antonborri.home_widget.HomeWidgetPlugin
 import es.antonborri.home_widget.HomeWidgetProvider
 
 /**
  * Home-screen widget showing the featured trip and today's plan. All display
  * strings are pre-formatted (and localised) on the Flutter side and read here
- * from [widgetData]; this class renders them, sizing the item list to the
- * widget's current height, and wires the tap intent.
+ * from [widgetData]; this class renders the header and wires the tap intent.
+ * The scrollable list of today's items is served by
+ * [TodayItemsRemoteViewsService].
  */
 class TravelPlannerWidgetProvider : HomeWidgetProvider() {
 
@@ -30,16 +32,6 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         }
     }
 
-    /** Re-render on resize so the item list fills the new height. */
-    override fun onAppWidgetOptionsChanged(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetId: Int,
-        newOptions: Bundle,
-    ) {
-        render(context, appWidgetManager, appWidgetId, HomeWidgetPlugin.getData(context))
-    }
-
     private fun render(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -48,13 +40,16 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
     ) {
         val views = RemoteViews(context.packageName, R.layout.travelplanner_widget)
 
-        if (data.getBoolean("has_trip", false)) {
-            showTrip(context, appWidgetManager, widgetId, views, data)
+        val listShown = if (data.getBoolean("has_trip", false)) {
+            showTrip(context, widgetId, views, data)
         } else {
             showEmptyState(views, data)
+            false
         }
 
-        // Deep-link the whole widget to the featured trip (or the list).
+        // Deep-link the whole widget to the featured trip (or the list). Note the
+        // scrollable list intercepts its own touches, so this currently only
+        // covers the header area; per-row taps are a separate step.
         val tripId = data.getInt("trip_id", -1)
         val uri = Uri.parse("travelplanner://trip?id=$tripId")
         val pendingIntent = HomeWidgetLaunchIntent.getActivity(
@@ -65,6 +60,10 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
 
         appWidgetManager.updateAppWidget(widgetId, views)
+        // Tell the list adapter to reload from the freshly-pushed data.
+        if (listShown) {
+            appWidgetManager.notifyAppWidgetViewDataChanged(widgetId, R.id.today_list)
+        }
     }
 
     private fun showEmptyState(views: RemoteViews, data: SharedPreferences) {
@@ -74,13 +73,13 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         views.setTextViewText(R.id.empty_body, data.getString("empty_body", ""))
     }
 
+    /** Renders the trip header and, when there are items today, the list. */
     private fun showTrip(
         context: Context,
-        appWidgetManager: AppWidgetManager,
         widgetId: Int,
         views: RemoteViews,
         data: SharedPreferences,
-    ) {
+    ): Boolean {
         views.setViewVisibility(R.id.empty_content, View.GONE)
         views.setViewVisibility(R.id.trip_content, View.VISIBLE)
 
@@ -93,54 +92,37 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         val itemCount = data.getInt("item_count", 0)
         val showToday = isOngoing && itemCount > 0
         views.setViewVisibility(R.id.today_section, if (showToday) View.VISIBLE else View.GONE)
-        if (!showToday) return
+        if (!showToday) return false
 
         setOrHide(views, R.id.today_header, data.getString("today_header", ""))
 
-        // Render as many rows as fit the widget's current height, then a "+N"
-        // only for whatever genuinely didn't fit.
-        val shown = rowsThatFit(data, itemCount, widgetHeightDp(appWidgetManager, widgetId))
-        views.removeAllViews(R.id.today_list_container)
-        for (i in 0 until shown) {
-            val row = RemoteViews(context.packageName, R.layout.widget_item_row)
-            setOrHide(row, R.id.item_time, data.getString("item${i}_time", ""))
-            row.setTextViewText(R.id.item_text, data.getString("item${i}_text", ""))
-            setOrHide(row, R.id.item_note, data.getString("item${i}_note", ""))
-            views.addView(R.id.today_list_container, row)
+        val serviceIntent = Intent(context, TodayItemsRemoteViewsService::class.java).apply {
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+            // Make the intent unique per widget so each list gets its own adapter.
+            this.data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
         }
-
-        val remaining = itemCount - shown
-        setOrHide(views, R.id.today_more, if (remaining > 0) "+$remaining" else "")
-    }
-
-    /** Current widget height in dp, from the host's size options. */
-    private fun widgetHeightDp(appWidgetManager: AppWidgetManager, widgetId: Int): Int {
-        val options = appWidgetManager.getAppWidgetOptions(widgetId)
-        // Portrait reports MAX_HEIGHT; fall back to MIN_HEIGHT, then a default.
-        val max = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 0)
-        val min = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 0)
-        val height = if (max > 0) max else min
-        return if (height > 0) height else DEFAULT_HEIGHT_DP
+        views.setRemoteAdapter(R.id.today_list, serviceIntent)
+        views.setPendingIntentTemplate(R.id.today_list, itemTapTemplate(context, widgetId))
+        return true
     }
 
     /**
-     * How many item rows fit in [heightDp]. Estimates height from the fixed
-     * header plus each row (taller when it carries a note). Always shows at
-     * least the previous baseline so small widgets don't regress, and never
-     * more than there are items.
+     * Mutable [PendingIntent] template for list-item taps. Each row supplies a
+     * fill-in intent with its own `travelplanner://trip?id=..&item=..` data,
+     * which merges into this template's home_widget launch action so the app
+     * routes to that item.
      */
-    private fun rowsThatFit(data: SharedPreferences, itemCount: Int, heightDp: Int): Int {
-        val available = heightDp - HEADER_OVERHEAD_DP
-        var used = 0
-        var fit = 0
-        for (i in 0 until itemCount) {
-            val note = data.getString("item${i}_note", "") ?: ""
-            val rowHeight = ROW_BASE_DP + if (note.isNotEmpty()) NOTE_DP else 0
-            if (fit > 0 && used + rowHeight > available) break
-            used += rowHeight
-            fit++
+    private fun itemTapTemplate(context: Context, widgetId: Int): PendingIntent {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            action = HomeWidgetLaunchIntent.HOME_WIDGET_LAUNCH_ACTION
         }
-        return fit.coerceAtLeast(minOf(itemCount, BASELINE_ROWS))
+        var flags = PendingIntent.FLAG_UPDATE_CURRENT
+        // A template must be mutable so each row's fill-in data applies; mutable
+        // is the default before Android S, where the flag doesn't exist.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags = flags or PendingIntent.FLAG_MUTABLE
+        }
+        return PendingIntent.getActivity(context, widgetId, intent, flags)
     }
 
     /** Sets the text, or hides the view when the value is blank. */
@@ -151,14 +133,5 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
             views.setViewVisibility(viewId, View.VISIBLE)
             views.setTextViewText(viewId, value)
         }
-    }
-
-    private companion object {
-        // Rough dp estimates used only to decide the row count.
-        const val HEADER_OVERHEAD_DP = 150
-        const val ROW_BASE_DP = 26
-        const val NOTE_DP = 18
-        const val DEFAULT_HEIGHT_DP = 180
-        const val BASELINE_ROWS = 3
     }
 }
