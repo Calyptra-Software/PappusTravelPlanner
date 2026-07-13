@@ -79,8 +79,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   final _notesController = TextEditingController();
 
   late DateTime _date;
-  int? _startMinutes;
-  int? _endMinutes;
+  final _times = <_TimeSlot, int?>{};
   TransportMode _mode = TransportMode.train;
 
   bool get _isTransport => widget.kind == ItemKind.transport;
@@ -97,8 +96,10 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _fromController.text = existing.fromLocation ?? '';
       _toController.text = existing.toLocation ?? '';
       _notesController.text = existing.notes ?? '';
-      _startMinutes = existing.startMinutes;
-      _endMinutes = existing.endMinutes;
+      _times[_TimeSlot.plannedStart] = existing.startMinutes;
+      _times[_TimeSlot.plannedEnd] = existing.endMinutes;
+      _times[_TimeSlot.actualStart] = existing.actualStartMinutes;
+      _times[_TimeSlot.actualEnd] = existing.actualEndMinutes;
       _mode = existing.mode ?? TransportMode.train;
     } else if (_isTransport) {
       _fromController.text = widget.defaultFromLocation ?? '';
@@ -125,22 +126,42 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     if (picked != null) setState(() => _date = normalizeDay(picked));
   }
 
-  Future<void> _pickTime({required bool isStart}) async {
-    final current = isStart ? _startMinutes : _endMinutes;
+  Future<void> _pickTime(_TimeSlot slot) async {
+    // An actual time starts from its planned counterpart, which is the time it
+    // is being corrected against — usually only minutes away from it.
+    final current = _times[slot] ?? _times[slot.planned];
     final initial = current != null
         ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
         : TimeOfDay.now();
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked != null) {
-      setState(() {
-        final minutes = picked.hour * 60 + picked.minute;
-        if (isStart) {
-          _startMinutes = minutes;
-        } else {
-          _endMinutes = minutes;
-        }
-      });
+      setState(() => _times[slot] = picked.hour * 60 + picked.minute);
     }
+  }
+
+  /// The two time fields of one row — planned or actual. Both rows carry the
+  /// same pair of labels (a leg departs and arrives, a place starts and ends);
+  /// the heading above them says whether they are the plan or what happened.
+  Widget _timeRow(AppLocalizations l10n, _TimeSlot start, _TimeSlot end) {
+    Widget field(_TimeSlot slot, String label) => Expanded(
+      child: _TimeField(
+        label: label,
+        emptyLabel: l10n.setTime,
+        minutes: _times[slot],
+        onTap: () => _pickTime(slot),
+        onClear: _times[slot] == null
+            ? null
+            : () => setState(() => _times[slot] = null),
+      ),
+    );
+
+    return Row(
+      children: [
+        field(start, _isTransport ? l10n.timeDeparts : l10n.timeStart),
+        const SizedBox(width: 12),
+        field(end, _isTransport ? l10n.timeArrives : l10n.timeEnd),
+      ],
+    );
   }
 
   Future<void> _save() async {
@@ -183,8 +204,10 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           sortOrder: existing.sortOrder,
           kind: widget.kind,
           title: nullIfEmpty(title),
-          startMinutes: _startMinutes,
-          endMinutes: _endMinutes,
+          startMinutes: _times[_TimeSlot.plannedStart],
+          endMinutes: _times[_TimeSlot.plannedEnd],
+          actualStartMinutes: _times[_TimeSlot.actualStart],
+          actualEndMinutes: _times[_TimeSlot.actualEnd],
           notes: nullIfEmpty(notes),
           location: _isTransport ? null : nullIfEmpty(location),
           mode: _isTransport ? _mode : null,
@@ -207,8 +230,10 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           sortOrder: Value(sortOrder),
           alternativeId: Value(alternativeId),
           title: Value(nullIfEmpty(title)),
-          startMinutes: Value(_startMinutes),
-          endMinutes: Value(_endMinutes),
+          startMinutes: Value(_times[_TimeSlot.plannedStart]),
+          endMinutes: Value(_times[_TimeSlot.plannedEnd]),
+          actualStartMinutes: Value(_times[_TimeSlot.actualStart]),
+          actualEndMinutes: Value(_times[_TimeSlot.actualEnd]),
           notes: Value(nullIfEmpty(notes)),
           location: Value(_isTransport ? null : nullIfEmpty(location)),
           mode: Value(_isTransport ? _mode : null),
@@ -339,35 +364,22 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     child: Text(formatDay(_date, localeName)),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TimeField(
-                        label: _isTransport ? l10n.timeDeparts : l10n.timeStart,
-                        emptyLabel: l10n.setTime,
-                        minutes: _startMinutes,
-                        onTap: () => _pickTime(isStart: true),
-                        onClear: _startMinutes == null
-                            ? null
-                            : () => setState(() => _startMinutes = null),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _TimeField(
-                        label: _isTransport ? l10n.timeArrives : l10n.timeEnd,
-                        emptyLabel: l10n.setTime,
-                        minutes: _endMinutes,
-                        onTap: () => _pickTime(isStart: false),
-                        onClear: _endMinutes == null
-                            ? null
-                            : () => setState(() => _endMinutes = null),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 16),
+                Text(l10n.plannedTimes, style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                _timeRow(l10n, _TimeSlot.plannedStart, _TimeSlot.plannedEnd),
+                const SizedBox(height: 16),
+                Text(l10n.actualTimes, style: theme.textTheme.labelLarge),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.actualTimesHint,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
+                _timeRow(l10n, _TimeSlot.actualStart, _TimeSlot.actualEnd),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: _notesController,
                   maxLines: 2,
@@ -680,6 +692,21 @@ class _CostsEditor extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// The four times an entry can carry: the plan, and what actually happened.
+enum _TimeSlot {
+  plannedStart,
+  plannedEnd,
+  actualStart,
+  actualEnd;
+
+  /// The planned time this slot is measured against — itself, for a planned one.
+  _TimeSlot get planned => switch (this) {
+    _TimeSlot.actualStart => _TimeSlot.plannedStart,
+    _TimeSlot.actualEnd => _TimeSlot.plannedEnd,
+    _ => this,
+  };
 }
 
 class _TimeField extends StatelessWidget {

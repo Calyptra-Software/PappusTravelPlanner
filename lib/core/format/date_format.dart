@@ -59,3 +59,15 @@ String formatTimeRange(int? startMinutes, int? endMinutes) {
   if (start.isEmpty) return end;
   return '$start – $end';
 }
+
+/// Formats how far an actual time missed its planned one, in minutes: "+15"
+/// (a quarter of an hour late), "−5" (five minutes early), "±0" (to the minute).
+/// From an hour out it reads as "+1:30" rather than as a large bare minute
+/// count. Always shown next to the time it belongs to, so it carries no unit.
+String formatSignedMinutes(int delta) {
+  if (delta == 0) return '±0';
+  final sign = delta > 0 ? '+' : '−';
+  final abs = delta.abs();
+  if (abs < 60) return '$sign$abs';
+  return '$sign${abs ~/ 60}:${(abs % 60).toString().padLeft(2, '0')}';
+}

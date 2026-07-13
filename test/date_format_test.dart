@@ -12,6 +12,20 @@ void main() {
   final d4 = DateTime(2026, 7, 4);
   final d9 = DateTime(2026, 7, 9);
 
+  group('how far an actual time missed its plan', () {
+    test('late reads as a plus, early as a minus, on time as neither', () {
+      expect(formatSignedMinutes(15), '+15');
+      expect(formatSignedMinutes(-5), '−5');
+      expect(formatSignedMinutes(0), '±0');
+    });
+
+    test('an hour or more reads as h:mm, not as a minute count', () {
+      expect(formatSignedMinutes(90), '+1:30');
+      expect(formatSignedMinutes(60), '+1:00');
+      expect(formatSignedMinutes(-125), '−2:05');
+    });
+  });
+
   group('locale-aware date formatting', () {
     test('German uses the day-period convention', () {
       expect(formatFullDate(d5, 'de'), '5. Juli 2026');

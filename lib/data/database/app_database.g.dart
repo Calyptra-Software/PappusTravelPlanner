@@ -1638,6 +1638,27 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _actualStartMinutesMeta =
+      const VerificationMeta('actualStartMinutes');
+  @override
+  late final GeneratedColumn<int> actualStartMinutes = GeneratedColumn<int>(
+    'actual_start_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _actualEndMinutesMeta = const VerificationMeta(
+    'actualEndMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> actualEndMinutes = GeneratedColumn<int>(
+    'actual_end_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -1701,6 +1722,8 @@ class $ItineraryItemsTable extends ItineraryItems
     title,
     startMinutes,
     endMinutes,
+    actualStartMinutes,
+    actualEndMinutes,
     notes,
     location,
     mode,
@@ -1778,6 +1801,24 @@ class $ItineraryItemsTable extends ItineraryItems
       context.handle(
         _endMinutesMeta,
         endMinutes.isAcceptableOrUnknown(data['end_minutes']!, _endMinutesMeta),
+      );
+    }
+    if (data.containsKey('actual_start_minutes')) {
+      context.handle(
+        _actualStartMinutesMeta,
+        actualStartMinutes.isAcceptableOrUnknown(
+          data['actual_start_minutes']!,
+          _actualStartMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('actual_end_minutes')) {
+      context.handle(
+        _actualEndMinutesMeta,
+        actualEndMinutes.isAcceptableOrUnknown(
+          data['actual_end_minutes']!,
+          _actualEndMinutesMeta,
+        ),
       );
     }
     if (data.containsKey('notes')) {
@@ -1858,6 +1899,14 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.int,
         data['${effectivePrefix}end_minutes'],
       ),
+      actualStartMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}actual_start_minutes'],
+      ),
+      actualEndMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}actual_end_minutes'],
+      ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -1922,9 +1971,20 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final ItemKind kind;
   final String? title;
 
-  /// Times stored as minutes since midnight (0-1439), or null if unset.
+  /// The **planned** times — when the entry is meant to start/end (for a
+  /// transport leg: to depart/arrive). Minutes since midnight (0-1439), or null
+  /// if unset.
   final int? startMinutes;
   final int? endMinutes;
+
+  /// The **actual** times — when the entry really started/ended, recorded during
+  /// or after the trip. Same encoding as the planned pair, and just as optional:
+  /// an entry the trip never got round to timing simply has none. Each is
+  /// compared against its planned counterpart to show how late or early the
+  /// entry ran; with no plan to compare against, an actual time just stands on
+  /// its own.
+  final int? actualStartMinutes;
+  final int? actualEndMinutes;
   final String? notes;
   final String? location;
   final TransportMode? mode;
@@ -1941,6 +2001,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     this.title,
     this.startMinutes,
     this.endMinutes,
+    this.actualStartMinutes,
+    this.actualEndMinutes,
     this.notes,
     this.location,
     this.mode,
@@ -1973,6 +2035,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     }
     if (!nullToAbsent || endMinutes != null) {
       map['end_minutes'] = Variable<int>(endMinutes);
+    }
+    if (!nullToAbsent || actualStartMinutes != null) {
+      map['actual_start_minutes'] = Variable<int>(actualStartMinutes);
+    }
+    if (!nullToAbsent || actualEndMinutes != null) {
+      map['actual_end_minutes'] = Variable<int>(actualEndMinutes);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -2016,6 +2084,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       endMinutes: endMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(endMinutes),
+      actualStartMinutes: actualStartMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualStartMinutes),
+      actualEndMinutes: actualEndMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(actualEndMinutes),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -2050,6 +2124,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       title: serializer.fromJson<String?>(json['title']),
       startMinutes: serializer.fromJson<int?>(json['startMinutes']),
       endMinutes: serializer.fromJson<int?>(json['endMinutes']),
+      actualStartMinutes: serializer.fromJson<int?>(json['actualStartMinutes']),
+      actualEndMinutes: serializer.fromJson<int?>(json['actualEndMinutes']),
       notes: serializer.fromJson<String?>(json['notes']),
       location: serializer.fromJson<String?>(json['location']),
       mode: $ItineraryItemsTable.$convertermoden.fromJson(
@@ -2075,6 +2151,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'title': serializer.toJson<String?>(title),
       'startMinutes': serializer.toJson<int?>(startMinutes),
       'endMinutes': serializer.toJson<int?>(endMinutes),
+      'actualStartMinutes': serializer.toJson<int?>(actualStartMinutes),
+      'actualEndMinutes': serializer.toJson<int?>(actualEndMinutes),
       'notes': serializer.toJson<String?>(notes),
       'location': serializer.toJson<String?>(location),
       'mode': serializer.toJson<int?>(
@@ -2096,6 +2174,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<String?> title = const Value.absent(),
     Value<int?> startMinutes = const Value.absent(),
     Value<int?> endMinutes = const Value.absent(),
+    Value<int?> actualStartMinutes = const Value.absent(),
+    Value<int?> actualEndMinutes = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<String?> location = const Value.absent(),
     Value<TransportMode?> mode = const Value.absent(),
@@ -2114,6 +2194,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     title: title.present ? title.value : this.title,
     startMinutes: startMinutes.present ? startMinutes.value : this.startMinutes,
     endMinutes: endMinutes.present ? endMinutes.value : this.endMinutes,
+    actualStartMinutes: actualStartMinutes.present
+        ? actualStartMinutes.value
+        : this.actualStartMinutes,
+    actualEndMinutes: actualEndMinutes.present
+        ? actualEndMinutes.value
+        : this.actualEndMinutes,
     notes: notes.present ? notes.value : this.notes,
     location: location.present ? location.value : this.location,
     mode: mode.present ? mode.value : this.mode,
@@ -2138,6 +2224,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       endMinutes: data.endMinutes.present
           ? data.endMinutes.value
           : this.endMinutes,
+      actualStartMinutes: data.actualStartMinutes.present
+          ? data.actualStartMinutes.value
+          : this.actualStartMinutes,
+      actualEndMinutes: data.actualEndMinutes.present
+          ? data.actualEndMinutes.value
+          : this.actualEndMinutes,
       notes: data.notes.present ? data.notes.value : this.notes,
       location: data.location.present ? data.location.value : this.location,
       mode: data.mode.present ? data.mode.value : this.mode,
@@ -2163,6 +2255,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('title: $title, ')
           ..write('startMinutes: $startMinutes, ')
           ..write('endMinutes: $endMinutes, ')
+          ..write('actualStartMinutes: $actualStartMinutes, ')
+          ..write('actualEndMinutes: $actualEndMinutes, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
           ..write('mode: $mode, ')
@@ -2184,6 +2278,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     title,
     startMinutes,
     endMinutes,
+    actualStartMinutes,
+    actualEndMinutes,
     notes,
     location,
     mode,
@@ -2204,6 +2300,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.title == this.title &&
           other.startMinutes == this.startMinutes &&
           other.endMinutes == this.endMinutes &&
+          other.actualStartMinutes == this.actualStartMinutes &&
+          other.actualEndMinutes == this.actualEndMinutes &&
           other.notes == this.notes &&
           other.location == this.location &&
           other.mode == this.mode &&
@@ -2222,6 +2320,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<String?> title;
   final Value<int?> startMinutes;
   final Value<int?> endMinutes;
+  final Value<int?> actualStartMinutes;
+  final Value<int?> actualEndMinutes;
   final Value<String?> notes;
   final Value<String?> location;
   final Value<TransportMode?> mode;
@@ -2238,6 +2338,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.title = const Value.absent(),
     this.startMinutes = const Value.absent(),
     this.endMinutes = const Value.absent(),
+    this.actualStartMinutes = const Value.absent(),
+    this.actualEndMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
     this.mode = const Value.absent(),
@@ -2255,6 +2357,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.title = const Value.absent(),
     this.startMinutes = const Value.absent(),
     this.endMinutes = const Value.absent(),
+    this.actualStartMinutes = const Value.absent(),
+    this.actualEndMinutes = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
     this.mode = const Value.absent(),
@@ -2274,6 +2378,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<String>? title,
     Expression<int>? startMinutes,
     Expression<int>? endMinutes,
+    Expression<int>? actualStartMinutes,
+    Expression<int>? actualEndMinutes,
     Expression<String>? notes,
     Expression<String>? location,
     Expression<int>? mode,
@@ -2291,6 +2397,9 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (title != null) 'title': title,
       if (startMinutes != null) 'start_minutes': startMinutes,
       if (endMinutes != null) 'end_minutes': endMinutes,
+      if (actualStartMinutes != null)
+        'actual_start_minutes': actualStartMinutes,
+      if (actualEndMinutes != null) 'actual_end_minutes': actualEndMinutes,
       if (notes != null) 'notes': notes,
       if (location != null) 'location': location,
       if (mode != null) 'mode': mode,
@@ -2310,6 +2419,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<String?>? title,
     Value<int?>? startMinutes,
     Value<int?>? endMinutes,
+    Value<int?>? actualStartMinutes,
+    Value<int?>? actualEndMinutes,
     Value<String?>? notes,
     Value<String?>? location,
     Value<TransportMode?>? mode,
@@ -2327,6 +2438,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       title: title ?? this.title,
       startMinutes: startMinutes ?? this.startMinutes,
       endMinutes: endMinutes ?? this.endMinutes,
+      actualStartMinutes: actualStartMinutes ?? this.actualStartMinutes,
+      actualEndMinutes: actualEndMinutes ?? this.actualEndMinutes,
       notes: notes ?? this.notes,
       location: location ?? this.location,
       mode: mode ?? this.mode,
@@ -2370,6 +2483,12 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (endMinutes.present) {
       map['end_minutes'] = Variable<int>(endMinutes.value);
     }
+    if (actualStartMinutes.present) {
+      map['actual_start_minutes'] = Variable<int>(actualStartMinutes.value);
+    }
+    if (actualEndMinutes.present) {
+      map['actual_end_minutes'] = Variable<int>(actualEndMinutes.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -2403,6 +2522,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('title: $title, ')
           ..write('startMinutes: $startMinutes, ')
           ..write('endMinutes: $endMinutes, ')
+          ..write('actualStartMinutes: $actualStartMinutes, ')
+          ..write('actualEndMinutes: $actualEndMinutes, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
           ..write('mode: $mode, ')
@@ -7375,6 +7496,8 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<String?> title,
       Value<int?> startMinutes,
       Value<int?> endMinutes,
+      Value<int?> actualStartMinutes,
+      Value<int?> actualEndMinutes,
       Value<String?> notes,
       Value<String?> location,
       Value<TransportMode?> mode,
@@ -7393,6 +7516,8 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<String?> title,
       Value<int?> startMinutes,
       Value<int?> endMinutes,
+      Value<int?> actualStartMinutes,
+      Value<int?> actualEndMinutes,
       Value<String?> notes,
       Value<String?> location,
       Value<TransportMode?> mode,
@@ -7522,6 +7647,16 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<int> get endMinutes => $composableBuilder(
     column: $table.endMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get actualStartMinutes => $composableBuilder(
+    column: $table.actualStartMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get actualEndMinutes => $composableBuilder(
+    column: $table.actualEndMinutes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -7690,6 +7825,16 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get actualStartMinutes => $composableBuilder(
+    column: $table.actualStartMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get actualEndMinutes => $composableBuilder(
+    column: $table.actualEndMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -7816,6 +7961,16 @@ class $$ItineraryItemsTableAnnotationComposer
 
   GeneratedColumn<int> get endMinutes => $composableBuilder(
     column: $table.endMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get actualStartMinutes => $composableBuilder(
+    column: $table.actualStartMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get actualEndMinutes => $composableBuilder(
+    column: $table.actualEndMinutes,
     builder: (column) => column,
   );
 
@@ -7978,6 +8133,8 @@ class $$ItineraryItemsTableTableManager
                 Value<String?> title = const Value.absent(),
                 Value<int?> startMinutes = const Value.absent(),
                 Value<int?> endMinutes = const Value.absent(),
+                Value<int?> actualStartMinutes = const Value.absent(),
+                Value<int?> actualEndMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<TransportMode?> mode = const Value.absent(),
@@ -7994,6 +8151,8 @@ class $$ItineraryItemsTableTableManager
                 title: title,
                 startMinutes: startMinutes,
                 endMinutes: endMinutes,
+                actualStartMinutes: actualStartMinutes,
+                actualEndMinutes: actualEndMinutes,
                 notes: notes,
                 location: location,
                 mode: mode,
@@ -8012,6 +8171,8 @@ class $$ItineraryItemsTableTableManager
                 Value<String?> title = const Value.absent(),
                 Value<int?> startMinutes = const Value.absent(),
                 Value<int?> endMinutes = const Value.absent(),
+                Value<int?> actualStartMinutes = const Value.absent(),
+                Value<int?> actualEndMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<TransportMode?> mode = const Value.absent(),
@@ -8028,6 +8189,8 @@ class $$ItineraryItemsTableTableManager
                 title: title,
                 startMinutes: startMinutes,
                 endMinutes: endMinutes,
+                actualStartMinutes: actualStartMinutes,
+                actualEndMinutes: actualEndMinutes,
                 notes: notes,
                 location: location,
                 mode: mode,

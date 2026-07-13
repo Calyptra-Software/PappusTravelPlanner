@@ -602,6 +602,24 @@ abstract class AppLocalizations {
   /// **'Set time'**
   String get setTime;
 
+  /// No description provided for @plannedTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get plannedTimes;
+
+  /// No description provided for @actualTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual'**
+  String get actualTimes;
+
+  /// No description provided for @actualTimesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What really happened. The timeline shows how late or early it ran.'**
+  String get actualTimesHint;
+
   /// No description provided for @notesOptional.
   ///
   /// In en, this message translates to:

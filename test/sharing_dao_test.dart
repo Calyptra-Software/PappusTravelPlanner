@@ -39,6 +39,7 @@ void main() {
         title: const Value('Colosseum'),
         location: const Value('Piazza del Colosseo'),
         startMinutes: const Value(600),
+        actualStartMinutes: const Value(615),
       ),
     );
     final leg = await db.itineraryDao.addItem(
@@ -123,6 +124,10 @@ void main() {
     final placeItem = b.items.firstWhere((i) => i.kind == ItemKind.place);
     expect(placeItem.groupLocalId, groupLocal);
     expect(placeItem.location, 'Piazza del Colosseo');
+    // The plan and how it really went both travel with the trip.
+    expect(placeItem.startMinutes, 600);
+    expect(placeItem.actualStartMinutes, 615);
+    expect(placeItem.actualEndMinutes, isNull);
 
     // Costs across all three attachment targets.
     final byReason = {for (final c in b.costs) c.reason: c};

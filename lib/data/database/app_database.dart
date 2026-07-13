@@ -47,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 18;
+  int get schemaVersion => 19;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -183,6 +183,13 @@ class AppDatabase extends _$AppDatabase {
           // at what happened. Only reachable from v17, which shipped the column.
           if (from == 17) {
             await m.alterTable(TableMigration(alternativeSets));
+          }
+          // v19 added the actual start/end times of an itinerary entry beside
+          // the planned ones it already had. Nothing to backfill: an existing
+          // entry has a plan and no record of how it really went.
+          if (from < 19) {
+            await m.addColumn(itineraryItems, itineraryItems.actualStartMinutes);
+            await m.addColumn(itineraryItems, itineraryItems.actualEndMinutes);
           }
         },
         beforeOpen: (details) async {

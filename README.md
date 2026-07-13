@@ -20,6 +20,10 @@ Linux, Windows, macOS, and iOS.
 - **Structured itinerary** — a vertical, day-by-day timeline of **places** and
   **transport legs** (walk, bike, ski, car, taxi, bus, train, tram, subway, ferry,
   flight, …) with times and notes. Reorder and group items within a day; collapse/expand days.
+- **Planned vs. actual times** — every entry carries the times it was *planned* for and,
+  once you record them, the times it *actually* started and ended (departed and arrived).
+  The timeline keeps showing the plan, with a green or red **+/−** on each end saying how
+  early or late it ran, and "you are here" follows what really happened rather than the plan.
 - **Alternatives** — plan competing options for one stretch of a day ("museum or boat
   trip?"). The decision sits in the timeline as a card you **swipe** between options; each option holds its own places, legs, and costs.
   Every option's price stays visible side by side so they can be compared, but only the

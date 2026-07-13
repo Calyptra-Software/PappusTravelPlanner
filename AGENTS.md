@@ -104,6 +104,16 @@ UI (features/*/presentation, *widgets)
   timeline can price every branch. Its Dart mirror for items is `features/itinerary/live_items.dart`
   (`liveItems` / `chosenBranchIds`), used by the timeline and the home widget. `computeTripStats`
   is deliberately left untouched by all this — it still sees one row per counted cost.
+- **Planned vs. actual times.** An item carries two pairs: `startMinutes`/`endMinutes` are
+  what was *planned* (a leg's departure/arrival), `actualStartMinutes`/`actualEndMinutes`
+  what really happened. Both are optional and each end is compared with its own counterpart,
+  so a leg that left late but has not landed yet runs from its actual departure to its
+  planned arrival. `features/itinerary/widgets/item_times.dart` draws the **planned** range
+  with each end carrying its miss as a signed, coloured `(+15)` / `(−5)`
+  (`formatSignedMinutes`; red late, green early or on time). The actual time itself is never
+  printed — plan plus delta already says it, and the plan is what the day is judged against.
+  An actual time outranks its planned one in `now_marker.dart`, though: "you are here" is a
+  claim about the day as it is going.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
   `Currency` and `TransportMode` enums (in `tables.dart`) and the SharedPreferences-backed
@@ -130,7 +140,7 @@ UI (features/*/presentation, *widgets)
   `DatabaseController` (`lib/features/settings/application/database_providers.dart`) coordinates
   switching/importing/exporting. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 18) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 19) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

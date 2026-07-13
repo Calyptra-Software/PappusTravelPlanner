@@ -329,6 +329,8 @@ class BundleItem {
     this.title,
     this.startMinutes,
     this.endMinutes,
+    this.actualStartMinutes,
+    this.actualEndMinutes,
     this.notes,
     this.location,
     this.mode,
@@ -345,6 +347,11 @@ class BundleItem {
   final String? title;
   final int? startMinutes;
   final int? endMinutes;
+
+  /// When the entry really started/ended. Absent from bundles written before
+  /// they were recorded at all, and simply unset on import then.
+  final int? actualStartMinutes;
+  final int? actualEndMinutes;
   final String? notes;
 
   // place-only
@@ -365,6 +372,8 @@ class BundleItem {
         'title': title,
         'startMinutes': startMinutes,
         'endMinutes': endMinutes,
+        'actualStartMinutes': actualStartMinutes,
+        'actualEndMinutes': actualEndMinutes,
         'notes': notes,
         'location': location,
         'mode': mode?.name,
@@ -382,6 +391,8 @@ class BundleItem {
         title: json['title'] as String?,
         startMinutes: json['startMinutes'] as int?,
         endMinutes: json['endMinutes'] as int?,
+        actualStartMinutes: json['actualStartMinutes'] as int?,
+        actualEndMinutes: json['actualEndMinutes'] as int?,
         notes: json['notes'] as String?,
         location: json['location'] as String?,
         mode: _enumByNameOrNull(TransportMode.values, json['mode'] as String?),

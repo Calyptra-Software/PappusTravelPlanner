@@ -13,6 +13,8 @@ void main() {
     int id, {
     int? start,
     int? end,
+    int? actualStart,
+    int? actualEnd,
     int sortOrder = 0,
     int? alternativeId,
   }) =>
@@ -25,6 +27,8 @@ void main() {
         title: 'Item $id',
         startMinutes: start,
         endMinutes: end,
+        actualStartMinutes: actualStart,
+        actualEndMinutes: actualEnd,
         alternativeId: alternativeId,
       );
 
@@ -104,6 +108,31 @@ void main() {
     final blocks = [ItemBlock(item(1)), ItemBlock(item(2))];
 
     expect(nowMarker(blocks, noon), isNull);
+  });
+
+  test('an entry that ran late is still under way past its planned end', () {
+    // Planned 09:00–11:00, but it started an hour late and is not over yet.
+    final blocks = [
+      ItemBlock(item(1, start: 9 * 60, end: 11 * 60, actualStart: 10 * 60)),
+      ItemBlock(item(2, start: 15 * 60, end: 16 * 60)),
+    ];
+
+    // On the plan alone, noon would be past the first entry. What happened wins.
+    expect(
+      nowMarker(blocks, 10 * 60 + 30),
+      const NowMarker(index: 0, happening: true),
+    );
+  });
+
+  test('an entry that ended early is behind us before it was due to end', () {
+    final blocks = [
+      ItemBlock(item(1, start: 9 * 60, end: 13 * 60, actualEnd: 11 * 60)),
+    ];
+
+    expect(
+      nowMarker(blocks, noon),
+      const NowMarker(index: 1, happening: false),
+    );
   });
 
   test('an untimed entry stays ahead of the line — we cannot know it is done',

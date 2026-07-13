@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_chip.dart';
+import 'item_times.dart';
 import 'now_line.dart';
 import 'transport_mode.dart';
 
@@ -242,7 +242,7 @@ class _PlaceRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final now = nowColor(theme);
-    final time = formatTimeRange(item.startMinutes, item.endMinutes);
+    final hasTimes = ItemTimes.hasAny(item);
     final title = (item.title != null && item.title!.isNotEmpty)
         ? item.title!
         : (item.location ?? 'Place');
@@ -300,17 +300,19 @@ class _PlaceRow extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (time.isNotEmpty || isNow)
+                              if (hasTimes || isNow)
                                 Row(
                                   children: [
-                                    if (time.isNotEmpty)
-                                      Text(
-                                        time,
-                                        style: theme.textTheme.labelMedium
-                                            ?.copyWith(
-                                              color: theme.colorScheme.primary,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                    if (hasTimes)
+                                      Flexible(
+                                        child: ItemTimes(
+                                          item: item,
+                                          style: theme.textTheme.labelMedium
+                                              ?.copyWith(
+                                                color: theme.colorScheme.primary,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
                                       ),
                                     if (isNow) ...[
                                       const SizedBox(width: 8),
@@ -394,7 +396,7 @@ class _TransportRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final now = nowColor(theme);
     final mode = item.mode ?? TransportMode.other;
-    final time = formatTimeRange(item.startMinutes, item.endMinutes);
+    final hasTimes = ItemTimes.hasAny(item);
     final from = item.fromLocation ?? '';
     final to = item.toLocation ?? '';
     final route = [from, to].where((s) => s.isNotEmpty).join('  →  ');
@@ -452,12 +454,17 @@ class _TransportRow extends StatelessWidget {
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                if (time.isNotEmpty) ...[
+                                if (hasTimes) ...[
                                   const SizedBox(width: 8),
-                                  Text(
-                                    time,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
+                                  Flexible(
+                                    child: ItemTimes(
+                                      item: item,
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
                                     ),
                                   ),
                                 ],

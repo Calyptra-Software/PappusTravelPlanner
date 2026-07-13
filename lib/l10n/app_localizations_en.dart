@@ -287,6 +287,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get setTime => 'Set time';
 
   @override
+  String get plannedTimes => 'Planned';
+
+  @override
+  String get actualTimes => 'Actual';
+
+  @override
+  String get actualTimesHint =>
+      'What really happened. The timeline shows how late or early it ran.';
+
+  @override
   String get notesOptional => 'Notes (optional)';
 
   @override

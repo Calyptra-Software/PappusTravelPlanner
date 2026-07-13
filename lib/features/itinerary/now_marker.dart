@@ -41,10 +41,18 @@ final class NowMarker {
 
 /// The span [item] covers, or null when it carries no time at all. An entry with
 /// only one of the two times is a moment at that time.
+///
+/// An actual time outranks the planned one it was recorded against: it is what
+/// happened, and "you are here" is a claim about the day as it is going, not as
+/// it was meant to go. Each end is taken on its own — a leg that left late but
+/// has not arrived yet is running from its actual departure to its planned
+/// arrival.
 TimeSpan? itemSpan(ItineraryItem item) {
-  final start = item.startMinutes ?? item.endMinutes;
+  final from = item.actualStartMinutes ?? item.startMinutes;
+  final to = item.actualEndMinutes ?? item.endMinutes;
+  final start = from ?? to;
   if (start == null) return null;
-  final end = item.endMinutes ?? start;
+  final end = to ?? start;
   return (start: start, end: end < start ? start : end);
 }
 

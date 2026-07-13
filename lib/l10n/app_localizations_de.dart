@@ -289,6 +289,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get setTime => 'Zeit wählen';
 
   @override
+  String get plannedTimes => 'Geplant';
+
+  @override
+  String get actualTimes => 'Tatsächlich';
+
+  @override
+  String get actualTimesHint =>
+      'Was wirklich passiert ist. Die Zeitleiste zeigt die Abweichung vom Plan.';
+
+  @override
   String get notesOptional => 'Notizen (optional)';
 
   @override

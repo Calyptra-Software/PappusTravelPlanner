@@ -27,6 +27,8 @@ void main() {
             title: 'Colosseum',
             startMinutes: 600,
             endMinutes: 720,
+            actualStartMinutes: 615,
+            actualEndMinutes: 715,
             location: 'Piazza del Colosseo',
           ),
           BundleItem(

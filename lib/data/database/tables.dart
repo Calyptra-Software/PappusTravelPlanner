@@ -188,9 +188,20 @@ class ItineraryItems extends Table {
   IntColumn get kind => intEnum<ItemKind>()();
   TextColumn get title => text().nullable()();
 
-  /// Times stored as minutes since midnight (0-1439), or null if unset.
+  /// The **planned** times — when the entry is meant to start/end (for a
+  /// transport leg: to depart/arrive). Minutes since midnight (0-1439), or null
+  /// if unset.
   IntColumn get startMinutes => integer().nullable()();
   IntColumn get endMinutes => integer().nullable()();
+
+  /// The **actual** times — when the entry really started/ended, recorded during
+  /// or after the trip. Same encoding as the planned pair, and just as optional:
+  /// an entry the trip never got round to timing simply has none. Each is
+  /// compared against its planned counterpart to show how late or early the
+  /// entry ran; with no plan to compare against, an actual time just stands on
+  /// its own.
+  IntColumn get actualStartMinutes => integer().nullable()();
+  IntColumn get actualEndMinutes => integer().nullable()();
   TextColumn get notes => text().nullable()();
 
   // --- place-only ---
