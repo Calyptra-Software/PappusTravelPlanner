@@ -6,6 +6,8 @@ part of 'group_dao.dart';
 mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $TripsTable get trips => attachedDatabase.trips;
   $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
+  $AlternativeSetsTable get alternativeSets => attachedDatabase.alternativeSets;
+  $AlternativesTable get alternatives => attachedDatabase.alternatives;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   $CostsTable get costs => attachedDatabase.costs;
   GroupDaoManager get managers => GroupDaoManager(this);
@@ -18,6 +20,13 @@ class GroupDaoManager {
       $$TripsTableTableManager(_db.attachedDatabase, _db.trips);
   $$ItemGroupsTableTableManager get itemGroups =>
       $$ItemGroupsTableTableManager(_db.attachedDatabase, _db.itemGroups);
+  $$AlternativeSetsTableTableManager get alternativeSets =>
+      $$AlternativeSetsTableTableManager(
+        _db.attachedDatabase,
+        _db.alternativeSets,
+      );
+  $$AlternativesTableTableManager get alternatives =>
+      $$AlternativesTableTableManager(_db.attachedDatabase, _db.alternatives);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(
         _db.attachedDatabase,

@@ -42,6 +42,8 @@ class TripRepository {
   Future<void> deleteItem(int id) => _db.groupDao.deleteItem(id);
   Future<int> nextSortOrder(int tripId, DateTime date) =>
       _db.itineraryDao.nextSortOrder(tripId, date);
+  Future<int> nextSortOrderInAlternative(int alternativeId) =>
+      _db.itineraryDao.nextSortOrderInAlternative(alternativeId);
   Stream<Set<DateTime>> watchCollapsedDays(int tripId) =>
       _db.itineraryDao.watchCollapsedDays(tripId);
   Future<void> setDayCollapsed(int tripId, DateTime day, bool collapsed) =>
@@ -61,9 +63,35 @@ class TripRepository {
   Future<void> setGroupCollapsed(int groupId, bool collapsed) =>
       _db.groupDao.setGroupCollapsed(groupId, collapsed);
 
+  // --- alternatives ---
+  Stream<Map<int, AlternativeSet>> watchAlternativeSets(int tripId) =>
+      _db.alternativeDao.watchSetsForTrip(tripId);
+  Stream<Map<int, List<Alternative>>> watchAlternativeBranches(int tripId) =>
+      _db.alternativeDao.watchBranchesForTrip(tripId);
+  Future<int> createAlternativeSetFromItem(int itemId, {String? label}) =>
+      _db.alternativeDao.createSetFromItem(itemId, label: label);
+  Future<int> addAlternative(int setId, {String? label}) =>
+      _db.alternativeDao.addAlternative(setId, label: label);
+  Future<void> chooseAlternative(int alternativeId) =>
+      _db.alternativeDao.chooseAlternative(alternativeId);
+  Future<void> deleteAlternative(int alternativeId) =>
+      _db.alternativeDao.deleteAlternative(alternativeId);
+  Future<void> keepOnlyAlternative(int alternativeId) =>
+      _db.alternativeDao.keepOnly(alternativeId);
+  Future<int> deleteAlternativeSet(int setId) =>
+      _db.alternativeDao.deleteSet(setId);
+  Future<void> setAlternativeSetSortOrder(int setId, int sortOrder) =>
+      _db.alternativeDao.setSortOrder(setId, sortOrder);
+  Future<void> setAlternativeSetLabel(int setId, String? label) =>
+      _db.alternativeDao.setSetLabel(setId, label);
+  Future<void> setAlternativeLabel(int alternativeId, String? label) =>
+      _db.alternativeDao.setAlternativeLabel(alternativeId, label);
+
   // --- costs ---
   Stream<List<Cost>> watchCostsForTrip(int tripId) =>
       _db.costDao.watchCostsForTrip(tripId);
+  Stream<List<Cost>> watchCountedCostsForTrip(int tripId) =>
+      _db.costDao.watchCountedCostsForTrip(tripId);
   Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() =>
       _db.costDao.watchTotalsByTrip();
   Future<int> addCost(CostsCompanion cost) => _db.costDao.addCost(cost);

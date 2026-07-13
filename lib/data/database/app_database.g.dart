@@ -816,6 +816,708 @@ class ItemGroupsCompanion extends UpdateCompanion<ItemGroup> {
   }
 }
 
+class $AlternativeSetsTable extends AlternativeSets
+    with TableInfo<$AlternativeSetsTable, AlternativeSet> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AlternativeSetsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, tripId, date, sortOrder, label];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'alternative_sets';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AlternativeSet> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dateMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  AlternativeSet map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AlternativeSet(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+    );
+  }
+
+  @override
+  $AlternativeSetsTable createAlias(String alias) {
+    return $AlternativeSetsTable(attachedDatabase, alias);
+  }
+}
+
+class AlternativeSet extends DataClass implements Insertable<AlternativeSet> {
+  final int id;
+  final int tripId;
+
+  /// The day this decision sits on (normalized to midnight, like
+  /// [ItineraryItems.date]). Branches are day-scoped: every item in every branch
+  /// belongs to this day.
+  final DateTime date;
+
+  /// The set's position within its day, sharing one ordering space with that
+  /// day's loose items — the whole set is a single block in the timeline.
+  final int sortOrder;
+
+  /// Optional display name (e.g. "Saturday afternoon"); falls back to a default
+  /// label in the UI.
+  final String? label;
+  const AlternativeSet({
+    required this.id,
+    required this.tripId,
+    required this.date,
+    required this.sortOrder,
+    this.label,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['trip_id'] = Variable<int>(tripId);
+    map['date'] = Variable<DateTime>(date);
+    map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    return map;
+  }
+
+  AlternativeSetsCompanion toCompanion(bool nullToAbsent) {
+    return AlternativeSetsCompanion(
+      id: Value(id),
+      tripId: Value(tripId),
+      date: Value(date),
+      sortOrder: Value(sortOrder),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+    );
+  }
+
+  factory AlternativeSet.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AlternativeSet(
+      id: serializer.fromJson<int>(json['id']),
+      tripId: serializer.fromJson<int>(json['tripId']),
+      date: serializer.fromJson<DateTime>(json['date']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      label: serializer.fromJson<String?>(json['label']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tripId': serializer.toJson<int>(tripId),
+      'date': serializer.toJson<DateTime>(date),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'label': serializer.toJson<String?>(label),
+    };
+  }
+
+  AlternativeSet copyWith({
+    int? id,
+    int? tripId,
+    DateTime? date,
+    int? sortOrder,
+    Value<String?> label = const Value.absent(),
+  }) => AlternativeSet(
+    id: id ?? this.id,
+    tripId: tripId ?? this.tripId,
+    date: date ?? this.date,
+    sortOrder: sortOrder ?? this.sortOrder,
+    label: label.present ? label.value : this.label,
+  );
+  AlternativeSet copyWithCompanion(AlternativeSetsCompanion data) {
+    return AlternativeSet(
+      id: data.id.present ? data.id.value : this.id,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      date: data.date.present ? data.date.value : this.date,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      label: data.label.present ? data.label.value : this.label,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlternativeSet(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('date: $date, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('label: $label')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, tripId, date, sortOrder, label);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AlternativeSet &&
+          other.id == this.id &&
+          other.tripId == this.tripId &&
+          other.date == this.date &&
+          other.sortOrder == this.sortOrder &&
+          other.label == this.label);
+}
+
+class AlternativeSetsCompanion extends UpdateCompanion<AlternativeSet> {
+  final Value<int> id;
+  final Value<int> tripId;
+  final Value<DateTime> date;
+  final Value<int> sortOrder;
+  final Value<String?> label;
+  const AlternativeSetsCompanion({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.date = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.label = const Value.absent(),
+  });
+  AlternativeSetsCompanion.insert({
+    this.id = const Value.absent(),
+    required int tripId,
+    required DateTime date,
+    this.sortOrder = const Value.absent(),
+    this.label = const Value.absent(),
+  }) : tripId = Value(tripId),
+       date = Value(date);
+  static Insertable<AlternativeSet> custom({
+    Expression<int>? id,
+    Expression<int>? tripId,
+    Expression<DateTime>? date,
+    Expression<int>? sortOrder,
+    Expression<String>? label,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tripId != null) 'trip_id': tripId,
+      if (date != null) 'date': date,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (label != null) 'label': label,
+    });
+  }
+
+  AlternativeSetsCompanion copyWith({
+    Value<int>? id,
+    Value<int>? tripId,
+    Value<DateTime>? date,
+    Value<int>? sortOrder,
+    Value<String?>? label,
+  }) {
+    return AlternativeSetsCompanion(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      date: date ?? this.date,
+      sortOrder: sortOrder ?? this.sortOrder,
+      label: label ?? this.label,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlternativeSetsCompanion(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('date: $date, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('label: $label')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $AlternativesTable extends Alternatives
+    with TableInfo<$AlternativesTable, Alternative> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AlternativesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _setIdMeta = const VerificationMeta('setId');
+  @override
+  late final GeneratedColumn<int> setId = GeneratedColumn<int>(
+    'set_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES alternative_sets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _labelMeta = const VerificationMeta('label');
+  @override
+  late final GeneratedColumn<String> label = GeneratedColumn<String>(
+    'label',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _chosenMeta = const VerificationMeta('chosen');
+  @override
+  late final GeneratedColumn<bool> chosen = GeneratedColumn<bool>(
+    'chosen',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("chosen" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, setId, label, sortOrder, chosen];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'alternatives';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Alternative> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('set_id')) {
+      context.handle(
+        _setIdMeta,
+        setId.isAcceptableOrUnknown(data['set_id']!, _setIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_setIdMeta);
+    }
+    if (data.containsKey('label')) {
+      context.handle(
+        _labelMeta,
+        label.isAcceptableOrUnknown(data['label']!, _labelMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    if (data.containsKey('chosen')) {
+      context.handle(
+        _chosenMeta,
+        chosen.isAcceptableOrUnknown(data['chosen']!, _chosenMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Alternative map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Alternative(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      setId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}set_id'],
+      )!,
+      label: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+      chosen: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}chosen'],
+      )!,
+    );
+  }
+
+  @override
+  $AlternativesTable createAlias(String alias) {
+    return $AlternativesTable(attachedDatabase, alias);
+  }
+}
+
+class Alternative extends DataClass implements Insertable<Alternative> {
+  final int id;
+  final int setId;
+
+  /// Optional display name (e.g. "Museum day"); falls back to "Option A/B/C".
+  final String? label;
+
+  /// Order of the branches within the set — the order they are swiped through.
+  final int sortOrder;
+
+  /// Whether this is the branch currently selected for the plan. At most one per
+  /// set; see the class doc.
+  final bool chosen;
+  const Alternative({
+    required this.id,
+    required this.setId,
+    this.label,
+    required this.sortOrder,
+    required this.chosen,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['set_id'] = Variable<int>(setId);
+    if (!nullToAbsent || label != null) {
+      map['label'] = Variable<String>(label);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    map['chosen'] = Variable<bool>(chosen);
+    return map;
+  }
+
+  AlternativesCompanion toCompanion(bool nullToAbsent) {
+    return AlternativesCompanion(
+      id: Value(id),
+      setId: Value(setId),
+      label: label == null && nullToAbsent
+          ? const Value.absent()
+          : Value(label),
+      sortOrder: Value(sortOrder),
+      chosen: Value(chosen),
+    );
+  }
+
+  factory Alternative.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Alternative(
+      id: serializer.fromJson<int>(json['id']),
+      setId: serializer.fromJson<int>(json['setId']),
+      label: serializer.fromJson<String?>(json['label']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      chosen: serializer.fromJson<bool>(json['chosen']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'setId': serializer.toJson<int>(setId),
+      'label': serializer.toJson<String?>(label),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+      'chosen': serializer.toJson<bool>(chosen),
+    };
+  }
+
+  Alternative copyWith({
+    int? id,
+    int? setId,
+    Value<String?> label = const Value.absent(),
+    int? sortOrder,
+    bool? chosen,
+  }) => Alternative(
+    id: id ?? this.id,
+    setId: setId ?? this.setId,
+    label: label.present ? label.value : this.label,
+    sortOrder: sortOrder ?? this.sortOrder,
+    chosen: chosen ?? this.chosen,
+  );
+  Alternative copyWithCompanion(AlternativesCompanion data) {
+    return Alternative(
+      id: data.id.present ? data.id.value : this.id,
+      setId: data.setId.present ? data.setId.value : this.setId,
+      label: data.label.present ? data.label.value : this.label,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      chosen: data.chosen.present ? data.chosen.value : this.chosen,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Alternative(')
+          ..write('id: $id, ')
+          ..write('setId: $setId, ')
+          ..write('label: $label, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('chosen: $chosen')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, setId, label, sortOrder, chosen);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Alternative &&
+          other.id == this.id &&
+          other.setId == this.setId &&
+          other.label == this.label &&
+          other.sortOrder == this.sortOrder &&
+          other.chosen == this.chosen);
+}
+
+class AlternativesCompanion extends UpdateCompanion<Alternative> {
+  final Value<int> id;
+  final Value<int> setId;
+  final Value<String?> label;
+  final Value<int> sortOrder;
+  final Value<bool> chosen;
+  const AlternativesCompanion({
+    this.id = const Value.absent(),
+    this.setId = const Value.absent(),
+    this.label = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.chosen = const Value.absent(),
+  });
+  AlternativesCompanion.insert({
+    this.id = const Value.absent(),
+    required int setId,
+    this.label = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+    this.chosen = const Value.absent(),
+  }) : setId = Value(setId);
+  static Insertable<Alternative> custom({
+    Expression<int>? id,
+    Expression<int>? setId,
+    Expression<String>? label,
+    Expression<int>? sortOrder,
+    Expression<bool>? chosen,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (setId != null) 'set_id': setId,
+      if (label != null) 'label': label,
+      if (sortOrder != null) 'sort_order': sortOrder,
+      if (chosen != null) 'chosen': chosen,
+    });
+  }
+
+  AlternativesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? setId,
+    Value<String?>? label,
+    Value<int>? sortOrder,
+    Value<bool>? chosen,
+  }) {
+    return AlternativesCompanion(
+      id: id ?? this.id,
+      setId: setId ?? this.setId,
+      label: label ?? this.label,
+      sortOrder: sortOrder ?? this.sortOrder,
+      chosen: chosen ?? this.chosen,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (setId.present) {
+      map['set_id'] = Variable<int>(setId.value);
+    }
+    if (label.present) {
+      map['label'] = Variable<String>(label.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    if (chosen.present) {
+      map['chosen'] = Variable<bool>(chosen.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AlternativesCompanion(')
+          ..write('id: $id, ')
+          ..write('setId: $setId, ')
+          ..write('label: $label, ')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('chosen: $chosen')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ItineraryItemsTable extends ItineraryItems
     with TableInfo<$ItineraryItemsTable, ItineraryItem> {
   @override
@@ -859,6 +1561,20 @@ class $ItineraryItemsTable extends ItineraryItems
     requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'REFERENCES item_groups (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _alternativeIdMeta = const VerificationMeta(
+    'alternativeId',
+  );
+  @override
+  late final GeneratedColumn<int> alternativeId = GeneratedColumn<int>(
+    'alternative_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES alternatives (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _dateMeta = const VerificationMeta('date');
@@ -978,6 +1694,7 @@ class $ItineraryItemsTable extends ItineraryItems
     id,
     tripId,
     groupId,
+    alternativeId,
     date,
     sortOrder,
     kind,
@@ -1017,6 +1734,15 @@ class $ItineraryItemsTable extends ItineraryItems
       context.handle(
         _groupIdMeta,
         groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('alternative_id')) {
+      context.handle(
+        _alternativeIdMeta,
+        alternativeId.isAcceptableOrUnknown(
+          data['alternative_id']!,
+          _alternativeIdMeta,
+        ),
       );
     }
     if (data.containsKey('date')) {
@@ -1102,6 +1828,10 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.int,
         data['${effectivePrefix}group_id'],
       ),
+      alternativeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}alternative_id'],
+      ),
       date: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}date'],
@@ -1175,10 +1905,19 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   /// dissolving a group never removes the underlying places/legs.
   final int? groupId;
 
+  /// The branch this item belongs to, or null when it is a *loose* item sitting
+  /// directly on its day (the ordinary case). Cascades on branch deletion — see
+  /// [Alternatives]. An item in an unchosen branch is invisible to the day's
+  /// timeline, the trip totals and the home-screen widget.
+  final int? alternativeId;
+
   /// The day this entry belongs to (time component ignored, normalised to midnight).
   final DateTime date;
 
-  /// Manual ordering within a day, used for reordering the timeline.
+  /// Manual ordering, used for reordering the timeline. For a loose item this
+  /// orders it within its day, in one space shared with that day's
+  /// [AlternativeSets]; for an item inside a branch it orders it within that
+  /// branch.
   final int sortOrder;
   final ItemKind kind;
   final String? title;
@@ -1195,6 +1934,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     required this.id,
     required this.tripId,
     this.groupId,
+    this.alternativeId,
     required this.date,
     required this.sortOrder,
     required this.kind,
@@ -1214,6 +1954,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     map['trip_id'] = Variable<int>(tripId);
     if (!nullToAbsent || groupId != null) {
       map['group_id'] = Variable<int>(groupId);
+    }
+    if (!nullToAbsent || alternativeId != null) {
+      map['alternative_id'] = Variable<int>(alternativeId);
     }
     map['date'] = Variable<DateTime>(date);
     map['sort_order'] = Variable<int>(sortOrder);
@@ -1258,6 +2001,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       groupId: groupId == null && nullToAbsent
           ? const Value.absent()
           : Value(groupId),
+      alternativeId: alternativeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alternativeId),
       date: Value(date),
       sortOrder: Value(sortOrder),
       kind: Value(kind),
@@ -1295,6 +2041,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       id: serializer.fromJson<int>(json['id']),
       tripId: serializer.fromJson<int>(json['tripId']),
       groupId: serializer.fromJson<int?>(json['groupId']),
+      alternativeId: serializer.fromJson<int?>(json['alternativeId']),
       date: serializer.fromJson<DateTime>(json['date']),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
       kind: $ItineraryItemsTable.$converterkind.fromJson(
@@ -1319,6 +2066,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'id': serializer.toJson<int>(id),
       'tripId': serializer.toJson<int>(tripId),
       'groupId': serializer.toJson<int?>(groupId),
+      'alternativeId': serializer.toJson<int?>(alternativeId),
       'date': serializer.toJson<DateTime>(date),
       'sortOrder': serializer.toJson<int>(sortOrder),
       'kind': serializer.toJson<int>(
@@ -1341,6 +2089,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     int? id,
     int? tripId,
     Value<int?> groupId = const Value.absent(),
+    Value<int?> alternativeId = const Value.absent(),
     DateTime? date,
     int? sortOrder,
     ItemKind? kind,
@@ -1356,6 +2105,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
     groupId: groupId.present ? groupId.value : this.groupId,
+    alternativeId: alternativeId.present
+        ? alternativeId.value
+        : this.alternativeId,
     date: date ?? this.date,
     sortOrder: sortOrder ?? this.sortOrder,
     kind: kind ?? this.kind,
@@ -1373,6 +2125,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       id: data.id.present ? data.id.value : this.id,
       tripId: data.tripId.present ? data.tripId.value : this.tripId,
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      alternativeId: data.alternativeId.present
+          ? data.alternativeId.value
+          : this.alternativeId,
       date: data.date.present ? data.date.value : this.date,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
       kind: data.kind.present ? data.kind.value : this.kind,
@@ -1401,6 +2156,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('id: $id, ')
           ..write('tripId: $tripId, ')
           ..write('groupId: $groupId, ')
+          ..write('alternativeId: $alternativeId, ')
           ..write('date: $date, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('kind: $kind, ')
@@ -1421,6 +2177,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     id,
     tripId,
     groupId,
+    alternativeId,
     date,
     sortOrder,
     kind,
@@ -1440,6 +2197,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.id == this.id &&
           other.tripId == this.tripId &&
           other.groupId == this.groupId &&
+          other.alternativeId == this.alternativeId &&
           other.date == this.date &&
           other.sortOrder == this.sortOrder &&
           other.kind == this.kind &&
@@ -1457,6 +2215,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<int> id;
   final Value<int> tripId;
   final Value<int?> groupId;
+  final Value<int?> alternativeId;
   final Value<DateTime> date;
   final Value<int> sortOrder;
   final Value<ItemKind> kind;
@@ -1472,6 +2231,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
     this.groupId = const Value.absent(),
+    this.alternativeId = const Value.absent(),
     this.date = const Value.absent(),
     this.sortOrder = const Value.absent(),
     this.kind = const Value.absent(),
@@ -1488,6 +2248,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.id = const Value.absent(),
     required int tripId,
     this.groupId = const Value.absent(),
+    this.alternativeId = const Value.absent(),
     required DateTime date,
     this.sortOrder = const Value.absent(),
     required ItemKind kind,
@@ -1506,6 +2267,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<int>? id,
     Expression<int>? tripId,
     Expression<int>? groupId,
+    Expression<int>? alternativeId,
     Expression<DateTime>? date,
     Expression<int>? sortOrder,
     Expression<int>? kind,
@@ -1522,6 +2284,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (id != null) 'id': id,
       if (tripId != null) 'trip_id': tripId,
       if (groupId != null) 'group_id': groupId,
+      if (alternativeId != null) 'alternative_id': alternativeId,
       if (date != null) 'date': date,
       if (sortOrder != null) 'sort_order': sortOrder,
       if (kind != null) 'kind': kind,
@@ -1540,6 +2303,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<int>? id,
     Value<int>? tripId,
     Value<int?>? groupId,
+    Value<int?>? alternativeId,
     Value<DateTime>? date,
     Value<int>? sortOrder,
     Value<ItemKind>? kind,
@@ -1556,6 +2320,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       id: id ?? this.id,
       tripId: tripId ?? this.tripId,
       groupId: groupId ?? this.groupId,
+      alternativeId: alternativeId ?? this.alternativeId,
       date: date ?? this.date,
       sortOrder: sortOrder ?? this.sortOrder,
       kind: kind ?? this.kind,
@@ -1581,6 +2346,9 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     }
     if (groupId.present) {
       map['group_id'] = Variable<int>(groupId.value);
+    }
+    if (alternativeId.present) {
+      map['alternative_id'] = Variable<int>(alternativeId.value);
     }
     if (date.present) {
       map['date'] = Variable<DateTime>(date.value);
@@ -1628,6 +2396,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('id: $id, ')
           ..write('tripId: $tripId, ')
           ..write('groupId: $groupId, ')
+          ..write('alternativeId: $alternativeId, ')
           ..write('date: $date, ')
           ..write('sortOrder: $sortOrder, ')
           ..write('kind: $kind, ')
@@ -4221,6 +4990,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $TripsTable trips = $TripsTable(this);
   late final $ItemGroupsTable itemGroups = $ItemGroupsTable(this);
+  late final $AlternativeSetsTable alternativeSets = $AlternativeSetsTable(
+    this,
+  );
+  late final $AlternativesTable alternatives = $AlternativesTable(this);
   late final $ItineraryItemsTable itineraryItems = $ItineraryItemsTable(this);
   late final $CostsTable costs = $CostsTable(this);
   late final $CostReasonsTable costReasons = $CostReasonsTable(this);
@@ -4238,6 +5011,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final CostDao costDao = CostDao(this as AppDatabase);
   late final ChecklistDao checklistDao = ChecklistDao(this as AppDatabase);
   late final GroupDao groupDao = GroupDao(this as AppDatabase);
+  late final AlternativeDao alternativeDao = AlternativeDao(
+    this as AppDatabase,
+  );
   late final SharingDao sharingDao = SharingDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -4246,6 +5022,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     trips,
     itemGroups,
+    alternativeSets,
+    alternatives,
     itineraryItems,
     costs,
     costReasons,
@@ -4270,6 +5048,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'trips',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('alternative_sets', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'alternative_sets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('alternatives', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('itinerary_items', kind: UpdateKind.delete)],
     ),
     WritePropagation(
@@ -4278,6 +5070,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('itinerary_items', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'alternatives',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('itinerary_items', kind: UpdateKind.delete)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -4392,6 +5191,26 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_itemGroupsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AlternativeSetsTable, List<AlternativeSet>>
+  _alternativeSetsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.alternativeSets,
+    aliasName: 'trips__id__alternative_sets__trip_id',
+  );
+
+  $$AlternativeSetsTableProcessedTableManager get alternativeSetsRefs {
+    final manager = $$AlternativeSetsTableTableManager(
+      $_db,
+      $_db.alternativeSets,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _alternativeSetsRefsTable($_db),
+    );
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -4555,6 +5374,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$ItemGroupsTableFilterComposer(
             $db: $db,
             $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> alternativeSetsRefs(
+    Expression<bool> Function($$AlternativeSetsTableFilterComposer f) f,
+  ) {
+    final $$AlternativeSetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.alternativeSets,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativeSetsTableFilterComposer(
+            $db: $db,
+            $table: $db.alternativeSets,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -4802,6 +5646,31 @@ class $$TripsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> alternativeSetsRefs<T extends Object>(
+    Expression<T> Function($$AlternativeSetsTableAnnotationComposer a) f,
+  ) {
+    final $$AlternativeSetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.alternativeSets,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativeSetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.alternativeSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> itineraryItemsRefs<T extends Object>(
     Expression<T> Function($$ItineraryItemsTableAnnotationComposer a) f,
   ) {
@@ -4943,6 +5812,7 @@ class $$TripsTableTableManager
           Trip,
           PrefetchHooks Function({
             bool itemGroupsRefs,
+            bool alternativeSetsRefs,
             bool itineraryItemsRefs,
             bool costsRefs,
             bool tripParticipantsRefs,
@@ -5010,6 +5880,7 @@ class $$TripsTableTableManager
           prefetchHooksCallback:
               ({
                 itemGroupsRefs = false,
+                alternativeSetsRefs = false,
                 itineraryItemsRefs = false,
                 costsRefs = false,
                 tripParticipantsRefs = false,
@@ -5020,6 +5891,7 @@ class $$TripsTableTableManager
                   db: db,
                   explicitlyWatchedTables: [
                     if (itemGroupsRefs) db.itemGroups,
+                    if (alternativeSetsRefs) db.alternativeSets,
                     if (itineraryItemsRefs) db.itineraryItems,
                     if (costsRefs) db.costs,
                     if (tripParticipantsRefs) db.tripParticipants,
@@ -5040,6 +5912,27 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).itemGroupsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (alternativeSetsRefs)
+                        await $_getPrefetchedData<
+                          Trip,
+                          $TripsTable,
+                          AlternativeSet
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._alternativeSetsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).alternativeSetsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.tripId == item.id,
@@ -5161,6 +6054,7 @@ typedef $$TripsTableProcessedTableManager =
       Trip,
       PrefetchHooks Function({
         bool itemGroupsRefs,
+        bool alternativeSetsRefs,
         bool itineraryItemsRefs,
         bool costsRefs,
         bool tripParticipantsRefs,
@@ -5657,11 +6551,824 @@ typedef $$ItemGroupsTableProcessedTableManager =
         bool costsRefs,
       })
     >;
+typedef $$AlternativeSetsTableCreateCompanionBuilder =
+    AlternativeSetsCompanion Function({
+      Value<int> id,
+      required int tripId,
+      required DateTime date,
+      Value<int> sortOrder,
+      Value<String?> label,
+    });
+typedef $$AlternativeSetsTableUpdateCompanionBuilder =
+    AlternativeSetsCompanion Function({
+      Value<int> id,
+      Value<int> tripId,
+      Value<DateTime> date,
+      Value<int> sortOrder,
+      Value<String?> label,
+    });
+
+final class $$AlternativeSetsTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $AlternativeSetsTable, AlternativeSet> {
+  $$AlternativeSetsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('alternative_sets__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$AlternativesTable, List<Alternative>>
+  _alternativesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.alternatives,
+    aliasName: 'alternative_sets__id__alternatives__set_id',
+  );
+
+  $$AlternativesTableProcessedTableManager get alternativesRefs {
+    final manager = $$AlternativesTableTableManager(
+      $_db,
+      $_db.alternatives,
+    ).filter((f) => f.setId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_alternativesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$AlternativeSetsTableFilterComposer
+    extends Composer<_$AppDatabase, $AlternativeSetsTable> {
+  $$AlternativeSetsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> alternativesRefs(
+    Expression<bool> Function($$AlternativesTableFilterComposer f) f,
+  ) {
+    final $$AlternativesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.alternatives,
+      getReferencedColumn: (t) => t.setId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativesTableFilterComposer(
+            $db: $db,
+            $table: $db.alternatives,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AlternativeSetsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AlternativeSetsTable> {
+  $$AlternativeSetsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AlternativeSetsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AlternativeSetsTable> {
+  $$AlternativeSetsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> alternativesRefs<T extends Object>(
+    Expression<T> Function($$AlternativesTableAnnotationComposer a) f,
+  ) {
+    final $$AlternativesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.alternatives,
+      getReferencedColumn: (t) => t.setId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.alternatives,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AlternativeSetsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AlternativeSetsTable,
+          AlternativeSet,
+          $$AlternativeSetsTableFilterComposer,
+          $$AlternativeSetsTableOrderingComposer,
+          $$AlternativeSetsTableAnnotationComposer,
+          $$AlternativeSetsTableCreateCompanionBuilder,
+          $$AlternativeSetsTableUpdateCompanionBuilder,
+          (AlternativeSet, $$AlternativeSetsTableReferences),
+          AlternativeSet,
+          PrefetchHooks Function({bool tripId, bool alternativesRefs})
+        > {
+  $$AlternativeSetsTableTableManager(
+    _$AppDatabase db,
+    $AlternativeSetsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AlternativeSetsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AlternativeSetsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AlternativeSetsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> tripId = const Value.absent(),
+                Value<DateTime> date = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+              }) => AlternativeSetsCompanion(
+                id: id,
+                tripId: tripId,
+                date: date,
+                sortOrder: sortOrder,
+                label: label,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int tripId,
+                required DateTime date,
+                Value<int> sortOrder = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+              }) => AlternativeSetsCompanion.insert(
+                id: id,
+                tripId: tripId,
+                date: date,
+                sortOrder: sortOrder,
+                label: label,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AlternativeSetsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false, alternativesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (alternativesRefs) db.alternatives],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tripId,
+                                referencedTable:
+                                    $$AlternativeSetsTableReferences
+                                        ._tripIdTable(db),
+                                referencedColumn:
+                                    $$AlternativeSetsTableReferences
+                                        ._tripIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (alternativesRefs)
+                    await $_getPrefetchedData<
+                      AlternativeSet,
+                      $AlternativeSetsTable,
+                      Alternative
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AlternativeSetsTableReferences
+                          ._alternativesRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$AlternativeSetsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).alternativesRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.setId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AlternativeSetsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AlternativeSetsTable,
+      AlternativeSet,
+      $$AlternativeSetsTableFilterComposer,
+      $$AlternativeSetsTableOrderingComposer,
+      $$AlternativeSetsTableAnnotationComposer,
+      $$AlternativeSetsTableCreateCompanionBuilder,
+      $$AlternativeSetsTableUpdateCompanionBuilder,
+      (AlternativeSet, $$AlternativeSetsTableReferences),
+      AlternativeSet,
+      PrefetchHooks Function({bool tripId, bool alternativesRefs})
+    >;
+typedef $$AlternativesTableCreateCompanionBuilder =
+    AlternativesCompanion Function({
+      Value<int> id,
+      required int setId,
+      Value<String?> label,
+      Value<int> sortOrder,
+      Value<bool> chosen,
+    });
+typedef $$AlternativesTableUpdateCompanionBuilder =
+    AlternativesCompanion Function({
+      Value<int> id,
+      Value<int> setId,
+      Value<String?> label,
+      Value<int> sortOrder,
+      Value<bool> chosen,
+    });
+
+final class $$AlternativesTableReferences
+    extends BaseReferences<_$AppDatabase, $AlternativesTable, Alternative> {
+  $$AlternativesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $AlternativeSetsTable _setIdTable(_$AppDatabase db) => db
+      .alternativeSets
+      .createAlias('alternatives__set_id__alternative_sets__id');
+
+  $$AlternativeSetsTableProcessedTableManager get setId {
+    final $_column = $_itemColumn<int>('set_id')!;
+
+    final manager = $$AlternativeSetsTableTableManager(
+      $_db,
+      $_db.alternativeSets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_setIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ItineraryItemsTable, List<ItineraryItem>>
+  _itineraryItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itineraryItems,
+    aliasName: 'alternatives__id__itinerary_items__alternative_id',
+  );
+
+  $$ItineraryItemsTableProcessedTableManager get itineraryItemsRefs {
+    final manager = $$ItineraryItemsTableTableManager(
+      $_db,
+      $_db.itineraryItems,
+    ).filter((f) => f.alternativeId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryItemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$AlternativesTableFilterComposer
+    extends Composer<_$AppDatabase, $AlternativesTable> {
+  $$AlternativesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get chosen => $composableBuilder(
+    column: $table.chosen,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AlternativeSetsTableFilterComposer get setId {
+    final $$AlternativeSetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.setId,
+      referencedTable: $db.alternativeSets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativeSetsTableFilterComposer(
+            $db: $db,
+            $table: $db.alternativeSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> itineraryItemsRefs(
+    Expression<bool> Function($$ItineraryItemsTableFilterComposer f) f,
+  ) {
+    final $$ItineraryItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.alternativeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AlternativesTableOrderingComposer
+    extends Composer<_$AppDatabase, $AlternativesTable> {
+  $$AlternativesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get label => $composableBuilder(
+    column: $table.label,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get chosen => $composableBuilder(
+    column: $table.chosen,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AlternativeSetsTableOrderingComposer get setId {
+    final $$AlternativeSetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.setId,
+      referencedTable: $db.alternativeSets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativeSetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.alternativeSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$AlternativesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AlternativesTable> {
+  $$AlternativesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get label =>
+      $composableBuilder(column: $table.label, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<bool> get chosen =>
+      $composableBuilder(column: $table.chosen, builder: (column) => column);
+
+  $$AlternativeSetsTableAnnotationComposer get setId {
+    final $$AlternativeSetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.setId,
+      referencedTable: $db.alternativeSets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativeSetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.alternativeSets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> itineraryItemsRefs<T extends Object>(
+    Expression<T> Function($$ItineraryItemsTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.alternativeId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$AlternativesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AlternativesTable,
+          Alternative,
+          $$AlternativesTableFilterComposer,
+          $$AlternativesTableOrderingComposer,
+          $$AlternativesTableAnnotationComposer,
+          $$AlternativesTableCreateCompanionBuilder,
+          $$AlternativesTableUpdateCompanionBuilder,
+          (Alternative, $$AlternativesTableReferences),
+          Alternative,
+          PrefetchHooks Function({bool setId, bool itineraryItemsRefs})
+        > {
+  $$AlternativesTableTableManager(_$AppDatabase db, $AlternativesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AlternativesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$AlternativesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$AlternativesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> setId = const Value.absent(),
+                Value<String?> label = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> chosen = const Value.absent(),
+              }) => AlternativesCompanion(
+                id: id,
+                setId: setId,
+                label: label,
+                sortOrder: sortOrder,
+                chosen: chosen,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int setId,
+                Value<String?> label = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+                Value<bool> chosen = const Value.absent(),
+              }) => AlternativesCompanion.insert(
+                id: id,
+                setId: setId,
+                label: label,
+                sortOrder: sortOrder,
+                chosen: chosen,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$AlternativesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({setId = false, itineraryItemsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (itineraryItemsRefs) db.itineraryItems,
+              ],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (setId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.setId,
+                                referencedTable: $$AlternativesTableReferences
+                                    ._setIdTable(db),
+                                referencedColumn: $$AlternativesTableReferences
+                                    ._setIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (itineraryItemsRefs)
+                    await $_getPrefetchedData<
+                      Alternative,
+                      $AlternativesTable,
+                      ItineraryItem
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AlternativesTableReferences
+                          ._itineraryItemsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$AlternativesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).itineraryItemsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where(
+                            (e) => e.alternativeId == item.id,
+                          ),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$AlternativesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AlternativesTable,
+      Alternative,
+      $$AlternativesTableFilterComposer,
+      $$AlternativesTableOrderingComposer,
+      $$AlternativesTableAnnotationComposer,
+      $$AlternativesTableCreateCompanionBuilder,
+      $$AlternativesTableUpdateCompanionBuilder,
+      (Alternative, $$AlternativesTableReferences),
+      Alternative,
+      PrefetchHooks Function({bool setId, bool itineraryItemsRefs})
+    >;
 typedef $$ItineraryItemsTableCreateCompanionBuilder =
     ItineraryItemsCompanion Function({
       Value<int> id,
       required int tripId,
       Value<int?> groupId,
+      Value<int?> alternativeId,
       required DateTime date,
       Value<int> sortOrder,
       required ItemKind kind,
@@ -5679,6 +7386,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int> tripId,
       Value<int?> groupId,
+      Value<int?> alternativeId,
       Value<DateTime> date,
       Value<int> sortOrder,
       Value<ItemKind> kind,
@@ -5728,6 +7436,24 @@ final class $$ItineraryItemsTableReferences
       $_db.itemGroups,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $AlternativesTable _alternativeIdTable(_$AppDatabase db) => db
+      .alternatives
+      .createAlias('itinerary_items__alternative_id__alternatives__id');
+
+  $$AlternativesTableProcessedTableManager? get alternativeId {
+    final $_column = $_itemColumn<int>('alternative_id');
+    if ($_column == null) return null;
+    final manager = $$AlternativesTableTableManager(
+      $_db,
+      $_db.alternatives,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_alternativeIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -5862,6 +7588,29 @@ class $$ItineraryItemsTableFilterComposer
           }) => $$ItemGroupsTableFilterComposer(
             $db: $db,
             $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$AlternativesTableFilterComposer get alternativeId {
+    final $$AlternativesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.alternativeId,
+      referencedTable: $db.alternatives,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativesTableFilterComposer(
+            $db: $db,
+            $table: $db.alternatives,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6011,6 +7760,29 @@ class $$ItineraryItemsTableOrderingComposer
     );
     return composer;
   }
+
+  $$AlternativesTableOrderingComposer get alternativeId {
+    final $$AlternativesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.alternativeId,
+      referencedTable: $db.alternatives,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativesTableOrderingComposer(
+            $db: $db,
+            $table: $db.alternatives,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ItineraryItemsTableAnnotationComposer
@@ -6112,6 +7884,29 @@ class $$ItineraryItemsTableAnnotationComposer
     return composer;
   }
 
+  $$AlternativesTableAnnotationComposer get alternativeId {
+    final $$AlternativesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.alternativeId,
+      referencedTable: $db.alternatives,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AlternativesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.alternatives,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> costsRefs<T extends Object>(
     Expression<T> Function($$CostsTableAnnotationComposer a) f,
   ) {
@@ -6151,7 +7946,12 @@ class $$ItineraryItemsTableTableManager
           $$ItineraryItemsTableUpdateCompanionBuilder,
           (ItineraryItem, $$ItineraryItemsTableReferences),
           ItineraryItem,
-          PrefetchHooks Function({bool tripId, bool groupId, bool costsRefs})
+          PrefetchHooks Function({
+            bool tripId,
+            bool groupId,
+            bool alternativeId,
+            bool costsRefs,
+          })
         > {
   $$ItineraryItemsTableTableManager(
     _$AppDatabase db,
@@ -6171,6 +7971,7 @@ class $$ItineraryItemsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> tripId = const Value.absent(),
                 Value<int?> groupId = const Value.absent(),
+                Value<int?> alternativeId = const Value.absent(),
                 Value<DateTime> date = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
                 Value<ItemKind> kind = const Value.absent(),
@@ -6186,6 +7987,7 @@ class $$ItineraryItemsTableTableManager
                 id: id,
                 tripId: tripId,
                 groupId: groupId,
+                alternativeId: alternativeId,
                 date: date,
                 sortOrder: sortOrder,
                 kind: kind,
@@ -6203,6 +8005,7 @@ class $$ItineraryItemsTableTableManager
                 Value<int> id = const Value.absent(),
                 required int tripId,
                 Value<int?> groupId = const Value.absent(),
+                Value<int?> alternativeId = const Value.absent(),
                 required DateTime date,
                 Value<int> sortOrder = const Value.absent(),
                 required ItemKind kind,
@@ -6218,6 +8021,7 @@ class $$ItineraryItemsTableTableManager
                 id: id,
                 tripId: tripId,
                 groupId: groupId,
+                alternativeId: alternativeId,
                 date: date,
                 sortOrder: sortOrder,
                 kind: kind,
@@ -6239,7 +8043,12 @@ class $$ItineraryItemsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({tripId = false, groupId = false, costsRefs = false}) {
+              ({
+                tripId = false,
+                groupId = false,
+                alternativeId = false,
+                costsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [if (costsRefs) db.costs],
@@ -6285,6 +8094,21 @@ class $$ItineraryItemsTableTableManager
                                     referencedColumn:
                                         $$ItineraryItemsTableReferences
                                             ._groupIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (alternativeId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.alternativeId,
+                                    referencedTable:
+                                        $$ItineraryItemsTableReferences
+                                            ._alternativeIdTable(db),
+                                    referencedColumn:
+                                        $$ItineraryItemsTableReferences
+                                            ._alternativeIdTable(db)
                                             .id,
                                   )
                                   as T;
@@ -6335,7 +8159,12 @@ typedef $$ItineraryItemsTableProcessedTableManager =
       $$ItineraryItemsTableUpdateCompanionBuilder,
       (ItineraryItem, $$ItineraryItemsTableReferences),
       ItineraryItem,
-      PrefetchHooks Function({bool tripId, bool groupId, bool costsRefs})
+      PrefetchHooks Function({
+        bool tripId,
+        bool groupId,
+        bool alternativeId,
+        bool costsRefs,
+      })
     >;
 typedef $$CostsTableCreateCompanionBuilder =
     CostsCompanion Function({
@@ -9287,6 +11116,10 @@ class $AppDatabaseManager {
       $$TripsTableTableManager(_db, _db.trips);
   $$ItemGroupsTableTableManager get itemGroups =>
       $$ItemGroupsTableTableManager(_db, _db.itemGroups);
+  $$AlternativeSetsTableTableManager get alternativeSets =>
+      $$AlternativeSetsTableTableManager(_db, _db.alternativeSets);
+  $$AlternativesTableTableManager get alternatives =>
+      $$AlternativesTableTableManager(_db, _db.alternatives);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(_db, _db.itineraryItems);
   $$CostsTableTableManager get costs =>

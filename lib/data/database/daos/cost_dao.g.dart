@@ -6,6 +6,8 @@ part of 'cost_dao.dart';
 mixin _$CostDaoMixin on DatabaseAccessor<AppDatabase> {
   $TripsTable get trips => attachedDatabase.trips;
   $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
+  $AlternativeSetsTable get alternativeSets => attachedDatabase.alternativeSets;
+  $AlternativesTable get alternatives => attachedDatabase.alternatives;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   $CostsTable get costs => attachedDatabase.costs;
   $CostReasonsTable get costReasons => attachedDatabase.costReasons;
@@ -22,6 +24,13 @@ class CostDaoManager {
       $$TripsTableTableManager(_db.attachedDatabase, _db.trips);
   $$ItemGroupsTableTableManager get itemGroups =>
       $$ItemGroupsTableTableManager(_db.attachedDatabase, _db.itemGroups);
+  $$AlternativeSetsTableTableManager get alternativeSets =>
+      $$AlternativeSetsTableTableManager(
+        _db.attachedDatabase,
+        _db.alternativeSets,
+      );
+  $$AlternativesTableTableManager get alternatives =>
+      $$AlternativesTableTableManager(_db.attachedDatabase, _db.alternatives);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(
         _db.attachedDatabase,

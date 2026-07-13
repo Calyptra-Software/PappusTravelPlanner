@@ -7,11 +7,15 @@ import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../day_blocks.dart';
+import 'alternative_card.dart';
 import 'timeline_tile.dart';
 
-/// Renders a trip's itinerary as day sections, each a reorderable list of
-/// place/transport tiles with per-day add actions. Non-scrolling on its own —
-/// intended to sit inside the detail screen's scroll view.
+/// Renders a trip's itinerary as day sections. A day is a reorderable list of
+/// **blocks**: single place/transport tiles, and decisions — a set of competing
+/// options swiped through in an [AlternativeCard] — each taking one slot.
+/// Non-scrolling on its own; intended to sit inside the detail screen's scroll
+/// view.
 class ItineraryTimeline extends StatelessWidget {
   const ItineraryTimeline({
     super.key,
@@ -24,19 +28,28 @@ class ItineraryTimeline extends StatelessWidget {
     required this.onQuickAddPlace,
     required this.onAddTransport,
     required this.onReorder,
+    required this.onReorderBranch,
     required this.costsByItem,
     required this.groups,
     required this.costsByGroup,
+    required this.sets,
+    required this.branches,
     required this.localeName,
     required this.onTapCost,
     required this.collapsedDays,
     required this.onToggleDayCollapsed,
   });
 
+  /// The trip's whole itinerary, including the items of options that were not
+  /// chosen — an [AlternativeCard] draws whichever option is being looked at.
   final List<ItineraryItem> items;
   final Color accent;
   final DateTime? tripStart;
   final DateTime? tripEnd;
+
+  /// The trip's decisions, keyed by id, and their options, keyed by decision id.
+  final Map<int, AlternativeSet> sets;
+  final Map<int, List<Alternative>> branches;
 
   /// The trip's item groups, keyed by id, to resolve a grouped item's label.
   final Map<int, ItemGroup> groups;
@@ -51,25 +64,41 @@ class ItineraryTimeline extends StatelessWidget {
   /// Called when a day header is tapped, with the new collapsed state.
   final void Function(DateTime day, bool collapsed) onToggleDayCollapsed;
   final ValueChanged<ItineraryItem> onTapItem;
-  final ValueChanged<DateTime> onAddPlace;
 
-  /// Creates a place for [day] pre-named with the given location, with no form
-  /// step. Used by the "you just arrived here" quick-add chip.
-  final void Function(DateTime day, String location) onQuickAddPlace;
+  /// Opens the add-place form for [day], or for one option of a decision on that
+  /// day when [alternativeId] is given.
+  final void Function(DateTime day, {int? alternativeId}) onAddPlace;
 
-  /// Opens the add-transport form for [day]. [fromDefault] is the day's current
-  /// location (where the previous entry left you), pre-filled into the "from"
-  /// field, or null if the day has no usable location yet.
-  final void Function(DateTime day, String? fromDefault) onAddTransport;
+  /// Creates a place for [day] — or inside one option of a decision on it —
+  /// pre-named with the given location, with no form step. Used by the "you just
+  /// arrived here" quick-add chip.
+  final void Function(DateTime day, String location, {int? alternativeId})
+  onQuickAddPlace;
+
+  /// Opens the add-transport form for [day] (or for one option of a decision on
+  /// it). [fromDefault] is the current location — where the previous entry
+  /// leaves you — pre-filled into the "from" field, or null if there is none.
+  final void Function(
+    DateTime day,
+    String? fromDefault, {
+    int? alternativeId,
+  }) onAddTransport;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
 
-  /// Called when a tile is dragged within a day. [dayItems] is that day's list
-  /// in its current order; [newIndex] is the item's final position (already
+  /// Called when a block is dragged within a day. [dayBlocks] is that day's list
+  /// in its current order; [newIndex] is the block's final position (already
   /// adjusted for the removal at [oldIndex], per ReorderableListView.onReorderItem).
-  final void Function(List<ItineraryItem> dayItems, int oldIndex, int newIndex)
+  final void Function(List<DayBlock> dayBlocks, int oldIndex, int newIndex)
   onReorder;
+
+  /// Called when a tile is dragged within one option of a decision.
+  final void Function(
+    List<ItineraryItem> branchItems,
+    int oldIndex,
+    int newIndex,
+  ) onReorderBranch;
 
   List<DateTime> _daysToShow() {
     final days = SplayTreeSet<DateTime>();
@@ -81,8 +110,13 @@ class ItineraryTimeline extends StatelessWidget {
         d = d.add(const Duration(days: 1));
       }
     }
+    // An item inside an option belongs to the day of its decision, not to its
+    // own date, so it can never pull a day into existence on its own.
     for (final item in items) {
-      days.add(normalizeDay(item.date));
+      if (item.alternativeId == null) days.add(normalizeDay(item.date));
+    }
+    for (final set in sets.values) {
+      days.add(normalizeDay(set.date));
     }
     return days.toList();
   }
@@ -97,7 +131,7 @@ class ItineraryTimeline extends StatelessWidget {
       return _DaySection(
         day: today,
         dayNumber: 1,
-        items: const [],
+        blocks: const [],
         accent: accent,
         collapsed: collapsedDays.contains(today),
         onToggleCollapsed: onToggleDayCollapsed,
@@ -106,6 +140,7 @@ class ItineraryTimeline extends StatelessWidget {
         onQuickAddPlace: onQuickAddPlace,
         onAddTransport: onAddTransport,
         onReorder: onReorder,
+        onReorderBranch: onReorderBranch,
         costsByItem: costsByItem,
         groups: groups,
         costsByGroup: costsByGroup,
@@ -122,9 +157,12 @@ class ItineraryTimeline extends StatelessWidget {
             key: ValueKey(days[i]),
             day: days[i],
             dayNumber: i + 1,
-            items: items
-                .where((it) => normalizeDay(it.date) == days[i])
-                .toList(),
+            blocks: buildDayBlocks(
+              day: days[i],
+              items: items,
+              sets: sets,
+              branchesBySet: branches,
+            ),
             accent: accent,
             collapsed: collapsedDays.contains(days[i]),
             onToggleCollapsed: onToggleDayCollapsed,
@@ -133,6 +171,7 @@ class ItineraryTimeline extends StatelessWidget {
             onQuickAddPlace: onQuickAddPlace,
             onAddTransport: onAddTransport,
             onReorder: onReorder,
+            onReorderBranch: onReorderBranch,
             costsByItem: costsByItem,
             groups: groups,
             costsByGroup: costsByGroup,
@@ -144,12 +183,15 @@ class ItineraryTimeline extends StatelessWidget {
   }
 }
 
+
+/// One day of the trip: a header that collapses the day, its blocks (tiles and
+/// decisions) as one reorderable list, and the day's add actions.
 class _DaySection extends StatelessWidget {
   const _DaySection({
     super.key,
     required this.day,
     required this.dayNumber,
-    required this.items,
+    required this.blocks,
     required this.accent,
     required this.collapsed,
     required this.onToggleCollapsed,
@@ -158,6 +200,7 @@ class _DaySection extends StatelessWidget {
     required this.onQuickAddPlace,
     required this.onAddTransport,
     required this.onReorder,
+    required this.onReorderBranch,
     required this.costsByItem,
     required this.groups,
     required this.costsByGroup,
@@ -167,7 +210,9 @@ class _DaySection extends StatelessWidget {
 
   final DateTime day;
   final int dayNumber;
-  final List<ItineraryItem> items;
+
+  /// The day's blocks in order: single items and whole decisions.
+  final List<DayBlock> blocks;
   final Color accent;
   final Map<int, ItemGroup> groups;
   final Map<int, List<Cost>> costsByGroup;
@@ -178,13 +223,28 @@ class _DaySection extends StatelessWidget {
   /// Called when the header is tapped, with the new collapsed state.
   final void Function(DateTime day, bool collapsed) onToggleCollapsed;
   final ValueChanged<ItineraryItem> onTapItem;
-  final ValueChanged<DateTime> onAddPlace;
-  final void Function(DateTime day, String location) onQuickAddPlace;
-  final void Function(DateTime day, String? fromDefault) onAddTransport;
-  final void Function(List<ItineraryItem>, int, int) onReorder;
+  final void Function(DateTime day, {int? alternativeId}) onAddPlace;
+  final void Function(DateTime day, String location, {int? alternativeId})
+  onQuickAddPlace;
+  final void Function(DateTime day, String? fromDefault, {int? alternativeId})
+  onAddTransport;
+  final void Function(List<DayBlock>, int, int) onReorder;
+  final void Function(List<ItineraryItem>, int, int) onReorderBranch;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
+
+  /// The day's plan as it stands: its loose items plus the items of the chosen
+  /// option of each decision. What the day *totals* and what the "you are here"
+  /// chips read from — an option not taken is not part of the day.
+  List<ItineraryItem> get _liveItems => [
+    for (final block in blocks)
+      ...switch (block) {
+        ItemBlock(:final item) => [item],
+        DecisionBlock(:final chosen, :final itemsByBranch) =>
+          itemsByBranch[chosen.id] ?? const [],
+      },
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -192,15 +252,18 @@ class _DaySection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
     final expanded = !collapsed;
-    final count = items.length;
-    // Per-item costs for the day, plus each group's shared costs counted once
-    // (a group may have several members on the day, but one expense).
+    final live = _liveItems;
+    final count = live.length;
+    // The day's expenses: each live item's own costs, plus each group's shared
+    // cost counted once (a group may have several members on the day, but one
+    // expense). The costs of options not chosen are shown on their option's card
+    // but never in this total.
     final groupIdsToday = {
-      for (final item in items)
+      for (final item in live)
         if (item.groupId != null) item.groupId!,
     };
     final dayCosts = [
-      for (final item in items) ...?costsByItem[item.id],
+      for (final item in live) ...?costsByItem[item.id],
       for (final groupId in groupIdsToday) ...?costsByGroup[groupId],
     ];
     final dayTotals = sumByCurrency(dayCosts);
@@ -284,7 +347,8 @@ class _DaySection extends StatelessWidget {
 
   Widget _buildBody(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
-    final lastItem = items.isEmpty ? null : items.last;
+    final live = _liveItems;
+    final lastItem = live.isEmpty ? null : live.last;
     // The day's current location: where the last entry leaves you — a place's
     // location, or a leg's destination. Used to pre-fill the next leg's "from"
     // and, when it comes from a leg, to offer the arrival quick-add chip.
@@ -297,14 +361,13 @@ class _DaySection extends StatelessWidget {
         currentLocation != null && currentLocation.isNotEmpty;
     // If the day ends on a transport leg with a destination, offer a one-tap
     // chip to add that arrival as a place — no typing the same name again.
-    final arrival =
-        hasCurrentLocation && lastItem!.kind == ItemKind.transport
+    final arrival = hasCurrentLocation && lastItem!.kind == ItemKind.transport
         ? currentLocation
         : null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (items.isEmpty)
+        if (blocks.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(48, 4, 4, 4),
             child: Text(
@@ -319,43 +382,53 @@ class _DaySection extends StatelessWidget {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
-            itemCount: items.length,
+            itemCount: blocks.length,
             onReorderItem: (oldIndex, newIndex) =>
-                onReorder(items, oldIndex, newIndex),
+                onReorder(blocks, oldIndex, newIndex),
             itemBuilder: (context, index) {
-              final item = items[index];
-              // A group renders as a contiguous run within the day: its label
-              // heads the first member and its shared costs sit under the last.
-              final groupId = item.groupId;
-              final inGroup = groupId != null;
-              final isFirstInGroup = inGroup &&
-                  (index == 0 || items[index - 1].groupId != groupId);
-              final isLastInGroup = inGroup &&
-                  (index == items.length - 1 ||
-                      items[index + 1].groupId != groupId);
-              return TimelineTile(
-                key: ValueKey(item.id),
-                item: item,
-                accent: accent,
-                onTap: () => onTapItem(item),
-                costs: costsByItem[item.id] ?? const [],
-                group: inGroup ? groups[groupId] : null,
-                isFirstInGroup: isFirstInGroup,
-                isLastInGroup: isLastInGroup,
-                groupCosts: inGroup ? (costsByGroup[groupId] ?? const []) : const [],
-                localeName: localeName,
-                onTapCost: onTapCost,
-                dragHandle: ReorderableDragStartListener(
-                  index: index,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.drag_indicator,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+              final block = blocks[index];
+              final dragHandle = ReorderableDragStartListener(
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               );
+              return switch (block) {
+                ItemBlock(:final item) => _itemTile(
+                  index: index,
+                  item: item,
+                  dragHandle: dragHandle,
+                ),
+                DecisionBlock() => AlternativeCard(
+                  key: ValueKey('set-${block.set.id}'),
+                  block: block,
+                  accent: accent,
+                  groups: groups,
+                  costsByItem: costsByItem,
+                  costsByGroup: costsByGroup,
+                  localeName: localeName,
+                  onTapItem: onTapItem,
+                  onTapCost: onTapCost,
+                  onAddPlace: (branchId) =>
+                      onAddPlace(day, alternativeId: branchId),
+                  onAddTransport: (branchId) => onAddTransport(
+                    day,
+                    _branchLastLocation(block, branchId),
+                    alternativeId: branchId,
+                  ),
+                  onQuickAddPlace: (branchId, location) => onQuickAddPlace(
+                    day,
+                    location,
+                    alternativeId: branchId,
+                  ),
+                  onReorderBranch: onReorderBranch,
+                  dragHandle: dragHandle,
+                ),
+              };
             },
           ),
         Padding(
@@ -388,5 +461,48 @@ class _DaySection extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// A loose item's tile. Its group run is read against its neighbouring blocks:
+  /// a group never spans a decision, so a decision in between simply ends the run.
+  Widget _itemTile({
+    required int index,
+    required ItineraryItem item,
+    required Widget dragHandle,
+  }) {
+    ItineraryItem? neighbour(int at) {
+      if (at < 0 || at >= blocks.length) return null;
+      final block = blocks[at];
+      return block is ItemBlock ? block.item : null;
+    }
+
+    final groupId = item.groupId;
+    return TimelineTile(
+      key: ValueKey('item-${item.id}'),
+      item: item,
+      accent: accent,
+      onTap: () => onTapItem(item),
+      costs: costsByItem[item.id] ?? const [],
+      group: groupId == null ? null : groups[groupId],
+      isFirstInGroup: startsGroupRun(item, neighbour(index - 1)),
+      isLastInGroup: endsGroupRun(item, neighbour(index + 1)),
+      groupCosts: groupId == null ? const [] : (costsByGroup[groupId] ?? const []),
+      localeName: localeName,
+      onTapCost: onTapCost,
+      dragHandle: dragHandle,
+    );
+  }
+
+  /// Where an option's last entry leaves you, to pre-fill the "from" field of a
+  /// leg added to that option.
+  String? _branchLastLocation(DecisionBlock block, int branchId) {
+    final items = block.itemsByBranch[branchId] ?? const [];
+    if (items.isEmpty) return null;
+    final last = items.last;
+    final location = switch (last.kind) {
+      ItemKind.place => last.location?.trim(),
+      ItemKind.transport => last.toLocation?.trim(),
+    };
+    return (location == null || location.isEmpty) ? null : location;
   }
 }

@@ -39,6 +39,7 @@ class TripBundle {
     required this.schemaVersion,
     required this.trip,
     this.groups = const [],
+    this.alternativeSets = const [],
     this.items = const [],
     this.costs = const [],
     this.checklists = const [],
@@ -49,7 +50,13 @@ class TripBundle {
 
   /// Version of the bundle format itself. Bump when the JSON shape changes in a
   /// way importers must branch on. Independent of the database [schemaVersion].
-  static const int currentFormatVersion = 1;
+  ///
+  /// v2 added [alternativeSets]. An exporter only *stamps* v2 on a trip that
+  /// actually has alternatives (see `SharingDao.exportTrip`): an older app would
+  /// drop the decisions it can't read and silently flatten every option's items
+  /// into the day, so it must refuse such a bundle — but there is no reason to
+  /// stop it reading an ordinary trip, which still goes out as v1.
+  static const int currentFormatVersion = 2;
 
   /// Magic string identifying the payload as a Travel Planner trip bundle.
   static const String kind = 'travelplanner.trip';
@@ -62,6 +69,10 @@ class TripBundle {
 
   final BundleTrip trip;
   final List<BundleGroup> groups;
+
+  /// The trip's decisions, each carrying its options. Items point back at an
+  /// option through [BundleItem.alternativeLocalId].
+  final List<BundleAlternativeSet> alternativeSets;
   final List<BundleItem> items;
   final List<BundleCost> costs;
   final List<BundleChecklist> checklists;
@@ -82,6 +93,7 @@ class TripBundle {
         'schemaVersion': schemaVersion,
         'trip': trip.toJson(),
         'groups': [for (final g in groups) g.toJson()],
+        'alternativeSets': [for (final s in alternativeSets) s.toJson()],
         'items': [for (final i in items) i.toJson()],
         'costs': [for (final c in costs) c.toJson()],
         'checklists': [for (final c in checklists) c.toJson()],
@@ -102,6 +114,10 @@ class TripBundle {
       groups: [
         for (final g in (json['groups'] as List? ?? const []))
           BundleGroup.fromJson(g as Map<String, dynamic>),
+      ],
+      alternativeSets: [
+        for (final s in (json['alternativeSets'] as List? ?? const []))
+          BundleAlternativeSet.fromJson(s as Map<String, dynamic>),
       ],
       items: [
         for (final i in (json['items'] as List? ?? const []))
@@ -223,12 +239,90 @@ class BundleGroup {
       );
 }
 
+/// An [AlternativeSets] row together with its [Alternatives]: one decision on one
+/// day and the competing options it holds. [localId] links the options' items
+/// back to it within the bundle.
+class BundleAlternativeSet {
+  const BundleAlternativeSet({
+    required this.localId,
+    required this.date,
+    this.sortOrder = 0,
+    this.label,
+    this.alternatives = const [],
+  });
+
+  final int localId;
+  final DateTime date;
+  final int sortOrder;
+  final String? label;
+
+  /// The options, in swipe order. Exactly one is [BundleAlternative.chosen].
+  final List<BundleAlternative> alternatives;
+
+  Map<String, dynamic> toJson() => {
+        'localId': localId,
+        'date': _encodeDate(date),
+        'sortOrder': sortOrder,
+        'label': label,
+        'alternatives': [for (final a in alternatives) a.toJson()],
+      };
+
+  factory BundleAlternativeSet.fromJson(Map<String, dynamic> json) =>
+      BundleAlternativeSet(
+        localId: json['localId'] as int,
+        date: _decodeDate(json['date'] as String)!,
+        sortOrder: json['sortOrder'] as int? ?? 0,
+        label: json['label'] as String?,
+        alternatives: [
+          for (final a in (json['alternatives'] as List? ?? const []))
+            BundleAlternative.fromJson(a as Map<String, dynamic>),
+        ],
+      );
+}
+
+/// One option of a [BundleAlternativeSet]. [localId] is the source row id, which
+/// the bundle's items refer to via [BundleItem.alternativeLocalId].
+class BundleAlternative {
+  const BundleAlternative({
+    required this.localId,
+    this.label,
+    this.sortOrder = 0,
+    this.chosen = false,
+  });
+
+  final int localId;
+  final String? label;
+  final int sortOrder;
+
+  /// Whether this is the option the plan follows. Only its items' costs count
+  /// toward the trip, so this flag carries real money with it.
+  final bool chosen;
+
+  Map<String, dynamic> toJson() => {
+        'localId': localId,
+        'label': label,
+        'sortOrder': sortOrder,
+        'chosen': chosen,
+      };
+
+  factory BundleAlternative.fromJson(Map<String, dynamic> json) =>
+      BundleAlternative(
+        localId: json['localId'] as int,
+        label: json['label'] as String?,
+        sortOrder: json['sortOrder'] as int? ?? 0,
+        chosen: json['chosen'] as bool? ?? false,
+      );
+}
+
 /// An [ItineraryItems] row (place or transport leg). [localId] is the source row
-/// id; [groupLocalId] refers to a [BundleGroup.localId] within the same bundle.
+/// id; [groupLocalId] refers to a [BundleGroup.localId] within the same bundle,
+/// and [alternativeLocalId] to a [BundleAlternative.localId] when the item is
+/// planned inside one of a decision's options rather than loose on its day.
 class BundleItem {
   const BundleItem({
     required this.localId,
     this.groupLocalId,
+    this.alternativeLocalId,
     required this.date,
     this.sortOrder = 0,
     required this.kind,
@@ -244,6 +338,7 @@ class BundleItem {
 
   final int localId;
   final int? groupLocalId;
+  final int? alternativeLocalId;
   final DateTime date;
   final int sortOrder;
   final ItemKind kind;
@@ -263,6 +358,7 @@ class BundleItem {
   Map<String, dynamic> toJson() => {
         'localId': localId,
         'groupLocalId': groupLocalId,
+        'alternativeLocalId': alternativeLocalId,
         'date': _encodeDate(date),
         'sortOrder': sortOrder,
         'kind': kind.name,
@@ -279,6 +375,7 @@ class BundleItem {
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
         localId: json['localId'] as int,
         groupLocalId: json['groupLocalId'] as int?,
+        alternativeLocalId: json['alternativeLocalId'] as int?,
         date: _decodeDate(json['date'] as String)!,
         sortOrder: json['sortOrder'] as int? ?? 0,
         kind: _enumByName(ItemKind.values, json['kind'] as String),

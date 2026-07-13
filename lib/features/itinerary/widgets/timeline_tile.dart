@@ -8,6 +8,20 @@ import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_chip.dart';
 import 'transport_mode.dart';
 
+/// Whether [item] opens a group's contiguous run — i.e. the row before it (its
+/// [previous] neighbour in the list being rendered, or null at the top) is not in
+/// the same group. The run's label is drawn on its first member.
+///
+/// A group lies entirely inside one alternative branch or entirely outside one,
+/// so this reads the same whether the list is a day or a single branch.
+bool startsGroupRun(ItineraryItem item, ItineraryItem? previous) =>
+    item.groupId != null && previous?.groupId != item.groupId;
+
+/// Whether [item] closes a group's run — the shared costs are drawn on its last
+/// member. See [startsGroupRun].
+bool endsGroupRun(ItineraryItem item, ItineraryItem? next) =>
+    item.groupId != null && next?.groupId != item.groupId;
+
 /// A single row in the itinerary timeline. Renders as a place stop or, for
 /// transport items, as a lighter connector between stops.
 class TimelineTile extends StatelessWidget {

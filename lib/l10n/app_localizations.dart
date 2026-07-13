@@ -1358,6 +1358,174 @@ abstract class AppLocalizations {
   /// **'\"{name}\" and all its items will be removed.'**
   String checklistDeleteBody(String name);
 
+  /// No description provided for @alternatives.
+  ///
+  /// In en, this message translates to:
+  /// **'Alternatives'**
+  String get alternatives;
+
+  /// No description provided for @planAlternatives.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan alternatives'**
+  String get planAlternatives;
+
+  /// No description provided for @planAlternativesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn this entry into a choice: plan several options and pick the one you go with.'**
+  String get planAlternativesHint;
+
+  /// No description provided for @itemInOptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Part of an option — it counts toward the trip only while that option is chosen.'**
+  String get itemInOptionHint;
+
+  /// No description provided for @decisionDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choice'**
+  String get decisionDefaultLabel;
+
+  /// No description provided for @decisionActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Decision actions'**
+  String get decisionActions;
+
+  /// No description provided for @decisionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename choice'**
+  String get decisionRename;
+
+  /// No description provided for @decisionNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choice name (optional)'**
+  String get decisionNameLabel;
+
+  /// No description provided for @decisionNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Saturday afternoon'**
+  String get decisionNameHint;
+
+  /// No description provided for @decisionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete choice'**
+  String get decisionDelete;
+
+  /// No description provided for @decisionDeleteQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this choice?'**
+  String get decisionDeleteQuestion;
+
+  /// No description provided for @decisionDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Every option and all their entries and expenses are deleted.'**
+  String get decisionDeleteBody;
+
+  /// No description provided for @optionLetter.
+  ///
+  /// In en, this message translates to:
+  /// **'Option {letter}'**
+  String optionLetter(String letter);
+
+  /// No description provided for @optionChosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Chosen'**
+  String get optionChosen;
+
+  /// No description provided for @optionChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this option'**
+  String get optionChoose;
+
+  /// No description provided for @optionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing planned in this option yet.'**
+  String get optionEmpty;
+
+  /// No description provided for @optionAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add option'**
+  String get optionAdd;
+
+  /// No description provided for @optionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename option'**
+  String get optionRename;
+
+  /// No description provided for @optionNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Option name (optional)'**
+  String get optionNameLabel;
+
+  /// No description provided for @optionNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Museum day'**
+  String get optionNameHint;
+
+  /// No description provided for @optionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete option'**
+  String get optionDelete;
+
+  /// No description provided for @optionDeleteQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this option?'**
+  String get optionDeleteQuestion;
+
+  /// No description provided for @optionDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its entries and their expenses are deleted with it. The other options are kept.'**
+  String get optionDeleteBody;
+
+  /// No description provided for @optionKeepOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep only this option'**
+  String get optionKeepOnly;
+
+  /// No description provided for @optionKeepOnlyQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep only this option?'**
+  String get optionKeepOnlyQuestion;
+
+  /// No description provided for @optionKeepOnlyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its entries move back into the day and the other options are deleted.'**
+  String get optionKeepOnlyBody;
+
+  /// No description provided for @optionPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous option'**
+  String get optionPrevious;
+
+  /// No description provided for @optionNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next option'**
+  String get optionNext;
+
   /// No description provided for @grouping.
   ///
   /// In en, this message translates to:

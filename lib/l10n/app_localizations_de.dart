@@ -714,6 +714,97 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get alternatives => 'Alternativen';
+
+  @override
+  String get planAlternatives => 'Alternativen planen';
+
+  @override
+  String get planAlternativesHint =>
+      'Mache aus diesem Eintrag eine Wahl: Plane mehrere Optionen und lege fest, welche es wird.';
+
+  @override
+  String get itemInOptionHint =>
+      'Teil einer Option – zählt nur zur Reise, solange diese Option gewählt ist.';
+
+  @override
+  String get decisionDefaultLabel => 'Wahl';
+
+  @override
+  String get decisionActions => 'Aktionen für die Wahl';
+
+  @override
+  String get decisionRename => 'Wahl umbenennen';
+
+  @override
+  String get decisionNameLabel => 'Name der Wahl (optional)';
+
+  @override
+  String get decisionNameHint => 'z. B. Samstagnachmittag';
+
+  @override
+  String get decisionDelete => 'Wahl löschen';
+
+  @override
+  String get decisionDeleteQuestion => 'Diese Wahl löschen?';
+
+  @override
+  String get decisionDeleteBody =>
+      'Alle Optionen mit ihren Einträgen und Ausgaben werden gelöscht.';
+
+  @override
+  String optionLetter(String letter) {
+    return 'Option $letter';
+  }
+
+  @override
+  String get optionChosen => 'Gewählt';
+
+  @override
+  String get optionChoose => 'Diese Option wählen';
+
+  @override
+  String get optionEmpty => 'In dieser Option ist noch nichts geplant.';
+
+  @override
+  String get optionAdd => 'Option hinzufügen';
+
+  @override
+  String get optionRename => 'Option umbenennen';
+
+  @override
+  String get optionNameLabel => 'Name der Option (optional)';
+
+  @override
+  String get optionNameHint => 'z. B. Museumstag';
+
+  @override
+  String get optionDelete => 'Option löschen';
+
+  @override
+  String get optionDeleteQuestion => 'Diese Option löschen?';
+
+  @override
+  String get optionDeleteBody =>
+      'Ihre Einträge und deren Ausgaben werden mitgelöscht. Die anderen Optionen bleiben erhalten.';
+
+  @override
+  String get optionKeepOnly => 'Nur diese Option behalten';
+
+  @override
+  String get optionKeepOnlyQuestion => 'Nur diese Option behalten?';
+
+  @override
+  String get optionKeepOnlyBody =>
+      'Ihre Einträge wandern zurück in den Tag, die anderen Optionen werden gelöscht.';
+
+  @override
+  String get optionPrevious => 'Vorherige Option';
+
+  @override
+  String get optionNext => 'Nächste Option';
+
+  @override
   String get grouping => 'Gruppierung';
 
   @override

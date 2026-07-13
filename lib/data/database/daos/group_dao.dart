@@ -26,10 +26,18 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// one is, and merges the two groups (moving the second's members and costs
   /// into the first, then deleting it) if both already belong to different
   /// groups. Adjacency is the caller's concern — this only wires up membership.
+  ///
+  /// Throws if the two items sit in different alternative branches (or one in a
+  /// branch and one loose): a group must lie entirely inside one branch or
+  /// entirely outside, or whether its shared cost counts toward the trip would
+  /// have no answer.
   Future<int> groupItems(int firstItemId, int secondItemId) {
     return transaction(() async {
       final first = await _item(firstItemId);
       final second = await _item(secondItemId);
+      if (first.alternativeId != second.alternativeId) {
+        throw ArgumentError('Cannot group items across alternative branches.');
+      }
       final ga = first.groupId;
       final gb = second.groupId;
 

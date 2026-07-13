@@ -17,6 +17,12 @@ Linux, Windows, macOS, and iOS.
 - **Structured itinerary** — a vertical, day-by-day timeline of **places** and
   **transport legs** (walk, bike, ski, car, taxi, bus, train, tram, subway, ferry,
   flight, …) with times and notes. Reorder and group items within a day; collapse/expand days.
+- **Alternatives** — plan competing options for one stretch of a day ("museum or boat
+  trip?"). The decision sits in the timeline as a card you **swipe** between options; each option holds its own places, legs, and costs.
+  Every option's price stays visible side by side so they can be compared, but only the
+  **chosen** option counts toward the trip's totals and its expense split — an option you
+  considered and dropped never inflates the budget. Afterwards, simply choose the option you
+  actually took, or clear the decision away with *keep only this option*.
 - **Checklists** — any number of named checklists per trip (packing list, to-dos, …),
   with reorderable, tickable items and collapsible cards.
 - **Costs & expense splitting** — attach costs to any place, transport, or the trip as a
@@ -144,14 +150,16 @@ lib/
     repositories/           # thin repository over the DAOs
   features/
     trips/                  # overview, create/edit, detail, participants
-    itinerary/              # timeline, item form, transport modes
+    itinerary/              # timeline, day blocks, alternatives card, item form, transport modes
     costs/                  # cost form, splitting/stats, reasons & people settings
     checklist/              # per-trip named checklists
+    sharing/                # portable trip bundles (export/import a single trip)
     settings/               # language, cost reasons, people + database location screen
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
 android/ ios/ linux/ ...    # per-platform host projects
 test/                       # unit and widget tests
+integration_test/           # flows driven against the real widgets and a real database
 ```
 
 ## Database and portability
@@ -180,8 +188,13 @@ and open it directly. Deleting a trip cascades to its itinerary items and their 
 - Analyze: `flutter analyze`
 - Format: `dart format .`
 - Test: `flutter test`
+- Integration tests (real widgets against a real database, on a real device — drift's
+  `.watch()` streams don't resolve under `flutter_test`'s fake clock, so flows that depend
+  on live data live here): `flutter test -d linux integration_test/`
 - After changing Drift tables/DAOs or Riverpod-annotated code, re-run
   `dart run build_runner build --delete-conflicting-outputs`.
+- Any change to a Drift table or column needs a bumped `AppDatabase.schemaVersion` and an
+  `onUpgrade` branch: real databases are migrated in place, never recreated.
 
 ## Disclaimer
 

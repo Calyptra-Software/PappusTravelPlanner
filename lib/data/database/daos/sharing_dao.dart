@@ -13,6 +13,8 @@ part 'sharing_dao.g.dart';
 @DriftAccessor(tables: [
   Trips,
   ItemGroups,
+  AlternativeSets,
+  Alternatives,
   ItineraryItems,
   Costs,
   CostReasons,
@@ -37,6 +39,15 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
 
     final groupRows =
         await (select(itemGroups)..where((g) => g.tripId.equals(tripId))).get();
+    final setRows = await (select(alternativeSets)
+          ..where((s) => s.tripId.equals(tripId)))
+        .get();
+    final branchRows = setRows.isEmpty
+        ? <Alternative>[]
+        : await (select(alternatives)
+              ..where((a) => a.setId.isIn([for (final s in setRows) s.id]))
+              ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
+            .get();
     final itemRows = await (select(itineraryItems)
           ..where((i) => i.tripId.equals(tripId)))
         .get();
@@ -61,6 +72,10 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
     );
 
     return TripBundle(
+      // A trip without decisions stays readable by an older app, which knows
+      // nothing of them; one *with* decisions goes out as v2, so an older app
+      // refuses it outright rather than flattening every option into the day.
+      formatVersion: setRows.isEmpty ? 1 : TripBundle.currentFormatVersion,
       schemaVersion: db.schemaVersion,
       trip: BundleTrip(
         title: trip.title,
@@ -75,11 +90,30 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         for (final g in groupRows)
           BundleGroup(localId: g.id, label: g.label, collapsed: g.collapsed),
       ],
+      alternativeSets: [
+        for (final s in setRows)
+          BundleAlternativeSet(
+            localId: s.id,
+            date: s.date,
+            sortOrder: s.sortOrder,
+            label: s.label,
+            alternatives: [
+              for (final a in branchRows.where((a) => a.setId == s.id))
+                BundleAlternative(
+                  localId: a.id,
+                  label: a.label,
+                  sortOrder: a.sortOrder,
+                  chosen: a.chosen,
+                ),
+            ],
+          ),
+      ],
       items: [
         for (final i in itemRows)
           BundleItem(
             localId: i.id,
             groupLocalId: i.groupId,
+            alternativeLocalId: i.alternativeId,
             date: i.date,
             sortOrder: i.sortOrder,
             kind: i.kind,
@@ -189,12 +223,37 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         );
       }
 
+      // Decisions and their options next, for the same reason: an item planned
+      // inside an option needs the option's fresh id.
+      final branchIds = <int, int>{};
+      for (final s in bundle.alternativeSets) {
+        final setId = await into(alternativeSets).insert(
+          AlternativeSetsCompanion.insert(
+            tripId: tripId,
+            date: s.date,
+            sortOrder: Value(s.sortOrder),
+            label: Value(s.label),
+          ),
+        );
+        for (final a in s.alternatives) {
+          branchIds[a.localId] = await into(alternatives).insert(
+            AlternativesCompanion.insert(
+              setId: setId,
+              label: Value(a.label),
+              sortOrder: Value(a.sortOrder),
+              chosen: Value(a.chosen),
+            ),
+          );
+        }
+      }
+
       final itemIds = <int, int>{};
       for (final i in bundle.items) {
         itemIds[i.localId] = await into(itineraryItems).insert(
           ItineraryItemsCompanion.insert(
             tripId: tripId,
             groupId: Value(_mapId(groupIds, i.groupLocalId)),
+            alternativeId: Value(_mapId(branchIds, i.alternativeLocalId)),
             date: i.date,
             sortOrder: Value(i.sortOrder),
             kind: i.kind,

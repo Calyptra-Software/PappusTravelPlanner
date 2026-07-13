@@ -60,12 +60,42 @@ UI (features/*/presentation, *widgets)
   `groupId` on items is `setNull` on group delete (dissolving a group keeps its items); a
   group's costs are re-pointed onto its first member before the group is deleted so the expense
   survives. Grouping ops live in `GroupDao`.
+- **Alternatives** (`AlternativeSets` / `Alternatives`, with `ItineraryItems.alternativeId`) are
+  a second, orthogonal axis of bundling: a set is one decision on one day ("what do we do on
+  Saturday afternoon?"), holding two or more branches — competing versions of that stretch of
+  the day — of which exactly one is `chosen`. There is deliberately no "actually happened" flag
+  beside it: the chosen branch is what the trip counts, so settling a decision after the fact is
+  just choosing what you did (v18 dropped the `decided` column that tried to say more).
+  A group means "these share a ticket", a branch means
+  "these are one option"; a group never straddles two branches (`GroupDao.groupItems` throws).
+  An item is either *loose* (`alternativeId` null — the ordinary case) or in exactly one branch.
+  A set occupies **one slot** in its day: `AlternativeSets.date`/`sortOrder` share an ordering
+  space with the day's loose items, while a branch item's `sortOrder` orders it within its
+  branch. Deleting a branch **deletes its items** (cascade — unlike dissolving a group, which
+  frees them), and a set left with one branch is flattened back into the day. Ops live in
+  `AlternativeDao`.
+- The timeline renders a day as a list of **blocks** (`features/itinerary/day_blocks.dart`,
+  pure): an `ItemBlock` (a loose item) or a `DecisionBlock` (a whole set). A decision draws as
+  an `AlternativeCard` — a `PageView` **swiped** between options, which only *browses*;
+  choosing is the explicit button, so looking at an option never moves the trip's money. The
+  indicator row under it carries every option's price (the comparison a pager otherwise hides).
+  Dragging in a day reorders blocks (writing `ItineraryItems.sortOrder` *and*
+  `AlternativeSets.sortOrder`); dragging inside a card reorders that option's items.
+- **Costs of unchosen branches are shown but never counted.** An item is *live* when it is
+  loose or in the chosen branch; a cost counts when it is trip-level, on a live item, or on a
+  group with a live member. The rule lives once, as a SQL predicate in `CostDao`
+  (`_countsTowardTotals`), and is applied by `watchCountedCostsForTrip` (trip header + stats)
+  and `watchTotalsByTrip` (overview cards); `watchCostsForTrip` stays unfiltered so the
+  timeline can price every branch. Its Dart mirror for items is `features/itinerary/live_items.dart`
+  (`liveItems` / `chosenBranchIds`), used by the timeline and the home widget. `computeTripStats`
+  is deliberately left untouched by all this — it still sees one row per counted cost.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
   `Currency` and `TransportMode` enums (in `tables.dart`) and the SharedPreferences-backed
   `CostReasonDisplay` / `ExpenseScope` enums are all persisted by **integer index** — only
   ever append new values at the end, never reorder.
-- Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItemGroups`, `ItineraryItems`, `Costs`,
+- Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItemGroups`, `AlternativeSets`,
+  `Alternatives`, `ItineraryItems`, `Costs`,
   `CostReasons` (reusable reason labels with an optional icon id), `People` (reusable payer/
   beneficiary names; one flagged `isMe`), `TripParticipants` and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
@@ -85,7 +115,7 @@ UI (features/*/presentation, *widgets)
   `DatabaseController` (`lib/features/settings/application/database_providers.dart`) coordinates
   switching/importing/exporting. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 15) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 18) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

@@ -12,6 +12,7 @@ part 'cost_dao.g.dart';
   CostBeneficiaries,
   ItineraryItems,
   ItemGroups,
+  Alternatives,
 ])
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   CostDao(super.db);
@@ -20,33 +21,96 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// of the trip's itinerary items, to a group of its items, or to the trip
   /// directly. The left joins let a single query reach every kind — a cost
   /// matches when its item, its group, or the cost itself belongs to the trip.
+  ///
+  /// Includes costs hanging off alternative branches that were *not* chosen —
+  /// the timeline shows them, so each branch can be priced and compared. Only
+  /// the totals must leave them out; see [watchCountedCostsForTrip].
   Stream<List<Cost>> watchCostsForTrip(int tripId) {
     final query = select(costs).join([
       leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
       leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
     ])
-      ..where(
-        itineraryItems.tripId.equals(tripId) |
-            itemGroups.tripId.equals(tripId) |
-            costs.tripId.equals(tripId),
-      )
+      ..where(_belongsToTrip(tripId))
       ..orderBy([OrderingTerm(expression: costs.createdAt)]);
     return query.watch().map(
           (rows) => rows.map((row) => row.readTable(costs)).toList(),
         );
   }
 
+  /// The costs of a trip that actually count: [watchCostsForTrip] minus the ones
+  /// attached to an alternative branch that was not chosen. This is what the
+  /// trip's total and its expense splitting are computed from — the roads not
+  /// taken must not inflate the budget.
+  Stream<List<Cost>> watchCountedCostsForTrip(int tripId) {
+    final query = select(costs).join([
+      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
+      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+      leftOuterJoin(
+        alternatives,
+        alternatives.id.equalsExp(itineraryItems.alternativeId),
+      ),
+    ])
+      ..where(_belongsToTrip(tripId) & _countsTowardTotals())
+      ..orderBy([OrderingTerm(expression: costs.createdAt)]);
+    return query.watch().map(
+          (rows) => rows.map((row) => row.readTable(costs)).toList(),
+        );
+  }
+
+  /// Whether a cost belongs to [tripId], whichever way it is attached.
+  Expression<bool> _belongsToTrip(int tripId) =>
+      itineraryItems.tripId.equals(tripId) |
+      itemGroups.tripId.equals(tripId) |
+      costs.tripId.equals(tripId);
+
+  /// Whether a cost counts toward its trip's totals: a trip-level cost always
+  /// does; an item's cost does when the item is *live* (loose, or in the chosen
+  /// branch of its decision); and a group's shared cost does when the group has
+  /// a live member — a group never straddles two branches, so any member answers
+  /// for all of them.
+  ///
+  /// Requires [alternatives] to be left-joined on the item's branch. The group
+  /// case can't use that join (a group cost has no item row), so it re-reaches
+  /// the group's members through a correlated subquery instead — joining them
+  /// directly would fan a cost out into one row per member and double-count it.
+  Expression<bool> _countsTowardTotals() {
+    final itemIsLive = costs.itemId.isNotNull() &
+        (itineraryItems.alternativeId.isNull() |
+            alternatives.chosen.equals(true));
+    return costs.tripId.isNotNull() | itemIsLive | _groupHasLiveMember();
+  }
+
+  Expression<bool> _groupHasLiveMember() {
+    final member = alias(itineraryItems, 'group_member');
+    final branch = alias(alternatives, 'member_branch');
+    final query = selectOnly(member).join([
+      leftOuterJoin(branch, branch.id.equalsExp(member.alternativeId)),
+    ])
+      ..addColumns([member.id])
+      ..where(
+        member.groupId.equalsExp(costs.groupId) &
+            (member.alternativeId.isNull() | branch.chosen.equals(true)),
+      );
+    return costs.groupId.isNotNull() & existsQuery(query);
+  }
+
   /// Per-currency cost totals for every trip, keyed by trip id (amounts stay in
   /// minor units). Reaches costs the same three ways as [watchCostsForTrip] —
   /// attached to an item, a group, or the trip directly — resolving each cost's
-  /// trip from whichever link it has. Powers the total shown on each overview
-  /// card in one query instead of a stream per trip. Trips with no costs are
-  /// absent from the map.
+  /// trip from whichever link it has, and leaving out the costs of unchosen
+  /// alternative branches (see [_countsTowardTotals]). Powers the total shown on
+  /// each overview card in one query instead of a stream per trip. Trips with no
+  /// costs are absent from the map.
   Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() {
     final query = select(costs).join([
       leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
       leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
-    ]);
+      leftOuterJoin(
+        alternatives,
+        alternatives.id.equalsExp(itineraryItems.alternativeId),
+      ),
+    ])
+      ..where(_countsTowardTotals());
     return query.watch().map((rows) {
       final byTrip = <int, Map<Currency, int>>{};
       for (final row in rows) {

@@ -709,6 +709,97 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get alternatives => 'Alternatives';
+
+  @override
+  String get planAlternatives => 'Plan alternatives';
+
+  @override
+  String get planAlternativesHint =>
+      'Turn this entry into a choice: plan several options and pick the one you go with.';
+
+  @override
+  String get itemInOptionHint =>
+      'Part of an option — it counts toward the trip only while that option is chosen.';
+
+  @override
+  String get decisionDefaultLabel => 'Choice';
+
+  @override
+  String get decisionActions => 'Decision actions';
+
+  @override
+  String get decisionRename => 'Rename choice';
+
+  @override
+  String get decisionNameLabel => 'Choice name (optional)';
+
+  @override
+  String get decisionNameHint => 'e.g. Saturday afternoon';
+
+  @override
+  String get decisionDelete => 'Delete choice';
+
+  @override
+  String get decisionDeleteQuestion => 'Delete this choice?';
+
+  @override
+  String get decisionDeleteBody =>
+      'Every option and all their entries and expenses are deleted.';
+
+  @override
+  String optionLetter(String letter) {
+    return 'Option $letter';
+  }
+
+  @override
+  String get optionChosen => 'Chosen';
+
+  @override
+  String get optionChoose => 'Use this option';
+
+  @override
+  String get optionEmpty => 'Nothing planned in this option yet.';
+
+  @override
+  String get optionAdd => 'Add option';
+
+  @override
+  String get optionRename => 'Rename option';
+
+  @override
+  String get optionNameLabel => 'Option name (optional)';
+
+  @override
+  String get optionNameHint => 'e.g. Museum day';
+
+  @override
+  String get optionDelete => 'Delete option';
+
+  @override
+  String get optionDeleteQuestion => 'Delete this option?';
+
+  @override
+  String get optionDeleteBody =>
+      'Its entries and their expenses are deleted with it. The other options are kept.';
+
+  @override
+  String get optionKeepOnly => 'Keep only this option';
+
+  @override
+  String get optionKeepOnlyQuestion => 'Keep only this option?';
+
+  @override
+  String get optionKeepOnlyBody =>
+      'Its entries move back into the day and the other options are deleted.';
+
+  @override
+  String get optionPrevious => 'Previous option';
+
+  @override
+  String get optionNext => 'Next option';
+
+  @override
   String get grouping => 'Grouping';
 
   @override

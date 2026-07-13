@@ -17,7 +17,10 @@ typedef TripCosts = ({
   List<Cost> tripLevel,
 });
 
-/// Costs for a trip, bucketed by their attachment ([TripCosts]).
+/// Costs for a trip, bucketed by their attachment ([TripCosts]). Includes the
+/// costs of alternative branches that were not chosen, so each branch can show
+/// its own price — anything that sums money instead wants
+/// [countedCostsProvider].
 final costsForTripProvider =
     StreamProvider.autoDispose.family<TripCosts, int>((ref, tripId) {
   return ref.watch(repositoryProvider).watchCostsForTrip(tripId).map((costs) {
@@ -35,6 +38,14 @@ final costsForTripProvider =
     }
     return (byItem: byItem, byGroup: byGroup, tripLevel: tripLevel);
   });
+});
+
+/// The costs of a trip that count toward its money: everything except the costs
+/// of alternative branches that were not chosen. Backs the trip's total and its
+/// statistics, so an option considered and dropped never inflates the budget.
+final countedCostsProvider =
+    StreamProvider.autoDispose.family<List<Cost>, int>((ref, tripId) {
+  return ref.watch(repositoryProvider).watchCountedCostsForTrip(tripId);
 });
 
 /// Saved reason labels for the reuse dropdown.
@@ -85,19 +96,15 @@ final tripBeneficiariesProvider = StreamProvider.autoDispose
 
 /// Per-currency expense statistics for a trip: category breakdown, per-person
 /// paid/share/balance, and settle-up suggestions. Derives from the trip's
-/// costs, their beneficiary split, and the participant roster (the fallback
-/// split for costs with no explicit beneficiaries).
+/// counted costs (the chosen plan — see [countedCostsProvider]), their
+/// beneficiary split, and the participant roster (the fallback split for costs
+/// with no explicit beneficiaries).
 final tripStatsProvider =
     Provider.autoDispose.family<TripStats, int>((ref, tripId) {
-  final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
+  final costs = ref.watch(countedCostsProvider(tripId)).value;
   final beneficiaries = ref.watch(tripBeneficiariesProvider(tripId)).value;
   final participants = ref.watch(tripParticipantsProvider(tripId)).value;
-  if (tripCosts == null) return const TripStats([]);
-  final costs = [
-    ...tripCosts.byItem.values.expand((c) => c),
-    ...tripCosts.byGroup.values.expand((c) => c),
-    ...tripCosts.tripLevel,
-  ];
+  if (costs == null) return const TripStats([]);
   return computeTripStats(
     costs,
     beneficiaries ?? const {},

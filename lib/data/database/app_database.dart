@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/database/database_location.dart';
+import 'daos/alternative_dao.dart';
 import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
 import 'daos/group_dao.dart';
@@ -15,6 +16,8 @@ part 'app_database.g.dart';
   tables: [
     Trips,
     ItemGroups,
+    AlternativeSets,
+    Alternatives,
     ItineraryItems,
     Costs,
     CostReasons,
@@ -25,7 +28,15 @@ part 'app_database.g.dart';
     ChecklistItems,
     CollapsedDays,
   ],
-  daos: [TripDao, ItineraryDao, CostDao, ChecklistDao, GroupDao, SharingDao],
+  daos: [
+    TripDao,
+    ItineraryDao,
+    CostDao,
+    ChecklistDao,
+    GroupDao,
+    AlternativeDao,
+    SharingDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   /// Opens (or creates) the database file at [path].
@@ -36,7 +47,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 18;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -156,6 +167,22 @@ class AppDatabase extends _$AppDatabase {
           // settled.
           if (from < 16) {
             await m.addColumn(costs, costs.paid);
+          }
+          // v17 added alternatives: competing versions of one stretch of a day,
+          // one of which is chosen. Create the two tables, then the nullable
+          // foreign key on items pointing at a branch. Nothing to backfill —
+          // every existing item stays loose (alternative_id NULL).
+          if (from < 17) {
+            await m.createTable(alternativeSets);
+            await m.createTable(alternatives);
+            await m.addColumn(itineraryItems, itineraryItems.alternativeId);
+          }
+          // v18 dropped alternative_sets.decided, a flag marking the chosen
+          // branch as the one actually taken. It was redundant: the chosen branch
+          // is already what the trip counts, so after the fact you just point it
+          // at what happened. Only reachable from v17, which shipped the column.
+          if (from == 17) {
+            await m.alterTable(TableMigration(alternativeSets));
           }
         },
         beforeOpen: (details) async {

@@ -18,6 +18,7 @@ import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../itinerary/application/itinerary_providers.dart';
+import '../../itinerary/day_blocks.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
 import '../../sharing/trip_bundle.dart';
@@ -108,14 +109,41 @@ class TripDetailScreen extends ConsumerWidget {
     }
   }
 
+  /// Reorders a day's blocks. A day's ordering space is shared by its loose items
+  /// and its decisions, so the renumbering writes to both tables — the items
+  /// inside a decision's options are untouched, they are ordered within their
+  /// option (see [_onReorderItems]).
   Future<void> _onReorder(
     WidgetRef ref,
-    List<ItineraryItem> dayItems,
+    List<DayBlock> dayBlocks,
     int oldIndex,
     int newIndex,
   ) async {
     // newIndex is already adjusted for the removal (onReorderItem semantics).
-    final reordered = List<ItineraryItem>.of(dayItems);
+    final reordered = List<DayBlock>.of(dayBlocks);
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+    final repo = ref.read(repositoryProvider);
+    for (var i = 0; i < reordered.length; i++) {
+      final block = reordered[i];
+      if (block.sortOrder == i) continue;
+      switch (block) {
+        case ItemBlock(:final item):
+          await repo.updateItem(item.copyWith(sortOrder: i));
+        case DecisionBlock(:final set):
+          await repo.setAlternativeSetSortOrder(set.id, i);
+      }
+    }
+  }
+
+  /// Renumbers a plain list of items — one option's contents.
+  Future<void> _onReorderItems(
+    WidgetRef ref,
+    List<ItineraryItem> items,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final reordered = List<ItineraryItem>.of(items);
     final moved = reordered.removeAt(oldIndex);
     reordered.insert(newIndex, moved);
     final repo = ref.read(repositoryProvider);
@@ -126,17 +154,21 @@ class TripDetailScreen extends ConsumerWidget {
     }
   }
 
-  /// Adds a place to [day] named [location] with no form step — used by the
-  /// "you just arrived here" quick-add chip, which reuses the previous leg's
-  /// destination so the name isn't typed twice.
+  /// Adds a place to [day] — or to one option of a decision on it — named
+  /// [location] with no form step. Used by the "you just arrived here" quick-add
+  /// chip, which reuses the previous leg's destination so the name isn't typed
+  /// twice. An entry inside an option is ordered within that option.
   Future<void> _quickAddPlace(
     WidgetRef ref,
     DateTime day,
-    String location,
-  ) async {
+    String location, {
+    int? alternativeId,
+  }) async {
     final repo = ref.read(repositoryProvider);
     final normalized = normalizeDay(day);
-    final sortOrder = await repo.nextSortOrder(tripId, normalized);
+    final sortOrder = alternativeId != null
+        ? await repo.nextSortOrderInAlternative(alternativeId)
+        : await repo.nextSortOrder(tripId, normalized);
     await repo.addItem(
       ItineraryItemsCompanion.insert(
         tripId: tripId,
@@ -144,6 +176,7 @@ class TripDetailScreen extends ConsumerWidget {
         kind: ItemKind.place,
         sortOrder: Value(sortOrder),
         location: Value(location),
+        alternativeId: Value(alternativeId),
       ),
     );
   }
@@ -158,6 +191,14 @@ class TripDetailScreen extends ConsumerWidget {
     final costsByItem = tripCosts?.byItem ?? const {};
     final costsByGroup = tripCosts?.byGroup ?? const {};
     final tripLevelCosts = tripCosts?.tripLevel ?? const <Cost>[];
+    // The header's total is the plan's, so it leaves out the costs of branches
+    // that were not chosen — unlike the chips above, which price every branch.
+    final countedCosts =
+        ref.watch(countedCostsProvider(tripId)).value ?? const <Cost>[];
+    final sets = ref.watch(alternativeSetsProvider(tripId)).value ??
+        const <int, AlternativeSet>{};
+    final branches = ref.watch(alternativeBranchesProvider(tripId)).value ??
+        const <int, List<Alternative>>{};
     final groups =
         ref.watch(groupsProvider(tripId)).value ?? const <int, ItemGroup>{};
     final participants =
@@ -214,11 +255,7 @@ class TripDetailScreen extends ConsumerWidget {
                   _TripHeader(
                     trip: trip,
                     accent: accent,
-                    allCosts: [
-                      ...costsByItem.values.expand((c) => c),
-                      ...costsByGroup.values.expand((c) => c),
-                      ...tripLevelCosts,
-                    ],
+                    allCosts: countedCosts,
                     tripLevelCosts: tripLevelCosts,
                     participants: participants,
                     localeName: localeName,
@@ -238,6 +275,8 @@ class TripDetailScreen extends ConsumerWidget {
                     costsByItem: costsByItem,
                     groups: groups,
                     costsByGroup: costsByGroup,
+                    sets: sets,
+                    branches: branches,
                     localeName: localeName,
                     collapsedDays: collapsedDays,
                     onToggleDayCollapsed: (day, collapsed) => ref
@@ -249,20 +288,28 @@ class TripDetailScreen extends ConsumerWidget {
                       kind: item.kind,
                       existing: item,
                     ),
-                    onAddPlace: (day) => showItemFormSheet(
+                    onAddPlace: (day, {alternativeId}) => showItemFormSheet(
                       context,
                       tripId: tripId,
                       kind: ItemKind.place,
                       day: day,
+                      alternativeId: alternativeId,
                     ),
-                    onQuickAddPlace: (day, location) =>
-                        _quickAddPlace(ref, day, location),
-                    onAddTransport: (day, fromDefault) => showItemFormSheet(
+                    onQuickAddPlace: (day, location, {alternativeId}) =>
+                        _quickAddPlace(
+                      ref,
+                      day,
+                      location,
+                      alternativeId: alternativeId,
+                    ),
+                    onAddTransport: (day, fromDefault, {alternativeId}) =>
+                        showItemFormSheet(
                       context,
                       tripId: tripId,
                       kind: ItemKind.transport,
                       day: day,
                       defaultFromLocation: fromDefault,
+                      alternativeId: alternativeId,
                     ),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
@@ -270,8 +317,10 @@ class TripDetailScreen extends ConsumerWidget {
                       groupId: cost.groupId,
                       existing: cost,
                     ),
-                    onReorder: (dayItems, oldIndex, newIndex) =>
-                        _onReorder(ref, dayItems, oldIndex, newIndex),
+                    onReorder: (dayBlocks, oldIndex, newIndex) =>
+                        _onReorder(ref, dayBlocks, oldIndex, newIndex),
+                    onReorderBranch: (branchItems, oldIndex, newIndex) =>
+                        _onReorderItems(ref, branchItems, oldIndex, newIndex),
                   ),
                 ],
               );

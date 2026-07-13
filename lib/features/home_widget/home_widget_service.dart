@@ -12,6 +12,7 @@ import '../../core/settings/locale_provider.dart';
 import '../../data/database/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../itinerary/application/itinerary_providers.dart';
+import '../itinerary/live_items.dart';
 import '../trips/application/trip_providers.dart';
 import 'widget_payload.dart';
 
@@ -37,8 +38,15 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
     if (featured != null && isTripOngoing(featured, now)) {
       final today = normalizeDay(now);
       final items = await repo.watchItems(featured.id).first;
-      todayItems =
-          items.where((i) => normalizeDay(i.date) == today).toList();
+      // Only the plan as it stands reaches the home screen: an option that was
+      // considered but not chosen is not on today's agenda.
+      final chosen = chosenBranchIds(
+        await repo.watchAlternativeBranches(featured.id).first,
+      );
+      todayItems = [
+        for (final item in liveItems(items, chosen))
+          if (normalizeDay(item.date) == today) item,
+      ];
     }
 
     final locale = _resolveLocale(ref);
@@ -151,6 +159,11 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
       final items = ongoing
           ? ref.watch(itineraryProvider(featured.id)).value
           : null;
+      // Switching to another branch changes what today's plan *is* without
+      // touching any item, so the branches belong in the signature too.
+      final branches = ongoing
+          ? ref.watch(alternativeBranchesProvider(featured.id)).value
+          : null;
 
       // Use each row's full toString (Drift data classes include every column)
       // so any in-place edit re-pushes — enumerating fields by hand has twice
@@ -158,6 +171,7 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
       final signature = [
         for (final t in trips) t.toString(),
         'items:${items?.map((i) => i.toString()).join('|') ?? ''}',
+        'branches:${branches?.values.expand((b) => b).join('|') ?? ''}',
       ].join('~');
 
       if (signature != _lastSignature) {

@@ -93,6 +93,68 @@ class ItemGroups extends Table {
   BoolColumn get collapsed => boolean().withDefault(const Constant(false))();
 }
 
+/// A decision point in a day's plan: "what do we do on Saturday afternoon?".
+/// Holds two or more [Alternatives] — competing versions of one stretch of the
+/// day — of which exactly one is [Alternatives.chosen].
+///
+/// A set occupies a single slot in its day's timeline: [date] and [sortOrder]
+/// place it among that day's loose items exactly as an item's own [date] and
+/// [ItineraryItems.sortOrder] would. Only the chosen branch's items are shown
+/// there, and only their costs count toward any total (see [Alternatives]).
+///
+/// There is deliberately no "this is what we actually did" flag: the chosen
+/// branch *is* what the trip counts, so after the fact you simply point it at
+/// what happened. A second marker would only record whether the decision was
+/// still open — which nothing in the app asks.
+class AlternativeSets extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get tripId =>
+      integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+
+  /// The day this decision sits on (normalized to midnight, like
+  /// [ItineraryItems.date]). Branches are day-scoped: every item in every branch
+  /// belongs to this day.
+  DateTimeColumn get date => dateTime()();
+
+  /// The set's position within its day, sharing one ordering space with that
+  /// day's loose items — the whole set is a single block in the timeline.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// Optional display name (e.g. "Saturday afternoon"); falls back to a default
+  /// label in the UI.
+  TextColumn get label => text().nullable()();
+}
+
+/// One branch of an [AlternativeSets] decision: a competing version of that
+/// stretch of the day, holding its own [ItineraryItems] (which may in turn be
+/// bundled into [ItemGroups] — a group never straddles two branches).
+///
+/// At most one branch per set has [chosen] set, enforced in `AlternativeDao`
+/// rather than by the schema (mirroring [People.isMe]); this avoids a circular
+/// foreign key between the two tables. The chosen branch is the one the timeline
+/// shows by default and the only one whose costs count toward the trip's totals
+/// and its expense splitting — the roads not taken must not inflate the budget.
+///
+/// Deleting a branch **deletes its items** (unlike dissolving an [ItemGroups]
+/// group, which frees them): a branch's items exist only as part of that branch,
+/// so rejecting an option is meant to remove its plan, not scatter it across the
+/// day.
+class Alternatives extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get setId =>
+      integer().references(AlternativeSets, #id, onDelete: KeyAction.cascade)();
+
+  /// Optional display name (e.g. "Museum day"); falls back to "Option A/B/C".
+  TextColumn get label => text().nullable()();
+
+  /// Order of the branches within the set — the order they are swiped through.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// Whether this is the branch currently selected for the plan. At most one per
+  /// set; see the class doc.
+  BoolColumn get chosen => boolean().withDefault(const Constant(false))();
+}
+
 /// A single itinerary entry belonging to a trip. Columns are shared across both
 /// [ItemKind]s; the ones that only apply to one kind are nullable.
 class ItineraryItems extends Table {
@@ -106,10 +168,21 @@ class ItineraryItems extends Table {
   IntColumn get groupId =>
       integer().nullable().references(ItemGroups, #id, onDelete: KeyAction.setNull)();
 
+  /// The branch this item belongs to, or null when it is a *loose* item sitting
+  /// directly on its day (the ordinary case). Cascades on branch deletion — see
+  /// [Alternatives]. An item in an unchosen branch is invisible to the day's
+  /// timeline, the trip totals and the home-screen widget.
+  IntColumn get alternativeId => integer()
+      .nullable()
+      .references(Alternatives, #id, onDelete: KeyAction.cascade)();
+
   /// The day this entry belongs to (time component ignored, normalised to midnight).
   DateTimeColumn get date => dateTime()();
 
-  /// Manual ordering within a day, used for reordering the timeline.
+  /// Manual ordering, used for reordering the timeline. For a loose item this
+  /// orders it within its day, in one space shared with that day's
+  /// [AlternativeSets]; for an item inside a branch it orders it within that
+  /// branch.
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 
   IntColumn get kind => intEnum<ItemKind>()();

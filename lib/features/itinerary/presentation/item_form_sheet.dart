@@ -23,6 +23,7 @@ Future<void> showItemFormSheet(
   DateTime? day,
   ItineraryItem? existing,
   String? defaultFromLocation,
+  int? alternativeId,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -35,6 +36,7 @@ Future<void> showItemFormSheet(
       day: day,
       existing: existing,
       defaultFromLocation: defaultFromLocation,
+      alternativeId: alternativeId,
     ),
   );
 }
@@ -47,12 +49,18 @@ class ItemFormSheet extends ConsumerStatefulWidget {
     this.day,
     this.existing,
     this.defaultFromLocation,
+    this.alternativeId,
   });
 
   final int tripId;
   final ItemKind kind;
   final DateTime? day;
   final ItineraryItem? existing;
+
+  /// When set, a new entry is planned inside this option of a decision rather
+  /// than directly on the day. Ignored when editing (an item's option is changed
+  /// from the decision's card, not here).
+  final int? alternativeId;
 
   /// Pre-fills the "from" field when adding a new transport leg, so the day's
   /// current location isn't typed again. Ignored when editing.
@@ -148,17 +156,19 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
 
     if (_isEditing) {
       final existing = widget.existing!;
-      // Preserve the item's current group membership. `widget.existing` is a
-      // snapshot from when the sheet opened, so if the item was grouped while
-      // the sheet was open (via "Group with next"), its groupId lives only in
-      // live data — reading it back here keeps this full-row update from
-      // clobbering the membership.
+      // Preserve the item's current group and option membership. `widget.existing`
+      // is a snapshot from when the sheet opened, so if the item was grouped, or
+      // turned into a decision, while the sheet was open, that membership lives
+      // only in live data — reading it back here keeps this full-row update from
+      // clobbering it.
       final live = ref.read(itineraryProvider(widget.tripId)).value;
       var currentGroupId = existing.groupId;
+      var currentAlternativeId = existing.alternativeId;
       if (live != null) {
         for (final it in live) {
           if (it.id == existing.id) {
             currentGroupId = it.groupId;
+            currentAlternativeId = it.alternativeId;
             break;
           }
         }
@@ -168,6 +178,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           id: existing.id,
           tripId: existing.tripId,
           groupId: currentGroupId,
+          alternativeId: currentAlternativeId,
           date: _date,
           sortOrder: existing.sortOrder,
           kind: widget.kind,
@@ -182,13 +193,19 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
         ),
       );
     } else {
-      final sortOrder = await repo.nextSortOrder(widget.tripId, _date);
+      // An entry planned inside an option is ordered within that option; one on
+      // the day is ordered among the day's blocks.
+      final alternativeId = widget.alternativeId;
+      final sortOrder = alternativeId != null
+          ? await repo.nextSortOrderInAlternative(alternativeId)
+          : await repo.nextSortOrder(widget.tripId, _date);
       await repo.addItem(
         ItineraryItemsCompanion.insert(
           tripId: widget.tripId,
           date: _date,
           kind: widget.kind,
           sortOrder: Value(sortOrder),
+          alternativeId: Value(alternativeId),
           title: Value(nullIfEmpty(title)),
           startMinutes: Value(_startMinutes),
           endMinutes: Value(_endMinutes),
@@ -434,21 +451,54 @@ class _GroupingAndCosts extends ConsumerWidget {
       }
     }
     final groupId = current?.groupId;
+    final alternativeId = current?.alternativeId;
 
-    // The next item on the same day, in itinerary order — the "group with next"
-    // target. Items arrive already ordered by day / sort / time.
+    // The next item in the same list — the "group with next" target. That list is
+    // the day for a loose item, and the option itself for an item inside one, so
+    // a group can never straddle two options.
     ItineraryItem? next;
     if (current != null) {
-      final day = normalizeDay(current.date);
-      final sameDay =
-          items.where((it) => normalizeDay(it.date) == day).toList();
-      final index = sameDay.indexWhere((it) => it.id == itemId);
-      if (index >= 0 && index + 1 < sameDay.length) next = sameDay[index + 1];
+      final siblings = alternativeId != null
+          ? items.where((it) => it.alternativeId == alternativeId).toList()
+          : items
+              .where((it) =>
+                  it.alternativeId == null &&
+                  normalizeDay(it.date) == normalizeDay(current!.date))
+              .toList();
+      final index = siblings.indexWhere((it) => it.id == itemId);
+      if (index >= 0 && index + 1 < siblings.length) next = siblings[index + 1];
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(l10n.alternatives, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        if (alternativeId != null)
+          Text(
+            l10n.itemInOptionHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else ...[
+          Text(
+            l10n.planAlternativesHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.alt_route, size: 18),
+              label: Text(l10n.planAlternatives),
+              onPressed: () => repo.createAlternativeSetFromItem(itemId),
+            ),
+          ),
+        ],
+        const SizedBox(height: 20),
         Text(l10n.grouping, style: theme.textTheme.labelLarge),
         const SizedBox(height: 4),
         if (groupId == null) ...[
