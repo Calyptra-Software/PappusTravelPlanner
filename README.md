@@ -13,7 +13,10 @@ Linux, Windows, macOS, and iOS.
 ## Features
 
 - **Trips overview** — create, edit, and delete trips with a destination, date range,
-  notes, participants, and an accent colour.
+  notes, participants, and an accent colour. Search by text, filter by status
+  (upcoming / ongoing / past / undated), participant, or date range, and sort by date,
+  name, creation, or total expenses. Switch the overview to a **month calendar** where
+  each trip is a bar in its accent colour spanning its days.
 - **Structured itinerary** — a vertical, day-by-day timeline of **places** and
   **transport legs** (walk, bike, ski, car, taxi, bus, train, tram, subway, ferry,
   flight, …) with times and notes. Reorder and group items within a day; collapse/expand days.
@@ -32,11 +35,16 @@ Linux, Windows, macOS, and iOS.
 - **Trip statistics & settle-up** — a per-trip stats screen breaks spending down by
   category and by person (paid vs. fair share) and suggests a minimal set of payments to
   settle up, computed per currency (no conversion between currencies).
+- **Share a single trip** — export a trip as a self-contained `.tpt` bundle and send it
+  to another user of the app (Android share sheet; desktop saves the file). Opening or
+  importing a bundle recreates the trip with its itinerary, alternatives, groups, costs,
+  and checklists. The format is independent of the local database's IDs, so sender and
+  recipient don't need matching data.
 - **Portable database** — all data lives in a single SQLite file. On desktop you can
   open/create the database anywhere; on Android you can import/export it. Copy the
   file between devices and platforms and open it as-is.
-- **Localization** — English and German, switchable in-app (or follow the system
-  language). Dates and currencies use locale-correct formatting.
+- **Localization & theme** — English and German, and a light/dark/system theme, both
+  switchable in-app. Dates and currencies use locale-correct formatting.
 - **Android home-screen widget** — shows your current/next trip, a countdown, and
   today's plan; tapping it opens the trip.
 - **Offline-first** — no account, no server; everything works without a network.
@@ -176,12 +184,18 @@ Open the in-app **Settings → Database** section to:
 The file is a standard SQLite database, so you can copy it between devices/platforms
 and open it directly. Deleting a trip cascades to its itinerary items and their costs.
 
+To move **one trip** rather than the whole database, use the share button on the trip
+screen: it writes a `.tpt` bundle (a portable snapshot of that trip alone) which the
+recipient imports from the trips overview. On Android a `.tpt` file shared to — or
+opened with — Travel Planner goes straight into the import flow.
+
 ## Localization
 
 - Strings live in `lib/l10n/app_en.arb` and `lib/l10n/app_de.arb`.
 - After editing the ARB files, run `flutter gen-l10n` (or just build the app) to
   regenerate the localized Dart classes.
-- Switch the language in-app under **Settings → Language** (System / English / German).
+- Switch the language in-app under **Settings → Language** (System / English / German),
+  and the theme under **Settings → Theme** (System / Light / Dark).
 
 ## Developer notes
 
