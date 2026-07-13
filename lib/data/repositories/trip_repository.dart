@@ -140,8 +140,7 @@ class TripRepository {
       _db.checklistDao.addItem(item);
   Future<bool> updateChecklistItem(ChecklistItem item) =>
       _db.checklistDao.updateItem(item);
-  Future<int> deleteChecklistItem(int id) =>
-      _db.checklistDao.deleteItem(id);
+  Future<int> deleteChecklistItem(int id) => _db.checklistDao.deleteItem(id);
   Future<int> nextChecklistItemSortOrder(int checklistId) =>
       _db.checklistDao.nextItemSortOrder(checklistId);
 

@@ -131,7 +131,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
         await SharePlus.instance.share(
           ShareParams(
             files: [
-              XFile.fromData(bytes, name: fileName, mimeType: tripBundleMimeType),
+              XFile.fromData(
+                bytes,
+                name: fileName,
+                mimeType: tripBundleMimeType,
+              ),
             ],
             fileNameOverrides: [fileName],
             subject: title,
@@ -229,9 +233,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     // that were not chosen — unlike the chips above, which price every branch.
     final countedCosts =
         ref.watch(countedCostsProvider(tripId)).value ?? const <Cost>[];
-    final sets = ref.watch(alternativeSetsProvider(tripId)).value ??
+    final sets =
+        ref.watch(alternativeSetsProvider(tripId)).value ??
         const <int, AlternativeSet>{};
-    final branches = ref.watch(alternativeBranchesProvider(tripId)).value ??
+    final branches =
+        ref.watch(alternativeBranchesProvider(tripId)).value ??
         const <int, List<Alternative>>{};
     final groups =
         ref.watch(groupsProvider(tripId)).value ?? const <int, ItemGroup>{};
@@ -337,20 +343,20 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     ),
                     onQuickAddPlace: (day, location, {alternativeId}) =>
                         _quickAddPlace(
-                      ref,
-                      day,
-                      location,
-                      alternativeId: alternativeId,
-                    ),
+                          ref,
+                          day,
+                          location,
+                          alternativeId: alternativeId,
+                        ),
                     onAddTransport: (day, fromDefault, {alternativeId}) =>
                         showItemFormSheet(
-                      context,
-                      tripId: tripId,
-                      kind: ItemKind.transport,
-                      day: day,
-                      defaultFromLocation: fromDefault,
-                      alternativeId: alternativeId,
-                    ),
+                          context,
+                          tripId: tripId,
+                          kind: ItemKind.transport,
+                          day: day,
+                          defaultFromLocation: fromDefault,
+                          alternativeId: alternativeId,
+                        ),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
                       itemId: cost.itemId,

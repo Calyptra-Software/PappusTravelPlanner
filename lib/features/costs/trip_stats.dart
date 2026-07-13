@@ -120,12 +120,9 @@ TripStats computeTripStats(
   for (final currency in Currency.values) {
     final group = byCurrency[currency];
     if (group == null || group.isEmpty) continue;
-    result.add(_statsForCurrency(
-      currency,
-      group,
-      beneficiariesByCost,
-      participantNames,
-    ));
+    result.add(
+      _statsForCurrency(currency, group, beneficiariesByCost, participantNames),
+    );
   }
   return TripStats(result);
 }
@@ -137,26 +134,33 @@ CurrencyStats _statsForCurrency(
   List<String> participantNames,
 ) {
   final total = costs.fold<int>(0, (sum, c) => sum + c.amountMinor);
-  final paidTotal =
-      costs.where((c) => c.paid).fold<int>(0, (sum, c) => sum + c.amountMinor);
+  final paidTotal = costs
+      .where((c) => c.paid)
+      .fold<int>(0, (sum, c) => sum + c.amountMinor);
 
   // By category (reason).
   final categoryAmounts = <String, int>{};
   final categoryCounts = <String, int>{};
   for (final cost in costs) {
-    categoryAmounts.update(cost.reason, (v) => v + cost.amountMinor,
-        ifAbsent: () => cost.amountMinor);
+    categoryAmounts.update(
+      cost.reason,
+      (v) => v + cost.amountMinor,
+      ifAbsent: () => cost.amountMinor,
+    );
     categoryCounts.update(cost.reason, (v) => v + 1, ifAbsent: () => 1);
   }
-  final byCategory = categoryAmounts.entries
-      .map((e) => CategoryStat(
-            reason: e.key,
-            amountMinor: e.value,
-            count: categoryCounts[e.key]!,
-            fraction: total == 0 ? 0 : e.value / total,
-          ))
-      .toList()
-    ..sort((a, b) => b.amountMinor.compareTo(a.amountMinor));
+  final byCategory =
+      categoryAmounts.entries
+          .map(
+            (e) => CategoryStat(
+              reason: e.key,
+              amountMinor: e.value,
+              count: categoryCounts[e.key]!,
+              fraction: total == 0 ? 0 : e.value / total,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => b.amountMinor.compareTo(a.amountMinor));
 
   // Paid and share, per person.
   final paid = <String, int>{};
@@ -164,24 +168,33 @@ CurrencyStats _statsForCurrency(
   for (final cost in costs) {
     final payer = cost.paidBy;
     if (payer != null && payer.isNotEmpty) {
-      paid.update(payer, (v) => v + cost.amountMinor,
-          ifAbsent: () => cost.amountMinor);
+      paid.update(
+        payer,
+        (v) => v + cost.amountMinor,
+        ifAbsent: () => cost.amountMinor,
+      );
     }
-    final beneficiaries = beneficiariesByCost[cost.id]?.map((p) => p.name).toList() ??
+    final beneficiaries =
+        beneficiariesByCost[cost.id]?.map((p) => p.name).toList() ??
         participantNames;
     for (final entry in _splitEvenly(cost.amountMinor, beneficiaries).entries) {
-      share.update(entry.key, (v) => v + entry.value,
-          ifAbsent: () => entry.value);
+      share.update(
+        entry.key,
+        (v) => v + entry.value,
+        ifAbsent: () => entry.value,
+      );
     }
   }
 
   final names = {...paid.keys, ...share.keys}.toList()..sort();
   final byPerson = names
-      .map((name) => PersonStat(
-            name: name,
-            paidMinor: paid[name] ?? 0,
-            shareMinor: share[name] ?? 0,
-          ))
+      .map(
+        (name) => PersonStat(
+          name: name,
+          paidMinor: paid[name] ?? 0,
+          shareMinor: share[name] ?? 0,
+        ),
+      )
       .toList();
 
   return CurrencyStats(
@@ -206,8 +219,11 @@ Map<String, int> _splitEvenly(int amountMinor, List<String> names) {
   final result = <String, int>{};
   for (var i = 0; i < ordered.length; i++) {
     // A name can repeat if it appears twice; accumulate rather than overwrite.
-    result.update(ordered[i], (v) => v + base + (i < remainder ? 1 : 0),
-        ifAbsent: () => base + (i < remainder ? 1 : 0));
+    result.update(
+      ordered[i],
+      (v) => v + base + (i < remainder ? 1 : 0),
+      ifAbsent: () => base + (i < remainder ? 1 : 0),
+    );
   }
   return result;
 }
@@ -217,29 +233,34 @@ Map<String, int> _splitEvenly(int amountMinor, List<String> names) {
 /// (costs with a payer but no split, or vice-versa, leave a remainder); the pass
 /// settles as much as it can and stops.
 List<Transfer> _settle(List<PersonStat> people) {
-  final creditors = people
-      .where((p) => p.netMinor > 0)
-      .map((p) => _Bal(p.name, p.netMinor))
-      .toList()
-    ..sort((a, b) => b.amount.compareTo(a.amount));
-  final debtors = people
-      .where((p) => p.netMinor < 0)
-      .map((p) => _Bal(p.name, -p.netMinor))
-      .toList()
-    ..sort((a, b) => b.amount.compareTo(a.amount));
+  final creditors =
+      people
+          .where((p) => p.netMinor > 0)
+          .map((p) => _Bal(p.name, p.netMinor))
+          .toList()
+        ..sort((a, b) => b.amount.compareTo(a.amount));
+  final debtors =
+      people
+          .where((p) => p.netMinor < 0)
+          .map((p) => _Bal(p.name, -p.netMinor))
+          .toList()
+        ..sort((a, b) => b.amount.compareTo(a.amount));
 
   final transfers = <Transfer>[];
   var i = 0;
   var j = 0;
   while (i < creditors.length && j < debtors.length) {
-    final amount =
-        creditors[i].amount < debtors[j].amount ? creditors[i].amount : debtors[j].amount;
+    final amount = creditors[i].amount < debtors[j].amount
+        ? creditors[i].amount
+        : debtors[j].amount;
     if (amount > 0) {
-      transfers.add(Transfer(
-        from: debtors[j].name,
-        to: creditors[i].name,
-        amountMinor: amount,
-      ));
+      transfers.add(
+        Transfer(
+          from: debtors[j].name,
+          to: creditors[i].name,
+          amountMinor: amount,
+        ),
+      );
     }
     creditors[i].amount -= amount;
     debtors[j].amount -= amount;

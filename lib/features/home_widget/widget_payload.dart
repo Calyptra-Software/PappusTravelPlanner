@@ -97,15 +97,22 @@ Trip? pickFeaturedTrip(List<Trip> trips, DateTime now) {
     ..sort((a, b) => a.startDate!.compareTo(b.startDate!));
   if (ongoing.isNotEmpty) return ongoing.first;
 
-  final upcoming = trips
-      .where((t) => t.startDate != null && normalizeDay(t.startDate!).isAfter(today))
-      .toList()
-    ..sort((a, b) => a.startDate!.compareTo(b.startDate!));
+  final upcoming =
+      trips
+          .where(
+            (t) =>
+                t.startDate != null &&
+                normalizeDay(t.startDate!).isAfter(today),
+          )
+          .toList()
+        ..sort((a, b) => a.startDate!.compareTo(b.startDate!));
   if (upcoming.isNotEmpty) return upcoming.first;
 
   final past = trips.where((t) => t.startDate != null).toList()
-    ..sort((a, b) =>
-        (b.endDate ?? b.startDate!).compareTo(a.endDate ?? a.startDate!));
+    ..sort(
+      (a, b) =>
+          (b.endDate ?? b.startDate!).compareTo(a.endDate ?? a.startDate!),
+    );
   if (past.isNotEmpty) return past.first;
 
   return trips.first;
@@ -115,9 +122,10 @@ Trip? pickFeaturedTrip(List<Trip> trips, DateTime now) {
 String _itemText(ItineraryItem item, AppLocalizations l10n) {
   if (item.kind == ItemKind.transport) {
     final mode = (item.mode ?? TransportMode.other).label(l10n);
-    final route = [item.fromLocation ?? '', item.toLocation ?? '']
-        .where((s) => s.isNotEmpty)
-        .join(' → ');
+    final route = [
+      item.fromLocation ?? '',
+      item.toLocation ?? '',
+    ].where((s) => s.isNotEmpty).join(' → ');
     return route.isEmpty ? mode : '$mode: $route';
   }
   final title = item.title ?? '';
@@ -170,12 +178,14 @@ WidgetPayload buildWidgetPayload(
   List<WidgetRow> rows = const [];
   if (ongoing && todayItems.isNotEmpty) {
     rows = todayItems
-        .map((i) => WidgetRow(
-              id: i.id,
-              time: widgetTime(i),
-              text: _itemText(i, l10n),
-              note: i.notes?.trim() ?? '',
-            ))
+        .map(
+          (i) => WidgetRow(
+            id: i.id,
+            time: widgetTime(i),
+            text: _itemText(i, l10n),
+            note: i.notes?.trim() ?? '',
+          ),
+        )
         .toList();
   }
 

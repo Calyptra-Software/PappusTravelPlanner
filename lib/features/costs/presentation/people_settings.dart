@@ -22,8 +22,9 @@ class PeopleSettings extends ConsumerWidget {
           ListTile(
             title: Text(
               l10n.noPeople,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           )
         else
@@ -40,12 +41,15 @@ class PeopleSettings extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
-                    icon: Icon(person.isMe
-                        ? Icons.how_to_reg
-                        : Icons.person_add_alt_outlined),
+                    icon: Icon(
+                      person.isMe
+                          ? Icons.how_to_reg
+                          : Icons.person_add_alt_outlined,
+                    ),
                     color: person.isMe ? theme.colorScheme.primary : null,
-                    tooltip:
-                        person.isMe ? l10n.personIsMe : l10n.personMarkAsMe,
+                    tooltip: person.isMe
+                        ? l10n.personIsMe
+                        : l10n.personMarkAsMe,
                     onPressed: () => ref
                         .read(costControllerProvider)
                         .setMePerson(person.isMe ? null : person.id),
@@ -75,7 +79,10 @@ class PeopleSettings extends ConsumerWidget {
   }
 
   Future<void> _addPerson(BuildContext context, WidgetRef ref) async {
-    final name = await _promptName(context, title: (l10n) => l10n.personAddTitle);
+    final name = await _promptName(
+      context,
+      title: (l10n) => l10n.personAddTitle,
+    );
     if (name == null || name.isEmpty) return;
     await ref.read(costControllerProvider).addPerson(name);
   }

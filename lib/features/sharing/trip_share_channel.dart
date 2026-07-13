@@ -10,8 +10,9 @@ import 'presentation/trip_import.dart';
 
 /// Method channel matching the native `MainActivity` bridge, over which a
 /// received `.tpt` file's bytes arrive as Base64.
-const MethodChannel _channel =
-    MethodChannel('com.travelplanner.travelplanner/trip_import');
+const MethodChannel _channel = MethodChannel(
+  'com.travelplanner.travelplanner/trip_import',
+);
 
 /// Receiving shared files is wired only on Android; a no-op elsewhere.
 bool get _supported =>
@@ -24,8 +25,11 @@ Uint8List? _decode(Object? arg) => arg is String ? base64Decode(arg) : null;
 /// start) as well as a live push.
 void _deliver(WidgetRef ref, Uint8List bytes) {
   WidgetsBinding.instance.addPostFrameCallback((_) {
-    final context =
-        ref.read(routerProvider).routerDelegate.navigatorKey.currentContext;
+    final context = ref
+        .read(routerProvider)
+        .routerDelegate
+        .navigatorKey
+        .currentContext;
     if (context != null) importTripBytes(context, ref, bytes);
   });
 }

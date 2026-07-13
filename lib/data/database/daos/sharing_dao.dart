@@ -10,21 +10,23 @@ part 'sharing_dao.g.dart';
 /// [TripBundle] (and, later, writes one back). Spans every trip-scoped table
 /// plus the two global rosters ([People], [CostReasons]) it must denormalize,
 /// so it lives in its own accessor rather than any one feature's DAO.
-@DriftAccessor(tables: [
-  Trips,
-  ItemGroups,
-  AlternativeSets,
-  Alternatives,
-  ItineraryItems,
-  Costs,
-  CostReasons,
-  People,
-  TripParticipants,
-  CostBeneficiaries,
-  Checklists,
-  ChecklistItems,
-  CollapsedDays,
-])
+@DriftAccessor(
+  tables: [
+    Trips,
+    ItemGroups,
+    AlternativeSets,
+    Alternatives,
+    ItineraryItems,
+    Costs,
+    CostReasons,
+    People,
+    TripParticipants,
+    CostBeneficiaries,
+    Checklists,
+    ChecklistItems,
+    CollapsedDays,
+  ],
+)
 class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   SharingDao(super.db);
 
@@ -33,43 +35,45 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   /// bundle's opaque local keys; references to the shared [People] and
   /// [CostReasons] rosters are denormalized to names / labels.
   Future<TripBundle?> exportTrip(int tripId) async {
-    final trip =
-        await (select(trips)..where((t) => t.id.equals(tripId))).getSingleOrNull();
+    final trip = await (select(
+      trips,
+    )..where((t) => t.id.equals(tripId))).getSingleOrNull();
     if (trip == null) return null;
 
-    final groupRows =
-        await (select(itemGroups)..where((g) => g.tripId.equals(tripId))).get();
-    final setRows = await (select(alternativeSets)
-          ..where((s) => s.tripId.equals(tripId)))
-        .get();
+    final groupRows = await (select(
+      itemGroups,
+    )..where((g) => g.tripId.equals(tripId))).get();
+    final setRows = await (select(
+      alternativeSets,
+    )..where((s) => s.tripId.equals(tripId))).get();
     final branchRows = setRows.isEmpty
         ? <Alternative>[]
         : await (select(alternatives)
-              ..where((a) => a.setId.isIn([for (final s in setRows) s.id]))
-              ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
-            .get();
-    final itemRows = await (select(itineraryItems)
-          ..where((i) => i.tripId.equals(tripId)))
-        .get();
+                ..where((a) => a.setId.isIn([for (final s in setRows) s.id]))
+                ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
+              .get();
+    final itemRows = await (select(
+      itineraryItems,
+    )..where((i) => i.tripId.equals(tripId))).get();
     final costRows = await _costsForTrip(tripId);
     final beneficiariesByCost = await _beneficiaryNamesByCost(tripId);
-    final checklistRows = await (select(checklists)
-          ..where((c) => c.tripId.equals(tripId)))
-        .get();
+    final checklistRows = await (select(
+      checklists,
+    )..where((c) => c.tripId.equals(tripId))).get();
     final checklistItemRows = checklistRows.isEmpty
         ? <ChecklistItem>[]
-        : await (select(checklistItems)
-              ..where((ci) => ci.checklistId.isIn(
-                    [for (final c in checklistRows) c.id],
-                  )))
-            .get();
-    final collapsedRows = await (select(collapsedDays)
-          ..where((d) => d.tripId.equals(tripId)))
-        .get();
+        : await (select(checklistItems)..where(
+                (ci) =>
+                    ci.checklistId.isIn([for (final c in checklistRows) c.id]),
+              ))
+              .get();
+    final collapsedRows = await (select(
+      collapsedDays,
+    )..where((d) => d.tripId.equals(tripId))).get();
     final participantNames = await _participantNames(tripId);
-    final reasonIcons = await _reasonIconsFor(
-      {for (final c in costRows) c.reason},
-    );
+    final reasonIcons = await _reasonIconsFor({
+      for (final c in costRows) c.reason,
+    });
 
     return TripBundle(
       // A trip without decisions stays readable by an older app, which knows
@@ -203,15 +207,17 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
 
       await _ensureReasons(bundle);
 
-      final tripId = await into(trips).insert(TripsCompanion.insert(
-        title: bundle.trip.title,
-        destination: Value(bundle.trip.destination),
-        startDate: Value(bundle.trip.startDate),
-        endDate: Value(bundle.trip.endDate),
-        notes: Value(bundle.trip.notes),
-        colorValue: Value(bundle.trip.colorValue),
-        createdAt: Value(bundle.trip.createdAt),
-      ));
+      final tripId = await into(trips).insert(
+        TripsCompanion.insert(
+          title: bundle.trip.title,
+          destination: Value(bundle.trip.destination),
+          startDate: Value(bundle.trip.startDate),
+          endDate: Value(bundle.trip.endDate),
+          notes: Value(bundle.trip.notes),
+          colorValue: Value(bundle.trip.colorValue),
+          createdAt: Value(bundle.trip.createdAt),
+        ),
+      );
 
       // Groups first, so items and costs can point at their new ids.
       final groupIds = <int, int>{};
@@ -279,17 +285,19 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         // A cost attaches to exactly one target. Fall back to the trip if it was
         // a trip-level cost (or, defensively, if its item/group didn't resolve).
         final tripLevel = itemId == null && groupId == null;
-        final costId = await into(costs).insert(CostsCompanion.insert(
-          itemId: Value(itemId),
-          groupId: Value(groupId),
-          tripId: Value(tripLevel ? tripId : null),
-          amountMinor: c.amountMinor,
-          currency: c.currency,
-          reason: c.reason,
-          paidBy: Value(c.paidBy),
-          paid: Value(c.paid),
-          createdAt: Value(c.createdAt),
-        ));
+        final costId = await into(costs).insert(
+          CostsCompanion.insert(
+            itemId: Value(itemId),
+            groupId: Value(groupId),
+            tripId: Value(tripLevel ? tripId : null),
+            amountMinor: c.amountMinor,
+            currency: c.currency,
+            reason: c.reason,
+            paidBy: Value(c.paidBy),
+            paid: Value(c.paid),
+            createdAt: Value(c.createdAt),
+          ),
+        );
         for (final name in c.beneficiaries) {
           await into(costBeneficiaries).insert(
             CostBeneficiariesCompanion.insert(
@@ -312,13 +320,15 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
           ),
         );
         for (final ci in cl.items) {
-          await into(checklistItems).insert(ChecklistItemsCompanion.insert(
-            checklistId: checklistId,
-            label: ci.label,
-            done: Value(ci.done),
-            sortOrder: Value(ci.sortOrder),
-            createdAt: Value(ci.createdAt),
-          ));
+          await into(checklistItems).insert(
+            ChecklistItemsCompanion.insert(
+              checklistId: checklistId,
+              label: ci.label,
+              done: Value(ci.done),
+              sortOrder: Value(ci.sortOrder),
+              createdAt: Value(ci.createdAt),
+            ),
+          );
         }
       }
 
@@ -350,8 +360,9 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       PeopleCompanion.insert(name: name),
       mode: InsertMode.insertOrIgnore,
     );
-    final person =
-        await (select(people)..where((p) => p.name.equals(name))).getSingle();
+    final person = await (select(
+      people,
+    )..where((p) => p.name.equals(name))).getSingle();
     return person.id;
   }
 
@@ -361,9 +372,9 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   Future<void> _ensureReasons(TripBundle bundle) async {
     final labels = {for (final c in bundle.costs) c.reason};
     if (labels.isEmpty) return;
-    final existing = await (select(costReasons)
-          ..where((r) => r.label.isIn(labels.toList())))
-        .get();
+    final existing = await (select(
+      costReasons,
+    )..where((r) => r.label.isIn(labels.toList()))).get();
     final existingLabels = {for (final r in existing) r.label};
     for (final label in labels) {
       if (existingLabels.contains(label)) continue;
@@ -384,33 +395,41 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   /// All costs belonging to the trip, whichever way they are attached (to an
   /// item, a group, or the trip directly). Mirrors `CostDao.watchCostsForTrip`.
   Future<List<Cost>> _costsForTrip(int tripId) {
-    final query = select(costs).join([
-      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
-      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
-    ])
-      ..where(
-        itineraryItems.tripId.equals(tripId) |
-            itemGroups.tripId.equals(tripId) |
-            costs.tripId.equals(tripId),
-      )
-      ..orderBy([OrderingTerm(expression: costs.createdAt)]);
+    final query =
+        select(costs).join([
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(costs.itemId),
+            ),
+            leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+          ])
+          ..where(
+            itineraryItems.tripId.equals(tripId) |
+                itemGroups.tripId.equals(tripId) |
+                costs.tripId.equals(tripId),
+          )
+          ..orderBy([OrderingTerm(expression: costs.createdAt)]);
     return query.map((row) => row.readTable(costs)).get();
   }
 
   /// Beneficiary person names for every cost in the trip, keyed by cost id.
   Future<Map<int, List<String>>> _beneficiaryNamesByCost(int tripId) async {
-    final query = select(costBeneficiaries).join([
-      innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
-      innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
-      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
-      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
-    ])
-      ..where(
-        itineraryItems.tripId.equals(tripId) |
-            itemGroups.tripId.equals(tripId) |
-            costs.tripId.equals(tripId),
-      )
-      ..orderBy([OrderingTerm(expression: people.name)]);
+    final query =
+        select(costBeneficiaries).join([
+            innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
+            innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(costs.itemId),
+            ),
+            leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+          ])
+          ..where(
+            itineraryItems.tripId.equals(tripId) |
+                itemGroups.tripId.equals(tripId) |
+                costs.tripId.equals(tripId),
+          )
+          ..orderBy([OrderingTerm(expression: people.name)]);
     final rows = await query.get();
     final byCost = <int, List<String>>{};
     for (final row in rows) {
@@ -422,14 +441,15 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
 
   /// Names of the trip's participants, alphabetical.
   Future<List<String>> _participantNames(int tripId) {
-    final query = select(people).join([
-      innerJoin(
-        tripParticipants,
-        tripParticipants.personId.equalsExp(people.id),
-      ),
-    ])
-      ..where(tripParticipants.tripId.equals(tripId))
-      ..orderBy([OrderingTerm(expression: people.name)]);
+    final query =
+        select(people).join([
+            innerJoin(
+              tripParticipants,
+              tripParticipants.personId.equalsExp(people.id),
+            ),
+          ])
+          ..where(tripParticipants.tripId.equals(tripId))
+          ..orderBy([OrderingTerm(expression: people.name)]);
     return query.map((row) => row.readTable(people).name).get();
   }
 
@@ -437,9 +457,11 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   /// shared reasons keep their icon on import.
   Future<Map<String, int>> _reasonIconsFor(Set<String> labels) async {
     if (labels.isEmpty) return const {};
-    final rows = await (select(costReasons)
-          ..where((r) => r.label.isIn(labels.toList()) & r.iconId.isNotNull()))
-        .get();
+    final rows =
+        await (select(costReasons)..where(
+              (r) => r.label.isIn(labels.toList()) & r.iconId.isNotNull(),
+            ))
+            .get();
     return {for (final r in rows) r.label: r.iconId!};
   }
 }

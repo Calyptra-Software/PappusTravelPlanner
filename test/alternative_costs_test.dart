@@ -26,17 +26,16 @@ void main() {
     required String title,
     int sortOrder = 0,
     int? alternativeId,
-  }) =>
-      db.itineraryDao.addItem(
-        ItineraryItemsCompanion.insert(
-          tripId: tripId,
-          date: day,
-          kind: ItemKind.place,
-          title: Value(title),
-          sortOrder: Value(sortOrder),
-          alternativeId: Value(alternativeId),
-        ),
-      );
+  }) => db.itineraryDao.addItem(
+    ItineraryItemsCompanion.insert(
+      tripId: tripId,
+      date: day,
+      kind: ItemKind.place,
+      title: Value(title),
+      sortOrder: Value(sortOrder),
+      alternativeId: Value(alternativeId),
+    ),
+  );
 
   Future<int> makeCost({
     int? itemId,
@@ -44,16 +43,17 @@ void main() {
     int? tripId,
     required int amountMinor,
     String paidBy = 'Ada',
-  }) =>
-      db.costDao.addCost(CostsCompanion.insert(
-        itemId: Value(itemId),
-        groupId: Value(groupId),
-        tripId: Value(tripId),
-        amountMinor: amountMinor,
-        currency: Currency.eur,
-        reason: 'Ticket',
-        paidBy: Value(paidBy),
-      ));
+  }) => db.costDao.addCost(
+    CostsCompanion.insert(
+      itemId: Value(itemId),
+      groupId: Value(groupId),
+      tripId: Value(tripId),
+      amountMinor: amountMinor,
+      currency: Currency.eur,
+      reason: 'Ticket',
+      paidBy: Value(paidBy),
+    ),
+  );
 
   Future<List<Alternative>> branchesOf(int tripId, int setId) async =>
       (await db.alternativeDao.watchBranchesForTrip(tripId).first)[setId]!;
@@ -114,14 +114,13 @@ void main() {
     await db.tripDao.addParticipant(tripId, 'Bob');
 
     final counted = await db.costDao.watchCountedCostsForTrip(tripId).first;
-    final beneficiaries =
-        await db.costDao.watchBeneficiariesForTrip(tripId).first;
+    final beneficiaries = await db.costDao
+        .watchBeneficiariesForTrip(tripId)
+        .first;
     final participants = await db.tripDao.watchParticipants(tripId).first;
-    final stats = computeTripStats(
-      counted,
-      beneficiaries,
-      [for (final p in participants) p.name],
-    );
+    final stats = computeTripStats(counted, beneficiaries, [
+      for (final p in participants) p.name,
+    ]);
 
     // Ada paid the €15 museum and owes half of it; the €50 boat trip they did
     // not take must not show up in anyone's balance.
@@ -199,18 +198,15 @@ void main() {
     final all = await db.alternativeDao.watchBranchesForTrip(tripId).first;
     final chosen = chosenBranchIds(all);
     expect(chosen, {branches.first.id});
-    expect(
-      liveItems(items, chosen).map((i) => i.title),
-      ['Museum', 'Dinner'],
-    );
+    expect(liveItems(items, chosen).map((i) => i.title), ['Museum', 'Dinner']);
 
     await db.alternativeDao.chooseAlternative(branches.last.id);
     final after = chosenBranchIds(
       await db.alternativeDao.watchBranchesForTrip(tripId).first,
     );
-    expect(
-      liveItems(items, after).map((i) => i.title),
-      ['Boat trip', 'Dinner'],
-    );
+    expect(liveItems(items, after).map((i) => i.title), [
+      'Boat trip',
+      'Dinner',
+    ]);
   });
 }

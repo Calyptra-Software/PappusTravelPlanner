@@ -69,10 +69,12 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
 /// Clamps the active locale to one the app actually ships (en/de), defaulting
 /// to English, so [AppLocalizations.delegate.load] always succeeds.
 Locale _resolveLocale(WidgetRef ref) {
-  final chosen = ref.read(localeProvider) ??
+  final chosen =
+      ref.read(localeProvider) ??
       WidgetsBinding.instance.platformDispatcher.locale;
-  return AppLocalizations.supportedLocales
-          .any((l) => l.languageCode == chosen.languageCode)
+  return AppLocalizations.supportedLocales.any(
+        (l) => l.languageCode == chosen.languageCode,
+      )
       ? Locale(chosen.languageCode)
       : const Locale('en');
 }
@@ -154,7 +156,8 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
     if (_widgetSupported) {
       final trips = ref.watch(tripListProvider).value ?? const [];
       final featured = pickFeaturedTrip(trips, DateTime.now());
-      final ongoing = featured != null && isTripOngoing(featured, DateTime.now());
+      final ongoing =
+          featured != null && isTripOngoing(featured, DateTime.now());
       // Watch the ongoing trip's items so edits to today's plan re-sync too.
       final items = ongoing
           ? ref.watch(itineraryProvider(featured.id)).value

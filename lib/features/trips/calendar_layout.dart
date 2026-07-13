@@ -100,16 +100,19 @@ List<CalendarWeek> buildMonthGrid(
       final startCol = s.start.isBefore(weekStart)
           ? 0
           : s.start.difference(weekStart).inDays;
-      final endCol =
-          s.end.isAfter(weekEnd) ? 6 : s.end.difference(weekStart).inDays;
-      clipped.add(CalendarSpan(
-        trip: s.trip,
-        startCol: startCol,
-        endCol: endCol,
-        continuesLeft: s.start.isBefore(weekStart),
-        continuesRight: s.end.isAfter(weekEnd),
-        lane: 0,
-      ));
+      final endCol = s.end.isAfter(weekEnd)
+          ? 6
+          : s.end.difference(weekStart).inDays;
+      clipped.add(
+        CalendarSpan(
+          trip: s.trip,
+          startCol: startCol,
+          endCol: endCol,
+          continuesLeft: s.start.isBefore(weekStart),
+          continuesRight: s.end.isAfter(weekEnd),
+          lane: 0,
+        ),
+      );
     }
 
     // Greedy lane packing: earliest-starting, then longest, first. Because the
@@ -129,21 +132,21 @@ List<CalendarWeek> buildMonthGrid(
       } else {
         laneEnds[lane] = span.endCol;
       }
-      placed.add(CalendarSpan(
-        trip: span.trip,
-        startCol: span.startCol,
-        endCol: span.endCol,
-        continuesLeft: span.continuesLeft,
-        continuesRight: span.continuesRight,
-        lane: lane,
-      ));
+      placed.add(
+        CalendarSpan(
+          trip: span.trip,
+          startCol: span.startCol,
+          endCol: span.endCol,
+          continuesLeft: span.continuesLeft,
+          continuesRight: span.continuesRight,
+          lane: lane,
+        ),
+      );
     }
 
-    weeks.add(CalendarWeek(
-      days: days,
-      spans: placed,
-      laneCount: laneEnds.length,
-    ));
+    weeks.add(
+      CalendarWeek(days: days, spans: placed, laneCount: laneEnds.length),
+    );
   }
   return weeks;
 }

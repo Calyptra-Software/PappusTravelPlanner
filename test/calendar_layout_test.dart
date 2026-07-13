@@ -3,20 +3,15 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/features/trips/calendar_layout.dart';
 
 void main() {
-  Trip trip({
-    required int id,
-    DateTime? start,
-    DateTime? end,
-  }) =>
-      Trip(
-        id: id,
-        title: 'Trip $id',
-        destination: '',
-        startDate: start,
-        endDate: end,
-        colorValue: 0xFF00695C,
-        createdAt: DateTime(2026, 1, 1),
-      );
+  Trip trip({required int id, DateTime? start, DateTime? end}) => Trip(
+    id: id,
+    title: 'Trip $id',
+    destination: '',
+    startDate: start,
+    endDate: end,
+    colorValue: 0xFF00695C,
+    createdAt: DateTime(2026, 1, 1),
+  );
 
   // Monday-start week for July 2026: the 1st is a Wednesday.
   const mondayFirst = 1;
@@ -33,11 +28,13 @@ void main() {
     });
 
     test('time component is stripped', () {
-      final span = tripSpan(trip(
-        id: 1,
-        start: DateTime(2026, 7, 5, 14, 30),
-        end: DateTime(2026, 7, 8, 9),
-      ));
+      final span = tripSpan(
+        trip(
+          id: 1,
+          start: DateTime(2026, 7, 5, 14, 30),
+          end: DateTime(2026, 7, 8, 9),
+        ),
+      );
       expect(span!.start, DateTime(2026, 7, 5));
       expect(span.end, DateTime(2026, 7, 8));
     });
@@ -66,18 +63,17 @@ void main() {
     });
 
     test('undated trips never appear on the grid', () {
-      final weeks =
-          buildMonthGrid(DateTime(2026, 7), [trip(id: 1)], mondayFirst);
+      final weeks = buildMonthGrid(DateTime(2026, 7), [
+        trip(id: 1),
+      ], mondayFirst);
       expect(weeks.every((w) => w.spans.isEmpty), isTrue);
     });
 
     test('a trip within one week spans the right columns', () {
       // Jul 1 (Wed) .. Jul 3 (Fri). Monday-start week => cols 2..4.
-      final weeks = buildMonthGrid(
-        DateTime(2026, 7),
-        [trip(id: 1, start: DateTime(2026, 7, 1), end: DateTime(2026, 7, 3))],
-        mondayFirst,
-      );
+      final weeks = buildMonthGrid(DateTime(2026, 7), [
+        trip(id: 1, start: DateTime(2026, 7, 1), end: DateTime(2026, 7, 3)),
+      ], mondayFirst);
       final span = weeks.expand((w) => w.spans).single;
       expect(span.startCol, 2);
       expect(span.endCol, 4);
@@ -88,11 +84,9 @@ void main() {
 
     test('a trip crossing a week boundary is clipped and flagged', () {
       // Jul 4 (Sat) .. Jul 8 (Wed) crosses the Sun/Mon boundary.
-      final weeks = buildMonthGrid(
-        DateTime(2026, 7),
-        [trip(id: 1, start: DateTime(2026, 7, 4), end: DateTime(2026, 7, 8))],
-        mondayFirst,
-      );
+      final weeks = buildMonthGrid(DateTime(2026, 7), [
+        trip(id: 1, start: DateTime(2026, 7, 4), end: DateTime(2026, 7, 8)),
+      ], mondayFirst);
       final segments = weeks.expand((w) => w.spans).toList();
       expect(segments, hasLength(2));
       final first = segments.firstWhere((s) => s.continuesRight);
@@ -102,28 +96,20 @@ void main() {
     });
 
     test('overlapping trips are packed into separate lanes', () {
-      final weeks = buildMonthGrid(
-        DateTime(2026, 7),
-        [
-          trip(id: 1, start: DateTime(2026, 7, 1), end: DateTime(2026, 7, 3)),
-          trip(id: 2, start: DateTime(2026, 7, 2), end: DateTime(2026, 7, 4)),
-        ],
-        mondayFirst,
-      );
+      final weeks = buildMonthGrid(DateTime(2026, 7), [
+        trip(id: 1, start: DateTime(2026, 7, 1), end: DateTime(2026, 7, 3)),
+        trip(id: 2, start: DateTime(2026, 7, 2), end: DateTime(2026, 7, 4)),
+      ], mondayFirst);
       final spans = weeks.expand((w) => w.spans).toList();
       final lanes = {for (final s in spans) s.trip.id: s.lane};
       expect(lanes[1], isNot(lanes[2]));
     });
 
     test('non-overlapping trips reuse the same lane', () {
-      final weeks = buildMonthGrid(
-        DateTime(2026, 7),
-        [
-          trip(id: 1, start: DateTime(2026, 7, 1), end: DateTime(2026, 7, 2)),
-          trip(id: 2, start: DateTime(2026, 7, 4), end: DateTime(2026, 7, 5)),
-        ],
-        mondayFirst,
-      );
+      final weeks = buildMonthGrid(DateTime(2026, 7), [
+        trip(id: 1, start: DateTime(2026, 7, 1), end: DateTime(2026, 7, 2)),
+        trip(id: 2, start: DateTime(2026, 7, 4), end: DateTime(2026, 7, 5)),
+      ], mondayFirst);
       // Both fall in the same week row; being disjoint they share lane 0.
       final week = weeks.firstWhere((w) => w.spans.length == 2);
       expect(week.spans.every((s) => s.lane == 0), isTrue);
@@ -133,18 +119,14 @@ void main() {
 
   group('overflowByColumn', () {
     test('counts bars hidden beyond the visible lanes', () {
-      final weeks = buildMonthGrid(
-        DateTime(2026, 7),
-        [
-          for (var i = 0; i < 4; i++)
-            trip(
-              id: i + 1,
-              start: DateTime(2026, 7, 1),
-              end: DateTime(2026, 7, 1),
-            ),
-        ],
-        mondayFirst,
-      );
+      final weeks = buildMonthGrid(DateTime(2026, 7), [
+        for (var i = 0; i < 4; i++)
+          trip(
+            id: i + 1,
+            start: DateTime(2026, 7, 1),
+            end: DateTime(2026, 7, 1),
+          ),
+      ], mondayFirst);
       final week = weeks.firstWhere((w) => w.spans.isNotEmpty);
       // Four bars stacked on Jul 1 (col 2); showing 2 lanes hides 2.
       final overflow = overflowByColumn(week, 2);

@@ -197,36 +197,39 @@ void main() {
     raw.close();
   }
 
-  test('v17 -> v18 drops the "decided" flag, keeping the decision itself',
-      () async {
-    seedV17Database();
+  test(
+    'v17 -> v18 drops the "decided" flag, keeping the decision itself',
+    () async {
+      seedV17Database();
 
-    final db = AppDatabase.forTesting(NativeDatabase(File(path)));
-    addTearDown(db.close);
+      final db = AppDatabase.forTesting(NativeDatabase(File(path)));
+      addTearDown(db.close);
 
-    // The decision, its options and their items all survive the column going.
-    final sets = await db.alternativeDao.watchSetsForTrip(1).first;
-    expect(sets.values.single.label, 'Saturday afternoon');
-    expect(sets.values.single.sortOrder, 1);
-    final branches =
-        (await db.alternativeDao.watchBranchesForTrip(1).first)[1]!;
-    expect(branches.map((b) => b.label), ['Museum day', null]);
-    expect(branches.where((b) => b.chosen).map((b) => b.id), [1]);
+      // The decision, its options and their items all survive the column going.
+      final sets = await db.alternativeDao.watchSetsForTrip(1).first;
+      expect(sets.values.single.label, 'Saturday afternoon');
+      expect(sets.values.single.sortOrder, 1);
+      final branches = (await db.alternativeDao
+          .watchBranchesForTrip(1)
+          .first)[1]!;
+      expect(branches.map((b) => b.label), ['Museum day', null]);
+      expect(branches.where((b) => b.chosen).map((b) => b.id), [1]);
 
-    // Items still point at their option — the foreign key survived the table
-    // being rebuilt — and only the chosen option's cost counts.
-    final items = await db.itineraryDao.watchItemsForTrip(1).first;
-    ItineraryItem item(String title) =>
-        items.firstWhere((i) => i.title == title);
-    expect(item('Louvre').alternativeId, 1);
-    expect(item('Boat trip').alternativeId, 2);
-    expect(item('Dinner').alternativeId, isNull);
-    final counted = await db.costDao.watchCountedCostsForTrip(1).first;
-    expect(counted.single.amountMinor, 2200);
+      // Items still point at their option — the foreign key survived the table
+      // being rebuilt — and only the chosen option's cost counts.
+      final items = await db.itineraryDao.watchItemsForTrip(1).first;
+      ItineraryItem item(String title) =>
+          items.firstWhere((i) => i.title == title);
+      expect(item('Louvre').alternativeId, 1);
+      expect(item('Boat trip').alternativeId, 2);
+      expect(item('Dinner').alternativeId, isNull);
+      final counted = await db.costDao.watchCountedCostsForTrip(1).first;
+      expect(counted.single.amountMinor, 2200);
 
-    // Choosing still works against the rebuilt table.
-    await db.alternativeDao.chooseAlternative(2);
-    final after = (await db.alternativeDao.watchBranchesForTrip(1).first)[1]!;
-    expect(after.where((b) => b.chosen).map((b) => b.id), [2]);
-  });
+      // Choosing still works against the rebuilt table.
+      await db.alternativeDao.chooseAlternative(2);
+      final after = (await db.alternativeDao.watchBranchesForTrip(1).first)[1]!;
+      expect(after.where((b) => b.chosen).map((b) => b.id), [2]);
+    },
+  );
 }

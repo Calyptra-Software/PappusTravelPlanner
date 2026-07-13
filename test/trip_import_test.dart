@@ -55,14 +55,14 @@ void main() {
   }
 
   Uint8List validBundle() => TripBundle(
-        schemaVersion: db.schemaVersion,
-        trip: BundleTrip(
-          title: 'Rome',
-          destination: 'Italy',
-          colorValue: 0xFF00695C,
-          createdAt: DateTime(2026),
-        ),
-      ).encode();
+    schemaVersion: db.schemaVersion,
+    trip: BundleTrip(
+      title: 'Rome',
+      destination: 'Italy',
+      colorValue: 0xFF00695C,
+      createdAt: DateTime(2026),
+    ),
+  ).encode();
 
   testWidgets('imports a valid bundle and opens the new trip', (tester) async {
     await pumpImporter(tester, validBundle());
@@ -77,8 +77,9 @@ void main() {
     expect(trips.single.title, 'Rome');
   });
 
-  testWidgets('shows an error and stays put for an invalid file',
-      (tester) async {
+  testWidgets('shows an error and stays put for an invalid file', (
+    tester,
+  ) async {
     await pumpImporter(tester, Uint8List.fromList([1, 2, 3, 4]));
 
     await tester.tap(find.text('import'));
@@ -91,8 +92,9 @@ void main() {
     expect(trips, isEmpty);
   });
 
-  testWidgets('shows an error for a bundle from a newer app version',
-      (tester) async {
+  testWidgets('shows an error for a bundle from a newer app version', (
+    tester,
+  ) async {
     final bytes = TripBundle(
       formatVersion: TripBundle.currentFormatVersion + 1,
       schemaVersion: db.schemaVersion,

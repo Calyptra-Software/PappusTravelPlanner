@@ -98,9 +98,11 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
             : [
                 IconButton(
                   tooltip: _calendarView ? l10n.listView : l10n.calendarView,
-                  icon: Icon(_calendarView
-                      ? Icons.view_list_outlined
-                      : Icons.calendar_month_outlined),
+                  icon: Icon(
+                    _calendarView
+                        ? Icons.view_list_outlined
+                        : Icons.calendar_month_outlined,
+                  ),
                   onPressed: () =>
                       setState(() => _calendarView = !_calendarView),
                 ),
@@ -248,7 +250,9 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
       initialDateRange: initial,
     );
     if (range != null) {
-      setState(() => _draft = _draft.copyWith(from: range.start, to: range.end));
+      setState(
+        () => _draft = _draft.copyWith(from: range.start, to: range.end),
+      );
     }
   }
 
@@ -270,8 +274,10 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
               Row(
                 children: [
                   Expanded(
-                    child: Text(l10n.filterAndSort,
-                        style: theme.textTheme.titleLarge),
+                    child: Text(
+                      l10n.filterAndSort,
+                      style: theme.textTheme.titleLarge,
+                    ),
                   ),
                   TextButton(
                     onPressed: _draft.hasActiveFilters
@@ -305,7 +311,11 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
                       label: Text(
                         hasRange
                             ? formatDateRange(
-                                l10n, localeName, _draft.from, _draft.to)
+                                l10n,
+                                localeName,
+                                _draft.from,
+                                _draft.to,
+                              )
                             : l10n.anyDate,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -315,8 +325,12 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
                     IconButton(
                       tooltip: l10n.clearFilters,
                       icon: const Icon(Icons.clear),
-                      onPressed: () => setState(() =>
-                          _draft = _draft.copyWith(clearFrom: true, clearTo: true)),
+                      onPressed: () => setState(
+                        () => _draft = _draft.copyWith(
+                          clearFrom: true,
+                          clearTo: true,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -376,8 +390,9 @@ class _SectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
         text,
-        style: theme.textTheme.labelLarge
-            ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -396,8 +411,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.luggage_outlined,
-                size: 72, color: theme.colorScheme.primary),
+            Icon(
+              Icons.luggage_outlined,
+              size: 72,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: 16),
             Text(l10n.noTripsTitle, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),
@@ -430,8 +448,11 @@ class _NoResults extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_outlined,
-                size: 72, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.search_off_outlined,
+              size: 72,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 16),
             Text(l10n.noTripsFoundTitle, style: theme.textTheme.titleLarge),
             const SizedBox(height: 8),

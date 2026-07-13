@@ -15,8 +15,9 @@ const String kDbPathPrefKey = 'db_path';
 
 /// The path of the database the app is currently using. Changing it rebuilds
 /// [databaseProvider] (and everything downstream) against the new file.
-final activeDbPathProvider =
-    NotifierProvider<ActiveDbPath, String>(ActiveDbPath.new);
+final activeDbPathProvider = NotifierProvider<ActiveDbPath, String>(
+  ActiveDbPath.new,
+);
 
 class ActiveDbPath extends Notifier<String> {
   @override

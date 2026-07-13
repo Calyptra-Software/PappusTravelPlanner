@@ -11,19 +11,19 @@ void main() {
     String reason = 'Food',
     String? paidBy,
     bool paid = false,
-  }) =>
-      Cost(
-        id: ++nextId,
-        tripId: 1,
-        amountMinor: minor,
-        currency: currency,
-        reason: reason,
-        paidBy: paidBy,
-        paid: paid,
-        createdAt: DateTime(2026),
-      );
+  }) => Cost(
+    id: ++nextId,
+    tripId: 1,
+    amountMinor: minor,
+    currency: currency,
+    reason: reason,
+    paidBy: paidBy,
+    paid: paid,
+    createdAt: DateTime(2026),
+  );
 
-  Person person(String name) => Person(id: name.hashCode, name: name, isMe: false);
+  Person person(String name) =>
+      Person(id: name.hashCode, name: name, isMe: false);
 
   CurrencyStats onlyCurrency(TripStats stats) {
     expect(stats.byCurrency, hasLength(1));
@@ -56,11 +56,7 @@ void main() {
   group('paid vs open', () {
     test('sums paid expenses into paidMinor, leaving the rest open', () {
       final stats = computeTripStats(
-        [
-          cost(3000, paid: true),
-          cost(1000, paid: true),
-          cost(6000),
-        ],
+        [cost(3000, paid: true), cost(1000, paid: true), cost(6000)],
         const {},
         const [],
       );
@@ -70,12 +66,16 @@ void main() {
       expect(cur.openMinor, 6000);
     });
 
-    test('paidMinor is zero and openMinor is the total when nothing is paid',
-        () {
-      final cur = onlyCurrency(computeTripStats([cost(2500)], const {}, const []));
-      expect(cur.paidMinor, 0);
-      expect(cur.openMinor, 2500);
-    });
+    test(
+      'paidMinor is zero and openMinor is the total when nothing is paid',
+      () {
+        final cur = onlyCurrency(
+          computeTripStats([cost(2500)], const {}, const []),
+        );
+        expect(cur.paidMinor, 0);
+        expect(cur.openMinor, 2500);
+      },
+    );
 
     test('tracks paid/open per currency', () {
       final stats = computeTripStats(
@@ -87,8 +87,12 @@ void main() {
         const {},
         const [],
       );
-      final eur = stats.byCurrency.firstWhere((c) => c.currency == Currency.eur);
-      final usd = stats.byCurrency.firstWhere((c) => c.currency == Currency.usd);
+      final eur = stats.byCurrency.firstWhere(
+        (c) => c.currency == Currency.eur,
+      );
+      final usd = stats.byCurrency.firstWhere(
+        (c) => c.currency == Currency.usd,
+      );
       expect(eur.paidMinor, 1000);
       expect(eur.openMinor, 0);
       expect(usd.paidMinor, 500);
@@ -97,30 +101,30 @@ void main() {
   });
 
   group('splits and balances', () {
-    test('splits a cost across its beneficiaries, remainder to first names', () {
-      final c = cost(1000, paidBy: 'Ann'); // 10.00 across 3 people
-      final stats = computeTripStats(
-        [c],
-        {
-          c.id: [person('Ann'), person('Bo'), person('Cy')],
-        },
-        const [],
-      );
-      final byPerson = {
-        for (final p in onlyCurrency(stats).byPerson) p.name: p,
-      };
-      // 1000 / 3 = 333 each, remainder 1 to the first name alphabetically.
-      expect(byPerson['Ann']!.shareMinor, 334);
-      expect(byPerson['Bo']!.shareMinor, 333);
-      expect(byPerson['Cy']!.shareMinor, 333);
-      // Shares sum back to the full amount exactly.
-      expect(
-        byPerson.values.fold<int>(0, (s, p) => s + p.shareMinor),
-        1000,
-      );
-      expect(byPerson['Ann']!.paidMinor, 1000);
-      expect(byPerson['Ann']!.netMinor, 1000 - 334);
-    });
+    test(
+      'splits a cost across its beneficiaries, remainder to first names',
+      () {
+        final c = cost(1000, paidBy: 'Ann'); // 10.00 across 3 people
+        final stats = computeTripStats(
+          [c],
+          {
+            c.id: [person('Ann'), person('Bo'), person('Cy')],
+          },
+          const [],
+        );
+        final byPerson = {
+          for (final p in onlyCurrency(stats).byPerson) p.name: p,
+        };
+        // 1000 / 3 = 333 each, remainder 1 to the first name alphabetically.
+        expect(byPerson['Ann']!.shareMinor, 334);
+        expect(byPerson['Bo']!.shareMinor, 333);
+        expect(byPerson['Cy']!.shareMinor, 333);
+        // Shares sum back to the full amount exactly.
+        expect(byPerson.values.fold<int>(0, (s, p) => s + p.shareMinor), 1000);
+        expect(byPerson['Ann']!.paidMinor, 1000);
+        expect(byPerson['Ann']!.netMinor, 1000 - 334);
+      },
+    );
 
     test('falls back to participants when a cost has no beneficiaries', () {
       final stats = computeTripStats(
@@ -170,15 +174,14 @@ void main() {
 
   test('keeps currencies separate, in enum order', () {
     final stats = computeTripStats(
-      [
-        cost(2000, currency: Currency.usd),
-        cost(1000, currency: Currency.eur),
-      ],
+      [cost(2000, currency: Currency.usd), cost(1000, currency: Currency.eur)],
       const {},
       const [],
     );
-    expect(stats.byCurrency.map((c) => c.currency),
-        [Currency.eur, Currency.usd]);
+    expect(stats.byCurrency.map((c) => c.currency), [
+      Currency.eur,
+      Currency.usd,
+    ]);
     expect(stats.byCurrency.first.totalMinor, 1000);
   });
 

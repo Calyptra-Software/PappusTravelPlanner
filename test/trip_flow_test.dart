@@ -16,9 +16,7 @@ Future<void> pumpOverview(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
-        tripListProvider.overrideWith((ref) => Stream.value(trips)),
-      ],
+      overrides: [tripListProvider.overrideWith((ref) => Stream.value(trips))],
       child: MaterialApp(
         locale: locale,
         localizationsDelegates: const [

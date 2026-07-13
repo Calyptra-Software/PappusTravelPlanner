@@ -15,16 +15,15 @@ void main() {
     required int sortOrder,
     int? alternativeId,
     DateTime? date,
-  }) =>
-      ItineraryItem(
-        id: id,
-        tripId: 1,
-        date: date ?? day,
-        sortOrder: sortOrder,
-        kind: ItemKind.place,
-        title: title,
-        alternativeId: alternativeId,
-      );
+  }) => ItineraryItem(
+    id: id,
+    tripId: 1,
+    date: date ?? day,
+    sortOrder: sortOrder,
+    kind: ItemKind.place,
+    title: title,
+    alternativeId: alternativeId,
+  );
 
   AlternativeSet set(int id, {required int sortOrder, DateTime? date}) =>
       AlternativeSet(
@@ -34,8 +33,12 @@ void main() {
         sortOrder: sortOrder,
       );
 
-  Alternative branch(int id, {required int setId, required int sortOrder, bool chosen = false}) =>
-      Alternative(id: id, setId: setId, sortOrder: sortOrder, chosen: chosen);
+  Alternative branch(
+    int id, {
+    required int setId,
+    required int sortOrder,
+    bool chosen = false,
+  }) => Alternative(id: id, setId: setId, sortOrder: sortOrder, chosen: chosen);
 
   test('a decision takes its slot among the day\'s loose items', () {
     final blocks = buildDayBlocks(
@@ -93,7 +96,12 @@ void main() {
       items: [
         item(1, title: 'Today', sortOrder: 0),
         item(2, title: 'Tomorrow', sortOrder: 0, date: otherDay),
-        item(3, title: 'In tomorrow\'s option', sortOrder: 0, alternativeId: 20),
+        item(
+          3,
+          title: 'In tomorrow\'s option',
+          sortOrder: 0,
+          alternativeId: 20,
+        ),
       ],
       sets: {
         5: set(5, sortOrder: 1),

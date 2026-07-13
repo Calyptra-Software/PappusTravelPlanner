@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/settings/locale_provider.dart' show sharedPreferencesProvider;
+import '../../../core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 
 /// How a cost reason is shown on cost chips. The amount is always shown; this
 /// only governs the reason portion. Stored by index in SharedPreferences, so
@@ -11,7 +12,8 @@ enum CostReasonDisplay { icon, text, both }
 /// Mirrors [LocaleController] in `core/settings/locale_provider.dart`.
 final costReasonDisplayProvider =
     NotifierProvider<CostReasonDisplayController, CostReasonDisplay>(
-        CostReasonDisplayController.new);
+      CostReasonDisplayController.new,
+    );
 
 class CostReasonDisplayController extends Notifier<CostReasonDisplay> {
   static const _key = 'cost_reason_display';
@@ -19,7 +21,9 @@ class CostReasonDisplayController extends Notifier<CostReasonDisplay> {
   @override
   CostReasonDisplay build() {
     final index = ref.read(sharedPreferencesProvider).getInt(_key);
-    if (index == null || index < 0 || index >= CostReasonDisplay.values.length) {
+    if (index == null ||
+        index < 0 ||
+        index >= CostReasonDisplay.values.length) {
       return CostReasonDisplay.both;
     }
     return CostReasonDisplay.values[index];
@@ -40,7 +44,8 @@ enum ExpenseScope { all, mine }
 /// launches. Mirrors [CostReasonDisplayController].
 final expenseScopeProvider =
     NotifierProvider<ExpenseScopeController, ExpenseScope>(
-        ExpenseScopeController.new);
+      ExpenseScopeController.new,
+    );
 
 class ExpenseScopeController extends Notifier<ExpenseScope> {
   static const _key = 'expense_scope';

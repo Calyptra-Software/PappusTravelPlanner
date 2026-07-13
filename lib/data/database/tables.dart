@@ -71,8 +71,7 @@ class Trips extends Table {
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   IntColumn get colorValue =>
       integer().withDefault(const Constant(0xFF00695C))();
-  DateTimeColumn get createdAt =>
-      dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
 /// Groups several adjacent itinerary items into one logical unit — e.g. a train
@@ -165,16 +164,21 @@ class ItineraryItems extends Table {
   /// The group this item belongs to, or null when it stands alone. On group
   /// deletion this is set to null (see [ItemGroups]) rather than cascading, so
   /// dissolving a group never removes the underlying places/legs.
-  IntColumn get groupId =>
-      integer().nullable().references(ItemGroups, #id, onDelete: KeyAction.setNull)();
+  IntColumn get groupId => integer().nullable().references(
+    ItemGroups,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// The branch this item belongs to, or null when it is a *loose* item sitting
   /// directly on its day (the ordinary case). Cascades on branch deletion — see
   /// [Alternatives]. An item in an unchosen branch is invisible to the day's
   /// timeline, the trip totals and the home-screen widget.
-  IntColumn get alternativeId => integer()
-      .nullable()
-      .references(Alternatives, #id, onDelete: KeyAction.cascade)();
+  IntColumn get alternativeId => integer().nullable().references(
+    Alternatives,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// The day this entry belongs to (time component ignored, normalised to midnight).
   DateTimeColumn get date => dateTime()();
@@ -221,19 +225,25 @@ class ItineraryItems extends Table {
 /// cost, so how it is attached never affects the maths.
 class Costs extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get itemId => integer()
-      .nullable()
-      .references(ItineraryItems, #id, onDelete: KeyAction.cascade)();
+  IntColumn get itemId => integer().nullable().references(
+    ItineraryItems,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Set for costs shared across an [ItemGroups] group instead of a single item.
-  IntColumn get groupId => integer()
-      .nullable()
-      .references(ItemGroups, #id, onDelete: KeyAction.cascade)();
+  IntColumn get groupId => integer().nullable().references(
+    ItemGroups,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Set for trip-level costs that aren't tied to a specific itinerary item.
-  IntColumn get tripId => integer()
-      .nullable()
-      .references(Trips, #id, onDelete: KeyAction.cascade)();
+  IntColumn get tripId => integer().nullable().references(
+    Trips,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Amount in the currency's minor unit (e.g. cents) to avoid float rounding.
   IntColumn get amountMinor => integer()();

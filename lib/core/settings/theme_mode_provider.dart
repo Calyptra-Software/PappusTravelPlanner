@@ -5,8 +5,9 @@ import 'locale_provider.dart';
 
 /// The user's chosen app theme mode. Defaults to [ThemeMode.system], which
 /// follows the device's light/dark setting.
-final themeModeProvider =
-    NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(
+  ThemeModeController.new,
+);
 
 class ThemeModeController extends Notifier<ThemeMode> {
   static const _key = 'theme_mode';

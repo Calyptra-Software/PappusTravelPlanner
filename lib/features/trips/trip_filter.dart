@@ -6,7 +6,14 @@ import '../../data/database/tables.dart';
 enum TripStatus { upcoming, ongoing, past, undated }
 
 /// Ordering options for the overview list.
-enum TripSort { dateAsc, dateDesc, nameAsc, createdDesc, expenseDesc, expenseAsc }
+enum TripSort {
+  dateAsc,
+  dateDesc,
+  nameAsc,
+  createdDesc,
+  expenseDesc,
+  expenseAsc,
+}
 
 /// Collapses a trip's per-currency totals to one comparable number: its largest
 /// single-currency bucket (the app never converts between currencies, so cross-
@@ -125,8 +132,9 @@ int _compare(
       }
       if (sa == null) return 1;
       if (sb == null) return -1;
-      final byDate =
-          sort == TripSort.dateAsc ? sa.compareTo(sb) : sb.compareTo(sa);
+      final byDate = sort == TripSort.dateAsc
+          ? sa.compareTo(sb)
+          : sb.compareTo(sa);
       return byDate != 0 ? byDate : b.createdAt.compareTo(a.createdAt);
     case TripSort.nameAsc:
       return a.title.toLowerCase().compareTo(b.title.toLowerCase());
@@ -136,8 +144,9 @@ int _compare(
     case TripSort.expenseAsc:
       final ka = tripExpenseKey(totalsByTrip[a.id]);
       final kb = tripExpenseKey(totalsByTrip[b.id]);
-      final byExpense =
-          sort == TripSort.expenseDesc ? kb.compareTo(ka) : ka.compareTo(kb);
+      final byExpense = sort == TripSort.expenseDesc
+          ? kb.compareTo(ka)
+          : ka.compareTo(kb);
       return byExpense != 0 ? byExpense : b.createdAt.compareTo(a.createdAt);
   }
 }

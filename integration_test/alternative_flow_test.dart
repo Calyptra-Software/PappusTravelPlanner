@@ -22,8 +22,9 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('plan alternatives for a day, swipe the options, choose one',
-      (tester) async {
+  testWidgets('plan alternatives for a day, swipe the options, choose one', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -38,23 +39,25 @@ void main() {
       ),
     );
     Future<int> place(String title, int sortOrder) => db.itineraryDao.addItem(
-          ItineraryItemsCompanion.insert(
-            tripId: tripId,
-            date: day,
-            kind: ItemKind.place,
-            sortOrder: Value(sortOrder),
-            title: Value(title),
-          ),
-        );
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day,
+        kind: ItemKind.place,
+        sortOrder: Value(sortOrder),
+        title: Value(title),
+      ),
+    );
     await place('Breakfast', 0);
     final museum = await place('Museum', 1);
     await place('Dinner', 2);
-    await db.costDao.addCost(CostsCompanion.insert(
-      itemId: Value(museum),
-      amountMinor: 1500,
-      currency: Currency.eur,
-      reason: 'Ticket',
-    ));
+    await db.costDao.addCost(
+      CostsCompanion.insert(
+        itemId: Value(museum),
+        amountMinor: 1500,
+        currency: Currency.eur,
+        reason: 'Ticket',
+      ),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -114,8 +117,11 @@ void main() {
     expect(find.text('Nothing planned in this option yet.'), findsOneWidget);
     expect(find.text('Use this option'), findsOneWidget);
     var branches = await db.select(db.alternatives).get();
-    expect(branches.where((b) => b.chosen).map((b) => b.sortOrder), [0],
-        reason: 'swiping browses; it must not move the choice');
+    expect(
+      branches.where((b) => b.chosen).map((b) => b.sortOrder),
+      [0],
+      reason: 'swiping browses; it must not move the choice',
+    );
     await Future<void>.delayed(const Duration(milliseconds: 2500));
 
     // Commit the empty option: the museum leaves the plan, and its €15 with it.

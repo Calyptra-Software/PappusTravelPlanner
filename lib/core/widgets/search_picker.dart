@@ -127,11 +127,12 @@ class _SearchPickerSheetState extends State<SearchPickerSheet> {
     final matches = query.isEmpty
         ? widget.options
         : widget.options
-            .where((o) => o.value.toLowerCase().contains(needle))
-            .toList();
+              .where((o) => o.value.toLowerCase().contains(needle))
+              .toList();
     // Offer to create only what isn't there already — an exact match is a hit,
     // not a new entry, even when the list is filtered down to it.
-    final showCreate = widget.allowCreate &&
+    final showCreate =
+        widget.allowCreate &&
         query.isNotEmpty &&
         !widget.options.any((o) => o.value.toLowerCase() == needle);
     final noneLabel = widget.noneLabel;

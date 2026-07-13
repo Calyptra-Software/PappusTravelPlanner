@@ -5,15 +5,17 @@ import '../tables.dart';
 
 part 'cost_dao.g.dart';
 
-@DriftAccessor(tables: [
-  Costs,
-  CostReasons,
-  People,
-  CostBeneficiaries,
-  ItineraryItems,
-  ItemGroups,
-  Alternatives,
-])
+@DriftAccessor(
+  tables: [
+    Costs,
+    CostReasons,
+    People,
+    CostBeneficiaries,
+    ItineraryItems,
+    ItemGroups,
+    Alternatives,
+  ],
+)
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   CostDao(super.db);
 
@@ -26,15 +28,19 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// the timeline shows them, so each branch can be priced and compared. Only
   /// the totals must leave them out; see [watchCountedCostsForTrip].
   Stream<List<Cost>> watchCostsForTrip(int tripId) {
-    final query = select(costs).join([
-      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
-      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
-    ])
-      ..where(_belongsToTrip(tripId))
-      ..orderBy([OrderingTerm(expression: costs.createdAt)]);
+    final query =
+        select(costs).join([
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(costs.itemId),
+            ),
+            leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+          ])
+          ..where(_belongsToTrip(tripId))
+          ..orderBy([OrderingTerm(expression: costs.createdAt)]);
     return query.watch().map(
-          (rows) => rows.map((row) => row.readTable(costs)).toList(),
-        );
+      (rows) => rows.map((row) => row.readTable(costs)).toList(),
+    );
   }
 
   /// The costs of a trip that actually count: [watchCostsForTrip] minus the ones
@@ -42,19 +48,23 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// trip's total and its expense splitting are computed from — the roads not
   /// taken must not inflate the budget.
   Stream<List<Cost>> watchCountedCostsForTrip(int tripId) {
-    final query = select(costs).join([
-      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
-      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
-      leftOuterJoin(
-        alternatives,
-        alternatives.id.equalsExp(itineraryItems.alternativeId),
-      ),
-    ])
-      ..where(_belongsToTrip(tripId) & _countsTowardTotals())
-      ..orderBy([OrderingTerm(expression: costs.createdAt)]);
+    final query =
+        select(costs).join([
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(costs.itemId),
+            ),
+            leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+            leftOuterJoin(
+              alternatives,
+              alternatives.id.equalsExp(itineraryItems.alternativeId),
+            ),
+          ])
+          ..where(_belongsToTrip(tripId) & _countsTowardTotals())
+          ..orderBy([OrderingTerm(expression: costs.createdAt)]);
     return query.watch().map(
-          (rows) => rows.map((row) => row.readTable(costs)).toList(),
-        );
+      (rows) => rows.map((row) => row.readTable(costs)).toList(),
+    );
   }
 
   /// Whether a cost belongs to [tripId], whichever way it is attached.
@@ -74,7 +84,8 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// the group's members through a correlated subquery instead — joining them
   /// directly would fan a cost out into one row per member and double-count it.
   Expression<bool> _countsTowardTotals() {
-    final itemIsLive = costs.itemId.isNotNull() &
+    final itemIsLive =
+        costs.itemId.isNotNull() &
         (itineraryItems.alternativeId.isNull() |
             alternatives.chosen.equals(true));
     return costs.tripId.isNotNull() | itemIsLive | _groupHasLiveMember();
@@ -83,14 +94,15 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   Expression<bool> _groupHasLiveMember() {
     final member = alias(itineraryItems, 'group_member');
     final branch = alias(alternatives, 'member_branch');
-    final query = selectOnly(member).join([
-      leftOuterJoin(branch, branch.id.equalsExp(member.alternativeId)),
-    ])
-      ..addColumns([member.id])
-      ..where(
-        member.groupId.equalsExp(costs.groupId) &
-            (member.alternativeId.isNull() | branch.chosen.equals(true)),
-      );
+    final query =
+        selectOnly(member).join([
+            leftOuterJoin(branch, branch.id.equalsExp(member.alternativeId)),
+          ])
+          ..addColumns([member.id])
+          ..where(
+            member.groupId.equalsExp(costs.groupId) &
+                (member.alternativeId.isNull() | branch.chosen.equals(true)),
+          );
     return costs.groupId.isNotNull() & existsQuery(query);
   }
 
@@ -109,19 +121,22 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         alternatives,
         alternatives.id.equalsExp(itineraryItems.alternativeId),
       ),
-    ])
-      ..where(_countsTowardTotals());
+    ])..where(_countsTowardTotals());
     return query.watch().map((rows) {
       final byTrip = <int, Map<Currency, int>>{};
       for (final row in rows) {
         final cost = row.readTable(costs);
-        final tripId = cost.tripId ??
+        final tripId =
+            cost.tripId ??
             row.readTableOrNull(itineraryItems)?.tripId ??
             row.readTableOrNull(itemGroups)?.tripId;
         if (tripId == null) continue;
         final totals = byTrip.putIfAbsent(tripId, () => {});
-        totals.update(cost.currency, (v) => v + cost.amountMinor,
-            ifAbsent: () => cost.amountMinor);
+        totals.update(
+          cost.currency,
+          (v) => v + cost.amountMinor,
+          ifAbsent: () => cost.amountMinor,
+        );
       }
       return byTrip;
     });
@@ -154,18 +169,19 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// All saved reasons with their icons, alphabetical by label. Used by the
   /// settings management list and by the chip's label -> icon lookup.
   Stream<List<CostReason>> watchReasonRows() {
-    return (select(costReasons)
-          ..orderBy([(r) => OrderingTerm(expression: r.label)]))
-        .watch();
+    return (select(
+      costReasons,
+    )..orderBy([(r) => OrderingTerm(expression: r.label)])).watch();
   }
 
   /// Creates the reason if needed and sets its icon (null = default icon).
   Future<void> setReasonIcon(String label, int? iconId) {
     return into(costReasons).insert(
       CostReasonsCompanion.insert(label: label, iconId: Value(iconId)),
-      onConflict: DoUpdate((_) =>
-          CostReasonsCompanion(iconId: Value(iconId)),
-          target: [costReasons.label]),
+      onConflict: DoUpdate(
+        (_) => CostReasonsCompanion(iconId: Value(iconId)),
+        target: [costReasons.label],
+      ),
     );
   }
 
@@ -177,17 +193,18 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
 
   /// The people a cost was paid for, alphabetical by name.
   Stream<List<Person>> watchBeneficiaries(int costId) {
-    final query = select(people).join([
-      innerJoin(
-        costBeneficiaries,
-        costBeneficiaries.personId.equalsExp(people.id),
-      ),
-    ])
-      ..where(costBeneficiaries.costId.equals(costId))
-      ..orderBy([OrderingTerm(expression: people.name)]);
-    return query
-        .watch()
-        .map((rows) => rows.map((row) => row.readTable(people)).toList());
+    final query =
+        select(people).join([
+            innerJoin(
+              costBeneficiaries,
+              costBeneficiaries.personId.equalsExp(people.id),
+            ),
+          ])
+          ..where(costBeneficiaries.costId.equals(costId))
+          ..orderBy([OrderingTerm(expression: people.name)]);
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(people)).toList(),
+    );
   }
 
   /// Beneficiary links for every cost in a trip, keyed by cost id, so statistics
@@ -196,18 +213,22 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// items and trip-level costs alike. Costs with no beneficiaries are absent
   /// from the map.
   Stream<Map<int, List<Person>>> watchBeneficiariesForTrip(int tripId) {
-    final query = select(costBeneficiaries).join([
-      innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
-      innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
-      leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
-      leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
-    ])
-      ..where(
-        itineraryItems.tripId.equals(tripId) |
-            itemGroups.tripId.equals(tripId) |
-            costs.tripId.equals(tripId),
-      )
-      ..orderBy([OrderingTerm(expression: people.name)]);
+    final query =
+        select(costBeneficiaries).join([
+            innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
+            innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(costs.itemId),
+            ),
+            leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+          ])
+          ..where(
+            itineraryItems.tripId.equals(tripId) |
+                itemGroups.tripId.equals(tripId) |
+                costs.tripId.equals(tripId),
+          )
+          ..orderBy([OrderingTerm(expression: people.name)]);
     return query.watch().map((rows) {
       final byCost = <int, List<Person>>{};
       for (final row in rows) {
@@ -229,19 +250,21 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
           PeopleCompanion.insert(name: name),
           mode: InsertMode.insertOrIgnore,
         );
-        final person = await (select(people)..where((p) => p.name.equals(name)))
-            .getSingle();
+        final person = await (select(
+          people,
+        )..where((p) => p.name.equals(name))).getSingle();
         ids.add(person.id);
       }
       if (ids.isEmpty) {
-        await (delete(costBeneficiaries)..where((cb) => cb.costId.equals(costId)))
-            .go();
+        await (delete(
+          costBeneficiaries,
+        )..where((cb) => cb.costId.equals(costId))).go();
         return;
       }
       // Drop links no longer wanted, then add the new ones (ignoring dupes).
-      await (delete(costBeneficiaries)
-            ..where(
-                (cb) => cb.costId.equals(costId) & cb.personId.isNotIn(ids)))
+      await (delete(
+            costBeneficiaries,
+          )..where((cb) => cb.costId.equals(costId) & cb.personId.isNotIn(ids)))
           .go();
       for (final id in ids) {
         await into(costBeneficiaries).insert(
@@ -272,8 +295,9 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// All saved people as rows (carrying their id and [Person.isMe] flag),
   /// alphabetical. Used by the settings list to show and set who "me" is.
   Stream<List<Person>> watchPeopleRows() {
-    return (select(people)..orderBy([(p) => OrderingTerm(expression: p.name)]))
-        .watch();
+    return (select(
+      people,
+    )..orderBy([(p) => OrderingTerm(expression: p.name)])).watch();
   }
 
   /// The person the user has marked as themselves, or null if none is set.
@@ -289,11 +313,13 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// most one person is ever flagged.
   Future<void> setMePerson(int? personId) async {
     await transaction(() async {
-      await (update(people)..where((p) => p.isMe.equals(true)))
-          .write(const PeopleCompanion(isMe: Value(false)));
+      await (update(people)..where((p) => p.isMe.equals(true))).write(
+        const PeopleCompanion(isMe: Value(false)),
+      );
       if (personId != null) {
-        await (update(people)..where((p) => p.id.equals(personId)))
-            .write(const PeopleCompanion(isMe: Value(true)));
+        await (update(people)..where((p) => p.id.equals(personId))).write(
+          const PeopleCompanion(isMe: Value(true)),
+        );
       }
     });
   }
@@ -309,16 +335,18 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   Future<void> renamePerson(String from, String to) async {
     if (from == to) return;
     await transaction(() async {
-      await (update(costs)..where((c) => c.paidBy.equals(from)))
-          .write(CostsCompanion(paidBy: Value(to)));
-      final targetExists =
-          await (select(people)..where((p) => p.name.equals(to)))
-              .getSingleOrNull();
+      await (update(costs)..where((c) => c.paidBy.equals(from))).write(
+        CostsCompanion(paidBy: Value(to)),
+      );
+      final targetExists = await (select(
+        people,
+      )..where((p) => p.name.equals(to))).getSingleOrNull();
       if (targetExists != null) {
         await (delete(people)..where((p) => p.name.equals(from))).go();
       } else {
-        await (update(people)..where((p) => p.name.equals(from)))
-            .write(PeopleCompanion(name: Value(to)));
+        await (update(people)..where((p) => p.name.equals(from))).write(
+          PeopleCompanion(name: Value(to)),
+        );
       }
     });
   }
@@ -330,16 +358,18 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   Future<void> renameReason(String from, String to) async {
     if (from == to) return;
     await transaction(() async {
-      await (update(costs)..where((c) => c.reason.equals(from)))
-          .write(CostsCompanion(reason: Value(to)));
-      final targetExists = await (select(costReasons)
-            ..where((r) => r.label.equals(to)))
-          .getSingleOrNull();
+      await (update(costs)..where((c) => c.reason.equals(from))).write(
+        CostsCompanion(reason: Value(to)),
+      );
+      final targetExists = await (select(
+        costReasons,
+      )..where((r) => r.label.equals(to))).getSingleOrNull();
       if (targetExists != null) {
         await (delete(costReasons)..where((r) => r.label.equals(from))).go();
       } else {
-        await (update(costReasons)..where((r) => r.label.equals(from)))
-            .write(CostReasonsCompanion(label: Value(to)));
+        await (update(costReasons)..where((r) => r.label.equals(from))).write(
+          CostReasonsCompanion(label: Value(to)),
+        );
       }
     });
   }

@@ -83,14 +83,16 @@ List<DayBlock> buildDayBlocks({
     // A set with no branches is transient at most (the DAO dissolves one that
     // loses its last branch); skip it rather than render an empty card.
     if (branches.isEmpty) continue;
-    blocks.add(DecisionBlock(
-      set: set,
-      branches: branches,
-      itemsByBranch: {
-        for (final branch in branches)
-          branch.id: itemsByBranch[branch.id] ?? const [],
-      },
-    ));
+    blocks.add(
+      DecisionBlock(
+        set: set,
+        branches: branches,
+        itemsByBranch: {
+          for (final branch in branches)
+            branch.id: itemsByBranch[branch.id] ?? const [],
+        },
+      ),
+    );
   }
 
   blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));

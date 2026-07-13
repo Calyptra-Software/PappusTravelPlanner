@@ -21,8 +21,10 @@ typedef TripCosts = ({
 /// costs of alternative branches that were not chosen, so each branch can show
 /// its own price — anything that sums money instead wants
 /// [countedCostsProvider].
-final costsForTripProvider =
-    StreamProvider.autoDispose.family<TripCosts, int>((ref, tripId) {
+final costsForTripProvider = StreamProvider.autoDispose.family<TripCosts, int>((
+  ref,
+  tripId,
+) {
   return ref.watch(repositoryProvider).watchCostsForTrip(tripId).map((costs) {
     final byItem = <int, List<Cost>>{};
     final byGroup = <int, List<Cost>>{};
@@ -43,10 +45,11 @@ final costsForTripProvider =
 /// The costs of a trip that count toward its money: everything except the costs
 /// of alternative branches that were not chosen. Backs the trip's total and its
 /// statistics, so an option considered and dropped never inflates the budget.
-final countedCostsProvider =
-    StreamProvider.autoDispose.family<List<Cost>, int>((ref, tripId) {
-  return ref.watch(repositoryProvider).watchCountedCostsForTrip(tripId);
-});
+final countedCostsProvider = StreamProvider.autoDispose.family<List<Cost>, int>(
+  (ref, tripId) {
+    return ref.watch(repositoryProvider).watchCountedCostsForTrip(tripId);
+  },
+);
 
 /// Saved reason labels for the reuse dropdown.
 final reasonsProvider = StreamProvider.autoDispose<List<String>>((ref) {
@@ -82,38 +85,39 @@ final mePersonProvider = StreamProvider.autoDispose<Person?>((ref) {
 });
 
 /// The people a cost was paid for, keyed by cost id.
-final costBeneficiariesProvider =
-    StreamProvider.autoDispose.family<List<Person>, int>((ref, costId) {
-  return ref.watch(repositoryProvider).watchBeneficiaries(costId);
-});
+final costBeneficiariesProvider = StreamProvider.autoDispose
+    .family<List<Person>, int>((ref, costId) {
+      return ref.watch(repositoryProvider).watchBeneficiaries(costId);
+    });
 
 /// Beneficiary split for every cost in a trip, keyed by cost id. Backs the
 /// statistics screen so it can compute shares without one stream per cost.
 final tripBeneficiariesProvider = StreamProvider.autoDispose
     .family<Map<int, List<Person>>, int>((ref, tripId) {
-  return ref.watch(repositoryProvider).watchBeneficiariesForTrip(tripId);
-});
+      return ref.watch(repositoryProvider).watchBeneficiariesForTrip(tripId);
+    });
 
 /// Per-currency expense statistics for a trip: category breakdown, per-person
 /// paid/share/balance, and settle-up suggestions. Derives from the trip's
 /// counted costs (the chosen plan — see [countedCostsProvider]), their
 /// beneficiary split, and the participant roster (the fallback split for costs
 /// with no explicit beneficiaries).
-final tripStatsProvider =
-    Provider.autoDispose.family<TripStats, int>((ref, tripId) {
+final tripStatsProvider = Provider.autoDispose.family<TripStats, int>((
+  ref,
+  tripId,
+) {
   final costs = ref.watch(countedCostsProvider(tripId)).value;
   final beneficiaries = ref.watch(tripBeneficiariesProvider(tripId)).value;
   final participants = ref.watch(tripParticipantsProvider(tripId)).value;
   if (costs == null) return const TripStats([]);
-  return computeTripStats(
-    costs,
-    beneficiaries ?? const {},
-    [for (final p in participants ?? const <Person>[]) p.name],
-  );
+  return computeTripStats(costs, beneficiaries ?? const {}, [
+    for (final p in participants ?? const <Person>[]) p.name,
+  ]);
 });
 
-final costControllerProvider =
-    Provider<CostController>((ref) => CostController(ref));
+final costControllerProvider = Provider<CostController>(
+  (ref) => CostController(ref),
+);
 
 /// Adds/edits/deletes costs, remembering each reason for reuse.
 class CostController {
@@ -137,16 +141,18 @@ class CostController {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
     if (paidBy != null && paidBy.isNotEmpty) await repo.upsertPerson(paidBy);
-    final id = await repo.addCost(CostsCompanion.insert(
-      itemId: Value(itemId),
-      groupId: Value(groupId),
-      tripId: Value(tripId),
-      amountMinor: amountMinor,
-      currency: currency,
-      reason: reason,
-      paidBy: Value(paidBy),
-      paid: Value(paid),
-    ));
+    final id = await repo.addCost(
+      CostsCompanion.insert(
+        itemId: Value(itemId),
+        groupId: Value(groupId),
+        tripId: Value(tripId),
+        amountMinor: amountMinor,
+        currency: currency,
+        reason: reason,
+        paidBy: Value(paidBy),
+        paid: Value(paid),
+      ),
+    );
     await repo.setBeneficiaries(id, paidFor);
   }
 
@@ -162,13 +168,15 @@ class CostController {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertReason(reason);
     if (paidBy != null && paidBy.isNotEmpty) await repo.upsertPerson(paidBy);
-    await repo.updateCost(existing.copyWith(
-      amountMinor: amountMinor,
-      currency: currency,
-      reason: reason,
-      paidBy: Value(paidBy),
-      paid: paid,
-    ));
+    await repo.updateCost(
+      existing.copyWith(
+        amountMinor: amountMinor,
+        currency: currency,
+        reason: reason,
+        paidBy: Value(paidBy),
+        paid: paid,
+      ),
+    );
     await repo.setBeneficiaries(existing.id, paidFor);
   }
 

@@ -32,25 +32,27 @@ void main() {
     List<String> reasons = const ['Hotel', 'Dinner'],
     List<String> people = const ['Alex', 'Sam'],
   }) async {
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        repositoryProvider.overrideWithValue(repo),
-        reasonsProvider.overrideWith((ref) => Stream.value(reasons)),
-        reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
-        peopleProvider.overrideWith((ref) => Stream.value(people)),
-        mePersonProvider.overrideWith((ref) => Stream.value(null)),
-      ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          reasonsProvider.overrideWith((ref) => Stream.value(reasons)),
+          reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
+          peopleProvider.overrideWith((ref) => Stream.value(people)),
+          mePersonProvider.overrideWith((ref) => Stream.value(null)),
         ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(body: CostFormSheet(tripId: 1)),
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: CostFormSheet(tripId: 1)),
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -69,8 +71,9 @@ void main() {
   /// sheet is up (the form's own fields are [TextFormField]s).
   final searchBox = find.byType(TextField).last;
 
-  testWidgets('category and payer are picked from the searchable list',
-      (tester) async {
+  testWidgets('category and payer are picked from the searchable list', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
     await tester.enterText(amountField, '42.50');
@@ -94,13 +97,15 @@ void main() {
     expect(cost.reason, 'Dinner');
     expect(cost.paidBy, 'Sam');
     // The payer pays at least for themselves, so they seed the split.
-    final beneficiaries =
-        await tester.runAsync(() => repo.watchBeneficiaries(cost.id).first);
+    final beneficiaries = await tester.runAsync(
+      () => repo.watchBeneficiaries(cost.id).first,
+    );
     expect([for (final p in beneficiaries!) p.name], ['Sam']);
   });
 
-  testWidgets('a category nobody has is added from the search box',
-      (tester) async {
+  testWidgets('a category nobody has is added from the search box', (
+    tester,
+  ) async {
     await pumpForm(tester);
 
     await tester.enterText(amountField, '9');

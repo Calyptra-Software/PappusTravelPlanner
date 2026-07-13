@@ -46,16 +46,19 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
         // Merge gb into ga: repoint its members and any shared costs, drop it.
         await (update(itineraryItems)..where((i) => i.groupId.equals(gb)))
             .write(ItineraryItemsCompanion(groupId: Value(ga)));
-        await (update(costs)..where((c) => c.groupId.equals(gb)))
-            .write(CostsCompanion(groupId: Value(ga)));
+        await (update(costs)..where((c) => c.groupId.equals(gb))).write(
+          CostsCompanion(groupId: Value(ga)),
+        );
         await (delete(itemGroups)..where((g) => g.id.equals(gb))).go();
         return ga;
       }
 
-      final target = ga ??
+      final target =
+          ga ??
           gb ??
-          await into(itemGroups)
-              .insert(ItemGroupsCompanion.insert(tripId: first.tripId));
+          await into(
+            itemGroups,
+          ).insert(ItemGroupsCompanion.insert(tripId: first.tripId));
       await (update(itineraryItems)
             ..where((i) => i.id.isIn([firstItemId, secondItemId])))
           .write(ItineraryItemsCompanion(groupId: Value(target)));
@@ -71,8 +74,9 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
       final item = await _item(itemId);
       final groupId = item.groupId;
       if (groupId == null) return;
-      await (update(itineraryItems)..where((i) => i.id.equals(itemId)))
-          .write(const ItineraryItemsCompanion(groupId: Value(null)));
+      await (update(itineraryItems)..where((i) => i.id.equals(itemId))).write(
+        const ItineraryItemsCompanion(groupId: Value(null)),
+      );
       await _dissolveIfDegenerate(groupId);
     });
   }
@@ -97,9 +101,9 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// attached to nothing visible.
   Future<void> deleteItem(int itemId) {
     return transaction(() async {
-      final item = await (select(itineraryItems)
-            ..where((i) => i.id.equals(itemId)))
-          .getSingleOrNull();
+      final item = await (select(
+        itineraryItems,
+      )..where((i) => i.id.equals(itemId))).getSingleOrNull();
       final groupId = item?.groupId;
       await (delete(itineraryItems)..where((i) => i.id.equals(itemId))).go();
       if (groupId != null) await _dissolveIfDegenerate(groupId);
@@ -119,8 +123,9 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
 
   /// Marks a group collapsed or expanded in the overview.
   Future<void> setGroupCollapsed(int groupId, bool collapsed) {
-    return (update(itemGroups)..where((g) => g.id.equals(groupId)))
-        .write(ItemGroupsCompanion(collapsed: Value(collapsed)));
+    return (update(itemGroups)..where((g) => g.id.equals(groupId))).write(
+      ItemGroupsCompanion(collapsed: Value(collapsed)),
+    );
   }
 
   Future<ItineraryItem> _item(int id) =>
@@ -141,7 +146,10 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// so they survive the group's deletion. A no-op when the group has no members
   /// left — in that case the costs cascade-delete with the group, as there is
   /// nowhere to attach them.
-  Future<void> _preserveCosts(int groupId, {List<ItineraryItem>? members}) async {
+  Future<void> _preserveCosts(
+    int groupId, {
+    List<ItineraryItem>? members,
+  }) async {
     final list = members ?? await _members(groupId);
     if (list.isEmpty) return;
     await (update(costs)..where((c) => c.groupId.equals(groupId))).write(
@@ -157,9 +165,9 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
             (i) => OrderingTerm(expression: i.date),
             (i) => OrderingTerm(expression: i.sortOrder),
             (i) => OrderingTerm(
-                  expression: i.startMinutes,
-                  nulls: NullsOrder.last,
-                ),
+              expression: i.startMinutes,
+              nulls: NullsOrder.last,
+            ),
           ]))
         .get();
   }

@@ -88,19 +88,19 @@ class TripBundle {
   final Map<String, int> reasonIcons;
 
   Map<String, dynamic> toJson() => {
-        'kind': kind,
-        'formatVersion': formatVersion,
-        'schemaVersion': schemaVersion,
-        'trip': trip.toJson(),
-        'groups': [for (final g in groups) g.toJson()],
-        'alternativeSets': [for (final s in alternativeSets) s.toJson()],
-        'items': [for (final i in items) i.toJson()],
-        'costs': [for (final c in costs) c.toJson()],
-        'checklists': [for (final c in checklists) c.toJson()],
-        'collapsedDays': [for (final d in collapsedDays) _encodeDate(d)],
-        'participants': participants,
-        'reasonIcons': reasonIcons,
-      };
+    'kind': kind,
+    'formatVersion': formatVersion,
+    'schemaVersion': schemaVersion,
+    'trip': trip.toJson(),
+    'groups': [for (final g in groups) g.toJson()],
+    'alternativeSets': [for (final s in alternativeSets) s.toJson()],
+    'items': [for (final i in items) i.toJson()],
+    'costs': [for (final c in costs) c.toJson()],
+    'checklists': [for (final c in checklists) c.toJson()],
+    'collapsedDays': [for (final d in collapsedDays) _encodeDate(d)],
+    'participants': participants,
+    'reasonIcons': reasonIcons,
+  };
 
   factory TripBundle.fromJson(Map<String, dynamic> json) {
     final k = json['kind'];
@@ -136,7 +136,8 @@ class TripBundle {
           _decodeDate(d as String)!,
       ],
       participants: [
-        for (final p in (json['participants'] as List? ?? const [])) p as String,
+        for (final p in (json['participants'] as List? ?? const []))
+          p as String,
       ],
       reasonIcons: {
         for (final e in (json['reasonIcons'] as Map? ?? const {}).entries)
@@ -147,8 +148,7 @@ class TripBundle {
 
   /// Encodes the bundle to UTF-8 JSON bytes, ready to write to a file or hand to
   /// a share sheet.
-  Uint8List encode() =>
-      Uint8List.fromList(utf8.encode(jsonEncode(toJson())));
+  Uint8List encode() => Uint8List.fromList(utf8.encode(jsonEncode(toJson())));
 
   /// Decodes a bundle from UTF-8 JSON [bytes]. Throws [FormatException] if the
   /// bytes aren't a valid trip bundle.
@@ -193,24 +193,24 @@ class BundleTrip {
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
-        'title': title,
-        'destination': destination,
-        'startDate': _encodeDate(startDate),
-        'endDate': _encodeDate(endDate),
-        'notes': notes,
-        'colorValue': colorValue,
-        'createdAt': _encodeDate(createdAt),
-      };
+    'title': title,
+    'destination': destination,
+    'startDate': _encodeDate(startDate),
+    'endDate': _encodeDate(endDate),
+    'notes': notes,
+    'colorValue': colorValue,
+    'createdAt': _encodeDate(createdAt),
+  };
 
   factory BundleTrip.fromJson(Map<String, dynamic> json) => BundleTrip(
-        title: json['title'] as String,
-        destination: json['destination'] as String? ?? '',
-        startDate: _decodeDate(json['startDate'] as String?),
-        endDate: _decodeDate(json['endDate'] as String?),
-        notes: json['notes'] as String?,
-        colorValue: json['colorValue'] as int,
-        createdAt: _decodeDate(json['createdAt'] as String)!,
-      );
+    title: json['title'] as String,
+    destination: json['destination'] as String? ?? '',
+    startDate: _decodeDate(json['startDate'] as String?),
+    endDate: _decodeDate(json['endDate'] as String?),
+    notes: json['notes'] as String?,
+    colorValue: json['colorValue'] as int,
+    createdAt: _decodeDate(json['createdAt'] as String)!,
+  );
 }
 
 /// An [ItemGroups] row. [localId] is the source row id, used only to link items
@@ -227,16 +227,16 @@ class BundleGroup {
   final bool collapsed;
 
   Map<String, dynamic> toJson() => {
-        'localId': localId,
-        'label': label,
-        'collapsed': collapsed,
-      };
+    'localId': localId,
+    'label': label,
+    'collapsed': collapsed,
+  };
 
   factory BundleGroup.fromJson(Map<String, dynamic> json) => BundleGroup(
-        localId: json['localId'] as int,
-        label: json['label'] as String?,
-        collapsed: json['collapsed'] as bool? ?? false,
-      );
+    localId: json['localId'] as int,
+    label: json['label'] as String?,
+    collapsed: json['collapsed'] as bool? ?? false,
+  );
 }
 
 /// An [AlternativeSets] row together with its [Alternatives]: one decision on one
@@ -260,12 +260,12 @@ class BundleAlternativeSet {
   final List<BundleAlternative> alternatives;
 
   Map<String, dynamic> toJson() => {
-        'localId': localId,
-        'date': _encodeDate(date),
-        'sortOrder': sortOrder,
-        'label': label,
-        'alternatives': [for (final a in alternatives) a.toJson()],
-      };
+    'localId': localId,
+    'date': _encodeDate(date),
+    'sortOrder': sortOrder,
+    'label': label,
+    'alternatives': [for (final a in alternatives) a.toJson()],
+  };
 
   factory BundleAlternativeSet.fromJson(Map<String, dynamic> json) =>
       BundleAlternativeSet(
@@ -299,11 +299,11 @@ class BundleAlternative {
   final bool chosen;
 
   Map<String, dynamic> toJson() => {
-        'localId': localId,
-        'label': label,
-        'sortOrder': sortOrder,
-        'chosen': chosen,
-      };
+    'localId': localId,
+    'label': label,
+    'sortOrder': sortOrder,
+    'chosen': chosen,
+  };
 
   factory BundleAlternative.fromJson(Map<String, dynamic> json) =>
       BundleAlternative(
@@ -363,42 +363,42 @@ class BundleItem {
   final String? toLocation;
 
   Map<String, dynamic> toJson() => {
-        'localId': localId,
-        'groupLocalId': groupLocalId,
-        'alternativeLocalId': alternativeLocalId,
-        'date': _encodeDate(date),
-        'sortOrder': sortOrder,
-        'kind': kind.name,
-        'title': title,
-        'startMinutes': startMinutes,
-        'endMinutes': endMinutes,
-        'actualStartMinutes': actualStartMinutes,
-        'actualEndMinutes': actualEndMinutes,
-        'notes': notes,
-        'location': location,
-        'mode': mode?.name,
-        'fromLocation': fromLocation,
-        'toLocation': toLocation,
-      };
+    'localId': localId,
+    'groupLocalId': groupLocalId,
+    'alternativeLocalId': alternativeLocalId,
+    'date': _encodeDate(date),
+    'sortOrder': sortOrder,
+    'kind': kind.name,
+    'title': title,
+    'startMinutes': startMinutes,
+    'endMinutes': endMinutes,
+    'actualStartMinutes': actualStartMinutes,
+    'actualEndMinutes': actualEndMinutes,
+    'notes': notes,
+    'location': location,
+    'mode': mode?.name,
+    'fromLocation': fromLocation,
+    'toLocation': toLocation,
+  };
 
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
-        localId: json['localId'] as int,
-        groupLocalId: json['groupLocalId'] as int?,
-        alternativeLocalId: json['alternativeLocalId'] as int?,
-        date: _decodeDate(json['date'] as String)!,
-        sortOrder: json['sortOrder'] as int? ?? 0,
-        kind: _enumByName(ItemKind.values, json['kind'] as String),
-        title: json['title'] as String?,
-        startMinutes: json['startMinutes'] as int?,
-        endMinutes: json['endMinutes'] as int?,
-        actualStartMinutes: json['actualStartMinutes'] as int?,
-        actualEndMinutes: json['actualEndMinutes'] as int?,
-        notes: json['notes'] as String?,
-        location: json['location'] as String?,
-        mode: _enumByNameOrNull(TransportMode.values, json['mode'] as String?),
-        fromLocation: json['fromLocation'] as String?,
-        toLocation: json['toLocation'] as String?,
-      );
+    localId: json['localId'] as int,
+    groupLocalId: json['groupLocalId'] as int?,
+    alternativeLocalId: json['alternativeLocalId'] as int?,
+    date: _decodeDate(json['date'] as String)!,
+    sortOrder: json['sortOrder'] as int? ?? 0,
+    kind: _enumByName(ItemKind.values, json['kind'] as String),
+    title: json['title'] as String?,
+    startMinutes: json['startMinutes'] as int?,
+    endMinutes: json['endMinutes'] as int?,
+    actualStartMinutes: json['actualStartMinutes'] as int?,
+    actualEndMinutes: json['actualEndMinutes'] as int?,
+    notes: json['notes'] as String?,
+    location: json['location'] as String?,
+    mode: _enumByNameOrNull(TransportMode.values, json['mode'] as String?),
+    fromLocation: json['fromLocation'] as String?,
+    toLocation: json['toLocation'] as String?,
+  );
 }
 
 /// A [Costs] row. A cost attaches to exactly one of an item, a group, or the
@@ -430,31 +430,30 @@ class BundleCost {
   final List<String> beneficiaries;
 
   Map<String, dynamic> toJson() => {
-        'itemLocalId': itemLocalId,
-        'groupLocalId': groupLocalId,
-        'amountMinor': amountMinor,
-        'currency': currency.name,
-        'reason': reason,
-        'paidBy': paidBy,
-        'paid': paid,
-        'createdAt': _encodeDate(createdAt),
-        'beneficiaries': beneficiaries,
-      };
+    'itemLocalId': itemLocalId,
+    'groupLocalId': groupLocalId,
+    'amountMinor': amountMinor,
+    'currency': currency.name,
+    'reason': reason,
+    'paidBy': paidBy,
+    'paid': paid,
+    'createdAt': _encodeDate(createdAt),
+    'beneficiaries': beneficiaries,
+  };
 
   factory BundleCost.fromJson(Map<String, dynamic> json) => BundleCost(
-        itemLocalId: json['itemLocalId'] as int?,
-        groupLocalId: json['groupLocalId'] as int?,
-        amountMinor: json['amountMinor'] as int,
-        currency: _enumByName(Currency.values, json['currency'] as String),
-        reason: json['reason'] as String,
-        paidBy: json['paidBy'] as String?,
-        paid: json['paid'] as bool? ?? false,
-        createdAt: _decodeDate(json['createdAt'] as String)!,
-        beneficiaries: [
-          for (final b in (json['beneficiaries'] as List? ?? const []))
-            b as String,
-        ],
-      );
+    itemLocalId: json['itemLocalId'] as int?,
+    groupLocalId: json['groupLocalId'] as int?,
+    amountMinor: json['amountMinor'] as int,
+    currency: _enumByName(Currency.values, json['currency'] as String),
+    reason: json['reason'] as String,
+    paidBy: json['paidBy'] as String?,
+    paid: json['paid'] as bool? ?? false,
+    createdAt: _decodeDate(json['createdAt'] as String)!,
+    beneficiaries: [
+      for (final b in (json['beneficiaries'] as List? ?? const [])) b as String,
+    ],
+  );
 }
 
 /// A [Checklists] row together with its [ChecklistItems]. [localId] is unused on
@@ -477,13 +476,13 @@ class BundleChecklist {
   final List<BundleChecklistItem> items;
 
   Map<String, dynamic> toJson() => {
-        'localId': localId,
-        'title': title,
-        'sortOrder': sortOrder,
-        'collapsed': collapsed,
-        'createdAt': _encodeDate(createdAt),
-        'items': [for (final i in items) i.toJson()],
-      };
+    'localId': localId,
+    'title': title,
+    'sortOrder': sortOrder,
+    'collapsed': collapsed,
+    'createdAt': _encodeDate(createdAt),
+    'items': [for (final i in items) i.toJson()],
+  };
 
   factory BundleChecklist.fromJson(Map<String, dynamic> json) =>
       BundleChecklist(
@@ -514,11 +513,11 @@ class BundleChecklistItem {
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
-        'label': label,
-        'done': done,
-        'sortOrder': sortOrder,
-        'createdAt': _encodeDate(createdAt),
-      };
+    'label': label,
+    'done': done,
+    'sortOrder': sortOrder,
+    'createdAt': _encodeDate(createdAt),
+  };
 
   factory BundleChecklistItem.fromJson(Map<String, dynamic> json) =>
       BundleChecklistItem(

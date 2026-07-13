@@ -473,10 +473,12 @@ class _GroupingAndCosts extends ConsumerWidget {
       final siblings = alternativeId != null
           ? items.where((it) => it.alternativeId == alternativeId).toList()
           : items
-              .where((it) =>
-                  it.alternativeId == null &&
-                  normalizeDay(it.date) == normalizeDay(current!.date))
-              .toList();
+                .where(
+                  (it) =>
+                      it.alternativeId == null &&
+                      normalizeDay(it.date) == normalizeDay(current!.date),
+                )
+                .toList();
       final index = siblings.indexWhere((it) => it.id == itemId);
       if (index >= 0 && index + 1 < siblings.length) next = siblings[index + 1];
     }
@@ -644,7 +646,8 @@ class _CostsEditor extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final tripCosts = ref.watch(costsForTripProvider(tripId)).value;
-    final costs = (groupId != null
+    final costs =
+        (groupId != null
             ? tripCosts?.byGroup[groupId]
             : tripCosts?.byItem[itemId]) ??
         const [];
@@ -652,8 +655,10 @@ class _CostsEditor extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(groupId != null ? l10n.groupSharedExpenses : l10n.costs,
-            style: theme.textTheme.labelLarge),
+        Text(
+          groupId != null ? l10n.groupSharedExpenses : l10n.costs,
+          style: theme.textTheme.labelLarge,
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 6,
@@ -669,11 +674,8 @@ class _CostsEditor extends ConsumerWidget {
               avatar: const Icon(Icons.add, size: 16),
               label: Text(l10n.addCost),
               visualDensity: VisualDensity.compact,
-              onPressed: () => showCostFormSheet(
-                context,
-                itemId: itemId,
-                groupId: groupId,
-              ),
+              onPressed: () =>
+                  showCostFormSheet(context, itemId: itemId, groupId: groupId),
             ),
           ],
         ),

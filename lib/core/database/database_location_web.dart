@@ -42,10 +42,10 @@ QueryExecutor openExecutor(String path) {
 }
 
 Future<WasmProbeResult> _probe() => WasmDatabase.probe(
-      sqlite3Uri: _sqlite3Wasm,
-      driftWorkerUri: _driftWorker,
-      databaseName: kDatabaseFileName,
-    );
+  sqlite3Uri: _sqlite3Wasm,
+  driftWorkerUri: _driftWorker,
+  databaseName: kDatabaseFileName,
+);
 
 ExistingDatabase? _existing(WasmProbeResult probe) {
   for (final db in probe.existingDatabases) {
@@ -81,8 +81,8 @@ void webSetPendingImport(Uint8List? bytes) => _pendingImport = bytes;
 void deleteSidecars(String path) {}
 
 Never _unsupported() => throw UnsupportedError(
-      'File-path database operations are not available on the web.',
-    );
+  'File-path database operations are not available on the web.',
+);
 
 /// File-path operations are native-only; the web uses the `web*` helpers above.
 void deleteDatabaseFile(String path) => _unsupported();

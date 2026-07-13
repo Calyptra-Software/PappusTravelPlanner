@@ -11,18 +11,14 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   /// All trips, upcoming/dated first (nulls last), then most recently created.
   Stream<List<Trip>> watchAllTrips() {
-    return (select(trips)
-          ..orderBy([
-            (t) => OrderingTerm(
-                  expression: t.startDate,
-                  mode: OrderingMode.asc,
-                  nulls: NullsOrder.last,
-                ),
-            (t) => OrderingTerm(
-                  expression: t.createdAt,
-                  mode: OrderingMode.desc,
-                ),
-          ]))
+    return (select(trips)..orderBy([
+          (t) => OrderingTerm(
+            expression: t.startDate,
+            mode: OrderingMode.asc,
+            nulls: NullsOrder.last,
+          ),
+          (t) => OrderingTerm(expression: t.createdAt, mode: OrderingMode.desc),
+        ]))
         .watch();
   }
 
@@ -43,17 +39,18 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   /// The people taking part in a trip, alphabetical by name.
   Stream<List<Person>> watchParticipants(int tripId) {
-    final query = select(people).join([
-      innerJoin(
-        tripParticipants,
-        tripParticipants.personId.equalsExp(people.id),
-      ),
-    ])
-      ..where(tripParticipants.tripId.equals(tripId))
-      ..orderBy([OrderingTerm(expression: people.name)]);
-    return query
-        .watch()
-        .map((rows) => rows.map((row) => row.readTable(people)).toList());
+    final query =
+        select(people).join([
+            innerJoin(
+              tripParticipants,
+              tripParticipants.personId.equalsExp(people.id),
+            ),
+          ])
+          ..where(tripParticipants.tripId.equals(tripId))
+          ..orderBy([OrderingTerm(expression: people.name)]);
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(people)).toList(),
+    );
   }
 
   /// Participants of every trip, keyed by trip id — used to filter the
@@ -61,8 +58,7 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Stream<Map<int, List<Person>>> watchAllParticipants() {
     final query = select(tripParticipants).join([
       innerJoin(people, people.id.equalsExp(tripParticipants.personId)),
-    ])
-      ..orderBy([OrderingTerm(expression: people.name)]);
+    ])..orderBy([OrderingTerm(expression: people.name)]);
     return query.watch().map((rows) {
       final byTrip = <int, List<Person>>{};
       for (final row in rows) {
@@ -81,8 +77,9 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
         PeopleCompanion.insert(name: name),
         mode: InsertMode.insertOrIgnore,
       );
-      final person =
-          await (select(people)..where((p) => p.name.equals(name))).getSingle();
+      final person = await (select(
+        people,
+      )..where((p) => p.name.equals(name))).getSingle();
       await into(tripParticipants).insert(
         TripParticipantsCompanion.insert(tripId: tripId, personId: person.id),
         mode: InsertMode.insertOrIgnore,
@@ -92,9 +89,9 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   /// Removes a participant from a trip. The person stays in the shared roster.
   Future<int> removeParticipant(int tripId, int personId) {
-    return (delete(tripParticipants)
-          ..where((tp) =>
-              tp.tripId.equals(tripId) & tp.personId.equals(personId)))
+    return (delete(tripParticipants)..where(
+          (tp) => tp.tripId.equals(tripId) & tp.personId.equals(personId),
+        ))
         .go();
   }
 }

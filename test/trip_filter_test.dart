@@ -32,24 +32,31 @@ void main() {
     TripQuery query, {
     Map<int, Set<int>> participants = const {},
     Map<int, Map<Currency, int>> totals = const {},
-  }) =>
-      applyTripQuery(trips,
-          query: query,
-          participantsByTrip: participants,
-          today: today,
-          totalsByTrip: totals);
+  }) => applyTripQuery(
+    trips,
+    query: query,
+    participantsByTrip: participants,
+    today: today,
+    totalsByTrip: totals,
+  );
 
   group('tripStatus', () {
     test('classifies relative to today', () {
-      expect(tripStatus(trip(id: 1, start: DateTime(2026, 8, 1)), today),
-          TripStatus.upcoming);
       expect(
-          tripStatus(
-              trip(id: 2, start: DateTime(2026, 7, 8), end: DateTime(2026, 7, 12)),
-              today),
-          TripStatus.ongoing);
-      expect(tripStatus(trip(id: 3, start: DateTime(2026, 6, 1)), today),
-          TripStatus.past);
+        tripStatus(trip(id: 1, start: DateTime(2026, 8, 1)), today),
+        TripStatus.upcoming,
+      );
+      expect(
+        tripStatus(
+          trip(id: 2, start: DateTime(2026, 7, 8), end: DateTime(2026, 7, 12)),
+          today,
+        ),
+        TripStatus.ongoing,
+      );
+      expect(
+        tripStatus(trip(id: 3, start: DateTime(2026, 6, 1)), today),
+        TripStatus.past,
+      );
       expect(tripStatus(trip(id: 4), today), TripStatus.undated);
     });
 
@@ -61,12 +68,19 @@ void main() {
   group('text search', () {
     final trips = [
       trip(id: 1, title: 'Rome getaway', destination: 'Italy'),
-      trip(id: 2, title: 'Ski week', destination: 'Austria', notes: 'bring gloves'),
+      trip(
+        id: 2,
+        title: 'Ski week',
+        destination: 'Austria',
+        notes: 'bring gloves',
+      ),
     ];
 
     test('matches title, destination and notes case-insensitively', () {
       expect(run(trips, const TripQuery(text: 'rome')).map((t) => t.id), [1]);
-      expect(run(trips, const TripQuery(text: 'austria')).map((t) => t.id), [2]);
+      expect(run(trips, const TripQuery(text: 'austria')).map((t) => t.id), [
+        2,
+      ]);
       expect(run(trips, const TripQuery(text: 'GLOVES')).map((t) => t.id), [2]);
     });
 
@@ -81,8 +95,7 @@ void main() {
       trip(id: 2, start: DateTime(2026, 6, 1)), // past
       trip(id: 3), // undated
     ];
-    final result =
-        run(trips, const TripQuery(statuses: {TripStatus.upcoming}));
+    final result = run(trips, const TripQuery(statuses: {TripStatus.upcoming}));
     expect(result.map((t) => t.id), [1]);
   });
 
@@ -121,25 +134,31 @@ void main() {
       trip(id: 1, title: 'Zurich', start: DateTime(2026, 8, 1)),
       trip(id: 2, title: 'Athens', start: DateTime(2026, 6, 1)),
       trip(
-          id: 3,
-          title: 'Berlin',
-          createdAt: DateTime(2026, 5, 1)), // undated, newest
+        id: 3,
+        title: 'Berlin',
+        createdAt: DateTime(2026, 5, 1),
+      ), // undated, newest
     ];
 
     test('dateAsc orders by start with undated last', () {
-      expect(run(trips, const TripQuery(sort: TripSort.dateAsc)).map((t) => t.id),
-          [2, 1, 3]);
+      expect(
+        run(trips, const TripQuery(sort: TripSort.dateAsc)).map((t) => t.id),
+        [2, 1, 3],
+      );
     });
 
     test('dateDesc orders by start descending with undated still last', () {
       expect(
-          run(trips, const TripQuery(sort: TripSort.dateDesc)).map((t) => t.id),
-          [1, 2, 3]);
+        run(trips, const TripQuery(sort: TripSort.dateDesc)).map((t) => t.id),
+        [1, 2, 3],
+      );
     });
 
     test('nameAsc orders alphabetically', () {
-      expect(run(trips, const TripQuery(sort: TripSort.nameAsc)).map((t) => t.id),
-          [2, 3, 1]);
+      expect(
+        run(trips, const TripQuery(sort: TripSort.nameAsc)).map((t) => t.id),
+        [2, 3, 1],
+      );
     });
 
     // Trip 1 ranks by its largest bucket (GBP 500), not the EUR+USD sum;
@@ -149,26 +168,42 @@ void main() {
       2: {Currency.eur: 40000},
     };
 
-    test('expenseDesc orders by largest currency bucket, no-cost trips last', () {
-      expect(
-          run(trips, const TripQuery(sort: TripSort.expenseDesc), totals: totals)
-              .map((t) => t.id),
-          [1, 2, 3]);
-    });
+    test(
+      'expenseDesc orders by largest currency bucket, no-cost trips last',
+      () {
+        expect(
+          run(
+            trips,
+            const TripQuery(sort: TripSort.expenseDesc),
+            totals: totals,
+          ).map((t) => t.id),
+          [1, 2, 3],
+        );
+      },
+    );
 
     test('expenseAsc orders ascending with no-cost trips first', () {
       expect(
-          run(trips, const TripQuery(sort: TripSort.expenseAsc), totals: totals)
-              .map((t) => t.id),
-          [3, 2, 1]);
+        run(
+          trips,
+          const TripQuery(sort: TripSort.expenseAsc),
+          totals: totals,
+        ).map((t) => t.id),
+        [3, 2, 1],
+      );
     });
   });
 
   group('tripExpenseKey', () {
-    test('is the largest single-currency bucket, never a cross-currency sum', () {
-      expect(
-          tripExpenseKey({Currency.eur: 30000, Currency.gbp: 50000}), 50000);
-    });
+    test(
+      'is the largest single-currency bucket, never a cross-currency sum',
+      () {
+        expect(
+          tripExpenseKey({Currency.eur: 30000, Currency.gbp: 50000}),
+          50000,
+        );
+      },
+    );
 
     test('is 0 for a trip with no costs', () {
       expect(tripExpenseKey(null), 0);
@@ -177,14 +212,17 @@ void main() {
   });
 
   test('activeFilterCount counts facets, not search or sort', () {
-    expect(const TripQuery(text: 'x', sort: TripSort.nameAsc).activeFilterCount,
-        0);
     expect(
-        TripQuery(
-          statuses: const {TripStatus.past},
-          participantIds: const {1},
-          from: DateTime(2026, 1, 1),
-        ).activeFilterCount,
-        3);
+      const TripQuery(text: 'x', sort: TripSort.nameAsc).activeFilterCount,
+      0,
+    );
+    expect(
+      TripQuery(
+        statuses: const {TripStatus.past},
+        participantIds: const {1},
+        from: DateTime(2026, 1, 1),
+      ).activeFilterCount,
+      3,
+    );
   });
 }

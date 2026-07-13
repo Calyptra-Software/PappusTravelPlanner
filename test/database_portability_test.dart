@@ -27,10 +27,12 @@ void main() {
   });
 
   ProviderContainer containerAt(String path) {
-    return ProviderContainer(overrides: [
-      sharedPreferencesProvider.overrideWithValue(prefs),
-      bootstrapDbPathProvider.overrideWithValue(path),
-    ]);
+    return ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        bootstrapDbPathProvider.overrideWithValue(path),
+      ],
+    );
   }
 
   Future<List<String>> titles(ProviderContainer c) async {
@@ -38,33 +40,35 @@ void main() {
     return trips.map((t) => t.title).toList();
   }
 
-  test('data written to a file persists when reopened (portability core)',
-      () async {
-    final path = p.join(tempDir.path, 'trip.sqlite');
+  test(
+    'data written to a file persists when reopened (portability core)',
+    () async {
+      final path = p.join(tempDir.path, 'trip.sqlite');
 
-    final c1 = containerAt(path);
-    await c1.read(repositoryProvider).createTrip(
-          TripsCompanion.insert(title: 'Portable trip'),
-        );
-    final db1 = c1.read(databaseProvider);
-    await db1.checkpoint();
-    await db1.close();
-    c1.dispose();
+      final c1 = containerAt(path);
+      await c1
+          .read(repositoryProvider)
+          .createTrip(TripsCompanion.insert(title: 'Portable trip'));
+      final db1 = c1.read(databaseProvider);
+      await db1.checkpoint();
+      await db1.close();
+      c1.dispose();
 
-    // Reopening the same file (as a fresh app launch would) sees the data.
-    final c2 = containerAt(path);
-    expect(await titles(c2), ['Portable trip']);
-    c2.dispose();
-  });
+      // Reopening the same file (as a fresh app launch would) sees the data.
+      final c2 = containerAt(path);
+      expect(await titles(c2), ['Portable trip']);
+      c2.dispose();
+    },
+  );
 
   test('switching the active path swaps which database is shown', () async {
     final pathA = p.join(tempDir.path, 'a.sqlite');
     final pathB = p.join(tempDir.path, 'b.sqlite');
 
     final c = containerAt(pathA);
-    await c.read(repositoryProvider).createTrip(
-          TripsCompanion.insert(title: 'In A'),
-        );
+    await c
+        .read(repositoryProvider)
+        .createTrip(TripsCompanion.insert(title: 'In A'));
     expect(await titles(c), ['In A']);
 
     // Switch to an empty database B.
@@ -84,15 +88,18 @@ void main() {
     // Build a source database with its own trip.
     final sourcePath = p.join(tempDir.path, 'source.sqlite');
     final source = AppDatabase.atPath(sourcePath);
-    await source.tripDao
-        .createTrip(TripsCompanion.insert(title: 'Imported trip'));
+    await source.tripDao.createTrip(
+      TripsCompanion.insert(title: 'Imported trip'),
+    );
     await source.checkpoint();
     await source.close();
 
     // Active database starts with different data.
     final activePath = p.join(tempDir.path, 'active.sqlite');
     final c = containerAt(activePath);
-    await c.read(repositoryProvider).createTrip(
+    await c
+        .read(repositoryProvider)
+        .createTrip(
           TripsCompanion.insert(
             title: 'Original',
             destination: const Value('to be replaced'),

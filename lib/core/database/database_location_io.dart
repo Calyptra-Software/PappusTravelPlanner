@@ -25,10 +25,7 @@ QueryExecutor openExecutor(String path) {
 /// SQLite writes a `-wal` and `-shm` sidecar alongside the main file in WAL
 /// mode. After the database is closed and checkpointed the main file is
 /// complete on its own; these helpers keep copies/imports to a single file.
-List<File> sidecarFiles(String path) => [
-      File('$path-wal'),
-      File('$path-shm'),
-    ];
+List<File> sidecarFiles(String path) => [File('$path-wal'), File('$path-shm')];
 
 /// Deletes any stale `-wal`/`-shm` sidecars for [path] (used before importing
 /// a replacement database so leftover journal data can't shadow it).
@@ -54,8 +51,8 @@ void copyDatabaseFile(String from, String to) {
 Future<Uint8List> readDatabaseBytes(String path) => File(path).readAsBytes();
 
 Never _webOnly() => throw UnsupportedError(
-      'Browser-storage database operations are only available on the web.',
-    );
+  'Browser-storage database operations are only available on the web.',
+);
 
 /// Web-only storage helpers; native platforms use the file-path operations
 /// above. These exist so the platform-neutral facade presents one API.

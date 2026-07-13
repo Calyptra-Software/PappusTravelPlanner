@@ -34,9 +34,13 @@ class _TripCalendarState extends State<TripCalendar> {
   static const _laneGap = 3.0;
   static const _initialPage = 1200; // ~100 years of scroll either way
 
-  late final PageController _controller =
-      PageController(initialPage: _initialPage);
-  late final DateTime _anchor = DateTime(DateTime.now().year, DateTime.now().month);
+  late final PageController _controller = PageController(
+    initialPage: _initialPage,
+  );
+  late final DateTime _anchor = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+  );
   late DateTime _visibleMonth = _anchor;
 
   DateTime _monthForPage(int page) =>
@@ -59,8 +63,7 @@ class _TripCalendarState extends State<TripCalendar> {
   @override
   Widget build(BuildContext context) {
     final localeName = Localizations.localeOf(context).languageCode;
-    final undated =
-        widget.trips.where((t) => tripSpan(t) == null).length;
+    final undated = widget.trips.where((t) => tripSpan(t) == null).length;
 
     return Column(
       children: [
@@ -102,8 +105,7 @@ class _TripCalendarState extends State<TripCalendar> {
   }
 
   void _showUndated(BuildContext context) {
-    final undated =
-        widget.trips.where((t) => tripSpan(t) == null).toList();
+    final undated = widget.trips.where((t) => tripSpan(t) == null).toList();
     _openTripSheet(
       context,
       title: AppLocalizations.of(context).calendarUndatedTitle,
@@ -111,8 +113,12 @@ class _TripCalendarState extends State<TripCalendar> {
     );
   }
 
-  void _showDay(BuildContext context, DateTime day, List<Trip> dayTrips,
-      String localeName) {
+  void _showDay(
+    BuildContext context,
+    DateTime day,
+    List<Trip> dayTrips,
+    String localeName,
+  ) {
     _openTripSheet(
       context,
       title: formatFullDate(day, localeName),
@@ -196,8 +202,9 @@ class _MonthHeader extends StatelessWidget {
             child: Text(
               label,
               textAlign: TextAlign.center,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w600),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           if (undatedCount > 0)
@@ -231,8 +238,9 @@ class _WeekdayHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final firstWeekday =
-        MaterialLocalizations.of(context).firstDayOfWeekIndex; // 0=Sun
+    final firstWeekday = MaterialLocalizations.of(
+      context,
+    ).firstDayOfWeekIndex; // 0=Sun
     final symbols = DateFormat('', localeName).dateSymbols.SHORTWEEKDAYS;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
@@ -288,8 +296,7 @@ class _MonthGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final firstWeekday =
-        MaterialLocalizations.of(context).firstDayOfWeekIndex;
+    final firstWeekday = MaterialLocalizations.of(context).firstDayOfWeekIndex;
     final weeks = buildMonthGrid(month, trips, firstWeekday);
     return Padding(
       // Bottom clearance so the "New trip" FAB doesn't cover the last week.
@@ -341,7 +348,8 @@ class _WeekRow extends StatelessWidget {
     final theme = Theme.of(context);
     final today = normalizeDay(DateTime.now());
     final visibleLanes = week.laneCount > maxVisibleLanes
-        ? maxVisibleLanes - 1 // reserve a lane for the "+N more" markers
+        ? maxVisibleLanes -
+              1 // reserve a lane for the "+N more" markers
         : week.laneCount;
     final overflow = week.laneCount > maxVisibleLanes
         ? overflowByColumn(week, visibleLanes)
@@ -422,8 +430,8 @@ class _DayCell extends StatelessWidget {
     final color = isToday
         ? scheme.onPrimary
         : inMonth
-            ? scheme.onSurface
-            : scheme.onSurfaceVariant.withValues(alpha: 0.5);
+        ? scheme.onSurface
+        : scheme.onSurfaceVariant.withValues(alpha: 0.5);
     return Padding(
       padding: const EdgeInsets.only(top: 4),
       child: Align(
@@ -460,8 +468,8 @@ class _TripBar extends StatelessWidget {
     // Legible label colour regardless of the accent's brightness.
     final onAccent =
         ThemeData.estimateBrightnessForColor(accent) == Brightness.dark
-            ? Colors.white
-            : Colors.black87;
+        ? Colors.white
+        : Colors.black87;
     const rounded = Radius.circular(6);
     const flat = Radius.zero;
     final radius = BorderRadius.horizontal(

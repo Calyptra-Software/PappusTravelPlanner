@@ -17,20 +17,19 @@ void main() {
     int? actualEnd,
     int sortOrder = 0,
     int? alternativeId,
-  }) =>
-      ItineraryItem(
-        id: id,
-        tripId: 1,
-        date: day,
-        sortOrder: sortOrder,
-        kind: ItemKind.place,
-        title: 'Item $id',
-        startMinutes: start,
-        endMinutes: end,
-        actualStartMinutes: actualStart,
-        actualEndMinutes: actualEnd,
-        alternativeId: alternativeId,
-      );
+  }) => ItineraryItem(
+    id: id,
+    tripId: 1,
+    date: day,
+    sortOrder: sortOrder,
+    kind: ItemKind.place,
+    title: 'Item $id',
+    startMinutes: start,
+    endMinutes: end,
+    actualStartMinutes: actualStart,
+    actualEndMinutes: actualEnd,
+    alternativeId: alternativeId,
+  );
 
   /// A decision whose two options both hold [chosenItems] / [otherItems].
   DecisionBlock decision({
@@ -38,8 +37,18 @@ void main() {
     required List<ItineraryItem> otherItems,
     int sortOrder = 0,
   }) {
-    const chosenBranch = Alternative(id: 1, setId: 1, sortOrder: 0, chosen: true);
-    const otherBranch = Alternative(id: 2, setId: 1, sortOrder: 1, chosen: false);
+    const chosenBranch = Alternative(
+      id: 1,
+      setId: 1,
+      sortOrder: 0,
+      chosen: true,
+    );
+    const otherBranch = Alternative(
+      id: 2,
+      setId: 1,
+      sortOrder: 1,
+      chosen: false,
+    );
     return DecisionBlock(
       set: AlternativeSet(id: 1, tripId: 1, date: day, sortOrder: sortOrder),
       branches: const [chosenBranch, otherBranch],
@@ -56,10 +65,7 @@ void main() {
       ItemBlock(item(3, start: 15 * 60)),
     ];
 
-    expect(
-      nowMarker(blocks, noon),
-      const NowMarker(index: 1, happening: true),
-    );
+    expect(nowMarker(blocks, noon), const NowMarker(index: 1, happening: true));
   });
 
   test('between two entries, the line goes above the next one', () {
@@ -135,19 +141,21 @@ void main() {
     );
   });
 
-  test('an untimed entry stays ahead of the line — we cannot know it is done',
-      () {
-    final blocks = [
-      ItemBlock(item(1, start: 9 * 60, end: 10 * 60)),
-      ItemBlock(item(2)),
-      ItemBlock(item(3, start: 15 * 60, end: 16 * 60)),
-    ];
+  test(
+    'an untimed entry stays ahead of the line — we cannot know it is done',
+    () {
+      final blocks = [
+        ItemBlock(item(1, start: 9 * 60, end: 10 * 60)),
+        ItemBlock(item(2)),
+        ItemBlock(item(3, start: 15 * 60, end: 16 * 60)),
+      ];
 
-    expect(
-      nowMarker(blocks, noon),
-      const NowMarker(index: 1, happening: false),
-    );
-  });
+      expect(
+        nowMarker(blocks, noon),
+        const NowMarker(index: 1, happening: false),
+      );
+    },
+  );
 
   test('an untimed entry is behind the line once something after it is', () {
     final blocks = [
@@ -169,28 +177,27 @@ void main() {
       ),
     ];
 
-    expect(
-      nowMarker(blocks, noon),
-      const NowMarker(index: 0, happening: true),
-    );
+    expect(nowMarker(blocks, noon), const NowMarker(index: 0, happening: true));
   });
 
-  test("a decision the trip is not following can't pull the mark onto itself",
-      () {
-    final blocks = [
-      decision(
-        // The chosen option is over by 10:00; the option not taken would still
-        // be running at noon — but it is not what the trip is doing.
-        chosenItems: [item(1, start: 9 * 60, end: 10 * 60, alternativeId: 1)],
-        otherItems: [item(2, start: 9 * 60, end: 18 * 60, alternativeId: 2)],
-      ),
-    ];
+  test(
+    "a decision the trip is not following can't pull the mark onto itself",
+    () {
+      final blocks = [
+        decision(
+          // The chosen option is over by 10:00; the option not taken would still
+          // be running at noon — but it is not what the trip is doing.
+          chosenItems: [item(1, start: 9 * 60, end: 10 * 60, alternativeId: 1)],
+          otherItems: [item(2, start: 9 * 60, end: 18 * 60, alternativeId: 2)],
+        ),
+      ];
 
-    expect(
-      nowMarker(blocks, noon),
-      const NowMarker(index: 1, happening: false),
-    );
-  });
+      expect(
+        nowMarker(blocks, noon),
+        const NowMarker(index: 1, happening: false),
+      );
+    },
+  );
 
   test('a decision spans its chosen option from first start to last end', () {
     final blocks = [
@@ -205,10 +212,7 @@ void main() {
       ),
     ];
 
-    expect(
-      nowMarker(blocks, noon),
-      const NowMarker(index: 0, happening: true),
-    );
+    expect(nowMarker(blocks, noon), const NowMarker(index: 0, happening: true));
   });
 
   test('inside an option, the entry under way is marked', () {

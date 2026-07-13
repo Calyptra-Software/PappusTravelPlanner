@@ -41,14 +41,14 @@ void main() {
 
   group('sumByCurrency / formatTotals', () {
     Cost cost(int minor, Currency c) => Cost(
-          id: 0,
-          itemId: 1,
-          amountMinor: minor,
-          currency: c,
-          reason: 'x',
-          paid: false,
-          createdAt: DateTime(2026),
-        );
+      id: 0,
+      itemId: 1,
+      amountMinor: minor,
+      currency: c,
+      reason: 'x',
+      paid: false,
+      createdAt: DateTime(2026),
+    );
 
     test('groups amounts per currency', () {
       final totals = sumByCurrency([

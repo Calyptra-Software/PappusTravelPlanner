@@ -40,9 +40,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         clipBehavior: Clip.antiAlias,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       inputDecorationTheme: const InputDecorationTheme(
         border: OutlineInputBorder(),

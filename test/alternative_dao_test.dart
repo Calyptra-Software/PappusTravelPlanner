@@ -24,29 +24,29 @@ void main() {
     int sortOrder = 0,
     int? alternativeId,
     DateTime? date,
-  }) =>
-      db.itineraryDao.addItem(
-        ItineraryItemsCompanion.insert(
-          tripId: tripId,
-          date: date ?? day,
-          kind: ItemKind.place,
-          title: Value(title),
-          sortOrder: Value(sortOrder),
-          alternativeId: Value(alternativeId),
-        ),
-      );
+  }) => db.itineraryDao.addItem(
+    ItineraryItemsCompanion.insert(
+      tripId: tripId,
+      date: date ?? day,
+      kind: ItemKind.place,
+      title: Value(title),
+      sortOrder: Value(sortOrder),
+      alternativeId: Value(alternativeId),
+    ),
+  );
 
-  Future<int> makeCost(int itemId, int amountMinor) =>
-      db.costDao.addCost(CostsCompanion.insert(
-        itemId: Value(itemId),
-        amountMinor: amountMinor,
-        currency: Currency.eur,
-        reason: 'Ticket',
-      ));
+  Future<int> makeCost(int itemId, int amountMinor) => db.costDao.addCost(
+    CostsCompanion.insert(
+      itemId: Value(itemId),
+      amountMinor: amountMinor,
+      currency: Currency.eur,
+      reason: 'Ticket',
+    ),
+  );
 
-  Future<ItineraryItem?> readItem(int id) =>
-      (db.select(db.itineraryItems)..where((i) => i.id.equals(id)))
-          .getSingleOrNull();
+  Future<ItineraryItem?> readItem(int id) => (db.select(
+    db.itineraryItems,
+  )..where((i) => i.id.equals(id))).getSingleOrNull();
 
   /// The branches of the trip's only set, in swipe order.
   Future<List<Alternative>> branchesOf(int tripId, int setId) async =>
@@ -62,24 +62,26 @@ void main() {
   }
 
   test(
-      'createSetFromItem moves the item into a chosen branch and adds an empty '
-      'second one', () async {
-    final tripId = await makeTrip();
-    final museum = await makeItem(tripId, title: 'Museum');
+    'createSetFromItem moves the item into a chosen branch and adds an empty '
+    'second one',
+    () async {
+      final tripId = await makeTrip();
+      final museum = await makeItem(tripId, title: 'Museum');
 
-    final setId = await db.alternativeDao.createSetFromItem(museum);
+      final setId = await db.alternativeDao.createSetFromItem(museum);
 
-    final branches = await branchesOf(tripId, setId);
-    expect(branches, hasLength(2));
-    // The existing plan becomes the chosen branch, so nothing changes for the
-    // user until they pick the new one.
-    expect(branches.first.chosen, isTrue);
-    expect(branches.last.chosen, isFalse);
-    expect((await readItem(museum))!.alternativeId, branches.first.id);
-    // The second branch starts empty, ready to be planned.
-    final items = await db.itineraryDao.watchItemsForTrip(tripId).first;
-    expect(items.where((i) => i.alternativeId == branches.last.id), isEmpty);
-  });
+      final branches = await branchesOf(tripId, setId);
+      expect(branches, hasLength(2));
+      // The existing plan becomes the chosen branch, so nothing changes for the
+      // user until they pick the new one.
+      expect(branches.first.chosen, isTrue);
+      expect(branches.last.chosen, isFalse);
+      expect((await readItem(museum))!.alternativeId, branches.first.id);
+      // The second branch starts empty, ready to be planned.
+      final items = await db.itineraryDao.watchItemsForTrip(tripId).first;
+      expect(items.where((i) => i.alternativeId == branches.last.id), isEmpty);
+    },
+  );
 
   test('createSetFromItem takes over the item\'s slot in the day', () async {
     final tripId = await makeTrip();
@@ -89,7 +91,9 @@ void main() {
 
     final setId = await db.alternativeDao.createSetFromItem(museum);
 
-    final set = (await db.alternativeDao.watchSetsForTrip(tripId).first)[setId]!;
+    final set = (await db.alternativeDao
+        .watchSetsForTrip(tripId)
+        .first)[setId]!;
     expect(set.date, day);
     // The set sits where the item sat, so the day still reads breakfast -> set
     // -> dinner.
@@ -125,62 +129,67 @@ void main() {
     );
   });
 
-  test('chooseAlternative moves the choice and leaves exactly one chosen',
-      () async {
-    final tripId = await makeTrip();
-    final museum = await makeItem(tripId, title: 'Museum');
-    final setId = await db.alternativeDao.createSetFromItem(museum);
-    final third = await db.alternativeDao.addAlternative(setId);
+  test(
+    'chooseAlternative moves the choice and leaves exactly one chosen',
+    () async {
+      final tripId = await makeTrip();
+      final museum = await makeItem(tripId, title: 'Museum');
+      final setId = await db.alternativeDao.createSetFromItem(museum);
+      final third = await db.alternativeDao.addAlternative(setId);
 
-    await db.alternativeDao.chooseAlternative(third);
+      await db.alternativeDao.chooseAlternative(third);
 
-    final branches = await branchesOf(tripId, setId);
-    expect(branches.where((b) => b.chosen).map((b) => b.id), [third]);
-  });
-
-  test('deleteAlternative deletes the branch\'s items and their costs',
-      () async {
-    final tripId = await makeTrip();
-    final museum = await makeItem(tripId, title: 'Museum');
-    final setId = await db.alternativeDao.createSetFromItem(museum);
-    final branches = await branchesOf(tripId, setId);
-    // A third branch, so deleting one does not make the set degenerate.
-    await db.alternativeDao.addAlternative(setId);
-    final beach = await makeItem(
-      tripId,
-      title: 'Beach',
-      alternativeId: branches.last.id,
-    );
-    await makeCost(beach, 2000);
-
-    await db.alternativeDao.deleteAlternative(branches.last.id);
-
-    // The rejected plan goes away with its branch, cost and all.
-    expect(await readItem(beach), isNull);
-    expect(await db.costDao.watchCostsForTrip(tripId).first, isEmpty);
-    expect((await readItem(museum))!.alternativeId, branches.first.id);
-  });
-
-  test('deleting the chosen branch falls back to the first remaining one',
-      () async {
-    final tripId = await makeTrip();
-    final museum = await makeItem(tripId, title: 'Museum');
-    final setId = await db.alternativeDao.createSetFromItem(museum);
-    await db.alternativeDao.addAlternative(setId);
-    var branches = await branchesOf(tripId, setId);
-
-    await db.alternativeDao.deleteAlternative(branches.first.id);
-
-    branches = await branchesOf(tripId, setId);
-    // Two branches remain, and one of them is chosen — a set is never left
-    // without a plan to show.
-    expect(branches, hasLength(2));
-    expect(branches.where((b) => b.chosen), hasLength(1));
-    expect(branches.first.chosen, isTrue);
-  });
+      final branches = await branchesOf(tripId, setId);
+      expect(branches.where((b) => b.chosen).map((b) => b.id), [third]);
+    },
+  );
 
   test(
-      'a set left with one branch is flattened back into the day, keeping its '
+    'deleteAlternative deletes the branch\'s items and their costs',
+    () async {
+      final tripId = await makeTrip();
+      final museum = await makeItem(tripId, title: 'Museum');
+      final setId = await db.alternativeDao.createSetFromItem(museum);
+      final branches = await branchesOf(tripId, setId);
+      // A third branch, so deleting one does not make the set degenerate.
+      await db.alternativeDao.addAlternative(setId);
+      final beach = await makeItem(
+        tripId,
+        title: 'Beach',
+        alternativeId: branches.last.id,
+      );
+      await makeCost(beach, 2000);
+
+      await db.alternativeDao.deleteAlternative(branches.last.id);
+
+      // The rejected plan goes away with its branch, cost and all.
+      expect(await readItem(beach), isNull);
+      expect(await db.costDao.watchCostsForTrip(tripId).first, isEmpty);
+      expect((await readItem(museum))!.alternativeId, branches.first.id);
+    },
+  );
+
+  test(
+    'deleting the chosen branch falls back to the first remaining one',
+    () async {
+      final tripId = await makeTrip();
+      final museum = await makeItem(tripId, title: 'Museum');
+      final setId = await db.alternativeDao.createSetFromItem(museum);
+      await db.alternativeDao.addAlternative(setId);
+      var branches = await branchesOf(tripId, setId);
+
+      await db.alternativeDao.deleteAlternative(branches.first.id);
+
+      branches = await branchesOf(tripId, setId);
+      // Two branches remain, and one of them is chosen — a set is never left
+      // without a plan to show.
+      expect(branches, hasLength(2));
+      expect(branches.where((b) => b.chosen), hasLength(1));
+      expect(branches.first.chosen, isTrue);
+    },
+  );
+
+  test('a set left with one branch is flattened back into the day, keeping its '
       'items and costs and the day\'s order', () async {
     final tripId = await makeTrip();
     await makeItem(tripId, title: 'Breakfast', sortOrder: 0);
@@ -203,7 +212,12 @@ void main() {
     // slot the set held — dinner shifted down to make room.
     expect(await db.alternativeDao.watchSetsForTrip(tripId).first, isEmpty);
     expect(await db.alternativeDao.watchBranchesForTrip(tripId).first, isEmpty);
-    expect(await looseTitles(tripId), ['Breakfast', 'Museum', 'Cafe', 'Dinner']);
+    expect(await looseTitles(tripId), [
+      'Breakfast',
+      'Museum',
+      'Cafe',
+      'Dinner',
+    ]);
     expect((await readItem(museum))!.alternativeId, isNull);
     final costs = await db.costDao.watchCostsForTrip(tripId).first;
     expect(costs.single.itemId, museum);
@@ -262,18 +276,23 @@ void main() {
     expect((await branchesOf(tripId, setId)).first.label, isNull);
   });
 
-  test('deleting the trip cascades to its sets, branches and their items',
-      () async {
-    final tripId = await makeTrip();
-    final museum = await makeItem(tripId, title: 'Museum');
-    await db.alternativeDao.createSetFromItem(museum);
+  test(
+    'deleting the trip cascades to its sets, branches and their items',
+    () async {
+      final tripId = await makeTrip();
+      final museum = await makeItem(tripId, title: 'Museum');
+      await db.alternativeDao.createSetFromItem(museum);
 
-    await db.tripDao.deleteTrip(tripId);
+      await db.tripDao.deleteTrip(tripId);
 
-    expect(await db.alternativeDao.watchSetsForTrip(tripId).first, isEmpty);
-    expect(await db.alternativeDao.watchBranchesForTrip(tripId).first, isEmpty);
-    expect(await readItem(museum), isNull);
-  });
+      expect(await db.alternativeDao.watchSetsForTrip(tripId).first, isEmpty);
+      expect(
+        await db.alternativeDao.watchBranchesForTrip(tripId).first,
+        isEmpty,
+      );
+      expect(await readItem(museum), isNull);
+    },
+  );
 
   test('groupItems refuses to group across branches', () async {
     final tripId = await makeTrip();
@@ -290,24 +309,34 @@ void main() {
     expect(() => db.groupDao.groupItems(museum, beach), throwsArgumentError);
   });
 
-  test('nextSortOrder counts sets as day blocks and ignores items in branches',
-      () async {
-    final tripId = await makeTrip();
-    final museum = await makeItem(tripId, title: 'Museum', sortOrder: 0);
-    final setId = await db.alternativeDao.createSetFromItem(museum);
-    final branches = await branchesOf(tripId, setId);
-    // A crowded branch must not push the day's next slot along: its items are
-    // ordered within the branch, not within the day.
-    await makeItem(tripId,
-        title: 'Beach', sortOrder: 0, alternativeId: branches.last.id);
-    await makeItem(tripId,
-        title: 'Bar', sortOrder: 1, alternativeId: branches.last.id);
+  test(
+    'nextSortOrder counts sets as day blocks and ignores items in branches',
+    () async {
+      final tripId = await makeTrip();
+      final museum = await makeItem(tripId, title: 'Museum', sortOrder: 0);
+      final setId = await db.alternativeDao.createSetFromItem(museum);
+      final branches = await branchesOf(tripId, setId);
+      // A crowded branch must not push the day's next slot along: its items are
+      // ordered within the branch, not within the day.
+      await makeItem(
+        tripId,
+        title: 'Beach',
+        sortOrder: 0,
+        alternativeId: branches.last.id,
+      );
+      await makeItem(
+        tripId,
+        title: 'Bar',
+        sortOrder: 1,
+        alternativeId: branches.last.id,
+      );
 
-    // The day holds one block — the set, at slot 0 — so the next slot is 1.
-    expect(await db.itineraryDao.nextSortOrder(tripId, day), 1);
-    expect(
-      await db.itineraryDao.nextSortOrderInAlternative(branches.last.id),
-      2,
-    );
-  });
+      // The day holds one block — the set, at slot 0 — so the next slot is 1.
+      expect(await db.itineraryDao.nextSortOrder(tripId, day), 1);
+      expect(
+        await db.itineraryDao.nextSortOrderInAlternative(branches.last.id),
+        2,
+      );
+    },
+  );
 }

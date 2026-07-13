@@ -100,8 +100,7 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db.close);
 
-    final paris =
-        (await db.checklistDao.watchChecklists(1).first);
+    final paris = (await db.checklistDao.watchChecklists(1).first);
     final rome = (await db.checklistDao.watchChecklists(2).first);
     final oslo = (await db.checklistDao.watchChecklists(3).first);
 
@@ -112,8 +111,7 @@ void main() {
     expect(oslo, isEmpty);
 
     // Items are repointed to the new checklist, order and done-state preserved.
-    final parisItems =
-        await db.checklistDao.watchItems(paris.single.id).first;
+    final parisItems = await db.checklistDao.watchItems(paris.single.id).first;
     expect(parisItems.map((i) => i.label), ['Passport', 'Tickets']);
     expect(parisItems.map((i) => i.done), [false, true]);
 

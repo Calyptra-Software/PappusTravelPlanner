@@ -34,8 +34,9 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
     final trip = ref.watch(tripProvider(widget.tripId)).value;
     final stats = ref.watch(tripStatsProvider(widget.tripId));
     final meName = ref.watch(mePersonProvider).value?.name;
-    final accent =
-        trip != null ? Color(trip.colorValue) : Theme.of(context).colorScheme.primary;
+    final accent = trip != null
+        ? Color(trip.colorValue)
+        : Theme.of(context).colorScheme.primary;
 
     // Keep the selected currency valid as data streams in.
     final currencies = [for (final c in stats.byCurrency) c.currency];
@@ -98,24 +99,24 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
                 const SizedBox(height: 12),
                 switch (_personView) {
                   _PersonView.paid => _PersonAmountList(
-                      stats: current,
-                      accent: accent,
-                      localeName: localeName,
-                      meName: meName,
-                      amountOf: (p) => p.paidMinor,
-                    ),
+                    stats: current,
+                    accent: accent,
+                    localeName: localeName,
+                    meName: meName,
+                    amountOf: (p) => p.paidMinor,
+                  ),
                   _PersonView.share => _PersonAmountList(
-                      stats: current,
-                      accent: accent,
-                      localeName: localeName,
-                      meName: meName,
-                      amountOf: (p) => p.shareMinor,
-                    ),
+                    stats: current,
+                    accent: accent,
+                    localeName: localeName,
+                    meName: meName,
+                    amountOf: (p) => p.shareMinor,
+                  ),
                   _PersonView.balances => _BalancesSection(
-                      stats: current,
-                      localeName: localeName,
-                      meName: meName,
-                    ),
+                    stats: current,
+                    localeName: localeName,
+                    meName: meName,
+                  ),
                 },
               ],
             ),
@@ -162,8 +163,9 @@ class _SummaryStrip extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     // Split the total into paid/open percentages; the open share takes the
     // remainder so the two always add up to 100 (no rounding drift).
-    final paidPercent =
-        stats.totalMinor == 0 ? 0 : (stats.paidMinor * 100 / stats.totalMinor).round();
+    final paidPercent = stats.totalMinor == 0
+        ? 0
+        : (stats.paidMinor * 100 / stats.totalMinor).round();
     final openPercent = stats.totalMinor == 0 ? 0 : 100 - paidPercent;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,37 +176,47 @@ class _SummaryStrip extends StatelessWidget {
           children: [
             Text(
               formatMoney(stats.totalMinor, stats.currency, localeName),
-              style: theme.textTheme.headlineMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(width: 12),
             Text(
               l10n.statsExpenses(stats.count),
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 6),
         Row(
           children: [
-            Icon(Icons.check_circle,
-                size: 16, color: theme.colorScheme.primary),
+            Icon(
+              Icons.check_circle,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 6),
             Text(
               l10n.statsPaidAmount(
-                  formatMoney(stats.paidMinor, stats.currency, localeName),
-                  paidPercent),
+                formatMoney(stats.paidMinor, stats.currency, localeName),
+                paidPercent,
+              ),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(width: 16),
-            Icon(Icons.pending_outlined,
-                size: 16, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.pending_outlined,
+              size: 16,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 6),
             Text(
               l10n.statsOpenAmount(
-                  formatMoney(stats.openMinor, stats.currency, localeName),
-                  openPercent),
+                formatMoney(stats.openMinor, stats.currency, localeName),
+                openPercent,
+              ),
               style: theme.textTheme.bodyMedium,
             ),
           ],
@@ -222,10 +234,9 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: Theme.of(context)
-          .textTheme
-          .titleMedium
-          ?.copyWith(fontWeight: FontWeight.bold),
+      style: Theme.of(
+        context,
+      ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
     );
   }
 }
@@ -248,7 +259,11 @@ class _CategoryList extends ConsumerWidget {
       children: [
         for (final cat in stats.byCategory)
           _BarRow(
-            leading: Icon(iconForReason(icons[cat.reason]), size: 20, color: accent),
+            leading: Icon(
+              iconForReason(icons[cat.reason]),
+              size: 20,
+              color: accent,
+            ),
             label: cat.reason,
             trailing: formatMoney(cat.amountMinor, stats.currency, localeName),
             secondary: '${(cat.fraction * 100).round()}%',
@@ -282,8 +297,10 @@ class _PersonAmountList extends StatelessWidget {
   Widget build(BuildContext context) {
     final people = [...stats.byPerson]
       ..sort((a, b) => amountOf(b).compareTo(amountOf(a)));
-    final maxAmount =
-        people.fold<int>(0, (m, p) => amountOf(p) > m ? amountOf(p) : m);
+    final maxAmount = people.fold<int>(
+      0,
+      (m, p) => amountOf(p) > m ? amountOf(p) : m,
+    );
     return Column(
       children: [
         for (final person in people)
@@ -336,12 +353,14 @@ class _BalancesSection extends StatelessWidget {
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Text(person.name, style: theme.textTheme.bodyLarge)),
+                Expanded(
+                  child: Text(person.name, style: theme.textTheme.bodyLarge),
+                ),
                 Text(
                   person.netMinor == 0
                       ? l10n.statsEven
                       : '${person.netMinor > 0 ? l10n.statsGetsBack : l10n.statsOwes} '
-                          '${formatMoney(person.netMinor.abs(), stats.currency, localeName)}',
+                            '${formatMoney(person.netMinor.abs(), stats.currency, localeName)}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: person.netMinor == 0
@@ -358,8 +377,9 @@ class _BalancesSection extends StatelessWidget {
         if (stats.settlements.isEmpty)
           Text(
             l10n.statsSettledUp,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           )
         else
           for (final t in stats.settlements)
@@ -367,14 +387,18 @@ class _BalancesSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  Icon(Icons.arrow_forward,
-                      size: 18, color: theme.colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.arrow_forward,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(child: Text(l10n.statsTransfer(t.from, t.to))),
                   Text(
                     formatMoney(t.amountMinor, stats.currency, localeName),
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -420,21 +444,26 @@ class _BarRow extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(label,
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     if (secondary != null) ...[
                       Text(
                         secondary!,
                         style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant),
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(width: 10),
                     ],
                     Text(
                       trailing,
-                      style: theme.textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
@@ -470,13 +499,19 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.bar_chart,
-                size: 48, color: theme.colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.bar_chart,
+              size: 48,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: 12),
-            Text(message,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyLarge
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),

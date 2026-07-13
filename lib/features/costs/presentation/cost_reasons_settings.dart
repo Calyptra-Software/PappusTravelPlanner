@@ -54,16 +54,18 @@ class CostReasonsSettings extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
           child: Text(
             l10n.costReasonDisplayHelp,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         if (rows.isEmpty)
           ListTile(
             title: Text(
               l10n.noCostReasons,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           )
         else
@@ -224,8 +226,10 @@ Future<int?> showCostReasonIconPicker(BuildContext context) {
           children: [
             // "No icon" (default) choice, then the curated set.
             IconButton(
-              icon: Icon(kDefaultCostReasonIcon,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              icon: Icon(
+                kDefaultCostReasonIcon,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
               onPressed: () => Navigator.pop(context, -1),
             ),
             for (final entry in kCostReasonIcons.entries)

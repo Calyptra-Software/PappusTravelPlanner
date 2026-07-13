@@ -18,7 +18,9 @@ void main() {
   late String path;
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('tp_actual_times_migration');
+    tempDir = await Directory.systemTemp.createTemp(
+      'tp_actual_times_migration',
+    );
     path = p.join(tempDir.path, 'v18.sqlite');
   });
 

@@ -68,7 +68,7 @@ class AlternativeCard extends ConsumerStatefulWidget {
 
   /// Reorders the items *within* one branch.
   final void Function(List<ItineraryItem> items, int oldIndex, int newIndex)
-      onReorderBranch;
+  onReorderBranch;
 
   /// Handle for dragging the whole decision to another slot in its day.
   final Widget? dragHandle;
@@ -290,7 +290,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     if (nowLine == null) return card;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [NowLine(minutes: nowLine), card],
+      children: [
+        NowLine(minutes: nowLine),
+        card,
+      ],
     );
   }
 
@@ -310,10 +313,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
               ),
             ),
           ),
-          if (widget.isNow) ...[
-            const NowBadge(),
-            const SizedBox(width: 4),
-          ],
+          if (widget.isNow) ...[const NowBadge(), const SizedBox(width: 4)],
           _menu(l10n),
           ?widget.dragHandle,
         ],
@@ -465,9 +465,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 )
               else
                 FilledButton.tonal(
-                  onPressed: () => ref
-                      .read(repositoryProvider)
-                      .chooseAlternative(branch.id),
+                  onPressed: () =>
+                      ref.read(repositoryProvider).chooseAlternative(branch.id),
                   child: Text(l10n.optionChoose),
                 ),
             ],
@@ -501,8 +500,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 onTap: () => widget.onTapItem(item),
                 costs: widget.costsByItem[item.id] ?? const [],
                 group: groupId == null ? null : widget.groups[groupId],
-                isFirstInGroup:
-                    startsGroupRun(item, i == 0 ? null : items[i - 1]),
+                isFirstInGroup: startsGroupRun(
+                  item,
+                  i == 0 ? null : items[i - 1],
+                ),
                 isLastInGroup: endsGroupRun(
                   item,
                   i == items.length - 1 ? null : items[i + 1],
@@ -603,7 +604,9 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
           IconButton(
             tooltip: l10n.optionNext,
             icon: const Icon(Icons.chevron_right),
-            onPressed: _page == _branches.length - 1 ? null : () => _goTo(_page + 1),
+            onPressed: _page == _branches.length - 1
+                ? null
+                : () => _goTo(_page + 1),
           ),
         ],
       ),
@@ -747,12 +750,12 @@ class _DragAnywhereScrollBehavior extends MaterialScrollBehavior {
 
   @override
   Set<PointerDeviceKind> get dragDevices => const {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.invertedStylus,
-        PointerDeviceKind.trackpad,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.invertedStylus,
+    PointerDeviceKind.trackpad,
+  };
 }
 
 /// Reports its child's laid-out size, so the pager can size itself to the option

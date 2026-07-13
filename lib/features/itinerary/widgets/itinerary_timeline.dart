@@ -89,11 +89,8 @@ class ItineraryTimeline extends StatelessWidget {
   /// Opens the add-transport form for [day] (or for one option of a decision on
   /// it). [fromDefault] is the current location — where the previous entry
   /// leaves you — pre-filled into the "from" field, or null if there is none.
-  final void Function(
-    DateTime day,
-    String? fromDefault, {
-    int? alternativeId,
-  }) onAddTransport;
+  final void Function(DateTime day, String? fromDefault, {int? alternativeId})
+  onAddTransport;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -109,7 +106,8 @@ class ItineraryTimeline extends StatelessWidget {
     List<ItineraryItem> branchItems,
     int oldIndex,
     int newIndex,
-  ) onReorderBranch;
+  )
+  onReorderBranch;
 
   List<DateTime> _daysToShow() {
     final days = SplayTreeSet<DateTime>();
@@ -197,7 +195,6 @@ class ItineraryTimeline extends StatelessWidget {
     );
   }
 }
-
 
 /// One day of the trip: a header that collapses the day, its blocks (tiles and
 /// decisions) as one reorderable list, and the day's add actions.
@@ -375,9 +372,7 @@ class _DaySection extends StatelessWidget {
                 Icon(
                   expanded ? Icons.expand_less : Icons.expand_more,
                   color: theme.colorScheme.onSurfaceVariant,
-                  semanticLabel: expanded
-                      ? l10n.hideEntries
-                      : l10n.showEntries,
+                  semanticLabel: expanded ? l10n.hideEntries : l10n.showEntries,
                 ),
               ],
             ),
@@ -406,8 +401,9 @@ class _DaySection extends StatelessWidget {
     // that carries no times at all — the header's clock says the rest.
     final isToday = normalizeDay(now) == day;
     final marker = isToday ? nowMarker(blocks, nowMinutes) : null;
-    final happeningIndex =
-        (marker != null && marker.happening) ? marker.index : -1;
+    final happeningIndex = (marker != null && marker.happening)
+        ? marker.index
+        : -1;
     // The block the line is drawn above; == blocks.length when the whole day is
     // behind us, and the line goes under the last block instead.
     final lineIndex = (marker != null && !marker.happening) ? marker.index : -1;
@@ -487,11 +483,8 @@ class _DaySection extends StatelessWidget {
                     _branchLastLocation(block, branchId),
                     alternativeId: branchId,
                   ),
-                  onQuickAddPlace: (branchId, location) => onQuickAddPlace(
-                    day,
-                    location,
-                    alternativeId: branchId,
-                  ),
+                  onQuickAddPlace: (branchId, location) =>
+                      onQuickAddPlace(day, location, alternativeId: branchId),
                   onReorderBranch: onReorderBranch,
                   dragHandle: dragHandle,
                 ),
@@ -559,7 +552,9 @@ class _DaySection extends StatelessWidget {
       group: groupId == null ? null : groups[groupId],
       isFirstInGroup: startsGroupRun(item, neighbour(index - 1)),
       isLastInGroup: endsGroupRun(item, neighbour(index + 1)),
-      groupCosts: groupId == null ? const [] : (costsByGroup[groupId] ?? const []),
+      groupCosts: groupId == null
+          ? const []
+          : (costsByGroup[groupId] ?? const []),
       localeName: localeName,
       onTapCost: onTapCost,
       dragHandle: dragHandle,

@@ -21,9 +21,9 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
             (i) => OrderingTerm(expression: i.date),
             (i) => OrderingTerm(expression: i.sortOrder),
             (i) => OrderingTerm(
-                  expression: i.startMinutes,
-                  nulls: NullsOrder.last,
-                ),
+              expression: i.startMinutes,
+              nulls: NullsOrder.last,
+            ),
           ]))
         .watch();
   }
@@ -46,14 +46,18 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
     final itemMax = itineraryItems.sortOrder.max();
     final itemQuery = selectOnly(itineraryItems)
       ..addColumns([itemMax])
-      ..where(itineraryItems.tripId.equals(tripId) &
-          itineraryItems.date.equals(date) &
-          itineraryItems.alternativeId.isNull());
+      ..where(
+        itineraryItems.tripId.equals(tripId) &
+            itineraryItems.date.equals(date) &
+            itineraryItems.alternativeId.isNull(),
+      );
     final setMax = alternativeSets.sortOrder.max();
     final setQuery = selectOnly(alternativeSets)
       ..addColumns([setMax])
-      ..where(alternativeSets.tripId.equals(tripId) &
-          alternativeSets.date.equals(date));
+      ..where(
+        alternativeSets.tripId.equals(tripId) &
+            alternativeSets.date.equals(date),
+      );
 
     final itemRow = await itemQuery.getSingleOrNull();
     final setRow = await setQuery.getSingleOrNull();
@@ -92,9 +96,9 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
         mode: InsertMode.insertOrIgnore,
       );
     } else {
-      await (delete(collapsedDays)
-            ..where((d) => d.tripId.equals(tripId) & d.day.equals(day)))
-          .go();
+      await (delete(
+        collapsedDays,
+      )..where((d) => d.tripId.equals(tripId) & d.day.equals(day))).go();
     }
   }
 }

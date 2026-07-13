@@ -30,13 +30,15 @@ void main() {
     );
   }
 
-  ItineraryItem placeItem(int id,
-      {int? minutes,
-      int? endMinutes,
-      int? actualMinutes,
-      int? actualEndMinutes,
-      String location = 'Place',
-      String? notes}) {
+  ItineraryItem placeItem(
+    int id, {
+    int? minutes,
+    int? endMinutes,
+    int? actualMinutes,
+    int? actualEndMinutes,
+    String location = 'Place',
+    String? notes,
+  }) {
     return ItineraryItem(
       id: id,
       tripId: 1,
@@ -58,7 +60,11 @@ void main() {
 
   group('isTripOngoing', () {
     final t = trip(
-        id: 1, title: 'T', start: DateTime(2026, 7, 9), end: DateTime(2026, 7, 11));
+      id: 1,
+      title: 'T',
+      start: DateTime(2026, 7, 9),
+      end: DateTime(2026, 7, 11),
+    );
 
     test('is true on the last day even with a time-of-day', () {
       // Raw DateTime.now() carries a time; the end day must still count as ongoing.
@@ -75,12 +81,16 @@ void main() {
   group('pickFeaturedTrip', () {
     test('prefers an ongoing trip over a sooner-starting upcoming one', () {
       final ongoing = trip(
-          id: 1,
-          title: 'Ongoing',
-          start: DateTime(2026, 7, 4),
-          end: DateTime(2026, 7, 8));
-      final upcoming =
-          trip(id: 2, title: 'Upcoming', start: DateTime(2026, 7, 6));
+        id: 1,
+        title: 'Ongoing',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 8),
+      );
+      final upcoming = trip(
+        id: 2,
+        title: 'Upcoming',
+        start: DateTime(2026, 7, 6),
+      );
 
       expect(pickFeaturedTrip([upcoming, ongoing], now)!.title, 'Ongoing');
     });
@@ -121,10 +131,11 @@ void main() {
 
     test('ongoing trip shows "Day X of Y" and all today items (uncapped)', () {
       final t = trip(
-          id: 1,
-          title: 'Italy',
-          start: DateTime(2026, 7, 4),
-          end: DateTime(2026, 7, 9));
+        id: 1,
+        title: 'Italy',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 9),
+      );
       final items = [
         placeItem(1, minutes: 9 * 60, location: 'Colosseum'),
         placeItem(2, minutes: 12 * 60, location: 'Lunch'),
@@ -144,12 +155,18 @@ void main() {
 
     test('surfaces item notes (trimmed) on the row', () {
       final t = trip(
-          id: 1,
-          title: 'Italy',
-          start: DateTime(2026, 7, 4),
-          end: DateTime(2026, 7, 9));
+        id: 1,
+        title: 'Italy',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 9),
+      );
       final items = [
-        placeItem(1, minutes: 9 * 60, location: 'Colosseum', notes: '  Bring water  '),
+        placeItem(
+          1,
+          minutes: 9 * 60,
+          location: 'Colosseum',
+          notes: '  Bring water  ',
+        ),
         placeItem(2, minutes: 12 * 60, location: 'Lunch'),
       ];
       final p = buildWidgetPayload([t], items, now, l10n, 'en');
@@ -160,10 +177,11 @@ void main() {
 
     test('shows a start–end time range when the item has an end time', () {
       final t = trip(
-          id: 1,
-          title: 'Italy',
-          start: DateTime(2026, 7, 4),
-          end: DateTime(2026, 7, 9));
+        id: 1,
+        title: 'Italy',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 9),
+      );
       final items = [
         placeItem(1, minutes: 9 * 60 + 2, endMinutes: 9 * 60 + 39),
         placeItem(2, minutes: 12 * 60),
@@ -176,16 +194,19 @@ void main() {
 
     test('a recorded actual time colours its miss onto the planned one', () {
       final t = trip(
-          id: 1,
-          title: 'Italy',
-          start: DateTime(2026, 7, 4),
-          end: DateTime(2026, 7, 9));
+        id: 1,
+        title: 'Italy',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 9),
+      );
       final items = [
-        placeItem(1,
-            minutes: 9 * 60,
-            endMinutes: 10 * 60 + 30,
-            actualMinutes: 9 * 60 + 15,
-            actualEndMinutes: 10 * 60 + 25),
+        placeItem(
+          1,
+          minutes: 9 * 60,
+          endMinutes: 10 * 60 + 30,
+          actualMinutes: 9 * 60 + 15,
+          actualEndMinutes: 10 * 60 + 25,
+        ),
       ];
       final p = buildWidgetPayload([t], items, now, l10n, 'en');
 

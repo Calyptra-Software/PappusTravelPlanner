@@ -39,7 +39,12 @@ void main() {
 
     test('cross-year range keeps both years', () {
       expect(
-        formatDateRange(l10n, 'de', DateTime(2026, 12, 30), DateTime(2027, 1, 2)),
+        formatDateRange(
+          l10n,
+          'de',
+          DateTime(2026, 12, 30),
+          DateTime(2027, 1, 2),
+        ),
         '30. Dezember 2026 – 2. Januar 2027',
       );
     });

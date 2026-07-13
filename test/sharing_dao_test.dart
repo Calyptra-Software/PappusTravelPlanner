@@ -188,8 +188,9 @@ void main() {
     // The recipient (db) already knows Bob — as "me" — and has its own icon (2)
     // for the "Tickets" reason.
     await db.costDao.upsertPerson('Bob');
-    final bob = await (db.select(db.people)..where((p) => p.name.equals('Bob')))
-        .getSingle();
+    final bob = await (db.select(
+      db.people,
+    )..where((p) => p.name.equals('Bob'))).getSingle();
     await db.costDao.setMePerson(bob.id);
     await db.costDao.setReasonIcon('Tickets', 2);
 
@@ -221,13 +222,13 @@ void main() {
 
     // Every itinerary item, cost, checklist, and collapsed day now belongs to
     // the new trip, and grouped items point at the new trip's group.
-    final items =
-        await (db.select(db.itineraryItems)..where((i) => i.tripId.equals(newId)))
-            .get();
+    final items = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.tripId.equals(newId))).get();
     expect(items, hasLength(2));
-    final groups =
-        await (db.select(db.itemGroups)..where((g) => g.tripId.equals(newId)))
-            .get();
+    final groups = await (db.select(
+      db.itemGroups,
+    )..where((g) => g.tripId.equals(newId))).get();
     expect(groups, hasLength(1));
     expect(items.every((i) => i.groupId == groups.single.id), isTrue);
 

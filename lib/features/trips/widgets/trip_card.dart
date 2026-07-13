@@ -46,8 +46,9 @@ class TripCard extends StatelessWidget {
                     children: [
                       Text(
                         trip.title,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w600),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -55,8 +56,11 @@ class TripCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            Icon(Icons.place_outlined,
-                                size: 16, color: theme.colorScheme.primary),
+                            Icon(
+                              Icons.place_outlined,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
@@ -72,14 +76,20 @@ class TripCard extends StatelessWidget {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Icon(Icons.calendar_today_outlined,
-                              size: 14,
-                              color: theme.colorScheme.onSurfaceVariant),
+                          Icon(
+                            Icons.calendar_today_outlined,
+                            size: 14,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               formatDateRange(
-                                  l10n, localeName, trip.startDate, trip.endDate),
+                                l10n,
+                                localeName,
+                                trip.startDate,
+                                trip.endDate,
+                              ),
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
@@ -92,9 +102,11 @@ class TripCard extends StatelessWidget {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.account_balance_wallet_outlined,
-                                size: 14,
-                                color: theme.colorScheme.onSurfaceVariant),
+                            Icon(
+                              Icons.account_balance_wallet_outlined,
+                              size: 14,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
@@ -138,9 +150,9 @@ class _Pill extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSecondaryContainer,
-              fontWeight: FontWeight.w600,
-            ),
+          color: scheme.onSecondaryContainer,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

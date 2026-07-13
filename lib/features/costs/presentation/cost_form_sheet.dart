@@ -22,8 +22,10 @@ Future<void> showCostFormSheet(
   int? tripId,
   Cost? existing,
 }) {
-  assert(existing != null || itemId != null || groupId != null || tripId != null,
-      'A new cost must be attached to an item, a group or a trip');
+  assert(
+    existing != null || itemId != null || groupId != null || tripId != null,
+    'A new cost must be attached to an item, a group or a trip',
+  );
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
@@ -109,7 +111,10 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
 
   /// Opens the category picker: every saved category with its icon, plus
   /// whatever the user types into the search box.
-  Future<void> _pickReason(List<String> reasons, Map<String, int?> icons) async {
+  Future<void> _pickReason(
+    List<String> reasons,
+    Map<String, int?> icons,
+  ) async {
     final l10n = AppLocalizations.of(context);
     final current = _reasonController.text.trim();
     final result = await showSearchPicker(
@@ -235,8 +240,9 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
     if (_isEditing) {
       // Seed the split once its beneficiaries have actually loaded, so an
       // existing list isn't briefly overwritten with an empty one.
-      final beneficiaries =
-          ref.watch(costBeneficiariesProvider(widget.existing!.id)).value;
+      final beneficiaries = ref
+          .watch(costBeneficiariesProvider(widget.existing!.id))
+          .value;
       if (beneficiaries != null) _seedPaidFor(beneficiaries);
     }
 
@@ -257,14 +263,17 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(_isEditing ? l10n.editCost : l10n.addCost,
-                    style: theme.textTheme.titleLarge),
+                Text(
+                  _isEditing ? l10n.editCost : l10n.addCost,
+                  style: theme.textTheme.titleLarge,
+                ),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _amountController,
                   autofocus: !_isEditing,
                   keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true),
+                    decimal: true,
+                  ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.,-]')),
                   ],
@@ -272,10 +281,9 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                     labelText: l10n.costAmount,
                     prefixText: '${_currency.symbol} ',
                   ),
-                  validator: (value) =>
-                      parseAmountToMinor(value ?? '') == null
-                          ? l10n.costAmountInvalid
-                          : null,
+                  validator: (value) => parseAmountToMinor(value ?? '') == null
+                      ? l10n.costAmountInvalid
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 Text(l10n.costCurrency, style: theme.textTheme.labelLarge),
@@ -308,10 +316,9 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                     suffixIcon: const Icon(Icons.arrow_drop_down),
                   ),
                   onTap: () => _pickReason(reasons, reasonIcons),
-                  validator: (value) =>
-                      (value == null || value.trim().isEmpty)
-                          ? l10n.costReasonRequired
-                          : null,
+                  validator: (value) => (value == null || value.trim().isEmpty)
+                      ? l10n.costReasonRequired
+                      : null,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -325,8 +332,8 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                       _payerController.text.isEmpty
                           ? Icons.person_off_outlined
                           : (_payerController.text == meName
-                              ? Icons.person
-                              : Icons.person_outline),
+                                ? Icons.person
+                                : Icons.person_outline),
                     ),
                     suffixIcon: const Icon(Icons.arrow_drop_down),
                   ),
@@ -352,8 +359,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                         label: Text(name),
                         visualDensity: VisualDensity.compact,
                         onDeleted: () => setState(() {
-                          _paidFor =
-                              _paidFor.where((n) => n != name).toList();
+                          _paidFor = _paidFor.where((n) => n != name).toList();
                         }),
                       ),
                     ActionChip(
@@ -369,8 +375,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                   contentPadding: EdgeInsets.zero,
                   controlAffinity: ListTileControlAffinity.leading,
                   value: _paid,
-                  onChanged: (value) =>
-                      setState(() => _paid = value ?? false),
+                  onChanged: (value) => setState(() => _paid = value ?? false),
                   title: Text(l10n.costPaid),
                 ),
                 const SizedBox(height: 12),

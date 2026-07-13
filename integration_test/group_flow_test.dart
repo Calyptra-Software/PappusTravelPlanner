@@ -20,8 +20,9 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('group two stops, add one shared expense, counted once',
-      (tester) async {
+  testWidgets('group two stops, add one shared expense, counted once', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     final db = AppDatabase.forTesting(NativeDatabase.memory());
@@ -31,24 +32,28 @@ void main() {
       TripsCompanion.insert(title: 'Italy'),
     );
     final day = DateTime(2026, 7, 5);
-    await db.itineraryDao.addItem(ItineraryItemsCompanion.insert(
-      tripId: tripId,
-      date: day,
-      kind: ItemKind.transport,
-      sortOrder: const Value(0),
-      mode: const Value(TransportMode.train),
-      fromLocation: const Value('Milan'),
-      toLocation: const Value('Florence'),
-    ));
-    await db.itineraryDao.addItem(ItineraryItemsCompanion.insert(
-      tripId: tripId,
-      date: day,
-      kind: ItemKind.transport,
-      sortOrder: const Value(1),
-      mode: const Value(TransportMode.train),
-      fromLocation: const Value('Florence'),
-      toLocation: const Value('Rome'),
-    ));
+    await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day,
+        kind: ItemKind.transport,
+        sortOrder: const Value(0),
+        mode: const Value(TransportMode.train),
+        fromLocation: const Value('Milan'),
+        toLocation: const Value('Florence'),
+      ),
+    );
+    await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day,
+        kind: ItemKind.transport,
+        sortOrder: const Value(1),
+        mode: const Value(TransportMode.train),
+        fromLocation: const Value('Florence'),
+        toLocation: const Value('Rome'),
+      ),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -94,9 +99,9 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(saveBtn);
     await tester.pumpAndSettle();
-    final members =
-        await (db.select(db.itineraryItems)..where((i) => i.groupId.isNotNull()))
-            .get();
+    final members = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.groupId.isNotNull())).get();
     expect(members.length, 2, reason: 'both stops stay grouped after save');
 
     // Reopen the first leg to continue adding the shared expense.

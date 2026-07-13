@@ -42,7 +42,5 @@ Map<Currency, int> sumByCurrency(Iterable<Cost> costs) {
 String formatTotals(Map<Currency, int> totals, String localeName) {
   // Stable order: EUR, USD, GBP.
   final ordered = Currency.values.where(totals.containsKey);
-  return ordered
-      .map((c) => formatMoney(totals[c]!, c, localeName))
-      .join(' · ');
+  return ordered.map((c) => formatMoney(totals[c]!, c, localeName)).join(' · ');
 }

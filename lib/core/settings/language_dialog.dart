@@ -32,9 +32,9 @@ Future<void> showLanguageDialog(BuildContext context, WidgetRef ref) {
         content: RadioGroup<String?>(
           groupValue: current,
           onChanged: (selected) {
-            ref.read(localeProvider.notifier).setLocale(
-                  selected == null ? null : Locale(selected),
-                );
+            ref
+                .read(localeProvider.notifier)
+                .setLocale(selected == null ? null : Locale(selected));
             Navigator.of(dialogContext).pop();
           },
           child: Column(

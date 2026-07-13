@@ -8,13 +8,7 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 /// filters the list, a query nobody matches can be added straight from the
 /// search box, and dismissing the sheet is not the same as picking "none".
 void main() {
-  const categories = [
-    'Hotel',
-    'Dinner',
-    'Train ticket',
-    'Museum',
-    'Souvenirs',
-  ];
+  const categories = ['Hotel', 'Dinner', 'Train ticket', 'Museum', 'Souvenirs'];
 
   /// Opens the picker over a bare app and hands back the future it resolves.
   /// [result] receives the outcome — deliberately a two-level "not yet / picked
@@ -27,37 +21,39 @@ void main() {
     String? noneLabel,
     bool allowCreate = true,
   }) async {
-    await tester.pumpWidget(MaterialApp(
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => Center(
-            child: ElevatedButton(
-              onPressed: () async {
-                final picked = await showSearchPicker(
-                  context,
-                  title: 'Category',
-                  options: [
-                    for (final c in categories) SearchPickerOption(c),
-                  ],
-                  selected: selected,
-                  noneLabel: noneLabel,
-                  allowCreate: allowCreate,
-                );
-                result.add(picked);
-              },
-              child: const Text('open'),
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Center(
+              child: ElevatedButton(
+                onPressed: () async {
+                  final picked = await showSearchPicker(
+                    context,
+                    title: 'Category',
+                    options: [
+                      for (final c in categories) SearchPickerOption(c),
+                    ],
+                    selected: selected,
+                    noneLabel: noneLabel,
+                    allowCreate: allowCreate,
+                  );
+                  result.add(picked);
+                },
+                child: const Text('open'),
+              ),
             ),
           ),
         ),
       ),
-    ));
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
   }
@@ -123,8 +119,12 @@ void main() {
 
   testWidgets('the none row resolves to a null value', (tester) async {
     final result = <SearchPickerResult?>[];
-    await open(tester, result: result, selected: 'Hotel',
-        noneLabel: 'Unassigned');
+    await open(
+      tester,
+      result: result,
+      selected: 'Hotel',
+      noneLabel: 'Unassigned',
+    );
 
     await tester.tap(find.text('Unassigned'));
     await tester.pumpAndSettle();
@@ -136,8 +136,12 @@ void main() {
 
   testWidgets('dismissing the sheet changes nothing', (tester) async {
     final result = <SearchPickerResult?>[];
-    await open(tester, result: result, selected: 'Hotel',
-        noneLabel: 'Unassigned');
+    await open(
+      tester,
+      result: result,
+      selected: 'Hotel',
+      noneLabel: 'Unassigned',
+    );
 
     await tester.tapAt(const Offset(10, 10)); // the barrier above the sheet
     await tester.pumpAndSettle();

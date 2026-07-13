@@ -39,22 +39,22 @@ void main() {
   /// reason-icon roster and the display preference, so both are stubbed: the
   /// drift stream behind the roster would never resolve under fake-async.
   Widget wrap(Widget card) => ProviderScope(
-        overrides: [
-          repositoryProvider.overrideWithValue(repo),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: SingleChildScrollView(child: card)),
-        ),
-      );
+    overrides: [
+      repositoryProvider.overrideWithValue(repo),
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
+    ],
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: SingleChildScrollView(child: card)),
+    ),
+  );
 
   ItineraryItem item(int id, String title, {required int alternativeId}) =>
       ItineraryItem(
@@ -68,37 +68,32 @@ void main() {
       );
 
   Cost cost(int id, int itemId, int amountMinor) => Cost(
-        id: id,
-        itemId: itemId,
-        amountMinor: amountMinor,
-        currency: Currency.eur,
-        reason: 'Ticket',
-        paid: false,
-        createdAt: DateTime(2026),
-      );
+    id: id,
+    itemId: itemId,
+    amountMinor: amountMinor,
+    currency: Currency.eur,
+    reason: 'Ticket',
+    paid: false,
+    createdAt: DateTime(2026),
+  );
 
   /// A decision with a €15 museum (chosen) and a €50 boat trip.
   DecisionBlock block() => DecisionBlock(
-        set: AlternativeSet(
-          id: 5,
-          tripId: 1,
-          date: day,
-          sortOrder: 0,
-        ),
-        branches: const [
-          Alternative(id: 10, setId: 5, sortOrder: 0, chosen: true),
-          Alternative(id: 11, setId: 5, sortOrder: 1, chosen: false),
-        ],
-        itemsByBranch: {
-          // Option A holds two entries, so it is the taller of the two — which
-          // the height test below depends on.
-          10: [
-            item(1, 'Museum', alternativeId: 10),
-            item(3, 'Lunch', alternativeId: 10),
-          ],
-          11: [item(2, 'Boat trip', alternativeId: 11)],
-        },
-      );
+    set: AlternativeSet(id: 5, tripId: 1, date: day, sortOrder: 0),
+    branches: const [
+      Alternative(id: 10, setId: 5, sortOrder: 0, chosen: true),
+      Alternative(id: 11, setId: 5, sortOrder: 1, chosen: false),
+    ],
+    itemsByBranch: {
+      // Option A holds two entries, so it is the taller of the two — which
+      // the height test below depends on.
+      10: [
+        item(1, 'Museum', alternativeId: 10),
+        item(3, 'Lunch', alternativeId: 10),
+      ],
+      11: [item(2, 'Boat trip', alternativeId: 11)],
+    },
+  );
 
   Future<void> pumpCard(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -135,7 +130,9 @@ void main() {
     expect(find.text('Use this option'), findsNothing);
   });
 
-  testWidgets('every option\'s price is visible without swiping', (tester) async {
+  testWidgets('every option\'s price is visible without swiping', (
+    tester,
+  ) async {
     await pumpCard(tester);
 
     // The pager can only show one option, so the indicator row carries the
@@ -144,8 +141,9 @@ void main() {
     expect(find.textContaining('Option B · €50.00'), findsOneWidget);
   });
 
-  testWidgets('swiping browses the next option without choosing it',
-      (tester) async {
+  testWidgets('swiping browses the next option without choosing it', (
+    tester,
+  ) async {
     await pumpCard(tester);
 
     await tester.fling(find.text('Museum'), const Offset(-300, 0), 1000);
@@ -169,8 +167,9 @@ void main() {
     expect(find.text('Boat trip'), findsOneWidget);
   });
 
-  testWidgets('clicking the card lets the arrow keys step through the options',
-      (tester) async {
+  testWidgets('clicking the card lets the arrow keys step through the options', (
+    tester,
+  ) async {
     await pumpCard(tester);
 
     // Before the click the card has no focus, so the keys go nowhere — this is
@@ -195,7 +194,9 @@ void main() {
   testWidgets('"use this option" commits the choice', (tester) async {
     // The card writes through the repository, so give it a real decision to
     // choose in.
-    final tripId = await db.tripDao.createTrip(TripsCompanion.insert(title: 'T'));
+    final tripId = await db.tripDao.createTrip(
+      TripsCompanion.insert(title: 'T'),
+    );
     final museum = await db.itineraryDao.addItem(
       ItineraryItemsCompanion.insert(
         tripId: tripId,
@@ -204,10 +205,11 @@ void main() {
       ),
     );
     final setId = await db.alternativeDao.createSetFromItem(museum);
-    final branches = await (db.select(db.alternatives)
-          ..where((a) => a.setId.equals(setId))
-          ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
-        .get();
+    final branches =
+        await (db.select(db.alternatives)
+              ..where((a) => a.setId.equals(setId))
+              ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
+            .get();
 
     await tester.pumpWidget(
       wrap(
@@ -249,8 +251,9 @@ void main() {
     expect(after.where((b) => b.chosen).map((b) => b.id), [branches.last.id]);
   });
 
-  testWidgets('an option comes back at its own full height after a swipe away',
-      (tester) async {
+  testWidgets('an option comes back at its own full height after a swipe away', (
+    tester,
+  ) async {
     await pumpCard(tester);
     final tallHeight = tester.getSize(find.byType(AlternativeCard)).height;
     // The taller option's actions sit at the bottom of the card, so they are the
@@ -260,7 +263,11 @@ void main() {
     await tester.fling(find.text('Museum'), const Offset(-600, 0), 2000);
     await tester.pumpAndSettle();
     final shortHeight = tester.getSize(find.byType(AlternativeCard)).height;
-    expect(shortHeight, lessThan(tallHeight), reason: 'the card shrinks to fit');
+    expect(
+      shortHeight,
+      lessThan(tallHeight),
+      reason: 'the card shrinks to fit',
+    );
 
     await tester.fling(find.text('Boat trip'), const Offset(600, 0), 2000);
     await tester.pumpAndSettle();
@@ -277,8 +284,9 @@ void main() {
     expect(addPlace.bottom, lessThanOrEqualTo(card.bottom));
   });
 
-  testWidgets('an option ending on a leg offers to add its destination',
-      (tester) async {
+  testWidgets('an option ending on a leg offers to add its destination', (
+    tester,
+  ) async {
     // The same "you just arrived here" shortcut the day itself offers: an option
     // that ends on a leg to Kronberg can add Kronberg as a place in one tap,
     // without typing the name again.
@@ -287,12 +295,7 @@ void main() {
       wrap(
         AlternativeCard(
           block: DecisionBlock(
-            set: AlternativeSet(
-              id: 5,
-              tripId: 1,
-              date: day,
-              sortOrder: 0,
-            ),
+            set: AlternativeSet(id: 5, tripId: 1, date: day, sortOrder: 0),
             branches: const [
               Alternative(id: 10, setId: 5, sortOrder: 0, chosen: true),
               Alternative(id: 11, setId: 5, sortOrder: 1, chosen: false),
@@ -352,11 +355,11 @@ void main() {
     required int nowMinutes,
     bool isNow = true,
   }) async {
-    ItineraryItem timed(int id, String title, int start, int end) =>
-        item(id, title, alternativeId: 10).copyWith(
-          startMinutes: Value(start),
-          endMinutes: Value(end),
-        );
+    ItineraryItem timed(int id, String title, int start, int end) => item(
+      id,
+      title,
+      alternativeId: 10,
+    ).copyWith(startMinutes: Value(start), endMinutes: Value(end));
 
     await tester.pumpWidget(
       wrap(
@@ -403,8 +406,9 @@ void main() {
     expect(find.byType(NowBadge), findsOneWidget);
   });
 
-  testWidgets('an entry under way takes the badge, and no line is drawn',
-      (tester) async {
+  testWidgets('an entry under way takes the badge, and no line is drawn', (
+    tester,
+  ) async {
     await pumpTimedCard(tester, nowMinutes: 11 * 60 + 30);
 
     expect(find.byType(NowLine), findsNothing);

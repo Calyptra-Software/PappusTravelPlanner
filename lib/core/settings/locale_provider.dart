@@ -9,8 +9,9 @@ final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
 });
 
 /// The user's chosen app locale. `null` means "follow the system language".
-final localeProvider =
-    NotifierProvider<LocaleController, Locale?>(LocaleController.new);
+final localeProvider = NotifierProvider<LocaleController, Locale?>(
+  LocaleController.new,
+);
 
 class LocaleController extends Notifier<Locale?> {
   static const _key = 'locale_code';

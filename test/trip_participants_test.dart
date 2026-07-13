@@ -11,31 +11,35 @@ void main() {
   Future<int> makeTrip([String title = 'T']) =>
       db.tripDao.createTrip(TripsCompanion.insert(title: title));
 
-  test('addParticipant creates the person and links them, sorted by name',
-      () async {
-    final tripId = await makeTrip();
-    await db.tripDao.addParticipant(tripId, 'Bob');
-    await db.tripDao.addParticipant(tripId, 'Alex');
+  test(
+    'addParticipant creates the person and links them, sorted by name',
+    () async {
+      final tripId = await makeTrip();
+      await db.tripDao.addParticipant(tripId, 'Bob');
+      await db.tripDao.addParticipant(tripId, 'Alex');
 
-    final participants = await db.tripDao.watchParticipants(tripId).first;
-    expect(participants.map((p) => p.name), ['Alex', 'Bob']);
-    // Both are now in the shared roster too.
-    expect(await db.costDao.watchPeople().first, ['Alex', 'Bob']);
-  });
+      final participants = await db.tripDao.watchParticipants(tripId).first;
+      expect(participants.map((p) => p.name), ['Alex', 'Bob']);
+      // Both are now in the shared roster too.
+      expect(await db.costDao.watchPeople().first, ['Alex', 'Bob']);
+    },
+  );
 
-  test('addParticipant reuses an existing roster person and is idempotent',
-      () async {
-    final tripId = await makeTrip();
-    await db.costDao.upsertPerson('Alex');
+  test(
+    'addParticipant reuses an existing roster person and is idempotent',
+    () async {
+      final tripId = await makeTrip();
+      await db.costDao.upsertPerson('Alex');
 
-    await db.tripDao.addParticipant(tripId, 'Alex');
-    await db.tripDao.addParticipant(tripId, 'Alex'); // duplicate, ignored
+      await db.tripDao.addParticipant(tripId, 'Alex');
+      await db.tripDao.addParticipant(tripId, 'Alex'); // duplicate, ignored
 
-    final participants = await db.tripDao.watchParticipants(tripId).first;
-    expect(participants.map((p) => p.name), ['Alex']);
-    // No duplicate person was created.
-    expect(await db.costDao.watchPeople().first, ['Alex']);
-  });
+      final participants = await db.tripDao.watchParticipants(tripId).first;
+      expect(participants.map((p) => p.name), ['Alex']);
+      // No duplicate person was created.
+      expect(await db.costDao.watchPeople().first, ['Alex']);
+    },
+  );
 
   test('participants stay scoped to their trip', () async {
     final a = await makeTrip('A');
@@ -43,39 +47,44 @@ void main() {
     await db.tripDao.addParticipant(a, 'Alex');
     await db.tripDao.addParticipant(b, 'Bob');
 
-    expect((await db.tripDao.watchParticipants(a).first).map((p) => p.name),
-        ['Alex']);
-    expect((await db.tripDao.watchParticipants(b).first).map((p) => p.name),
-        ['Bob']);
+    expect((await db.tripDao.watchParticipants(a).first).map((p) => p.name), [
+      'Alex',
+    ]);
+    expect((await db.tripDao.watchParticipants(b).first).map((p) => p.name), [
+      'Bob',
+    ]);
   });
 
-  test('watchAllParticipants groups every trip\'s participants by trip id',
-      () async {
-    final a = await makeTrip('A');
-    final b = await makeTrip('B');
-    await makeTrip('C'); // no participants → absent from the map
-    await db.tripDao.addParticipant(a, 'Bob');
-    await db.tripDao.addParticipant(a, 'Alex');
-    await db.tripDao.addParticipant(b, 'Alex');
+  test(
+    'watchAllParticipants groups every trip\'s participants by trip id',
+    () async {
+      final a = await makeTrip('A');
+      final b = await makeTrip('B');
+      await makeTrip('C'); // no participants → absent from the map
+      await db.tripDao.addParticipant(a, 'Bob');
+      await db.tripDao.addParticipant(a, 'Alex');
+      await db.tripDao.addParticipant(b, 'Alex');
 
-    final byTrip = await db.tripDao.watchAllParticipants().first;
-    expect(byTrip.keys.toSet(), {a, b});
-    expect(byTrip[a]!.map((p) => p.name), ['Alex', 'Bob']); // sorted by name
-    expect(byTrip[b]!.map((p) => p.name), ['Alex']);
-  });
+      final byTrip = await db.tripDao.watchAllParticipants().first;
+      expect(byTrip.keys.toSet(), {a, b});
+      expect(byTrip[a]!.map((p) => p.name), ['Alex', 'Bob']); // sorted by name
+      expect(byTrip[b]!.map((p) => p.name), ['Alex']);
+    },
+  );
 
-  test('removeParticipant unlinks but keeps the person in the roster',
-      () async {
-    final tripId = await makeTrip();
-    await db.tripDao.addParticipant(tripId, 'Alex');
-    final person =
-        (await db.tripDao.watchParticipants(tripId).first).single;
+  test(
+    'removeParticipant unlinks but keeps the person in the roster',
+    () async {
+      final tripId = await makeTrip();
+      await db.tripDao.addParticipant(tripId, 'Alex');
+      final person = (await db.tripDao.watchParticipants(tripId).first).single;
 
-    await db.tripDao.removeParticipant(tripId, person.id);
+      await db.tripDao.removeParticipant(tripId, person.id);
 
-    expect(await db.tripDao.watchParticipants(tripId).first, isEmpty);
-    expect(await db.costDao.watchPeople().first, ['Alex']);
-  });
+      expect(await db.tripDao.watchParticipants(tripId).first, isEmpty);
+      expect(await db.costDao.watchPeople().first, ['Alex']);
+    },
+  );
 
   test('deleting a person removes them from every trip they joined', () async {
     final tripId = await makeTrip();

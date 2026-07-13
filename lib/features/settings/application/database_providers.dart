@@ -5,8 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_location.dart';
 import '../../../core/providers.dart';
 
-final databaseControllerProvider =
-    Provider<DatabaseController>((ref) => DatabaseController(ref));
+final databaseControllerProvider = Provider<DatabaseController>(
+  (ref) => DatabaseController(ref),
+);
 
 /// Coordinates switching the active database and moving data in/out of it.
 class DatabaseController {
@@ -86,6 +87,8 @@ class DatabaseController {
   /// Reverts to the default app-managed database location.
   Future<void> resetToDefault() async {
     final path = await defaultDatabaseFile();
-    await _ref.read(activeDbPathProvider.notifier).setPath(path, persist: false);
+    await _ref
+        .read(activeDbPathProvider.notifier)
+        .setPath(path, persist: false);
   }
 }

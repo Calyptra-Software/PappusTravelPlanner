@@ -16,18 +16,17 @@ bool isLiveItem(ItineraryItem item, Set<int> chosenBranchIds) =>
 List<ItineraryItem> liveItems(
   List<ItineraryItem> items,
   Set<int> chosenBranchIds,
-) =>
-    [
-      for (final item in items)
-        if (isLiveItem(item, chosenBranchIds)) item,
-    ];
+) => [
+  for (final item in items)
+    if (isLiveItem(item, chosenBranchIds)) item,
+];
 
 /// The chosen branch of every decision in a trip, from the branches keyed by set
 /// id that `TripRepository.watchAlternativeBranches` yields. A set always has
 /// exactly one chosen branch (`AlternativeDao` guarantees it), so this is one id
 /// per set.
 Set<int> chosenBranchIds(Map<int, List<Alternative>> branchesBySet) => {
-      for (final branches in branchesBySet.values)
-        for (final branch in branches)
-          if (branch.chosen) branch.id,
-    };
+  for (final branches in branchesBySet.values)
+    for (final branch in branches)
+      if (branch.chosen) branch.id,
+};

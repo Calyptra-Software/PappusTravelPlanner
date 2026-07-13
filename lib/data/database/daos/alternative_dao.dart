@@ -38,14 +38,15 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
   /// The branches of every set in a trip, keyed by set id and in swipe order.
   /// Sets with no branches (transient at most) are absent from the map.
   Stream<Map<int, List<Alternative>>> watchBranchesForTrip(int tripId) {
-    final query = select(alternatives).join([
-      innerJoin(
-        alternativeSets,
-        alternativeSets.id.equalsExp(alternatives.setId),
-      ),
-    ])
-      ..where(alternativeSets.tripId.equals(tripId))
-      ..orderBy([OrderingTerm(expression: alternatives.sortOrder)]);
+    final query =
+        select(alternatives).join([
+            innerJoin(
+              alternativeSets,
+              alternativeSets.id.equalsExp(alternatives.setId),
+            ),
+          ])
+          ..where(alternativeSets.tripId.equals(tripId))
+          ..orderBy([OrderingTerm(expression: alternatives.sortOrder)]);
     return query.watch().map((rows) {
       final bySet = <int, List<Alternative>>{};
       for (final row in rows) {
@@ -76,8 +77,9 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
           'Item is already inside a branch.',
         );
       }
-      final members =
-          item.groupId == null ? [item] : await _groupMembers(item.groupId!);
+      final members = item.groupId == null
+          ? [item]
+          : await _groupMembers(item.groupId!);
       if (members.map((m) => m.date).toSet().length > 1) {
         throw ArgumentError.value(
           itemId,
@@ -107,12 +109,14 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
       );
       // Inside a branch, sortOrder orders the items within that branch.
       for (var i = 0; i < members.length; i++) {
-        await (update(itineraryItems)
-              ..where((it) => it.id.equals(members[i].id)))
-            .write(ItineraryItemsCompanion(
-          alternativeId: Value(chosen),
-          sortOrder: Value(i),
-        ));
+        await (update(
+          itineraryItems,
+        )..where((it) => it.id.equals(members[i].id))).write(
+          ItineraryItemsCompanion(
+            alternativeId: Value(chosen),
+            sortOrder: Value(i),
+          ),
+        );
       }
       return setId;
     });
@@ -157,8 +161,9 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
     return transaction(() async {
       final branch = await _alternative(alternativeId);
       // Items (and, through them, their costs) cascade with the branch.
-      await (delete(alternatives)..where((a) => a.id.equals(alternativeId)))
-          .go();
+      await (delete(
+        alternatives,
+      )..where((a) => a.id.equals(alternativeId))).go();
       await _tidySet(branch.setId);
     });
   }
@@ -182,15 +187,17 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
   /// Moves a set to another slot in its day, when the timeline's blocks — that
   /// day's loose items and decisions alike — are dragged into a new order.
   Future<void> setSortOrder(int setId, int sortOrder) {
-    return (update(alternativeSets)..where((s) => s.id.equals(setId)))
-        .write(AlternativeSetsCompanion(sortOrder: Value(sortOrder)));
+    return (update(alternativeSets)..where((s) => s.id.equals(setId))).write(
+      AlternativeSetsCompanion(sortOrder: Value(sortOrder)),
+    );
   }
 
   /// Sets a set's display name (null/empty clears it, falling back to the
   /// default label in the UI).
   Future<void> setSetLabel(int setId, String? label) {
-    return (update(alternativeSets)..where((s) => s.id.equals(setId)))
-        .write(AlternativeSetsCompanion(label: Value(_clean(label))));
+    return (update(alternativeSets)..where((s) => s.id.equals(setId))).write(
+      AlternativeSetsCompanion(label: Value(_clean(label))),
+    );
   }
 
   /// Sets a branch's display name (null/empty falls back to "Option A/B/C").
@@ -240,11 +247,14 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
 
     // Detach the items *before* dropping the set, or they would cascade with it.
     for (var i = 0; i < members.length; i++) {
-      await (update(itineraryItems)..where((it) => it.id.equals(members[i].id)))
-          .write(ItineraryItemsCompanion(
-        alternativeId: const Value(null),
-        sortOrder: Value(set.sortOrder + i),
-      ));
+      await (update(
+        itineraryItems,
+      )..where((it) => it.id.equals(members[i].id))).write(
+        ItineraryItemsCompanion(
+          alternativeId: const Value(null),
+          sortOrder: Value(set.sortOrder + i),
+        ),
+      );
     }
     await (delete(alternativeSets)..where((s) => s.id.equals(set.id))).go();
   }
@@ -293,9 +303,9 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
           ..orderBy([
             (i) => OrderingTerm(expression: i.sortOrder),
             (i) => OrderingTerm(
-                  expression: i.startMinutes,
-                  nulls: NullsOrder.last,
-                ),
+              expression: i.startMinutes,
+              nulls: NullsOrder.last,
+            ),
           ]))
         .get();
   }
@@ -308,9 +318,9 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
             (i) => OrderingTerm(expression: i.date),
             (i) => OrderingTerm(expression: i.sortOrder),
             (i) => OrderingTerm(
-                  expression: i.startMinutes,
-                  nulls: NullsOrder.last,
-                ),
+              expression: i.startMinutes,
+              nulls: NullsOrder.last,
+            ),
           ]))
         .get();
   }

@@ -26,8 +26,9 @@ class _ColorPickerDialog extends StatefulWidget {
 
 class _ColorPickerDialogState extends State<_ColorPickerDialog> {
   late HSVColor _hsv = HSVColor.fromColor(widget.initial.withAlpha(0xFF));
-  late final TextEditingController _hexController =
-      TextEditingController(text: _hexOf(_hsv.toColor()));
+  late final TextEditingController _hexController = TextEditingController(
+    text: _hexOf(_hsv.toColor()),
+  );
   String? _hexError;
 
   @override
@@ -241,10 +242,7 @@ class _HueSlider extends StatelessWidget {
         return GestureDetector(
           onPanDown: (d) => handle(d.localPosition.dx),
           onPanUpdate: (d) => handle(d.localPosition.dx),
-          child: CustomPaint(
-            size: Size(width, 24),
-            painter: _HuePainter(hue),
-          ),
+          child: CustomPaint(size: Size(width, 24), painter: _HuePainter(hue)),
         );
       },
     );

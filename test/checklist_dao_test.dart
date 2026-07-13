@@ -23,11 +23,13 @@ void main() {
     final o1 = await db.checklistDao.nextChecklistSortOrder(tripId);
     await makeChecklist(tripId, title: 'Packing');
     final o2 = await db.checklistDao.nextChecklistSortOrder(tripId);
-    await db.checklistDao.addChecklist(ChecklistsCompanion.insert(
-      tripId: tripId,
-      title: const Value('To-do'),
-      sortOrder: Value(o2),
-    ));
+    await db.checklistDao.addChecklist(
+      ChecklistsCompanion.insert(
+        tripId: tripId,
+        title: const Value('To-do'),
+        sortOrder: Value(o2),
+      ),
+    );
 
     expect(o1, 0);
     expect(o2, 1);
@@ -35,40 +37,43 @@ void main() {
     expect(lists.map((c) => c.title), ['Packing', 'To-do']);
   });
 
-  test('items belong to a checklist and append via nextItemSortOrder',
-      () async {
-    final tripId = await makeTrip();
-    final listId = await makeChecklist(tripId, title: 'Packing');
+  test(
+    'items belong to a checklist and append via nextItemSortOrder',
+    () async {
+      final tripId = await makeTrip();
+      final listId = await makeChecklist(tripId, title: 'Packing');
 
-    final o1 = await db.checklistDao.nextItemSortOrder(listId);
-    await db.checklistDao.addItem(
-      ChecklistItemsCompanion.insert(
-        checklistId: listId,
-        label: 'Passport',
-        sortOrder: Value(o1),
-      ),
-    );
-    final o2 = await db.checklistDao.nextItemSortOrder(listId);
-    await db.checklistDao.addItem(
-      ChecklistItemsCompanion.insert(
-        checklistId: listId,
-        label: 'Sunscreen',
-        sortOrder: Value(o2),
-      ),
-    );
+      final o1 = await db.checklistDao.nextItemSortOrder(listId);
+      await db.checklistDao.addItem(
+        ChecklistItemsCompanion.insert(
+          checklistId: listId,
+          label: 'Passport',
+          sortOrder: Value(o1),
+        ),
+      );
+      final o2 = await db.checklistDao.nextItemSortOrder(listId);
+      await db.checklistDao.addItem(
+        ChecklistItemsCompanion.insert(
+          checklistId: listId,
+          label: 'Sunscreen',
+          sortOrder: Value(o2),
+        ),
+      );
 
-    expect([o1, o2], [0, 1]);
-    final items = await db.checklistDao.watchItems(listId).first;
-    expect(items.map((i) => i.label), ['Passport', 'Sunscreen']);
-    expect(items.every((i) => !i.done), isTrue);
-  });
+      expect([o1, o2], [0, 1]);
+      final items = await db.checklistDao.watchItems(listId).first;
+      expect(items.map((i) => i.label), ['Passport', 'Sunscreen']);
+      expect(items.every((i) => !i.done), isTrue);
+    },
+  );
 
   test('items are scoped to their own checklist', () async {
     final tripId = await makeTrip();
     final a = await makeChecklist(tripId, title: 'A');
     final b = await makeChecklist(tripId, title: 'B');
-    await db.checklistDao
-        .addItem(ChecklistItemsCompanion.insert(checklistId: a, label: 'x'));
+    await db.checklistDao.addItem(
+      ChecklistItemsCompanion.insert(checklistId: a, label: 'x'),
+    );
 
     expect((await db.checklistDao.watchItems(a).first).length, 1);
     expect((await db.checklistDao.watchItems(b).first), isEmpty);
@@ -90,7 +95,10 @@ void main() {
     );
     final item = (await db.checklistDao.watchItems(listId).first).single;
     await db.checklistDao.updateItem(item.copyWith(done: true));
-    expect((await db.checklistDao.watchItems(listId).first).single.done, isTrue);
+    expect(
+      (await db.checklistDao.watchItems(listId).first).single.done,
+      isTrue,
+    );
 
     await db.checklistDao.deleteItem(id);
     expect(await db.checklistDao.watchItems(listId).first, isEmpty);
@@ -99,8 +107,9 @@ void main() {
   test('deleting a checklist cascades to its items', () async {
     final tripId = await makeTrip();
     final listId = await makeChecklist(tripId, title: 'Packing');
-    await db.checklistDao
-        .addItem(ChecklistItemsCompanion.insert(checklistId: listId, label: 'x'));
+    await db.checklistDao.addItem(
+      ChecklistItemsCompanion.insert(checklistId: listId, label: 'x'),
+    );
 
     await db.checklistDao.deleteChecklist(listId);
 

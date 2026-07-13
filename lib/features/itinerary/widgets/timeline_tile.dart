@@ -112,7 +112,10 @@ class TimelineTile extends StatelessWidget {
     if (nowLine == null) return content;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [NowLine(minutes: nowLine), content],
+      children: [
+        NowLine(minutes: nowLine),
+        content,
+      ],
     );
   }
 }
@@ -309,7 +312,8 @@ class _PlaceRow extends StatelessWidget {
                                           item: item,
                                           style: theme.textTheme.labelMedium
                                               ?.copyWith(
-                                                color: theme.colorScheme.primary,
+                                                color:
+                                                    theme.colorScheme.primary,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                         ),

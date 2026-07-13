@@ -6,92 +6,92 @@ void main() {
   /// A fully-populated bundle exercising every table, nullable field, enum, and
   /// the three cost attachment targets (item / group / trip).
   TripBundle sample() => TripBundle(
-        schemaVersion: 16,
-        trip: BundleTrip(
-          title: 'Rome',
-          destination: 'Italy',
-          startDate: DateTime(2026, 5, 1),
-          endDate: DateTime(2026, 5, 7),
-          notes: 'Bring sunscreen',
-          colorValue: 0xFF00695C,
-          createdAt: DateTime(2026, 1, 2, 3, 4, 5),
-        ),
-        groups: const [
-          BundleGroup(localId: 10, label: 'Train to Rome', collapsed: true),
-        ],
+    schemaVersion: 16,
+    trip: BundleTrip(
+      title: 'Rome',
+      destination: 'Italy',
+      startDate: DateTime(2026, 5, 1),
+      endDate: DateTime(2026, 5, 7),
+      notes: 'Bring sunscreen',
+      colorValue: 0xFF00695C,
+      createdAt: DateTime(2026, 1, 2, 3, 4, 5),
+    ),
+    groups: const [
+      BundleGroup(localId: 10, label: 'Train to Rome', collapsed: true),
+    ],
+    items: [
+      BundleItem(
+        localId: 100,
+        date: DateTime(2026, 5, 1),
+        kind: ItemKind.place,
+        title: 'Colosseum',
+        startMinutes: 600,
+        endMinutes: 720,
+        actualStartMinutes: 615,
+        actualEndMinutes: 715,
+        location: 'Piazza del Colosseo',
+      ),
+      BundleItem(
+        localId: 101,
+        groupLocalId: 10,
+        date: DateTime(2026, 5, 1),
+        sortOrder: 1,
+        kind: ItemKind.transport,
+        mode: TransportMode.train,
+        fromLocation: 'Florence',
+        toLocation: 'Rome',
+      ),
+    ],
+    costs: [
+      BundleCost(
+        itemLocalId: 100,
+        amountMinor: 1600,
+        currency: Currency.eur,
+        reason: 'Tickets',
+        paidBy: 'Alice',
+        paid: true,
+        createdAt: DateTime(2026, 5, 1, 9),
+        beneficiaries: const ['Alice', 'Bob'],
+      ),
+      BundleCost(
+        groupLocalId: 10,
+        amountMinor: 8000,
+        currency: Currency.eur,
+        reason: 'Train',
+        createdAt: DateTime(2026, 5, 1, 8),
+      ),
+      BundleCost(
+        amountMinor: -500,
+        currency: Currency.usd,
+        reason: 'Refund',
+        paidBy: 'Bob',
+        createdAt: DateTime(2026, 5, 2),
+      ),
+    ],
+    checklists: [
+      BundleChecklist(
+        localId: 200,
+        title: 'Packing',
+        collapsed: true,
+        createdAt: DateTime(2026, 4, 1),
         items: [
-          BundleItem(
-            localId: 100,
-            date: DateTime(2026, 5, 1),
-            kind: ItemKind.place,
-            title: 'Colosseum',
-            startMinutes: 600,
-            endMinutes: 720,
-            actualStartMinutes: 615,
-            actualEndMinutes: 715,
-            location: 'Piazza del Colosseo',
-          ),
-          BundleItem(
-            localId: 101,
-            groupLocalId: 10,
-            date: DateTime(2026, 5, 1),
-            sortOrder: 1,
-            kind: ItemKind.transport,
-            mode: TransportMode.train,
-            fromLocation: 'Florence',
-            toLocation: 'Rome',
-          ),
-        ],
-        costs: [
-          BundleCost(
-            itemLocalId: 100,
-            amountMinor: 1600,
-            currency: Currency.eur,
-            reason: 'Tickets',
-            paidBy: 'Alice',
-            paid: true,
-            createdAt: DateTime(2026, 5, 1, 9),
-            beneficiaries: const ['Alice', 'Bob'],
-          ),
-          BundleCost(
-            groupLocalId: 10,
-            amountMinor: 8000,
-            currency: Currency.eur,
-            reason: 'Train',
-            createdAt: DateTime(2026, 5, 1, 8),
-          ),
-          BundleCost(
-            amountMinor: -500,
-            currency: Currency.usd,
-            reason: 'Refund',
-            paidBy: 'Bob',
-            createdAt: DateTime(2026, 5, 2),
-          ),
-        ],
-        checklists: [
-          BundleChecklist(
-            localId: 200,
-            title: 'Packing',
-            collapsed: true,
+          BundleChecklistItem(
+            label: 'Passport',
+            done: true,
             createdAt: DateTime(2026, 4, 1),
-            items: [
-              BundleChecklistItem(
-                label: 'Passport',
-                done: true,
-                createdAt: DateTime(2026, 4, 1),
-              ),
-              BundleChecklistItem(
-                label: 'Charger',
-                sortOrder: 1,
-                createdAt: DateTime(2026, 4, 1),
-              ),
-            ],
+          ),
+          BundleChecklistItem(
+            label: 'Charger',
+            sortOrder: 1,
+            createdAt: DateTime(2026, 4, 1),
           ),
         ],
-        collapsedDays: [DateTime(2026, 5, 3)],
-        participants: const ['Alice', 'Bob'],
-        reasonIcons: const {'Tickets': 7},
-      );
+      ),
+    ],
+    collapsedDays: [DateTime(2026, 5, 3)],
+    participants: const ['Alice', 'Bob'],
+    reasonIcons: const {'Tickets': 7},
+  );
 
   test('round-trips through JSON unchanged', () {
     final original = sample();
@@ -132,8 +132,9 @@ void main() {
     expect(place.groupLocalId, isNull);
     expect(place.location, 'Piazza del Colosseo');
 
-    final transport =
-        restored.items.firstWhere((i) => i.kind == ItemKind.transport);
+    final transport = restored.items.firstWhere(
+      (i) => i.kind == ItemKind.transport,
+    );
     expect(transport.mode, TransportMode.train);
     expect(transport.title, isNull);
     expect(transport.location, isNull);

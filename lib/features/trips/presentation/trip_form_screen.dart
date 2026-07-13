@@ -139,9 +139,7 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     final l10n = AppLocalizations.of(context);
@@ -181,15 +179,19 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
             const SizedBox(height: 16),
             _DateRangeField(
               label: l10n.fieldDates,
-              valueText:
-                  formatDateRange(l10n, localeName, _startDate, _endDate),
+              valueText: formatDateRange(
+                l10n,
+                localeName,
+                _startDate,
+                _endDate,
+              ),
               onTap: _pickDateRange,
               onClear: (_startDate == null && _endDate == null)
                   ? null
                   : () => setState(() {
-                        _startDate = null;
-                        _endDate = null;
-                      }),
+                      _startDate = null;
+                      _endDate = null;
+                    }),
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -203,8 +205,10 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(l10n.accentColour,
-                style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              l10n.accentColour,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(height: 8),
             _ColorPicker(
               selected: _colorValue,
@@ -214,10 +218,7 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
             if (widget.isEditing) ...[
               _TripParticipantsEditor(tripId: widget.tripId!),
               const SizedBox(height: 24),
-              _TripCostsEditor(
-                tripId: widget.tripId!,
-                localeName: localeName,
-              ),
+              _TripCostsEditor(tripId: widget.tripId!, localeName: localeName),
             ] else
               _NewTripParticipantsEditor(
                 participants: _participants,
@@ -228,7 +229,9 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
             FilledButton.icon(
               onPressed: _save,
               icon: const Icon(Icons.check),
-              label: Text(widget.isEditing ? l10n.saveChanges : l10n.createTrip),
+              label: Text(
+                widget.isEditing ? l10n.saveChanges : l10n.createTrip,
+              ),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
               ),
@@ -453,10 +456,7 @@ class _DateRangeField extends StatelessWidget {
       ),
       child: InkWell(
         onTap: onTap,
-        child: Text(
-          valueText,
-          style: Theme.of(context).textTheme.bodyLarge,
-        ),
+        child: Text(valueText, style: Theme.of(context).textTheme.bodyLarge),
       ),
     );
   }
@@ -471,8 +471,9 @@ class _ColorPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final isPreset = AppTheme.tripAccents
-        .any((color) => color.toARGB32() == selected);
+    final isPreset = AppTheme.tripAccents.any(
+      (color) => color.toARGB32() == selected,
+    );
     return Wrap(
       spacing: 12,
       runSpacing: 12,

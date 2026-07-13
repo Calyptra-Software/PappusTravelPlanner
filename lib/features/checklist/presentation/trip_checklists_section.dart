@@ -186,7 +186,8 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
         .deleteChecklist(widget.checklist.id);
   }
 
-  String _displayTitle(AppLocalizations l10n) => widget.checklist.title.isNotEmpty
+  String _displayTitle(AppLocalizations l10n) =>
+      widget.checklist.title.isNotEmpty
       ? widget.checklist.title
       : l10n.checklist;
 
@@ -196,7 +197,7 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
     final l10n = AppLocalizations.of(context);
     final items =
         ref.watch(checklistItemsProvider(widget.checklist.id)).value ??
-            const [];
+        const [];
     final doneCount = items.where((i) => i.done).length;
     final expanded = !widget.checklist.collapsed;
 
@@ -216,8 +217,11 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                 child: Row(
                   children: [
-                    Icon(Icons.checklist_outlined,
-                        size: 20, color: widget.accent),
+                    Icon(
+                      Icons.checklist_outlined,
+                      size: 20,
+                      color: widget.accent,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
