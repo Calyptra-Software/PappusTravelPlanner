@@ -75,6 +75,8 @@
   "cancel": "Cancel",
   "delete": "Delete",
   "nothingPlanned": "Nothing planned yet.",
+  "now": "Now",
+  "today": "Today",
   "addPlace": "Add place",
   "addArrival": "Add {place}",
   "@addArrival": {

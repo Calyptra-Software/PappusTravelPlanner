@@ -6,6 +6,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_chip.dart';
+import 'now_line.dart';
 import 'transport_mode.dart';
 
 /// Whether [item] opens a group's contiguous run — i.e. the row before it (its
@@ -38,6 +39,8 @@ class TimelineTile extends StatelessWidget {
     this.isLastInGroup = false,
     this.groupCosts = const [],
     this.dragHandle,
+    this.isNow = false,
+    this.nowLineMinutes,
   });
 
   final ItineraryItem item;
@@ -57,6 +60,17 @@ class TimelineTile extends StatelessWidget {
   final List<Cost> groupCosts;
   final Widget? dragHandle;
 
+  /// Whether this entry is under way right now.
+  final bool isNow;
+
+  /// When set, the current time (minutes since midnight): the now-line is drawn
+  /// above this tile, which is the first entry of today still ahead of us.
+  ///
+  /// Drawn *inside* the tile rather than as a list entry of its own: the day is a
+  /// `ReorderableListView` whose indices are its blocks, and an extra child would
+  /// shift every one of them.
+  final int? nowLineMinutes;
+
   @override
   Widget build(BuildContext context) {
     final costsSection = _CostsSection(
@@ -70,6 +84,7 @@ class TimelineTile extends StatelessWidget {
             onTap: onTap,
             dragHandle: dragHandle,
             costsSection: costsSection,
+            isNow: isNow,
           )
         : _PlaceRow(
             item: item,
@@ -77,18 +92,27 @@ class TimelineTile extends StatelessWidget {
             onTap: onTap,
             dragHandle: dragHandle,
             costsSection: costsSection,
+            isNow: isNow,
           );
 
-    if (group == null) return row;
-    return _GroupBand(
-      accent: accent,
-      isFirst: isFirstInGroup,
-      isLast: isLastInGroup,
-      label: group!.label,
-      groupCosts: groupCosts,
-      localeName: localeName,
-      onTapCost: onTapCost,
-      child: row,
+    final content = group == null
+        ? row
+        : _GroupBand(
+            accent: accent,
+            isFirst: isFirstInGroup,
+            isLast: isLastInGroup,
+            label: group!.label,
+            groupCosts: groupCosts,
+            localeName: localeName,
+            onTapCost: onTapCost,
+            child: row,
+          );
+
+    final nowLine = nowLineMinutes;
+    if (nowLine == null) return content;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [NowLine(minutes: nowLine), content],
     );
   }
 }
@@ -204,6 +228,7 @@ class _PlaceRow extends StatelessWidget {
     required this.onTap,
     required this.dragHandle,
     required this.costsSection,
+    required this.isNow,
   });
 
   final ItineraryItem item;
@@ -211,10 +236,12 @@ class _PlaceRow extends StatelessWidget {
   final VoidCallback onTap;
   final Widget? dragHandle;
   final Widget costsSection;
+  final bool isNow;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final now = nowColor(theme);
     final time = formatTimeRange(item.startMinutes, item.endMinutes);
     final title = (item.title != null && item.title!.isNotEmpty)
         ? item.title!
@@ -236,7 +263,12 @@ class _PlaceRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accent,
                 shape: BoxShape.circle,
-                border: Border.all(color: theme.colorScheme.surface, width: 2),
+                // The ring both punches the rail out from behind the node and,
+                // on the entry under way, marks it.
+                border: Border.all(
+                  color: isNow ? now : theme.colorScheme.surface,
+                  width: isNow ? 3 : 2,
+                ),
               ),
             ),
           ),
@@ -245,7 +277,18 @@ class _PlaceRow extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Card(
-                color: theme.colorScheme.surfaceContainerHighest,
+                color: isNow
+                    ? Color.alphaBlend(
+                        now.withValues(alpha: 0.10),
+                        theme.colorScheme.surfaceContainerHighest,
+                      )
+                    : theme.colorScheme.surfaceContainerHighest,
+                shape: isNow
+                    ? RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: now, width: 1.5),
+                      )
+                    : null,
                 child: InkWell(
                   onTap: onTap,
                   child: Padding(
@@ -257,13 +300,23 @@ class _PlaceRow extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (time.isNotEmpty)
-                                Text(
-                                  time,
-                                  style: theme.textTheme.labelMedium?.copyWith(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              if (time.isNotEmpty || isNow)
+                                Row(
+                                  children: [
+                                    if (time.isNotEmpty)
+                                      Text(
+                                        time,
+                                        style: theme.textTheme.labelMedium
+                                            ?.copyWith(
+                                              color: theme.colorScheme.primary,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    if (isNow) ...[
+                                      const SizedBox(width: 8),
+                                      const NowBadge(),
+                                    ],
+                                  ],
                                 ),
                               Text(
                                 title,
@@ -326,17 +379,20 @@ class _TransportRow extends StatelessWidget {
     required this.onTap,
     required this.dragHandle,
     required this.costsSection,
+    required this.isNow,
   });
 
   final ItineraryItem item;
   final VoidCallback onTap;
   final Widget? dragHandle;
   final Widget costsSection;
+  final bool isNow;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final now = nowColor(theme);
     final mode = item.mode ?? TransportMode.other;
     final time = formatTimeRange(item.startMinutes, item.endMinutes);
     final from = item.fromLocation ?? '';
@@ -354,6 +410,7 @@ class _TransportRow extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.colorScheme.secondaryContainer,
                 shape: BoxShape.circle,
+                border: isNow ? Border.all(color: now, width: 2) : null,
               ),
               child: Icon(
                 mode.icon,
@@ -403,6 +460,10 @@ class _TransportRow extends StatelessWidget {
                                       color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
+                                ],
+                                if (isNow) ...[
+                                  const SizedBox(width: 8),
+                                  const NowBadge(),
                                 ],
                               ],
                             ),

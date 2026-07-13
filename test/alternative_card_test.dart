@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' show OrderingTerm;
+import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +14,7 @@ import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/itinerary/day_blocks.dart';
 import 'package:travelplanner/features/itinerary/widgets/alternative_card.dart';
+import 'package:travelplanner/features/itinerary/widgets/now_line.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 /// Covers the swipeable decision card: only the option on screen is drawn,
@@ -342,4 +343,81 @@ void main() {
     expect(find.textContaining('Add Kronberg'), findsNothing);
   });
 
+  /// A decision on today whose chosen option runs 11:00–12:00 and then
+  /// 15:00–16:00 — so a time can fall *between* its entries, which is where a
+  /// decision would otherwise swallow the "you are here" mark: the day sees the
+  /// whole decision as under way and draws no line of its own.
+  Future<void> pumpTimedCard(
+    WidgetTester tester, {
+    required int nowMinutes,
+    bool isNow = true,
+  }) async {
+    ItineraryItem timed(int id, String title, int start, int end) =>
+        item(id, title, alternativeId: 10).copyWith(
+          startMinutes: Value(start),
+          endMinutes: Value(end),
+        );
+
+    await tester.pumpWidget(
+      wrap(
+        AlternativeCard(
+          block: DecisionBlock(
+            set: AlternativeSet(id: 5, tripId: 1, date: day, sortOrder: 0),
+            branches: const [
+              Alternative(id: 10, setId: 5, sortOrder: 0, chosen: true),
+              Alternative(id: 11, setId: 5, sortOrder: 1, chosen: false),
+            ],
+            itemsByBranch: {
+              10: [
+                timed(1, 'Museum', 11 * 60, 12 * 60),
+                timed(3, 'Park', 15 * 60, 16 * 60),
+              ],
+              11: [timed(2, 'Boat trip', 11 * 60, 17 * 60)],
+            },
+          ),
+          accent: Colors.teal,
+          groups: const {},
+          costsByItem: const {},
+          costsByGroup: const {},
+          localeName: 'en',
+          isNow: isNow,
+          nowMinutes: nowMinutes,
+          onTapItem: (_) {},
+          onTapCost: (_) {},
+          onAddPlace: (_) {},
+          onAddTransport: (_) {},
+          onQuickAddPlace: (_, _) {},
+          onReorderBranch: (_, _, _) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('between two entries of the option in progress, the now-line is '
+      'drawn inside the card', (tester) async {
+    await pumpTimedCard(tester, nowMinutes: 13 * 60 + 30);
+
+    expect(find.byType(NowLine), findsOneWidget);
+    // On the decision itself, saying which slot of the day we are in.
+    expect(find.byType(NowBadge), findsOneWidget);
+  });
+
+  testWidgets('an entry under way takes the badge, and no line is drawn',
+      (tester) async {
+    await pumpTimedCard(tester, nowMinutes: 11 * 60 + 30);
+
+    expect(find.byType(NowLine), findsNothing);
+    // One on the decision, one on the entry itself.
+    expect(find.byType(NowBadge), findsNWidgets(2));
+  });
+
+  testWidgets('a decision the day is not in carries no mark', (tester) async {
+    // The option not taken would still be running at 16:30 — but the trip is not
+    // following it, so the day has moved past this decision entirely.
+    await pumpTimedCard(tester, nowMinutes: 16 * 60 + 30, isNow: false);
+
+    expect(find.byType(NowLine), findsNothing);
+    expect(find.byType(NowBadge), findsNothing);
+  });
 }

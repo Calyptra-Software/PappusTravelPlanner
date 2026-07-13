@@ -63,6 +63,8 @@
   "cancel": "Abbrechen",
   "delete": "Löschen",
   "nothingPlanned": "Noch nichts geplant.",
+  "now": "Jetzt",
+  "today": "Heute",
   "addPlace": "Ort hinzufügen",
   "addArrival": "{place} hinzufügen",
   "addTransport": "Transport hinzufügen",

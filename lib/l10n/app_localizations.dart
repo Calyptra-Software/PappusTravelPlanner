@@ -458,6 +458,18 @@ abstract class AppLocalizations {
   /// **'Nothing planned yet.'**
   String get nothingPlanned;
 
+  /// No description provided for @now.
+  ///
+  /// In en, this message translates to:
+  /// **'Now'**
+  String get now;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
   /// No description provided for @addPlace.
   ///
   /// In en, this message translates to:

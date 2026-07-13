@@ -12,6 +12,8 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../day_blocks.dart';
+import '../now_marker.dart';
+import 'now_line.dart';
 import 'timeline_tile.dart';
 
 /// A decision in the timeline: the competing options for one stretch of a day,
@@ -42,6 +44,9 @@ class AlternativeCard extends ConsumerStatefulWidget {
     required this.onQuickAddPlace,
     required this.onReorderBranch,
     this.dragHandle,
+    this.isNow = false,
+    this.nowLineMinutes,
+    this.nowMinutes,
   });
 
   final DecisionBlock block;
@@ -67,6 +72,20 @@ class AlternativeCard extends ConsumerStatefulWidget {
 
   /// Handle for dragging the whole decision to another slot in its day.
   final Widget? dragHandle;
+
+  /// Whether the decision — that is, the option it currently follows — is under
+  /// way right now. An option not chosen is not what the trip is doing, so it can
+  /// never be "now", however it is priced or swiped to.
+  final bool isNow;
+
+  /// When set, the current time: the now-line is drawn above the card.
+  final int? nowLineMinutes;
+
+  /// The current time, when this decision sits on today. Places the mark within
+  /// the chosen option: the entry under way, or — when [isNow] but now falls
+  /// between two of its entries — the now-line between them. Null on any other
+  /// day.
+  final int? nowMinutes;
 
   @override
   ConsumerState<AlternativeCard> createState() => _AlternativeCardState();
@@ -192,7 +211,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     // it. A Listener rather than a gesture detector: it must not enter the
     // gesture arena, or it would compete with the pager's drag and the tiles'
     // taps.
-    return Listener(
+    final card = Listener(
       onPointerDown: (_) => _focusNode.requestFocus(),
       child: FocusableActionDetector(
         focusNode: _focusNode,
@@ -266,6 +285,13 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
         ),
       ),
     );
+
+    final nowLine = widget.nowLineMinutes;
+    if (nowLine == null) return card;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [NowLine(minutes: nowLine), card],
+    );
   }
 
   Widget _header(ThemeData theme, AppLocalizations l10n, String label) {
@@ -284,6 +310,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
               ),
             ),
           ),
+          if (widget.isNow) ...[
+            const NowBadge(),
+            const SizedBox(width: 4),
+          ],
           _menu(l10n),
           ?widget.dragHandle,
         ],
@@ -381,6 +411,23 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     final items = widget.block.itemsByBranch[branch.id] ?? const [];
     final isChosen = branch.chosen;
     final totals = sumByCurrency(_branchCosts(items));
+    // Where now sits inside this option — only ever the chosen one, and only on
+    // today: an option the trip is not following is not somewhere we can be.
+    //
+    // A decision spans its chosen option whole, so when now falls *between* two
+    // of its entries the day sees the decision as under way and draws no line of
+    // its own. The boundary is inside the card, so it is drawn inside the card —
+    // otherwise a decision would swallow the mark exactly when it is most needed
+    // ([widget.isNow] is the day's word for that, and the only case in which an
+    // option may draw a line).
+    final nowMinutes = widget.nowMinutes;
+    final marker = (isChosen && nowMinutes != null)
+        ? nowMarkerForItems(items, nowMinutes)
+        : null;
+    final nowIndex = (marker != null && marker.happening) ? marker.index : -1;
+    final lineIndex = (widget.isNow && marker != null && !marker.happening)
+        ? marker.index
+        : -1;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -465,6 +512,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                     : (widget.costsByGroup[groupId] ?? const []),
                 localeName: widget.localeName,
                 onTapCost: widget.onTapCost,
+                isNow: i == nowIndex,
+                nowLineMinutes: i == lineIndex ? nowMinutes : null,
                 dragHandle: ReorderableDragStartListener(
                   index: i,
                   child: Padding(
@@ -478,6 +527,11 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
               );
             },
           ),
+        // Everything the option has left to say is behind us — which reads as the
+        // decision still being under way only when something untimed is left in
+        // it, so the line closes the option off rather than being dropped.
+        if (lineIndex == items.length && items.isNotEmpty)
+          NowLine(minutes: nowMinutes!),
         Padding(
           padding: const EdgeInsets.only(left: 40, top: 4, bottom: 4),
           child: Wrap(

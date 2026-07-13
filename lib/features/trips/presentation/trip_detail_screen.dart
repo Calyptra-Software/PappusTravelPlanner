@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/clock.dart';
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
@@ -25,7 +26,7 @@ import '../../sharing/trip_bundle.dart';
 import '../application/trip_providers.dart';
 
 /// Trip detail: header summary plus the day-by-day itinerary.
-class TripDetailScreen extends ConsumerWidget {
+class TripDetailScreen extends ConsumerStatefulWidget {
   const TripDetailScreen({super.key, required this.tripId, this.initialItemId});
 
   final int tripId;
@@ -33,6 +34,39 @@ class TripDetailScreen extends ConsumerWidget {
   /// When set (from a widget row deep-link), opens this item's editor once the
   /// itinerary has loaded.
   final int? initialItemId;
+
+  @override
+  ConsumerState<TripDetailScreen> createState() => _TripDetailScreenState();
+}
+
+class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
+  /// Today's section in the timeline, when the trip is under way — scrolled into
+  /// view once, so an ongoing trip opens where we actually are rather than at
+  /// day 1.
+  final _todayKey = GlobalKey();
+  bool _scrolledToToday = false;
+
+  int get tripId => widget.tripId;
+  int? get initialItemId => widget.initialItemId;
+
+  /// Brings today's section into view, once, as soon as it is in the tree. Stays
+  /// armed until it lands: on the first frames the itinerary is still loading and
+  /// the key has no context yet.
+  void _scrollToTodayOnce() {
+    if (_scrolledToToday) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _scrolledToToday) return;
+      final context = _todayKey.currentContext;
+      if (context == null) return;
+      _scrolledToToday = true;
+      Scrollable.ensureVisible(
+        context,
+        alignment: 0.05,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
@@ -182,7 +216,7 @@ class TripDetailScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tripAsync = ref.watch(tripProvider(tripId));
     final itemsAsync = ref.watch(itineraryProvider(tripId));
     final collapsedDays =
@@ -205,6 +239,9 @@ class TripDetailScreen extends ConsumerWidget {
         ref.watch(tripParticipantsProvider(tripId)).value ?? const <Person>[];
     final localeName = Localizations.localeOf(context).languageCode;
     final l10n = AppLocalizations.of(context);
+    // Ticks on the minute, so the timeline's "you are here" mark keeps up with
+    // the clock. The first frame comes before the stream's first value.
+    final now = ref.watch(nowProvider).value ?? DateTime.now();
 
     return Scaffold(
       appBar: AppBar(
@@ -242,6 +279,7 @@ class TripDetailScreen extends ConsumerWidget {
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (error, _) => Center(child: Text('Error: $error')),
             data: (items) {
+              _scrollToTodayOnce();
               return ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
                 children: [
@@ -272,6 +310,8 @@ class TripDetailScreen extends ConsumerWidget {
                     accent: accent,
                     tripStart: trip.startDate,
                     tripEnd: trip.endDate,
+                    now: now,
+                    todayKey: _todayKey,
                     costsByItem: costsByItem,
                     groups: groups,
                     costsByGroup: costsByGroup,

@@ -81,6 +81,21 @@ UI (features/*/presentation, *widgets)
   indicator row under it carries every option's price (the comparison a pager otherwise hides).
   Dragging in a day reorders blocks (writing `ItineraryItems.sortOrder` *and*
   `AlternativeSets.sortOrder`); dragging inside a card reorders that option's items.
+- **"You are here"**: a day is an ordered *list*, not a time-scaled axis (times are optional),
+  so there is no offset to place a now-line at — only a slot. `features/itinerary/now_marker.dart`
+  (pure) answers, for today's blocks and the current minute, either *this block is under way*
+  (marked with a `NowBadge`, a red rail node and a tinted tile) or *the line goes here* (a
+  `NowLine` between two blocks, after the last block that is behind us). The same rule runs a
+  second time *inside* a decision that is under way (`nowMarkerForItems` over its chosen
+  option): a decision spans its option whole, so when now falls between two of that option's
+  entries the day draws no line — the boundary is inside the card, and so is the line.
+  Untimed entries stay
+  *ahead* of the line unless something timed after them is already past — we cannot know when
+  they happen, and claiming they are done is the guess that would make the mark lie. A decision
+  is timed by its **chosen** option only. The mark is drawn *inside* the tile/card, never as an
+  extra list child: the day is a `ReorderableListView` indexed by its blocks. `core/clock.dart`'s
+  `nowProvider` ticks it on the minute; today's day header carries `Today · HH:mm` so a collapsed
+  day still says where we are, and `TripDetailScreen` scrolls today into view on open.
 - **Costs of unchosen branches are shown but never counted.** An item is *live* when it is
   loose or in the chosen branch; a cost counts when it is trip-level, on a live item, or on a
   group with a live member. The rule lives once, as a SQL predicate in `CostDao`

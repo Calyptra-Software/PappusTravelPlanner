@@ -8,7 +8,9 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../day_blocks.dart';
+import '../now_marker.dart';
 import 'alternative_card.dart';
+import 'now_line.dart';
 import 'timeline_tile.dart';
 
 /// Renders a trip's itinerary as day sections. A day is a reorderable list of
@@ -38,6 +40,8 @@ class ItineraryTimeline extends StatelessWidget {
     required this.onTapCost,
     required this.collapsedDays,
     required this.onToggleDayCollapsed,
+    required this.now,
+    this.todayKey,
   });
 
   /// The trip's whole itinerary, including the items of options that were not
@@ -46,6 +50,13 @@ class ItineraryTimeline extends StatelessWidget {
   final Color accent;
   final DateTime? tripStart;
   final DateTime? tripEnd;
+
+  /// The current time, ticking on the minute (`nowProvider`). The day it falls on
+  /// — if the trip has one — carries the "you are here" mark.
+  final DateTime now;
+
+  /// Attached to today's day section, so the screen can scroll it into view.
+  final GlobalKey? todayKey;
 
   /// The trip's decisions, keyed by id, and their options, keyed by decision id.
   final Map<int, AlternativeSet> sets;
@@ -124,10 +135,10 @@ class ItineraryTimeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = _daysToShow();
+    final today = normalizeDay(now);
 
     if (days.isEmpty) {
       // No trip dates and no items yet: offer a single "today" section.
-      final today = normalizeDay(DateTime.now());
       return _DaySection(
         day: today,
         dayNumber: 1,
@@ -146,6 +157,8 @@ class ItineraryTimeline extends StatelessWidget {
         costsByGroup: costsByGroup,
         localeName: localeName,
         onTapCost: onTapCost,
+        now: now,
+        anchorKey: todayKey,
       );
     }
 
@@ -177,6 +190,8 @@ class ItineraryTimeline extends StatelessWidget {
             costsByGroup: costsByGroup,
             localeName: localeName,
             onTapCost: onTapCost,
+            now: now,
+            anchorKey: days[i] == today ? todayKey : null,
           ),
       ],
     );
@@ -206,10 +221,20 @@ class _DaySection extends StatelessWidget {
     required this.costsByGroup,
     required this.localeName,
     required this.onTapCost,
+    required this.now,
+    this.anchorKey,
   });
 
   final DateTime day;
   final int dayNumber;
+
+  /// The current time. When it falls on [day], the day is marked as today and
+  /// carries the now-line.
+  final DateTime now;
+
+  /// Attached to this section's header when it is today, so it can be scrolled
+  /// into view.
+  final GlobalKey? anchorKey;
 
   /// The day's blocks in order: single items and whole decisions.
   final List<DayBlock> blocks;
@@ -267,12 +292,18 @@ class _DaySection extends StatelessWidget {
       for (final groupId in groupIdsToday) ...?costsByGroup[groupId],
     ];
     final dayTotals = sumByCurrency(dayCosts);
+    final isToday = normalizeDay(now) == day;
+    final nowMinutes = now.hour * 60 + now.minute;
+    final today = nowColor(theme);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Tappable header that collapses/expands the whole day.
+        // Tappable header that collapses/expands the whole day. On today it also
+        // carries the clock: the day can be collapsed, and then this is the only
+        // place left to say where in the trip we are.
         InkWell(
+          key: anchorKey,
           onTap: () => onToggleCollapsed(day, expanded),
           borderRadius: BorderRadius.circular(12),
           child: Padding(
@@ -295,9 +326,29 @@ class _DaySection extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        formatDay(day, localeName),
-                        style: theme.textTheme.titleMedium,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              formatDay(day, localeName),
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: isToday
+                                    ? FontWeight.w700
+                                    : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          if (isToday) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              '${l10n.today} · ${formatMinutes(nowMinutes)}',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: today,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       if (dayTotals.isNotEmpty)
                         Text(
@@ -349,6 +400,17 @@ class _DaySection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final live = _liveItems;
     final lastItem = live.isEmpty ? null : live.last;
+    final nowMinutes = now.hour * 60 + now.minute;
+    // Where today stands: either an entry is under way, or the day divides into
+    // what is behind us and what is ahead. Null on any other day, and on a day
+    // that carries no times at all — the header's clock says the rest.
+    final isToday = normalizeDay(now) == day;
+    final marker = isToday ? nowMarker(blocks, nowMinutes) : null;
+    final happeningIndex =
+        (marker != null && marker.happening) ? marker.index : -1;
+    // The block the line is drawn above; == blocks.length when the whole day is
+    // behind us, and the line goes under the last block instead.
+    final lineIndex = (marker != null && !marker.happening) ? marker.index : -1;
     // The day's current location: where the last entry leaves you — a place's
     // location, or a leg's destination. Used to pre-fill the next leg's "from"
     // and, when it comes from a leg, to offer the arrival quick-add chip.
@@ -402,10 +464,15 @@ class _DaySection extends StatelessWidget {
                   index: index,
                   item: item,
                   dragHandle: dragHandle,
+                  isNow: index == happeningIndex,
+                  nowLineMinutes: index == lineIndex ? nowMinutes : null,
                 ),
                 DecisionBlock() => AlternativeCard(
                   key: ValueKey('set-${block.set.id}'),
                   block: block,
+                  isNow: index == happeningIndex,
+                  nowLineMinutes: index == lineIndex ? nowMinutes : null,
+                  nowMinutes: isToday ? nowMinutes : null,
                   accent: accent,
                   groups: groups,
                   costsByItem: costsByItem,
@@ -431,6 +498,10 @@ class _DaySection extends StatelessWidget {
               };
             },
           ),
+        // The whole day is behind us: the line closes it off. (A day with nothing
+        // planned never gets one — there is nothing to be past.)
+        if (lineIndex == blocks.length && blocks.isNotEmpty)
+          NowLine(minutes: nowMinutes),
         Padding(
           padding: const EdgeInsets.only(left: 40, top: 4),
           child: Wrap(
@@ -469,6 +540,8 @@ class _DaySection extends StatelessWidget {
     required int index,
     required ItineraryItem item,
     required Widget dragHandle,
+    required bool isNow,
+    required int? nowLineMinutes,
   }) {
     ItineraryItem? neighbour(int at) {
       if (at < 0 || at >= blocks.length) return null;
@@ -490,6 +563,8 @@ class _DaySection extends StatelessWidget {
       localeName: localeName,
       onTapCost: onTapCost,
       dragHandle: dragHandle,
+      isNow: isNow,
+      nowLineMinutes: nowLineMinutes,
     );
   }
 

@@ -213,6 +213,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nothingPlanned => 'Nothing planned yet.';
 
   @override
+  String get now => 'Now';
+
+  @override
+  String get today => 'Today';
+
+  @override
   String get addPlace => 'Add place';
 
   @override
