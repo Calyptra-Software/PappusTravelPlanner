@@ -292,6 +292,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get add => 'Hinzufügen';
 
   @override
+  String get search => 'Suchen';
+
+  @override
+  String get searchNoMatches => 'Keine Treffer';
+
+  @override
+  String searchAdd(String query) {
+    return '„$query“ hinzufügen';
+  }
+
+  @override
   String get language => 'Sprache';
 
   @override
@@ -481,9 +492,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get costReason => 'Kategorie';
 
   @override
-  String get costReasonNew => 'Neue Kategorie…';
-
-  @override
   String get costReasonHint => 'z. B. Hotel, Abendessen, Zugticket';
 
   @override
@@ -557,9 +565,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get costPaidByNone => 'Nicht zugewiesen';
-
-  @override
-  String get costPaidByNew => 'Neue Person…';
 
   @override
   String costPaidByName(String name) {

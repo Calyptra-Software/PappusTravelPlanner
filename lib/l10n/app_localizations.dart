@@ -608,6 +608,24 @@ abstract class AppLocalizations {
   /// **'Add'**
   String get add;
 
+  /// No description provided for @search.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get search;
+
+  /// No description provided for @searchNoMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matches'**
+  String get searchNoMatches;
+
+  /// Row in a search picker that adds what was typed as a new entry
+  ///
+  /// In en, this message translates to:
+  /// **'Add “{query}”'**
+  String searchAdd(String query);
+
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
@@ -938,12 +956,6 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get costReason;
 
-  /// No description provided for @costReasonNew.
-  ///
-  /// In en, this message translates to:
-  /// **'New category…'**
-  String get costReasonNew;
-
   /// No description provided for @costReasonHint.
   ///
   /// In en, this message translates to:
@@ -1087,12 +1099,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unassigned'**
   String get costPaidByNone;
-
-  /// No description provided for @costPaidByNew.
-  ///
-  /// In en, this message translates to:
-  /// **'New person…'**
-  String get costPaidByNew;
 
   /// No description provided for @costPaidByName.
   ///

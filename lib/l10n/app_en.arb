@@ -104,6 +104,13 @@
   "notesOptional": "Notes (optional)",
   "save": "Save",
   "add": "Add",
+  "search": "Search",
+  "searchNoMatches": "No matches",
+  "searchAdd": "Add “{query}”",
+  "@searchAdd": {
+    "description": "Row in a search picker that adds what was typed as a new entry",
+    "placeholders": { "query": { "type": "String" } }
+  },
   "language": "Language",
   "languageSystem": "System default",
   "languageEnglish": "English",
@@ -174,7 +181,6 @@
   "costAmount": "Amount",
   "costCurrency": "Currency",
   "costReason": "Category",
-  "costReasonNew": "New category…",
   "costReasonHint": "e.g. Hotel, Dinner, Train ticket",
   "costReasonLabel": "Category name",
   "costAmountInvalid": "Enter a valid amount",
@@ -205,7 +211,6 @@
   "costPaid": "Already paid",
   "costPaidFor": "Paid for",
   "costPaidByNone": "Unassigned",
-  "costPaidByNew": "New person…",
   "costPaidByName": "Paid by {name}",
   "@costPaidByName": {
     "placeholders": { "name": { "type": "String" } }

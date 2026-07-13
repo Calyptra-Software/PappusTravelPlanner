@@ -88,6 +88,12 @@
   "notesOptional": "Notizen (optional)",
   "save": "Speichern",
   "add": "Hinzufügen",
+  "search": "Suchen",
+  "searchNoMatches": "Keine Treffer",
+  "searchAdd": "„{query}“ hinzufügen",
+  "@searchAdd": {
+    "placeholders": { "query": { "type": "String" } }
+  },
   "language": "Sprache",
   "languageSystem": "Systemstandard",
   "languageEnglish": "Englisch",
@@ -143,7 +149,6 @@
   "costAmount": "Betrag",
   "costCurrency": "Währung",
   "costReason": "Kategorie",
-  "costReasonNew": "Neue Kategorie…",
   "costReasonHint": "z. B. Hotel, Abendessen, Zugticket",
   "costReasonLabel": "Kategoriename",
   "costAmountInvalid": "Bitte einen gültigen Betrag eingeben",
@@ -168,7 +173,6 @@
   "costPaid": "Bereits bezahlt",
   "costPaidFor": "Bezahlt für",
   "costPaidByNone": "Nicht zugewiesen",
-  "costPaidByNew": "Neue Person…",
   "costPaidByName": "Bezahlt von {name}",
   "@costPaidByName": {
     "placeholders": { "name": { "type": "String" } }

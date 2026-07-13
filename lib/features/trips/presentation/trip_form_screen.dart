@@ -13,7 +13,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
-import '../../costs/presentation/person_picker_dialog.dart';
+import '../../costs/presentation/person_picker.dart';
 import '../application/trip_providers.dart';
 
 /// Create a new trip, or edit an existing one when [tripId] is provided.
