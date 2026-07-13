@@ -3,6 +3,7 @@ package com.travelplanner.travelplanner
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.text.Html
 import android.view.View
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
@@ -49,7 +50,14 @@ private class TodayItemsFactory(
             row.setViewVisibility(R.id.item_time, View.GONE)
         } else {
             row.setViewVisibility(R.id.item_time, View.VISIBLE)
-            row.setTextViewText(R.id.item_time, time)
+            // The planned times, each carrying how far the actual one missed it
+            // ("09:00 <font color=...>(+15)</font>"). The Flutter side sends the
+            // colour with the text, since HTML is the only way a RemoteViews
+            // text can be coloured in part; plain times pass through unchanged.
+            row.setTextViewText(
+                R.id.item_time,
+                Html.fromHtml(time, Html.FROM_HTML_MODE_LEGACY),
+            )
         }
 
         row.setTextViewText(R.id.item_text, data.getString("item${position}_text", ""))

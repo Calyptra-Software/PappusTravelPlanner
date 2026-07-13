@@ -108,12 +108,14 @@ UI (features/*/presentation, *widgets)
   what was *planned* (a leg's departure/arrival), `actualStartMinutes`/`actualEndMinutes`
   what really happened. Both are optional and each end is compared with its own counterpart,
   so a leg that left late but has not landed yet runs from its actual departure to its
-  planned arrival. `features/itinerary/widgets/item_times.dart` draws the **planned** range
-  with each end carrying its miss as a signed, coloured `(+15)` / `(−5)`
-  (`formatSignedMinutes`; red late, green early or on time). The actual time itself is never
-  printed — plan plus delta already says it, and the plan is what the day is judged against.
-  An actual time outranks its planned one in `now_marker.dart`, though: "you are here" is a
-  claim about the day as it is going.
+  planned arrival. What is *shown* is decided once, in the pure
+  `features/itinerary/time_marks.dart` (`timeMarks`): the **planned** range, each end
+  carrying its miss as a signed `(+15)` / `(−5)` (`formatSignedMinutes`; red late, green
+  early or on time). The actual time itself is never printed — plan plus delta already says
+  it, and the plan is what the day is judged against. Two renderers paint that one rule:
+  `widgets/item_times.dart` (coloured spans) and the home widget (see below). An actual time
+  outranks its planned one in `now_marker.dart`, though: "you are here" is a claim about the
+  day as it is going.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
   `Currency` and `TransportMode` enums (in `tables.dart`) and the SharedPreferences-backed
@@ -151,6 +153,13 @@ flat key/value pairs via `home_widget`. `HomeWidgetSync` (wrapping the app in `a
 watches trips/itinerary and re-pushes on change; widget taps deep-link via
 `travelplanner://trip?id=N`. `pickFeaturedTrip` decides which trip to show (ongoing → next
 upcoming → most recent past). Widget code is Android-only and no-ops elsewhere.
+
+A row's time (`widgetTime`) is the one place the payload is not plain text: it carries the
+same planned-time-plus-miss line as the timeline, and a `RemoteViews` text can only be
+coloured in part through HTML, so the `(+15)` is wrapped in a `<font color>` that
+`TodayItemsRemoteViewsService` parses back into spans with `Html.fromHtml`. The colours are
+the widget's own (a lighter red/green — it paints on its own dark background, not the app's
+theme), and a row with nothing recorded still sends plain "09:00 – 10:30".
 
 ## Testing notes
 

@@ -15,8 +15,11 @@
         android:layout_marginEnd="8dp"
         android:textColor="#B3FFFFFF"
         android:textSize="12sp" />
+    <!-- Takes whatever the time column leaves: a time carrying its "(+15)" is
+         wider than a bare one, and the entry itself must not be pushed out. -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
+        android:layout_weight="1"
         android:layout_height="wrap_content"
         android:orientation="vertical">
         <TextView

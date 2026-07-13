@@ -2,6 +2,7 @@ import '../../core/format/date_format.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
+import '../itinerary/time_marks.dart';
 import '../itinerary/widgets/transport_mode.dart';
 
 /// One line of "today's plan" shown on the widget.
@@ -15,10 +16,32 @@ class WidgetRow {
 
   /// Itinerary item id, so a tapped row can deep-link into that specific item.
   final int id;
+
+  /// The entry's planned times, each end carrying how far it missed its plan —
+  /// the timeline's line, in the one form a `RemoteViews` text can be coloured
+  /// in: HTML, parsed back into spans by `TodayItemsRemoteViewsService`. Plain
+  /// text ("09:00 – 10:30") whenever nothing has been recorded to compare.
   final String time;
   final String text;
   final String note;
 }
+
+/// Red for late, green for early — a lighter pair than the app's, because the
+/// widget paints on its own dark background rather than the app's theme.
+const String _widgetLateColor = '#FF8A80';
+const String _widgetEarlyColor = '#A5D6A7';
+
+/// The item's times as the widget shows them: [timeMarks]' rule, with each miss
+/// wrapped in a `<font>` the native row turns back into colour.
+String widgetTime(ItineraryItem item) => [
+  for (final mark in timeMarks(item))
+    if (mark.delta case final delta?)
+      '${formatMinutes(mark.minutes)} <font color="'
+          '${delta > 0 ? _widgetLateColor : _widgetEarlyColor}">'
+          '(${formatSignedMinutes(delta)})</font>'
+    else
+      formatMinutes(mark.minutes),
+].join(' – ');
 
 /// Flat, pre-formatted data handed to the native Android widget. All strings are
 /// already localised so the Kotlin side only has to display them.
@@ -149,7 +172,7 @@ WidgetPayload buildWidgetPayload(
     rows = todayItems
         .map((i) => WidgetRow(
               id: i.id,
-              time: formatTimeRange(i.startMinutes, i.endMinutes),
+              time: widgetTime(i),
               text: _itemText(i, l10n),
               note: i.notes?.trim() ?? '',
             ))

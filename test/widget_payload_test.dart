@@ -31,7 +31,12 @@ void main() {
   }
 
   ItineraryItem placeItem(int id,
-      {int? minutes, int? endMinutes, String location = 'Place', String? notes}) {
+      {int? minutes,
+      int? endMinutes,
+      int? actualMinutes,
+      int? actualEndMinutes,
+      String location = 'Place',
+      String? notes}) {
     return ItineraryItem(
       id: id,
       tripId: 1,
@@ -41,6 +46,8 @@ void main() {
       title: null,
       startMinutes: minutes,
       endMinutes: endMinutes,
+      actualStartMinutes: actualMinutes,
+      actualEndMinutes: actualEndMinutes,
       notes: notes,
       location: location,
       mode: null,
@@ -165,6 +172,29 @@ void main() {
 
       expect(p.rows[0].time, '09:02 – 09:39');
       expect(p.rows[1].time, '12:00');
+    });
+
+    test('a recorded actual time colours its miss onto the planned one', () {
+      final t = trip(
+          id: 1,
+          title: 'Italy',
+          start: DateTime(2026, 7, 4),
+          end: DateTime(2026, 7, 9));
+      final items = [
+        placeItem(1,
+            minutes: 9 * 60,
+            endMinutes: 10 * 60 + 30,
+            actualMinutes: 9 * 60 + 15,
+            actualEndMinutes: 10 * 60 + 25),
+      ];
+      final p = buildWidgetPayload([t], items, now, l10n, 'en');
+
+      // The native row parses the markup back into spans: red late, green early.
+      expect(
+        p.rows.single.time,
+        '09:00 <font color="#FF8A80">(+15)</font> – '
+        '10:30 <font color="#A5D6A7">(−5)</font>',
+      );
     });
   });
 }
