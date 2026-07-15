@@ -124,7 +124,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         for (final reason in reasons)
           SearchPickerOption(
             reason,
-            icon: kCostReasonIcons[icons[reason]] ?? Icons.label_outline,
+            icon: iconForReason(icons[reason]),
           ),
       ],
       selected: current.isEmpty ? null : current,
@@ -310,8 +310,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                     labelText: l10n.costReason,
                     hintText: l10n.costReasonHint,
                     prefixIcon: Icon(
-                      kCostReasonIcons[reasonIcons[_reasonController.text]] ??
-                          Icons.label_outline,
+                      iconForReason(reasonIcons[_reasonController.text]),
                     ),
                     suffixIcon: const Icon(Icons.arrow_drop_down),
                   ),
