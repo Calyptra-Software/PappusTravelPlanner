@@ -133,6 +133,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareTripFailed => 'Could not share this trip.';
 
   @override
+  String get exportPdf => 'Export as PDF';
+
+  @override
+  String get exportPdfFailed => 'Could not export this trip as PDF.';
+
+  @override
+  String pdfOtherOptions(String options) {
+    return 'Other options: $options';
+  }
+
+  @override
+  String pdfExportedOn(String date) {
+    return 'Exported $date';
+  }
+
+  @override
   String get importTrip => 'Import trip';
 
   @override

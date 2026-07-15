@@ -134,6 +134,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareTripFailed => 'Diese Reise konnte nicht geteilt werden.';
 
   @override
+  String get exportPdf => 'Als PDF exportieren';
+
+  @override
+  String get exportPdfFailed =>
+      'Diese Reise konnte nicht als PDF exportiert werden.';
+
+  @override
+  String pdfOtherOptions(String options) {
+    return 'Weitere Optionen: $options';
+  }
+
+  @override
+  String pdfExportedOn(String date) {
+    return 'Exportiert am $date';
+  }
+
+  @override
   String get importTrip => 'Reise importieren';
 
   @override

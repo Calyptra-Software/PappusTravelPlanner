@@ -23,7 +23,12 @@ import '../../itinerary/day_blocks.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
 import '../../sharing/trip_bundle.dart';
+import '../../sharing/trip_pdf.dart';
 import '../application/trip_providers.dart';
+
+/// The two ways to export a trip from the detail screen's share menu: the app's
+/// own portable `.tpt` bundle (re-importable) or a printable PDF.
+enum _ShareAction { tripFile, pdf }
 
 /// Trip detail: header summary plus the day-by-day itinerary.
 class TripDetailScreen extends ConsumerStatefulWidget {
@@ -102,6 +107,44 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           defaultTargetPlatform == TargetPlatform.windows ||
           defaultTargetPlatform == TargetPlatform.macOS);
 
+  /// A filesystem-safe base name derived from the trip [title], for the exported
+  /// file. Falls back to `trip` when the title is empty or all-punctuation.
+  String _fileBase(String title) {
+    final base = title.replaceAll(RegExp(r'[^\w\- ]'), '_').trim();
+    return base.isEmpty ? 'trip' : base;
+  }
+
+  /// Delivers [bytes] as a file: saved to a chosen location on desktop (which
+  /// has no OS share sheet), handed to the share sheet everywhere else.
+  /// [savedMessage] is shown after a desktop save.
+  Future<void> _shareBytes(
+    ScaffoldMessengerState messenger, {
+    required Uint8List bytes,
+    required String fileName,
+    required String mimeType,
+    required String subject,
+    required String savedMessage,
+  }) async {
+    if (_isDesktop) {
+      // Use file_selector (not file_picker) on desktop, matching the database
+      // export in settings: its native chooser parents to the app window on
+      // Linux instead of opening behind it.
+      final location = await getSaveLocation(suggestedName: fileName);
+      if (location != null) {
+        await XFile.fromData(bytes).saveTo(location.path);
+        messenger.showSnackBar(SnackBar(content: Text(savedMessage)));
+      }
+    } else {
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile.fromData(bytes, name: fileName, mimeType: mimeType)],
+          fileNameOverrides: [fileName],
+          subject: subject,
+        ),
+      );
+    }
+  }
+
   /// Exports the trip to a portable `.tpt` bundle: on mobile/web via the OS
   /// share sheet, on desktop by saving it to a file. [title] names the file.
   Future<void> _shareTrip(
@@ -114,36 +157,49 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     try {
       final bytes = await ref.read(repositoryProvider).exportTrip(tripId);
       if (bytes == null) return;
-      final base = title.trim().isEmpty
-          ? 'trip'
-          : title.replaceAll(RegExp(r'[^\w\- ]'), '_').trim();
-      final fileName = '$base.tpt';
-      if (_isDesktop) {
-        // Use file_selector (not file_picker) on desktop, matching the database
-        // export in settings: its native chooser parents to the app window on
-        // Linux instead of opening behind it.
-        final location = await getSaveLocation(suggestedName: fileName);
-        if (location != null) {
-          await XFile.fromData(bytes).saveTo(location.path);
-          messenger.showSnackBar(SnackBar(content: Text(l10n.shareTripSaved)));
-        }
-      } else {
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [
-              XFile.fromData(
-                bytes,
-                name: fileName,
-                mimeType: tripBundleMimeType,
-              ),
-            ],
-            fileNameOverrides: [fileName],
-            subject: title,
-          ),
-        );
-      }
+      await _shareBytes(
+        messenger,
+        bytes: bytes,
+        fileName: '${_fileBase(title)}.tpt',
+        mimeType: tripBundleMimeType,
+        subject: title,
+        savedMessage: l10n.shareTripSaved,
+      );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.shareTripFailed)));
+    }
+  }
+
+  /// Exports the trip as a printable PDF: shared via the OS share sheet on
+  /// mobile/web, saved to a file on desktop. [title] names the file.
+  Future<void> _exportPdf(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final localeName = Localizations.localeOf(context).languageCode;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bundle = await ref.read(repositoryProvider).tripBundle(tripId);
+      if (bundle == null) return;
+      final fonts = await TripPdfFonts.load();
+      final bytes = await buildTripPdf(
+        bundle: bundle,
+        l10n: l10n,
+        localeName: localeName,
+        fonts: fonts,
+      );
+      await _shareBytes(
+        messenger,
+        bytes: bytes,
+        fileName: '${_fileBase(title)}.pdf',
+        mimeType: 'application/pdf',
+        subject: title,
+        savedMessage: l10n.shareTripSaved,
+      );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.exportPdfFailed)));
     }
   }
 
@@ -258,11 +314,38 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
             icon: const Icon(Icons.bar_chart),
             onPressed: () => context.push('/trip/$tripId/stats'),
           ),
-          IconButton(
+          PopupMenuButton<_ShareAction>(
             tooltip: l10n.shareTrip,
             icon: const Icon(Icons.ios_share),
-            onPressed: () =>
-                _shareTrip(context, ref, tripAsync.value?.title ?? ''),
+            onSelected: (action) {
+              final title = tripAsync.value?.title ?? '';
+              switch (action) {
+                case _ShareAction.tripFile:
+                  _shareTrip(context, ref, title);
+                case _ShareAction.pdf:
+                  _exportPdf(context, ref, title);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: _ShareAction.tripFile,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.ios_share),
+                  title: Text(l10n.shareTrip),
+                ),
+              ),
+              PopupMenuItem(
+                value: _ShareAction.pdf,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.picture_as_pdf_outlined),
+                  title: Text(l10n.exportPdf),
+                ),
+              ),
+            ],
           ),
           IconButton(
             tooltip: l10n.editTrip,

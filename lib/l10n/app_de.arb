@@ -37,6 +37,16 @@
   "shareTrip": "Reise teilen",
   "shareTripSaved": "Reisedatei gespeichert.",
   "shareTripFailed": "Diese Reise konnte nicht geteilt werden.",
+  "exportPdf": "Als PDF exportieren",
+  "exportPdfFailed": "Diese Reise konnte nicht als PDF exportiert werden.",
+  "pdfOtherOptions": "Weitere Optionen: {options}",
+  "@pdfOtherOptions": {
+    "placeholders": { "options": { "type": "String" } }
+  },
+  "pdfExportedOn": "Exportiert am {date}",
+  "@pdfExportedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "importTrip": "Reise importieren",
   "importTripSuccess": "Reise importiert.",
   "importTripInvalid": "Diese Datei ist keine gültige geteilte Reise.",

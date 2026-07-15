@@ -44,6 +44,10 @@ Linux, Windows, macOS, and iOS.
   importing a bundle recreates the trip with its itinerary, alternatives, groups, costs,
   and checklists. The format is independent of the local database's IDs, so sender and
   recipient don't need matching data.
+- **Export as PDF** — turn a trip into a printable PDF for sharing with people who don't
+  use the app or for a paper copy: a cover with the trip's dates, notes, and participants,
+  the day-by-day itinerary, an expense summary (per-currency total and a breakdown), and
+  the checklists. Shared via the Android share sheet or saved to a file on desktop.
 - **Portable database** — all data lives in a single SQLite file. On desktop you can
   open/create the database anywhere; on Android you can import/export it. Copy the
   file between devices and platforms and open it as-is.
@@ -165,7 +169,7 @@ lib/
     itinerary/              # timeline, day blocks, alternatives card, item form, transport modes
     costs/                  # cost form, splitting/stats, reasons & people settings
     checklist/              # per-trip named checklists
-    sharing/                # portable trip bundles (export/import a single trip)
+    sharing/                # portable trip bundles (export/import a single trip) + PDF export
     settings/               # language, cost reasons, people + database location screen
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
@@ -191,7 +195,9 @@ and open it directly. Deleting a trip cascades to its itinerary items and their 
 To move **one trip** rather than the whole database, use the share button on the trip
 screen: it writes a `.tpt` bundle (a portable snapshot of that trip alone) which the
 recipient imports from the trips overview. On Android a `.tpt` file shared to — or
-opened with — Travel Planner goes straight into the import flow.
+opened with — Travel Planner goes straight into the import flow. The same button also
+offers **Export as PDF** — a printable, read-only copy of the trip for anyone, whether or
+not they use the app.
 
 ## Localization
 

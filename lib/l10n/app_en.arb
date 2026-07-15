@@ -49,6 +49,16 @@
   "shareTrip": "Share trip",
   "shareTripSaved": "Trip file saved.",
   "shareTripFailed": "Could not share this trip.",
+  "exportPdf": "Export as PDF",
+  "exportPdfFailed": "Could not export this trip as PDF.",
+  "pdfOtherOptions": "Other options: {options}",
+  "@pdfOtherOptions": {
+    "placeholders": { "options": { "type": "String" } }
+  },
+  "pdfExportedOn": "Exported {date}",
+  "@pdfExportedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
   "importTrip": "Import trip",
   "importTripSuccess": "Trip imported.",
   "importTripInvalid": "This file isn't a valid shared trip.",

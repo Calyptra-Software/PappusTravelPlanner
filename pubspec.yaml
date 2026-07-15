@@ -41,6 +41,7 @@ dependencies:
 
   intl: ^0.20.2
   home_widget: ^0.9.3 # Android home-screen widget
+  pdf: ^3.12.0 # exporting a trip as a printable PDF
 
 dev_dependencies:
   flutter_test:
@@ -62,6 +63,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true # localizations from lib/l10n/*.arb, see l10n.yaml
+
+  # Roboto (Apache-2.0, bundled with Flutter — see Roboto-LICENSE.txt) is loaded
+  # by the PDF export as raw bytes, since the standard PDF font can't draw the €
+  # sign or other non-Latin-1 glyphs, and the offline app can't fetch a webfont.
+  # Declared as plain assets (read via rootBundle), not a Flutter `fonts:` family.
+  assets:
+    - assets/fonts/Roboto-Regular.ttf
+    - assets/fonts/Roboto-Bold.ttf
 
   # assets/icon/travelplanner.png is only a source image for flutter_launcher_icons,
   # so it is deliberately not bundled here.

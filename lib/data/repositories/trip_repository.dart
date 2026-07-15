@@ -152,6 +152,11 @@ class TripRepository {
     return bundle?.encode();
   }
 
+  /// Loads the trip [id] and all its data as a portable [TripBundle] — the same
+  /// database-free snapshot behind [exportTrip], handed to the PDF builder.
+  /// Returns null if the trip no longer exists.
+  Future<TripBundle?> tripBundle(int id) => _db.sharingDao.exportTrip(id);
+
   /// Imports a shared trip bundle's [bytes] as a new trip, returning its id.
   /// Throws [FormatException] if the bytes aren't a valid bundle, or
   /// [IncompatibleBundleException] if they came from a newer app version.

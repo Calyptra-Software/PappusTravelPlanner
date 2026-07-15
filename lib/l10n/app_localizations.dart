@@ -302,6 +302,30 @@ abstract class AppLocalizations {
   /// **'Could not share this trip.'**
   String get shareTripFailed;
 
+  /// No description provided for @exportPdf.
+  ///
+  /// In en, this message translates to:
+  /// **'Export as PDF'**
+  String get exportPdf;
+
+  /// No description provided for @exportPdfFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export this trip as PDF.'**
+  String get exportPdfFailed;
+
+  /// No description provided for @pdfOtherOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Other options: {options}'**
+  String pdfOtherOptions(String options);
+
+  /// No description provided for @pdfExportedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Exported {date}'**
+  String pdfExportedOn(String date);
+
   /// No description provided for @importTrip.
   ///
   /// In en, this message translates to:
