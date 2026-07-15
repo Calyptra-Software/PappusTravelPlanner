@@ -50,6 +50,17 @@ String formatMinutes(int? minutes) {
   return '$h:$m';
 }
 
+/// Formats a plain duration given in minutes as a compact "2h 30m" label
+/// ("45m" under an hour, "3h" on the hour, "0m" for none). Like [formatMinutes]
+/// the units are not localized — durations read the same way everywhere.
+String formatDurationHm(int minutes) {
+  final h = minutes ~/ 60;
+  final m = minutes % 60;
+  if (h == 0) return '${m}m';
+  if (m == 0) return '${h}h';
+  return '${h}h ${m}m';
+}
+
 /// Formats a start/end pair, e.g. "09:00 – 11:30", "09:00", or ''.
 String formatTimeRange(int? startMinutes, int? endMinutes) {
   final start = formatMinutes(startMinutes);

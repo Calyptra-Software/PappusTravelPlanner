@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../itinerary/application/itinerary_providers.dart';
+import '../../itinerary/transport_stats.dart';
+import '../../itinerary/widgets/transport_mode.dart';
 import '../../trips/application/trip_providers.dart';
 import '../application/cost_providers.dart';
 import '../cost_reason_icons.dart';
@@ -47,79 +51,111 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
         ? null
         : stats.byCurrency.firstWhere((c) => c.currency == selected);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.statsTitle)),
-      body: current == null
-          ? _EmptyState(message: l10n.statsNoData)
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-              children: [
-                if (currencies.length > 1) ...[
-                  _CurrencySelector(
-                    currencies: currencies,
-                    selected: selected!,
-                    onChanged: (c) => setState(() => _currency = c),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                _SummaryStrip(stats: current, localeName: localeName),
-                const SizedBox(height: 24),
-                _SectionHeader(l10n.statsByCategory),
-                const SizedBox(height: 12),
-                _CategoryList(
-                  stats: current,
-                  accent: accent,
-                  localeName: localeName,
-                ),
-                const SizedBox(height: 24),
-                _SectionHeader(l10n.statsByPerson),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: SegmentedButton<_PersonView>(
-                    segments: [
-                      ButtonSegment(
-                        value: _PersonView.paid,
-                        label: Text(l10n.statsScopePaid),
-                      ),
-                      ButtonSegment(
-                        value: _PersonView.share,
-                        label: Text(l10n.statsScopeShare),
-                      ),
-                      ButtonSegment(
-                        value: _PersonView.balances,
-                        label: Text(l10n.statsScopeBalances),
-                      ),
-                    ],
-                    selected: {_personView},
-                    onSelectionChanged: (s) =>
-                        setState(() => _personView = s.first),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                switch (_personView) {
-                  _PersonView.paid => _PersonAmountList(
-                    stats: current,
-                    accent: accent,
-                    localeName: localeName,
-                    meName: meName,
-                    amountOf: (p) => p.paidMinor,
-                  ),
-                  _PersonView.share => _PersonAmountList(
-                    stats: current,
-                    accent: accent,
-                    localeName: localeName,
-                    meName: meName,
-                    amountOf: (p) => p.shareMinor,
-                  ),
-                  _PersonView.balances => _BalancesSection(
-                    stats: current,
-                    localeName: localeName,
-                    meName: meName,
-                  ),
-                },
-              ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.statsTitle),
+          bottom: TabBar(
+            tabs: [
+              Tab(text: l10n.statsTabExpenses),
+              Tab(text: l10n.statsTabTransport),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _expensesTab(
+              context,
+              l10n: l10n,
+              localeName: localeName,
+              accent: accent,
+              meName: meName,
+              currencies: currencies,
+              selected: selected,
+              current: current,
             ),
+            _TransportTab(tripId: widget.tripId, accent: accent),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _expensesTab(
+    BuildContext context, {
+    required AppLocalizations l10n,
+    required String localeName,
+    required Color accent,
+    required String? meName,
+    required List<Currency> currencies,
+    required Currency? selected,
+    required CurrencyStats? current,
+  }) {
+    if (current == null) return _EmptyState(message: l10n.statsNoData);
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      children: [
+        if (currencies.length > 1) ...[
+          _CurrencySelector(
+            currencies: currencies,
+            selected: selected!,
+            onChanged: (c) => setState(() => _currency = c),
+          ),
+          const SizedBox(height: 16),
+        ],
+        _SummaryStrip(stats: current, localeName: localeName),
+        const SizedBox(height: 24),
+        _SectionHeader(l10n.statsByCategory),
+        const SizedBox(height: 12),
+        _CategoryList(stats: current, accent: accent, localeName: localeName),
+        const SizedBox(height: 24),
+        _SectionHeader(l10n.statsByPerson),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SegmentedButton<_PersonView>(
+            segments: [
+              ButtonSegment(
+                value: _PersonView.paid,
+                label: Text(l10n.statsScopePaid),
+              ),
+              ButtonSegment(
+                value: _PersonView.share,
+                label: Text(l10n.statsScopeShare),
+              ),
+              ButtonSegment(
+                value: _PersonView.balances,
+                label: Text(l10n.statsScopeBalances),
+              ),
+            ],
+            selected: {_personView},
+            onSelectionChanged: (s) => setState(() => _personView = s.first),
+          ),
+        ),
+        const SizedBox(height: 12),
+        switch (_personView) {
+          _PersonView.paid => _PersonAmountList(
+            stats: current,
+            accent: accent,
+            localeName: localeName,
+            meName: meName,
+            amountOf: (p) => p.paidMinor,
+          ),
+          _PersonView.share => _PersonAmountList(
+            stats: current,
+            accent: accent,
+            localeName: localeName,
+            meName: meName,
+            amountOf: (p) => p.shareMinor,
+          ),
+          _PersonView.balances => _BalancesSection(
+            stats: current,
+            localeName: localeName,
+            meName: meName,
+          ),
+        },
+      ],
     );
   }
 }
@@ -403,6 +439,230 @@ class _BalancesSection extends StatelessWidget {
                 ],
               ),
             ),
+      ],
+    );
+  }
+}
+
+/// Which time axis the transport breakdown reports — the plan, or what actually
+/// happened.
+enum _TransportView { planned, actual }
+
+/// Per-mode transport breakdown: a summary of total legs and time, then each
+/// [TransportMode] with its leg count and total time stacked as two bars. A
+/// planned/actual toggle swaps both figures between the plan and what was
+/// recorded — the transport mirror of the expense tab. See [computeTransportStats].
+class _TransportTab extends ConsumerStatefulWidget {
+  const _TransportTab({required this.tripId, required this.accent});
+
+  final int tripId;
+  final Color accent;
+
+  @override
+  ConsumerState<_TransportTab> createState() => _TransportTabState();
+}
+
+class _TransportTabState extends ConsumerState<_TransportTab> {
+  _TransportView _view = _TransportView.planned;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final stats = ref.watch(transportStatsProvider(widget.tripId));
+    if (stats.isEmpty) return _EmptyState(message: l10n.statsNoTransport);
+
+    // The selected axis picks each mode's count and time; the largest of each
+    // across modes sizes its column of bars. Order stays by leg usage so the
+    // list doesn't reshuffle when the axis changes.
+    final actual = _view == _TransportView.actual;
+    int countOf(TransportModeStat m) => actual ? m.actualCount : m.legs;
+    int timeOf(TransportModeStat m) =>
+        actual ? m.actualMinutes : m.plannedMinutes;
+    final maxCount = stats.byMode.fold<int>(
+      0,
+      (m, s) => countOf(s) > m ? countOf(s) : m,
+    );
+    final maxTime = stats.byMode.fold<int>(
+      0,
+      (m, s) => timeOf(s) > m ? timeOf(s) : m,
+    );
+    final totalCount = actual ? stats.totalActualCount : stats.totalLegs;
+    final totalTime = actual
+        ? stats.totalActualMinutes
+        : stats.totalPlannedMinutes;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              l10n.statsLegs(totalCount),
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              l10n.statsTotalTime(formatDurationHm(totalTime)),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SegmentedButton<_TransportView>(
+            segments: [
+              ButtonSegment(
+                value: _TransportView.planned,
+                label: Text(l10n.plannedTimes),
+              ),
+              ButtonSegment(
+                value: _TransportView.actual,
+                label: Text(l10n.actualTimes),
+              ),
+            ],
+            selected: {_view},
+            onSelectionChanged: (s) => setState(() => _view = s.first),
+          ),
+        ),
+        const SizedBox(height: 24),
+        _SectionHeader(l10n.statsByMode),
+        const SizedBox(height: 4),
+        for (final mode in stats.byMode)
+          _TransportModeRow(
+            mode: mode.mode,
+            legs: countOf(mode),
+            minutes: timeOf(mode),
+            legsFraction: maxCount == 0 ? 0 : countOf(mode) / maxCount,
+            timeFraction: maxTime == 0 ? 0 : timeOf(mode) / maxTime,
+            accent: widget.accent,
+          ),
+      ],
+    );
+  }
+}
+
+/// One mode's row in the transport breakdown: its icon and name, with the leg
+/// count and total time stacked underneath as two labelled bars.
+class _TransportModeRow extends StatelessWidget {
+  const _TransportModeRow({
+    required this.mode,
+    required this.legs,
+    required this.minutes,
+    required this.legsFraction,
+    required this.timeFraction,
+    required this.accent,
+  });
+
+  final TransportMode mode;
+  final int legs;
+  final int minutes;
+  final double legsFraction;
+  final double timeFraction;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(mode.icon, size: 20, color: accent),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  mode.label(l10n),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge,
+                ),
+                const SizedBox(height: 8),
+                _MetricBar(
+                  caption: l10n.statsScopeLegs,
+                  value: '$legs',
+                  fraction: legsFraction,
+                  color: accent,
+                ),
+                const SizedBox(height: 6),
+                _MetricBar(
+                  caption: l10n.statsScopeTime,
+                  value: formatDurationHm(minutes),
+                  fraction: timeFraction,
+                  color: accent,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A captioned proportional bar with a trailing value — one line of a
+/// [_TransportModeRow] (its legs or its time).
+class _MetricBar extends StatelessWidget {
+  const _MetricBar({
+    required this.caption,
+    required this.value,
+    required this.fraction,
+    required this.color,
+  });
+
+  final String caption;
+  final String value;
+  final double fraction;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+    return Row(
+      children: [
+        SizedBox(
+          width: 76,
+          child: Text(
+            caption,
+            style: muted,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: fraction.clamp(0.0, 1.0),
+              minHeight: 6,
+              backgroundColor: color.withValues(alpha: 0.12),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          value,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }

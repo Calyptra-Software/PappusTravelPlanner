@@ -1235,7 +1235,7 @@ abstract class AppLocalizations {
   /// No description provided for @statsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Expense statistics'**
+  /// **'Statistics'**
   String get statsTitle;
 
   /// No description provided for @statsOpen.
@@ -1244,17 +1244,65 @@ abstract class AppLocalizations {
   /// **'Statistics'**
   String get statsOpen;
 
+  /// No description provided for @statsTabExpenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Expenses'**
+  String get statsTabExpenses;
+
+  /// No description provided for @statsTabTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport'**
+  String get statsTabTransport;
+
   /// No description provided for @statsNoData.
   ///
   /// In en, this message translates to:
   /// **'No expenses to analyze yet'**
   String get statsNoData;
 
+  /// No description provided for @statsNoTransport.
+  ///
+  /// In en, this message translates to:
+  /// **'No transport legs to analyze yet'**
+  String get statsNoTransport;
+
   /// No description provided for @statsByCategory.
   ///
   /// In en, this message translates to:
   /// **'By category'**
   String get statsByCategory;
+
+  /// No description provided for @statsByMode.
+  ///
+  /// In en, this message translates to:
+  /// **'By mode'**
+  String get statsByMode;
+
+  /// No description provided for @statsScopeLegs.
+  ///
+  /// In en, this message translates to:
+  /// **'Legs'**
+  String get statsScopeLegs;
+
+  /// No description provided for @statsScopeTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get statsScopeTime;
+
+  /// No description provided for @statsLegs.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 leg} other{{count} legs}}'**
+  String statsLegs(int count);
+
+  /// No description provided for @statsTotalTime.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} total'**
+  String statsTotalTime(String duration);
 
   /// No description provided for @statsByPerson.
   ///

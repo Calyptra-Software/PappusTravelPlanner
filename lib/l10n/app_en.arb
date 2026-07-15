@@ -239,10 +239,24 @@
   "expenseScopeMine": "Mine",
   "participants": "Participants",
   "addParticipant": "Add participant",
-  "statsTitle": "Expense statistics",
+  "statsTitle": "Statistics",
   "statsOpen": "Statistics",
+  "statsTabExpenses": "Expenses",
+  "statsTabTransport": "Transport",
   "statsNoData": "No expenses to analyze yet",
+  "statsNoTransport": "No transport legs to analyze yet",
   "statsByCategory": "By category",
+  "statsByMode": "By mode",
+  "statsScopeLegs": "Legs",
+  "statsScopeTime": "Time",
+  "statsLegs": "{count, plural, =1{1 leg} other{{count} legs}}",
+  "@statsLegs": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsTotalTime": "{duration} total",
+  "@statsTotalTime": {
+    "placeholders": { "duration": { "type": "String" } }
+  },
   "statsByPerson": "By person",
   "statsScopePaid": "Paid",
   "statsScopeShare": "Share",

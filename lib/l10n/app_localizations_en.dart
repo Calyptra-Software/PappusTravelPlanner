@@ -633,16 +633,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addParticipant => 'Add participant';
 
   @override
-  String get statsTitle => 'Expense statistics';
+  String get statsTitle => 'Statistics';
 
   @override
   String get statsOpen => 'Statistics';
 
   @override
+  String get statsTabExpenses => 'Expenses';
+
+  @override
+  String get statsTabTransport => 'Transport';
+
+  @override
   String get statsNoData => 'No expenses to analyze yet';
 
   @override
+  String get statsNoTransport => 'No transport legs to analyze yet';
+
+  @override
   String get statsByCategory => 'By category';
+
+  @override
+  String get statsByMode => 'By mode';
+
+  @override
+  String get statsScopeLegs => 'Legs';
+
+  @override
+  String get statsScopeTime => 'Time';
+
+  @override
+  String statsLegs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count legs',
+      one: '1 leg',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statsTotalTime(String duration) {
+    return '$duration total';
+  }
 
   @override
   String get statsByPerson => 'By person';

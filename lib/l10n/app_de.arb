@@ -201,7 +201,21 @@
   "expenseScopeMine": "Meine",
   "participants": "Teilnehmer",
   "addParticipant": "Teilnehmer hinzufügen",
-  "statsTitle": "Ausgabenstatistik",
+  "statsTitle": "Statistik",
+  "statsTabExpenses": "Ausgaben",
+  "statsTabTransport": "Transport",
+  "statsNoTransport": "Noch keine Strecken zum Auswerten",
+  "statsByMode": "Nach Verkehrsmittel",
+  "statsScopeLegs": "Strecken",
+  "statsScopeTime": "Zeit",
+  "statsLegs": "{count, plural, =1{1 Strecke} other{{count} Strecken}}",
+  "@statsLegs": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsTotalTime": "{duration} gesamt",
+  "@statsTotalTime": {
+    "placeholders": { "duration": { "type": "String" } }
+  },
   "statsOpen": "Statistik",
   "statsNoData": "Noch keine Ausgaben zum Auswerten",
   "statsByCategory": "Nach Kategorie",

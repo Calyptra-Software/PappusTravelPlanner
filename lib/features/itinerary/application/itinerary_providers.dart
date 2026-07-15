@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../live_items.dart';
+import '../transport_stats.dart';
 
 /// Every itinerary item of a trip, already ordered by day / sort / time —
 /// including the items of alternative branches that were not chosen (the
@@ -49,3 +50,16 @@ final chosenBranchIdsProvider = Provider.autoDispose.family<Set<int>, int>((
   final branches = ref.watch(alternativeBranchesProvider(tripId)).value;
   return branches == null ? const {} : chosenBranchIds(branches);
 });
+
+/// Per-mode transport statistics for a trip: how many legs and how much time
+/// each [TransportMode] accounts for. Derives from the trip's *live* legs (the
+/// plan as it stands — unchosen alternatives are excluded, just as they are
+/// from the money) via [computeTransportStats].
+final transportStatsProvider = Provider.autoDispose.family<TransportStats, int>(
+  (ref, tripId) {
+    final items = ref.watch(itineraryProvider(tripId)).value;
+    if (items == null) return const TransportStats([]);
+    final chosen = ref.watch(chosenBranchIdsProvider(tripId));
+    return computeTransportStats(liveItems(items, chosen));
+  },
+);

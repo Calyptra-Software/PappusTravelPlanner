@@ -638,16 +638,50 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addParticipant => 'Teilnehmer hinzufügen';
 
   @override
-  String get statsTitle => 'Ausgabenstatistik';
+  String get statsTitle => 'Statistik';
 
   @override
   String get statsOpen => 'Statistik';
 
   @override
+  String get statsTabExpenses => 'Ausgaben';
+
+  @override
+  String get statsTabTransport => 'Transport';
+
+  @override
   String get statsNoData => 'Noch keine Ausgaben zum Auswerten';
 
   @override
+  String get statsNoTransport => 'Noch keine Strecken zum Auswerten';
+
+  @override
   String get statsByCategory => 'Nach Kategorie';
+
+  @override
+  String get statsByMode => 'Nach Verkehrsmittel';
+
+  @override
+  String get statsScopeLegs => 'Strecken';
+
+  @override
+  String get statsScopeTime => 'Zeit';
+
+  @override
+  String statsLegs(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Strecken',
+      one: '1 Strecke',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String statsTotalTime(String duration) {
+    return '$duration gesamt';
+  }
 
   @override
   String get statsByPerson => 'Nach Person';
