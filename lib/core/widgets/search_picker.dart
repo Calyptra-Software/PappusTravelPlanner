@@ -184,7 +184,14 @@ class _SearchPickerSheetState extends State<SearchPickerSheet> {
             Flexible(
               child: ListView(
                 shrinkWrap: true,
-                padding: const EdgeInsets.only(top: 8, bottom: 12),
+                // The last row must clear the Android system navigation-bar
+                // inset (padding.bottom) — the sheet's SafeArea guards the top
+                // and sides but leaves the bottom to us. With the keyboard up,
+                // padding.bottom collapses to 0 (viewInsets covers it above).
+                padding: EdgeInsets.only(
+                  top: 8,
+                  bottom: 12 + media.padding.bottom,
+                ),
                 children: [
                   if (showCreate)
                     ListTile(
