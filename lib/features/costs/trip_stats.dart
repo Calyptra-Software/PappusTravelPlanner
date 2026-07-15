@@ -127,6 +127,102 @@ TripStats computeTripStats(
   return TripStats(result);
 }
 
+/// Merges several trips' [TripStats] into one, as if their costs were pooled —
+/// the all-trips overview. Per currency the category amounts and per-person
+/// paid/share are summed and the settle-up recomputed, so it reads exactly like
+/// a single trip's stats. Each trip must be computed on its own first (via
+/// [computeTripStats]) so a cost still falls back to *its* trip's participants;
+/// this only adds the pieces up.
+TripStats mergeTripStats(Iterable<TripStats> perTrip) {
+  final byCurrency = <Currency, List<CurrencyStats>>{};
+  for (final stats in perTrip) {
+    for (final c in stats.byCurrency) {
+      byCurrency.putIfAbsent(c.currency, () => []).add(c);
+    }
+  }
+
+  final result = <CurrencyStats>[];
+  for (final currency in Currency.values) {
+    final group = byCurrency[currency];
+    if (group == null || group.isEmpty) continue;
+    result.add(_mergeCurrency(currency, group));
+  }
+  return TripStats(result);
+}
+
+CurrencyStats _mergeCurrency(Currency currency, List<CurrencyStats> parts) {
+  var total = 0;
+  var paid = 0;
+  var count = 0;
+  final categoryAmounts = <String, int>{};
+  final categoryCounts = <String, int>{};
+  final paidByPerson = <String, int>{};
+  final shareByPerson = <String, int>{};
+  for (final part in parts) {
+    total += part.totalMinor;
+    paid += part.paidMinor;
+    count += part.count;
+    for (final cat in part.byCategory) {
+      categoryAmounts.update(
+        cat.reason,
+        (v) => v + cat.amountMinor,
+        ifAbsent: () => cat.amountMinor,
+      );
+      categoryCounts.update(
+        cat.reason,
+        (v) => v + cat.count,
+        ifAbsent: () => cat.count,
+      );
+    }
+    for (final person in part.byPerson) {
+      paidByPerson.update(
+        person.name,
+        (v) => v + person.paidMinor,
+        ifAbsent: () => person.paidMinor,
+      );
+      shareByPerson.update(
+        person.name,
+        (v) => v + person.shareMinor,
+        ifAbsent: () => person.shareMinor,
+      );
+    }
+  }
+
+  final byCategory =
+      categoryAmounts.entries
+          .map(
+            (e) => CategoryStat(
+              reason: e.key,
+              amountMinor: e.value,
+              count: categoryCounts[e.key]!,
+              fraction: total == 0 ? 0 : e.value / total,
+            ),
+          )
+          .toList()
+        ..sort((a, b) => b.amountMinor.compareTo(a.amountMinor));
+
+  final names = {...paidByPerson.keys, ...shareByPerson.keys}.toList()..sort();
+  final byPerson = names
+      .map(
+        (name) => PersonStat(
+          name: name,
+          paidMinor: paidByPerson[name] ?? 0,
+          shareMinor: shareByPerson[name] ?? 0,
+        ),
+      )
+      .toList();
+
+  return CurrencyStats(
+    currency: currency,
+    totalMinor: total,
+    paidMinor: paid,
+    count: count,
+    byCategory: byCategory,
+    byPerson: byPerson,
+    settlements: _settle(byPerson),
+  );
+}
+
 CurrencyStats _statsForCurrency(
   Currency currency,
   List<Cost> costs,

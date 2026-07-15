@@ -641,7 +641,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get statsTitle => 'Statistik';
 
   @override
+  String get statsAllTripsTitle => 'Gesamtstatistik';
+
+  @override
   String get statsOpen => 'Statistik';
+
+  @override
+  String get statsAllTripsOpen => 'Gesamtstatistik';
 
   @override
   String get statsTabExpenses => 'Ausgaben';

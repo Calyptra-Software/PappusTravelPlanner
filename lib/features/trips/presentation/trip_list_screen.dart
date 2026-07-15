@@ -121,6 +121,11 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                   onPressed: () => _openFilters(peopleList),
                 ),
                 IconButton(
+                  tooltip: l10n.statsAllTripsOpen,
+                  icon: const Icon(Icons.bar_chart),
+                  onPressed: () => context.push('/stats'),
+                ),
+                IconButton(
                   tooltip: l10n.importTrip,
                   icon: const Icon(Icons.file_download_outlined),
                   onPressed: () => pickAndImportTrip(context, ref),

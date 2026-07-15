@@ -188,4 +188,65 @@ void main() {
   test('empty when there are no costs', () {
     expect(computeTripStats(const [], const {}, const []).isEmpty, isTrue);
   });
+
+  group('mergeTripStats', () {
+    test(
+      'pools categories, per-person paid/share and settle-up per currency',
+      () {
+        // Trip 1: Ann pays 100 shared by Ann and Bob.
+        final trip1 = computeTripStats(
+          [cost(10000, reason: 'Hotel', paidBy: 'Ann')],
+          const {},
+          const ['Ann', 'Bob'],
+        );
+        // Trip 2: Bob pays 40 for Food shared by Ann and Bob.
+        final trip2 = computeTripStats(
+          [cost(4000, reason: 'Food', paidBy: 'Bob')],
+          const {},
+          const ['Ann', 'Bob'],
+        );
+
+        final merged = mergeTripStats([trip1, trip2]);
+        final cur = onlyCurrency(merged);
+
+        expect(cur.totalMinor, 14000);
+        expect(cur.count, 2);
+        // Categories summed and sorted by amount.
+        expect(cur.byCategory.map((c) => c.reason), ['Hotel', 'Food']);
+
+        // Ann paid 100, share 50+20 = 70 → +30; Bob paid 40, share 70 → −30.
+        final ann = cur.byPerson.firstWhere((p) => p.name == 'Ann');
+        final bob = cur.byPerson.firstWhere((p) => p.name == 'Bob');
+        expect(ann.paidMinor, 10000);
+        expect(ann.shareMinor, 7000);
+        expect(bob.netMinor, -3000);
+
+        // Settle-up recomputed from the pooled balances.
+        expect(cur.settlements, hasLength(1));
+        expect(cur.settlements.single.from, 'Bob');
+        expect(cur.settlements.single.to, 'Ann');
+        expect(cur.settlements.single.amountMinor, 3000);
+      },
+    );
+
+    test('keeps currencies separate and is empty with no data', () {
+      final merged = mergeTripStats([
+        computeTripStats(
+          [cost(2000, currency: Currency.usd)],
+          const {},
+          const [],
+        ),
+        computeTripStats(
+          [cost(1000, currency: Currency.eur)],
+          const {},
+          const [],
+        ),
+      ]);
+      expect(merged.byCurrency.map((c) => c.currency), [
+        Currency.eur,
+        Currency.usd,
+      ]);
+      expect(mergeTripStats(const []).isEmpty, isTrue);
+    });
+  });
 }

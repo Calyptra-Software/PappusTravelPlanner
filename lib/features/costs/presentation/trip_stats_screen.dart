@@ -16,12 +16,14 @@ import '../trip_stats.dart';
 /// Which per-person figure the balances section shows.
 enum _PersonView { paid, share, balances }
 
-/// Per-trip expense statistics: a category breakdown plus per-person paid totals
-/// and settle-up balances, one section per currency the trip uses.
+/// Statistics for a single trip, or — when [tripId] is null — pooled across all
+/// trips: an expenses tab (category breakdown plus per-person paid totals and
+/// settle-up balances, one section per currency) and a transport tab.
 class TripStatsScreen extends ConsumerStatefulWidget {
-  const TripStatsScreen({super.key, required this.tripId});
+  const TripStatsScreen({super.key, this.tripId});
 
-  final int tripId;
+  /// The trip to report on, or null for the all-trips overview.
+  final int? tripId;
 
   @override
   ConsumerState<TripStatsScreen> createState() => _TripStatsScreenState();
@@ -35,8 +37,15 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
-    final trip = ref.watch(tripProvider(widget.tripId)).value;
-    final stats = ref.watch(tripStatsProvider(widget.tripId));
+    final tripId = widget.tripId;
+    final allTrips = tripId == null;
+    final trip = allTrips ? null : ref.watch(tripProvider(tripId)).value;
+    final stats = allTrips
+        ? ref.watch(allTripsStatsProvider)
+        : ref.watch(tripStatsProvider(tripId));
+    final transportStats = allTrips
+        ? ref.watch(allTripsTransportStatsProvider)
+        : ref.watch(transportStatsProvider(tripId));
     final meName = ref.watch(mePersonProvider).value?.name;
     final accent = trip != null
         ? Color(trip.colorValue)
@@ -55,7 +64,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(l10n.statsTitle),
+          title: Text(allTrips ? l10n.statsAllTripsTitle : l10n.statsTitle),
           bottom: TabBar(
             tabs: [
               Tab(text: l10n.statsTabExpenses),
@@ -75,7 +84,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
               selected: selected,
               current: current,
             ),
-            _TransportTab(tripId: widget.tripId, accent: accent),
+            _TransportTab(stats: transportStats, accent: accent),
           ],
         ),
       ),
@@ -452,24 +461,24 @@ enum _TransportView { planned, actual }
 /// [TransportMode] with its leg count and total time stacked as two bars. A
 /// planned/actual toggle swaps both figures between the plan and what was
 /// recorded — the transport mirror of the expense tab. See [computeTransportStats].
-class _TransportTab extends ConsumerStatefulWidget {
-  const _TransportTab({required this.tripId, required this.accent});
+class _TransportTab extends StatefulWidget {
+  const _TransportTab({required this.stats, required this.accent});
 
-  final int tripId;
+  final TransportStats stats;
   final Color accent;
 
   @override
-  ConsumerState<_TransportTab> createState() => _TransportTabState();
+  State<_TransportTab> createState() => _TransportTabState();
 }
 
-class _TransportTabState extends ConsumerState<_TransportTab> {
+class _TransportTabState extends State<_TransportTab> {
   _TransportView _view = _TransportView.planned;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final stats = ref.watch(transportStatsProvider(widget.tripId));
+    final stats = widget.stats;
     if (stats.isEmpty) return _EmptyState(message: l10n.statsNoTransport);
 
     // The selected axis picks each mode's count and time; the largest of each

@@ -175,4 +175,39 @@ void main() {
       TransportMode.bus,
     ]);
   });
+
+  group('mergeTransportStats', () {
+    test('sums each mode across trips and re-sorts', () {
+      final a = computeTransportStats([
+        leg(TransportMode.train, startMinutes: 0, endMinutes: 60), // 1 leg, 60
+        leg(TransportMode.walk, startMinutes: 0, endMinutes: 10), // 1 leg, 10
+      ]);
+      final b = computeTransportStats([
+        leg(TransportMode.walk, startMinutes: 0, endMinutes: 20), // walk
+        leg(TransportMode.walk, startMinutes: 0, endMinutes: 30), // walk
+      ]);
+      final merged = mergeTransportStats([a, b]);
+
+      // Walk now leads on leg count (3 vs 1 train).
+      expect(merged.byMode.map((m) => m.mode), [
+        TransportMode.walk,
+        TransportMode.train,
+      ]);
+      final walk = merged.byMode.first;
+      expect(walk.legs, 3);
+      expect(walk.plannedMinutes, 60); // 10 + 20 + 30
+      expect(merged.totalLegs, 4);
+    });
+
+    test('is empty when no trip has any legs', () {
+      expect(mergeTransportStats([]).isEmpty, isTrue);
+      expect(
+        mergeTransportStats([
+          const TransportStats([]),
+          computeTransportStats([]),
+        ]).isEmpty,
+        isTrue,
+      );
+    });
+  });
 }

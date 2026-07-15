@@ -202,6 +202,8 @@
   "participants": "Teilnehmer",
   "addParticipant": "Teilnehmer hinzufügen",
   "statsTitle": "Statistik",
+  "statsAllTripsTitle": "Gesamtstatistik",
+  "statsAllTripsOpen": "Gesamtstatistik",
   "statsTabExpenses": "Ausgaben",
   "statsTabTransport": "Transport",
   "statsNoTransport": "Noch keine Strecken zum Auswerten",

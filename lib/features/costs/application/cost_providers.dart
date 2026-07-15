@@ -115,6 +115,16 @@ final tripStatsProvider = Provider.autoDispose.family<TripStats, int>((
   ]);
 });
 
+/// Expense statistics pooled across **all** trips — the overall overview. Each
+/// trip is computed on its own (so costs still fall back to their own trip's
+/// participants) and the results are merged; see [mergeTripStats].
+final allTripsStatsProvider = Provider.autoDispose<TripStats>((ref) {
+  final trips = ref.watch(tripListProvider).value ?? const <Trip>[];
+  return mergeTripStats([
+    for (final trip in trips) ref.watch(tripStatsProvider(trip.id)),
+  ]);
+});
+
 final costControllerProvider = Provider<CostController>(
   (ref) => CostController(ref),
 );

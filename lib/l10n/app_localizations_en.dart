@@ -636,7 +636,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsTitle => 'Statistics';
 
   @override
+  String get statsAllTripsTitle => 'Overall statistics';
+
+  @override
   String get statsOpen => 'Statistics';
+
+  @override
+  String get statsAllTripsOpen => 'Overall statistics';
 
   @override
   String get statsTabExpenses => 'Expenses';

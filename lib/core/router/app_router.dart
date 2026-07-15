@@ -21,6 +21,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const SettingsScreen(),
           ),
           GoRoute(
+            path: 'stats',
+            builder: (context, state) => const TripStatsScreen(),
+          ),
+          GoRoute(
             path: 'new',
             builder: (context, state) => const TripFormScreen(),
           ),

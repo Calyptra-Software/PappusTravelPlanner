@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
+import '../../trips/application/trip_providers.dart';
 import '../live_items.dart';
 import '../transport_stats.dart';
 
@@ -63,3 +64,15 @@ final transportStatsProvider = Provider.autoDispose.family<TransportStats, int>(
     return computeTransportStats(liveItems(items, chosen));
   },
 );
+
+/// Transport statistics pooled across **all** trips — the overall overview. Each
+/// trip is aggregated (and time-balanced) on its own and the results are summed
+/// per mode; see [mergeTransportStats].
+final allTripsTransportStatsProvider = Provider.autoDispose<TransportStats>((
+  ref,
+) {
+  final trips = ref.watch(tripListProvider).value ?? const <Trip>[];
+  return mergeTransportStats([
+    for (final trip in trips) ref.watch(transportStatsProvider(trip.id)),
+  ]);
+});

@@ -106,14 +106,64 @@ TransportStats computeTransportStats(List<ItineraryItem> items) {
             ),
           )
           .toList()
-        ..sort((a, b) {
-          final byLegs = b.legs.compareTo(a.legs);
-          if (byLegs != 0) return byLegs;
-          final byTime = b.plannedMinutes.compareTo(a.plannedMinutes);
-          if (byTime != 0) return byTime;
-          return a.mode.index.compareTo(b.mode.index);
-        });
+        ..sort(_byUsage);
   return TransportStats(byMode);
+}
+
+/// Merges several trips' [TransportStats] into one by summing each mode's legs
+/// and time — the all-trips overview. Each trip is aggregated (and its time
+/// balanced) on its own first via [computeTransportStats], so a journey split
+/// within a trip stays balanced there and can't pair across trips; this only
+/// adds the per-mode totals up.
+TransportStats mergeTransportStats(Iterable<TransportStats> perTrip) {
+  final legs = <TransportMode, int>{};
+  final planned = <TransportMode, int>{};
+  final actualCount = <TransportMode, int>{};
+  final actual = <TransportMode, int>{};
+  for (final stats in perTrip) {
+    for (final m in stats.byMode) {
+      legs.update(m.mode, (v) => v + m.legs, ifAbsent: () => m.legs);
+      planned.update(
+        m.mode,
+        (v) => v + m.plannedMinutes,
+        ifAbsent: () => m.plannedMinutes,
+      );
+      actualCount.update(
+        m.mode,
+        (v) => v + m.actualCount,
+        ifAbsent: () => m.actualCount,
+      );
+      actual.update(
+        m.mode,
+        (v) => v + m.actualMinutes,
+        ifAbsent: () => m.actualMinutes,
+      );
+    }
+  }
+
+  final byMode =
+      legs.entries
+          .map(
+            (e) => TransportModeStat(
+              mode: e.key,
+              legs: e.value,
+              plannedMinutes: planned[e.key]!,
+              actualCount: actualCount[e.key]!,
+              actualMinutes: actual[e.key]!,
+            ),
+          )
+          .toList()
+        ..sort(_byUsage);
+  return TransportStats(byMode);
+}
+
+/// Orders modes by leg count, then planned time, then stable enum order.
+int _byUsage(TransportModeStat a, TransportModeStat b) {
+  final byLegs = b.legs.compareTo(a.legs);
+  if (byLegs != 0) return byLegs;
+  final byTime = b.plannedMinutes.compareTo(a.plannedMinutes);
+  if (byTime != 0) return byTime;
+  return a.mode.index.compareTo(b.mode.index);
 }
 
 /// One leg's span on a single axis: its [day] (an absolute day index) plus the

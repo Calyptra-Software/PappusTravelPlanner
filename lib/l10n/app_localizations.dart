@@ -1238,11 +1238,23 @@ abstract class AppLocalizations {
   /// **'Statistics'**
   String get statsTitle;
 
+  /// No description provided for @statsAllTripsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall statistics'**
+  String get statsAllTripsTitle;
+
   /// No description provided for @statsOpen.
   ///
   /// In en, this message translates to:
   /// **'Statistics'**
   String get statsOpen;
+
+  /// No description provided for @statsAllTripsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Overall statistics'**
+  String get statsAllTripsOpen;
 
   /// No description provided for @statsTabExpenses.
   ///
