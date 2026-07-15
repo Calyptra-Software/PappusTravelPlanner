@@ -122,10 +122,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       title: l10n.costReason,
       options: [
         for (final reason in reasons)
-          SearchPickerOption(
-            reason,
-            icon: iconForReason(icons[reason]),
-          ),
+          SearchPickerOption(reason, icon: iconForReason(icons[reason])),
       ],
       selected: current.isEmpty ? null : current,
     );
