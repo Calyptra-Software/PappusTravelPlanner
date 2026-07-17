@@ -11,6 +11,10 @@ import '../trip_filter.dart';
 import '../widgets/trip_calendar.dart';
 import '../widgets/trip_card.dart';
 
+/// Actions folded into the overview app bar's overflow menu to keep the title
+/// from being crowded out on narrow screens.
+enum _OverflowAction { stats, import, settings }
+
 /// Overview screen: the list of all planned trips.
 class TripListScreen extends ConsumerStatefulWidget {
   const TripListScreen({super.key});
@@ -120,20 +124,41 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                   ),
                   onPressed: () => _openFilters(peopleList),
                 ),
-                IconButton(
-                  tooltip: l10n.statsAllTripsOpen,
-                  icon: const Icon(Icons.bar_chart),
-                  onPressed: () => context.push('/stats'),
-                ),
-                IconButton(
-                  tooltip: l10n.importTrip,
-                  icon: const Icon(Icons.file_download_outlined),
-                  onPressed: () => pickAndImportTrip(context, ref),
-                ),
-                IconButton(
-                  tooltip: l10n.settingsTitle,
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: () => context.push('/settings'),
+                PopupMenuButton<_OverflowAction>(
+                  tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+                  onSelected: (action) {
+                    switch (action) {
+                      case _OverflowAction.stats:
+                        context.push('/stats');
+                      case _OverflowAction.import:
+                        pickAndImportTrip(context, ref);
+                      case _OverflowAction.settings:
+                        context.push('/settings');
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: _OverflowAction.stats,
+                      child: ListTile(
+                        leading: const Icon(Icons.bar_chart),
+                        title: Text(l10n.statsAllTripsOpen),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: _OverflowAction.import,
+                      child: ListTile(
+                        leading: const Icon(Icons.file_download_outlined),
+                        title: Text(l10n.importTrip),
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: _OverflowAction.settings,
+                      child: ListTile(
+                        leading: const Icon(Icons.settings_outlined),
+                        title: Text(l10n.settingsTitle),
+                      ),
+                    ),
+                  ],
                 ),
               ],
       ),
