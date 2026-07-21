@@ -151,4 +151,53 @@ void main() {
 
     expect(blocks.single, isA<ItemBlock>());
   });
+
+  test('flattening a day keeps the decision in its slot', () {
+    // The chosen option's items carry sortOrder 0 and 1 — their order *within
+    // the branch*. Sorting the day's items by sortOrder would put them first;
+    // the decision's own slot (1) says they belong between the loose items.
+    final blocks = buildDayBlocks(
+      day: day,
+      items: [
+        item(1, title: 'Breakfast', sortOrder: 0),
+        item(2, title: 'Museum', sortOrder: 0, alternativeId: 10),
+        item(3, title: 'Lunch nearby', sortOrder: 1, alternativeId: 10),
+        item(4, title: 'Beach', sortOrder: 0, alternativeId: 11),
+        item(5, title: 'Dinner', sortOrder: 2),
+      ],
+      sets: {5: set(5, sortOrder: 1)},
+      branchesBySet: {
+        5: [
+          branch(10, setId: 5, sortOrder: 0, chosen: true),
+          branch(11, setId: 5, sortOrder: 1),
+        ],
+      },
+    );
+
+    expect(itemsInDayOrder(blocks).map((i) => i.title), [
+      'Breakfast',
+      'Museum',
+      'Lunch nearby',
+      'Dinner',
+    ]);
+  });
+
+  test('flattening a day skips the options not chosen', () {
+    final blocks = buildDayBlocks(
+      day: day,
+      items: [
+        item(1, title: 'Museum', sortOrder: 0, alternativeId: 10),
+        item(2, title: 'Beach', sortOrder: 0, alternativeId: 11),
+      ],
+      sets: {5: set(5, sortOrder: 0)},
+      branchesBySet: {
+        5: [
+          branch(10, setId: 5, sortOrder: 0),
+          branch(11, setId: 5, sortOrder: 1, chosen: true),
+        ],
+      },
+    );
+
+    expect(itemsInDayOrder(blocks).map((i) => i.title), ['Beach']);
+  });
 }

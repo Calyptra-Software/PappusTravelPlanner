@@ -98,3 +98,21 @@ List<DayBlock> buildDayBlocks({
   blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
   return blocks;
 }
+
+/// [blocks]' items as one flat list, in the order the day reads them: a loose
+/// item in its slot, and a decision's *chosen* option's items in the slot the
+/// decision occupies.
+///
+/// This is the only correct way to walk a day's live items in order. Filtering
+/// the trip's items with `liveItems` keeps them sorted by `sortOrder`, but a
+/// branch item's `sortOrder` orders it *within its branch* — it shares no
+/// ordering space with the day's loose items, so a branch's first item would
+/// jump ahead of the loose items it comes after.
+List<ItineraryItem> itemsInDayOrder(List<DayBlock> blocks) => [
+  for (final block in blocks)
+    ...switch (block) {
+      ItemBlock(:final item) => [item],
+      DecisionBlock(:final chosen, :final itemsByBranch) =>
+        itemsByBranch[chosen.id] ?? const <ItineraryItem>[],
+    },
+];

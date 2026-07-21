@@ -12,7 +12,7 @@ import '../../core/settings/locale_provider.dart';
 import '../../data/database/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../itinerary/application/itinerary_providers.dart';
-import '../itinerary/live_items.dart';
+import '../itinerary/day_blocks.dart';
 import '../itinerary/widgets/transport_mode.dart';
 import '../trips/application/trip_providers.dart';
 import 'widget_payload.dart';
@@ -38,16 +38,18 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
     var todayItems = <ItineraryItem>[];
     if (featured != null && isTripOngoing(featured, now)) {
       final today = normalizeDay(now);
-      final items = await repo.watchItems(featured.id).first;
-      // Only the plan as it stands reaches the home screen: an option that was
-      // considered but not chosen is not on today's agenda.
-      final chosen = chosenBranchIds(
-        await repo.watchAlternativeBranches(featured.id).first,
+      // Assemble today exactly as the timeline does — as blocks — so a decision
+      // keeps the slot it occupies in the day. Only the plan as it stands
+      // reaches the home screen: an option that was considered but not chosen
+      // is not on today's agenda.
+      todayItems = itemsInDayOrder(
+        buildDayBlocks(
+          day: today,
+          items: await repo.watchItems(featured.id).first,
+          sets: await repo.watchAlternativeSets(featured.id).first,
+          branchesBySet: await repo.watchAlternativeBranches(featured.id).first,
+        ),
       );
-      todayItems = [
-        for (final item in liveItems(items, chosen))
-          if (normalizeDay(item.date) == today) item,
-      ];
     }
 
     final locale = _resolveLocale(ref);
@@ -169,9 +171,14 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
           ? ref.watch(itineraryProvider(featured.id)).value
           : null;
       // Switching to another branch changes what today's plan *is* without
-      // touching any item, so the branches belong in the signature too.
+      // touching any item, and dragging a decision moves its whole option
+      // without touching one either, so the branches and the sets belong in the
+      // signature too.
       final branches = ongoing
           ? ref.watch(alternativeBranchesProvider(featured.id)).value
+          : null;
+      final sets = ongoing
+          ? ref.watch(alternativeSetsProvider(featured.id)).value
           : null;
 
       // Use each row's full toString (Drift data classes include every column)
@@ -181,6 +188,7 @@ class _HomeWidgetSyncState extends ConsumerState<HomeWidgetSync> {
         for (final t in trips) t.toString(),
         'items:${items?.map((i) => i.toString()).join('|') ?? ''}',
         'branches:${branches?.values.expand((b) => b).join('|') ?? ''}',
+        'sets:${sets?.values.join('|') ?? ''}',
       ].join('~');
 
       if (signature != _lastSignature) {
