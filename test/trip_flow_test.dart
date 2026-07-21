@@ -73,4 +73,67 @@ void main() {
     expect(find.text('Noch keine Reisen'), findsOneWidget);
     expect(find.text('Neue Reise'), findsOneWidget);
   });
+
+  group('app bar actions adapt to the window width', () {
+    /// Sizes the test surface in logical pixels for the next pump.
+    void sizeSurface(WidgetTester tester, double width) {
+      tester.view
+        ..devicePixelRatio = 1.0
+        ..physicalSize = Size(width, 800);
+      addTearDown(tester.view.reset);
+    }
+
+    // The navigation actions, by the icon each shows when it has its own slot.
+    const navigationIcons = [
+      Icons.bar_chart,
+      Icons.file_download_outlined,
+      Icons.settings_outlined,
+    ];
+
+    // The menu is typed on a private enum, so match the raw widget type.
+    final overflowMenu = find.byWidgetPredicate((w) => w is PopupMenuButton);
+
+    testWidgets('collapses navigation actions into a menu on a phone', (
+      tester,
+    ) async {
+      sizeSurface(tester, 400);
+      await pumpOverview(tester, const []);
+
+      expect(overflowMenu, findsOneWidget);
+      for (final icon in navigationIcons) {
+        expect(find.byIcon(icon), findsNothing);
+      }
+      // The actions the list itself uses stay directly reachable.
+      expect(find.byIcon(Icons.search), findsOneWidget);
+      expect(find.byIcon(Icons.tune), findsOneWidget);
+      expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
+    });
+
+    testWidgets('shows every action as an icon on a wide window', (
+      tester,
+    ) async {
+      sizeSurface(tester, 900);
+      await pumpOverview(tester, const []);
+
+      expect(overflowMenu, findsNothing);
+      for (final icon in navigationIcons) {
+        expect(find.byIcon(icon), findsOneWidget);
+      }
+      expect(find.byIcon(Icons.search), findsOneWidget);
+    });
+
+    testWidgets('menu exposes the collapsed actions when opened', (
+      tester,
+    ) async {
+      sizeSurface(tester, 400);
+      await pumpOverview(tester, const []);
+
+      await tester.tap(overflowMenu);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Overall statistics'), findsOneWidget);
+      expect(find.text('Import trip'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+    });
+  });
 }

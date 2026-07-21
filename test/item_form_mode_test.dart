@@ -110,40 +110,42 @@ void main() {
     expect(dropdownOf(tester).initialValue, 1);
   });
 
-  testWidgets('a leg whose mode was deleted stays unassigned, shown as "Other"', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      wrap(
-        ItemFormSheet(
-          tripId: 1,
-          kind: ItemKind.transport,
-          existing: leg(mode: null),
+  testWidgets(
+    'a leg whose mode was deleted stays unassigned, shown as "Other"',
+    (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(
+            tripId: 1,
+            kind: ItemKind.transport,
+            existing: leg(mode: null),
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    // Not silently pre-selected onto train (or any other row) ...
-    expect(dropdownOf(tester).initialValue, isNull);
-    // ... and labelled the way the timeline labels it.
-    expect(find.text('Other'), findsOneWidget);
-  });
+      // Not silently pre-selected onto train (or any other row) ...
+      expect(dropdownOf(tester).initialValue, isNull);
+      // ... and labelled the way the timeline labels it.
+      expect(find.text('Other'), findsOneWidget);
+    },
+  );
 
-  testWidgets('a stale mode id that no longer exists falls back to unassigned', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      wrap(
-        ItemFormSheet(
-          tripId: 1,
-          kind: ItemKind.transport,
-          existing: leg(mode: 999), // deleted while the sheet was open
+  testWidgets(
+    'a stale mode id that no longer exists falls back to unassigned',
+    (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(
+            tripId: 1,
+            kind: ItemKind.transport,
+            existing: leg(mode: 999), // deleted while the sheet was open
+          ),
         ),
-      ),
-    );
-    await tester.pump();
+      );
+      await tester.pump();
 
-    expect(dropdownOf(tester).initialValue, isNull);
-  });
+      expect(dropdownOf(tester).initialValue, isNull);
+    },
+  );
 }

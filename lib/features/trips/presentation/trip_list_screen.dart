@@ -15,6 +15,11 @@ import '../widgets/trip_card.dart';
 /// from being crowded out on narrow screens.
 enum _OverflowAction { stats, import, settings }
 
+/// Width from which the overview app bar has room for every action as its own
+/// icon. Below it the navigation actions collapse into an overflow menu; the
+/// value is Material's compact/medium window breakpoint, i.e. phone vs. tablet.
+const double _wideAppBarBreakpoint = 600;
+
 /// Overview screen: the list of all planned trips.
 class TripListScreen extends ConsumerStatefulWidget {
   const TripListScreen({super.key});
@@ -55,6 +60,17 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     if (updated != null) setState(() => _query = updated);
   }
 
+  void _runOverflowAction(_OverflowAction action) {
+    switch (action) {
+      case _OverflowAction.stats:
+        context.push('/stats');
+      case _OverflowAction.import:
+        pickAndImportTrip(context, ref);
+      case _OverflowAction.settings:
+        context.push('/settings');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tripsAsync = ref.watch(tripListProvider);
@@ -75,6 +91,18 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
     final filterCount = _query.activeFilterCount;
+
+    // The three navigation actions, defined once so the wide and compact app
+    // bars stay in sync: shown as icons when there is room, folded into an
+    // overflow menu when there is not.
+    final overflowActions = <(_OverflowAction, IconData, String)>[
+      (_OverflowAction.stats, Icons.bar_chart, l10n.statsAllTripsOpen),
+      (_OverflowAction.import, Icons.file_download_outlined, l10n.importTrip),
+      (_OverflowAction.settings, Icons.settings_outlined, l10n.settingsTitle),
+    ];
+    // Six icons crowd the title off a phone's app bar but fit comfortably on a
+    // tablet or desktop window.
+    final wide = MediaQuery.sizeOf(context).width >= _wideAppBarBreakpoint;
 
     return Scaffold(
       appBar: AppBar(
@@ -124,42 +152,28 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                   ),
                   onPressed: () => _openFilters(peopleList),
                 ),
-                PopupMenuButton<_OverflowAction>(
-                  tooltip: MaterialLocalizations.of(context).showMenuTooltip,
-                  onSelected: (action) {
-                    switch (action) {
-                      case _OverflowAction.stats:
-                        context.push('/stats');
-                      case _OverflowAction.import:
-                        pickAndImportTrip(context, ref);
-                      case _OverflowAction.settings:
-                        context.push('/settings');
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: _OverflowAction.stats,
-                      child: ListTile(
-                        leading: const Icon(Icons.bar_chart),
-                        title: Text(l10n.statsAllTripsOpen),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: _OverflowAction.import,
-                      child: ListTile(
-                        leading: const Icon(Icons.file_download_outlined),
-                        title: Text(l10n.importTrip),
-                      ),
-                    ),
-                    PopupMenuItem(
-                      value: _OverflowAction.settings,
-                      child: ListTile(
-                        leading: const Icon(Icons.settings_outlined),
-                        title: Text(l10n.settingsTitle),
-                      ),
-                    ),
-                  ],
-                ),
+                if (wide)
+                  for (final (action, icon, label) in overflowActions)
+                    IconButton(
+                      tooltip: label,
+                      icon: Icon(icon),
+                      onPressed: () => _runOverflowAction(action),
+                    )
+                else
+                  PopupMenuButton<_OverflowAction>(
+                    tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+                    onSelected: _runOverflowAction,
+                    itemBuilder: (context) => [
+                      for (final (action, icon, label) in overflowActions)
+                        PopupMenuItem(
+                          value: action,
+                          child: ListTile(
+                            leading: Icon(icon),
+                            title: Text(label),
+                          ),
+                        ),
+                    ],
+                  ),
               ],
       ),
       floatingActionButton: FloatingActionButton.extended(
