@@ -12,6 +12,7 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/costs/application/cost_providers.dart';
+import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/day_blocks.dart';
 import 'package:travelplanner/features/itinerary/widgets/alternative_card.dart';
 import 'package:travelplanner/features/itinerary/widgets/now_line.dart';
@@ -43,6 +44,14 @@ void main() {
       repositoryProvider.overrideWithValue(repo),
       sharedPreferencesProvider.overrideWithValue(prefs),
       reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
+      // The transport tile resolves its mode through this stream; like the
+      // reason roster, the real drift stream would never resolve under
+      // fake-async, so stub it with the one mode the card uses.
+      transportModesProvider.overrideWith(
+        (ref) => Stream.value([
+          TransportModeRow(id: 6, builtinKey: 'train', sortOrder: 0),
+        ]),
+      ),
     ],
     child: MaterialApp(
       localizationsDelegates: const [
@@ -308,7 +317,7 @@ void main() {
                   date: day,
                   sortOrder: 0,
                   kind: ItemKind.transport,
-                  mode: TransportMode.train,
+                  mode: 6,
                   fromLocation: 'Hamburg',
                   toLocation: 'Kronberg',
                   alternativeId: 10,

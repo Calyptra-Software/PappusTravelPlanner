@@ -7,6 +7,7 @@ import 'daos/cost_dao.dart';
 import 'daos/group_dao.dart';
 import 'daos/itinerary_dao.dart';
 import 'daos/sharing_dao.dart';
+import 'daos/transport_mode_dao.dart';
 import 'daos/trip_dao.dart';
 import 'tables.dart';
 
@@ -21,6 +22,7 @@ part 'app_database.g.dart';
     ItineraryItems,
     Costs,
     CostReasons,
+    TransportModes,
     People,
     TripParticipants,
     CostBeneficiaries,
@@ -36,6 +38,7 @@ part 'app_database.g.dart';
     GroupDao,
     AlternativeDao,
     SharingDao,
+    TransportModeDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -47,10 +50,16 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 19;
+  int get schemaVersion => 21;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onCreate: (m) async {
+      await m.createAll();
+      // A fresh database starts with the built-in transport modes so a leg has
+      // something to pick from; the user manages the list from there.
+      await transportModeDao.seedBuiltinModes();
+    },
     onUpgrade: (m, from, to) async {
       // v2 introduced costs attached to itinerary items.
       if (from < 2) {
@@ -193,12 +202,53 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(itineraryItems, itineraryItems.actualStartMinutes);
         await m.addColumn(itineraryItems, itineraryItems.actualEndMinutes);
       }
+      // v20 turned the fixed TransportMode enum into a user-managed table:
+      // built-ins are now seeded rows the user can extend, rename, re-icon,
+      // reorder or delete. Create and seed the table (the built-ins go in in
+      // enum order, so each gets id = its old enum index + 1), then repoint
+      // every leg's `mode` from that old index onto its new row and recreate
+      // the table so its foreign key to transport_modes takes effect.
+      if (from < 20) {
+        await _seedTransportModesAndRepointLegs(m);
+      }
+      // v21 self-heals a database that reached v20 without the transport-modes
+      // table — an intermediate build bumped the version before the migration
+      // above shipped, so `onUpgrade` never ran it and the table is missing
+      // (every leg then reads as "Other"). If the table is absent, run the v20
+      // steps now; if it's already there, v20 did its job and this is a no-op.
+      if (from < 21) {
+        final hasTable = (await customSelect(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+          "AND name = 'transport_modes'",
+        ).get()).isNotEmpty;
+        if (!hasTable) {
+          await _seedTransportModesAndRepointLegs(m);
+        }
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
       await customStatement('PRAGMA foreign_keys = ON');
     },
   );
+
+  /// The v20 transport-modes setup, shared by the v20 branch and the v21
+  /// self-heal: create and seed the table (built-ins go in in enum order, so
+  /// each gets id = its old enum index + 1), then repoint every leg's `mode`
+  /// from that old index onto its new row and recreate the table so its foreign
+  /// key to `transport_modes` takes effect.
+  Future<void> _seedTransportModesAndRepointLegs(Migrator m) async {
+    await m.createTable(transportModes);
+    await transportModeDao.seedBuiltinModes();
+    await m.alterTable(
+      TableMigration(
+        itineraryItems,
+        columnTransformer: {
+          itineraryItems.mode: itineraryItems.mode + const Constant(1),
+        },
+      ),
+    );
+  }
 
   /// Flushes the write-ahead log into the main database file so it is complete
   /// and safe to copy/export as a single file.

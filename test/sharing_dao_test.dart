@@ -47,7 +47,7 @@ void main() {
         tripId: tripId,
         date: DateTime(2026, 5, 1),
         kind: ItemKind.transport,
-        mode: const Value(TransportMode.train),
+        mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         fromLocation: const Value('Florence'),
         toLocation: const Value('Rome'),
       ),
@@ -120,7 +120,7 @@ void main() {
     final groupLocal = b.groups.single.localId;
     final transport = b.items.firstWhere((i) => i.kind == ItemKind.transport);
     expect(transport.groupLocalId, groupLocal);
-    expect(transport.mode, TransportMode.train);
+    expect(transport.mode, 'train');
     final placeItem = b.items.firstWhere((i) => i.kind == ItemKind.place);
     expect(placeItem.groupLocalId, groupLocal);
     expect(placeItem.location, 'Piazza del Colosseo');
@@ -312,7 +312,7 @@ Future<int> _seedTrip(AppDatabase db) async {
       tripId: tripId,
       date: DateTime(2026, 5, 1),
       kind: ItemKind.transport,
-      mode: const Value(TransportMode.train),
+      mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
     ),
   );
   final groupId = await db.groupDao.groupItems(place, leg);

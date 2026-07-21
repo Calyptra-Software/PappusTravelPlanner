@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/database/app_database.dart';
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/checklist_providers.dart';
 
@@ -12,34 +13,14 @@ Future<String?> _promptText(
   required String title,
   String initial = '',
   String? hint,
-}) async {
-  final l10n = AppLocalizations.of(context);
-  final controller = TextEditingController(text: initial);
-  final result = await showDialog<String>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(title),
-      content: TextField(
-        controller: controller,
-        autofocus: true,
-        textCapitalization: TextCapitalization.sentences,
-        decoration: hint == null ? null : InputDecoration(hintText: hint),
-        onSubmitted: (v) => Navigator.pop(context, v),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.cancel),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, controller.text),
-          child: Text(l10n.save),
-        ),
-      ],
-    ),
+}) {
+  return showTextPromptDialog(
+    context,
+    title: title,
+    hint: hint,
+    initial: initial,
+    confirmLabel: AppLocalizations.of(context).save,
   );
-  controller.dispose();
-  return result;
 }
 
 /// The trip's checklists shown in the detail header: any number of named,

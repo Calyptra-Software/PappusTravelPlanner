@@ -3,7 +3,6 @@ import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
 import '../itinerary/time_marks.dart';
-import '../itinerary/widgets/transport_mode.dart';
 
 /// One line of "today's plan" shown on the widget.
 class WidgetRow {
@@ -118,10 +117,15 @@ Trip? pickFeaturedTrip(List<Trip> trips, DateTime now) {
   return trips.first;
 }
 
-/// Display text for a single itinerary item.
-String _itemText(ItineraryItem item, AppLocalizations l10n) {
+/// Display text for a single itinerary item. [modeLabels] resolves a leg's
+/// transport-mode row id to its already-localized label.
+String _itemText(
+  ItineraryItem item,
+  AppLocalizations l10n,
+  Map<int, String> modeLabels,
+) {
   if (item.kind == ItemKind.transport) {
-    final mode = (item.mode ?? TransportMode.other).label(l10n);
+    final mode = modeLabels[item.mode] ?? l10n.modeOther;
     final route = [
       item.fromLocation ?? '',
       item.toLocation ?? '',
@@ -140,8 +144,9 @@ WidgetPayload buildWidgetPayload(
   List<ItineraryItem> todayItems,
   DateTime now,
   AppLocalizations l10n,
-  String localeName,
-) {
+  String localeName, {
+  Map<int, String> modeLabels = const {},
+}) {
   final trip = pickFeaturedTrip(trips, now);
   if (trip == null) {
     return WidgetPayload(
@@ -182,7 +187,7 @@ WidgetPayload buildWidgetPayload(
           (i) => WidgetRow(
             id: i.id,
             time: widgetTime(i),
-            text: _itemText(i, l10n),
+            text: _itemText(i, l10n, modeLabels),
             note: i.notes?.trim() ?? '',
           ),
         )

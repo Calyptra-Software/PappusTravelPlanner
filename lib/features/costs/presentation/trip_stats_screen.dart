@@ -6,6 +6,7 @@ import '../../../core/format/money_format.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
+import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/transport_stats.dart';
 import '../../itinerary/widgets/transport_mode.dart';
 import '../../trips/application/trip_providers.dart';
@@ -560,7 +561,7 @@ class _TransportTabState extends State<_TransportTab> {
 
 /// One mode's row in the transport breakdown: its icon and name, with the leg
 /// count and total time stacked underneath as two labelled bars.
-class _TransportModeRow extends StatelessWidget {
+class _TransportModeRow extends ConsumerWidget {
   const _TransportModeRow({
     required this.mode,
     required this.legs,
@@ -570,7 +571,8 @@ class _TransportModeRow extends StatelessWidget {
     required this.accent,
   });
 
-  final TransportMode mode;
+  /// The mode's row id (`TransportModes.id`), resolved to icon/label here.
+  final int mode;
   final int legs;
   final int minutes;
   final double legsFraction;
@@ -578,22 +580,27 @@ class _TransportModeRow extends StatelessWidget {
   final Color accent;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final modeRow = ref.watch(transportModesByIdProvider)[mode];
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(mode.icon, size: 20, color: accent),
+          Icon(
+            modeRow?.icon ?? kDefaultTransportModeIcon,
+            size: 20,
+            color: accent,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  mode.label(l10n),
+                  modeRow?.label(l10n) ?? l10n.modeOther,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyLarge,

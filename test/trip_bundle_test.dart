@@ -37,7 +37,7 @@ void main() {
         date: DateTime(2026, 5, 1),
         sortOrder: 1,
         kind: ItemKind.transport,
-        mode: TransportMode.train,
+        mode: 'train',
         fromLocation: 'Florence',
         toLocation: 'Rome',
       ),
@@ -135,7 +135,7 @@ void main() {
     final transport = restored.items.firstWhere(
       (i) => i.kind == ItemKind.transport,
     );
-    expect(transport.mode, TransportMode.train);
+    expect(transport.mode, 'train');
     expect(transport.title, isNull);
     expect(transport.location, isNull);
   });

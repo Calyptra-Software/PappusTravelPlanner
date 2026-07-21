@@ -222,6 +222,19 @@
     "placeholders": { "reason": { "type": "String" } }
   },
   "noCostReasons": "No saved categories yet",
+  "transportModesSection": "Transport modes",
+  "transportModeAdd": "Add mode",
+  "transportModeAddTitle": "New transport mode",
+  "transportModeRenameTitle": "Rename mode",
+  "transportModeLabel": "Name",
+  "transportModeHint": "e.g. Gondola",
+  "transportModeChooseIcon": "Choose an icon",
+  "transportModeDeleteConfirmTitle": "Delete mode?",
+  "transportModeDeleteConfirmBody": "\"{mode}\" will be removed from the mode list. Existing transport legs that used it keep their route but lose their mode.",
+  "@transportModeDeleteConfirmBody": {
+    "placeholders": { "mode": { "type": "String" } }
+  },
+  "noTransportModes": "No transport modes yet",
   "costPaidBy": "Paid by",
   "costPaid": "Already paid",
   "costPaidFor": "Paid for",

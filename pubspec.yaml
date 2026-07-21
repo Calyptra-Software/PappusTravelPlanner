@@ -74,3 +74,13 @@ flutter:
 
   # assets/icon/travelplanner.png is only a source image for flutter_launcher_icons,
   # so it is deliberately not bundled here.
+
+  fonts:
+    # A tiny custom icon font (4 glyphs) for transport modes Material Icons has
+    # no symbol for: horse, gondola, chairlift, and T-bar. Regenerate with
+    # `python3 assets/fonts/build_transport_glyphs.py assets/fonts/TransportGlyphs.ttf`.
+    # Referenced by `IconData(0xE800…, fontFamily: 'TransportGlyphs')` — see
+    # kTransportModeIcons in features/itinerary/widgets/transport_mode.dart.
+    - family: TransportGlyphs
+      fonts:
+        - asset: assets/fonts/TransportGlyphs.ttf

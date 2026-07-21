@@ -118,12 +118,23 @@ UI (features/*/presentation, *widgets)
   day as it is going.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
-  `Currency` and `TransportMode` enums (in `tables.dart`) and the SharedPreferences-backed
+  `Currency` enum (in `tables.dart`) and the SharedPreferences-backed
   `CostReasonDisplay` / `ExpenseScope` enums are all persisted by **integer index** — only
   ever append new values at the end, never reorder.
+- **Transport modes are a user-managed table**, not a fixed enum: a leg's `ItineraryItems.mode`
+  is a foreign key into `TransportModes` (setNull on delete). The `TransportMode` enum (in
+  `tables.dart`) is only the *catalogue of built-ins* the DB is seeded with — each value's
+  `name` is the `builtinKey` stored on its seed row, giving it a localized label and a default
+  icon (`transport_mode.dart`). A row's label is its `name` when set, else its `builtinKey`'s
+  localized label; icons come from the curated `kTransportModeIcons` set. Built-ins seed in
+  enum order so a fresh row's id is its enum index + 1 — the fact the v20 migration relies on
+  to repoint legacy legs. CRUD lives in `TransportModeDao`; the sharing bundle denormalizes a
+  leg's mode to its portable key (built-in key or custom name), carrying custom icons in
+  `TripBundle.modeIcons`.
 - Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItemGroups`, `AlternativeSets`,
   `Alternatives`, `ItineraryItems`, `Costs`,
-  `CostReasons` (reusable reason labels with an optional icon id), `People` (reusable payer/
+  `CostReasons` (reusable reason labels with an optional icon id), `TransportModes` (the
+  built-in-plus-custom transport modes, above), `People` (reusable payer/
   beneficiary names; one flagged `isMe`), `TripParticipants` and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
   per trip), and `CollapsedDays` (persists which itinerary days are collapsed).
@@ -142,7 +153,7 @@ UI (features/*/presentation, *widgets)
   `DatabaseController` (`lib/features/settings/application/database_providers.dart`) coordinates
   switching/importing/exporting. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 19) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 21) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

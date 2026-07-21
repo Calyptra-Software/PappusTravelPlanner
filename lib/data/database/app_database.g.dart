@@ -1518,6 +1518,372 @@ class AlternativesCompanion extends UpdateCompanion<Alternative> {
   }
 }
 
+class $TransportModesTable extends TransportModes
+    with TableInfo<$TransportModesTable, TransportModeRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TransportModesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _builtinKeyMeta = const VerificationMeta(
+    'builtinKey',
+  );
+  @override
+  late final GeneratedColumn<String> builtinKey = GeneratedColumn<String>(
+    'builtin_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _iconIdMeta = const VerificationMeta('iconId');
+  @override
+  late final GeneratedColumn<int> iconId = GeneratedColumn<int>(
+    'icon_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    builtinKey,
+    name,
+    iconId,
+    sortOrder,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'transport_modes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TransportModeRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('builtin_key')) {
+      context.handle(
+        _builtinKeyMeta,
+        builtinKey.isAcceptableOrUnknown(data['builtin_key']!, _builtinKeyMeta),
+      );
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('icon_id')) {
+      context.handle(
+        _iconIdMeta,
+        iconId.isAcceptableOrUnknown(data['icon_id']!, _iconIdMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TransportModeRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TransportModeRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      builtinKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}builtin_key'],
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      iconId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}icon_id'],
+      ),
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $TransportModesTable createAlias(String alias) {
+    return $TransportModesTable(attachedDatabase, alias);
+  }
+}
+
+class TransportModeRow extends DataClass
+    implements Insertable<TransportModeRow> {
+  final int id;
+
+  /// The [TransportMode] value this row was seeded from (its `name`), or null
+  /// for a user-created mode. Gives a built-in its localized label and default
+  /// icon, and a stable identity that survives sharing across databases.
+  final String? builtinKey;
+
+  /// The user-visible label. Null on a pristine built-in (whose label comes from
+  /// [builtinKey] instead); set for a custom mode or a renamed built-in. Unique
+  /// among the modes that have one, so no two read the same.
+  final String? name;
+
+  /// Stable key into the curated icon set (`kTransportModeIcons`), or null to
+  /// use the default icon. Not a font code point, so the set can change safely.
+  final int? iconId;
+
+  /// Manual ordering for the picker and settings list.
+  final int sortOrder;
+  const TransportModeRow({
+    required this.id,
+    this.builtinKey,
+    this.name,
+    this.iconId,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || builtinKey != null) {
+      map['builtin_key'] = Variable<String>(builtinKey);
+    }
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    if (!nullToAbsent || iconId != null) {
+      map['icon_id'] = Variable<int>(iconId);
+    }
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  TransportModesCompanion toCompanion(bool nullToAbsent) {
+    return TransportModesCompanion(
+      id: Value(id),
+      builtinKey: builtinKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(builtinKey),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      iconId: iconId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(iconId),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory TransportModeRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TransportModeRow(
+      id: serializer.fromJson<int>(json['id']),
+      builtinKey: serializer.fromJson<String?>(json['builtinKey']),
+      name: serializer.fromJson<String?>(json['name']),
+      iconId: serializer.fromJson<int?>(json['iconId']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'builtinKey': serializer.toJson<String?>(builtinKey),
+      'name': serializer.toJson<String?>(name),
+      'iconId': serializer.toJson<int?>(iconId),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  TransportModeRow copyWith({
+    int? id,
+    Value<String?> builtinKey = const Value.absent(),
+    Value<String?> name = const Value.absent(),
+    Value<int?> iconId = const Value.absent(),
+    int? sortOrder,
+  }) => TransportModeRow(
+    id: id ?? this.id,
+    builtinKey: builtinKey.present ? builtinKey.value : this.builtinKey,
+    name: name.present ? name.value : this.name,
+    iconId: iconId.present ? iconId.value : this.iconId,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  TransportModeRow copyWithCompanion(TransportModesCompanion data) {
+    return TransportModeRow(
+      id: data.id.present ? data.id.value : this.id,
+      builtinKey: data.builtinKey.present
+          ? data.builtinKey.value
+          : this.builtinKey,
+      name: data.name.present ? data.name.value : this.name,
+      iconId: data.iconId.present ? data.iconId.value : this.iconId,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TransportModeRow(')
+          ..write('id: $id, ')
+          ..write('builtinKey: $builtinKey, ')
+          ..write('name: $name, ')
+          ..write('iconId: $iconId, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, builtinKey, name, iconId, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TransportModeRow &&
+          other.id == this.id &&
+          other.builtinKey == this.builtinKey &&
+          other.name == this.name &&
+          other.iconId == this.iconId &&
+          other.sortOrder == this.sortOrder);
+}
+
+class TransportModesCompanion extends UpdateCompanion<TransportModeRow> {
+  final Value<int> id;
+  final Value<String?> builtinKey;
+  final Value<String?> name;
+  final Value<int?> iconId;
+  final Value<int> sortOrder;
+  const TransportModesCompanion({
+    this.id = const Value.absent(),
+    this.builtinKey = const Value.absent(),
+    this.name = const Value.absent(),
+    this.iconId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  TransportModesCompanion.insert({
+    this.id = const Value.absent(),
+    this.builtinKey = const Value.absent(),
+    this.name = const Value.absent(),
+    this.iconId = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  static Insertable<TransportModeRow> custom({
+    Expression<int>? id,
+    Expression<String>? builtinKey,
+    Expression<String>? name,
+    Expression<int>? iconId,
+    Expression<int>? sortOrder,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (builtinKey != null) 'builtin_key': builtinKey,
+      if (name != null) 'name': name,
+      if (iconId != null) 'icon_id': iconId,
+      if (sortOrder != null) 'sort_order': sortOrder,
+    });
+  }
+
+  TransportModesCompanion copyWith({
+    Value<int>? id,
+    Value<String?>? builtinKey,
+    Value<String?>? name,
+    Value<int?>? iconId,
+    Value<int>? sortOrder,
+  }) {
+    return TransportModesCompanion(
+      id: id ?? this.id,
+      builtinKey: builtinKey ?? this.builtinKey,
+      name: name ?? this.name,
+      iconId: iconId ?? this.iconId,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (builtinKey.present) {
+      map['builtin_key'] = Variable<String>(builtinKey.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (iconId.present) {
+      map['icon_id'] = Variable<int>(iconId.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TransportModesCompanion(')
+          ..write('id: $id, ')
+          ..write('builtinKey: $builtinKey, ')
+          ..write('name: $name, ')
+          ..write('iconId: $iconId, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $ItineraryItemsTable extends ItineraryItems
     with TableInfo<$ItineraryItemsTable, ItineraryItem> {
   @override
@@ -1679,15 +2045,18 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
-  late final GeneratedColumnWithTypeConverter<TransportMode?, int> mode =
-      GeneratedColumn<int>(
-        'mode',
-        aliasedName,
-        true,
-        type: DriftSqlType.int,
-        requiredDuringInsert: false,
-      ).withConverter<TransportMode?>($ItineraryItemsTable.$convertermoden);
+  late final GeneratedColumn<int> mode = GeneratedColumn<int>(
+    'mode',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES transport_modes (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _fromLocationMeta = const VerificationMeta(
     'fromLocation',
   );
@@ -1833,6 +2202,12 @@ class $ItineraryItemsTable extends ItineraryItems
         location.isAcceptableOrUnknown(data['location']!, _locationMeta),
       );
     }
+    if (data.containsKey('mode')) {
+      context.handle(
+        _modeMeta,
+        mode.isAcceptableOrUnknown(data['mode']!, _modeMeta),
+      );
+    }
     if (data.containsKey('from_location')) {
       context.handle(
         _fromLocationMeta,
@@ -1915,11 +2290,9 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.string,
         data['${effectivePrefix}location'],
       ),
-      mode: $ItineraryItemsTable.$convertermoden.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.int,
-          data['${effectivePrefix}mode'],
-        ),
+      mode: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mode'],
       ),
       fromLocation: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -1939,10 +2312,6 @@ class $ItineraryItemsTable extends ItineraryItems
 
   static JsonTypeConverter2<ItemKind, int, int> $converterkind =
       const EnumIndexConverter<ItemKind>(ItemKind.values);
-  static JsonTypeConverter2<TransportMode, int, int> $convertermode =
-      const EnumIndexConverter<TransportMode>(TransportMode.values);
-  static JsonTypeConverter2<TransportMode?, int?, int?> $convertermoden =
-      JsonTypeConverter2.asNullable($convertermode);
 }
 
 class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
@@ -1987,7 +2356,11 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final int? actualEndMinutes;
   final String? notes;
   final String? location;
-  final TransportMode? mode;
+
+  /// The transport mode of this leg — a row in [TransportModes], or null when
+  /// unassigned. On mode deletion this is set to null (the leg keeps its route,
+  /// it just loses its mode), like an item losing its group.
+  final int? mode;
   final String? fromLocation;
   final String? toLocation;
   const ItineraryItem({
@@ -2049,9 +2422,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       map['location'] = Variable<String>(location);
     }
     if (!nullToAbsent || mode != null) {
-      map['mode'] = Variable<int>(
-        $ItineraryItemsTable.$convertermoden.toSql(mode),
-      );
+      map['mode'] = Variable<int>(mode);
     }
     if (!nullToAbsent || fromLocation != null) {
       map['from_location'] = Variable<String>(fromLocation);
@@ -2128,9 +2499,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       actualEndMinutes: serializer.fromJson<int?>(json['actualEndMinutes']),
       notes: serializer.fromJson<String?>(json['notes']),
       location: serializer.fromJson<String?>(json['location']),
-      mode: $ItineraryItemsTable.$convertermoden.fromJson(
-        serializer.fromJson<int?>(json['mode']),
-      ),
+      mode: serializer.fromJson<int?>(json['mode']),
       fromLocation: serializer.fromJson<String?>(json['fromLocation']),
       toLocation: serializer.fromJson<String?>(json['toLocation']),
     );
@@ -2155,9 +2524,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'actualEndMinutes': serializer.toJson<int?>(actualEndMinutes),
       'notes': serializer.toJson<String?>(notes),
       'location': serializer.toJson<String?>(location),
-      'mode': serializer.toJson<int?>(
-        $ItineraryItemsTable.$convertermoden.toJson(mode),
-      ),
+      'mode': serializer.toJson<int?>(mode),
       'fromLocation': serializer.toJson<String?>(fromLocation),
       'toLocation': serializer.toJson<String?>(toLocation),
     };
@@ -2178,7 +2545,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<int?> actualEndMinutes = const Value.absent(),
     Value<String?> notes = const Value.absent(),
     Value<String?> location = const Value.absent(),
-    Value<TransportMode?> mode = const Value.absent(),
+    Value<int?> mode = const Value.absent(),
     Value<String?> fromLocation = const Value.absent(),
     Value<String?> toLocation = const Value.absent(),
   }) => ItineraryItem(
@@ -2324,7 +2691,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<int?> actualEndMinutes;
   final Value<String?> notes;
   final Value<String?> location;
-  final Value<TransportMode?> mode;
+  final Value<int?> mode;
   final Value<String?> fromLocation;
   final Value<String?> toLocation;
   const ItineraryItemsCompanion({
@@ -2423,7 +2790,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<int?>? actualEndMinutes,
     Value<String?>? notes,
     Value<String?>? location,
-    Value<TransportMode?>? mode,
+    Value<int?>? mode,
     Value<String?>? fromLocation,
     Value<String?>? toLocation,
   }) {
@@ -2496,9 +2863,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       map['location'] = Variable<String>(location.value);
     }
     if (mode.present) {
-      map['mode'] = Variable<int>(
-        $ItineraryItemsTable.$convertermoden.toSql(mode.value),
-      );
+      map['mode'] = Variable<int>(mode.value);
     }
     if (fromLocation.present) {
       map['from_location'] = Variable<String>(fromLocation.value);
@@ -5115,6 +5480,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $AlternativesTable alternatives = $AlternativesTable(this);
+  late final $TransportModesTable transportModes = $TransportModesTable(this);
   late final $ItineraryItemsTable itineraryItems = $ItineraryItemsTable(this);
   late final $CostsTable costs = $CostsTable(this);
   late final $CostReasonsTable costReasons = $CostReasonsTable(this);
@@ -5136,6 +5502,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this as AppDatabase,
   );
   late final SharingDao sharingDao = SharingDao(this as AppDatabase);
+  late final TransportModeDao transportModeDao = TransportModeDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5145,6 +5514,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     itemGroups,
     alternativeSets,
     alternatives,
+    transportModes,
     itineraryItems,
     costs,
     costReasons,
@@ -5198,6 +5568,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('itinerary_items', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'transport_modes',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('itinerary_items', kind: UpdateKind.update)],
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
@@ -7484,6 +7861,312 @@ typedef $$AlternativesTableProcessedTableManager =
       Alternative,
       PrefetchHooks Function({bool setId, bool itineraryItemsRefs})
     >;
+typedef $$TransportModesTableCreateCompanionBuilder =
+    TransportModesCompanion Function({
+      Value<int> id,
+      Value<String?> builtinKey,
+      Value<String?> name,
+      Value<int?> iconId,
+      Value<int> sortOrder,
+    });
+typedef $$TransportModesTableUpdateCompanionBuilder =
+    TransportModesCompanion Function({
+      Value<int> id,
+      Value<String?> builtinKey,
+      Value<String?> name,
+      Value<int?> iconId,
+      Value<int> sortOrder,
+    });
+
+final class $$TransportModesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $TransportModesTable, TransportModeRow> {
+  $$TransportModesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static MultiTypedResultKey<$ItineraryItemsTable, List<ItineraryItem>>
+  _itineraryItemsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.itineraryItems,
+    aliasName: 'transport_modes__id__itinerary_items__mode',
+  );
+
+  $$ItineraryItemsTableProcessedTableManager get itineraryItemsRefs {
+    final manager = $$ItineraryItemsTableTableManager(
+      $_db,
+      $_db.itineraryItems,
+    ).filter((f) => f.mode.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_itineraryItemsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$TransportModesTableFilterComposer
+    extends Composer<_$AppDatabase, $TransportModesTable> {
+  $$TransportModesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get builtinKey => $composableBuilder(
+    column: $table.builtinKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get iconId => $composableBuilder(
+    column: $table.iconId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> itineraryItemsRefs(
+    Expression<bool> Function($$ItineraryItemsTableFilterComposer f) f,
+  ) {
+    final $$ItineraryItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TransportModesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TransportModesTable> {
+  $$TransportModesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get builtinKey => $composableBuilder(
+    column: $table.builtinKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get iconId => $composableBuilder(
+    column: $table.iconId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TransportModesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TransportModesTable> {
+  $$TransportModesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get builtinKey => $composableBuilder(
+    column: $table.builtinKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get iconId =>
+      $composableBuilder(column: $table.iconId, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  Expression<T> itineraryItemsRefs<T extends Object>(
+    Expression<T> Function($$ItineraryItemsTableAnnotationComposer a) f,
+  ) {
+    final $$ItineraryItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.mode,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TransportModesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TransportModesTable,
+          TransportModeRow,
+          $$TransportModesTableFilterComposer,
+          $$TransportModesTableOrderingComposer,
+          $$TransportModesTableAnnotationComposer,
+          $$TransportModesTableCreateCompanionBuilder,
+          $$TransportModesTableUpdateCompanionBuilder,
+          (TransportModeRow, $$TransportModesTableReferences),
+          TransportModeRow,
+          PrefetchHooks Function({bool itineraryItemsRefs})
+        > {
+  $$TransportModesTableTableManager(
+    _$AppDatabase db,
+    $TransportModesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TransportModesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TransportModesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TransportModesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> builtinKey = const Value.absent(),
+                Value<String?> name = const Value.absent(),
+                Value<int?> iconId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => TransportModesCompanion(
+                id: id,
+                builtinKey: builtinKey,
+                name: name,
+                iconId: iconId,
+                sortOrder: sortOrder,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> builtinKey = const Value.absent(),
+                Value<String?> name = const Value.absent(),
+                Value<int?> iconId = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => TransportModesCompanion.insert(
+                id: id,
+                builtinKey: builtinKey,
+                name: name,
+                iconId: iconId,
+                sortOrder: sortOrder,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TransportModesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({itineraryItemsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (itineraryItemsRefs) db.itineraryItems,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (itineraryItemsRefs)
+                    await $_getPrefetchedData<
+                      TransportModeRow,
+                      $TransportModesTable,
+                      ItineraryItem
+                    >(
+                      currentTable: table,
+                      referencedTable: $$TransportModesTableReferences
+                          ._itineraryItemsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$TransportModesTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).itineraryItemsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.mode == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TransportModesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TransportModesTable,
+      TransportModeRow,
+      $$TransportModesTableFilterComposer,
+      $$TransportModesTableOrderingComposer,
+      $$TransportModesTableAnnotationComposer,
+      $$TransportModesTableCreateCompanionBuilder,
+      $$TransportModesTableUpdateCompanionBuilder,
+      (TransportModeRow, $$TransportModesTableReferences),
+      TransportModeRow,
+      PrefetchHooks Function({bool itineraryItemsRefs})
+    >;
 typedef $$ItineraryItemsTableCreateCompanionBuilder =
     ItineraryItemsCompanion Function({
       Value<int> id,
@@ -7500,7 +8183,7 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<int?> actualEndMinutes,
       Value<String?> notes,
       Value<String?> location,
-      Value<TransportMode?> mode,
+      Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
     });
@@ -7520,7 +8203,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<int?> actualEndMinutes,
       Value<String?> notes,
       Value<String?> location,
-      Value<TransportMode?> mode,
+      Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
     });
@@ -7579,6 +8262,23 @@ final class $$ItineraryItemsTableReferences
       $_db.alternatives,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_alternativeIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TransportModesTable _modeTable(_$AppDatabase db) => db.transportModes
+      .createAlias('itinerary_items__mode__transport_modes__id');
+
+  $$TransportModesTableProcessedTableManager? get mode {
+    final $_column = $_itemColumn<int>('mode');
+    if ($_column == null) return null;
+    final manager = $$TransportModesTableTableManager(
+      $_db,
+      $_db.transportModes,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_modeTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -7670,12 +8370,6 @@ class $$ItineraryItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnWithTypeConverterFilters<TransportMode?, TransportMode, int> get mode =>
-      $composableBuilder(
-        column: $table.mode,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
-
   ColumnFilters<String> get fromLocation => $composableBuilder(
     column: $table.fromLocation,
     builder: (column) => ColumnFilters(column),
@@ -7746,6 +8440,29 @@ class $$ItineraryItemsTableFilterComposer
           }) => $$AlternativesTableFilterComposer(
             $db: $db,
             $table: $db.alternatives,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TransportModesTableFilterComposer get mode {
+    final $$TransportModesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.transportModes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TransportModesTableFilterComposer(
+            $db: $db,
+            $table: $db.transportModes,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -7845,11 +8562,6 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get mode => $composableBuilder(
-    column: $table.mode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get fromLocation => $composableBuilder(
     column: $table.fromLocation,
     builder: (column) => ColumnOrderings(column),
@@ -7928,6 +8640,29 @@ class $$ItineraryItemsTableOrderingComposer
     );
     return composer;
   }
+
+  $$TransportModesTableOrderingComposer get mode {
+    final $$TransportModesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.transportModes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TransportModesTableOrderingComposer(
+            $db: $db,
+            $table: $db.transportModes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$ItineraryItemsTableAnnotationComposer
@@ -7979,9 +8714,6 @@ class $$ItineraryItemsTableAnnotationComposer
 
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
-
-  GeneratedColumnWithTypeConverter<TransportMode?, int> get mode =>
-      $composableBuilder(column: $table.mode, builder: (column) => column);
 
   GeneratedColumn<String> get fromLocation => $composableBuilder(
     column: $table.fromLocation,
@@ -8062,6 +8794,29 @@ class $$ItineraryItemsTableAnnotationComposer
     return composer;
   }
 
+  $$TransportModesTableAnnotationComposer get mode {
+    final $$TransportModesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.mode,
+      referencedTable: $db.transportModes,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TransportModesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.transportModes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> costsRefs<T extends Object>(
     Expression<T> Function($$CostsTableAnnotationComposer a) f,
   ) {
@@ -8105,6 +8860,7 @@ class $$ItineraryItemsTableTableManager
             bool tripId,
             bool groupId,
             bool alternativeId,
+            bool mode,
             bool costsRefs,
           })
         > {
@@ -8137,7 +8893,7 @@ class $$ItineraryItemsTableTableManager
                 Value<int?> actualEndMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
-                Value<TransportMode?> mode = const Value.absent(),
+                Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
               }) => ItineraryItemsCompanion(
@@ -8175,7 +8931,7 @@ class $$ItineraryItemsTableTableManager
                 Value<int?> actualEndMinutes = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
-                Value<TransportMode?> mode = const Value.absent(),
+                Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
               }) => ItineraryItemsCompanion.insert(
@@ -8210,6 +8966,7 @@ class $$ItineraryItemsTableTableManager
                 tripId = false,
                 groupId = false,
                 alternativeId = false,
+                mode = false,
                 costsRefs = false,
               }) {
                 return PrefetchHooks(
@@ -8276,6 +9033,21 @@ class $$ItineraryItemsTableTableManager
                                   )
                                   as T;
                         }
+                        if (mode) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.mode,
+                                    referencedTable:
+                                        $$ItineraryItemsTableReferences
+                                            ._modeTable(db),
+                                    referencedColumn:
+                                        $$ItineraryItemsTableReferences
+                                            ._modeTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
 
                         return state;
                       },
@@ -8326,6 +9098,7 @@ typedef $$ItineraryItemsTableProcessedTableManager =
         bool tripId,
         bool groupId,
         bool alternativeId,
+        bool mode,
         bool costsRefs,
       })
     >;
@@ -11283,6 +12056,8 @@ class $AppDatabaseManager {
       $$AlternativeSetsTableTableManager(_db, _db.alternativeSets);
   $$AlternativesTableTableManager get alternatives =>
       $$AlternativesTableTableManager(_db, _db.alternatives);
+  $$TransportModesTableTableManager get transportModes =>
+      $$TransportModesTableTableManager(_db, _db.transportModes);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(_db, _db.itineraryItems);
   $$CostsTableTableManager get costs =>

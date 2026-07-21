@@ -69,7 +69,7 @@ void main() {
         date: DateTime(2026, 5, 1),
         sortOrder: 1,
         kind: ItemKind.transport,
-        mode: TransportMode.train,
+        mode: 'train',
         fromLocation: 'Florence',
         toLocation: 'Rome',
       ),

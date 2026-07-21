@@ -19,6 +19,7 @@ part 'sharing_dao.g.dart';
     ItineraryItems,
     Costs,
     CostReasons,
+    TransportModes,
     People,
     TripParticipants,
     CostBeneficiaries,
@@ -75,6 +76,22 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       for (final c in costRows) c.reason,
     });
 
+    // Modes are denormalized to a portable key per leg (a built-in's key or a
+    // custom mode's name); a custom mode's icon is carried alongside so it
+    // survives import.
+    final modeRows = await select(transportModes).get();
+    final modeById = {for (final m in modeRows) m.id: m};
+    final modeIcons = <String, int>{};
+    for (final i in itemRows) {
+      final row = i.mode == null ? null : modeById[i.mode];
+      if (row != null &&
+          row.builtinKey == null &&
+          row.name != null &&
+          row.iconId != null) {
+        modeIcons[row.name!] = row.iconId!;
+      }
+    }
+
     return TripBundle(
       // A trip without decisions stays readable by an older app, which knows
       // nothing of them; one *with* decisions goes out as v2, so an older app
@@ -128,7 +145,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             actualEndMinutes: i.actualEndMinutes,
             notes: i.notes,
             location: i.location,
-            mode: i.mode,
+            mode: _modeKey(i.mode, modeById),
             fromLocation: i.fromLocation,
             toLocation: i.toLocation,
           ),
@@ -171,7 +188,16 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       collapsedDays: [for (final d in collapsedRows) d.day],
       participants: participantNames,
       reasonIcons: reasonIcons,
+      modeIcons: modeIcons,
     );
+  }
+
+  /// The portable key for a leg's mode row id: a built-in's `builtinKey`, or a
+  /// custom mode's name. Null when the leg has no mode (or its row is gone).
+  String? _modeKey(int? modeId, Map<int, TransportModeRow> byId) {
+    if (modeId == null) return null;
+    final row = byId[modeId];
+    return row?.builtinKey ?? row?.name;
   }
 
   /// Imports [bundle] as a brand-new trip, returning its id. Runs in a single
@@ -255,6 +281,11 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         }
       }
 
+      // Resolve each leg's mode key to a local mode row, seeding a missing
+      // built-in or creating a missing custom mode as we go. Cached by key so a
+      // mode shared by many legs is resolved once.
+      final modeIds = <String, int>{};
+
       final itemIds = <int, int>{};
       for (final i in bundle.items) {
         itemIds[i.localId] = await into(itineraryItems).insert(
@@ -272,7 +303,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             actualEndMinutes: Value(i.actualEndMinutes),
             notes: Value(i.notes),
             location: Value(i.location),
-            mode: Value(i.mode),
+            mode: Value(await _ensureMode(i.mode, bundle, modeIds)),
             fromLocation: Value(i.fromLocation),
             toLocation: Value(i.toLocation),
           ),
@@ -385,6 +416,48 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         ),
       );
     }
+  }
+
+  /// Resolves a bundle mode [key] to a local `TransportModes` row id, creating
+  /// the row if needed: a built-in whose key isn't present is seeded (the user
+  /// may have deleted it), and an unknown key is taken as a custom mode and
+  /// created with its shared icon. Results are cached in [cache] for the import.
+  Future<int?> _ensureMode(
+    String? key,
+    TripBundle bundle,
+    Map<String, int> cache,
+  ) async {
+    if (key == null) return null;
+    final cached = cache[key];
+    if (cached != null) return cached;
+
+    final isBuiltin = TransportMode.values.any((m) => m.name == key);
+    final match =
+        await (select(transportModes)..where(
+              (m) => isBuiltin ? m.builtinKey.equals(key) : m.name.equals(key),
+            ))
+            .getSingleOrNull();
+    final id =
+        match?.id ??
+        await into(transportModes).insert(
+          TransportModesCompanion.insert(
+            builtinKey: Value(isBuiltin ? key : null),
+            name: Value(isBuiltin ? null : key),
+            iconId: Value(isBuiltin ? null : bundle.modeIcons[key]),
+            sortOrder: Value(await _nextModeSortOrder()),
+          ),
+        );
+    cache[key] = id;
+    return id;
+  }
+
+  /// The next free `sortOrder` for a mode created during import (appended).
+  Future<int> _nextModeSortOrder() async {
+    final maxOrder = transportModes.sortOrder.max();
+    final row = await (selectOnly(
+      transportModes,
+    )..addColumns([maxOrder])).getSingle();
+    return (row.read(maxOrder) ?? -1) + 1;
   }
 
   /// Maps a bundle-local key to its freshly-inserted id, or null when the key is

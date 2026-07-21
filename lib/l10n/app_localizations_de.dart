@@ -588,6 +588,38 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noCostReasons => 'Noch keine gespeicherten Kategorien';
 
   @override
+  String get transportModesSection => 'Verkehrsmittel';
+
+  @override
+  String get transportModeAdd => 'Verkehrsmittel hinzufügen';
+
+  @override
+  String get transportModeAddTitle => 'Neues Verkehrsmittel';
+
+  @override
+  String get transportModeRenameTitle => 'Verkehrsmittel umbenennen';
+
+  @override
+  String get transportModeLabel => 'Name';
+
+  @override
+  String get transportModeHint => 'z. B. Gondel';
+
+  @override
+  String get transportModeChooseIcon => 'Symbol wählen';
+
+  @override
+  String get transportModeDeleteConfirmTitle => 'Verkehrsmittel löschen?';
+
+  @override
+  String transportModeDeleteConfirmBody(String mode) {
+    return '\"$mode\" wird aus der Liste entfernt. Vorhandene Transportabschnitte behalten ihre Route, verlieren aber ihr Verkehrsmittel.';
+  }
+
+  @override
+  String get noTransportModes => 'Noch keine Verkehrsmittel';
+
+  @override
   String get costPaidBy => 'Bezahlt von';
 
   @override

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_chip.dart';
+import '../application/transport_mode_providers.dart';
 import 'item_times.dart';
 import 'now_line.dart';
 import 'transport_mode.dart';
@@ -379,7 +381,7 @@ class _PlaceRow extends StatelessWidget {
   }
 }
 
-class _TransportRow extends StatelessWidget {
+class _TransportRow extends ConsumerWidget {
   const _TransportRow({
     required this.item,
     required this.onTap,
@@ -395,11 +397,13 @@ class _TransportRow extends StatelessWidget {
   final bool isNow;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final now = nowColor(theme);
-    final mode = item.mode ?? TransportMode.other;
+    final modeRow = ref.watch(transportModesByIdProvider)[item.mode];
+    final modeIcon = modeRow?.icon ?? kDefaultTransportModeIcon;
+    final modeLabel = modeRow?.label(l10n) ?? l10n.modeOther;
     final hasTimes = ItemTimes.hasAny(item);
     final from = item.fromLocation ?? '';
     final to = item.toLocation ?? '';
@@ -419,7 +423,7 @@ class _TransportRow extends StatelessWidget {
                 border: isNow ? Border.all(color: now, width: 2) : null,
               ),
               child: Icon(
-                mode.icon,
+                modeIcon,
                 size: 17,
                 color: theme.colorScheme.onSecondaryContainer,
               ),
@@ -453,7 +457,7 @@ class _TransportRow extends StatelessWidget {
                             Row(
                               children: [
                                 Text(
-                                  mode.label(l10n),
+                                  modeLabel,
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),

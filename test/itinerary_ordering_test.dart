@@ -86,7 +86,7 @@ void main() {
         tripId: tripId,
         date: day(1),
         kind: ItemKind.transport,
-        mode: const Value(TransportMode.train),
+        mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         fromLocation: const Value('Rome'),
         toLocation: const Value('Florence'),
       ),

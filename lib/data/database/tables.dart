@@ -41,8 +41,13 @@ enum Currency {
   }
 }
 
-/// Supported modes of transport for a transport leg. Ordering here is stable and
-/// used as the stored integer index, so only append new values at the end.
+/// The built-in modes of transport a trip is seeded with. No longer a stored
+/// column type: a transport leg now points at a [TransportModes] row via
+/// [ItineraryItems.mode], and the built-ins are seeded as rows the user can add
+/// to, rename, re-icon, reorder, or delete (see `TransportModeDao`). This enum
+/// stays the catalogue those seed rows are built from — each value's `name` is
+/// the stable `builtinKey` stored on its row, giving it a localized label and a
+/// default icon (see `transport_mode.dart`). Only append new values at the end.
 enum TransportMode {
   walk,
   bike,
@@ -212,7 +217,14 @@ class ItineraryItems extends Table {
   TextColumn get location => text().nullable()();
 
   // --- transport-only ---
-  IntColumn get mode => intEnum<TransportMode>().nullable()();
+  /// The transport mode of this leg — a row in [TransportModes], or null when
+  /// unassigned. On mode deletion this is set to null (the leg keeps its route,
+  /// it just loses its mode), like an item losing its group.
+  IntColumn get mode => integer().nullable().references(
+    TransportModes,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
   TextColumn get fromLocation => text().nullable()();
   TextColumn get toLocation => text().nullable()();
 }
@@ -306,6 +318,38 @@ class CollapsedDays extends Table {
 
   @override
   Set<Column> get primaryKey => {tripId, day};
+}
+
+/// The modes of transport a leg can use, managed in settings and reused in the
+/// item form's mode dropdown — the transport counterpart to [CostReasons], but
+/// referenced by row id ([ItineraryItems.mode]) rather than by text, since a
+/// leg carries no free-form mode of its own.
+///
+/// The database is seeded with one row per [TransportMode] (its `builtinKey`),
+/// and the user may add more, or rename / re-icon / reorder / delete any of
+/// them. A row's display label is its [name] when set, and otherwise the
+/// localized label of its [builtinKey] — so a pristine built-in stays localized,
+/// while a custom mode (or a renamed built-in) shows the text the user typed.
+@DataClassName('TransportModeRow')
+class TransportModes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// The [TransportMode] value this row was seeded from (its `name`), or null
+  /// for a user-created mode. Gives a built-in its localized label and default
+  /// icon, and a stable identity that survives sharing across databases.
+  TextColumn get builtinKey => text().nullable().unique()();
+
+  /// The user-visible label. Null on a pristine built-in (whose label comes from
+  /// [builtinKey] instead); set for a custom mode or a renamed built-in. Unique
+  /// among the modes that have one, so no two read the same.
+  TextColumn get name => text().nullable().unique()();
+
+  /// Stable key into the curated icon set (`kTransportModeIcons`), or null to
+  /// use the default icon. Not a font code point, so the set can change safely.
+  IntColumn get iconId => integer().nullable()();
+
+  /// Manual ordering for the picker and settings list.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
 /// Distinct reason labels the user has entered, kept for reuse in the dropdown

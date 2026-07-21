@@ -10,6 +10,7 @@ import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
@@ -617,34 +618,14 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     required String title,
     required String hint,
     String? initial,
-  }) async {
-    final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: initial ?? '');
-    final result = await showDialog<String?>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(hintText: hint),
-          onSubmitted: (value) => Navigator.pop(context, value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+  }) {
+    return showTextPromptDialog(
+      context,
+      title: title,
+      hint: hint,
+      initial: initial ?? '',
+      confirmLabel: AppLocalizations.of(context).save,
     );
-    controller.dispose();
-    return result;
   }
 
   Future<bool> _confirm({

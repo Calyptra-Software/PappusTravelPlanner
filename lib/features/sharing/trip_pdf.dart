@@ -371,7 +371,9 @@ class _TripPdfBuilder {
   }
 
   String _transportTitle(BundleItem item) {
-    final mode = item.mode?.label(l10n) ?? l10n.modeOther;
+    final mode = item.mode == null
+        ? l10n.modeOther
+        : labelForTransportModeKey(item.mode!, l10n);
     final from = item.fromLocation?.trim() ?? '';
     final to = item.toLocation?.trim() ?? '';
     if (from.isEmpty && to.isEmpty) return mode;

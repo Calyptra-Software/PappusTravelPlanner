@@ -20,7 +20,7 @@ void main() {
           date: DateTime(2026, 7, 5),
           kind: ItemKind.transport,
           sortOrder: Value(sortOrder),
-          mode: const Value(TransportMode.train),
+          mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         ),
       );
 

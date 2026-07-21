@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/cost_providers.dart';
 
@@ -106,37 +107,16 @@ class PeopleSettings extends ConsumerWidget {
     BuildContext context, {
     required String Function(AppLocalizations) title,
     String? initial,
-  }) async {
+  }) {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: initial);
-    final name = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title(l10n)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            labelText: l10n.personLabel,
-            hintText: l10n.personHint,
-          ),
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(initial == null ? l10n.add : l10n.save),
-          ),
-        ],
-      ),
+    return showTextPromptDialog(
+      context,
+      title: title(l10n),
+      label: l10n.personLabel,
+      hint: l10n.personHint,
+      initial: initial,
+      textCapitalization: TextCapitalization.words,
     );
-    controller.dispose();
-    return name;
   }
 
   Future<void> _confirmDelete(

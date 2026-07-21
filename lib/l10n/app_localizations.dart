@@ -1130,6 +1130,66 @@ abstract class AppLocalizations {
   /// **'No saved categories yet'**
   String get noCostReasons;
 
+  /// No description provided for @transportModesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Transport modes'**
+  String get transportModesSection;
+
+  /// No description provided for @transportModeAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add mode'**
+  String get transportModeAdd;
+
+  /// No description provided for @transportModeAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New transport mode'**
+  String get transportModeAddTitle;
+
+  /// No description provided for @transportModeRenameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename mode'**
+  String get transportModeRenameTitle;
+
+  /// No description provided for @transportModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get transportModeLabel;
+
+  /// No description provided for @transportModeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Gondola'**
+  String get transportModeHint;
+
+  /// No description provided for @transportModeChooseIcon.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get transportModeChooseIcon;
+
+  /// No description provided for @transportModeDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete mode?'**
+  String get transportModeDeleteConfirmTitle;
+
+  /// No description provided for @transportModeDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{mode}\" will be removed from the mode list. Existing transport legs that used it keep their route but lose their mode.'**
+  String transportModeDeleteConfirmBody(String mode);
+
+  /// No description provided for @noTransportModes.
+  ///
+  /// In en, this message translates to:
+  /// **'No transport modes yet'**
+  String get noTransportModes;
+
   /// No description provided for @costPaidBy.
   ///
   /// In en, this message translates to:

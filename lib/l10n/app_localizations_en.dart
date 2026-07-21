@@ -582,6 +582,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get noCostReasons => 'No saved categories yet';
 
   @override
+  String get transportModesSection => 'Transport modes';
+
+  @override
+  String get transportModeAdd => 'Add mode';
+
+  @override
+  String get transportModeAddTitle => 'New transport mode';
+
+  @override
+  String get transportModeRenameTitle => 'Rename mode';
+
+  @override
+  String get transportModeLabel => 'Name';
+
+  @override
+  String get transportModeHint => 'e.g. Gondola';
+
+  @override
+  String get transportModeChooseIcon => 'Choose an icon';
+
+  @override
+  String get transportModeDeleteConfirmTitle => 'Delete mode?';
+
+  @override
+  String transportModeDeleteConfirmBody(String mode) {
+    return '\"$mode\" will be removed from the mode list. Existing transport legs that used it keep their route but lose their mode.';
+  }
+
+  @override
+  String get noTransportModes => 'No transport modes yet';
+
+  @override
   String get costPaidBy => 'Paid by';
 
   @override

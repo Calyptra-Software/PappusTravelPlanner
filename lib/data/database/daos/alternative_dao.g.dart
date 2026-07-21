@@ -8,6 +8,7 @@ mixin _$AlternativeDaoMixin on DatabaseAccessor<AppDatabase> {
   $AlternativeSetsTable get alternativeSets => attachedDatabase.alternativeSets;
   $AlternativesTable get alternatives => attachedDatabase.alternatives;
   $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
+  $TransportModesTable get transportModes => attachedDatabase.transportModes;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   AlternativeDaoManager get managers => AlternativeDaoManager(this);
 }
@@ -26,6 +27,11 @@ class AlternativeDaoManager {
       $$AlternativesTableTableManager(_db.attachedDatabase, _db.alternatives);
   $$ItemGroupsTableTableManager get itemGroups =>
       $$ItemGroupsTableTableManager(_db.attachedDatabase, _db.itemGroups);
+  $$TransportModesTableTableManager get transportModes =>
+      $$TransportModesTableTableManager(
+        _db.attachedDatabase,
+        _db.transportModes,
+      );
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(
         _db.attachedDatabase,

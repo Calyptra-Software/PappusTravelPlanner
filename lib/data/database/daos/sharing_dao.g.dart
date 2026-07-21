@@ -8,6 +8,7 @@ mixin _$SharingDaoMixin on DatabaseAccessor<AppDatabase> {
   $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
   $AlternativeSetsTable get alternativeSets => attachedDatabase.alternativeSets;
   $AlternativesTable get alternatives => attachedDatabase.alternatives;
+  $TransportModesTable get transportModes => attachedDatabase.transportModes;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   $CostsTable get costs => attachedDatabase.costs;
   $CostReasonsTable get costReasons => attachedDatabase.costReasons;
@@ -36,6 +37,11 @@ class SharingDaoManager {
       );
   $$AlternativesTableTableManager get alternatives =>
       $$AlternativesTableTableManager(_db.attachedDatabase, _db.alternatives);
+  $$TransportModesTableTableManager get transportModes =>
+      $$TransportModesTableTableManager(
+        _db.attachedDatabase,
+        _db.transportModes,
+      );
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(
         _db.attachedDatabase,

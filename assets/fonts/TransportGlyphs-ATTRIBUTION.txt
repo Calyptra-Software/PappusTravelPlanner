@@ -1,0 +1,21 @@
+TransportGlyphs.ttf — source icons and licenses
+================================================
+
+This bundled icon font contains four transport-mode glyphs the Material Icons
+set has no symbol for. Each was normalised from a freely-licensed source icon by
+assets/fonts/build_transport_glyphs.py.
+
+  horse     (U+E800)  Material Design Icons "horse-human"
+                      https://pictogrammers.com/library/mdi/icon/horse-human/
+                      License: Apache License 2.0
+                      (c) Pictogrammers / Michael Irigoyen
+
+  gondola   (U+E801)  Temaki "gondola_lift"
+  chairlift (U+E802)  Temaki "chairlift"
+  tbar      (U+E803)  Temaki "t_bar_lift"
+                      https://github.com/rapideditor/temaki
+                      License: CC0 1.0 (public domain dedication)
+
+Material Design Icons is licensed under Apache-2.0; a copy of that license is at
+https://www.apache.org/licenses/LICENSE-2.0 . No attribution is required for the
+CC0 (Temaki) glyphs, but their provenance is recorded here for completeness.

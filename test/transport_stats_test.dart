@@ -9,6 +9,11 @@ void main() {
   final day = DateTime(2026, 7, 5);
   var nextId = 0;
 
+  // A leg stores its mode as a row id now; the built-ins are seeded in enum
+  // order, so a mode's id is its enum index + 1 (see `TransportModeDao`). Using
+  // the enum here keeps the tests readable.
+  int idOf(TransportMode mode) => mode.index + 1;
+
   ItineraryItem leg(
     TransportMode? mode, {
     DateTime? date,
@@ -22,7 +27,7 @@ void main() {
     date: date ?? day,
     sortOrder: 0,
     kind: ItemKind.transport,
-    mode: mode,
+    mode: mode == null ? null : idOf(mode),
     startMinutes: startMinutes,
     endMinutes: endMinutes,
     actualStartMinutes: actualStartMinutes,
@@ -56,12 +61,12 @@ void main() {
     expect(stats.byMode, hasLength(2));
     // Train has more legs, so it sorts first.
     final train = stats.byMode.first;
-    expect(train.mode, TransportMode.train);
+    expect(train.mode, idOf(TransportMode.train));
     expect(train.legs, 2);
     expect(train.plannedMinutes, 150);
 
     final walk = stats.byMode.last;
-    expect(walk.mode, TransportMode.walk);
+    expect(walk.mode, idOf(TransportMode.walk));
     expect(walk.legs, 1);
     expect(walk.plannedMinutes, 15);
 
@@ -114,7 +119,7 @@ void main() {
       leg(TransportMode.bus, startMinutes: 0, endMinutes: 30),
     ]);
     expect(stats.byMode, hasLength(1));
-    expect(stats.byMode.single.mode, TransportMode.bus);
+    expect(stats.byMode.single.mode, idOf(TransportMode.bus));
     expect(stats.totalLegs, 1);
   });
 
@@ -171,8 +176,8 @@ void main() {
     ]);
     // Equal counts (1 each); train has more planned time, so it comes first.
     expect(stats.byMode.map((m) => m.mode), [
-      TransportMode.train,
-      TransportMode.bus,
+      idOf(TransportMode.train),
+      idOf(TransportMode.bus),
     ]);
   });
 
@@ -190,8 +195,8 @@ void main() {
 
       // Walk now leads on leg count (3 vs 1 train).
       expect(merged.byMode.map((m) => m.mode), [
-        TransportMode.walk,
-        TransportMode.train,
+        idOf(TransportMode.walk),
+        idOf(TransportMode.train),
       ]);
       final walk = merged.byMode.first;
       expect(walk.legs, 3);

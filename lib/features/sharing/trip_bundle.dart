@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../../data/database/tables.dart' show Currency, ItemKind, TransportMode;
+import '../../data/database/tables.dart' show Currency, ItemKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
 /// share-sheet intent filter matches only Travel Planner trips, not every
@@ -46,6 +46,7 @@ class TripBundle {
     this.collapsedDays = const [],
     this.participants = const [],
     this.reasonIcons = const {},
+    this.modeIcons = const {},
   });
 
   /// Version of the bundle format itself. Bump when the JSON shape changes in a
@@ -87,6 +88,13 @@ class TripBundle {
   /// keep their icon on import. Only labels with a non-null icon appear.
   final Map<String, int> reasonIcons;
 
+  /// Icon id for each **custom** transport mode used by this trip's legs, keyed
+  /// by the mode's name (its portable key in [BundleItem.mode]), so a shared
+  /// custom mode keeps its icon on import. Built-in modes aren't listed — they
+  /// take their icon from their key. Only custom modes with a non-null icon
+  /// appear.
+  final Map<String, int> modeIcons;
+
   Map<String, dynamic> toJson() => {
     'kind': kind,
     'formatVersion': formatVersion,
@@ -100,6 +108,7 @@ class TripBundle {
     'collapsedDays': [for (final d in collapsedDays) _encodeDate(d)],
     'participants': participants,
     'reasonIcons': reasonIcons,
+    'modeIcons': modeIcons,
   };
 
   factory TripBundle.fromJson(Map<String, dynamic> json) {
@@ -141,6 +150,10 @@ class TripBundle {
       ],
       reasonIcons: {
         for (final e in (json['reasonIcons'] as Map? ?? const {}).entries)
+          e.key as String: e.value as int,
+      },
+      modeIcons: {
+        for (final e in (json['modeIcons'] as Map? ?? const {}).entries)
           e.key as String: e.value as int,
       },
     );
@@ -358,7 +371,11 @@ class BundleItem {
   final String? location;
 
   // transport-only
-  final TransportMode? mode;
+  /// The leg's transport mode as a portable key: a built-in's `builtinKey`
+  /// (e.g. "train") or a custom mode's name. Resolved to a local mode row on
+  /// import; null when the leg has no mode. A custom mode's icon rides along in
+  /// [TripBundle.modeIcons].
+  final String? mode;
   final String? fromLocation;
   final String? toLocation;
 
@@ -376,7 +393,7 @@ class BundleItem {
     'actualEndMinutes': actualEndMinutes,
     'notes': notes,
     'location': location,
-    'mode': mode?.name,
+    'mode': mode,
     'fromLocation': fromLocation,
     'toLocation': toLocation,
   };
@@ -395,7 +412,7 @@ class BundleItem {
     actualEndMinutes: json['actualEndMinutes'] as int?,
     notes: json['notes'] as String?,
     location: json['location'] as String?,
-    mode: _enumByNameOrNull(TransportMode.values, json['mode'] as String?),
+    mode: json['mode'] as String?,
     fromLocation: json['fromLocation'] as String?,
     toLocation: json['toLocation'] as String?,
   );
@@ -543,6 +560,3 @@ T _enumByName<T extends Enum>(List<T> values, String name) {
   }
   throw FormatException('Unknown ${values.first.runtimeType} value: $name');
 }
-
-T? _enumByNameOrNull<T extends Enum>(List<T> values, String? name) =>
-    name == null ? null : _enumByName(values, name);

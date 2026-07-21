@@ -112,6 +112,20 @@ class TripRepository {
   Future<void> renameReason(String from, String to) =>
       _db.costDao.renameReason(from, to);
 
+  // --- transport modes ---
+  Stream<List<TransportModeRow>> watchTransportModes() =>
+      _db.transportModeDao.watchModes();
+  Future<int> addTransportMode(String name, {int? iconId}) =>
+      _db.transportModeDao.addMode(name, iconId: iconId);
+  Future<void> renameTransportMode(int id, String name) =>
+      _db.transportModeDao.renameMode(id, name);
+  Future<void> setTransportModeIcon(int id, int? iconId) =>
+      _db.transportModeDao.setModeIcon(id, iconId);
+  Future<int> deleteTransportMode(int id) =>
+      _db.transportModeDao.deleteMode(id);
+  Future<void> reorderTransportModes(List<int> orderedIds) =>
+      _db.transportModeDao.reorderModes(orderedIds);
+
   // --- people ---
   Stream<List<String>> watchPeople() => _db.costDao.watchPeople();
   Stream<List<Person>> watchPeopleRows() => _db.costDao.watchPeopleRows();

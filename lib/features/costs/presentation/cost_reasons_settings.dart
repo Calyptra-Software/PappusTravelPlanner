@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/cost_display_provider.dart';
 import '../application/cost_providers.dart';
@@ -102,34 +103,12 @@ class CostReasonsSettings extends ConsumerWidget {
 
   Future<void> _addReason(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController();
-    final label = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.costReasonAddTitle),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(
-            labelText: l10n.costReasonLabel,
-            hintText: l10n.costReasonHint,
-          ),
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(l10n.add),
-          ),
-        ],
-      ),
+    final label = await showTextPromptDialog(
+      context,
+      title: l10n.costReasonAddTitle,
+      label: l10n.costReasonLabel,
+      hint: l10n.costReasonHint,
     );
-    controller.dispose();
     if (label == null || label.isEmpty) return;
     await ref.read(costControllerProvider).addReason(label);
   }
@@ -140,31 +119,12 @@ class CostReasonsSettings extends ConsumerWidget {
     String current,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: current);
-    final label = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.costReasonRenameTitle),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(labelText: l10n.costReasonLabel),
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+    final label = await showTextPromptDialog(
+      context,
+      title: l10n.costReasonRenameTitle,
+      label: l10n.costReasonLabel,
+      initial: current,
     );
-    controller.dispose();
     if (label == null || label.isEmpty || label == current) return;
     await ref.read(costControllerProvider).renameReason(current, label);
   }

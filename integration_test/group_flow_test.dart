@@ -38,7 +38,7 @@ void main() {
         date: day,
         kind: ItemKind.transport,
         sortOrder: const Value(0),
-        mode: const Value(TransportMode.train),
+        mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         fromLocation: const Value('Milan'),
         toLocation: const Value('Florence'),
       ),
@@ -49,7 +49,7 @@ void main() {
         date: day,
         kind: ItemKind.transport,
         sortOrder: const Value(1),
-        mode: const Value(TransportMode.train),
+        mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         fromLocation: const Value('Florence'),
         toLocation: const Value('Rome'),
       ),

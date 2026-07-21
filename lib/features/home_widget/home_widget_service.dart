@@ -13,6 +13,7 @@ import '../../data/database/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../itinerary/application/itinerary_providers.dart';
 import '../itinerary/live_items.dart';
+import '../itinerary/widgets/transport_mode.dart';
 import '../trips/application/trip_providers.dart';
 import 'widget_payload.dart';
 
@@ -51,12 +52,17 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
 
     final locale = _resolveLocale(ref);
     final l10n = await AppLocalizations.delegate.load(locale);
+    // Pre-resolve every mode's localized label so the payload (which the native
+    // side only displays) carries plain text, not row ids.
+    final modes = await repo.watchTransportModes().first;
+    final modeLabels = {for (final m in modes) m.id: m.label(l10n)};
     final payload = buildWidgetPayload(
       trips,
       todayItems,
       now,
       l10n,
       locale.languageCode,
+      modeLabels: modeLabels,
     );
 
     await _save(payload);

@@ -3,11 +3,13 @@ import '../../data/database/tables.dart';
 
 /// Statistics derived from a trip's transport legs, split out as pure functions
 /// (like `trip_stats.dart`) so the aggregation is unit-testable without a
-/// database. Legs are bucketed by [TransportMode]; each mode carries how many
-/// legs used it and how much time they add up to — kept both as **planned** and
-/// as **actual**, the app's two time axes, so the two can be compared. Only the
-/// trip's *live* legs should be passed in — see `live_items.dart` — so an
-/// unchosen alternative never counts, exactly as it doesn't for the money.
+/// database. Legs are bucketed by their transport-mode row id
+/// ([ItineraryItem.mode]); each mode carries how many legs used it and how much
+/// time they add up to — kept both as **planned** and as **actual**, the app's
+/// two time axes, so the two can be compared. The id is resolved to an icon and
+/// label at render time (the mode rows are global). Only the trip's *live* legs
+/// should be passed in — see `live_items.dart` — so an unchosen alternative
+/// never counts, exactly as it doesn't for the money.
 
 /// One transport mode's slice of a trip, holding the planned and actual figures
 /// side by side.
@@ -20,7 +22,8 @@ class TransportModeStat {
     required this.actualMinutes,
   });
 
-  final TransportMode mode;
+  /// The mode's row id (`TransportModes.id`), resolved to icon/label by the UI.
+  final int mode;
 
   /// Number of legs using this mode. Every leg is part of the plan, so this is
   /// also the *planned* leg count.
@@ -69,10 +72,10 @@ class TransportStats {
 /// a start-only leg and an end-only leg, and a single leg that departs one
 /// evening and arrives the next morning.
 TransportStats computeTransportStats(List<ItineraryItem> items) {
-  final legs = <TransportMode, int>{};
-  final actualCount = <TransportMode, int>{};
-  final planned = <TransportMode, List<_Span>>{};
-  final actual = <TransportMode, List<_Span>>{};
+  final legs = <int, int>{};
+  final actualCount = <int, int>{};
+  final planned = <int, List<_Span>>{};
+  final actual = <int, List<_Span>>{};
 
   for (final item in items) {
     if (item.kind != ItemKind.transport) continue;
@@ -116,10 +119,10 @@ TransportStats computeTransportStats(List<ItineraryItem> items) {
 /// within a trip stays balanced there and can't pair across trips; this only
 /// adds the per-mode totals up.
 TransportStats mergeTransportStats(Iterable<TransportStats> perTrip) {
-  final legs = <TransportMode, int>{};
-  final planned = <TransportMode, int>{};
-  final actualCount = <TransportMode, int>{};
-  final actual = <TransportMode, int>{};
+  final legs = <int, int>{};
+  final planned = <int, int>{};
+  final actualCount = <int, int>{};
+  final actual = <int, int>{};
   for (final stats in perTrip) {
     for (final m in stats.byMode) {
       legs.update(m.mode, (v) => v + m.legs, ifAbsent: () => m.legs);
@@ -157,13 +160,13 @@ TransportStats mergeTransportStats(Iterable<TransportStats> perTrip) {
   return TransportStats(byMode);
 }
 
-/// Orders modes by leg count, then planned time, then stable enum order.
+/// Orders modes by leg count, then planned time, then stable mode-id order.
 int _byUsage(TransportModeStat a, TransportModeStat b) {
   final byLegs = b.legs.compareTo(a.legs);
   if (byLegs != 0) return byLegs;
   final byTime = b.plannedMinutes.compareTo(a.plannedMinutes);
   if (byTime != 0) return byTime;
-  return a.mode.index.compareTo(b.mode.index);
+  return a.mode.compareTo(b.mode);
 }
 
 /// One leg's span on a single axis: its [day] (an absolute day index) plus the

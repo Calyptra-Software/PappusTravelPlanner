@@ -8,11 +8,13 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../application/itinerary_providers.dart';
+import '../application/transport_mode_providers.dart';
 import '../widgets/transport_mode.dart';
 
 /// Opens the add/edit sheet for an itinerary item and persists on save.
@@ -80,7 +82,10 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
 
   late DateTime _date;
   final _times = <_TimeSlot, int?>{};
-  TransportMode _mode = TransportMode.train;
+
+  /// The selected transport mode's row id, or null before the modes have loaded
+  /// (a default is filled in once they do) or when there are somehow none.
+  int? _mode;
 
   bool get _isTransport => widget.kind == ItemKind.transport;
   bool get _isEditing => widget.existing != null;
@@ -100,7 +105,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _times[_TimeSlot.plannedEnd] = existing.endMinutes;
       _times[_TimeSlot.actualStart] = existing.actualStartMinutes;
       _times[_TimeSlot.actualEnd] = existing.actualEndMinutes;
-      _mode = existing.mode ?? TransportMode.train;
+      _mode = existing.mode;
     } else if (_isTransport) {
       _fromController.text = widget.defaultFromLocation ?? '';
     }
@@ -250,6 +255,64 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// The mode dropdown, populated from the user-managed modes.
+  ///
+  /// A **new** leg opens on the "train" built-in (or the first mode there is),
+  /// so it starts on something valid. An **existing** leg keeps whatever it has
+  /// stored — including *no* mode, which is what a leg is left with when the
+  /// mode it used was deleted (`ItineraryItems.mode` is set null). That state
+  /// shows here exactly as the timeline shows it — the three-dots icon and
+  /// "Other" — instead of silently pre-selecting a real mode that saving would
+  /// then assign.
+  Widget _buildModeDropdown(AppLocalizations l10n) {
+    final theme = Theme.of(context);
+    final modes = ref.watch(transportModesProvider).value ?? const [];
+    // A selection whose mode no longer exists (deleted while the sheet was open)
+    // falls back to "no mode" rather than to some other row's id.
+    if (_mode != null && modes.isNotEmpty && !modes.any((m) => m.id == _mode)) {
+      _mode = null;
+    }
+    if (!_isEditing && _mode == null && modes.isNotEmpty) {
+      _mode = modes
+          .firstWhere(
+            (m) => m.builtinKey == TransportMode.train.name,
+            orElse: () => modes.first,
+          )
+          .id;
+    }
+    return DropdownButtonFormField<int?>(
+      initialValue: _mode,
+      decoration: InputDecoration(labelText: l10n.fieldMode),
+      // Shown while nothing is selected — a leg whose mode was deleted.
+      hint: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            kDefaultTransportModeIcon,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 8),
+          Text(l10n.modeOther),
+        ],
+      ),
+      items: [
+        for (final mode in modes)
+          DropdownMenuItem<int?>(
+            value: mode.id,
+            child: Row(
+              children: [
+                Icon(mode.icon, size: 18),
+                const SizedBox(width: 8),
+                Text(mode.label(l10n)),
+              ],
+            ),
+          ),
+      ],
+      onChanged: (value) => setState(() => _mode = value),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -282,25 +345,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                 Text(heading, style: theme.textTheme.titleLarge),
                 const SizedBox(height: 16),
                 if (_isTransport) ...[
-                  DropdownButtonFormField<TransportMode>(
-                    initialValue: _mode,
-                    decoration: InputDecoration(labelText: l10n.fieldMode),
-                    items: [
-                      for (final mode in kTransportModeOrder)
-                        DropdownMenuItem(
-                          value: mode,
-                          child: Row(
-                            children: [
-                              Icon(mode.icon, size: 18),
-                              const SizedBox(width: 8),
-                              Text(mode.label(l10n)),
-                            ],
-                          ),
-                        ),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _mode = value ?? _mode),
-                  ),
+                  _buildModeDropdown(l10n),
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: _fromController,
@@ -595,31 +640,13 @@ class _GroupingAndCosts extends ConsumerWidget {
     String? current,
   ) async {
     final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController(text: current ?? '');
-    final result = await showDialog<String?>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.groupNameLabel),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(hintText: l10n.groupNameHint),
-          onSubmitted: (value) => Navigator.pop(context, value),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(l10n.save),
-          ),
-        ],
-      ),
+    final result = await showTextPromptDialog(
+      context,
+      title: l10n.groupNameLabel,
+      hint: l10n.groupNameHint,
+      initial: current ?? '',
+      confirmLabel: l10n.save,
     );
-    controller.dispose();
     if (result != null) await repo.setGroupLabel(groupId, result);
   }
 }
