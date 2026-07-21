@@ -173,8 +173,15 @@ WidgetPayload buildWidgetPayload(
       countdown = l10n.widgetInDays(daysUntil);
     } else if (daysUntil == 1) {
       countdown = l10n.widgetTomorrow;
-    } else if (daysUntil == 0) {
-      countdown = l10n.widgetToday;
+    } else {
+      // A trip starting today is ongoing, so what is left here is over. It is
+      // featured only because nothing is ongoing or ahead; without a line
+      // saying it has ended it reads as the current trip.
+      final end = normalizeDay(trip.endDate ?? trip.startDate!);
+      final daysSince = today.difference(end).inDays;
+      countdown = daysSince == 1
+          ? l10n.widgetEndedYesterday
+          : l10n.widgetEndedDaysAgo(daysSince);
     }
   }
 

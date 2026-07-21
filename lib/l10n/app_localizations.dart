@@ -950,17 +950,23 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{in 1 day} other{in {count} days}}'**
   String widgetInDays(int count);
 
-  /// No description provided for @widgetToday.
-  ///
-  /// In en, this message translates to:
-  /// **'Starts today'**
-  String get widgetToday;
-
   /// No description provided for @widgetTomorrow.
   ///
   /// In en, this message translates to:
   /// **'Starts tomorrow'**
   String get widgetTomorrow;
+
+  /// No description provided for @widgetEndedYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended yesterday'**
+  String get widgetEndedYesterday;
+
+  /// No description provided for @widgetEndedDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Ended 1 day ago} other{Ended {count} days ago}}'**
+  String widgetEndedDaysAgo(int count);
 
   /// No description provided for @widgetDayXofY.
   ///

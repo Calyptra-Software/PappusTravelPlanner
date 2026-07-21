@@ -177,8 +177,12 @@
   "@widgetInDays": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "widgetToday": "Starts today",
   "widgetTomorrow": "Starts tomorrow",
+  "widgetEndedYesterday": "Ended yesterday",
+  "widgetEndedDaysAgo": "{count, plural, =1{Ended 1 day ago} other{Ended {count} days ago}}",
+  "@widgetEndedDaysAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
   "widgetDayXofY": "Day {current} of {total}",
   "@widgetDayXofY": {
     "placeholders": {

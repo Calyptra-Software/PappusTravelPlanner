@@ -485,10 +485,21 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get widgetToday => 'Beginnt heute';
+  String get widgetTomorrow => 'Beginnt morgen';
 
   @override
-  String get widgetTomorrow => 'Beginnt morgen';
+  String get widgetEndedYesterday => 'Gestern beendet';
+
+  @override
+  String widgetEndedDaysAgo(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vor $count Tagen beendet',
+      one: 'Vor 1 Tag beendet',
+    );
+    return '$_temp0';
+  }
 
   @override
   String widgetDayXofY(int current, int total) {

@@ -129,6 +129,35 @@ void main() {
       expect(p.countdown, 'Starts tomorrow');
     });
 
+    test('finished trip says it is over instead of showing no countdown', () {
+      final t = trip(
+        id: 1,
+        title: 'Italy',
+        start: DateTime(2026, 6, 20),
+        end: DateTime(2026, 6, 30),
+      );
+      final p = buildWidgetPayload([t], const [], now, l10n, 'en');
+      expect(p.isOngoing, isFalse);
+      expect(p.countdown, 'Ended 5 days ago');
+    });
+
+    test('trip that ended yesterday shows the yesterday label', () {
+      final t = trip(
+        id: 1,
+        title: 'Italy',
+        start: DateTime(2026, 7, 1),
+        end: DateTime(2026, 7, 4),
+      );
+      final p = buildWidgetPayload([t], const [], now, l10n, 'en');
+      expect(p.countdown, 'Ended yesterday');
+    });
+
+    test('single-day trip in the past counts from its start date', () {
+      final t = trip(id: 1, title: 'Day out', start: DateTime(2026, 7, 3));
+      final p = buildWidgetPayload([t], const [], now, l10n, 'en');
+      expect(p.countdown, 'Ended 2 days ago');
+    });
+
     test('ongoing trip shows "Day X of Y" and all today items (uncapped)', () {
       final t = trip(
         id: 1,
