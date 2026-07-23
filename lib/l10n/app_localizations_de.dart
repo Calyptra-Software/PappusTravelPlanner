@@ -835,6 +835,90 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get checklistActions => 'Aktionen für die Checkliste';
+
+  @override
+  String get checklistDelete => 'Checkliste löschen';
+
+  @override
+  String get checklistDuplicate => 'Duplizieren';
+
+  @override
+  String checklistCopyTitle(String name) {
+    return '$name (Kopie)';
+  }
+
+  @override
+  String get checklistCopyToTrip => 'In Reise kopieren…';
+
+  @override
+  String get checklistMoveToTrip => 'In Reise verschieben…';
+
+  @override
+  String get checklistPickTrip => 'In welche Reise?';
+
+  @override
+  String get checklistNoOtherTrips => 'Es gibt noch keine andere Reise dafür.';
+
+  @override
+  String checklistCopiedTo(String trip) {
+    return 'Nach „$trip“ kopiert. Häkchen werden nicht kopiert – eine Liste ist nur leer wiederverwendbar.';
+  }
+
+  @override
+  String checklistMovedTo(String trip) {
+    return 'Nach „$trip“ verschoben.';
+  }
+
+  @override
+  String get moveOrCopy => 'Verschieben oder kopieren';
+
+  @override
+  String get moveOrCopyHint =>
+      'Nimm diesen Eintrag auf und lege dann fest, wo er landen soll – an einem anderen Tag oder in einer Option einer Wahl.';
+
+  @override
+  String get moveToDots => 'Verschieben nach…';
+
+  @override
+  String get copyToDots => 'Kopieren nach…';
+
+  @override
+  String get duplicateEntry => 'Duplizieren';
+
+  @override
+  String get moveHere => 'Hierher verschieben';
+
+  @override
+  String get copyHere => 'Hierher kopieren';
+
+  @override
+  String holdingMove(String entry) {
+    return 'Wird verschoben: $entry';
+  }
+
+  @override
+  String holdingCopy(String entry) {
+    return 'Wird kopiert: $entry';
+  }
+
+  @override
+  String get holdingHint =>
+      'Tippe an einem Tag oder in einer Option auf „Hierher verschieben“ bzw. „Hierher kopieren“.';
+
+  @override
+  String get untitledEntry => 'Eintrag ohne Titel';
+
+  @override
+  String get copiedWithoutCosts =>
+      'Kopiert. Kosten werden nicht kopiert – eine Zahlung gab es nur einmal.';
+
+  @override
+  String putIntoUnchosenOption(String option) {
+    return 'In $option eingefügt – zählt nicht zur Reise, solange eine andere Option gewählt ist.';
+  }
+
+  @override
   String get alternatives => 'Alternativen';
 
   @override

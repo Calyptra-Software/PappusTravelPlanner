@@ -66,6 +66,87 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
     return (lastItem > lastSet ? lastItem : lastSet) + 1;
   }
 
+  // --- moving and copying between lists ---
+
+  /// Moves [itemId] to the end of another list: [day]'s loose items, or — when
+  /// [alternativeId] is given — that option's items. This is how an entry
+  /// crosses a boundary dragging cannot: to another day, into an option, or back
+  /// out of one. Reordering *within* a list stays the drag's job.
+  ///
+  /// The item **leaves its group**: a group means "these share a ticket", so it
+  /// has to stay one contiguous run inside a single day or option (see
+  /// [GroupDao.groupItems], which refuses to build one that straddles). A group
+  /// left with a single member is dissolved, its shared costs preserved — the
+  /// item's own costs travel with it either way, since they hang off the item.
+  ///
+  /// Emptying an option is allowed: an option with nothing planned in it yet is
+  /// a normal state, so nothing is tidied away behind the move.
+  Future<void> moveItem(
+    int itemId, {
+    required DateTime day,
+    int? alternativeId,
+  }) {
+    return transaction(() async {
+      final item = await _item(itemId);
+      // Same transaction, so a move that lands is never half a move: the item
+      // cannot end up out of its group but still in its old slot.
+      await attachedDatabase.groupDao.removeFromGroup(itemId);
+      final sortOrder = alternativeId != null
+          ? await nextSortOrderInAlternative(alternativeId)
+          : await nextSortOrder(item.tripId, day);
+      await (update(itineraryItems)..where((i) => i.id.equals(itemId))).write(
+        ItineraryItemsCompanion(
+          date: Value(day),
+          alternativeId: Value(alternativeId),
+          sortOrder: Value(sortOrder),
+        ),
+      );
+    });
+  }
+
+  /// Copies [itemId] to the end of the same list [moveItem] would move it to,
+  /// and returns the new item's id.
+  ///
+  /// The copy takes the **plan** — title, times, notes, location, route, mode —
+  /// but neither the costs nor the group. A cost records a payment that happened
+  /// once; duplicating it would invent money, and it would do so silently inside
+  /// a trip whose totals and settle-up depend on it. Adding the cost back takes
+  /// seconds; noticing an invented one takes a wrong balance.
+  Future<int> duplicateItem(
+    int itemId, {
+    required DateTime day,
+    int? alternativeId,
+  }) {
+    return transaction(() async {
+      final item = await _item(itemId);
+      final sortOrder = alternativeId != null
+          ? await nextSortOrderInAlternative(alternativeId)
+          : await nextSortOrder(item.tripId, day);
+      return into(itineraryItems).insert(
+        ItineraryItemsCompanion.insert(
+          tripId: item.tripId,
+          date: day,
+          kind: item.kind,
+          sortOrder: Value(sortOrder),
+          alternativeId: Value(alternativeId),
+          title: Value(item.title),
+          startMinutes: Value(item.startMinutes),
+          endMinutes: Value(item.endMinutes),
+          actualStartMinutes: Value(item.actualStartMinutes),
+          actualEndMinutes: Value(item.actualEndMinutes),
+          notes: Value(item.notes),
+          location: Value(item.location),
+          mode: Value(item.mode),
+          fromLocation: Value(item.fromLocation),
+          toLocation: Value(item.toLocation),
+        ),
+      );
+    });
+  }
+
+  Future<ItineraryItem> _item(int id) =>
+      (select(itineraryItems)..where((i) => i.id.equals(id))).getSingle();
+
   /// Next sort order for a new entry appended to the end of an alternative
   /// branch, whose items are ordered among themselves rather than in the day.
   Future<int> nextSortOrderInAlternative(int alternativeId) async {

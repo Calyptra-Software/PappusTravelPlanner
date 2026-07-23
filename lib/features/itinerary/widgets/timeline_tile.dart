@@ -43,6 +43,7 @@ class TimelineTile extends StatelessWidget {
     this.dragHandle,
     this.isNow = false,
     this.nowLineMinutes,
+    this.held = false,
   });
 
   final ItineraryItem item;
@@ -73,6 +74,12 @@ class TimelineTile extends StatelessWidget {
   /// shift every one of them.
   final int? nowLineMinutes;
 
+  /// Whether this entry is the one currently picked up, waiting to be put down
+  /// somewhere else. It is dimmed rather than removed: a move that has not
+  /// landed yet has changed nothing, and an entry that vanished from the day the
+  /// moment you picked it up would read as deleted.
+  final bool held;
+
   @override
   Widget build(BuildContext context) {
     final costsSection = _CostsSection(
@@ -97,7 +104,7 @@ class TimelineTile extends StatelessWidget {
             isNow: isNow,
           );
 
-    final content = group == null
+    final banded = group == null
         ? row
         : _GroupBand(
             accent: accent,
@@ -109,6 +116,8 @@ class TimelineTile extends StatelessWidget {
             onTapCost: onTapCost,
             child: row,
           );
+
+    final content = held ? Opacity(opacity: 0.4, child: banded) : banded;
 
     final nowLine = nowLineMinutes;
     if (nowLine == null) return content;

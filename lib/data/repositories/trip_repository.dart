@@ -40,6 +40,21 @@ class TripRepository {
   // Routes through GroupDao so deleting a grouped item also tidies its group
   // (dissolving a group left with <2 members, preserving its shared costs).
   Future<void> deleteItem(int id) => _db.groupDao.deleteItem(id);
+  Future<void> moveItem(
+    int itemId, {
+    required DateTime day,
+    int? alternativeId,
+  }) =>
+      _db.itineraryDao.moveItem(itemId, day: day, alternativeId: alternativeId);
+  Future<int> duplicateItem(
+    int itemId, {
+    required DateTime day,
+    int? alternativeId,
+  }) => _db.itineraryDao.duplicateItem(
+    itemId,
+    day: day,
+    alternativeId: alternativeId,
+  );
   Future<int> nextSortOrder(int tripId, DateTime date) =>
       _db.itineraryDao.nextSortOrder(tripId, date);
   Future<int> nextSortOrderInAlternative(int alternativeId) =>
@@ -144,6 +159,10 @@ class TripRepository {
   Future<bool> updateChecklist(Checklist checklist) =>
       _db.checklistDao.updateChecklist(checklist);
   Future<int> deleteChecklist(int id) => _db.checklistDao.deleteChecklist(id);
+  Future<void> moveChecklist(int checklistId, int tripId) =>
+      _db.checklistDao.moveChecklist(checklistId, tripId);
+  Future<int> copyChecklist(int checklistId, int tripId, {String? title}) =>
+      _db.checklistDao.copyChecklist(checklistId, tripId, title: title);
   Future<int> nextChecklistSortOrder(int tripId) =>
       _db.checklistDao.nextChecklistSortOrder(tripId);
 

@@ -829,6 +829,91 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get checklistActions => 'Checklist actions';
+
+  @override
+  String get checklistDelete => 'Delete checklist';
+
+  @override
+  String get checklistDuplicate => 'Duplicate';
+
+  @override
+  String checklistCopyTitle(String name) {
+    return '$name (copy)';
+  }
+
+  @override
+  String get checklistCopyToTrip => 'Copy to trip…';
+
+  @override
+  String get checklistMoveToTrip => 'Move to trip…';
+
+  @override
+  String get checklistPickTrip => 'Which trip?';
+
+  @override
+  String get checklistNoOtherTrips =>
+      'There is no other trip to put it in yet.';
+
+  @override
+  String checklistCopiedTo(String trip) {
+    return 'Copied to “$trip”. Ticks aren\'t copied — a list is only reusable empty.';
+  }
+
+  @override
+  String checklistMovedTo(String trip) {
+    return 'Moved to “$trip”.';
+  }
+
+  @override
+  String get moveOrCopy => 'Move or copy';
+
+  @override
+  String get moveOrCopyHint =>
+      'Pick this entry up, then choose where to put it down — another day, or one option of a choice.';
+
+  @override
+  String get moveToDots => 'Move to…';
+
+  @override
+  String get copyToDots => 'Copy to…';
+
+  @override
+  String get duplicateEntry => 'Duplicate';
+
+  @override
+  String get moveHere => 'Move here';
+
+  @override
+  String get copyHere => 'Copy here';
+
+  @override
+  String holdingMove(String entry) {
+    return 'Moving: $entry';
+  }
+
+  @override
+  String holdingCopy(String entry) {
+    return 'Copying: $entry';
+  }
+
+  @override
+  String get holdingHint =>
+      'Tap “Move here” or “Copy here” on any day or option.';
+
+  @override
+  String get untitledEntry => 'Untitled entry';
+
+  @override
+  String get copiedWithoutCosts =>
+      'Copied. Expenses aren\'t copied — a payment happened only once.';
+
+  @override
+  String putIntoUnchosenOption(String option) {
+    return 'Put into $option — it won\'t count toward the trip while another option is chosen.';
+  }
+
+  @override
   String get alternatives => 'Alternatives';
 
   @override

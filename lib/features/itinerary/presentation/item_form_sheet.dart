@@ -13,6 +13,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
+import '../application/item_clipboard.dart';
 import '../application/itinerary_providers.dart';
 import '../application/transport_mode_providers.dart';
 import '../widgets/transport_mode.dart';
@@ -531,6 +532,43 @@ class _GroupingAndCosts extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(l10n.moveOrCopy, style: theme.textTheme.labelLarge),
+        const SizedBox(height: 4),
+        Text(
+          l10n.moveOrCopyHint,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            // Picking up closes the sheet: the second half of the act happens out
+            // in the timeline, and a sheet covering it would hide the very thing
+            // being chosen.
+            OutlinedButton.icon(
+              icon: const Icon(Icons.drive_file_move_outline, size: 18),
+              label: Text(l10n.moveToDots),
+              onPressed: () => _hold(context, ref, itemId, HoldMode.move),
+            ),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.content_copy, size: 18),
+              label: Text(l10n.copyToDots),
+              onPressed: () => _hold(context, ref, itemId, HoldMode.copy),
+            ),
+            // The common copy needs no journey: right here, just below.
+            TextButton.icon(
+              icon: const Icon(Icons.control_point_duplicate, size: 18),
+              label: Text(l10n.duplicateEntry),
+              onPressed: current == null
+                  ? null
+                  : () => _duplicateInPlace(context, repo, current!),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
         Text(l10n.alternatives, style: theme.textTheme.labelLarge),
         const SizedBox(height: 4),
         if (alternativeId != null)
@@ -631,6 +669,34 @@ class _GroupingAndCosts extends ConsumerWidget {
         ],
       ],
     );
+  }
+
+  /// Picks the entry up and gets out of the way, so the destination — a day, or
+  /// one option of a decision — can be chosen where it is visible.
+  void _hold(BuildContext context, WidgetRef ref, int itemId, HoldMode mode) {
+    ref
+        .read(itemClipboardProvider.notifier)
+        .hold(HeldItem(tripId: tripId, itemId: itemId, mode: mode));
+    Navigator.of(context).pop();
+  }
+
+  /// Copies the entry to the end of the list it is already in — the same day, or
+  /// the same option. No journey, because the destination is where we are.
+  Future<void> _duplicateInPlace(
+    BuildContext context,
+    TripRepository repo,
+    ItineraryItem item,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+    await repo.duplicateItem(
+      item.id,
+      day: item.date,
+      alternativeId: item.alternativeId,
+    );
+    navigator.pop();
+    messenger.showSnackBar(SnackBar(content: Text(l10n.copiedWithoutCosts)));
   }
 
   Future<void> _renameGroup(

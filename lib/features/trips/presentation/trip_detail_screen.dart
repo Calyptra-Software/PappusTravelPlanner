@@ -18,9 +18,11 @@ import '../../costs/application/cost_display_provider.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
+import '../../itinerary/application/item_clipboard.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/day_blocks.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
+import '../../itinerary/widgets/alternative_card.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
 import '../../sharing/trip_bundle.dart';
 import '../../sharing/trip_pdf.dart';
@@ -230,6 +232,65 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
+  /// Puts the held entry down at the end of [day], or of [alternativeId]'s
+  /// option — the other half of picking it up in the item sheet.
+  ///
+  /// Both halves are explicit and named, which is the point: landing in an
+  /// option that is not the chosen one takes the entry's money out of the trip's
+  /// totals, so that is said out loud, here, at the moment it happens.
+  Future<void> _putDown(
+    BuildContext context,
+    WidgetRef ref,
+    HeldItem held,
+    DateTime day, {
+    int? alternativeId,
+  }) async {
+    final repo = ref.read(repositoryProvider);
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final target = _findBranch(ref, alternativeId);
+    final normalized = normalizeDay(day);
+
+    switch (held.mode) {
+      case HoldMode.move:
+        await repo.moveItem(
+          held.itemId,
+          day: normalized,
+          alternativeId: alternativeId,
+        );
+      case HoldMode.copy:
+        await repo.duplicateItem(
+          held.itemId,
+          day: normalized,
+          alternativeId: alternativeId,
+        );
+    }
+    ref.read(itemClipboardProvider.notifier).clear();
+
+    final notes = [
+      if (held.mode == HoldMode.copy) l10n.copiedWithoutCosts,
+      if (target case (final branch, final index) when !branch.chosen)
+        l10n.putIntoUnchosenOption(optionLabel(l10n, branch, index)),
+    ];
+    if (notes.isNotEmpty) {
+      messenger.showSnackBar(SnackBar(content: Text(notes.join('\n'))));
+    }
+  }
+
+  /// The option [alternativeId] names together with its position among its
+  /// siblings (which is what gives an unlabelled one its letter), or null when
+  /// the entry is landing on a day rather than in an option.
+  (Alternative, int)? _findBranch(WidgetRef ref, int? alternativeId) {
+    if (alternativeId == null) return null;
+    final branchesBySet =
+        ref.read(alternativeBranchesProvider(tripId)).value ?? const {};
+    for (final branches in branchesBySet.values) {
+      final index = branches.indexWhere((b) => b.id == alternativeId);
+      if (index >= 0) return (branches[index], index);
+    }
+    return null;
+  }
+
   /// Renumbers a plain list of items — one option's contents.
   Future<void> _onReorderItems(
     WidgetRef ref,
@@ -304,6 +365,12 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     // Ticks on the minute, so the timeline's "you are here" mark keeps up with
     // the clock. The first frame comes before the stream's first value.
     final now = ref.watch(nowProvider).value ?? DateTime.now();
+    // Watched (not read) for two reasons: it drives the put-down chips, and the
+    // watch is what keeps the hold alive — leaving this screen disposes it.
+    // Another trip's entry is not offered here; an entry carries costs and
+    // participants that belong to its own trip.
+    final rawHeld = ref.watch(itemClipboardProvider);
+    final held = rawHeld?.tripId == tripId ? rawHeld : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -359,6 +426,13 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           ),
         ],
       ),
+      bottomNavigationBar: held == null
+          ? null
+          : _HoldingBar(
+              held: held,
+              items: itemsAsync.value ?? const [],
+              onCancel: () => ref.read(itemClipboardProvider.notifier).clear(),
+            ),
       body: tripAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
@@ -450,6 +524,17 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                         _onReorder(ref, dayBlocks, oldIndex, newIndex),
                     onReorderBranch: (branchItems, oldIndex, newIndex) =>
                         _onReorderItems(ref, branchItems, oldIndex, newIndex),
+                    held: held,
+                    onPutDown: (day, {alternativeId}) {
+                      if (held == null) return;
+                      _putDown(
+                        context,
+                        ref,
+                        held,
+                        day,
+                        alternativeId: alternativeId,
+                      );
+                    },
                   ),
                 ],
               );
@@ -712,4 +797,104 @@ class _OpenItemOnceState extends State<_OpenItemOnce> {
 
   @override
   Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+/// The bar shown while an itinerary entry is picked up: what is being carried,
+/// and the way out.
+///
+/// It exists because the hold is otherwise invisible state — the entry stays in
+/// place (dimmed), and the only other sign is a chip in each add-row. A carried
+/// thing you cannot see, and cannot put back down, is the failure mode of every
+/// two-step move; this is the answer to both.
+class _HoldingBar extends StatelessWidget {
+  const _HoldingBar({
+    required this.held,
+    required this.items,
+    required this.onCancel,
+  });
+
+  final HeldItem held;
+  final List<ItineraryItem> items;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    ItineraryItem? entry;
+    for (final item in items) {
+      if (item.id == held.itemId) {
+        entry = item;
+        break;
+      }
+    }
+    final name = entry == null ? l10n.untitledEntry : _entryLabel(entry, l10n);
+
+    return Material(
+      color: theme.colorScheme.secondaryContainer,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          child: Row(
+            children: [
+              Icon(
+                held.mode == HoldMode.move
+                    ? Icons.drive_file_move_outline
+                    : Icons.content_copy,
+                size: 20,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  // Scaffold hands its bottom bar *loose* height constraints, so
+                  // a Column left at MainAxisSize.max grows to the whole screen
+                  // and takes the bar (which paints over the app bar) with it.
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      held.mode == HoldMode.move
+                          ? l10n.holdingMove(name)
+                          : l10n.holdingCopy(name),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      l10n.holdingHint,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton(onPressed: onCancel, child: Text(l10n.cancel)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Names an entry the way its tile does: its title, else where it is (or the
+  /// route it runs), else a placeholder — a nameless entry still has to be
+  /// referred to by something while it is in the air.
+  String _entryLabel(ItineraryItem item, AppLocalizations l10n) {
+    final title = item.title?.trim() ?? '';
+    if (title.isNotEmpty) return title;
+    final fallback = switch (item.kind) {
+      ItemKind.place => item.location?.trim() ?? '',
+      ItemKind.transport => [
+        item.fromLocation?.trim() ?? '',
+        item.toLocation?.trim() ?? '',
+      ].where((s) => s.isNotEmpty).join(' → '),
+    };
+    return fallback.isEmpty ? l10n.untitledEntry : fallback;
+  }
 }

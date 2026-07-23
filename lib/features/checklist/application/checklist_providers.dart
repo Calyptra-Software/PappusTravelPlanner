@@ -48,6 +48,26 @@ class ChecklistController {
   Future<void> deleteChecklist(int id) =>
       _ref.read(repositoryProvider).deleteChecklist(id);
 
+  /// Moves a checklist to another trip — for one written down on the wrong trip.
+  Future<void> moveChecklistToTrip(int checklistId, int tripId) =>
+      _ref.read(repositoryProvider).moveChecklist(checklistId, tripId);
+
+  /// Copies a checklist into another trip, unticked. The reason the whole
+  /// feature exists: last summer's packing list is the best starting point for
+  /// this summer's.
+  Future<void> copyChecklistToTrip(int checklistId, int tripId) =>
+      _ref.read(repositoryProvider).copyChecklist(checklistId, tripId);
+
+  /// Copies a checklist within its own trip, under [title] — two variants of one
+  /// list ("hand luggage" / "hold luggage") usually start as one.
+  Future<void> duplicateChecklist(
+    int checklistId,
+    int tripId, {
+    required String title,
+  }) => _ref
+      .read(repositoryProvider)
+      .copyChecklist(checklistId, tripId, title: title);
+
   /// Persists whether a checklist card is shown collapsed.
   Future<void> setCollapsed(Checklist checklist, bool collapsed) => _ref
       .read(repositoryProvider)

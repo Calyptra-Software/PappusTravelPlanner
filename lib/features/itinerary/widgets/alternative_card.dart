@@ -12,10 +12,22 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
 import 'now_line.dart';
+import 'put_down_chip.dart';
 import 'timeline_tile.dart';
+
+/// An option's name: its own label, or its position spelled as a letter
+/// ("Option B") when it has none. Top-level so anything that has to name an
+/// option away from the card — a message about where an entry just landed, say
+/// — names it the same way the card does.
+String optionLabel(AppLocalizations l10n, Alternative branch, int index) {
+  final label = branch.label;
+  if (label != null && label.isNotEmpty) return label;
+  return l10n.optionLetter(String.fromCharCode(65 + index));
+}
 
 /// A decision in the timeline: the competing options for one stretch of a day,
 /// shown one at a time and **swiped** through left/right (dragged with the mouse
@@ -44,11 +56,18 @@ class AlternativeCard extends ConsumerStatefulWidget {
     required this.onAddTransport,
     required this.onQuickAddPlace,
     required this.onReorderBranch,
+    required this.held,
+    required this.onPutDown,
     this.dragHandle,
     this.isNow = false,
     this.nowLineMinutes,
     this.nowMinutes,
   });
+
+  /// The entry currently picked up, or null. Each option offers to take it —
+  /// the option on screen, so the destination is the one you are looking at.
+  final HeldItem? held;
+  final void Function(int alternativeId) onPutDown;
 
   final DecisionBlock block;
   final Color accent;
@@ -170,11 +189,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     return (destination == null || destination.isEmpty) ? null : destination;
   }
 
-  String _branchLabel(AppLocalizations l10n, int index) {
-    final label = _branches[index].label;
-    if (label != null && label.isNotEmpty) return label;
-    return l10n.optionLetter(String.fromCharCode(65 + index));
-  }
+  String _branchLabel(AppLocalizations l10n, int index) =>
+      optionLabel(l10n, _branches[index], index);
 
   /// Interpolates between the two pages the swipe is between, so the card's
   /// height follows the finger rather than jumping when the page settles.
@@ -516,6 +532,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 onTapCost: widget.onTapCost,
                 isNow: i == nowIndex,
                 nowLineMinutes: i == lineIndex ? nowMinutes : null,
+                held: widget.held?.itemId == item.id,
                 dragHandle: ReorderableDragStartListener(
                   index: i,
                   child: Padding(
@@ -556,6 +573,13 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: Text(l10n.addTransport),
               ),
+              // The option's own add-row, so the entry lands in the option you
+              // swiped to — the ambiguity a drop *onto* the card would have.
+              if (widget.held case final held?)
+                PutDownChip(
+                  mode: held.mode,
+                  onPressed: () => widget.onPutDown(branch.id),
+                ),
             ],
           ),
         ),

@@ -12,6 +12,7 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/costs/application/cost_providers.dart';
+import 'package:travelplanner/features/itinerary/application/item_clipboard.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/day_blocks.dart';
 import 'package:travelplanner/features/itinerary/widgets/alternative_card.dart';
@@ -123,6 +124,8 @@ void main() {
           onAddTransport: (_) {},
           onQuickAddPlace: (_, _) {},
           onReorderBranch: (_, _, _) {},
+          held: null,
+          onPutDown: (_) {},
         ),
       ),
     );
@@ -246,6 +249,8 @@ void main() {
           onAddTransport: (_) {},
           onQuickAddPlace: (_, _) {},
           onReorderBranch: (_, _, _) {},
+          held: null,
+          onPutDown: (_) {},
         ),
       ),
     );
@@ -338,6 +343,8 @@ void main() {
           onQuickAddPlace: (branchId, location) =>
               quickAdded = (branchId, location),
           onReorderBranch: (_, _, _) {},
+          held: null,
+          onPutDown: (_) {},
         ),
       ),
     );
@@ -400,6 +407,8 @@ void main() {
           onAddTransport: (_) {},
           onQuickAddPlace: (_, _) {},
           onReorderBranch: (_, _, _) {},
+          held: null,
+          onPutDown: (_) {},
         ),
       ),
     );
@@ -432,5 +441,50 @@ void main() {
 
     expect(find.byType(NowLine), findsNothing);
     expect(find.byType(NowBadge), findsNothing);
+  });
+
+  testWidgets('a held entry can be put down in the option on screen', (
+    tester,
+  ) async {
+    int? target;
+    await tester.pumpWidget(
+      wrap(
+        AlternativeCard(
+          block: block(),
+          accent: Colors.teal,
+          groups: const {},
+          costsByItem: const {},
+          costsByGroup: const {},
+          localeName: 'en',
+          onTapItem: (_) {},
+          onTapCost: (_) {},
+          onAddPlace: (_) {},
+          onAddTransport: (_) {},
+          onQuickAddPlace: (_, _) {},
+          onReorderBranch: (_, _, _) {},
+          held: const HeldItem(tripId: 1, itemId: 9, mode: HoldMode.move),
+          onPutDown: (branchId) => target = branchId,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The offer joins the option's own add-row, so the destination is the
+    // option being looked at — not "the card", which names no option at all.
+    await tester.tap(find.text('Move here'));
+    expect(target, 10);
+
+    // Swiping to the other option retargets it: same chip, the option on screen.
+    await tester.fling(find.text('Museum'), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move here'));
+    expect(target, 11);
+  });
+
+  testWidgets('nothing held, nothing offered', (tester) async {
+    await pumpCard(tester);
+
+    expect(find.text('Move here'), findsNothing);
+    expect(find.text('Copy here'), findsNothing);
   });
 }

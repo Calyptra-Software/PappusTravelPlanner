@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/format/date_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../trips/application/trip_providers.dart';
 import '../application/checklist_providers.dart';
 
 /// Shows a single-field text dialog, returning the entered value, or null if
@@ -73,6 +75,45 @@ class TripChecklistsSection extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// What the checklist card's overflow menu offers.
+enum _ChecklistAction { rename, duplicate, copyToTrip, moveToTrip, delete }
+
+/// Asks which trip a checklist should go to, and returns it (null if
+/// dismissed). The trip it is already in is left out: copying a list to where it
+/// already is is [_ChecklistAction.duplicate], which needs no dialog.
+///
+/// A picker, where an itinerary entry gets picked up and carried: a checklist's
+/// possible destinations are just *the trips*, a short flat list that names
+/// itself. It is only when the destinations are many and structured — every day
+/// times every option — that a picker stops working and the entry has to travel
+/// to a place you can see.
+Future<Trip?> _pickTrip(
+  BuildContext context,
+  List<Trip> trips,
+  String localeName,
+) {
+  final l10n = AppLocalizations.of(context);
+  return showDialog<Trip>(
+    context: context,
+    builder: (context) => SimpleDialog(
+      title: Text(l10n.checklistPickTrip),
+      children: [
+        for (final trip in trips)
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, trip),
+            child: ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(trip.title),
+              subtitle: Text(
+                formatDateRange(l10n, localeName, trip.startDate, trip.endDate),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
 }
 
 /// One collapsible checklist card: tickable, reorderable items with an inline
@@ -167,10 +208,92 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
         .deleteChecklist(widget.checklist.id);
   }
 
+  /// Runs the overflow menu's choice. [itemCount] is only needed by delete,
+  /// which asks first when the list isn't empty.
+  void _onAction(_ChecklistAction action, int itemCount) {
+    switch (action) {
+      case _ChecklistAction.rename:
+        _rename();
+      case _ChecklistAction.duplicate:
+        _duplicate();
+      case _ChecklistAction.copyToTrip:
+        _toAnotherTrip(copy: true);
+      case _ChecklistAction.moveToTrip:
+        _toAnotherTrip(copy: false);
+      case _ChecklistAction.delete:
+        _delete(itemCount);
+    }
+  }
+
+  Future<void> _duplicate() async {
+    final l10n = AppLocalizations.of(context);
+    await ref
+        .read(checklistControllerProvider)
+        .duplicateChecklist(
+          widget.checklist.id,
+          widget.checklist.tripId,
+          title: l10n.checklistCopyTitle(_displayTitle(l10n)),
+        );
+  }
+
+  /// Copies or moves this checklist into another trip, asking which one.
+  ///
+  /// The copy arrives unticked — the point of reusing a packing list is to pack
+  /// again — so the confirmation says as much rather than leaving it to be
+  /// discovered.
+  Future<void> _toAnotherTrip({required bool copy}) async {
+    final l10n = AppLocalizations.of(context);
+    final localeName = Localizations.localeOf(context).languageCode;
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(checklistControllerProvider);
+
+    final others = [
+      for (final trip in ref.read(tripListProvider).value ?? const <Trip>[])
+        if (trip.id != widget.checklist.tripId) trip,
+    ];
+    if (others.isEmpty) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.checklistNoOtherTrips)),
+      );
+      return;
+    }
+    final target = await _pickTrip(context, others, localeName);
+    if (target == null) return;
+
+    if (copy) {
+      await controller.copyChecklistToTrip(widget.checklist.id, target.id);
+    } else {
+      await controller.moveChecklistToTrip(widget.checklist.id, target.id);
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          copy
+              ? l10n.checklistCopiedTo(target.title)
+              : l10n.checklistMovedTo(target.title),
+        ),
+      ),
+    );
+  }
+
   String _displayTitle(AppLocalizations l10n) =>
       widget.checklist.title.isNotEmpty
       ? widget.checklist.title
       : l10n.checklist;
+
+  PopupMenuItem<_ChecklistAction> _menuItem(
+    _ChecklistAction value,
+    IconData icon,
+    String label,
+  ) => PopupMenuItem(
+    value: value,
+    child: ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(icon, size: 20),
+      title: Text(label),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -217,17 +340,40 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
-                    IconButton(
-                      tooltip: l10n.checklistRenameTitle,
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.edit_outlined, size: 18),
-                      onPressed: _rename,
-                    ),
-                    IconButton(
-                      tooltip: l10n.checklistDeleteTitle,
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.delete_outline, size: 18),
-                      onPressed: () => _delete(items.length),
+                    // One menu rather than a row of icons: with copying and
+                    // moving added, four buttons plus the chevron would leave a
+                    // long list title nowhere to go on a phone.
+                    PopupMenuButton<_ChecklistAction>(
+                      tooltip: l10n.checklistActions,
+                      icon: const Icon(Icons.more_vert, size: 18),
+                      onSelected: (action) => _onAction(action, items.length),
+                      itemBuilder: (context) => [
+                        _menuItem(
+                          _ChecklistAction.rename,
+                          Icons.edit_outlined,
+                          l10n.checklistRenameTitle,
+                        ),
+                        _menuItem(
+                          _ChecklistAction.duplicate,
+                          Icons.control_point_duplicate,
+                          l10n.checklistDuplicate,
+                        ),
+                        _menuItem(
+                          _ChecklistAction.copyToTrip,
+                          Icons.content_copy,
+                          l10n.checklistCopyToTrip,
+                        ),
+                        _menuItem(
+                          _ChecklistAction.moveToTrip,
+                          Icons.drive_file_move_outline,
+                          l10n.checklistMoveToTrip,
+                        ),
+                        _menuItem(
+                          _ChecklistAction.delete,
+                          Icons.delete_outline,
+                          l10n.checklistDelete,
+                        ),
+                      ],
                     ),
                     Icon(
                       expanded ? Icons.expand_less : Icons.expand_more,

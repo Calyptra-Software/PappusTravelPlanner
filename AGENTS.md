@@ -81,6 +81,28 @@ UI (features/*/presentation, *widgets)
   indicator row under it carries every option's price (the comparison a pager otherwise hides).
   Dragging in a day reorders blocks (writing `ItineraryItems.sortOrder` *and*
   `AlternativeSets.sortOrder`); dragging inside a card reorders that option's items.
+- **Drag reorders *within* a list; move/copy crosses between them.** A day and an option are
+  two separate `ReorderableListView`s, and a decision is one index in its day, so no drag can
+  express "into that option" — nor should one, since landing in an unchosen option takes an
+  entry's money out of the trip's totals, and this app's rule is that gestures browse while
+  buttons commit. Crossing a boundary is therefore two explicit steps: the item sheet's
+  **Move to… / Copy to…** picks the entry up into `itemClipboardProvider`
+  (`features/itinerary/application/item_clipboard.dart` — a `HeldItem`, autoDispose so leaving
+  the trip screen drops the hold rather than leaving an invisible pending move); the day's and
+  each option's add-row then grows a `PutDownChip`, so the destination names itself by being
+  the place you navigated to. The held entry stays visible, dimmed (`TimelineTile.held`), under
+  a `_HoldingBar`. `ItineraryDao.moveItem` / `duplicateItem` do the writing, appending to the
+  end of the destination (finer placement is the drag's job again). Two rules there: a moved
+  entry **leaves its group** (a group is one contiguous run inside one day or option), and a
+  **copy takes the plan, not the money** — a cost records a payment that happened once, and
+  duplicating it would silently invent money inside the settle-up.
+- **A checklist travels by picker, not by hand** (`ChecklistDao.moveChecklist` / `copyChecklist`,
+  offered from the card's overflow menu). Same two-step frame, different second step, because a
+  checklist's destinations are just *the trips* — a short flat list that names itself, where an
+  itinerary entry's are every day × every option. The rule that governs the money governs the
+  ticks: a **copy arrives unticked** (a tick records that this was packed, on that trip), while
+  a **move keeps them** — it is the same list, relocated. Copying last trip's packing list into
+  the next one is what the feature is for, and a list is only reusable empty.
 - **"You are here"**: a day is an ordered *list*, not a time-scaled axis (times are optional),
   so there is no offset to place a now-line at — only a slot. `features/itinerary/now_marker.dart`
   (pure) answers, for today's blocks and the current minute, either *this block is under way*

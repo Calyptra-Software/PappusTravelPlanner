@@ -1544,6 +1544,144 @@ abstract class AppLocalizations {
   /// **'\"{name}\" and all its items will be removed.'**
   String checklistDeleteBody(String name);
 
+  /// No description provided for @checklistActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist actions'**
+  String get checklistActions;
+
+  /// No description provided for @checklistDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete checklist'**
+  String get checklistDelete;
+
+  /// No description provided for @checklistDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get checklistDuplicate;
+
+  /// Name given to a checklist duplicated within the same trip.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (copy)'**
+  String checklistCopyTitle(String name);
+
+  /// No description provided for @checklistCopyToTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to trip…'**
+  String get checklistCopyToTrip;
+
+  /// No description provided for @checklistMoveToTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to trip…'**
+  String get checklistMoveToTrip;
+
+  /// No description provided for @checklistPickTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Which trip?'**
+  String get checklistPickTrip;
+
+  /// No description provided for @checklistNoOtherTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'There is no other trip to put it in yet.'**
+  String get checklistNoOtherTrips;
+
+  /// Confirmation after copying a checklist into another trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to “{trip}”. Ticks aren\'t copied — a list is only reusable empty.'**
+  String checklistCopiedTo(String trip);
+
+  /// Confirmation after moving a checklist to another trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Moved to “{trip}”.'**
+  String checklistMovedTo(String trip);
+
+  /// No description provided for @moveOrCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Move or copy'**
+  String get moveOrCopy;
+
+  /// No description provided for @moveOrCopyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick this entry up, then choose where to put it down — another day, or one option of a choice.'**
+  String get moveOrCopyHint;
+
+  /// No description provided for @moveToDots.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to…'**
+  String get moveToDots;
+
+  /// No description provided for @copyToDots.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy to…'**
+  String get copyToDots;
+
+  /// No description provided for @duplicateEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateEntry;
+
+  /// No description provided for @moveHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Move here'**
+  String get moveHere;
+
+  /// No description provided for @copyHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy here'**
+  String get copyHere;
+
+  /// Bar shown while an itinerary entry is picked up and waiting to be put down.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving: {entry}'**
+  String holdingMove(String entry);
+
+  /// Bar shown while an itinerary entry is picked up to be duplicated elsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Copying: {entry}'**
+  String holdingCopy(String entry);
+
+  /// No description provided for @holdingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap “Move here” or “Copy here” on any day or option.'**
+  String get holdingHint;
+
+  /// No description provided for @untitledEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled entry'**
+  String get untitledEntry;
+
+  /// No description provided for @copiedWithoutCosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied. Expenses aren\'t copied — a payment happened only once.'**
+  String get copiedWithoutCosts;
+
+  /// Warning after moving or copying an entry into an option that is not the chosen one.
+  ///
+  /// In en, this message translates to:
+  /// **'Put into {option} — it won\'t count toward the trip while another option is chosen.'**
+  String putIntoUnchosenOption(String option);
+
   /// No description provided for @alternatives.
   ///
   /// In en, this message translates to:

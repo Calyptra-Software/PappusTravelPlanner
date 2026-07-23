@@ -7,10 +7,12 @@ import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
 import 'alternative_card.dart';
 import 'now_line.dart';
+import 'put_down_chip.dart';
 import 'timeline_tile.dart';
 
 /// Renders a trip's itinerary as day sections. A day is a reorderable list of
@@ -41,8 +43,18 @@ class ItineraryTimeline extends StatelessWidget {
     required this.collapsedDays,
     required this.onToggleDayCollapsed,
     required this.now,
+    required this.held,
+    required this.onPutDown,
     this.todayKey,
   });
+
+  /// The entry currently picked up, or null. While one is held, every day and
+  /// every option offers to put it down; the entry itself is drawn dimmed where
+  /// it still sits.
+  final HeldItem? held;
+
+  /// Puts the held entry at the end of [day], or of [alternativeId]'s option.
+  final void Function(DateTime day, {int? alternativeId}) onPutDown;
 
   /// The trip's whole itinerary, including the items of options that were not
   /// chosen — an [AlternativeCard] draws whichever option is being looked at.
@@ -156,6 +168,8 @@ class ItineraryTimeline extends StatelessWidget {
         localeName: localeName,
         onTapCost: onTapCost,
         now: now,
+        held: held,
+        onPutDown: onPutDown,
         anchorKey: todayKey,
       );
     }
@@ -189,6 +203,8 @@ class ItineraryTimeline extends StatelessWidget {
             localeName: localeName,
             onTapCost: onTapCost,
             now: now,
+            held: held,
+            onPutDown: onPutDown,
             anchorKey: days[i] == today ? todayKey : null,
           ),
       ],
@@ -219,8 +235,13 @@ class _DaySection extends StatelessWidget {
     required this.localeName,
     required this.onTapCost,
     required this.now,
+    required this.held,
+    required this.onPutDown,
     this.anchorKey,
   });
+
+  final HeldItem? held;
+  final void Function(DateTime day, {int? alternativeId}) onPutDown;
 
   final DateTime day;
   final int dayNumber;
@@ -259,14 +280,7 @@ class _DaySection extends StatelessWidget {
   /// The day's plan as it stands: its loose items plus the items of the chosen
   /// option of each decision. What the day *totals* and what the "you are here"
   /// chips read from — an option not taken is not part of the day.
-  List<ItineraryItem> get _liveItems => [
-    for (final block in blocks)
-      ...switch (block) {
-        ItemBlock(:final item) => [item],
-        DecisionBlock(:final chosen, :final itemsByBranch) =>
-          itemsByBranch[chosen.id] ?? const [],
-      },
-  ];
+  List<ItineraryItem> get _liveItems => itemsInDayOrder(blocks);
 
   @override
   Widget build(BuildContext context) {
@@ -487,6 +501,9 @@ class _DaySection extends StatelessWidget {
                       onQuickAddPlace(day, location, alternativeId: branchId),
                   onReorderBranch: onReorderBranch,
                   dragHandle: dragHandle,
+                  held: held,
+                  onPutDown: (branchId) =>
+                      onPutDown(day, alternativeId: branchId),
                 ),
               };
             },
@@ -520,6 +537,11 @@ class _DaySection extends StatelessWidget {
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: Text(l10n.addTransport),
               ),
+              // Where something new goes is where a held entry can go too, so
+              // the offer sits in the row already used for "put something here"
+              // — and disappears entirely when nothing is held.
+              if (held case final held?)
+                PutDownChip(mode: held.mode, onPressed: () => onPutDown(day)),
             ],
           ),
         ),
@@ -560,6 +582,7 @@ class _DaySection extends StatelessWidget {
       dragHandle: dragHandle,
       isNow: isNow,
       nowLineMinutes: nowLineMinutes,
+      held: held?.itemId == item.id,
     );
   }
 

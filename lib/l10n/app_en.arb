@@ -333,6 +333,53 @@
   "@checklistDeleteBody": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "checklistActions": "Checklist actions",
+  "checklistDelete": "Delete checklist",
+  "checklistDuplicate": "Duplicate",
+  "checklistCopyTitle": "{name} (copy)",
+  "@checklistCopyTitle": {
+    "description": "Name given to a checklist duplicated within the same trip.",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "checklistCopyToTrip": "Copy to trip…",
+  "checklistMoveToTrip": "Move to trip…",
+  "checklistPickTrip": "Which trip?",
+  "checklistNoOtherTrips": "There is no other trip to put it in yet.",
+  "checklistCopiedTo": "Copied to “{trip}”. Ticks aren't copied — a list is only reusable empty.",
+  "@checklistCopiedTo": {
+    "description": "Confirmation after copying a checklist into another trip.",
+    "placeholders": { "trip": { "type": "String" } }
+  },
+  "checklistMovedTo": "Moved to “{trip}”.",
+  "@checklistMovedTo": {
+    "description": "Confirmation after moving a checklist to another trip.",
+    "placeholders": { "trip": { "type": "String" } }
+  },
+  "moveOrCopy": "Move or copy",
+  "moveOrCopyHint": "Pick this entry up, then choose where to put it down — another day, or one option of a choice.",
+  "moveToDots": "Move to…",
+  "copyToDots": "Copy to…",
+  "duplicateEntry": "Duplicate",
+  "moveHere": "Move here",
+  "copyHere": "Copy here",
+  "holdingMove": "Moving: {entry}",
+  "@holdingMove": {
+    "description": "Bar shown while an itinerary entry is picked up and waiting to be put down.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "holdingCopy": "Copying: {entry}",
+  "@holdingCopy": {
+    "description": "Bar shown while an itinerary entry is picked up to be duplicated elsewhere.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "holdingHint": "Tap “Move here” or “Copy here” on any day or option.",
+  "untitledEntry": "Untitled entry",
+  "copiedWithoutCosts": "Copied. Expenses aren't copied — a payment happened only once.",
+  "putIntoUnchosenOption": "Put into {option} — it won't count toward the trip while another option is chosen.",
+  "@putIntoUnchosenOption": {
+    "description": "Warning after moving or copying an entry into an option that is not the chosen one.",
+    "placeholders": { "option": { "type": "String" } }
+  },
   "alternatives": "Alternatives",
   "planAlternatives": "Plan alternatives",
   "planAlternativesHint": "Turn this entry into a choice: plan several options and pick the one you go with.",
