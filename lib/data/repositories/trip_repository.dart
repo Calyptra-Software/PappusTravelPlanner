@@ -71,6 +71,16 @@ class TripRepository {
       _db.groupDao.groupItems(firstItemId, secondItemId);
   Future<void> removeFromGroup(int itemId) =>
       _db.groupDao.removeFromGroup(itemId);
+  Future<void> moveGroup(
+    int groupId, {
+    required DateTime day,
+    int? alternativeId,
+  }) => _db.groupDao.moveGroup(groupId, day: day, alternativeId: alternativeId);
+  Future<int> copyGroup(
+    int groupId, {
+    required DateTime day,
+    int? alternativeId,
+  }) => _db.groupDao.copyGroup(groupId, day: day, alternativeId: alternativeId);
   Future<void> dissolveGroup(int groupId) =>
       _db.groupDao.dissolveGroup(groupId);
   Future<void> setGroupLabel(int groupId, String? label) =>
@@ -87,6 +97,8 @@ class TripRepository {
       _db.alternativeDao.createSetFromItem(itemId, label: label);
   Future<int> addAlternative(int setId, {String? label}) =>
       _db.alternativeDao.addAlternative(setId, label: label);
+  Future<int> duplicateAlternative(int alternativeId) =>
+      _db.alternativeDao.duplicateAlternative(alternativeId);
   Future<void> chooseAlternative(int alternativeId) =>
       _db.alternativeDao.chooseAlternative(alternativeId);
   Future<void> deleteAlternative(int alternativeId) =>

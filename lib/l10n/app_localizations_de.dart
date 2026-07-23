@@ -975,6 +975,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get optionAdd => 'Option hinzufügen';
 
   @override
+  String get optionDuplicate => 'Option duplizieren';
+
+  @override
   String get optionRename => 'Option umbenennen';
 
   @override
@@ -1014,6 +1017,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get groupWithNext => 'Mit nächstem Element gruppieren';
+
+  @override
+  String get groupMoveTo => 'Gruppe verschieben nach…';
+
+  @override
+  String get groupCopyTo => 'Gruppe kopieren nach…';
 
   @override
   String get groupRemoveItem => 'Aus Gruppe entfernen';

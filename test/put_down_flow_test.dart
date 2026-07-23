@@ -113,7 +113,7 @@ void main() {
   ///
   /// The surface is made tall enough for both days' add-rows to be laid out and
   /// tappable: the chips under test sit at the bottom of each day.
-  Future<void> pumpDetail(WidgetTester tester, {HeldItem? held}) async {
+  Future<void> pumpDetail(WidgetTester tester, {Held? held}) async {
     tester.view
       ..devicePixelRatio = 1.0
       ..physicalSize = const Size(800, 2400);
@@ -123,6 +123,13 @@ void main() {
     final items = await readItems();
     final sets = await readSets();
     final branches = await readBranches();
+    // A one-shot query, not `watchGroupsForTrip().first`: a drift `.watch()`
+    // stream never resolves under fake-async, and awaiting one here would hang
+    // every test in the file (see the note at the top).
+    final groupRows = await (db.select(
+      db.itemGroups,
+    )..where((g) => g.tripId.equals(tripId))).get();
+    final groups = {for (final g in groupRows) g.id: g};
 
     await tester.pumpWidget(
       ProviderScope(
@@ -140,7 +147,7 @@ void main() {
           collapsedDaysProvider(
             tripId,
           ).overrideWith((ref) => Stream.value(const {})),
-          groupsProvider(tripId).overrideWith((ref) => Stream.value(const {})),
+          groupsProvider(tripId).overrideWith((ref) => Stream.value(groups)),
           costsForTripProvider(tripId).overrideWith(
             (ref) => Stream.value((
               byItem: const <int, List<Cost>>{},
@@ -332,5 +339,37 @@ void main() {
     final unmoved = await readItem(museum);
     expect(unmoved.date, day1);
     expect(unmoved.sortOrder, 3);
+  });
+
+  testWidgets('a held group dims all its members and moves them together', (
+    tester,
+  ) async {
+    final leg1 = await addItem('Leg 1', date: day1, sortOrder: 0);
+    final leg2 = await addItem('Leg 2', date: day1, sortOrder: 1);
+    await addItem('Market', date: day2, sortOrder: 0);
+    final groupId = await db.groupDao.groupItems(leg1, leg2);
+    await db.groupDao.setGroupLabel(groupId, 'Rail pass');
+
+    await pumpDetail(
+      tester,
+      held: HeldGroup(tripId: tripId, groupId: groupId, mode: HoldMode.move),
+    );
+
+    // The bar names the group, and both members are faded — the whole run is in
+    // hand, not one entry.
+    expect(find.text('Moving: Rail pass'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate((w) => w is Opacity && w.opacity == 0.4),
+      findsNWidgets(2),
+    );
+
+    await tester.tap(putDownChips().last);
+    await tester.pumpAndSettle();
+
+    // Both legs crossed to the other day, still grouped; nothing left on day 1.
+    expect((await readItem(leg1)).date, day2);
+    expect((await readItem(leg2)).date, day2);
+    expect((await readItem(leg1)).groupId, groupId);
+    expect(find.textContaining('Moving:'), findsNothing);
   });
 }

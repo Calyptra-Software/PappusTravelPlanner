@@ -66,7 +66,7 @@ class AlternativeCard extends ConsumerStatefulWidget {
 
   /// The entry currently picked up, or null. Each option offers to take it —
   /// the option on screen, so the destination is the one you are looking at.
-  final HeldItem? held;
+  final Held? held;
   final void Function(int alternativeId) onPutDown;
 
   final DecisionBlock block;
@@ -367,6 +367,12 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
             WidgetsBinding.instance.addPostFrameCallback(
               (_) => _goTo(_branches.length - 1),
             );
+          case _MenuAction.duplicateOption:
+            await repo.duplicateAlternative(branch.id);
+            // Land on the copy — the whole point is to tweak it from here.
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _goTo(_branches.length - 1),
+            );
           case _MenuAction.keepOnly:
             if (await _confirm(
               title: l10n.optionKeepOnlyQuestion,
@@ -397,6 +403,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
         PopupMenuItem(
           value: _MenuAction.addOption,
           child: Text(l10n.optionAdd),
+        ),
+        PopupMenuItem(
+          value: _MenuAction.duplicateOption,
+          child: Text(l10n.optionDuplicate),
         ),
         PopupMenuItem(
           value: _MenuAction.renameDecision,
@@ -532,7 +542,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 onTapCost: widget.onTapCost,
                 isNow: i == nowIndex,
                 nowLineMinutes: i == lineIndex ? nowMinutes : null,
-                held: widget.held?.itemId == item.id,
+                held: isHeldItem(widget.held, item),
                 dragHandle: ReorderableDragStartListener(
                   index: i,
                   child: Padding(
@@ -681,6 +691,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
 
 enum _MenuAction {
   addOption,
+  duplicateOption,
   renameDecision,
   renameOption,
   keepOnly,

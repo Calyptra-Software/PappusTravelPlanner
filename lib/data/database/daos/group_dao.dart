@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../app_database.dart';
+import '../item_copy.dart';
 import '../tables.dart';
 
 part 'group_dao.g.dart';
@@ -110,6 +111,90 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     });
   }
 
+  /// Moves a whole group to the end of another list — [day]'s loose items, or
+  /// [alternativeId]'s option — with its members kept together and still
+  /// grouped. This is how a bundle (a train journey on one ticket) relocates as
+  /// a unit; moving a single member instead *leaves* the group (see
+  /// [ItineraryDao.moveItem]).
+  ///
+  /// The shared cost rides along untouched: it hangs off the group, and the
+  /// group survives the move. Members keep their order among themselves,
+  /// appended after whatever the destination already holds.
+  Future<void> moveGroup(
+    int groupId, {
+    required DateTime day,
+    int? alternativeId,
+  }) {
+    return transaction(() async {
+      final members = await _members(groupId);
+      if (members.isEmpty) return;
+      final base = alternativeId != null
+          ? await attachedDatabase.itineraryDao.nextSortOrderInAlternative(
+              alternativeId,
+            )
+          : await attachedDatabase.itineraryDao.nextSortOrder(
+              members.first.tripId,
+              day,
+            );
+      for (var i = 0; i < members.length; i++) {
+        await (update(
+          itineraryItems,
+        )..where((it) => it.id.equals(members[i].id))).write(
+          ItineraryItemsCompanion(
+            date: Value(day),
+            alternativeId: Value(alternativeId),
+            sortOrder: Value(base + i),
+          ),
+        );
+      }
+    });
+  }
+
+  /// Copies a whole group to the end of [day] (or [alternativeId]'s option): a
+  /// fresh group with the same name, holding a copy of each member. Returns the
+  /// new group's id.
+  ///
+  /// As everywhere, a copy takes the **plan, not the money** — neither the
+  /// members' own costs nor the group's shared cost come along ([copyItemPlan]).
+  /// The copy is a bundle to price afresh, not a second claim on a payment that
+  /// happened once.
+  Future<int> copyGroup(
+    int groupId, {
+    required DateTime day,
+    int? alternativeId,
+  }) {
+    return transaction(() async {
+      final source = await _group(groupId);
+      final members = await _members(groupId);
+      final base = alternativeId != null
+          ? await attachedDatabase.itineraryDao.nextSortOrderInAlternative(
+              alternativeId,
+            )
+          : await attachedDatabase.itineraryDao.nextSortOrder(
+              source.tripId,
+              day,
+            );
+      final newGroupId = await into(itemGroups).insert(
+        ItemGroupsCompanion.insert(
+          tripId: source.tripId,
+          label: Value(source.label),
+        ),
+      );
+      for (var i = 0; i < members.length; i++) {
+        await into(itineraryItems).insert(
+          copyItemPlan(
+            members[i],
+            date: day,
+            alternativeId: alternativeId,
+            groupId: newGroupId,
+            sortOrder: base + i,
+          ),
+        );
+      }
+      return newGroupId;
+    });
+  }
+
   /// Sets a group's display name (null/empty clears it, falling back to the
   /// default label in the UI).
   Future<void> setGroupLabel(int groupId, String? label) {
@@ -130,6 +215,9 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
 
   Future<ItineraryItem> _item(int id) =>
       (select(itineraryItems)..where((i) => i.id.equals(id))).getSingle();
+
+  Future<ItemGroup> _group(int id) =>
+      (select(itemGroups)..where((g) => g.id.equals(id))).getSingle();
 
   /// Dissolves [groupId] when it no longer holds at least two members, so a
   /// group of one is never left dangling. Preserves its costs first.

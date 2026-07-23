@@ -1784,6 +1784,12 @@ abstract class AppLocalizations {
   /// **'Add option'**
   String get optionAdd;
 
+  /// No description provided for @optionDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate option'**
+  String get optionDuplicate;
+
   /// No description provided for @optionRename.
   ///
   /// In en, this message translates to:
@@ -1861,6 +1867,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Group with next item'**
   String get groupWithNext;
+
+  /// No description provided for @groupMoveTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Move group to…'**
+  String get groupMoveTo;
+
+  /// No description provided for @groupCopyTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy group to…'**
+  String get groupCopyTo;
 
   /// No description provided for @groupRemoveItem.
   ///

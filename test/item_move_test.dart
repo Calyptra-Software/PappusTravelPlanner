@@ -212,4 +212,96 @@ void main() {
     expect(await dayTitles(tripId, day1), ['Beach', 'Museum']);
     expect((await readItem(museum)).alternativeId, isNull);
   });
+
+  group('moving and copying a whole group', () {
+    test(
+      'a moved group travels together, staying grouped, cost and all',
+      () async {
+        final tripId = await makeTrip();
+        final leg1 = await makeItem(tripId, title: 'Leg 1', sortOrder: 0);
+        final leg2 = await makeItem(tripId, title: 'Leg 2', sortOrder: 1);
+        await makeItem(tripId, title: 'Solo', sortOrder: 2);
+        final groupId = await db.groupDao.groupItems(leg1, leg2);
+        await db.costDao.addCost(
+          CostsCompanion.insert(
+            groupId: Value(groupId),
+            amountMinor: 8000,
+            currency: Currency.eur,
+            reason: 'Train ticket',
+          ),
+        );
+
+        await db.groupDao.moveGroup(groupId, day: day2);
+
+        // Both legs cross over, in order, still one group; the loose item stays.
+        expect(await dayTitles(tripId, day1), ['Solo']);
+        expect(await dayTitles(tripId, day2), ['Leg 1', 'Leg 2']);
+        expect((await readItem(leg1)).groupId, groupId);
+        expect((await readItem(leg2)).groupId, groupId);
+        // The shared ticket rides along — it hangs off the group, which survived.
+        final costs = await db.costDao.watchCostsForTrip(tripId).first;
+        expect(costs.single.amountMinor, 8000);
+        expect(costs.single.groupId, groupId);
+      },
+    );
+
+    test(
+      'a group moves into an option, its members landing in the branch',
+      () async {
+        final tripId = await makeTrip();
+        final beach = await makeItem(tripId, title: 'Beach', sortOrder: 0);
+        final leg1 = await makeItem(tripId, title: 'Leg 1', sortOrder: 1);
+        final leg2 = await makeItem(tripId, title: 'Leg 2', sortOrder: 2);
+        final groupId = await db.groupDao.groupItems(leg1, leg2);
+        final setId = await db.alternativeDao.createSetFromItem(beach);
+        final chosen =
+            (await db.alternativeDao.watchBranchesForTrip(tripId).first)[setId]!
+                .first;
+
+        await db.groupDao.moveGroup(
+          groupId,
+          day: day1,
+          alternativeId: chosen.id,
+        );
+
+        // Both legs are now inside the option and still one group (a group inside
+        // one branch is legal).
+        expect((await readItem(leg1)).alternativeId, chosen.id);
+        expect((await readItem(leg2)).alternativeId, chosen.id);
+        expect((await readItem(leg1)).groupId, groupId);
+        expect((await readItem(leg2)).groupId, groupId);
+      },
+    );
+
+    test('a copied group is a fresh bundle with no money', () async {
+      final tripId = await makeTrip();
+      final leg1 = await makeItem(tripId, title: 'Leg 1', sortOrder: 0);
+      final leg2 = await makeItem(tripId, title: 'Leg 2', sortOrder: 1);
+      final groupId = await db.groupDao.groupItems(leg1, leg2);
+      await db.groupDao.setGroupLabel(groupId, 'Rail pass');
+      await makeCost(leg1, 500);
+      await db.costDao.addCost(
+        CostsCompanion.insert(
+          groupId: Value(groupId),
+          amountMinor: 8000,
+          currency: Currency.eur,
+          reason: 'Train ticket',
+        ),
+      );
+
+      final newGroupId = await db.groupDao.copyGroup(groupId, day: day2);
+
+      // The original is untouched on its day; the copy is two new items on the
+      // other, grouped under a new group with the same name.
+      expect(await dayTitles(tripId, day1), ['Leg 1', 'Leg 2']);
+      expect(await dayTitles(tripId, day2), ['Leg 1', 'Leg 2']);
+      expect(newGroupId, isNot(groupId));
+      final groups = await db.groupDao.watchGroupsForTrip(tripId).first;
+      expect(groups[newGroupId]!.label, 'Rail pass');
+      // Costs never copy: the two originals are the only ones in the trip.
+      final costs = await db.costDao.watchCostsForTrip(tripId).first;
+      expect(costs.length, 2);
+      expect(costs.map((c) => c.groupId), everyElement(isNot(newGroupId)));
+    });
+  });
 }

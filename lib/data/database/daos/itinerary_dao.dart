@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../app_database.dart';
+import '../item_copy.dart';
 import '../tables.dart';
 
 part 'itinerary_dao.g.dart';
@@ -122,23 +123,15 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
       final sortOrder = alternativeId != null
           ? await nextSortOrderInAlternative(alternativeId)
           : await nextSortOrder(item.tripId, day);
+      // No groupId passed: a lone copy does not join the original's group (that
+      // would put a third leg on a two-leg ticket, and break the run's
+      // adjacency). Copying a *whole* group is `GroupDao.copyGroup`.
       return into(itineraryItems).insert(
-        ItineraryItemsCompanion.insert(
-          tripId: item.tripId,
+        copyItemPlan(
+          item,
           date: day,
-          kind: item.kind,
-          sortOrder: Value(sortOrder),
-          alternativeId: Value(alternativeId),
-          title: Value(item.title),
-          startMinutes: Value(item.startMinutes),
-          endMinutes: Value(item.endMinutes),
-          actualStartMinutes: Value(item.actualStartMinutes),
-          actualEndMinutes: Value(item.actualEndMinutes),
-          notes: Value(item.notes),
-          location: Value(item.location),
-          mode: Value(item.mode),
-          fromLocation: Value(item.fromLocation),
-          toLocation: Value(item.toLocation),
+          alternativeId: alternativeId,
+          sortOrder: sortOrder,
         ),
       );
     });

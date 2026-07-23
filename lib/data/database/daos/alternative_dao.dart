@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../app_database.dart';
+import '../item_copy.dart';
 import '../tables.dart';
 
 part 'alternative_dao.g.dart';
@@ -22,7 +23,9 @@ part 'alternative_dao.g.dart';
 ///
 /// Also owns [ItineraryItems] so moving items into and out of branches, and
 /// re-numbering the day around them, runs in one transaction.
-@DriftAccessor(tables: [AlternativeSets, Alternatives, ItineraryItems])
+@DriftAccessor(
+  tables: [AlternativeSets, Alternatives, ItineraryItems, ItemGroups],
+)
 class AlternativeDao extends DatabaseAccessor<AppDatabase>
     with _$AlternativeDaoMixin {
   AlternativeDao(super.db);
@@ -138,6 +141,55 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
           label: Value(_clean(label)),
         ),
       );
+    });
+  }
+
+  /// Adds a new option to a decision that is a **copy** of an existing one — the
+  /// usual way a third option is planned: "same as B, but…". The copy is *not*
+  /// chosen (it is a fresh candidate to weigh, and the set already has its one
+  /// chosen), and returns its id so the card can swipe to it.
+  ///
+  /// Grouping inside the option is kept — a shared-ticket run is part of what
+  /// the option *is* — by cloning each source group into a fresh one. Costs are
+  /// not copied ([copyItemPlan]); a duplicated option is a plan to price afresh.
+  Future<int> duplicateAlternative(int alternativeId) {
+    return transaction(() async {
+      final source = await _alternative(alternativeId);
+      final newBranchId = await addAlternative(source.setId);
+      final items = await _branchItems(alternativeId);
+      // A branch item's group is internal to the branch; remap each to a new
+      // one so the copy's bundling is its own, not shared with the original.
+      final groupMap = <int, int>{};
+      for (var i = 0; i < items.length; i++) {
+        final item = items[i];
+        int? newGroup;
+        final sourceGroup = item.groupId;
+        if (sourceGroup != null) {
+          newGroup = groupMap[sourceGroup];
+          if (newGroup == null) {
+            final group = await (select(
+              itemGroups,
+            )..where((g) => g.id.equals(sourceGroup))).getSingle();
+            newGroup = await into(itemGroups).insert(
+              ItemGroupsCompanion.insert(
+                tripId: group.tripId,
+                label: Value(group.label),
+              ),
+            );
+            groupMap[sourceGroup] = newGroup;
+          }
+        }
+        await into(itineraryItems).insert(
+          copyItemPlan(
+            item,
+            date: item.date,
+            alternativeId: newBranchId,
+            groupId: newGroup,
+            sortOrder: i,
+          ),
+        );
+      }
+      return newBranchId;
     });
   }
 

@@ -626,6 +626,21 @@ class _GroupingAndCosts extends ConsumerWidget {
                   label: Text(l10n.groupWithNext),
                   onPressed: () => repo.groupItems(itemId, next!.id),
                 ),
+              // Carry the whole run, not just this entry: picking up a single
+              // grouped item *leaves* the group (see [_hold] / moveItem), which
+              // is the opposite of what you want for a shared ticket.
+              OutlinedButton.icon(
+                icon: const Icon(Icons.drive_file_move_outline, size: 18),
+                label: Text(l10n.groupMoveTo),
+                onPressed: () =>
+                    _holdGroup(context, ref, groupId, HoldMode.move),
+              ),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.content_copy, size: 18),
+                label: Text(l10n.groupCopyTo),
+                onPressed: () =>
+                    _holdGroup(context, ref, groupId, HoldMode.copy),
+              ),
               TextButton.icon(
                 icon: const Icon(Icons.edit_outlined, size: 18),
                 label: Text(l10n.groupNameLabel),
@@ -677,6 +692,20 @@ class _GroupingAndCosts extends ConsumerWidget {
     ref
         .read(itemClipboardProvider.notifier)
         .hold(HeldItem(tripId: tripId, itemId: itemId, mode: mode));
+    Navigator.of(context).pop();
+  }
+
+  /// Picks the whole group up instead of the single entry, so a shared-ticket
+  /// run relocates as one — its members travel together and stay grouped.
+  void _holdGroup(
+    BuildContext context,
+    WidgetRef ref,
+    int groupId,
+    HoldMode mode,
+  ) {
+    ref
+        .read(itemClipboardProvider.notifier)
+        .hold(HeldGroup(tripId: tripId, groupId: groupId, mode: mode));
     Navigator.of(context).pop();
   }
 

@@ -51,7 +51,7 @@ class ItineraryTimeline extends StatelessWidget {
   /// The entry currently picked up, or null. While one is held, every day and
   /// every option offers to put it down; the entry itself is drawn dimmed where
   /// it still sits.
-  final HeldItem? held;
+  final Held? held;
 
   /// Puts the held entry at the end of [day], or of [alternativeId]'s option.
   final void Function(DateTime day, {int? alternativeId}) onPutDown;
@@ -240,7 +240,7 @@ class _DaySection extends StatelessWidget {
     this.anchorKey,
   });
 
-  final HeldItem? held;
+  final Held? held;
   final void Function(DateTime day, {int? alternativeId}) onPutDown;
 
   final DateTime day;
@@ -582,7 +582,7 @@ class _DaySection extends StatelessWidget {
       dragHandle: dragHandle,
       isNow: isNow,
       nowLineMinutes: nowLineMinutes,
-      held: held?.itemId == item.id,
+      held: isHeldItem(held, item),
     );
   }
 

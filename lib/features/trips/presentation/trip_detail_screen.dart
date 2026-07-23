@@ -241,7 +241,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   Future<void> _putDown(
     BuildContext context,
     WidgetRef ref,
-    HeldItem held,
+    Held held,
     DateTime day, {
     int? alternativeId,
   }) async {
@@ -250,20 +250,36 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final target = _findBranch(ref, alternativeId);
     final normalized = normalizeDay(day);
+    final move = held.mode == HoldMode.move;
 
-    switch (held.mode) {
-      case HoldMode.move:
-        await repo.moveItem(
-          held.itemId,
-          day: normalized,
-          alternativeId: alternativeId,
-        );
-      case HoldMode.copy:
-        await repo.duplicateItem(
-          held.itemId,
-          day: normalized,
-          alternativeId: alternativeId,
-        );
+    // An item and a group land the same way — at the end of the destination —
+    // through their own DAO op; a move relocates, a copy leaves the plan behind
+    // and takes only a fresh, unpriced version.
+    switch (held) {
+      case HeldItem(:final itemId):
+        move
+            ? await repo.moveItem(
+                itemId,
+                day: normalized,
+                alternativeId: alternativeId,
+              )
+            : await repo.duplicateItem(
+                itemId,
+                day: normalized,
+                alternativeId: alternativeId,
+              );
+      case HeldGroup(:final groupId):
+        move
+            ? await repo.moveGroup(
+                groupId,
+                day: normalized,
+                alternativeId: alternativeId,
+              )
+            : await repo.copyGroup(
+                groupId,
+                day: normalized,
+                alternativeId: alternativeId,
+              );
     }
     ref.read(itemClipboardProvider.notifier).clear();
 
@@ -431,6 +447,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           : _HoldingBar(
               held: held,
               items: itemsAsync.value ?? const [],
+              groups: groups,
               onCancel: () => ref.read(itemClipboardProvider.notifier).clear(),
             ),
       body: tripAsync.when(
@@ -810,25 +827,20 @@ class _HoldingBar extends StatelessWidget {
   const _HoldingBar({
     required this.held,
     required this.items,
+    required this.groups,
     required this.onCancel,
   });
 
-  final HeldItem held;
+  final Held held;
   final List<ItineraryItem> items;
+  final Map<int, ItemGroup> groups;
   final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    ItineraryItem? entry;
-    for (final item in items) {
-      if (item.id == held.itemId) {
-        entry = item;
-        break;
-      }
-    }
-    final name = entry == null ? l10n.untitledEntry : _entryLabel(entry, l10n);
+    final name = _heldName(l10n);
 
     return Material(
       color: theme.colorScheme.secondaryContainer,
@@ -882,9 +894,23 @@ class _HoldingBar extends StatelessWidget {
     );
   }
 
+  /// Names what is being carried: a group by its label, an entry by its own
+  /// name — a nameless thing still has to be referred to while it is in the air.
+  String _heldName(AppLocalizations l10n) {
+    switch (held) {
+      case HeldGroup(:final groupId):
+        final label = groups[groupId]?.label?.trim() ?? '';
+        return label.isEmpty ? l10n.groupDefaultLabel : label;
+      case HeldItem(:final itemId):
+        for (final item in items) {
+          if (item.id == itemId) return _entryLabel(item, l10n);
+        }
+        return l10n.untitledEntry;
+    }
+  }
+
   /// Names an entry the way its tile does: its title, else where it is (or the
-  /// route it runs), else a placeholder — a nameless entry still has to be
-  /// referred to by something while it is in the air.
+  /// route it runs), else a placeholder.
   String _entryLabel(ItineraryItem item, AppLocalizations l10n) {
     final title = item.title?.trim() ?? '';
     if (title.isNotEmpty) return title;

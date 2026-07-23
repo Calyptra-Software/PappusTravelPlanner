@@ -95,7 +95,19 @@ UI (features/*/presentation, *widgets)
   end of the destination (finer placement is the drag's job again). Two rules there: a moved
   entry **leaves its group** (a group is one contiguous run inside one day or option), and a
   **copy takes the plan, not the money** — a cost records a payment that happened once, and
-  duplicating it would silently invent money inside the settle-up.
+  duplicating it would silently invent money inside the settle-up. The clipboard's `Held` is a
+  sealed type: a `HeldItem` *or* a `HeldGroup`, so a whole shared-ticket run rides along too —
+  picked up from a grouped entry's sheet, dimmed member-by-member (`isHeldItem`), landing via
+  `GroupDao.moveGroup` (members travel together, still grouped, the shared cost riding along
+  since it hangs off the surviving group) / `copyGroup` (a fresh bundle, no costs). The copy
+  fields live once, in `copyItemPlan` (`data/database/item_copy.dart`), shared by every
+  duplicate so a new column reaches them all at once.
+- **Duplicating an *option* is in-place, not clipboard** (`AlternativeDao.duplicateAlternative`,
+  the decision card's ⋮ menu): the "same as B, but…" third option. It adds an **unchosen** copy
+  of the option on screen (the set already has its one chosen), cloning the option's internal
+  grouping into fresh groups (a group is part of what the option *is*) but — as everywhere — not
+  its costs. Moving a whole decision to another day, or flattening one option's contents out
+  elsewhere, are deliberately *not* built.
 - **A checklist travels by picker, not by hand** (`ChecklistDao.moveChecklist` / `copyChecklist`,
   offered from the card's overflow menu). Same two-step frame, different second step, because a
   checklist's destinations are just *the trips* — a short flat list that names itself, where an

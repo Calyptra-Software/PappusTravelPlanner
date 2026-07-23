@@ -339,4 +339,90 @@ void main() {
       );
     },
   );
+
+  /// One branch's items, in order, by title.
+  Future<List<String>> branchTitles(int alternativeId) async {
+    final items = await db.itineraryDao.watchItemsForTrip(1).first;
+    return [
+      for (final i in items)
+        if (i.alternativeId == alternativeId) i.title!,
+    ];
+  }
+
+  group('duplicateAlternative', () {
+    test('adds an unchosen copy of the option, carrying its entries', () async {
+      final tripId = await makeTrip();
+      final beach = await makeItem(tripId, title: 'Beach');
+      final setId = await db.alternativeDao.createSetFromItem(beach);
+      final chosen = (await branchesOf(tripId, setId)).first;
+      await makeItem(
+        tripId,
+        title: 'Bar',
+        sortOrder: 1,
+        alternativeId: chosen.id,
+      );
+
+      final copyId = await db.alternativeDao.duplicateAlternative(chosen.id);
+      final branches = await branchesOf(tripId, setId);
+
+      // A third option, at the end, and the plan still follows the original.
+      expect(branches.map((b) => b.id), containsAll([chosen.id, copyId]));
+      expect(branches.firstWhere((b) => b.id == copyId).chosen, isFalse);
+      expect(branches.firstWhere((b) => b.id == chosen.id).chosen, isTrue);
+      // The copy holds its own entries, in order — new rows, not the originals.
+      expect(await branchTitles(copyId), ['Beach', 'Bar']);
+      expect(await branchTitles(chosen.id), ['Beach', 'Bar']);
+    });
+
+    test('takes the plan of each entry but none of its costs', () async {
+      final tripId = await makeTrip();
+      final beach = await makeItem(tripId, title: 'Beach');
+      final setId = await db.alternativeDao.createSetFromItem(beach);
+      final chosen = (await branchesOf(tripId, setId)).first;
+      await makeCost(beach, 2000);
+
+      final copyId = await db.alternativeDao.duplicateAlternative(chosen.id);
+
+      // The one cost is still the original's; the copy's entry has none.
+      final costs = await db.costDao.watchCostsForTrip(tripId).first;
+      expect(costs.single.itemId, beach);
+      final items = await db.itineraryDao.watchItemsForTrip(tripId).first;
+      final copyEntry = items.firstWhere((i) => i.alternativeId == copyId);
+      final copyCosts = costs.where((c) => c.itemId == copyEntry.id);
+      expect(copyCosts, isEmpty);
+    });
+
+    test('clones grouping inside the option into a fresh group', () async {
+      final tripId = await makeTrip();
+      final beach = await makeItem(tripId, title: 'Beach');
+      final setId = await db.alternativeDao.createSetFromItem(beach);
+      final chosen = (await branchesOf(tripId, setId)).first;
+      final leg1 = await makeItem(
+        tripId,
+        title: 'Leg 1',
+        sortOrder: 1,
+        alternativeId: chosen.id,
+      );
+      final leg2 = await makeItem(
+        tripId,
+        title: 'Leg 2',
+        sortOrder: 2,
+        alternativeId: chosen.id,
+      );
+      final sourceGroup = await db.groupDao.groupItems(leg1, leg2);
+
+      final copyId = await db.alternativeDao.duplicateAlternative(chosen.id);
+
+      // The copy's legs are grouped too — but under their own group, not the
+      // original's (a group is internal to the option it lives in).
+      final items = await db.itineraryDao.watchItemsForTrip(tripId).first;
+      final copyLegs = items
+          .where((i) => i.alternativeId == copyId && i.groupId != null)
+          .toList();
+      expect(copyLegs, hasLength(2));
+      final copyGroup = copyLegs.first.groupId;
+      expect(copyGroup, isNot(sourceGroup));
+      expect(copyLegs.every((i) => i.groupId == copyGroup), isTrue);
+    });
+  });
 }
