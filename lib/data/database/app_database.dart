@@ -13,6 +13,13 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
+/// Marks a file as a Travel Planner database. SQLite keeps this 32-bit value in
+/// the file header (bytes 68-71), so the file says what it is without anything
+/// having to open a table — `file(1)`, a backup tool, or a later validation
+/// check can tell one of our databases from any other `.sqlite` a picker
+/// happened to hand back. The value is ASCII `TRPL`.
+const int kApplicationId = 0x5452504C;
+
 @DriftDatabase(
   tables: [
     Trips,
@@ -235,8 +242,27 @@ class AppDatabase extends _$AppDatabase {
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
       await customStatement('PRAGMA foreign_keys = ON');
+      await _stampApplicationId();
     },
   );
+
+  /// Writes [kApplicationId] into the file header unless something already
+  /// claimed it.
+  ///
+  /// This runs on every open rather than from a migration branch because the
+  /// header is not part of the schema: every database already at the current
+  /// [schemaVersion] — which is every existing user's — would never reach an
+  /// `onUpgrade` branch, and bumping the version for a 4-byte header field
+  /// would mean shipping an otherwise empty migration. A file that carries
+  /// *another* application's id is left untouched: that id is the one piece of
+  /// evidence it isn't ours, and overwriting it would destroy it.
+  Future<void> _stampApplicationId() async {
+    final row = await customSelect('PRAGMA application_id').getSingleOrNull();
+    if (row == null || row.read<int>('application_id') != 0) return;
+    // Pragma values can't be bound as parameters; the id is a compile-time
+    // constant, so interpolating it is safe.
+    await customStatement('PRAGMA application_id = $kApplicationId');
+  }
 
   /// The v20 transport-modes setup, shared by the v20 branch and the v21
   /// self-heal: create and seed the table (built-ins go in in enum order, so
