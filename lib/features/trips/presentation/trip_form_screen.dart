@@ -281,9 +281,19 @@ class _TripCostsEditor extends ConsumerWidget {
               visualDensity: VisualDensity.compact,
               onPressed: () => showCostFormSheet(context, tripId: tripId),
             ),
+            // Settlements live beside the trip's general expenses: both hang off
+            // the trip rather than a day, and this is where their chips appear.
+            ActionChip(
+              avatar: const Icon(Icons.swap_horiz, size: 16),
+              label: Text(l10n.addTransfer),
+              visualDensity: VisualDensity.compact,
+              onPressed: () => showTransferFormSheet(context, tripId: tripId),
+            ),
           ],
         ),
-        if (costs.length > 1)
+        // The total is the expenses' — a settlement moves money between people
+        // without spending any, so it neither adds to the sum nor counts here.
+        if (costs.where((c) => !c.isTransfer).length > 1)
           Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(

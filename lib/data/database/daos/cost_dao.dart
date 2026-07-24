@@ -47,6 +47,10 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// attached to an alternative branch that was not chosen. This is what the
   /// trip's total and its expense splitting are computed from — the roads not
   /// taken must not inflate the budget.
+  ///
+  /// Transfers ([Costs.isTransfer]) are included: they are what settles the
+  /// balances, so the splitting must see them. Leaving them out of the *spend*
+  /// figures is `computeTripStats`'s job, not this query's.
   Stream<List<Cost>> watchCountedCostsForTrip(int tripId) {
     final query =
         select(costs).join([
@@ -110,9 +114,10 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
   /// minor units). Reaches costs the same three ways as [watchCostsForTrip] —
   /// attached to an item, a group, or the trip directly — resolving each cost's
   /// trip from whichever link it has, and leaving out the costs of unchosen
-  /// alternative branches (see [_countsTowardTotals]). Powers the total shown on
-  /// each overview card in one query instead of a stream per trip. Trips with no
-  /// costs are absent from the map.
+  /// alternative branches (see [_countsTowardTotals]) as well as transfers
+  /// (money moved between people is not money spent — see [Costs.isTransfer]).
+  /// Powers the total shown on each overview card in one query instead of a
+  /// stream per trip. Trips with no costs are absent from the map.
   Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() {
     final query = select(costs).join([
       leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
@@ -121,7 +126,7 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         alternatives,
         alternatives.id.equalsExp(itineraryItems.alternativeId),
       ),
-    ])..where(_countsTowardTotals());
+    ])..where(_countsTowardTotals() & costs.isTransfer.equals(false));
     return query.watch().map((rows) {
       final byTrip = <int, Map<Currency, int>>{};
       for (final row in rows) {

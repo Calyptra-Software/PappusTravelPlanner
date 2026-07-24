@@ -184,6 +184,42 @@ void main() {
     expect(_canonical(imported!.toJson()), _canonical(original!.toJson()));
   });
 
+  test('a settlement arrives as a settlement, with its receiver', () async {
+    final source = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(source.close);
+
+    final sourceId = await _seedTrip(source);
+    final bytes = (await source.sharingDao.exportTrip(sourceId))!.encode();
+    final newId = await db.sharingDao.importTrip(TripBundle.decode(bytes));
+
+    final costs = await db.costDao.watchCostsForTrip(newId).first;
+    final settlement = costs.singleWhere((c) => c.isTransfer);
+    expect(settlement.amountMinor, 2000);
+    expect(settlement.paidBy, 'Bob');
+    final receivers = await db.costDao.watchBeneficiaries(settlement.id).first;
+    expect(receivers.map((p) => p.name), ['Alice']);
+
+    // And it still isn't spending on the recipient's device either.
+    final totals = await db.costDao.watchTotalsByTrip().first;
+    expect(totals[newId]![Currency.eur], 1600 + 8000);
+  });
+
+  test('a bundle written before settlements existed reads as expenses', () {
+    // The flag is simply absent in an older sender's JSON.
+    final json = {
+      'itemLocalId': null,
+      'groupLocalId': null,
+      'amountMinor': 1600,
+      'currency': 'eur',
+      'reason': 'Tickets',
+      'paidBy': 'Alice',
+      'paid': true,
+      'createdAt': DateTime(2026, 5, 1).toIso8601String(),
+      'beneficiaries': ['Alice'],
+    };
+    expect(BundleCost.fromJson(json).isTransfer, isFalse);
+  });
+
   test('importing merges rosters without duplicating or overriding', () async {
     // The recipient (db) already knows Bob — as "me" — and has its own icon (2)
     // for the "Tickets" reason.
@@ -345,6 +381,20 @@ Future<int> _seedTrip(AppDatabase db) async {
       reason: 'Refund',
     ),
   );
+  // A settlement: Bob hands Alice 20.00 back. Not an expense — it must travel
+  // as what it is, or the recipient's balances would read as spending.
+  final settlement = await db.costDao.addCost(
+    CostsCompanion.insert(
+      tripId: Value(tripId),
+      amountMinor: 2000,
+      currency: Currency.eur,
+      reason: '',
+      paidBy: const Value('Bob'),
+      paid: const Value(true),
+      isTransfer: const Value(true),
+    ),
+  );
+  await db.costDao.setBeneficiaries(settlement, ['Alice']);
   final checklistId = await db.checklistDao.addChecklist(
     ChecklistsCompanion.insert(title: const Value('Packing'), tripId: tripId),
   );

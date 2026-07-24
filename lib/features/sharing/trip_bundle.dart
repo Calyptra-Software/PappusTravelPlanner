@@ -430,6 +430,7 @@ class BundleCost {
     required this.reason,
     this.paidBy,
     this.paid = false,
+    this.isTransfer = false,
     required this.createdAt,
     this.beneficiaries = const [],
   });
@@ -441,6 +442,13 @@ class BundleCost {
   final String reason;
   final String? paidBy;
   final bool paid;
+
+  /// Whether this row is a transfer between two people rather than an expense
+  /// ([Costs.isTransfer]): [paidBy] handed the money to its one beneficiary.
+  /// Absent in bundles written before transfers existed, and read back as
+  /// false there — an older bundle only ever held expenses.
+  final bool isTransfer;
+
   final DateTime createdAt;
 
   /// Person names this cost was split among; empty means "all participants".
@@ -454,6 +462,7 @@ class BundleCost {
     'reason': reason,
     'paidBy': paidBy,
     'paid': paid,
+    'isTransfer': isTransfer,
     'createdAt': _encodeDate(createdAt),
     'beneficiaries': beneficiaries,
   };
@@ -466,6 +475,7 @@ class BundleCost {
     reason: json['reason'] as String,
     paidBy: json['paidBy'] as String?,
     paid: json['paid'] as bool? ?? false,
+    isTransfer: json['isTransfer'] as bool? ?? false,
     createdAt: _decodeDate(json['createdAt'] as String)!,
     beneficiaries: [
       for (final b in (json['beneficiaries'] as List? ?? const [])) b as String,

@@ -269,6 +269,15 @@ class Costs extends Table {
 
   /// Whether this expense has already been paid/settled. Defaults to false.
   BoolColumn get paid => boolean().withDefault(const Constant(false))();
+
+  /// Marks the row as a **transfer** — money handed from one person to another
+  /// (settling a debt) rather than money spent on the trip. A transfer is
+  /// always trip-level, its [paidBy] is the sender and its single beneficiary
+  /// the receiver, and it carries no [reason] (the category makes no sense for
+  /// it). It moves the two people's balances and nothing else: totals, the
+  /// paid/open split and the category breakdown all leave it out, because no
+  /// money left the group. See `computeTripStats`.
+  BoolColumn get isTransfer => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

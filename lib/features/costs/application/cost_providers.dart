@@ -190,6 +190,61 @@ class CostController {
     await repo.setBeneficiaries(existing.id, paidFor);
   }
 
+  // --- transfers (settling up between people) ---
+
+  /// Records [from] handing [amountMinor] to [to] on trip [tripId]: a transfer,
+  /// not an expense (see [Costs.isTransfer]). It carries no category — a
+  /// repayment isn't a kind of spending — and is stored already settled, since
+  /// recording it says the money has changed hands. The receiver is stored as
+  /// the row's single beneficiary, which is what shifts their balance.
+  Future<void> addTransfer({
+    required int tripId,
+    required int amountMinor,
+    required Currency currency,
+    required String from,
+    required String to,
+  }) async {
+    final repo = _ref.read(repositoryProvider);
+    await repo.upsertPerson(from);
+    await repo.upsertPerson(to);
+    final id = await repo.addCost(
+      CostsCompanion.insert(
+        tripId: Value(tripId),
+        amountMinor: amountMinor,
+        currency: currency,
+        reason: '',
+        paidBy: Value(from),
+        paid: const Value(true),
+        isTransfer: const Value(true),
+      ),
+    );
+    await repo.setBeneficiaries(id, [to]);
+  }
+
+  /// Edits a recorded transfer, keeping it a transfer.
+  Future<void> updateTransfer(
+    Cost existing, {
+    required int amountMinor,
+    required Currency currency,
+    required String from,
+    required String to,
+  }) async {
+    final repo = _ref.read(repositoryProvider);
+    await repo.upsertPerson(from);
+    await repo.upsertPerson(to);
+    await repo.updateCost(
+      existing.copyWith(
+        amountMinor: amountMinor,
+        currency: currency,
+        reason: '',
+        paidBy: Value(from),
+        paid: true,
+        isTransfer: true,
+      ),
+    );
+    await repo.setBeneficiaries(existing.id, [to]);
+  }
+
   Future<void> deleteCost(int id) =>
       _ref.read(repositoryProvider).deleteCost(id);
 

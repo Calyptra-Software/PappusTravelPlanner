@@ -661,6 +661,42 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get addTransfer => 'Record settlement';
+
+  @override
+  String get editTransfer => 'Edit settlement';
+
+  @override
+  String get transfer => 'Settlement';
+
+  @override
+  String get transfers => 'Settlements';
+
+  @override
+  String get transferFrom => 'From';
+
+  @override
+  String get transferTo => 'To';
+
+  @override
+  String get transferPersonRequired => 'Choose a person';
+
+  @override
+  String get transferSamePerson => 'Choose two different people';
+
+  @override
+  String get transferAmountPositive => 'Enter an amount above zero';
+
+  @override
+  String transferBetween(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get transferHint =>
+      'Settlements move money between people. They change the balances only — never the trip\'s total.';
+
+  @override
   String get peopleSection => 'People';
 
   @override
@@ -819,6 +855,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String statsTransfer(String from, String to) {
     return '$from pays $to';
+  }
+
+  @override
+  String get statsRecordSettlement => 'Record';
+
+  @override
+  String statsSettlementSent(String amount) {
+    return 'paid back $amount';
+  }
+
+  @override
+  String statsSettlementReceived(String amount) {
+    return 'received $amount';
   }
 
   @override

@@ -212,6 +212,23 @@
   "@costPaidByName": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "addTransfer": "Ausgleich erfassen",
+  "editTransfer": "Ausgleich bearbeiten",
+  "transfer": "Ausgleich",
+  "transfers": "Ausgleichszahlungen",
+  "transferFrom": "Von",
+  "transferTo": "An",
+  "transferPersonRequired": "Person wählen",
+  "transferSamePerson": "Zwei verschiedene Personen wählen",
+  "transferAmountPositive": "Betrag muss größer als null sein",
+  "transferBetween": "{from} → {to}",
+  "@transferBetween": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "transferHint": "Ausgleichszahlungen verschieben Geld zwischen Personen. Sie ändern nur die Salden — nie die Gesamtsumme der Reise.",
   "peopleSection": "Personen",
   "noPeople": "Noch keine gespeicherten Personen",
   "personAdd": "Person hinzufügen",
@@ -286,6 +303,15 @@
       "from": { "type": "String" },
       "to": { "type": "String" }
     }
+  },
+  "statsRecordSettlement": "Erfassen",
+  "statsSettlementSent": "{amount} zurückgezahlt",
+  "@statsSettlementSent": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsSettlementReceived": "{amount} erhalten",
+  "@statsSettlementReceived": {
+    "placeholders": { "amount": { "type": "String" } }
   },
   "checklist": "Checkliste",
   "checklistAddHint": "Eintrag hinzufügen…",

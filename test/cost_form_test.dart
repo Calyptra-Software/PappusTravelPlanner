@@ -135,4 +135,101 @@ void main() {
     expect(find.text('Enter a category'), findsOneWidget);
     expect(await savedCosts(tester), isEmpty);
   });
+
+  group('settlement', () {
+    /// Pumps the same sheet as a settlement between two people.
+    Future<void> pumpTransfer(
+      WidgetTester tester, {
+      List<String> people = const ['Alex', 'Sam'],
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            repositoryProvider.overrideWithValue(repo),
+            reasonsProvider.overrideWith((ref) => Stream.value(const [])),
+            reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
+            peopleProvider.overrideWith((ref) => Stream.value(people)),
+            mePersonProvider.overrideWith((ref) => Stream.value(null)),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: CostFormSheet(tripId: 1, transfer: true),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // In settlement mode the category and the split are gone: the two people
+    // are the whole form.
+    final fromField = find.byType(TextFormField).at(1);
+    final toField = find.byType(TextFormField).at(2);
+
+    /// Opens [field]'s picker and chooses [name] from its list. The row is
+    /// targeted inside the picker: once a field holds the name, a plain text
+    /// finder would match the field behind the sheet too.
+    Future<void> pick(WidgetTester tester, Finder field, String name) async {
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, name));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('records who paid whom, and is not an expense', (tester) async {
+      await pumpTransfer(tester);
+
+      await tester.enterText(amountField, '20');
+      await pick(tester, fromField, 'Sam');
+      await pick(tester, toField, 'Alex');
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      final cost = (await savedCosts(tester)).single;
+      expect(cost.isTransfer, isTrue);
+      expect(cost.amountMinor, 2000);
+      expect(cost.paidBy, 'Sam');
+      // No category: a repayment isn't a kind of spending.
+      expect(cost.reason, '');
+      // The receiver rides along as the row's single beneficiary — that is
+      // what moves their balance.
+      final beneficiaries = await tester.runAsync(
+        () => repo.watchBeneficiaries(cost.id).first,
+      );
+      expect([for (final p in beneficiaries!) p.name], ['Alex']);
+    });
+
+    testWidgets('refuses a settlement with itself', (tester) async {
+      await pumpTransfer(tester);
+
+      await tester.enterText(amountField, '20');
+      await pick(tester, fromField, 'Sam');
+      await pick(tester, toField, 'Sam');
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Choose two different people'), findsOneWidget);
+      expect(await savedCosts(tester), isEmpty);
+    });
+
+    testWidgets('refuses a settlement of nothing', (tester) async {
+      await pumpTransfer(tester);
+
+      await tester.enterText(amountField, '0');
+      await pick(tester, fromField, 'Sam');
+      await pick(tester, toField, 'Alex');
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter an amount above zero'), findsOneWidget);
+      expect(await savedCosts(tester), isEmpty);
+    });
+  });
 }

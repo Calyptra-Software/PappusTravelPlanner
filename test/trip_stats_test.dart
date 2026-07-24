@@ -19,6 +19,25 @@ void main() {
     reason: reason,
     paidBy: paidBy,
     paid: paid,
+    isTransfer: false,
+    createdAt: DateTime(2026),
+  );
+
+  /// A settlement: [from] hands [minor] to someone (the receiver is the row's
+  /// beneficiary, wired up by each test).
+  Cost transfer(
+    int minor, {
+    Currency currency = Currency.eur,
+    required String from,
+  }) => Cost(
+    id: ++nextId,
+    tripId: 1,
+    amountMinor: minor,
+    currency: currency,
+    reason: '',
+    paidBy: from,
+    paid: true,
+    isTransfer: true,
     createdAt: DateTime(2026),
   );
 
@@ -169,6 +188,155 @@ void main() {
         const [],
       );
       expect(onlyCurrency(stats).settlements, isEmpty);
+    });
+  });
+
+  group('settlements between people', () {
+    test('a settlement clears the debt it repays', () {
+      // Ann pays 60 for the three of them: Bo and Cy owe her 20 each.
+      final dinner = cost(6000, paidBy: 'Ann');
+      // Bo hands Ann his 20 back.
+      final repayment = transfer(2000, from: 'Bo');
+      final stats = computeTripStats(
+        [dinner, repayment],
+        {
+          dinner.id: [person('Ann'), person('Bo'), person('Cy')],
+          repayment.id: [person('Ann')],
+        },
+        const [],
+      );
+      final cur = onlyCurrency(stats);
+      final byPerson = {for (final p in cur.byPerson) p.name: p};
+
+      // Bo is square; Ann is owed only Cy's share now.
+      expect(byPerson['Bo']!.netMinor, 0);
+      expect(byPerson['Ann']!.netMinor, 2000);
+      expect(byPerson['Cy']!.netMinor, -2000);
+      expect(cur.settlements, hasLength(1));
+      expect(cur.settlements.single.from, 'Cy');
+      expect(cur.settlements.single.to, 'Ann');
+      expect(cur.settlements.single.amountMinor, 2000);
+    });
+
+    test('the repayment is not spending: total, count and categories', () {
+      final dinner = cost(6000, reason: 'Dinner', paidBy: 'Ann');
+      final repayment = transfer(2000, from: 'Bo');
+      final stats = computeTripStats(
+        [dinner, repayment],
+        {
+          dinner.id: [person('Ann'), person('Bo')],
+          repayment.id: [person('Ann')],
+        },
+        const [],
+      );
+      final cur = onlyCurrency(stats);
+
+      expect(cur.totalMinor, 6000);
+      expect(cur.count, 1);
+      expect(cur.byCategory.map((c) => c.reason), ['Dinner']);
+      expect(cur.byCategory.single.fraction, 1.0);
+      // Nor does it move the paid/open split, though it is itself settled.
+      expect(cur.paidMinor, 0);
+      expect(cur.openMinor, 6000);
+    });
+
+    test('keeps "paid" meaning spent, reporting the settlement apart', () {
+      final dinner = cost(6000, paidBy: 'Ann');
+      final repayment = transfer(2000, from: 'Bo');
+      final stats = computeTripStats(
+        [dinner, repayment],
+        {
+          dinner.id: [person('Ann'), person('Bo'), person('Cy')],
+          repayment.id: [person('Ann')],
+        },
+        const [],
+      );
+      final byPerson = {
+        for (final p in onlyCurrency(stats).byPerson) p.name: p,
+      };
+
+      // Bo spent nothing on the trip; he settled 20 with Ann.
+      expect(byPerson['Bo']!.paidMinor, 0);
+      expect(byPerson['Bo']!.settledMinor, 2000);
+      // Ann's "paid" is still the dinner alone; the 20 she got back is settled.
+      expect(byPerson['Ann']!.paidMinor, 6000);
+      expect(byPerson['Ann']!.settledMinor, -2000);
+      // The per-person paid figures still sum to the trip's total.
+      expect(
+        byPerson.values.fold<int>(0, (s, p) => s + p.paidMinor),
+        onlyCurrency(stats).totalMinor,
+      );
+    });
+
+    test('a settlement with no receiver moves nobody but the sender', () {
+      // No beneficiary recorded: it must not spread over the participants the
+      // way an expense would.
+      final stats = computeTripStats(
+        [transfer(2000, from: 'Bo')],
+        const {},
+        const ['Ann', 'Bo', 'Cy'],
+      );
+      final byPerson = {
+        for (final p in onlyCurrency(stats).byPerson) p.name: p,
+      };
+      expect(byPerson.keys, ['Bo']);
+      expect(byPerson['Bo']!.settledMinor, 2000);
+    });
+
+    test('settles in its own currency only', () {
+      final dinner = cost(6000, paidBy: 'Ann');
+      final repayment = transfer(3000, currency: Currency.usd, from: 'Bo');
+      final stats = computeTripStats(
+        [dinner, repayment],
+        {
+          dinner.id: [person('Ann'), person('Bo')],
+          repayment.id: [person('Ann')],
+        },
+        const [],
+      );
+      final eur = stats.byCurrency.firstWhere(
+        (c) => c.currency == Currency.eur,
+      );
+      final usd = stats.byCurrency.firstWhere(
+        (c) => c.currency == Currency.usd,
+      );
+
+      // The euro debt stands — dollars don't pay it off.
+      expect(eur.settlements.single.from, 'Bo');
+      expect(eur.settlements.single.amountMinor, 3000);
+      // The dollar side is a currency with no spending at all, just a balance.
+      expect(usd.totalMinor, 0);
+      expect(usd.count, 0);
+      expect(usd.byCategory, isEmpty);
+      expect(usd.settlements.single.from, 'Ann');
+      expect(usd.settlements.single.amountMinor, 3000);
+    });
+
+    test('merged across trips, settlements travel with the balances', () {
+      final dinner = cost(6000, paidBy: 'Ann');
+      final trip1 = computeTripStats(
+        [dinner],
+        {
+          dinner.id: [person('Ann'), person('Bo')],
+        },
+        const [],
+      );
+      final repayment = transfer(3000, from: 'Bo');
+      final trip2 = computeTripStats(
+        [repayment],
+        {
+          repayment.id: [person('Ann')],
+        },
+        const [],
+      );
+
+      final cur = onlyCurrency(mergeTripStats([trip1, trip2]));
+      expect(cur.totalMinor, 6000);
+      expect(cur.count, 1);
+      final byPerson = {for (final p in cur.byPerson) p.name: p};
+      expect(byPerson['Bo']!.settledMinor, 3000);
+      expect(byPerson['Bo']!.netMinor, 0);
+      expect(cur.settlements, isEmpty);
     });
   });
 

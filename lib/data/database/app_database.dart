@@ -50,7 +50,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -224,6 +224,12 @@ class AppDatabase extends _$AppDatabase {
         if (!hasTable) {
           await _seedTransportModesAndRepointLegs(m);
         }
+      }
+      // v22 added costs.is_transfer, marking a row as money handed from one
+      // person to another instead of money spent. Nothing to backfill: every
+      // existing row is an expense.
+      if (from < 22) {
+        await m.addColumn(costs, costs.isTransfer);
       }
     },
     beforeOpen: (details) async {

@@ -253,6 +253,26 @@
   "@costPaidByName": {
     "placeholders": { "name": { "type": "String" } }
   },
+  "addTransfer": "Record settlement",
+  "@addTransfer": {
+    "description": "Records money handed from one person to another to settle a debt — not an expense"
+  },
+  "editTransfer": "Edit settlement",
+  "transfer": "Settlement",
+  "transfers": "Settlements",
+  "transferFrom": "From",
+  "transferTo": "To",
+  "transferPersonRequired": "Choose a person",
+  "transferSamePerson": "Choose two different people",
+  "transferAmountPositive": "Enter an amount above zero",
+  "transferBetween": "{from} → {to}",
+  "@transferBetween": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "transferHint": "Settlements move money between people. They change the balances only — never the trip's total.",
   "peopleSection": "People",
   "noPeople": "No saved people yet",
   "personAdd": "Add person",
@@ -327,6 +347,18 @@
       "from": { "type": "String" },
       "to": { "type": "String" }
     }
+  },
+  "statsRecordSettlement": "Record",
+  "@statsRecordSettlement": {
+    "description": "Button on a suggested settle-up payment: books it as an actual settlement"
+  },
+  "statsSettlementSent": "paid back {amount}",
+  "@statsSettlementSent": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsSettlementReceived": "received {amount}",
+  "@statsSettlementReceived": {
+    "placeholders": { "amount": { "type": "String" } }
   },
   "checklist": "Checklist",
   "checklistAddHint": "Add an item…",

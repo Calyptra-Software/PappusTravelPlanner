@@ -98,6 +98,18 @@ void main() {
         paidBy: 'Bob',
         createdAt: DateTime(2026, 5, 2),
       ),
+      // A settlement: Bob pays Alice back. It is laid out apart from the
+      // expenses and counts toward none of their totals.
+      BundleCost(
+        amountMinor: 2000,
+        currency: Currency.eur,
+        reason: '',
+        paidBy: 'Bob',
+        paid: true,
+        isTransfer: true,
+        beneficiaries: const ['Alice'],
+        createdAt: DateTime(2026, 5, 3),
+      ),
     ],
     checklists: [
       BundleChecklist(

@@ -25,20 +25,32 @@ class CategoryStat {
 }
 
 /// One person's standing in a currency: what they paid, their fair share of the
-/// expenses they benefit from, and the resulting balance.
+/// expenses they benefit from, what they have settled directly with the others,
+/// and the resulting balance.
 class PersonStat {
   const PersonStat({
     required this.name,
     required this.paidMinor,
     required this.shareMinor,
+    this.settledMinor = 0,
   });
 
   final String name;
+
+  /// What the person paid for the trip's *expenses*. Transfers are not in here
+  /// — see [settledMinor].
   final int paidMinor;
   final int shareMinor;
 
+  /// Net of the person-to-person transfers ([Costs.isTransfer]): money handed
+  /// over minus money received. Positive when they have paid others back, so it
+  /// adds to their balance exactly as paying an expense would; negative when
+  /// they have been paid back. Kept apart from [paidMinor] so "paid" still
+  /// means "spent on the trip" and still sums to the trip's total.
+  final int settledMinor;
+
   /// Positive when the person is owed money, negative when they owe.
-  int get netMinor => paidMinor - shareMinor;
+  int get netMinor => paidMinor - shareMinor + settledMinor;
 }
 
 /// A suggested payment that settles part of the balances: [from] pays [to].
@@ -67,6 +79,9 @@ class CurrencyStats {
   });
 
   final Currency currency;
+
+  /// What the trip cost in this currency. Expenses only: transfers between
+  /// people are not spending and stay out of it (see [computeTripStats]).
   final int totalMinor;
 
   /// Portion of [totalMinor] from expenses already marked paid.
@@ -75,6 +90,7 @@ class CurrencyStats {
   /// Portion of [totalMinor] still outstanding (`totalMinor - paidMinor`).
   int get openMinor => totalMinor - paidMinor;
 
+  /// How many expenses make up [totalMinor] — transfers not counted.
   final int count;
 
   /// Reasons, largest spend first.
@@ -106,6 +122,14 @@ class TripStats {
 /// participants either it counts toward totals and categories but toward no
 /// one's share. Splits are integer-exact: the remainder cents go to the first
 /// beneficiaries in name order so every person's shares still sum to the total.
+///
+/// **Transfers** ([Costs.isTransfer]) are the one kind of row that is not
+/// spending: one person hands money to another to settle up. Such a row moves
+/// only the two people's balances — into [PersonStat.settledMinor], never into
+/// the total, the paid/open split, the expense count or the categories, because
+/// no money left the group. It also never falls back to the participants: a
+/// transfer with no receiver recorded moves nobody's balance rather than
+/// quietly spreading itself over everyone.
 TripStats computeTripStats(
   List<Cost> costs,
   Map<int, List<Person>> beneficiariesByCost,
@@ -158,6 +182,7 @@ CurrencyStats _mergeCurrency(Currency currency, List<CurrencyStats> parts) {
   final categoryCounts = <String, int>{};
   final paidByPerson = <String, int>{};
   final shareByPerson = <String, int>{};
+  final settledByPerson = <String, int>{};
   for (final part in parts) {
     total += part.totalMinor;
     paid += part.paidMinor;
@@ -185,6 +210,11 @@ CurrencyStats _mergeCurrency(Currency currency, List<CurrencyStats> parts) {
         (v) => v + person.shareMinor,
         ifAbsent: () => person.shareMinor,
       );
+      settledByPerson.update(
+        person.name,
+        (v) => v + person.settledMinor,
+        ifAbsent: () => person.settledMinor,
+      );
     }
   }
 
@@ -201,13 +231,18 @@ CurrencyStats _mergeCurrency(Currency currency, List<CurrencyStats> parts) {
           .toList()
         ..sort((a, b) => b.amountMinor.compareTo(a.amountMinor));
 
-  final names = {...paidByPerson.keys, ...shareByPerson.keys}.toList()..sort();
+  final names = {
+    ...paidByPerson.keys,
+    ...shareByPerson.keys,
+    ...settledByPerson.keys,
+  }.toList()..sort();
   final byPerson = names
       .map(
         (name) => PersonStat(
           name: name,
           paidMinor: paidByPerson[name] ?? 0,
           shareMinor: shareByPerson[name] ?? 0,
+          settledMinor: settledByPerson[name] ?? 0,
         ),
       )
       .toList();
@@ -229,15 +264,20 @@ CurrencyStats _statsForCurrency(
   Map<int, List<Person>> beneficiariesByCost,
   List<String> participantNames,
 ) {
-  final total = costs.fold<int>(0, (sum, c) => sum + c.amountMinor);
-  final paidTotal = costs
+  // Every spend figure below is about the expenses only; the transfers are
+  // settlements between people and are handled apart, on the balances.
+  final expenses = costs.where((c) => !c.isTransfer).toList();
+  final transfers = costs.where((c) => c.isTransfer);
+
+  final total = expenses.fold<int>(0, (sum, c) => sum + c.amountMinor);
+  final paidTotal = expenses
       .where((c) => c.paid)
       .fold<int>(0, (sum, c) => sum + c.amountMinor);
 
   // By category (reason).
   final categoryAmounts = <String, int>{};
   final categoryCounts = <String, int>{};
-  for (final cost in costs) {
+  for (final cost in expenses) {
     categoryAmounts.update(
       cost.reason,
       (v) => v + cost.amountMinor,
@@ -261,7 +301,7 @@ CurrencyStats _statsForCurrency(
   // Paid and share, per person.
   final paid = <String, int>{};
   final share = <String, int>{};
-  for (final cost in costs) {
+  for (final cost in expenses) {
     final payer = cost.paidBy;
     if (payer != null && payer.isNotEmpty) {
       paid.update(
@@ -282,13 +322,38 @@ CurrencyStats _statsForCurrency(
     }
   }
 
-  final names = {...paid.keys, ...share.keys}.toList()..sort();
+  // Settled, per person: the sender's balance rises by what they handed over,
+  // each receiver's falls by what they got. No participant fallback — an
+  // unaddressed transfer settles with nobody (see [computeTripStats]).
+  final settled = <String, int>{};
+  for (final cost in transfers) {
+    final sender = cost.paidBy;
+    if (sender != null && sender.isNotEmpty) {
+      settled.update(
+        sender,
+        (v) => v + cost.amountMinor,
+        ifAbsent: () => cost.amountMinor,
+      );
+    }
+    final receivers = beneficiariesByCost[cost.id]?.map((p) => p.name).toList();
+    if (receivers == null) continue;
+    for (final entry in _splitEvenly(cost.amountMinor, receivers).entries) {
+      settled.update(
+        entry.key,
+        (v) => v - entry.value,
+        ifAbsent: () => -entry.value,
+      );
+    }
+  }
+
+  final names = {...paid.keys, ...share.keys, ...settled.keys}.toList()..sort();
   final byPerson = names
       .map(
         (name) => PersonStat(
           name: name,
           paidMinor: paid[name] ?? 0,
           shareMinor: share[name] ?? 0,
+          settledMinor: settled[name] ?? 0,
         ),
       )
       .toList();
@@ -297,7 +362,7 @@ CurrencyStats _statsForCurrency(
     currency: currency,
     totalMinor: total,
     paidMinor: paidTotal,
-    count: costs.length,
+    count: expenses.length,
     byCategory: byCategory,
     byPerson: byPerson,
     settlements: _settle(byPerson),

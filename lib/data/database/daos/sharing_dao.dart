@@ -160,6 +160,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             reason: c.reason,
             paidBy: c.paidBy,
             paid: c.paid,
+            isTransfer: c.isTransfer,
             createdAt: c.createdAt,
             beneficiaries: beneficiariesByCost[c.id] ?? const [],
           ),
@@ -326,6 +327,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             reason: c.reason,
             paidBy: Value(c.paidBy),
             paid: Value(c.paid),
+            isTransfer: Value(c.isTransfer),
             createdAt: Value(c.createdAt),
           ),
         );

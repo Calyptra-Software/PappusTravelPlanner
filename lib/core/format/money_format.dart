@@ -26,9 +26,12 @@ int? parseAmountToMinor(String input) {
 }
 
 /// Totals a set of costs per currency (amounts stay in minor units).
+///
+/// Transfers ([Costs.isTransfer]) are left out: settling up moves money between
+/// people, it does not spend any, so it belongs in no "total" the app prints.
 Map<Currency, int> sumByCurrency(Iterable<Cost> costs) {
   final totals = <Currency, int>{};
-  for (final cost in costs) {
+  for (final cost in costs.where((c) => !c.isTransfer)) {
     totals.update(
       cost.currency,
       (value) => value + cost.amountMinor,

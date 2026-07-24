@@ -177,6 +177,22 @@ UI (features/*/presentation, *widgets)
   and minimal settle-up transfers are unit-testable without a database. A cost splits among
   its `CostBeneficiaries`, falling back to all trip participants. The app never converts
   between currencies — everything is computed per `Currency`.
+- **A settlement is a `Costs` row that isn't spending.** `Costs.isTransfer` marks money handed
+  from one person to another to square up: always trip-level, `paidBy` the sender, its single
+  beneficiary the receiver, and no `reason` (a repayment is not a category). It moves the two
+  balances and nothing else — `computeTripStats` keeps it out of `totalMinor`, the paid/open
+  split, the expense `count` and the categories, folding it instead into
+  `PersonStat.settledMinor` (sent − received), which `netMinor` adds to `paid − share`. So
+  "paid" still means "spent on the trip" and still sums to the trip's total, while the
+  settle-up list — unchanged, it just reads `netMinor` — shrinks by what has been paid back.
+  Unlike an expense, a settlement with no beneficiary recorded does **not** fall back to the
+  participants: it would otherwise quietly spread itself over everyone. The same rule is
+  mirrored wherever money is summed: `sumByCurrency` (every "Total" the app prints) and
+  `CostDao.watchTotalsByTrip` (overview cards) drop transfers, while
+  `watchCountedCostsForTrip` keeps them — they are what settles the balances. Recording one
+  goes through `CostController.addTransfer` / `showTransferFormSheet` (a "from → to" form, no
+  category, no split), reachable from the trip's general expenses and, prefilled, from each
+  suggested payment in the settle-up list.
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
@@ -193,7 +209,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 21) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 22) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

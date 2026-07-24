@@ -1262,6 +1262,72 @@ abstract class AppLocalizations {
   /// **'Paid by {name}'**
   String costPaidByName(String name);
 
+  /// Records money handed from one person to another to settle a debt — not an expense
+  ///
+  /// In en, this message translates to:
+  /// **'Record settlement'**
+  String get addTransfer;
+
+  /// No description provided for @editTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit settlement'**
+  String get editTransfer;
+
+  /// No description provided for @transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement'**
+  String get transfer;
+
+  /// No description provided for @transfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements'**
+  String get transfers;
+
+  /// No description provided for @transferFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get transferFrom;
+
+  /// No description provided for @transferTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get transferTo;
+
+  /// No description provided for @transferPersonRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a person'**
+  String get transferPersonRequired;
+
+  /// No description provided for @transferSamePerson.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose two different people'**
+  String get transferSamePerson;
+
+  /// No description provided for @transferAmountPositive.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount above zero'**
+  String get transferAmountPositive;
+
+  /// No description provided for @transferBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} → {to}'**
+  String transferBetween(String from, String to);
+
+  /// No description provided for @transferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements move money between people. They change the balances only — never the trip\'s total.'**
+  String get transferHint;
+
   /// No description provided for @peopleSection.
   ///
   /// In en, this message translates to:
@@ -1531,6 +1597,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{from} pays {to}'**
   String statsTransfer(String from, String to);
+
+  /// Button on a suggested settle-up payment: books it as an actual settlement
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get statsRecordSettlement;
+
+  /// No description provided for @statsSettlementSent.
+  ///
+  /// In en, this message translates to:
+  /// **'paid back {amount}'**
+  String statsSettlementSent(String amount);
+
+  /// No description provided for @statsSettlementReceived.
+  ///
+  /// In en, this message translates to:
+  /// **'received {amount}'**
+  String statsSettlementReceived(String amount);
 
   /// No description provided for @checklist.
   ///

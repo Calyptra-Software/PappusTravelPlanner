@@ -13,6 +13,7 @@ import '../../trips/application/trip_providers.dart';
 import '../application/cost_providers.dart';
 import '../cost_reason_icons.dart';
 import '../trip_stats.dart';
+import 'cost_form_sheet.dart';
 
 /// Which per-person figure the balances section shows.
 enum _PersonView { paid, share, balances }
@@ -163,6 +164,9 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
             stats: current,
             localeName: localeName,
             meName: meName,
+            // Booking a settlement writes to one trip, so it is offered on a
+            // trip's statistics only — not on the pooled all-trips view.
+            tripId: widget.tripId,
           ),
         },
       ],
@@ -370,11 +374,16 @@ class _BalancesSection extends StatelessWidget {
     required this.stats,
     required this.localeName,
     required this.meName,
+    this.tripId,
   });
 
   final CurrencyStats stats;
   final String localeName;
   final String? meName;
+
+  /// The trip a suggested payment would be recorded on, or null (the all-trips
+  /// view) to only suggest.
+  final int? tripId;
 
   @override
   Widget build(BuildContext context) {
@@ -400,7 +409,35 @@ class _BalancesSection extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(person.name, style: theme.textTheme.bodyLarge),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(person.name, style: theme.textTheme.bodyLarge),
+                      // What the balance already accounts for in settlements,
+                      // so a figure that no expense explains still adds up.
+                      if (person.settledMinor != 0)
+                        Text(
+                          person.settledMinor > 0
+                              ? l10n.statsSettlementSent(
+                                  formatMoney(
+                                    person.settledMinor,
+                                    stats.currency,
+                                    localeName,
+                                  ),
+                                )
+                              : l10n.statsSettlementReceived(
+                                  formatMoney(
+                                    -person.settledMinor,
+                                    stats.currency,
+                                    localeName,
+                                  ),
+                                ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
                 Text(
                   person.netMinor == 0
@@ -446,6 +483,23 @@ class _BalancesSection extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  // Books the suggestion as a settlement that actually happened
+                  // — the sheet opens prefilled, so it stays a decision the
+                  // user confirms rather than one the list makes for them.
+                  if (tripId != null) ...[
+                    const SizedBox(width: 8),
+                    TextButton(
+                      onPressed: () => showTransferFormSheet(
+                        context,
+                        tripId: tripId!,
+                        amountMinor: t.amountMinor,
+                        currency: stats.currency,
+                        from: t.from,
+                        to: t.to,
+                      ),
+                      child: Text(l10n.statsRecordSettlement),
+                    ),
+                  ],
                 ],
               ),
             ),

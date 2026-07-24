@@ -130,6 +130,7 @@ class _TripPdfBuilder {
           _headerBlock(),
           ..._itinerarySection(),
           ..._costsSection(),
+          ..._transfersSection(),
           ..._checklistsSection(),
         ],
       ),
@@ -406,9 +407,12 @@ class _TripPdfBuilder {
     };
     final counted = [
       for (final c in bundle.costs)
-        if (c.itemLocalId == null && c.groupLocalId == null ||
-            (c.itemLocalId != null && liveItemIds.contains(c.itemLocalId)) ||
-            (c.groupLocalId != null && liveGroupIds.contains(c.groupLocalId)))
+        if (!c.isTransfer &&
+            (c.itemLocalId == null && c.groupLocalId == null ||
+                (c.itemLocalId != null &&
+                    liveItemIds.contains(c.itemLocalId)) ||
+                (c.groupLocalId != null &&
+                    liveGroupIds.contains(c.groupLocalId))))
           c,
     ];
     if (counted.isEmpty) return;
@@ -478,6 +482,73 @@ class _TripPdfBuilder {
               cell(
                 c.paidBy?.trim().isNotEmpty ?? false ? c.paidBy!.trim() : '—',
               ),
+              cell(
+                formatMoney(c.amountMinor, c.currency, localeName),
+                align: pw.Alignment.centerRight,
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  /// The settlements between people, listed apart from the expenses because
+  /// they are not spending: they only move money from one person to another.
+  /// Rendered as two named columns rather than "A -> B" — the bundled Roboto
+  /// has no arrow glyph.
+  Iterable<pw.Widget> _transfersSection() sync* {
+    final transfers = [
+      for (final c in bundle.costs)
+        if (c.isTransfer) c,
+    ];
+    if (transfers.isEmpty) return;
+
+    pw.Widget cell(String text, {bool bold = false, pw.Alignment? align}) {
+      final child = pw.Text(
+        text,
+        style: pw.TextStyle(
+          fontSize: 9,
+          fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
+        ),
+      );
+      return pw.Padding(
+        padding: const pw.EdgeInsets.symmetric(vertical: 3, horizontal: 4),
+        child: align == null ? child : pw.Align(alignment: align, child: child),
+      );
+    }
+
+    yield pw.SizedBox(height: 16);
+    yield _sectionTitle(l10n.transfers);
+    yield pw.SizedBox(height: 6);
+    yield pw.Table(
+      border: pw.TableBorder(
+        bottom: const pw.BorderSide(color: PdfColors.grey300, width: 0.5),
+        horizontalInside: const pw.BorderSide(
+          color: PdfColors.grey300,
+          width: 0.5,
+        ),
+      ),
+      columnWidths: const {
+        0: pw.FlexColumnWidth(3),
+        1: pw.FlexColumnWidth(3),
+        2: pw.FlexColumnWidth(2),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey100),
+          children: [
+            cell(l10n.transferFrom, bold: true),
+            cell(l10n.transferTo, bold: true),
+            cell(l10n.costAmount, bold: true, align: pw.Alignment.centerRight),
+          ],
+        ),
+        for (final c in transfers)
+          pw.TableRow(
+            children: [
+              cell(
+                c.paidBy?.trim().isNotEmpty ?? false ? c.paidBy!.trim() : '—',
+              ),
+              cell(c.beneficiaries.isEmpty ? '—' : c.beneficiaries.first),
               cell(
                 formatMoney(c.amountMinor, c.currency, localeName),
                 align: pw.Alignment.centerRight,

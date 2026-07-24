@@ -667,6 +667,42 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get addTransfer => 'Ausgleich erfassen';
+
+  @override
+  String get editTransfer => 'Ausgleich bearbeiten';
+
+  @override
+  String get transfer => 'Ausgleich';
+
+  @override
+  String get transfers => 'Ausgleichszahlungen';
+
+  @override
+  String get transferFrom => 'Von';
+
+  @override
+  String get transferTo => 'An';
+
+  @override
+  String get transferPersonRequired => 'Person wählen';
+
+  @override
+  String get transferSamePerson => 'Zwei verschiedene Personen wählen';
+
+  @override
+  String get transferAmountPositive => 'Betrag muss größer als null sein';
+
+  @override
+  String transferBetween(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get transferHint =>
+      'Ausgleichszahlungen verschieben Geld zwischen Personen. Sie ändern nur die Salden — nie die Gesamtsumme der Reise.';
+
+  @override
   String get peopleSection => 'Personen';
 
   @override
@@ -825,6 +861,19 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String statsTransfer(String from, String to) {
     return '$from zahlt an $to';
+  }
+
+  @override
+  String get statsRecordSettlement => 'Erfassen';
+
+  @override
+  String statsSettlementSent(String amount) {
+    return '$amount zurückgezahlt';
+  }
+
+  @override
+  String statsSettlementReceived(String amount) {
+    return '$amount erhalten';
   }
 
   @override

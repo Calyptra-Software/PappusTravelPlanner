@@ -84,6 +84,7 @@ void main() {
     currency: Currency.eur,
     reason: 'Ticket',
     paid: false,
+    isTransfer: false,
     createdAt: DateTime(2026),
   );
 

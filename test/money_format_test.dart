@@ -40,13 +40,14 @@ void main() {
   });
 
   group('sumByCurrency / formatTotals', () {
-    Cost cost(int minor, Currency c) => Cost(
+    Cost cost(int minor, Currency c, {bool isTransfer = false}) => Cost(
       id: 0,
       itemId: 1,
       amountMinor: minor,
       currency: c,
       reason: 'x',
       paid: false,
+      isTransfer: isTransfer,
       createdAt: DateTime(2026),
     );
 
@@ -59,6 +60,14 @@ void main() {
       expect(totals[Currency.eur], 1500);
       expect(totals[Currency.usd], 2000);
       expect(totals.containsKey(Currency.gbp), isFalse);
+    });
+
+    test('leaves settlements between people out of the total', () {
+      final totals = sumByCurrency([
+        cost(1000, Currency.eur),
+        cost(2500, Currency.eur, isTransfer: true),
+      ]);
+      expect(totals[Currency.eur], 1000);
     });
 
     test('formats totals in stable currency order', () {

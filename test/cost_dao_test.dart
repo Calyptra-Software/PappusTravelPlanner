@@ -86,6 +86,51 @@ void main() {
     expect(await db.costDao.watchCostsForTrip(tripB).first, isEmpty);
   });
 
+  group('settlements between people', () {
+    /// A settlement: [from] hands [minor] over to someone.
+    CostsCompanion transfer(int tripId, int minor, String from) =>
+        CostsCompanion.insert(
+          tripId: Value(tripId),
+          amountMinor: minor,
+          currency: Currency.eur,
+          reason: '',
+          paidBy: Value(from),
+          paid: const Value(true),
+          isTransfer: const Value(true),
+        );
+
+    test('a settlement stays out of the trip totals', () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'T'),
+      );
+      await db.costDao.addCost(tripCost(tripId, 6000, Currency.eur, 'Dinner'));
+      await db.costDao.addCost(transfer(tripId, 2000, 'Bo'));
+
+      final totals = await db.costDao.watchTotalsByTrip().first;
+      expect(totals[tripId], {Currency.eur: 6000});
+    });
+
+    test('a trip with only settlements has no total at all', () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'T'),
+      );
+      await db.costDao.addCost(transfer(tripId, 2000, 'Bo'));
+
+      expect(await db.costDao.watchTotalsByTrip().first, isEmpty);
+    });
+
+    test('but the splitting does see it — it is what settles up', () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'T'),
+      );
+      await db.costDao.addCost(transfer(tripId, 2000, 'Bo'));
+
+      final counted = await db.costDao.watchCountedCostsForTrip(tripId).first;
+      expect(counted.single.isTransfer, isTrue);
+      expect(counted.single.paidBy, 'Bo');
+    });
+  });
+
   test('deleting a trip cascades to its trip-level costs', () async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
