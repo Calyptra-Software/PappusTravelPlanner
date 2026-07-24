@@ -34,6 +34,27 @@ class DatabaseController {
     await _ref.read(activeDbPathProvider.notifier).setPath(path);
   }
 
+  /// Empties the active database, leaving a fresh one in its place (mobile and
+  /// web, where the storage location is fixed so "new database" can't mean a
+  /// path). This is the import flow with nothing to copy in: close the live
+  /// connection, discard the stored data, reopen onto an empty schema.
+  Future<void> createEmpty() async {
+    await _ref.read(databaseProvider).close();
+    if (kIsWeb) {
+      await webDeleteStorage();
+      // Guard against a queued import left over from a failed attempt: the
+      // fresh store must seed from nothing.
+      webSetPendingImport(null);
+    } else {
+      final active = currentPath;
+      deleteDatabaseFile(active);
+      deleteSidecars(active);
+    }
+    _ref.invalidate(databaseProvider);
+    // Force the new instance to open eagerly.
+    _ref.read(databaseProvider);
+  }
+
   /// Replaces the active database with the file at [sourcePath] (Android import).
   /// The active path is unchanged — only its contents are swapped.
   Future<void> importFrom(String sourcePath) async {

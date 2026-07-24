@@ -84,6 +84,28 @@ void main() {
     c.dispose();
   });
 
+  test('createEmpty clears the active database in place', () async {
+    // The mobile/web case: the path is fixed, so "new" means "emptied".
+    final activePath = p.join(tempDir.path, 'active.sqlite');
+    final c = containerAt(activePath);
+    await c
+        .read(repositoryProvider)
+        .createTrip(TripsCompanion.insert(title: 'Old trip'));
+    expect(await titles(c), ['Old trip']);
+
+    await c.read(databaseControllerProvider).createEmpty();
+
+    expect(c.read(activeDbPathProvider), activePath);
+    expect(await titles(c), isEmpty);
+
+    // The fresh file is a working database, not just an absent one.
+    await c
+        .read(repositoryProvider)
+        .createTrip(TripsCompanion.insert(title: 'New trip'));
+    expect(await titles(c), ['New trip']);
+    c.dispose();
+  });
+
   test('importFrom replaces the active database contents in place', () async {
     // Build a source database with its own trip.
     final sourcePath = p.join(tempDir.path, 'source.sqlite');

@@ -378,6 +378,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dbNewSubtitle => 'Create an empty database at a chosen location';
 
   @override
+  String get dbNewEmpty => 'New empty database';
+
+  @override
+  String get dbNewEmptySubtitle => 'Start over with no trips';
+
+  @override
+  String get dbNewEmptyConfirmTitle => 'Start a new database?';
+
+  @override
+  String get dbNewEmptyConfirmBody =>
+      'This deletes all current trips and starts from an empty database. It can\'t be undone — export a copy first if you want to keep the data.';
+
+  @override
+  String get dbNewEmptyAction => 'Start new';
+
+  @override
+  String get dbNewEmptyDone => 'Started a new empty database';
+
+  @override
   String get dbImport => 'Import database…';
 
   @override

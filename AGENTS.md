@@ -185,7 +185,13 @@ UI (features/*/presentation, *widgets)
 
 - Data is one SQLite file. Desktop can open/create a DB at any path; Android imports/exports.
   `DatabaseController` (`lib/features/settings/application/database_providers.dart`) coordinates
-  switching/importing/exporting. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
+  switching/importing/exporting. Where the app can't choose a path — Android (scoped storage
+  hands back a `content://` URI, not a file it may hold a WAL handle on) and the web — the DB
+  always lives at the fixed default location, so **"new database" can only mean "emptied in
+  place"**: `createEmpty` is the import flow with nothing to copy in. "Reset to default" is
+  desktop-only for the same reason — only a platform that can be pointed *away* from the
+  default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
+  label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
 - Bump `AppDatabase.schemaVersion` (currently 21) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.

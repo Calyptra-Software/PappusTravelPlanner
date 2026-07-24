@@ -382,6 +382,25 @@ class AppLocalizationsDe extends AppLocalizations {
       'Leere Datenbank an einem gewählten Ort erstellen';
 
   @override
+  String get dbNewEmpty => 'Neue leere Datenbank';
+
+  @override
+  String get dbNewEmptySubtitle => 'Ohne Reisen neu beginnen';
+
+  @override
+  String get dbNewEmptyConfirmTitle => 'Neue Datenbank beginnen?';
+
+  @override
+  String get dbNewEmptyConfirmBody =>
+      'Dadurch werden alle aktuellen Reisen gelöscht und es wird mit einer leeren Datenbank begonnen. Dies kann nicht rückgängig gemacht werden — exportiere vorher eine Kopie, wenn du die Daten behalten möchtest.';
+
+  @override
+  String get dbNewEmptyAction => 'Neu beginnen';
+
+  @override
+  String get dbNewEmptyDone => 'Neue leere Datenbank begonnen';
+
+  @override
   String get dbImport => 'Datenbank importieren…';
 
   @override

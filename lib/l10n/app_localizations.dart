@@ -770,6 +770,42 @@ abstract class AppLocalizations {
   /// **'Create an empty database at a chosen location'**
   String get dbNewSubtitle;
 
+  /// No description provided for @dbNewEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'New empty database'**
+  String get dbNewEmpty;
+
+  /// No description provided for @dbNewEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start over with no trips'**
+  String get dbNewEmptySubtitle;
+
+  /// No description provided for @dbNewEmptyConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new database?'**
+  String get dbNewEmptyConfirmTitle;
+
+  /// No description provided for @dbNewEmptyConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This deletes all current trips and starts from an empty database. It can\'t be undone — export a copy first if you want to keep the data.'**
+  String get dbNewEmptyConfirmBody;
+
+  /// No description provided for @dbNewEmptyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Start new'**
+  String get dbNewEmptyAction;
+
+  /// No description provided for @dbNewEmptyDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Started a new empty database'**
+  String get dbNewEmptyDone;
+
   /// No description provided for @dbImport.
   ///
   /// In en, this message translates to:

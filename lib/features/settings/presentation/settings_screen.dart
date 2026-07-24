@@ -18,9 +18,10 @@ import '../application/database_providers.dart';
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
-  /// Desktop platforms open/create a database file in place; mobile uses
-  /// import/export (SAF) instead. The web has no filesystem, so it offers
-  /// neither — only the reset action below.
+  /// Desktop platforms open/create a database file at a chosen path, and so can
+  /// also be reset back to the default one. Mobile (SAF) and the web have no
+  /// path to choose: their database always sits at the default location, so
+  /// they empty it in place and move data in and out by import/export.
   bool get _isDesktop =>
       !kIsWeb &&
       (defaultTargetPlatform == TargetPlatform.linux ||
@@ -82,7 +83,24 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: Text(l10n.dbNewSubtitle),
               onTap: () => _createNew(context, ref),
             ),
+            // Only desktop can be pointed away from the default location, so
+            // only desktop can be sent back to it.
+            ListTile(
+              leading: const Icon(Icons.restart_alt),
+              title: Text(l10n.dbReset),
+              subtitle: Text(l10n.dbResetSubtitle),
+              onTap: () => _reset(context, ref),
+            ),
           ] else ...[
+            // The location is fixed here, so "new" can only mean "empty" —
+            // no path to choose, and nothing to fall back to, hence the
+            // confirmation.
+            ListTile(
+              leading: const Icon(Icons.note_add_outlined),
+              title: Text(l10n.dbNewEmpty),
+              subtitle: Text(l10n.dbNewEmptySubtitle),
+              onTap: () => _createEmpty(context, ref),
+            ),
             ListTile(
               leading: const Icon(Icons.file_download_outlined),
               title: Text(l10n.dbImport),
@@ -96,12 +114,6 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _export(context, ref),
             ),
           ],
-          ListTile(
-            leading: const Icon(Icons.restart_alt),
-            title: Text(l10n.dbReset),
-            subtitle: Text(l10n.dbResetSubtitle),
-            onTap: () => _reset(context, ref),
-          ),
         ],
       ),
     );
@@ -141,7 +153,24 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  // --- mobile & web: import / export ---
+  // --- mobile & web: new / import / export ---
+
+  Future<void> _createEmpty(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await _confirm(
+      context,
+      title: l10n.dbNewEmptyConfirmTitle,
+      body: l10n.dbNewEmptyConfirmBody,
+      action: l10n.dbNewEmptyAction,
+    );
+    if (!confirmed || !context.mounted) return;
+    await _run(
+      context,
+      ref,
+      () => ref.read(databaseControllerProvider).createEmpty(),
+      l10n.dbNewEmptyDone,
+    );
+  }
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
@@ -150,24 +179,13 @@ class SettingsScreen extends ConsumerWidget {
     final file = result?.files.single;
     if (file == null || !context.mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.dbImportConfirmTitle),
-        content: Text(l10n.dbImportConfirmBody),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(l10n.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.dbImportAction),
-          ),
-        ],
-      ),
+    final confirmed = await _confirm(
+      context,
+      title: l10n.dbImportConfirmTitle,
+      body: l10n.dbImportConfirmBody,
+      action: l10n.dbImportAction,
     );
-    if (confirmed != true || !context.mounted) return;
+    if (!confirmed || !context.mounted) return;
 
     final controller = ref.read(databaseControllerProvider);
     await _run(context, ref, () async {
@@ -210,6 +228,33 @@ class SettingsScreen extends ConsumerWidget {
       () => ref.read(databaseControllerProvider).resetToDefault(),
       AppLocalizations.of(context).dbResetDone,
     );
+  }
+
+  /// Asks before an irreversible swap of the whole database's contents.
+  Future<bool> _confirm(
+    BuildContext context, {
+    required String title,
+    required String body,
+    required String action,
+  }) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
   /// Runs [action], showing a success or error SnackBar.
