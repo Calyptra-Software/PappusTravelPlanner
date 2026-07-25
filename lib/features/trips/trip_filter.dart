@@ -1,6 +1,5 @@
 import '../../core/format/date_format.dart';
 import '../../data/database/app_database.dart';
-import '../../data/database/tables.dart';
 
 /// Where a trip sits relative to today, derived from its dates.
 enum TripStatus { upcoming, ongoing, past, undated }
@@ -19,7 +18,7 @@ enum TripSort {
 /// single-currency bucket (the app never converts between currencies, so cross-
 /// currency sums would be meaningless). A trip with no costs — or an absent
 /// entry — ranks as 0.
-int tripExpenseKey(Map<Currency, int>? totals) {
+int tripExpenseKey(Map<String, int>? totals) {
   if (totals == null || totals.isEmpty) return 0;
   return totals.values.reduce((a, b) => a > b ? a : b);
 }
@@ -119,7 +118,7 @@ int _compare(
   Trip a,
   Trip b,
   TripSort sort,
-  Map<int, Map<Currency, int>> totalsByTrip,
+  Map<int, Map<String, int>> totalsByTrip,
 ) {
   switch (sort) {
     case TripSort.dateAsc:
@@ -160,7 +159,7 @@ List<Trip> applyTripQuery(
   required TripQuery query,
   required Map<int, Set<int>> participantsByTrip,
   required DateTime today,
-  Map<int, Map<Currency, int>> totalsByTrip = const {},
+  Map<int, Map<String, int>> totalsByTrip = const {},
 }) {
   final needle = query.text.trim().toLowerCase();
   final result = trips.where((trip) {

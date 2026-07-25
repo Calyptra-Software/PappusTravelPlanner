@@ -1,12 +1,14 @@
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/application/currency_providers.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
@@ -214,7 +216,7 @@ class ItineraryTimeline extends StatelessWidget {
 
 /// One day of the trip: a header that collapses the day, its blocks (tiles and
 /// decisions) as one reorderable list, and the day's add actions.
-class _DaySection extends StatelessWidget {
+class _DaySection extends ConsumerWidget {
   const _DaySection({
     super.key,
     required this.day,
@@ -283,10 +285,11 @@ class _DaySection extends StatelessWidget {
   List<ItineraryItem> get _liveItems => itemsInDayOrder(blocks);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
+    final book = ref.watch(currencyBookProvider);
     final expanded = !collapsed;
     final live = _liveItems;
     final count = live.length;
@@ -302,7 +305,7 @@ class _DaySection extends StatelessWidget {
       for (final item in live) ...?costsByItem[item.id],
       for (final groupId in groupIdsToday) ...?costsByGroup[groupId],
     ];
-    final dayTotals = sumByCurrency(dayCosts);
+    final dayTotals = sumByCurrency(dayCosts, book);
     final isToday = normalizeDay(now) == day;
     final nowMinutes = now.hour * 60 + now.minute;
     final today = nowColor(theme);
@@ -364,7 +367,7 @@ class _DaySection extends StatelessWidget {
                       if (dayTotals.isNotEmpty)
                         Text(
                           '${l10n.costsTotal}: '
-                          '${formatTotals(dayTotals, localeName)}',
+                          '${formatTotals(dayTotals, book, localeName)}',
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.w600,

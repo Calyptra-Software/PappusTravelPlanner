@@ -238,6 +238,60 @@
     }
   },
   "transferHint": "Ausgleichszahlungen verschieben Geld zwischen Personen. Sie ändern nur die Salden — nie die Gesamtsumme der Reise.",
+  "currenciesSection": "Währungen",
+  "currencyAdd": "Währung hinzufügen",
+  "currencyAddTitle": "Neue Währung",
+  "currencyEditTitle": "Währung bearbeiten",
+  "currencyCode": "Code",
+  "currencyCodeHint": "z. B. JPY",
+  "currencyCodeRequired": "Code eingeben",
+  "currencySymbol": "Symbol",
+  "currencySymbolHint": "z. B. ¥",
+  "currencyRate": "Wechselkurs",
+  "currencyRateInvalid": "Zahl größer als null eingeben",
+  "currencyRateNone": "Kein Kurs hinterlegt",
+  "currencyRateExplains": "1 {code} = {rate} {base}",
+  "@currencyRateExplains": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "rate": { "type": "String" },
+      "base": { "type": "String" }
+    }
+  },
+  "currencyRateHelp": "Wie viel ein {code} in {base} wert ist. Leer lassen, wenn nicht umgerechnet werden soll.",
+  "@currencyRateHelp": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "base": { "type": "String" }
+    }
+  },
+  "currencyBase": "Basiswährung",
+  "currencyBaseHelp": "Alle Kurse beziehen sich auf die Basiswährung, und neue Ausgaben starten in ihr. Summen über mehrere Währungen werden in sie umgerechnet — neben den genauen Beträgen je Währung, nicht an ihrer Stelle.",
+  "currencyMakeBase": "Als Basiswährung festlegen",
+  "currencyRebaseWarnTitle": "Basiswährung wechseln?",
+  "currencyRebaseWarnBody": "Für \"{code}\" ist kein Wechselkurs hinterlegt. Die Kurse der anderen Währungen lassen sich deshalb nicht darauf umrechnen und werden gelöscht. Du kannst sie danach neu eingeben.",
+  "@currencyRebaseWarnBody": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "currencyInUse": "Verwendet von {count, plural, =1{1 Ausgabe} other{{count} Ausgaben}}",
+  "@currencyInUse": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "currencyDeleteConfirmTitle": "Währung löschen?",
+  "currencyDeleteConfirmBody": "\"{code}\" wird aus der Währungsliste entfernt.",
+  "@currencyDeleteConfirmBody": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "currencyDeleteBlockedInUse": "\"{code}\" wird noch von {count, plural, =1{1 Ausgabe} other{{count} Ausgaben}} verwendet. Ein Betrag kann nicht ohne Währung bleiben.",
+  "@currencyDeleteBlockedInUse": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "currencyDeleteBlockedBase": "Die Basiswährung kann nicht gelöscht werden. Lege zuerst eine andere als Basis fest.",
+  "currencyCodeTaken": "Dieser Code ist bereits in der Liste",
+  "noCurrencies": "Noch keine Währungen",
   "peopleSection": "Personen",
   "noPeople": "Noch keine gespeicherten Personen",
   "personAdd": "Person hinzufügen",

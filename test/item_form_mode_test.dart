@@ -15,6 +15,8 @@ import 'package:travelplanner/features/itinerary/application/transport_mode_prov
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
+import 'currency_fixture.dart';
+
 /// Covers which mode the item form opens a transport leg on. Deleting a mode
 /// leaves the legs that used it with no mode at all (the foreign key is set
 /// null), and the timeline draws those as "Other" — so the form must show the
@@ -43,6 +45,7 @@ void main() {
 
   Widget wrap(Widget sheet) => ProviderScope(
     overrides: [
+      ...currencyOverrides,
       repositoryProvider.overrideWithValue(repo),
       sharedPreferencesProvider.overrideWithValue(prefs),
       // Every drift-backed stream the sheet touches is stubbed: the real

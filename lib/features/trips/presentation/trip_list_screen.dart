@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/format/date_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/application/currency_providers.dart';
 import '../../sharing/presentation/trip_import.dart';
 import '../application/trip_providers.dart';
 import '../trip_filter.dart';
@@ -76,6 +77,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     final tripsAsync = ref.watch(tripListProvider);
     final participantsAsync = ref.watch(allParticipantsProvider);
     final totalsByTrip = ref.watch(tripTotalsProvider).value ?? const {};
+    final book = ref.watch(currencyBookProvider);
     final l10n = AppLocalizations.of(context);
 
     final participantsByTrip = participantsAsync.value ?? const {};
@@ -202,6 +204,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
             return TripCalendar(
               trips: visible,
               totals: totalsByTrip,
+              book: book,
               onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
             );
           }
@@ -213,6 +216,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
               final trip = visible[index];
               return TripCard(
                 trip: trip,
+                book: book,
                 totals: totalsByTrip[trip.id] ?? const {},
                 onTap: () => context.push('/trip/${trip.id}'),
               );

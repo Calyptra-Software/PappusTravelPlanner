@@ -14,6 +14,7 @@ part 'cost_dao.g.dart';
     ItineraryItems,
     ItemGroups,
     Alternatives,
+    Currencies,
   ],
 )
 class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
@@ -110,15 +111,20 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
     return costs.groupId.isNotNull() & existsQuery(query);
   }
 
-  /// Per-currency cost totals for every trip, keyed by trip id (amounts stay in
-  /// minor units). Reaches costs the same three ways as [watchCostsForTrip] —
-  /// attached to an item, a group, or the trip directly — resolving each cost's
-  /// trip from whichever link it has, and leaving out the costs of unchosen
-  /// alternative branches (see [_countsTowardTotals]) as well as transfers
-  /// (money moved between people is not money spent — see [Costs.isTransfer]).
-  /// Powers the total shown on each overview card in one query instead of a
-  /// stream per trip. Trips with no costs are absent from the map.
-  Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() {
+  /// Per-currency cost totals for every trip, keyed by trip id and then by
+  /// currency **code** (amounts stay in minor units). Reaches costs the same
+  /// three ways as [watchCostsForTrip] — attached to an item, a group, or the
+  /// trip directly — resolving each cost's trip from whichever link it has, and
+  /// leaving out the costs of unchosen alternative branches (see
+  /// [_countsTowardTotals]) as well as transfers (money moved between people is
+  /// not money spent — see [Costs.isTransfer]). Powers the total shown on each
+  /// overview card in one query instead of a stream per trip. Trips with no
+  /// costs are absent from the map.
+  ///
+  /// The currency is joined in and keyed by its code rather than its row id so
+  /// the result reads the same way `sumByCurrency` does, and so a card can label
+  /// a total without a second lookup.
+  Stream<Map<int, Map<String, int>>> watchTotalsByTrip() {
     final query = select(costs).join([
       leftOuterJoin(itineraryItems, itineraryItems.id.equalsExp(costs.itemId)),
       leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
@@ -126,9 +132,10 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         alternatives,
         alternatives.id.equalsExp(itineraryItems.alternativeId),
       ),
+      innerJoin(currencies, currencies.id.equalsExp(costs.currency)),
     ])..where(_countsTowardTotals() & costs.isTransfer.equals(false));
     return query.watch().map((rows) {
-      final byTrip = <int, Map<Currency, int>>{};
+      final byTrip = <int, Map<String, int>>{};
       for (final row in rows) {
         final cost = row.readTable(costs);
         final tripId =
@@ -138,7 +145,7 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         if (tripId == null) continue;
         final totals = byTrip.putIfAbsent(tripId, () => {});
         totals.update(
-          cost.currency,
+          row.readTable(currencies).code,
           (v) => v + cost.amountMinor,
           ifAbsent: () => cost.amountMinor,
         );

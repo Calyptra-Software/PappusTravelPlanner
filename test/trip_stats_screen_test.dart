@@ -3,12 +3,13 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
-import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/costs/presentation/trip_stats_screen.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'currency_fixture.dart';
 
 /// Covers how the balances section reports settlements: the figure no expense
 /// explains is named, and a suggested payment can be booked as one.
@@ -31,7 +32,7 @@ void main() {
     id: id,
     tripId: 1,
     amountMinor: minor,
-    currency: Currency.eur,
+    currency: eurId,
     reason: reason,
     paidBy: paidBy,
     paid: false,
@@ -52,6 +53,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...currencyOverrides,
           tripProvider(1).overrideWith((ref) => Stream.value(trip)),
           countedCostsProvider(1).overrideWith((ref) => Stream.value(costs)),
           tripBeneficiariesProvider(

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
-import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/trip_filter.dart';
 
 void main() {
@@ -31,7 +30,7 @@ void main() {
     List<Trip> trips,
     TripQuery query, {
     Map<int, Set<int>> participants = const {},
-    Map<int, Map<Currency, int>> totals = const {},
+    Map<int, Map<String, int>> totals = const {},
   }) => applyTripQuery(
     trips,
     query: query,
@@ -164,8 +163,8 @@ void main() {
     // Trip 1 ranks by its largest bucket (GBP 500), not the EUR+USD sum;
     // trip 3 has no costs and ranks as 0.
     final totals = {
-      1: {Currency.eur: 30000, Currency.usd: 5000, Currency.gbp: 50000},
-      2: {Currency.eur: 40000},
+      1: {'EUR': 30000, 'USD': 5000, 'GBP': 50000},
+      2: {'EUR': 40000},
     };
 
     test(
@@ -198,10 +197,7 @@ void main() {
     test(
       'is the largest single-currency bucket, never a cross-currency sum',
       () {
-        expect(
-          tripExpenseKey({Currency.eur: 30000, Currency.gbp: 50000}),
-          50000,
-        );
+        expect(tripExpenseKey({'EUR': 30000, 'GBP': 50000}), 50000);
       },
     );
 

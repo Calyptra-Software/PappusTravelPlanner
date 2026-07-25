@@ -4,8 +4,13 @@ import 'package:drift/drift.dart';
 /// lets a trip read as a natural timeline: place -> transport leg -> place ...
 enum ItemKind { place, transport }
 
-/// Currencies a cost can be entered in. Stored as the integer index, so only
-/// append new values at the end.
+/// The built-in currencies the database is seeded with. No longer a stored
+/// column type: a cost now points at a [Currencies] row via [Costs.currency],
+/// and the built-ins are seeded as rows the user can add to, re-code, re-symbol,
+/// reorder, or delete (see `CurrencyDao`) — exactly as [TransportMode] became a
+/// catalogue rather than a type. Each value's [code] is the row's identity, so
+/// only append new values at the end (the v23 migration maps a cost's old enum
+/// index onto the row seeded at that position).
 enum Currency {
   eur,
   usd,
@@ -26,7 +31,7 @@ enum Currency {
     }
   }
 
-  /// ISO-ish currency code.
+  /// ISO-ish currency code — the seeded row's unique [Currencies.code].
   String get code {
     switch (this) {
       case Currency.eur:
@@ -259,7 +264,12 @@ class Costs extends Table {
 
   /// Amount in the currency's minor unit (e.g. cents) to avoid float rounding.
   IntColumn get amountMinor => integer()();
-  IntColumn get currency => intEnum<Currency>()();
+
+  /// The currency the amount is in — a row in [Currencies]. Unlike a leg's
+  /// transport mode, this can never be dropped: an amount with no currency says
+  /// nothing, so the reference restricts the delete instead of nulling itself.
+  IntColumn get currency =>
+      integer().references(Currencies, #id, onDelete: KeyAction.restrict)();
   TextColumn get reason => text()();
 
   /// Name of the person who paid, or null if unassigned. Stored as text (like
@@ -358,6 +368,57 @@ class TransportModes extends Table {
   IntColumn get iconId => integer().nullable()();
 
   /// Manual ordering for the picker and settings list.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+}
+
+/// An exchange rate of exactly 1, in the fixed-point encoding [Currencies]
+/// stores rates in: millionths of a unit of the base currency. Rates are held as
+/// integers for the same reason amounts are held in minor units — a float would
+/// round differently on every platform, and a rate is multiplied into money.
+const int kRateOne = 1000000;
+
+/// The currencies an expense can be recorded in, managed in settings and reused
+/// in the expense form — the money counterpart to [TransportModes], and
+/// referenced by row id ([Costs.currency]) rather than by text, since an amount
+/// carries no currency of its own.
+///
+/// The database is seeded with one row per [Currency] built-in, and the user may
+/// add more, or re-code / re-symbol / reorder / delete any of them. A currency
+/// in use by an expense cannot be deleted (the reference is `restrict`, and
+/// `CurrencyDao` checks before trying): unlike a transport mode, which a leg can
+/// simply lose, an amount without a currency means nothing.
+///
+/// Exactly one row is the **base** ([isBase]), and every other row's
+/// [rateMicros] says what one of its units is worth in that base. A rate is
+/// optional: an unset one means the user has not told the app what the currency
+/// is worth, and the app then declines to convert rather than guessing. The app
+/// still computes every total per currency exactly as before — a converted
+/// figure is only ever shown *beside* those, never instead of them.
+@DataClassName('CurrencyRow')
+class Currencies extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// ISO-ish code, e.g. `EUR`. Unique, and the currency's portable identity:
+  /// it is what a shared trip carries instead of a row id.
+  TextColumn get code => text().unique()();
+
+  /// Symbol shown next to amounts, e.g. `€`. Free text — plenty of currencies
+  /// have no symbol beyond their code, which is then simply repeated here.
+  TextColumn get symbol => text()();
+
+  /// What one unit of this currency is worth in the base currency, in millionths
+  /// (see [kRateOne]) — so with base EUR, a USD worth €0.92 stores `920000`.
+  /// Null when no rate has been set; the base row's own rate is [kRateOne] by
+  /// definition.
+  IntColumn get rateMicros => integer().nullable()();
+
+  /// Marks the single currency every rate is expressed in. At most one row is
+  /// true, enforced in `CurrencyDao` rather than by the schema (mirroring
+  /// [People.isMe]). Travels with the database file.
+  BoolColumn get isBase => boolean().withDefault(const Constant(false))();
+
+  /// Manual ordering for the expense form's picker and the settings list. Also
+  /// the order per-currency totals are printed in.
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 

@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 
+import 'currency_fixture.dart';
+
 /// Covers [AlternativeDao]: turning an item into a decision point, choosing a
 /// branch, and the two invariants it maintains — exactly one chosen branch, and
 /// never a set with fewer than two branches.
@@ -39,7 +41,7 @@ void main() {
     CostsCompanion.insert(
       itemId: Value(itemId),
       amountMinor: amountMinor,
-      currency: Currency.eur,
+      currency: eurId,
       reason: 'Ticket',
     ),
   );

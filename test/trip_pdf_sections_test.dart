@@ -62,19 +62,19 @@ void main() {
       BundleCost(
         itemLocalId: 100,
         amountMinor: 1600,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: 'Tickets',
         createdAt: DateTime(2026, 5, 1, 9),
       ),
       BundleCost(
         amountMinor: 500,
-        currency: Currency.usd,
+        currency: 'USD',
         reason: 'Snacks',
         createdAt: DateTime(2026, 5, 1, 12),
       ),
       BundleCost(
         amountMinor: 2000,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: '',
         paidBy: 'Bob',
         isTransfer: true,
@@ -118,7 +118,7 @@ void main() {
       expect(s.entries, 3);
       // The settlement is not one of the expenses; it is counted apart.
       expect(s.expenses, 2);
-      expect(s.expenseTotals, {Currency.eur: 1600, Currency.usd: 500});
+      expect(s.expenseTotals, {'EUR': 1600, 'USD': 500});
       expect(s.transfers, 1);
       expect(s.checklists, 1);
       expect(s.checklistItems, 2);
@@ -167,14 +167,14 @@ void main() {
           BundleCost(
             itemLocalId: 100,
             amountMinor: 2000,
-            currency: Currency.eur,
+            currency: 'EUR',
             reason: 'Museum entry',
             createdAt: DateTime(2026, 5, 2),
           ),
           BundleCost(
             itemLocalId: 101,
             amountMinor: 500,
-            currency: Currency.eur,
+            currency: 'EUR',
             reason: 'Beach chair',
             createdAt: DateTime(2026, 5, 2),
           ),
@@ -185,7 +185,7 @@ void main() {
       expect(s.days, 1);
       expect(s.entries, 1);
       expect(s.expenses, 1);
-      expect(s.expenseTotals, {Currency.eur: 2000});
+      expect(s.expenseTotals, {'EUR': 2000});
     });
 
     test('offers nothing for a trip with nothing in it', () {
@@ -291,6 +291,7 @@ void main() {
                     await showPdfSectionsSheet(
                       context,
                       summary: summary,
+                      book: sample().currencyBook,
                       initial: initial,
                     ),
                   );
@@ -311,7 +312,11 @@ void main() {
       await openSheet(tester, summary: summary, initial: kAllPdfSections);
 
       expect(find.text('2 days · 3 entries'), findsOneWidget);
-      final totals = formatTotals(summary.expenseTotals, 'en');
+      final totals = formatTotals(
+        summary.expenseTotals,
+        sample().currencyBook,
+        'en',
+      );
       expect(
         find.text('2 expenses · $totals\nSettlements included'),
         findsOneWidget,

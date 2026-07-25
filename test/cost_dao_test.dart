@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 
+import 'currency_fixture.dart';
+
 void main() {
   late AppDatabase db;
 
@@ -19,7 +21,7 @@ void main() {
     ),
   );
 
-  CostsCompanion cost(int itemId, int minor, Currency c, String reason) =>
+  CostsCompanion cost(int itemId, int minor, int c, String reason) =>
       CostsCompanion.insert(
         itemId: Value(itemId),
         amountMinor: minor,
@@ -27,7 +29,7 @@ void main() {
         reason: reason,
       );
 
-  CostsCompanion tripCost(int tripId, int minor, Currency c, String reason) =>
+  CostsCompanion tripCost(int tripId, int minor, int c, String reason) =>
       CostsCompanion.insert(
         tripId: Value(tripId),
         amountMinor: minor,
@@ -41,9 +43,9 @@ void main() {
     );
     final a = await makeItem(tripId);
     final b = await makeItem(tripId);
-    await db.costDao.addCost(cost(a, 4990, Currency.eur, 'Hotel'));
-    await db.costDao.addCost(cost(a, 1500, Currency.eur, 'Dinner'));
-    await db.costDao.addCost(cost(b, 2000, Currency.usd, 'Train ticket'));
+    await db.costDao.addCost(cost(a, 4990, eurId, 'Hotel'));
+    await db.costDao.addCost(cost(a, 1500, eurId, 'Dinner'));
+    await db.costDao.addCost(cost(b, 2000, usdId, 'Train ticket'));
 
     final costs = await db.costDao.watchCostsForTrip(tripId).first;
     expect(costs.length, 3);
@@ -60,10 +62,8 @@ void main() {
         TripsCompanion.insert(title: 'T'),
       );
       final item = await makeItem(tripId);
-      await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
-      await db.costDao.addCost(
-        tripCost(tripId, 3000, Currency.eur, 'Insurance'),
-      );
+      await db.costDao.addCost(cost(item, 4990, eurId, 'Hotel'));
+      await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Insurance'));
 
       final costs = await db.costDao.watchCostsForTrip(tripId).first;
       expect(costs.length, 2);
@@ -81,7 +81,7 @@ void main() {
     final tripB = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'B'),
     );
-    await db.costDao.addCost(tripCost(tripA, 3000, Currency.eur, 'Insurance'));
+    await db.costDao.addCost(tripCost(tripA, 3000, eurId, 'Insurance'));
 
     expect(await db.costDao.watchCostsForTrip(tripB).first, isEmpty);
   });
@@ -92,7 +92,7 @@ void main() {
         CostsCompanion.insert(
           tripId: Value(tripId),
           amountMinor: minor,
-          currency: Currency.eur,
+          currency: eurId,
           reason: '',
           paidBy: Value(from),
           paid: const Value(true),
@@ -103,11 +103,11 @@ void main() {
       final tripId = await db.tripDao.createTrip(
         TripsCompanion.insert(title: 'T'),
       );
-      await db.costDao.addCost(tripCost(tripId, 6000, Currency.eur, 'Dinner'));
+      await db.costDao.addCost(tripCost(tripId, 6000, eurId, 'Dinner'));
       await db.costDao.addCost(transfer(tripId, 2000, 'Bo'));
 
       final totals = await db.costDao.watchTotalsByTrip().first;
-      expect(totals[tripId], {Currency.eur: 6000});
+      expect(totals[tripId], {'EUR': 6000});
     });
 
     test('a trip with only settlements has no total at all', () async {
@@ -135,7 +135,7 @@ void main() {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
-    await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Insurance'));
+    await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Insurance'));
 
     await db.tripDao.deleteTrip(tripId);
 
@@ -187,8 +187,8 @@ void main() {
     );
     final item = await makeItem(tripId);
     await db.costDao.setReasonIcon('Hotel', 5);
-    await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
-    await db.costDao.addCost(tripCost(tripId, 3000, Currency.eur, 'Hotel'));
+    await db.costDao.addCost(cost(item, 4990, eurId, 'Hotel'));
+    await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Hotel'));
 
     await db.costDao.renameReason('Hotel', 'Lodging');
 
@@ -204,9 +204,9 @@ void main() {
       TripsCompanion.insert(title: 'T'),
     );
     final item = await makeItem(tripId);
-    await db.costDao.addCost(cost(item, 1000, Currency.eur, 'Food'));
+    await db.costDao.addCost(cost(item, 1000, eurId, 'Food'));
     await db.costDao.upsertReason('Dinner');
-    await db.costDao.addCost(tripCost(tripId, 2000, Currency.eur, 'Dinner'));
+    await db.costDao.addCost(tripCost(tripId, 2000, eurId, 'Dinner'));
 
     await db.costDao.renameReason('Food', 'Dinner');
 
@@ -269,7 +269,7 @@ void main() {
       CostsCompanion.insert(
         itemId: Value(item),
         amountMinor: 4990,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Hotel',
         paidBy: const Value('Alex'),
       ),
@@ -278,7 +278,7 @@ void main() {
       CostsCompanion.insert(
         tripId: Value(tripId),
         amountMinor: 3000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Insurance',
         paidBy: const Value('Alex'),
       ),
@@ -300,7 +300,7 @@ void main() {
       CostsCompanion.insert(
         itemId: Value(item),
         amountMinor: 1000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Food',
         paidBy: const Value('Alex'),
       ),
@@ -319,9 +319,7 @@ void main() {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
-    final id = await db.costDao.addCost(
-      tripCost(tripId, 3000, Currency.eur, 'Taxi'),
-    );
+    final id = await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Taxi'));
 
     await db.costDao.setBeneficiaries(id, ['Bob', 'Alex']);
 
@@ -342,13 +340,13 @@ void main() {
       );
       final item = await makeItem(tripId);
       final itemCostId = await db.costDao.addCost(
-        cost(item, 4990, Currency.eur, 'Hotel'),
+        cost(item, 4990, eurId, 'Hotel'),
       );
       final tripCostId = await db.costDao.addCost(
-        tripCost(tripId, 3000, Currency.eur, 'Taxi'),
+        tripCost(tripId, 3000, eurId, 'Taxi'),
       );
       final otherCostId = await db.costDao.addCost(
-        tripCost(other, 1000, Currency.eur, 'Bus'),
+        tripCost(other, 1000, eurId, 'Bus'),
       );
 
       await db.costDao.setBeneficiaries(itemCostId, ['Bob', 'Alex']);
@@ -366,9 +364,7 @@ void main() {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
-    final id = await db.costDao.addCost(
-      tripCost(tripId, 3000, Currency.eur, 'Taxi'),
-    );
+    final id = await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Taxi'));
 
     await db.costDao.setBeneficiaries(id, ['Alex', 'Bob']);
     await db.costDao.setBeneficiaries(id, [
@@ -384,9 +380,7 @@ void main() {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
-    final id = await db.costDao.addCost(
-      tripCost(tripId, 3000, Currency.eur, 'Taxi'),
-    );
+    final id = await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Taxi'));
     await db.costDao.setBeneficiaries(id, ['Alex']);
 
     await db.costDao.setBeneficiaries(id, const []);
@@ -400,9 +394,7 @@ void main() {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
-    final id = await db.costDao.addCost(
-      tripCost(tripId, 3000, Currency.eur, 'Taxi'),
-    );
+    final id = await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Taxi'));
     await db.costDao.setBeneficiaries(id, ['Alex']);
 
     await db.costDao.deleteCost(id);
@@ -415,9 +407,7 @@ void main() {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
-    final id = await db.costDao.addCost(
-      tripCost(tripId, 3000, Currency.eur, 'Taxi'),
-    );
+    final id = await db.costDao.addCost(tripCost(tripId, 3000, eurId, 'Taxi'));
     await db.costDao.setBeneficiaries(id, ['Alex', 'Bob']);
 
     await db.costDao.deletePerson('Alex');
@@ -431,7 +421,7 @@ void main() {
       TripsCompanion.insert(title: 'T'),
     );
     final item = await makeItem(tripId);
-    await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
+    await db.costDao.addCost(cost(item, 4990, eurId, 'Hotel'));
 
     await db.itineraryDao.deleteItem(item);
 
@@ -443,7 +433,7 @@ void main() {
       TripsCompanion.insert(title: 'T'),
     );
     final item = await makeItem(tripId);
-    await db.costDao.addCost(cost(item, 4990, Currency.eur, 'Hotel'));
+    await db.costDao.addCost(cost(item, 4990, eurId, 'Hotel'));
 
     await db.tripDao.deleteTrip(tripId);
 

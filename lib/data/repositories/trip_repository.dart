@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
-import '../database/tables.dart';
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -119,7 +118,7 @@ class TripRepository {
       _db.costDao.watchCostsForTrip(tripId);
   Stream<List<Cost>> watchCountedCostsForTrip(int tripId) =>
       _db.costDao.watchCountedCostsForTrip(tripId);
-  Stream<Map<int, Map<Currency, int>>> watchTotalsByTrip() =>
+  Stream<Map<int, Map<String, int>>> watchTotalsByTrip() =>
       _db.costDao.watchTotalsByTrip();
   Future<int> addCost(CostsCompanion cost) => _db.costDao.addCost(cost);
   Future<bool> updateCost(Cost cost) => _db.costDao.updateCost(cost);
@@ -138,6 +137,31 @@ class TripRepository {
   Future<int> deleteReason(String label) => _db.costDao.deleteReason(label);
   Future<void> renameReason(String from, String to) =>
       _db.costDao.renameReason(from, to);
+
+  // --- currencies ---
+  Stream<List<CurrencyRow>> watchCurrencies() =>
+      _db.currencyDao.watchCurrencies();
+  Stream<Map<int, int>> watchCurrencyCostCounts() =>
+      _db.currencyDao.watchCostCounts();
+  Future<int> addCurrency({
+    required String code,
+    required String symbol,
+    int? rateMicros,
+  }) => _db.currencyDao.addCurrency(
+    code: code,
+    symbol: symbol,
+    rateMicros: rateMicros,
+  );
+  Future<void> editCurrency(int id, {String? code, String? symbol}) =>
+      _db.currencyDao.editCurrency(id, code: code, symbol: symbol);
+  Future<void> setCurrencyRate(int id, int? rateMicros) =>
+      _db.currencyDao.setRate(id, rateMicros);
+  Future<void> setBaseCurrency(int id) => _db.currencyDao.setBase(id);
+  Future<bool> rebaseClearsRates(int id) =>
+      _db.currencyDao.rebaseClearsRates(id);
+  Future<void> deleteCurrency(int id) => _db.currencyDao.deleteCurrency(id);
+  Future<void> reorderCurrencies(List<int> orderedIds) =>
+      _db.currencyDao.reorderCurrencies(orderedIds);
 
   // --- transport modes ---
   Stream<List<TransportModeRow>> watchTransportModes() =>

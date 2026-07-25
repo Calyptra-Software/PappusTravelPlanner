@@ -1382,6 +1382,162 @@ abstract class AppLocalizations {
   /// **'Settlements move money between people. They change the balances only — never the trip\'s total.'**
   String get transferHint;
 
+  /// No description provided for @currenciesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Currencies'**
+  String get currenciesSection;
+
+  /// No description provided for @currencyAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add currency'**
+  String get currencyAdd;
+
+  /// No description provided for @currencyAddTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New currency'**
+  String get currencyAddTitle;
+
+  /// No description provided for @currencyEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit currency'**
+  String get currencyEditTitle;
+
+  /// No description provided for @currencyCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get currencyCode;
+
+  /// No description provided for @currencyCodeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. JPY'**
+  String get currencyCodeHint;
+
+  /// No description provided for @currencyCodeRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a code'**
+  String get currencyCodeRequired;
+
+  /// No description provided for @currencySymbol.
+  ///
+  /// In en, this message translates to:
+  /// **'Symbol'**
+  String get currencySymbol;
+
+  /// No description provided for @currencySymbolHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. ¥'**
+  String get currencySymbolHint;
+
+  /// No description provided for @currencyRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Exchange rate'**
+  String get currencyRate;
+
+  /// No description provided for @currencyRateInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number above zero'**
+  String get currencyRateInvalid;
+
+  /// No description provided for @currencyRateNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No rate set'**
+  String get currencyRateNone;
+
+  /// What one unit of a currency is worth in the base currency
+  ///
+  /// In en, this message translates to:
+  /// **'1 {code} = {rate} {base}'**
+  String currencyRateExplains(String code, String rate, String base);
+
+  /// No description provided for @currencyRateHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'What one {code} is worth in {base}. Leave empty if you would rather not convert.'**
+  String currencyRateHelp(String code, String base);
+
+  /// No description provided for @currencyBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Base currency'**
+  String get currencyBase;
+
+  /// No description provided for @currencyBaseHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Every rate is expressed in the base currency, and it is the one new expenses start in. Totals across several currencies are converted into it — beside the exact per-currency figures, never instead of them.'**
+  String get currencyBaseHelp;
+
+  /// No description provided for @currencyMakeBase.
+  ///
+  /// In en, this message translates to:
+  /// **'Make base currency'**
+  String get currencyMakeBase;
+
+  /// No description provided for @currencyRebaseWarnTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the base currency?'**
+  String get currencyRebaseWarnTitle;
+
+  /// No description provided for @currencyRebaseWarnBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{code}\" has no exchange rate, so the other currencies\' rates cannot be re-expressed against it and will be cleared. You can enter them again afterwards.'**
+  String currencyRebaseWarnBody(String code);
+
+  /// No description provided for @currencyInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Used by {count, plural, =1{1 expense} other{{count} expenses}}'**
+  String currencyInUse(int count);
+
+  /// No description provided for @currencyDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete currency?'**
+  String get currencyDeleteConfirmTitle;
+
+  /// No description provided for @currencyDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{code}\" will be removed from the currency list.'**
+  String currencyDeleteConfirmBody(String code);
+
+  /// No description provided for @currencyDeleteBlockedInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{code}\" is still used by {count, plural, =1{1 expense} other{{count} expenses}}. An amount cannot be left without a currency.'**
+  String currencyDeleteBlockedInUse(String code, int count);
+
+  /// No description provided for @currencyDeleteBlockedBase.
+  ///
+  /// In en, this message translates to:
+  /// **'The base currency cannot be deleted. Make another one the base first.'**
+  String get currencyDeleteBlockedBase;
+
+  /// No description provided for @currencyCodeTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'That code is already in the list'**
+  String get currencyCodeTaken;
+
+  /// No description provided for @noCurrencies.
+  ///
+  /// In en, this message translates to:
+  /// **'No currencies yet'**
+  String get noCurrencies;
+
   /// No description provided for @peopleSection.
   ///
   /// In en, this message translates to:

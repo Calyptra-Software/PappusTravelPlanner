@@ -5,6 +5,8 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/sharing/trip_bundle.dart';
 
+import 'currency_fixture.dart';
+
 /// Sharing a trip that holds decisions: every option travels with the bundle —
 /// including the ones not chosen, which are the point of having planned them —
 /// and lands on the recipient's device as a decision again, not as a day with
@@ -55,7 +57,7 @@ void main() {
       CostsCompanion.insert(
         itemId: Value(museum),
         amountMinor: 1500,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Ticket',
       ),
     );
@@ -72,7 +74,7 @@ void main() {
       CostsCompanion.insert(
         itemId: Value(boat),
         amountMinor: 5000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Boat',
       ),
     );
@@ -119,10 +121,9 @@ void main() {
       // An older app would drop the decisions and flatten every option into the
       // day, so it must refuse this bundle — but it can still read plain trips.
       final withDecision = await seedDecision(db);
-      expect(
-        (await db.sharingDao.exportTrip(withDecision))!.formatVersion,
-        TripBundle.currentFormatVersion,
-      );
+      // v2, not the current version: each version is stamped only when the trip
+      // needs it, and this trip's currencies are ones an older app knows.
+      expect((await db.sharingDao.exportTrip(withDecision))!.formatVersion, 2);
 
       final plain = await db.tripDao.createTrip(
         TripsCompanion.insert(title: 'X'),
@@ -225,7 +226,7 @@ void main() {
       CostsCompanion.insert(
         groupId: Value(groupId),
         amountMinor: 8000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Ticket',
       ),
     );

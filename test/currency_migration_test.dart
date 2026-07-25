@@ -1,18 +1,17 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 
-import 'currency_fixture.dart';
-
-/// Verifies the v21 -> v22 migration that added `costs.is_transfer`, marking a
-/// row as money handed from one person to another instead of money spent. Real
-/// user databases are migrated in place: every expense already recorded must
-/// come through unchanged, and reading as an expense.
+/// Verifies the v22 -> v23 migration that turned the fixed `Currency` enum into
+/// a user-managed `currencies` table. Real user databases are migrated in place:
+/// the built-ins must be seeded, and every existing expense must come through in
+/// the same currency it was in — its old enum index (0..3) repointed onto the
+/// seeded row for that currency (id = index + 1).
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -20,17 +19,18 @@ void main() {
   late String path;
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('tp_transfer_migration');
-    path = p.join(tempDir.path, 'v21.sqlite');
+    tempDir = await Directory.systemTemp.createTemp('tp_currency_migr');
+    path = p.join(tempDir.path, 'v22.sqlite');
   });
 
   tearDown(() {
     if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
-  /// Builds a database file at [path] with the v21 schema — costs without the
-  /// transfer flag — holding a trip with one expense.
-  void seedV21Database() {
+  /// Builds a database file at [path] with the v22 schema — costs storing their
+  /// currency as the `Currency` enum index — holding one trip with a EUR cost
+  /// (index 0), a GBP cost (index 2) and a EUR settlement.
+  void seedV22Database() {
     final raw = sqlite3.open(path);
     raw.execute('''
       CREATE TABLE trips (
@@ -63,13 +63,6 @@ void main() {
         sort_order INTEGER NOT NULL DEFAULT 0,
         chosen INTEGER NOT NULL DEFAULT 0
       );
-      CREATE TABLE transport_modes (
-        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        builtin_key TEXT,
-        icon_id INTEGER,
-        sort_order INTEGER NOT NULL DEFAULT 0
-      );
       CREATE TABLE itinerary_items (
         id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
         trip_id INTEGER NOT NULL REFERENCES trips (id),
@@ -85,7 +78,7 @@ void main() {
         actual_end_minutes INTEGER,
         notes TEXT,
         location TEXT,
-        mode INTEGER REFERENCES transport_modes (id),
+        mode INTEGER,
         from_location TEXT,
         to_location TEXT
       );
@@ -99,54 +92,48 @@ void main() {
         reason TEXT NOT NULL,
         paid_by TEXT,
         paid INTEGER NOT NULL DEFAULT 0,
+        is_transfer INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT 0
       );
-      CREATE TABLE people (
-        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        is_me INTEGER NOT NULL DEFAULT 0
-      );
-      CREATE TABLE cost_beneficiaries (
-        cost_id INTEGER NOT NULL REFERENCES costs (id),
-        person_id INTEGER NOT NULL REFERENCES people (id),
-        PRIMARY KEY (cost_id, person_id)
-      );
-      INSERT INTO trips (id, title) VALUES (1, 'Lisbon');
-      INSERT INTO costs (id, trip_id, amount_minor, currency, reason, paid_by)
-        VALUES (1, 1, 6000, 0, 'Dinner', 'Ann');
+      INSERT INTO trips (id, title) VALUES (1, 'Highlands');
+      INSERT INTO costs
+        (id, trip_id, amount_minor, currency, reason, paid_by, is_transfer)
+        VALUES
+          (1, 1, 4990, 0, 'Hotel', 'Ada', 0),   -- EUR (index 0)
+          (2, 1, 2500, 2, 'Train', 'Bo', 0),    -- GBP (index 2)
+          (3, 1, 1000, 0, '', 'Bo', 1);         -- a EUR settlement
     ''');
-    raw.execute('PRAGMA user_version = 21');
+    raw.execute('PRAGMA user_version = 22');
     raw.close();
   }
 
-  test('v21 -> v22 leaves every recorded cost an expense', () async {
-    seedV21Database();
+  test('v22 -> v23 seeds the currencies and repoints every cost', () async {
+    seedV22Database();
 
     final db = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db.close);
 
+    // The four built-ins are seeded, EUR the base and the only one with a rate.
+    final currencies = await db.currencyDao.watchCurrencies().first;
+    expect(currencies.map((c) => c.code), ['EUR', 'USD', 'GBP', 'CHF']);
+    expect(currencies.where((c) => c.isBase).map((c) => c.code), ['EUR']);
+    expect(currencies.first.rateMicros, kRateOne);
+
+    // Each cost now points at the seeded row for the currency it was in.
+    final byId = {for (final c in currencies) c.id: c};
     final costs = await db.costDao.watchCostsForTrip(1).first;
-    expect(costs.single.reason, 'Dinner');
-    expect(costs.single.amountMinor, 6000);
-    expect(costs.single.paidBy, 'Ann');
-    expect(costs.single.isTransfer, isFalse);
+    final byCostId = {for (final c in costs) c.id: c};
+    expect(byId[byCostId[1]!.currency]!.code, 'EUR');
+    expect(byId[byCostId[2]!.currency]!.code, 'GBP');
+    expect(byId[byCostId[3]!.currency]!.code, 'EUR');
 
-    // The trip's total is unchanged by the new column.
+    // Amounts and the settlement flag came through untouched.
+    expect(byCostId[1]!.amountMinor, 4990);
+    expect(byCostId[2]!.reason, 'Train');
+    expect(byCostId[3]!.isTransfer, isTrue);
+
+    // And the trip's totals now key by code.
     final totals = await db.costDao.watchTotalsByTrip().first;
-    expect(totals[1], {'EUR': 6000});
-
-    // And the migrated schema really does take a settlement, which the total
-    // then leaves alone.
-    await db.costDao.addCost(
-      CostsCompanion.insert(
-        tripId: const Value(1),
-        amountMinor: 3000,
-        currency: eurId,
-        reason: '',
-        paidBy: const Value('Bo'),
-        isTransfer: const Value(true),
-      ),
-    );
-    expect((await db.costDao.watchTotalsByTrip().first)[1], {'EUR': 6000});
+    expect(totals[1], {'EUR': 4990, 'GBP': 2500});
   });
 }

@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Overview card summarising a single trip, with a colour accent stripe.
@@ -12,15 +11,20 @@ class TripCard extends StatelessWidget {
     super.key,
     required this.trip,
     required this.onTap,
+    required this.book,
     this.totals = const {},
   });
 
   final Trip trip;
   final VoidCallback onTap;
 
-  /// Per-currency cost totals for this trip, in minor units. Empty when the
-  /// trip has no costs, in which case the total row is hidden.
-  final Map<Currency, int> totals;
+  /// The currencies, for labelling and ordering [totals] — passed in rather
+  /// than watched, since the list screen already holds one for every card.
+  final CurrencyBook book;
+
+  /// Cost totals for this trip in minor units, keyed by currency code. Empty
+  /// when the trip has no costs, in which case the total row is hidden.
+  final Map<String, int> totals;
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +114,7 @@ class TripCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                formatTotals(totals, localeName),
+                                formatTotals(totals, book, localeName),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: theme.colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,

@@ -223,7 +223,11 @@ class _TripIcsBuilder {
     if (notes.isNotEmpty) parts.add(notes);
     for (final c in bundle.costs) {
       if (c.itemLocalId != item.localId) continue;
-      final amount = formatMoney(c.amountMinor, c.currency, localeName);
+      final amount = formatMoney(
+        c.amountMinor,
+        bundle.currencyBook.byCode(c.currency),
+        localeName,
+      );
       final reason = c.reason.trim();
       parts.add(reason.isEmpty ? amount : '$reason: $amount');
     }

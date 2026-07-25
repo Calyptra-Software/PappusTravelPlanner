@@ -10,6 +10,7 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $AlternativesTable get alternatives => attachedDatabase.alternatives;
   $TransportModesTable get transportModes => attachedDatabase.transportModes;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
+  $CurrenciesTable get currencies => attachedDatabase.currencies;
   $CostsTable get costs => attachedDatabase.costs;
   GroupDaoManager get managers => GroupDaoManager(this);
 }
@@ -38,6 +39,8 @@ class GroupDaoManager {
         _db.attachedDatabase,
         _db.itineraryItems,
       );
+  $$CurrenciesTableTableManager get currencies =>
+      $$CurrenciesTableTableManager(_db.attachedDatabase, _db.currencies);
   $$CostsTableTableManager get costs =>
       $$CostsTableTableManager(_db.attachedDatabase, _db.costs);
 }

@@ -396,7 +396,11 @@ class _TripPdfBuilder {
   ];
 
   String _costLabel(BundleCost c) {
-    final amount = formatMoney(c.amountMinor, c.currency, localeName);
+    final amount = formatMoney(
+      c.amountMinor,
+      bundle.currencyBook.byCode(c.currency),
+      localeName,
+    );
     return c.reason.trim().isEmpty ? amount : '${c.reason.trim()} $amount';
   }
 
@@ -413,7 +417,8 @@ class _TripPdfBuilder {
     yield _sectionTitle(l10n.costs);
     yield pw.SizedBox(height: 6);
 
-    final totals = <Currency, int>{};
+    final book = bundle.currencyBook;
+    final totals = <String, int>{};
     for (final c in counted) {
       totals.update(
         c.currency,
@@ -421,9 +426,8 @@ class _TripPdfBuilder {
         ifAbsent: () => c.amountMinor,
       );
     }
-    final orderedTotals = Currency.values.where(totals.containsKey);
     yield pw.Text(
-      '${l10n.costsTotal}: ${orderedTotals.map((c) => formatMoney(totals[c]!, c, localeName)).join('  ·  ')}',
+      '${l10n.costsTotal}: ${formatTotals(totals, book, localeName)}',
       style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
     );
     yield pw.SizedBox(height: 8);
@@ -475,7 +479,11 @@ class _TripPdfBuilder {
                 c.paidBy?.trim().isNotEmpty ?? false ? c.paidBy!.trim() : '—',
               ),
               cell(
-                formatMoney(c.amountMinor, c.currency, localeName),
+                formatMoney(
+                  c.amountMinor,
+                  bundle.currencyBook.byCode(c.currency),
+                  localeName,
+                ),
                 align: pw.Alignment.centerRight,
               ),
             ],
@@ -543,7 +551,11 @@ class _TripPdfBuilder {
               ),
               cell(c.beneficiaries.isEmpty ? '—' : c.beneficiaries.first),
               cell(
-                formatMoney(c.amountMinor, c.currency, localeName),
+                formatMoney(
+                  c.amountMinor,
+                  bundle.currencyBook.byCode(c.currency),
+                  localeName,
+                ),
                 align: pw.Alignment.centerRight,
               ),
             ],

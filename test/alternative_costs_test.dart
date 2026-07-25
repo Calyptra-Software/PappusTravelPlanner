@@ -6,6 +6,8 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/costs/trip_stats.dart';
 import 'package:travelplanner/features/itinerary/live_items.dart';
 
+import 'currency_fixture.dart';
+
 /// The money rule for alternatives: a cost hanging off a branch that was not
 /// chosen is still *shown* (so each branch can be priced and compared) but never
 /// *counted* — not in the trip's total, not on the overview card, not in the
@@ -49,7 +51,7 @@ void main() {
       groupId: Value(groupId),
       tripId: Value(tripId),
       amountMinor: amountMinor,
-      currency: Currency.eur,
+      currency: eurId,
       reason: 'Ticket',
       paidBy: Value(paidBy),
     ),
@@ -67,7 +69,7 @@ void main() {
   /// The trip's total as the overview card computes it, in EUR minor units.
   Future<int> cardTotal(int tripId) async {
     final totals = await db.costDao.watchTotalsByTrip().first;
-    return totals[tripId]?[Currency.eur] ?? 0;
+    return totals[tripId]?['EUR'] ?? 0;
   }
 
   /// A trip with one decision: the chosen branch holds a €15 museum, the other a
@@ -120,7 +122,7 @@ void main() {
     final participants = await db.tripDao.watchParticipants(tripId).first;
     final stats = computeTripStats(counted, beneficiaries, [
       for (final p in participants) p.name,
-    ]);
+    ], seededBook);
 
     // Ada paid the €15 museum and owes half of it; the €50 boat trip they did
     // not take must not show up in anyone's balance.

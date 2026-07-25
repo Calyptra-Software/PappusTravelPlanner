@@ -1,13 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
-import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/costs/trip_stats.dart';
+
+import 'currency_fixture.dart';
 
 void main() {
   var nextId = 0;
   Cost cost(
     int minor, {
-    Currency currency = Currency.eur,
+    int currency = eurId,
     String reason = 'Food',
     String? paidBy,
     bool paid = false,
@@ -25,21 +26,18 @@ void main() {
 
   /// A settlement: [from] hands [minor] to someone (the receiver is the row's
   /// beneficiary, wired up by each test).
-  Cost transfer(
-    int minor, {
-    Currency currency = Currency.eur,
-    required String from,
-  }) => Cost(
-    id: ++nextId,
-    tripId: 1,
-    amountMinor: minor,
-    currency: currency,
-    reason: '',
-    paidBy: from,
-    paid: true,
-    isTransfer: true,
-    createdAt: DateTime(2026),
-  );
+  Cost transfer(int minor, {int currency = eurId, required String from}) =>
+      Cost(
+        id: ++nextId,
+        tripId: 1,
+        amountMinor: minor,
+        currency: currency,
+        reason: '',
+        paidBy: from,
+        paid: true,
+        isTransfer: true,
+        createdAt: DateTime(2026),
+      );
 
   Person person(String name) =>
       Person(id: name.hashCode, name: name, isMe: false);
@@ -61,6 +59,7 @@ void main() {
         ],
         const {},
         const [],
+        seededBook,
       );
       final cur = onlyCurrency(stats);
       expect(cur.totalMinor, 10000);
@@ -78,6 +77,7 @@ void main() {
         [cost(3000, paid: true), cost(1000, paid: true), cost(6000)],
         const {},
         const [],
+        seededBook,
       );
       final cur = onlyCurrency(stats);
       expect(cur.totalMinor, 10000);
@@ -89,7 +89,7 @@ void main() {
       'paidMinor is zero and openMinor is the total when nothing is paid',
       () {
         final cur = onlyCurrency(
-          computeTripStats([cost(2500)], const {}, const []),
+          computeTripStats([cost(2500)], const {}, const [], seededBook),
         );
         expect(cur.paidMinor, 0);
         expect(cur.openMinor, 2500);
@@ -100,18 +100,15 @@ void main() {
       final stats = computeTripStats(
         [
           cost(1000, paid: true),
-          cost(500, currency: Currency.usd, paid: true),
-          cost(500, currency: Currency.usd),
+          cost(500, currency: usdId, paid: true),
+          cost(500, currency: usdId),
         ],
         const {},
         const [],
+        seededBook,
       );
-      final eur = stats.byCurrency.firstWhere(
-        (c) => c.currency == Currency.eur,
-      );
-      final usd = stats.byCurrency.firstWhere(
-        (c) => c.currency == Currency.usd,
-      );
+      final eur = stats.byCurrency.firstWhere((c) => c.currency == 'EUR');
+      final usd = stats.byCurrency.firstWhere((c) => c.currency == 'USD');
       expect(eur.paidMinor, 1000);
       expect(eur.openMinor, 0);
       expect(usd.paidMinor, 500);
@@ -130,6 +127,7 @@ void main() {
             c.id: [person('Ann'), person('Bo'), person('Cy')],
           },
           const [],
+          seededBook,
         );
         final byPerson = {
           for (final p in onlyCurrency(stats).byPerson) p.name: p,
@@ -150,6 +148,7 @@ void main() {
         [cost(1000, paidBy: 'Ann')],
         const {},
         const ['Ann', 'Bo'],
+        seededBook,
       );
       final byPerson = {
         for (final p in onlyCurrency(stats).byPerson) p.name: p,
@@ -168,6 +167,7 @@ void main() {
           c.id: [person('Ann'), person('Bo'), person('Cy')],
         },
         const [],
+        seededBook,
       );
       final cur = onlyCurrency(stats);
       final transfers = {for (final t in cur.settlements) t.from: t};
@@ -186,6 +186,7 @@ void main() {
           c.id: [person('Ann')],
         },
         const [],
+        seededBook,
       );
       expect(onlyCurrency(stats).settlements, isEmpty);
     });
@@ -204,6 +205,7 @@ void main() {
           repayment.id: [person('Ann')],
         },
         const [],
+        seededBook,
       );
       final cur = onlyCurrency(stats);
       final byPerson = {for (final p in cur.byPerson) p.name: p};
@@ -228,6 +230,7 @@ void main() {
           repayment.id: [person('Ann')],
         },
         const [],
+        seededBook,
       );
       final cur = onlyCurrency(stats);
 
@@ -250,6 +253,7 @@ void main() {
           repayment.id: [person('Ann')],
         },
         const [],
+        seededBook,
       );
       final byPerson = {
         for (final p in onlyCurrency(stats).byPerson) p.name: p,
@@ -275,6 +279,7 @@ void main() {
         [transfer(2000, from: 'Bo')],
         const {},
         const ['Ann', 'Bo', 'Cy'],
+        seededBook,
       );
       final byPerson = {
         for (final p in onlyCurrency(stats).byPerson) p.name: p,
@@ -285,7 +290,7 @@ void main() {
 
     test('settles in its own currency only', () {
       final dinner = cost(6000, paidBy: 'Ann');
-      final repayment = transfer(3000, currency: Currency.usd, from: 'Bo');
+      final repayment = transfer(3000, currency: usdId, from: 'Bo');
       final stats = computeTripStats(
         [dinner, repayment],
         {
@@ -293,13 +298,10 @@ void main() {
           repayment.id: [person('Ann')],
         },
         const [],
+        seededBook,
       );
-      final eur = stats.byCurrency.firstWhere(
-        (c) => c.currency == Currency.eur,
-      );
-      final usd = stats.byCurrency.firstWhere(
-        (c) => c.currency == Currency.usd,
-      );
+      final eur = stats.byCurrency.firstWhere((c) => c.currency == 'EUR');
+      final usd = stats.byCurrency.firstWhere((c) => c.currency == 'USD');
 
       // The euro debt stands — dollars don't pay it off.
       expect(eur.settlements.single.from, 'Bo');
@@ -320,6 +322,7 @@ void main() {
           dinner.id: [person('Ann'), person('Bo')],
         },
         const [],
+        seededBook,
       );
       final repayment = transfer(3000, from: 'Bo');
       final trip2 = computeTripStats(
@@ -328,9 +331,10 @@ void main() {
           repayment.id: [person('Ann')],
         },
         const [],
+        seededBook,
       );
 
-      final cur = onlyCurrency(mergeTripStats([trip1, trip2]));
+      final cur = onlyCurrency(mergeTripStats([trip1, trip2], seededBook));
       expect(cur.totalMinor, 6000);
       expect(cur.count, 1);
       final byPerson = {for (final p in cur.byPerson) p.name: p};
@@ -340,21 +344,22 @@ void main() {
     });
   });
 
-  test('keeps currencies separate, in enum order', () {
+  test('keeps currencies separate, in the book order', () {
     final stats = computeTripStats(
-      [cost(2000, currency: Currency.usd), cost(1000, currency: Currency.eur)],
+      [cost(2000, currency: usdId), cost(1000, currency: eurId)],
       const {},
       const [],
+      seededBook,
     );
-    expect(stats.byCurrency.map((c) => c.currency), [
-      Currency.eur,
-      Currency.usd,
-    ]);
+    expect(stats.byCurrency.map((c) => c.currency), ['EUR', 'USD']);
     expect(stats.byCurrency.first.totalMinor, 1000);
   });
 
   test('empty when there are no costs', () {
-    expect(computeTripStats(const [], const {}, const []).isEmpty, isTrue);
+    expect(
+      computeTripStats(const [], const {}, const [], seededBook).isEmpty,
+      isTrue,
+    );
   });
 
   group('mergeTripStats', () {
@@ -366,15 +371,17 @@ void main() {
           [cost(10000, reason: 'Hotel', paidBy: 'Ann')],
           const {},
           const ['Ann', 'Bob'],
+          seededBook,
         );
         // Trip 2: Bob pays 40 for Food shared by Ann and Bob.
         final trip2 = computeTripStats(
           [cost(4000, reason: 'Food', paidBy: 'Bob')],
           const {},
           const ['Ann', 'Bob'],
+          seededBook,
         );
 
-        final merged = mergeTripStats([trip1, trip2]);
+        final merged = mergeTripStats([trip1, trip2], seededBook);
         final cur = onlyCurrency(merged);
 
         expect(cur.totalMinor, 14000);
@@ -400,21 +407,20 @@ void main() {
     test('keeps currencies separate and is empty with no data', () {
       final merged = mergeTripStats([
         computeTripStats(
-          [cost(2000, currency: Currency.usd)],
+          [cost(2000, currency: usdId)],
           const {},
           const [],
+          seededBook,
         ),
         computeTripStats(
-          [cost(1000, currency: Currency.eur)],
+          [cost(1000, currency: eurId)],
           const {},
           const [],
+          seededBook,
         ),
-      ]);
-      expect(merged.byCurrency.map((c) => c.currency), [
-        Currency.eur,
-        Currency.usd,
-      ]);
-      expect(mergeTripStats(const []).isEmpty, isTrue);
+      ], seededBook);
+      expect(merged.byCurrency.map((c) => c.currency), ['EUR', 'USD']);
+      expect(mergeTripStats(const [], seededBook).isEmpty, isTrue);
     });
   });
 }

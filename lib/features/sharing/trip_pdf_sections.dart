@@ -1,5 +1,4 @@
 import '../../core/format/date_format.dart';
-import '../../data/database/tables.dart';
 import 'trip_bundle.dart';
 
 /// A part of the exported PDF the user may include or leave out. The trip's
@@ -92,10 +91,10 @@ class PdfSectionSummary {
   final int days;
   final int entries;
 
-  /// Expenses: how many count, and their total per currency (the app never
-  /// converts between currencies).
+  /// Expenses: how many count, and their total per currency code (the totals
+  /// themselves are never converted between currencies).
   final int expenses;
-  final Map<Currency, int> expenseTotals;
+  final Map<String, int> expenseTotals;
 
   /// Settlements, printed as part of the expenses section.
   final int transfers;
@@ -135,7 +134,7 @@ PdfSectionSummary summarizePdfSections(TripBundle bundle) {
   }
 
   final counted = countedBundleCosts(bundle, chosenBranchIds: chosen);
-  final totals = <Currency, int>{};
+  final totals = <String, int>{};
   for (final c in counted) {
     totals.update(
       c.currency,

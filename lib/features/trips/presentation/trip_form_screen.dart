@@ -11,6 +11,7 @@ import '../../../core/widgets/color_picker_dialog.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
+import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../costs/presentation/person_picker.dart';
@@ -258,6 +259,7 @@ class _TripCostsEditor extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final costs =
         ref.watch(costsForTripProvider(tripId)).value?.tripLevel ?? const [];
+    final book = ref.watch(currencyBookProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,7 +300,7 @@ class _TripCostsEditor extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               '${l10n.costsTotal}: '
-              '${formatTotals(sumByCurrency(costs), localeName)}',
+              '${formatTotals(sumByCurrency(costs, book), book, localeName)}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,

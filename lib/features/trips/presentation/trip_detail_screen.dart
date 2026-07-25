@@ -18,6 +18,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../checklist/presentation/trip_checklists_section.dart';
 import '../../costs/application/cost_display_provider.dart';
 import '../../costs/application/cost_providers.dart';
+import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../itinerary/application/item_clipboard.dart';
@@ -199,6 +200,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       final sections = await showPdfSectionsSheet(
         context,
         summary: summarizePdfSections(bundle),
+        book: bundle.currencyBook,
         initial: ref.read(pdfSectionsProvider),
       );
       if (sections == null) return;
@@ -663,7 +665,8 @@ class _TripHeader extends ConsumerWidget {
     final scopedCosts = scope == ExpenseScope.mine
         ? allCosts.where((c) => c.paidBy == meName)
         : allCosts;
-    final totals = sumByCurrency(scopedCosts);
+    final book = ref.watch(currencyBookProvider);
+    final totals = sumByCurrency(scopedCosts, book);
 
     return Card(
       color: accent.withValues(alpha: 0.10),
@@ -808,7 +811,7 @@ class _TripHeader extends ConsumerWidget {
                           child: Text(
                             totals.isEmpty
                                 ? '—'
-                                : formatTotals(totals, localeName),
+                                : formatTotals(totals, book, localeName),
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),

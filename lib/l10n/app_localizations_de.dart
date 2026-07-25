@@ -748,6 +748,110 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausgleichszahlungen verschieben Geld zwischen Personen. Sie ändern nur die Salden — nie die Gesamtsumme der Reise.';
 
   @override
+  String get currenciesSection => 'Währungen';
+
+  @override
+  String get currencyAdd => 'Währung hinzufügen';
+
+  @override
+  String get currencyAddTitle => 'Neue Währung';
+
+  @override
+  String get currencyEditTitle => 'Währung bearbeiten';
+
+  @override
+  String get currencyCode => 'Code';
+
+  @override
+  String get currencyCodeHint => 'z. B. JPY';
+
+  @override
+  String get currencyCodeRequired => 'Code eingeben';
+
+  @override
+  String get currencySymbol => 'Symbol';
+
+  @override
+  String get currencySymbolHint => 'z. B. ¥';
+
+  @override
+  String get currencyRate => 'Wechselkurs';
+
+  @override
+  String get currencyRateInvalid => 'Zahl größer als null eingeben';
+
+  @override
+  String get currencyRateNone => 'Kein Kurs hinterlegt';
+
+  @override
+  String currencyRateExplains(String code, String rate, String base) {
+    return '1 $code = $rate $base';
+  }
+
+  @override
+  String currencyRateHelp(String code, String base) {
+    return 'Wie viel ein $code in $base wert ist. Leer lassen, wenn nicht umgerechnet werden soll.';
+  }
+
+  @override
+  String get currencyBase => 'Basiswährung';
+
+  @override
+  String get currencyBaseHelp =>
+      'Alle Kurse beziehen sich auf die Basiswährung, und neue Ausgaben starten in ihr. Summen über mehrere Währungen werden in sie umgerechnet — neben den genauen Beträgen je Währung, nicht an ihrer Stelle.';
+
+  @override
+  String get currencyMakeBase => 'Als Basiswährung festlegen';
+
+  @override
+  String get currencyRebaseWarnTitle => 'Basiswährung wechseln?';
+
+  @override
+  String currencyRebaseWarnBody(String code) {
+    return 'Für \"$code\" ist kein Wechselkurs hinterlegt. Die Kurse der anderen Währungen lassen sich deshalb nicht darauf umrechnen und werden gelöscht. Du kannst sie danach neu eingeben.';
+  }
+
+  @override
+  String currencyInUse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ausgaben',
+      one: '1 Ausgabe',
+    );
+    return 'Verwendet von $_temp0';
+  }
+
+  @override
+  String get currencyDeleteConfirmTitle => 'Währung löschen?';
+
+  @override
+  String currencyDeleteConfirmBody(String code) {
+    return '\"$code\" wird aus der Währungsliste entfernt.';
+  }
+
+  @override
+  String currencyDeleteBlockedInUse(String code, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Ausgaben',
+      one: '1 Ausgabe',
+    );
+    return '\"$code\" wird noch von $_temp0 verwendet. Ein Betrag kann nicht ohne Währung bleiben.';
+  }
+
+  @override
+  String get currencyDeleteBlockedBase =>
+      'Die Basiswährung kann nicht gelöscht werden. Lege zuerst eine andere als Basis fest.';
+
+  @override
+  String get currencyCodeTaken => 'Dieser Code ist bereits in der Liste';
+
+  @override
+  String get noCurrencies => 'Noch keine Währungen';
+
+  @override
   String get peopleSection => 'Personen';
 
   @override

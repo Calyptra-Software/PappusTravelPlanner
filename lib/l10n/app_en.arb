@@ -288,6 +288,61 @@
     }
   },
   "transferHint": "Settlements move money between people. They change the balances only — never the trip's total.",
+  "currenciesSection": "Currencies",
+  "currencyAdd": "Add currency",
+  "currencyAddTitle": "New currency",
+  "currencyEditTitle": "Edit currency",
+  "currencyCode": "Code",
+  "currencyCodeHint": "e.g. JPY",
+  "currencyCodeRequired": "Enter a code",
+  "currencySymbol": "Symbol",
+  "currencySymbolHint": "e.g. ¥",
+  "currencyRate": "Exchange rate",
+  "currencyRateInvalid": "Enter a number above zero",
+  "currencyRateNone": "No rate set",
+  "currencyRateExplains": "1 {code} = {rate} {base}",
+  "@currencyRateExplains": {
+    "description": "What one unit of a currency is worth in the base currency",
+    "placeholders": {
+      "code": { "type": "String" },
+      "rate": { "type": "String" },
+      "base": { "type": "String" }
+    }
+  },
+  "currencyRateHelp": "What one {code} is worth in {base}. Leave empty if you would rather not convert.",
+  "@currencyRateHelp": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "base": { "type": "String" }
+    }
+  },
+  "currencyBase": "Base currency",
+  "currencyBaseHelp": "Every rate is expressed in the base currency, and it is the one new expenses start in. Totals across several currencies are converted into it — beside the exact per-currency figures, never instead of them.",
+  "currencyMakeBase": "Make base currency",
+  "currencyRebaseWarnTitle": "Change the base currency?",
+  "currencyRebaseWarnBody": "\"{code}\" has no exchange rate, so the other currencies' rates cannot be re-expressed against it and will be cleared. You can enter them again afterwards.",
+  "@currencyRebaseWarnBody": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "currencyInUse": "Used by {count, plural, =1{1 expense} other{{count} expenses}}",
+  "@currencyInUse": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "currencyDeleteConfirmTitle": "Delete currency?",
+  "currencyDeleteConfirmBody": "\"{code}\" will be removed from the currency list.",
+  "@currencyDeleteConfirmBody": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "currencyDeleteBlockedInUse": "\"{code}\" is still used by {count, plural, =1{1 expense} other{{count} expenses}}. An amount cannot be left without a currency.",
+  "@currencyDeleteBlockedInUse": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "currencyDeleteBlockedBase": "The base currency cannot be deleted. Make another one the base first.",
+  "currencyCodeTaken": "That code is already in the list",
+  "noCurrencies": "No currencies yet",
   "peopleSection": "People",
   "noPeople": "No saved people yet",
   "personAdd": "Add person",

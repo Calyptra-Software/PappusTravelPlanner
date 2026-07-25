@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../../data/database/tables.dart' show Currency, ItemKind;
+import '../../core/format/money_format.dart';
+import '../../data/database/tables.dart' show ItemKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
 /// share-sheet intent filter matches only Travel Planner trips, not every
@@ -24,9 +25,10 @@ const String tripBundleExtension = 'tpt';
 ///   opaque local keys** ([BundleGroup.localId] etc.). The importer remaps these
 ///   to fresh IDs; their absolute values are meaningless to the recipient.
 /// - References to the app's **global** tables — [People] (participants,
-///   `paidBy`, beneficiaries) and [CostReasons] — are denormalized to their
-///   natural string keys (name / label) so the recipient doesn't need matching
-///   IDs. Reason icons ride along in [reasonIcons] keyed by label.
+///   `paidBy`, beneficiaries), [CostReasons] and [Currencies] — are denormalized
+///   to their natural string keys (name / label / code) so the recipient doesn't
+///   need matching IDs. Reason icons ride along in [reasonIcons] keyed by label,
+///   and the currencies themselves in [currencies].
 /// - Enums are serialized by their `name`, not their persisted integer index, so
 ///   an unknown or newly-appended value from a sender on a different app version
 ///   can be detected rather than silently misread.
@@ -47,6 +49,7 @@ class TripBundle {
     this.participants = const [],
     this.reasonIcons = const {},
     this.modeIcons = const {},
+    this.currencies = kBuiltinBundleCurrencies,
   });
 
   /// Version of the bundle format itself. Bump when the JSON shape changes in a
@@ -57,7 +60,13 @@ class TripBundle {
   /// drop the decisions it can't read and silently flatten every option's items
   /// into the day, so it must refuse such a bundle — but there is no reason to
   /// stop it reading an ordinary trip, which still goes out as v1.
-  static const int currentFormatVersion = 2;
+  ///
+  /// v3 turned the currencies into a managed list ([currencies]) and made
+  /// [BundleCost.currency] a currency *code*. The same rule applies: a cost in
+  /// one of the four currencies the old enum knew is still written under that
+  /// enum's name, so an ordinary trip stays readable by an older app and only a
+  /// trip using a currency the user added goes out as v3.
+  static const int currentFormatVersion = 3;
 
   /// Magic string identifying the payload as a Travel Planner trip bundle.
   static const String kind = 'travelplanner.trip';
@@ -95,6 +104,25 @@ class TripBundle {
   /// appear.
   final Map<String, int> modeIcons;
 
+  /// The currencies this trip's costs are recorded in, plus the sender's base
+  /// one — enough for the recipient (and the PDF and `.ics` builders, which see
+  /// only the bundle) to label every amount and, where the rates allow it,
+  /// convert. Defaults to [kBuiltinBundleCurrencies] so a bundle written before
+  /// currencies were managed still prints its amounts with a symbol.
+  final List<BundleCurrency> currencies;
+
+  /// [currencies] as the pure [CurrencyBook] the exports format with. Costs name
+  /// their currency by code, so the book is looked up the same way there.
+  CurrencyBook get currencyBook => CurrencyBook([
+    for (final c in currencies)
+      CurrencyInfo(
+        code: c.code,
+        symbol: c.symbol,
+        rateMicros: c.rateMicros,
+        isBase: c.isBase,
+      ),
+  ]);
+
   Map<String, dynamic> toJson() => {
     'kind': kind,
     'formatVersion': formatVersion,
@@ -109,6 +137,7 @@ class TripBundle {
     'participants': participants,
     'reasonIcons': reasonIcons,
     'modeIcons': modeIcons,
+    'currencies': [for (final c in currencies) c.toJson()],
   };
 
   factory TripBundle.fromJson(Map<String, dynamic> json) {
@@ -156,6 +185,14 @@ class TripBundle {
         for (final e in (json['modeIcons'] as Map? ?? const {}).entries)
           e.key as String: e.value as int,
       },
+      // Absent in bundles written before currencies were managed; those only
+      // ever held the four built-ins, which is exactly the fallback.
+      currencies: json['currencies'] == null
+          ? kBuiltinBundleCurrencies
+          : [
+              for (final c in (json['currencies'] as List))
+                BundleCurrency.fromJson(c as Map<String, dynamic>),
+            ],
     );
   }
 
@@ -418,6 +455,86 @@ class BundleItem {
   );
 }
 
+/// A [Currencies] row, carried by code rather than id. [rateMicros] is what one
+/// unit was worth in the *sender's* base currency; the importer only adopts it
+/// when its own base has the same code, since a rate against someone else's base
+/// says nothing here.
+class BundleCurrency {
+  const BundleCurrency({
+    required this.code,
+    required this.symbol,
+    this.rateMicros,
+    this.isBase = false,
+  });
+
+  final String code;
+  final String symbol;
+  final int? rateMicros;
+
+  /// Whether this was the sender's base currency.
+  final bool isBase;
+
+  Map<String, dynamic> toJson() => {
+    'code': code,
+    'symbol': symbol,
+    'rateMicros': rateMicros,
+    'isBase': isBase,
+  };
+
+  factory BundleCurrency.fromJson(Map<String, dynamic> json) => BundleCurrency(
+    code: json['code'] as String,
+    symbol: json['symbol'] as String,
+    rateMicros: json['rateMicros'] as int?,
+    isBase: json['isBase'] as bool? ?? false,
+  );
+}
+
+/// The currencies the bundle format knew before v3: the four the [Currency]
+/// enum used to be, under the names it wrote them as. **Frozen** — it describes
+/// what older bundles hold and what an older app can read, so appending to the
+/// enum must not change it.
+const Map<String, String> _legacyCurrencyTokens = {
+  'EUR': 'eur',
+  'USD': 'usd',
+  'GBP': 'gbp',
+  'CHF': 'chf',
+};
+
+/// The currencies a bundle is assumed to hold when it names none — the four
+/// above, with EUR as the base. Only ever the stand-in for a bundle written
+/// before currencies were managed.
+const List<BundleCurrency> kBuiltinBundleCurrencies = [
+  BundleCurrency(code: 'EUR', symbol: '\u20AC', isBase: true),
+  BundleCurrency(code: 'USD', symbol: r'US$'),
+  BundleCurrency(code: 'GBP', symbol: '\u00A3'),
+  BundleCurrency(code: 'CHF', symbol: 'CHF'),
+];
+
+/// The token a currency [code] is written under in a bundle: the name the old
+/// enum used when the code is one of [_legacyCurrencyTokens], and the code
+/// itself otherwise.
+///
+/// The indirection keeps an ordinary trip readable by an app from before
+/// currencies were managed, which expects that name here — see
+/// [TripBundle.currentFormatVersion]. [bundleCurrencyCode] reads it back.
+String bundleCurrencyToken(String code) => _legacyCurrencyTokens[code] ?? code;
+
+/// The currency code a bundle's [token] names — the inverse of
+/// [bundleCurrencyToken], accepting both spellings so v3 and older bundles read
+/// the same way.
+String bundleCurrencyCode(String token) {
+  for (final entry in _legacyCurrencyTokens.entries) {
+    if (entry.value == token) return entry.key;
+  }
+  return token;
+}
+
+/// Whether a trip whose costs use [codes] has to go out as a v3 bundle: it does
+/// exactly when some currency is one the old enum never had, and so cannot be
+/// written under a name an older app would recognise.
+bool bundleNeedsCurrencyFormat(Iterable<String> codes) =>
+    codes.any((code) => !_legacyCurrencyTokens.containsKey(code));
+
 /// A [Costs] row. A cost attaches to exactly one of an item, a group, or the
 /// trip: [itemLocalId] and [groupLocalId] refer to bundle-local ids and are both
 /// null for a trip-level cost. [paidBy] and [beneficiaries] are person names.
@@ -438,7 +555,10 @@ class BundleCost {
   final int? itemLocalId;
   final int? groupLocalId;
   final int amountMinor;
-  final Currency currency;
+
+  /// The currency's [Currencies.code] — its identity across databases. Listed
+  /// with its symbol and rate in [TripBundle.currencies].
+  final String currency;
   final String reason;
   final String? paidBy;
   final bool paid;
@@ -458,7 +578,7 @@ class BundleCost {
     'itemLocalId': itemLocalId,
     'groupLocalId': groupLocalId,
     'amountMinor': amountMinor,
-    'currency': currency.name,
+    'currency': bundleCurrencyToken(currency),
     'reason': reason,
     'paidBy': paidBy,
     'paid': paid,
@@ -471,7 +591,7 @@ class BundleCost {
     itemLocalId: json['itemLocalId'] as int?,
     groupLocalId: json['groupLocalId'] as int?,
     amountMinor: json['amountMinor'] as int,
-    currency: _enumByName(Currency.values, json['currency'] as String),
+    currency: bundleCurrencyCode(json['currency'] as String),
     reason: json['reason'] as String,
     paidBy: json['paidBy'] as String?,
     paid: json['paid'] as bool? ?? false,

@@ -741,6 +741,110 @@ class AppLocalizationsEn extends AppLocalizations {
       'Settlements move money between people. They change the balances only — never the trip\'s total.';
 
   @override
+  String get currenciesSection => 'Currencies';
+
+  @override
+  String get currencyAdd => 'Add currency';
+
+  @override
+  String get currencyAddTitle => 'New currency';
+
+  @override
+  String get currencyEditTitle => 'Edit currency';
+
+  @override
+  String get currencyCode => 'Code';
+
+  @override
+  String get currencyCodeHint => 'e.g. JPY';
+
+  @override
+  String get currencyCodeRequired => 'Enter a code';
+
+  @override
+  String get currencySymbol => 'Symbol';
+
+  @override
+  String get currencySymbolHint => 'e.g. ¥';
+
+  @override
+  String get currencyRate => 'Exchange rate';
+
+  @override
+  String get currencyRateInvalid => 'Enter a number above zero';
+
+  @override
+  String get currencyRateNone => 'No rate set';
+
+  @override
+  String currencyRateExplains(String code, String rate, String base) {
+    return '1 $code = $rate $base';
+  }
+
+  @override
+  String currencyRateHelp(String code, String base) {
+    return 'What one $code is worth in $base. Leave empty if you would rather not convert.';
+  }
+
+  @override
+  String get currencyBase => 'Base currency';
+
+  @override
+  String get currencyBaseHelp =>
+      'Every rate is expressed in the base currency, and it is the one new expenses start in. Totals across several currencies are converted into it — beside the exact per-currency figures, never instead of them.';
+
+  @override
+  String get currencyMakeBase => 'Make base currency';
+
+  @override
+  String get currencyRebaseWarnTitle => 'Change the base currency?';
+
+  @override
+  String currencyRebaseWarnBody(String code) {
+    return '\"$code\" has no exchange rate, so the other currencies\' rates cannot be re-expressed against it and will be cleared. You can enter them again afterwards.';
+  }
+
+  @override
+  String currencyInUse(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return 'Used by $_temp0';
+  }
+
+  @override
+  String get currencyDeleteConfirmTitle => 'Delete currency?';
+
+  @override
+  String currencyDeleteConfirmBody(String code) {
+    return '\"$code\" will be removed from the currency list.';
+  }
+
+  @override
+  String currencyDeleteBlockedInUse(String code, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count expenses',
+      one: '1 expense',
+    );
+    return '\"$code\" is still used by $_temp0. An amount cannot be left without a currency.';
+  }
+
+  @override
+  String get currencyDeleteBlockedBase =>
+      'The base currency cannot be deleted. Make another one the base first.';
+
+  @override
+  String get currencyCodeTaken => 'That code is already in the list';
+
+  @override
+  String get noCurrencies => 'No currencies yet';
+
+  @override
   String get peopleSection => 'People';
 
   @override

@@ -5,6 +5,8 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/day_blocks.dart';
 
+import 'currency_fixture.dart';
+
 /// Covers moving and copying an entry between lists — the two-step act that
 /// crosses the boundaries dragging cannot: to another day, into one option of a
 /// decision, and back out of it.
@@ -41,7 +43,7 @@ void main() {
     CostsCompanion.insert(
       itemId: Value(itemId),
       amountMinor: amountMinor,
-      currency: Currency.eur,
+      currency: eurId,
       reason: 'Ticket',
     ),
   );
@@ -135,7 +137,7 @@ void main() {
       CostsCompanion.insert(
         groupId: Value(groupId),
         amountMinor: 4500,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Ticket',
       ),
     );
@@ -226,7 +228,7 @@ void main() {
           CostsCompanion.insert(
             groupId: Value(groupId),
             amountMinor: 8000,
-            currency: Currency.eur,
+            currency: eurId,
             reason: 'Train ticket',
           ),
         );
@@ -284,7 +286,7 @@ void main() {
         CostsCompanion.insert(
           groupId: Value(groupId),
           amountMinor: 8000,
-          currency: Currency.eur,
+          currency: eurId,
           reason: 'Train ticket',
         ),
       );

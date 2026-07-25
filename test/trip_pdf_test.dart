@@ -78,7 +78,7 @@ void main() {
       BundleCost(
         itemLocalId: 100,
         amountMinor: 1600,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: 'Tickets',
         paidBy: 'Alice',
         paid: true,
@@ -87,13 +87,13 @@ void main() {
       BundleCost(
         groupLocalId: 10,
         amountMinor: 8000,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: 'Train',
         createdAt: DateTime(2026, 5, 1, 8),
       ),
       BundleCost(
         amountMinor: -500,
-        currency: Currency.usd,
+        currency: 'USD',
         reason: 'Refund',
         paidBy: 'Bob',
         createdAt: DateTime(2026, 5, 2),
@@ -102,7 +102,7 @@ void main() {
       // expenses and counts toward none of their totals.
       BundleCost(
         amountMinor: 2000,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: '',
         paidBy: 'Bob',
         paid: true,
@@ -202,14 +202,14 @@ void main() {
         BundleCost(
           itemLocalId: 100,
           amountMinor: 2000,
-          currency: Currency.eur,
+          currency: 'EUR',
           reason: 'Museum entry',
           createdAt: DateTime(2026, 5, 2),
         ),
         BundleCost(
           itemLocalId: 101,
           amountMinor: 500,
-          currency: Currency.eur,
+          currency: 'EUR',
           reason: 'Beach chair',
           createdAt: DateTime(2026, 5, 2),
         ),

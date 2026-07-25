@@ -15,20 +15,30 @@ import '../trip_pdf_sections.dart';
 Future<Set<PdfSection>?> showPdfSectionsSheet(
   BuildContext context, {
   required PdfSectionSummary summary,
+  required CurrencyBook book,
   required Set<PdfSection> initial,
 }) {
   return showModalBottomSheet<Set<PdfSection>>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _PdfSectionsSheet(summary: summary, initial: initial),
+    builder: (_) =>
+        _PdfSectionsSheet(summary: summary, book: book, initial: initial),
   );
 }
 
 class _PdfSectionsSheet extends StatefulWidget {
-  const _PdfSectionsSheet({required this.summary, required this.initial});
+  const _PdfSectionsSheet({
+    required this.summary,
+    required this.book,
+    required this.initial,
+  });
 
   final PdfSectionSummary summary;
+
+  /// Labels and orders [PdfSectionSummary.expenseTotals] — the bundle's own
+  /// currencies, so the row reads exactly as the document will.
+  final CurrencyBook book;
   final Set<PdfSection> initial;
 
   @override
@@ -82,7 +92,7 @@ class _PdfSectionsSheetState extends State<_PdfSectionsSheet> {
         return '${l10n.days(s.days)} · ${l10n.entries(s.entries)}';
       case PdfSection.expenses:
         if (s.expenses == 0 && s.transfers == 0) return null;
-        final totals = formatTotals(s.expenseTotals, localeName);
+        final totals = formatTotals(s.expenseTotals, widget.book, localeName);
         final counts = l10n.statsExpenses(s.expenses);
         final line = totals.isEmpty ? counts : '$counts · $totals';
         return s.transfers == 0 ? line : '$line\n${l10n.pdfInclSettlements}';

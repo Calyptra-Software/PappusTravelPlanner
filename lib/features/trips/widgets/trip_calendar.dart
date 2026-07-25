@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../calendar_layout.dart';
 import 'trip_card.dart';
@@ -16,12 +16,18 @@ class TripCalendar extends StatefulWidget {
     super.key,
     required this.trips,
     required this.totals,
+    required this.book,
     required this.onOpenTrip,
   });
 
   /// The (already filtered) trips to render, dated and undated alike.
   final List<Trip> trips;
-  final Map<int, Map<Currency, int>> totals;
+
+  /// Each trip's totals in minor units, keyed by currency code.
+  final Map<int, Map<String, int>> totals;
+
+  /// The currencies those totals are labelled and ordered by.
+  final CurrencyBook book;
   final void Function(Trip trip) onOpenTrip;
 
   @override
@@ -150,6 +156,7 @@ class _TripCalendarState extends State<TripCalendar> {
             for (final trip in trips) ...[
               TripCard(
                 trip: trip,
+                book: widget.book,
                 totals: widget.totals[trip.id] ?? const {},
                 onTap: () {
                   Navigator.of(sheetContext).pop();

@@ -1,11 +1,13 @@
+import '../../core/format/money_format.dart';
 import '../../data/database/app_database.dart';
-import '../../data/database/tables.dart';
 
 /// Statistics derived from a trip's expenses, split out as pure functions so the
 /// splitting and settle-up maths can be unit-tested without a database. All
-/// amounts stay in minor units (cents). Because costs can be in several
-/// currencies and the app never converts between them, everything is computed
-/// per currency — see [TripStats.byCurrency].
+/// amounts stay in minor units (cents). Costs can be in several currencies and
+/// nothing here ever converts between them — everything is computed per
+/// currency (see [TripStats.byCurrency]), and the exchange rates the user can
+/// set in settings only ever add a converted figure *beside* these, never
+/// inside them.
 
 /// One reason's slice of a currency's spending.
 class CategoryStat {
@@ -78,7 +80,9 @@ class CurrencyStats {
     required this.settlements,
   });
 
-  final Currency currency;
+  /// The currency's code (`Currencies.code`) — its identity outside the
+  /// database, so a merged or shared trip's stats key the same way.
+  final String currency;
 
   /// What the trip cost in this currency. Expenses only: transfers between
   /// people are not spending and stay out of it (see [computeTripStats]).
@@ -103,8 +107,8 @@ class CurrencyStats {
   final List<Transfer> settlements;
 }
 
-/// Per-currency statistics for a whole trip, in the stable [Currency] order and
-/// only for currencies that actually occur.
+/// Per-currency statistics for a whole trip, in the [CurrencyBook]'s display
+/// order and only for currencies that actually occur.
 class TripStats {
   const TripStats(this.byCurrency);
 
@@ -134,18 +138,21 @@ TripStats computeTripStats(
   List<Cost> costs,
   Map<int, List<Person>> beneficiariesByCost,
   List<String> participantNames,
+  CurrencyBook book,
 ) {
-  final byCurrency = <Currency, List<Cost>>{};
+  final byCurrency = <String, List<Cost>>{};
   for (final cost in costs) {
-    byCurrency.putIfAbsent(cost.currency, () => []).add(cost);
+    final code = book.byId(cost.currency)?.code;
+    if (code == null) continue;
+    byCurrency.putIfAbsent(code, () => []).add(cost);
   }
 
   final result = <CurrencyStats>[];
-  for (final currency in Currency.values) {
-    final group = byCurrency[currency];
+  for (final code in book.ordered(byCurrency.keys)) {
+    final group = byCurrency[code];
     if (group == null || group.isEmpty) continue;
     result.add(
-      _statsForCurrency(currency, group, beneficiariesByCost, participantNames),
+      _statsForCurrency(code, group, beneficiariesByCost, participantNames),
     );
   }
   return TripStats(result);
@@ -156,9 +163,10 @@ TripStats computeTripStats(
 /// paid/share are summed and the settle-up recomputed, so it reads exactly like
 /// a single trip's stats. Each trip must be computed on its own first (via
 /// [computeTripStats]) so a cost still falls back to *its* trip's participants;
-/// this only adds the pieces up.
-TripStats mergeTripStats(Iterable<TripStats> perTrip) {
-  final byCurrency = <Currency, List<CurrencyStats>>{};
+/// this only adds the pieces up. [book] fixes the order the currencies come out
+/// in, exactly as in [computeTripStats].
+TripStats mergeTripStats(Iterable<TripStats> perTrip, CurrencyBook book) {
+  final byCurrency = <String, List<CurrencyStats>>{};
   for (final stats in perTrip) {
     for (final c in stats.byCurrency) {
       byCurrency.putIfAbsent(c.currency, () => []).add(c);
@@ -166,15 +174,15 @@ TripStats mergeTripStats(Iterable<TripStats> perTrip) {
   }
 
   final result = <CurrencyStats>[];
-  for (final currency in Currency.values) {
-    final group = byCurrency[currency];
+  for (final code in book.ordered(byCurrency.keys)) {
+    final group = byCurrency[code];
     if (group == null || group.isEmpty) continue;
-    result.add(_mergeCurrency(currency, group));
+    result.add(_mergeCurrency(code, group));
   }
   return TripStats(result);
 }
 
-CurrencyStats _mergeCurrency(Currency currency, List<CurrencyStats> parts) {
+CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
   var total = 0;
   var paid = 0;
   var count = 0;
@@ -259,7 +267,7 @@ CurrencyStats _mergeCurrency(Currency currency, List<CurrencyStats> parts) {
 }
 
 CurrencyStats _statsForCurrency(
-  Currency currency,
+  String currency,
   List<Cost> costs,
   Map<int, List<Person>> beneficiariesByCost,
   List<String> participantNames,

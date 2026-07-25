@@ -152,9 +152,28 @@ UI (features/*/presentation, *widgets)
   day as it is going.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
-  `Currency` enum (in `tables.dart`) and the SharedPreferences-backed
-  `CostReasonDisplay` / `ExpenseScope` enums are all persisted by **integer index** — only
-  ever append new values at the end, never reorder.
+  SharedPreferences-backed `CostReasonDisplay` / `ExpenseScope` enums are persisted by
+  **integer index** — only ever append new values at the end, never reorder.
+- **Currencies are a user-managed table too**, on the same pattern as the transport modes: a
+  cost's `Costs.currency` is a foreign key into `Currencies`, and the `Currency` enum is only
+  the *catalogue of built-ins* (EUR/USD/GBP/CHF) the DB is seeded with, in enum order, so a
+  fresh row's id is its enum index + 1 — what the v23 migration repoints legacy costs by. A
+  row's identity is its unique `code`; unlike a mode, a currency in use **cannot be deleted**
+  (`restrict`, plus a check in `CurrencyDao`) — a leg without a mode is still a leg, an amount
+  without a currency is nothing. Exactly one row `isBase`, and every other carries an optional
+  `rateMicros`: what one of its units is worth in the base, in millionths (`kRateOne`), or null
+  for "not set" — the app then declines to convert rather than guessing. `CurrencyDao.setBase`
+  re-expresses every rate against the new base (clearing them when the new base has no rate to
+  divide by; `rebaseClearsRates` warns first). CRUD is in `CurrencyDao`, the UI in
+  `features/costs/presentation/currencies_settings.dart`.
+- **The maths stays per-currency; conversion is only ever an extra line.** `core/format/money_format.dart`
+  holds the pure `CurrencyInfo` / `CurrencyBook` — a lookup by row id *and* by code, plus the
+  base and the display order — that everything printing money reads (`currencyBookProvider`;
+  the PDF and `.ics` build one from `TripBundle.currencyBook` instead). Totals are keyed by
+  currency **code**, not row id, so one map shape serves both the app and a shared trip.
+  `formatTotals` appends "≈ €395.90" when several currencies are involved *and* every one has
+  a rate — never replacing the exact per-currency figures, and never on a partial set, which
+  would read as a total while leaving money out. `computeTripStats` still converts nothing.
 - **Transport modes are a user-managed table**, not a fixed enum: a leg's `ItineraryItems.mode`
   is a foreign key into `TransportModes` (setNull on delete). The `TransportMode` enum (in
   `tables.dart`) is only the *catalogue of built-ins* the DB is seeded with — each value's
@@ -167,16 +186,17 @@ UI (features/*/presentation, *widgets)
   `TripBundle.modeIcons`.
 - Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItemGroups`, `AlternativeSets`,
   `Alternatives`, `ItineraryItems`, `Costs`,
-  `CostReasons` (reusable reason labels with an optional icon id), `TransportModes` (the
-  built-in-plus-custom transport modes, above), `People` (reusable payer/
+  `CostReasons` (reusable reason labels with an optional icon id), `Currencies` (the
+  built-in-plus-custom currencies with their base flag and exchange rates, above),
+  `TransportModes` (the built-in-plus-custom transport modes, above), `People` (reusable payer/
   beneficiary names; one flagged `isMe`), `TripParticipants` and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
   per trip), and `CollapsedDays` (persists which itinerary days are collapsed).
 - **Expense splitting** lives in `lib/features/costs/trip_stats.dart` as pure functions
   (`computeTripStats`) so the per-currency category breakdown, per-person paid/share/balance,
   and minimal settle-up transfers are unit-testable without a database. A cost splits among
-  its `CostBeneficiaries`, falling back to all trip participants. The app never converts
-  between currencies — everything is computed per `Currency`.
+  its `CostBeneficiaries`, falling back to all trip participants. Nothing here converts between
+  currencies — everything is computed per currency code, in the `CurrencyBook`'s order.
 - **A settlement is a `Costs` row that isn't spending.** `Costs.isTransfer` marks money handed
   from one person to another to square up: always trip-level, `paidBy` the sender, its single
   beneficiary the receiver, and no `reason` (a repayment is not a category). It moves the two
@@ -209,6 +229,16 @@ UI (features/*/presentation, *widgets)
   participants and actual times have no mapping (costs ride along as description text, readable
   but not counted). Import of `.ics` is deliberately **not** built — a calendar event routinely
   spans days, which an item (one day, strictly) cannot represent.
+- **A bundle stamps only the format version the trip actually needs**, so an older app keeps
+  reading what it can: v2 for a trip with decisions, v3 for one using a currency the old
+  four-value enum never had. That is why a cost's currency is written under the *old enum name*
+  (`eur`) when its code is one of those four and as the plain code (`JPY`) otherwise —
+  `bundleCurrencyToken` / `bundleCurrencyCode` in `trip_bundle.dart`, whose legacy table is
+  frozen and must not follow the enum if it grows. The currency definitions ride along in
+  `TripBundle.currencies` (used codes plus the sender's base). On import a currency is matched
+  by code and created only when missing; an existing one keeps the importer's own symbol and
+  rate, and an incoming rate is adopted **only when both databases share a base code** — a rate
+  against someone else's base would silently misprice everything.
 - **The PDF is the one export the user composes** (`trip_pdf_sections.dart`, pure): a `PdfSection`
   — itinerary, expenses, checklists — is ticked in `presentation/pdf_sections_sheet.dart` before
   the document is built, and the choice is remembered across launches as a bitmask
@@ -236,7 +266,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 22) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 23) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

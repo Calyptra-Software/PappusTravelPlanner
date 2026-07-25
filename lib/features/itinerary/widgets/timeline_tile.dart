@@ -5,6 +5,7 @@ import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../application/transport_mode_providers.dart';
 import 'item_times.dart';
@@ -528,7 +529,7 @@ class _TransportRow extends ConsumerWidget {
 /// Cost chips under an itinerary item plus a per-currency subtotal when there
 /// is more than one. Renders nothing when the item has no costs; costs are
 /// added from the item's detail sheet.
-class _CostsSection extends StatelessWidget {
+class _CostsSection extends ConsumerWidget {
   const _CostsSection({
     required this.costs,
     required this.localeName,
@@ -540,10 +541,11 @@ class _CostsSection extends StatelessWidget {
   final ValueChanged<Cost> onTapCost;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (costs.isEmpty) return const SizedBox.shrink();
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final book = ref.watch(currencyBookProvider);
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Column(
@@ -563,7 +565,7 @@ class _CostsSection extends StatelessWidget {
               padding: const EdgeInsets.only(top: 2, left: 4),
               child: Text(
                 '${l10n.costsTotal}: '
-                '${formatTotals(sumByCurrency(costs), localeName)}',
+                '${formatTotals(sumByCurrency(costs, book), book, localeName)}',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,

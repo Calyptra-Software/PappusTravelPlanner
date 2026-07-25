@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/format/money_format.dart';
 import '../../../core/widgets/search_picker.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/cost_providers.dart';
+import '../application/currency_providers.dart';
 import '../cost_reason_icons.dart';
 import 'person_picker.dart';
 
@@ -45,14 +45,14 @@ Future<void> showCostFormSheet(
 /// Opens the settlement sheet: money handed from one person to another, which
 /// moves their balances without spending anything (see [Costs.isTransfer]). A
 /// settlement is always trip-level, so [tripId] is required. The optional
-/// [amountMinor] / [currency] / [from] / [to] prefill the form — that is how the
-/// settle-up list books one of its suggested payments in one tap. Editing a
+/// [amountMinor] / [currencyId] / [from] / [to] prefill the form — that is how
+/// the settle-up list books one of its suggested payments in one tap. Editing a
 /// recorded settlement goes through [showCostFormSheet] like any other cost.
 Future<void> showTransferFormSheet(
   BuildContext context, {
   required int tripId,
   int? amountMinor,
-  Currency? currency,
+  int? currencyId,
   String? from,
   String? to,
 }) {
@@ -65,7 +65,7 @@ Future<void> showTransferFormSheet(
       tripId: tripId,
       transfer: true,
       initialAmountMinor: amountMinor,
-      initialCurrency: currency,
+      initialCurrencyId: currencyId,
       initialFrom: from,
       initialTo: to,
     ),
@@ -81,7 +81,7 @@ class CostFormSheet extends ConsumerStatefulWidget {
     this.existing,
     this.transfer = false,
     this.initialAmountMinor,
-    this.initialCurrency,
+    this.initialCurrencyId,
     this.initialFrom,
     this.initialTo,
   });
@@ -97,7 +97,9 @@ class CostFormSheet extends ConsumerStatefulWidget {
 
   /// Prefill for a new settlement (ignored when editing).
   final int? initialAmountMinor;
-  final Currency? initialCurrency;
+
+  /// A `Currencies` row id.
+  final int? initialCurrencyId;
   final String? initialFrom;
   final String? initialTo;
 
@@ -120,7 +122,10 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
   /// [_paidFor] instead.
   final _recipientController = TextEditingController();
 
-  late Currency _currency;
+  /// The `Currencies` row id the amount is recorded in. Null until the
+  /// currencies load and one can be settled on — a new expense starts in the
+  /// base currency, which is what the setting is for.
+  int? _currencyId;
 
   /// Names the expense was paid for (its split), edited locally and persisted
   /// on save. Seeded once from the DB when editing.
@@ -141,7 +146,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
   void initState() {
     super.initState();
     final existing = widget.existing;
-    _currency = existing?.currency ?? widget.initialCurrency ?? Currency.eur;
+    _currencyId = existing?.currency ?? widget.initialCurrencyId;
     if (existing != null) {
       _amountController.text = (existing.amountMinor / 100).toStringAsFixed(2);
       _reasonController.text = existing.reason;
@@ -274,7 +279,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       await controller.updateCost(
         widget.existing!,
         amountMinor: amountMinor,
-        currency: _currency,
+        currencyId: _currencyId!,
         reason: reason,
         paidBy: paidBy,
         paidFor: _paidFor,
@@ -286,7 +291,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         groupId: widget.groupId,
         tripId: widget.tripId,
         amountMinor: amountMinor,
-        currency: _currency,
+        currencyId: _currencyId!,
         reason: reason,
         paidBy: paidBy,
         paidFor: _paidFor,
@@ -308,7 +313,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       await controller.updateTransfer(
         widget.existing!,
         amountMinor: amountMinor,
-        currency: _currency,
+        currencyId: _currencyId!,
         from: from,
         to: to,
       );
@@ -316,7 +321,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       await controller.addTransfer(
         tripId: widget.tripId!,
         amountMinor: amountMinor,
-        currency: _currency,
+        currencyId: _currencyId!,
         from: from,
         to: to,
       );
@@ -362,6 +367,11 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
     final reasonIcons = ref.watch(reasonIconsProvider);
     final people = ref.watch(peopleProvider).value ?? const [];
     final meName = ref.watch(mePersonProvider).value?.name;
+    // A new expense opens in the base currency — that is the one the settings
+    // designate as "the" currency — falling back to the first in the list.
+    final book = ref.watch(currencyBookProvider);
+    _currencyId ??= book.base?.id ?? book.currencies.firstOrNull?.id;
+    final currency = book.byId(_currencyId);
 
     if (_isEditing) {
       // Seed the split once its beneficiaries have actually loaded, so an
@@ -407,7 +417,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                   ],
                   decoration: InputDecoration(
                     labelText: l10n.costAmount,
-                    prefixText: '${_currency.symbol} ',
+                    prefixText: currency == null ? null : '${currency.symbol} ',
                   ),
                   validator: (value) {
                     final minor = parseAmountToMinor(value ?? '');
@@ -424,14 +434,20 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                 const SizedBox(height: 16),
                 Text(l10n.costCurrency, style: theme.textTheme.labelLarge),
                 const SizedBox(height: 8),
-                SegmentedButton<Currency>(
-                  segments: [
-                    for (final c in Currency.values)
-                      ButtonSegment(value: c, label: Text(c.symbol)),
+                // Chips rather than a segmented button: the currencies are
+                // user-managed, so the list has no fixed width to divide up.
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  children: [
+                    for (final c in book.currencies)
+                      ChoiceChip(
+                        label: Text('${c.symbol} ${c.code}'),
+                        visualDensity: VisualDensity.compact,
+                        selected: c.id == _currencyId,
+                        onSelected: (_) => setState(() => _currencyId = c.id),
+                      ),
                   ],
-                  selected: {_currency},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _currency = selection.first),
                 ),
                 const SizedBox(height: 16),
                 if (_isTransfer)
@@ -459,7 +475,9 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
                     ],
                     Expanded(
                       child: FilledButton.icon(
-                        onPressed: _save,
+                        // Nothing can be recorded before a currency exists to
+                        // record it in; settings always keeps at least one.
+                        onPressed: _currencyId == null ? null : _save,
                         icon: const Icon(Icons.check),
                         label: Text(_isEditing ? l10n.save : l10n.add),
                         style: FilledButton.styleFrom(

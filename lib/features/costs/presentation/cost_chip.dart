@@ -6,6 +6,7 @@ import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/cost_display_provider.dart';
 import '../application/cost_providers.dart';
+import '../application/currency_providers.dart';
 import '../cost_reason_icons.dart';
 
 /// A tappable chip for a single cost. The amount is always shown; the reason is
@@ -25,7 +26,12 @@ class CostChip extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final display = ref.watch(costReasonDisplayProvider);
     final localeName = Localizations.localeOf(context).languageCode;
-    final amount = formatMoney(cost.amountMinor, cost.currency, localeName);
+    final book = ref.watch(currencyBookProvider);
+    final amount = formatMoney(
+      cost.amountMinor,
+      book.byId(cost.currency),
+      localeName,
+    );
 
     if (cost.isTransfer) return _transferChip(context, ref, l10n, amount);
 

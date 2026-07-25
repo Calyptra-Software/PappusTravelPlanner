@@ -8,8 +8,9 @@ part 'sharing_dao.g.dart';
 
 /// Reads a single trip and everything hanging off it into a portable
 /// [TripBundle] (and, later, writes one back). Spans every trip-scoped table
-/// plus the two global rosters ([People], [CostReasons]) it must denormalize,
-/// so it lives in its own accessor rather than any one feature's DAO.
+/// plus the global rosters ([People], [CostReasons], [Currencies]) it must
+/// denormalize, so it lives in its own accessor rather than any one feature's
+/// DAO.
 @DriftAccessor(
   tables: [
     Trips,
@@ -19,6 +20,7 @@ part 'sharing_dao.g.dart';
     ItineraryItems,
     Costs,
     CostReasons,
+    Currencies,
     TransportModes,
     People,
     TripParticipants,
@@ -76,6 +78,27 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       for (final c in costRows) c.reason,
     });
 
+    // Currencies are denormalized to their codes: a cost names one, and the
+    // definitions ride along so the recipient (and the PDF/.ics builders, which
+    // see only the bundle) can label and convert amounts. The base is always
+    // included even if nothing was spent in it — it is what the rates mean.
+    final currencyRows = await db.currencyDao.allCurrencies();
+    final currencyById = {for (final c in currencyRows) c.id: c};
+    final usedCurrencyCodes = <String>{
+      for (final c in costRows)
+        if (currencyById[c.currency] != null) currencyById[c.currency]!.code,
+    };
+    final bundleCurrencies = [
+      for (final c in currencyRows)
+        if (c.isBase || usedCurrencyCodes.contains(c.code))
+          BundleCurrency(
+            code: c.code,
+            symbol: c.symbol,
+            rateMicros: c.isBase ? kRateOne : c.rateMicros,
+            isBase: c.isBase,
+          ),
+    ];
+
     // Modes are denormalized to a portable key per leg (a built-in's key or a
     // custom mode's name); a custom mode's icon is carried alongside so it
     // survives import.
@@ -93,10 +116,14 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
     }
 
     return TripBundle(
-      // A trip without decisions stays readable by an older app, which knows
-      // nothing of them; one *with* decisions goes out as v2, so an older app
-      // refuses it outright rather than flattening every option into the day.
-      formatVersion: setRows.isEmpty ? 1 : TripBundle.currentFormatVersion,
+      // Each version is stamped only when the trip actually needs it, so an
+      // older app keeps reading what it can read. Decisions force v2 — an older
+      // app would flatten every option into the day — and a currency the old
+      // enum never had forces v3, since there is no name to write it under that
+      // such an app would recognise.
+      formatVersion: bundleNeedsCurrencyFormat(usedCurrencyCodes)
+          ? 3
+          : (setRows.isEmpty ? 1 : 2),
       schemaVersion: db.schemaVersion,
       trip: BundleTrip(
         title: trip.title,
@@ -156,7 +183,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             itemLocalId: c.itemId,
             groupLocalId: c.groupId,
             amountMinor: c.amountMinor,
-            currency: c.currency,
+            currency: currencyById[c.currency]?.code ?? '',
             reason: c.reason,
             paidBy: c.paidBy,
             paid: c.paid,
@@ -190,6 +217,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       participants: participantNames,
       reasonIcons: reasonIcons,
       modeIcons: modeIcons,
+      currencies: bundleCurrencies,
     );
   }
 
@@ -287,6 +315,9 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       // mode shared by many legs is resolved once.
       final modeIds = <String, int>{};
 
+      // Same for each cost's currency code; see [_ensureCurrency].
+      final currencyIds = <String, int>{};
+
       final itemIds = <int, int>{};
       for (final i in bundle.items) {
         itemIds[i.localId] = await into(itineraryItems).insert(
@@ -323,7 +354,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             groupId: Value(groupId),
             tripId: Value(tripLevel ? tripId : null),
             amountMinor: c.amountMinor,
-            currency: c.currency,
+            currency: await _ensureCurrency(c.currency, bundle, currencyIds),
             reason: c.reason,
             paidBy: Value(c.paidBy),
             paid: Value(c.paid),
@@ -451,6 +482,60 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         );
     cache[key] = id;
     return id;
+  }
+
+  /// Resolves a bundle currency [code] to a local `Currencies` row id, creating
+  /// the row if needed — the user may have deleted a built-in, or the sender may
+  /// use a currency this database has never seen.
+  ///
+  /// A newly created currency takes the bundle's symbol, but its **rate only
+  /// when the two databases share a base**: a rate is a number against one
+  /// particular currency, so adopting one measured against the sender's base
+  /// would quietly misprice everything. An existing currency is left exactly as
+  /// it is — its code, symbol and rate are the importer's own settings, not the
+  /// sender's to overwrite. Results are cached in [cache] for the import.
+  Future<int> _ensureCurrency(
+    String code,
+    TripBundle bundle,
+    Map<String, int> cache,
+  ) async {
+    final cached = cache[code];
+    if (cached != null) return cached;
+
+    final match = await (select(
+      currencies,
+    )..where((c) => c.code.equals(code))).getSingleOrNull();
+    if (match != null) {
+      cache[code] = match.id;
+      return match.id;
+    }
+
+    final incoming = bundle.currencies.where((c) => c.code == code).firstOrNull;
+    final localBase = await (select(
+      currencies,
+    )..where((c) => c.isBase.equals(true))).getSingleOrNull();
+    final sameBase =
+        localBase != null &&
+        bundle.currencies.any((c) => c.isBase && c.code == localBase.code);
+    final id = await into(currencies).insert(
+      CurrenciesCompanion.insert(
+        code: code,
+        symbol: incoming?.symbol ?? code,
+        rateMicros: Value(sameBase ? incoming?.rateMicros : null),
+        sortOrder: Value(await _nextCurrencySortOrder()),
+      ),
+    );
+    cache[code] = id;
+    return id;
+  }
+
+  /// The next free `sortOrder` for a currency created during import (appended).
+  Future<int> _nextCurrencySortOrder() async {
+    final maxOrder = currencies.sortOrder.max();
+    final row = await (selectOnly(
+      currencies,
+    )..addColumns([maxOrder])).getSingle();
+    return (row.read(maxOrder) ?? -1) + 1;
   }
 
   /// The next free `sortOrder` for a mode created during import (appended).

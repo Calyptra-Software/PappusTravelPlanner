@@ -10,6 +10,8 @@ import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/costs/presentation/cost_form_sheet.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
+import 'currency_fixture.dart';
+
 /// Covers the expense form's two picked fields — category and payer. Neither is
 /// typed into: both open the searchable picker, and what it yields is what the
 /// saved expense carries.
@@ -35,6 +37,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...currencyOverrides,
           repositoryProvider.overrideWithValue(repo),
           reasonsProvider.overrideWith((ref) => Stream.value(reasons)),
           reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -145,6 +148,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            ...currencyOverrides,
             repositoryProvider.overrideWithValue(repo),
             reasonsProvider.overrideWith((ref) => Stream.value(const [])),
             reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),

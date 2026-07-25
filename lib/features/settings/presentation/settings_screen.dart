@@ -10,6 +10,7 @@ import '../../../core/settings/language_dialog.dart';
 import '../../../core/settings/theme_mode_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_reasons_settings.dart';
+import '../../costs/presentation/currencies_settings.dart';
 import '../../costs/presentation/people_settings.dart';
 import '../../itinerary/presentation/transport_modes_settings.dart';
 import '../application/database_providers.dart';
@@ -56,6 +57,9 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _SectionHeader(title: l10n.costReasonsSection),
           const CostReasonsSettings(),
+          const Divider(),
+          _SectionHeader(title: l10n.currenciesSection),
+          const CurrenciesSettings(),
           const Divider(),
           _SectionHeader(title: l10n.transportModesSection),
           const TransportModesSettings(),

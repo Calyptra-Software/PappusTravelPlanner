@@ -12,6 +12,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../costs/application/currency_providers.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
@@ -437,7 +438,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     final branch = _branches[index];
     final items = widget.block.itemsByBranch[branch.id] ?? const [];
     final isChosen = branch.chosen;
-    final totals = sumByCurrency(_branchCosts(items));
+    final book = ref.watch(currencyBookProvider);
+    final totals = sumByCurrency(_branchCosts(items), book);
     // Where now sits inside this option — only ever the chosen one, and only on
     // today: an option the trip is not following is not somewhere we can be.
     //
@@ -475,7 +477,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                     ),
                     if (totals.isNotEmpty)
                       Text(
-                        formatTotals(totals, widget.localeName),
+                        formatTotals(totals, book, widget.localeName),
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w600,
@@ -601,6 +603,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
   /// compared at a glance, which a pager otherwise makes impossible — plus the
   /// chevrons that step through them without a swipe.
   Widget _indicators(ThemeData theme, AppLocalizations l10n) {
+    final book = ref.watch(currencyBookProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
       child: Row(
@@ -619,14 +622,19 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 for (var i = 0; i < _branches.length; i++)
                   _OptionPill(
                     label: _branchLabel(l10n, i),
+                    // No converted equivalent on a pill: it is a comparison
+                    // chip, and the row of them has no width to spare.
                     totals: formatTotals(
                       sumByCurrency(
                         _branchCosts(
                           widget.block.itemsByBranch[_branches[i].id] ??
                               const [],
                         ),
+                        book,
                       ),
+                      book,
                       widget.localeName,
+                      withBaseTotal: false,
                     ),
                     accent: widget.accent,
                     current: i == _page,

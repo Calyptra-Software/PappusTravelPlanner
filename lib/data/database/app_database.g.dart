@@ -2899,6 +2899,421 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   }
 }
 
+class $CurrenciesTable extends Currencies
+    with TableInfo<$CurrenciesTable, CurrencyRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $CurrenciesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _symbolMeta = const VerificationMeta('symbol');
+  @override
+  late final GeneratedColumn<String> symbol = GeneratedColumn<String>(
+    'symbol',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rateMicrosMeta = const VerificationMeta(
+    'rateMicros',
+  );
+  @override
+  late final GeneratedColumn<int> rateMicros = GeneratedColumn<int>(
+    'rate_micros',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isBaseMeta = const VerificationMeta('isBase');
+  @override
+  late final GeneratedColumn<bool> isBase = GeneratedColumn<bool>(
+    'is_base',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_base" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    code,
+    symbol,
+    rateMicros,
+    isBase,
+    sortOrder,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'currencies';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<CurrencyRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('symbol')) {
+      context.handle(
+        _symbolMeta,
+        symbol.isAcceptableOrUnknown(data['symbol']!, _symbolMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_symbolMeta);
+    }
+    if (data.containsKey('rate_micros')) {
+      context.handle(
+        _rateMicrosMeta,
+        rateMicros.isAcceptableOrUnknown(data['rate_micros']!, _rateMicrosMeta),
+      );
+    }
+    if (data.containsKey('is_base')) {
+      context.handle(
+        _isBaseMeta,
+        isBase.isAcceptableOrUnknown(data['is_base']!, _isBaseMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  CurrencyRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return CurrencyRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      symbol: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}symbol'],
+      )!,
+      rateMicros: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}rate_micros'],
+      ),
+      isBase: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_base'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $CurrenciesTable createAlias(String alias) {
+    return $CurrenciesTable(attachedDatabase, alias);
+  }
+}
+
+class CurrencyRow extends DataClass implements Insertable<CurrencyRow> {
+  final int id;
+
+  /// ISO-ish code, e.g. `EUR`. Unique, and the currency's portable identity:
+  /// it is what a shared trip carries instead of a row id.
+  final String code;
+
+  /// Symbol shown next to amounts, e.g. `€`. Free text — plenty of currencies
+  /// have no symbol beyond their code, which is then simply repeated here.
+  final String symbol;
+
+  /// What one unit of this currency is worth in the base currency, in millionths
+  /// (see [kRateOne]) — so with base EUR, a USD worth €0.92 stores `920000`.
+  /// Null when no rate has been set; the base row's own rate is [kRateOne] by
+  /// definition.
+  final int? rateMicros;
+
+  /// Marks the single currency every rate is expressed in. At most one row is
+  /// true, enforced in `CurrencyDao` rather than by the schema (mirroring
+  /// [People.isMe]). Travels with the database file.
+  final bool isBase;
+
+  /// Manual ordering for the expense form's picker and the settings list. Also
+  /// the order per-currency totals are printed in.
+  final int sortOrder;
+  const CurrencyRow({
+    required this.id,
+    required this.code,
+    required this.symbol,
+    this.rateMicros,
+    required this.isBase,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['code'] = Variable<String>(code);
+    map['symbol'] = Variable<String>(symbol);
+    if (!nullToAbsent || rateMicros != null) {
+      map['rate_micros'] = Variable<int>(rateMicros);
+    }
+    map['is_base'] = Variable<bool>(isBase);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  CurrenciesCompanion toCompanion(bool nullToAbsent) {
+    return CurrenciesCompanion(
+      id: Value(id),
+      code: Value(code),
+      symbol: Value(symbol),
+      rateMicros: rateMicros == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rateMicros),
+      isBase: Value(isBase),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory CurrencyRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return CurrencyRow(
+      id: serializer.fromJson<int>(json['id']),
+      code: serializer.fromJson<String>(json['code']),
+      symbol: serializer.fromJson<String>(json['symbol']),
+      rateMicros: serializer.fromJson<int?>(json['rateMicros']),
+      isBase: serializer.fromJson<bool>(json['isBase']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'code': serializer.toJson<String>(code),
+      'symbol': serializer.toJson<String>(symbol),
+      'rateMicros': serializer.toJson<int?>(rateMicros),
+      'isBase': serializer.toJson<bool>(isBase),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  CurrencyRow copyWith({
+    int? id,
+    String? code,
+    String? symbol,
+    Value<int?> rateMicros = const Value.absent(),
+    bool? isBase,
+    int? sortOrder,
+  }) => CurrencyRow(
+    id: id ?? this.id,
+    code: code ?? this.code,
+    symbol: symbol ?? this.symbol,
+    rateMicros: rateMicros.present ? rateMicros.value : this.rateMicros,
+    isBase: isBase ?? this.isBase,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  CurrencyRow copyWithCompanion(CurrenciesCompanion data) {
+    return CurrencyRow(
+      id: data.id.present ? data.id.value : this.id,
+      code: data.code.present ? data.code.value : this.code,
+      symbol: data.symbol.present ? data.symbol.value : this.symbol,
+      rateMicros: data.rateMicros.present
+          ? data.rateMicros.value
+          : this.rateMicros,
+      isBase: data.isBase.present ? data.isBase.value : this.isBase,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CurrencyRow(')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('symbol: $symbol, ')
+          ..write('rateMicros: $rateMicros, ')
+          ..write('isBase: $isBase, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, code, symbol, rateMicros, isBase, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is CurrencyRow &&
+          other.id == this.id &&
+          other.code == this.code &&
+          other.symbol == this.symbol &&
+          other.rateMicros == this.rateMicros &&
+          other.isBase == this.isBase &&
+          other.sortOrder == this.sortOrder);
+}
+
+class CurrenciesCompanion extends UpdateCompanion<CurrencyRow> {
+  final Value<int> id;
+  final Value<String> code;
+  final Value<String> symbol;
+  final Value<int?> rateMicros;
+  final Value<bool> isBase;
+  final Value<int> sortOrder;
+  const CurrenciesCompanion({
+    this.id = const Value.absent(),
+    this.code = const Value.absent(),
+    this.symbol = const Value.absent(),
+    this.rateMicros = const Value.absent(),
+    this.isBase = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  CurrenciesCompanion.insert({
+    this.id = const Value.absent(),
+    required String code,
+    required String symbol,
+    this.rateMicros = const Value.absent(),
+    this.isBase = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  }) : code = Value(code),
+       symbol = Value(symbol);
+  static Insertable<CurrencyRow> custom({
+    Expression<int>? id,
+    Expression<String>? code,
+    Expression<String>? symbol,
+    Expression<int>? rateMicros,
+    Expression<bool>? isBase,
+    Expression<int>? sortOrder,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (code != null) 'code': code,
+      if (symbol != null) 'symbol': symbol,
+      if (rateMicros != null) 'rate_micros': rateMicros,
+      if (isBase != null) 'is_base': isBase,
+      if (sortOrder != null) 'sort_order': sortOrder,
+    });
+  }
+
+  CurrenciesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? code,
+    Value<String>? symbol,
+    Value<int?>? rateMicros,
+    Value<bool>? isBase,
+    Value<int>? sortOrder,
+  }) {
+    return CurrenciesCompanion(
+      id: id ?? this.id,
+      code: code ?? this.code,
+      symbol: symbol ?? this.symbol,
+      rateMicros: rateMicros ?? this.rateMicros,
+      isBase: isBase ?? this.isBase,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (symbol.present) {
+      map['symbol'] = Variable<String>(symbol.value);
+    }
+    if (rateMicros.present) {
+      map['rate_micros'] = Variable<int>(rateMicros.value);
+    }
+    if (isBase.present) {
+      map['is_base'] = Variable<bool>(isBase.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('CurrenciesCompanion(')
+          ..write('id: $id, ')
+          ..write('code: $code, ')
+          ..write('symbol: $symbol, ')
+          ..write('rateMicros: $rateMicros, ')
+          ..write('isBase: $isBase, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -2966,15 +3381,20 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _currencyMeta = const VerificationMeta(
+    'currency',
+  );
   @override
-  late final GeneratedColumnWithTypeConverter<Currency, int> currency =
-      GeneratedColumn<int>(
-        'currency',
-        aliasedName,
-        false,
-        type: DriftSqlType.int,
-        requiredDuringInsert: true,
-      ).withConverter<Currency>($CostsTable.$convertercurrency);
+  late final GeneratedColumn<int> currency = GeneratedColumn<int>(
+    'currency',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES currencies (id) ON DELETE RESTRICT',
+    ),
+  );
   static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
   @override
   late final GeneratedColumn<String> reason = GeneratedColumn<String>(
@@ -3091,6 +3511,14 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     } else if (isInserting) {
       context.missing(_amountMinorMeta);
     }
+    if (data.containsKey('currency')) {
+      context.handle(
+        _currencyMeta,
+        currency.isAcceptableOrUnknown(data['currency']!, _currencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_currencyMeta);
+    }
     if (data.containsKey('reason')) {
       context.handle(
         _reasonMeta,
@@ -3152,12 +3580,10 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
         DriftSqlType.int,
         data['${effectivePrefix}amount_minor'],
       )!,
-      currency: $CostsTable.$convertercurrency.fromSql(
-        attachedDatabase.typeMapping.read(
-          DriftSqlType.int,
-          data['${effectivePrefix}currency'],
-        )!,
-      ),
+      currency: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}currency'],
+      )!,
       reason: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}reason'],
@@ -3185,9 +3611,6 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
   $CostsTable createAlias(String alias) {
     return $CostsTable(attachedDatabase, alias);
   }
-
-  static JsonTypeConverter2<Currency, int, int> $convertercurrency =
-      const EnumIndexConverter<Currency>(Currency.values);
 }
 
 class Cost extends DataClass implements Insertable<Cost> {
@@ -3202,7 +3625,11 @@ class Cost extends DataClass implements Insertable<Cost> {
 
   /// Amount in the currency's minor unit (e.g. cents) to avoid float rounding.
   final int amountMinor;
-  final Currency currency;
+
+  /// The currency the amount is in — a row in [Currencies]. Unlike a leg's
+  /// transport mode, this can never be dropped: an amount with no currency says
+  /// nothing, so the reference restricts the delete instead of nulling itself.
+  final int currency;
   final String reason;
 
   /// Name of the person who paid, or null if unassigned. Stored as text (like
@@ -3249,11 +3676,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       map['trip_id'] = Variable<int>(tripId);
     }
     map['amount_minor'] = Variable<int>(amountMinor);
-    {
-      map['currency'] = Variable<int>(
-        $CostsTable.$convertercurrency.toSql(currency),
-      );
-    }
+    map['currency'] = Variable<int>(currency);
     map['reason'] = Variable<String>(reason);
     if (!nullToAbsent || paidBy != null) {
       map['paid_by'] = Variable<String>(paidBy);
@@ -3299,9 +3722,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       groupId: serializer.fromJson<int?>(json['groupId']),
       tripId: serializer.fromJson<int?>(json['tripId']),
       amountMinor: serializer.fromJson<int>(json['amountMinor']),
-      currency: $CostsTable.$convertercurrency.fromJson(
-        serializer.fromJson<int>(json['currency']),
-      ),
+      currency: serializer.fromJson<int>(json['currency']),
       reason: serializer.fromJson<String>(json['reason']),
       paidBy: serializer.fromJson<String?>(json['paidBy']),
       paid: serializer.fromJson<bool>(json['paid']),
@@ -3318,9 +3739,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       'groupId': serializer.toJson<int?>(groupId),
       'tripId': serializer.toJson<int?>(tripId),
       'amountMinor': serializer.toJson<int>(amountMinor),
-      'currency': serializer.toJson<int>(
-        $CostsTable.$convertercurrency.toJson(currency),
-      ),
+      'currency': serializer.toJson<int>(currency),
       'reason': serializer.toJson<String>(reason),
       'paidBy': serializer.toJson<String?>(paidBy),
       'paid': serializer.toJson<bool>(paid),
@@ -3335,7 +3754,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     Value<int?> groupId = const Value.absent(),
     Value<int?> tripId = const Value.absent(),
     int? amountMinor,
-    Currency? currency,
+    int? currency,
     String? reason,
     Value<String?> paidBy = const Value.absent(),
     bool? paid,
@@ -3429,7 +3848,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   final Value<int?> groupId;
   final Value<int?> tripId;
   final Value<int> amountMinor;
-  final Value<Currency> currency;
+  final Value<int> currency;
   final Value<String> reason;
   final Value<String?> paidBy;
   final Value<bool> paid;
@@ -3454,7 +3873,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     this.groupId = const Value.absent(),
     this.tripId = const Value.absent(),
     required int amountMinor,
-    required Currency currency,
+    required int currency,
     required String reason,
     this.paidBy = const Value.absent(),
     this.paid = const Value.absent(),
@@ -3497,7 +3916,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     Value<int?>? groupId,
     Value<int?>? tripId,
     Value<int>? amountMinor,
-    Value<Currency>? currency,
+    Value<int>? currency,
     Value<String>? reason,
     Value<String?>? paidBy,
     Value<bool>? paid,
@@ -3538,9 +3957,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
       map['amount_minor'] = Variable<int>(amountMinor.value);
     }
     if (currency.present) {
-      map['currency'] = Variable<int>(
-        $CostsTable.$convertercurrency.toSql(currency.value),
-      );
+      map['currency'] = Variable<int>(currency.value);
     }
     if (reason.present) {
       map['reason'] = Variable<String>(reason.value);
@@ -5541,6 +5958,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AlternativesTable alternatives = $AlternativesTable(this);
   late final $TransportModesTable transportModes = $TransportModesTable(this);
   late final $ItineraryItemsTable itineraryItems = $ItineraryItemsTable(this);
+  late final $CurrenciesTable currencies = $CurrenciesTable(this);
   late final $CostsTable costs = $CostsTable(this);
   late final $CostReasonsTable costReasons = $CostReasonsTable(this);
   late final $PeopleTable people = $PeopleTable(this);
@@ -5564,6 +5982,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final TransportModeDao transportModeDao = TransportModeDao(
     this as AppDatabase,
   );
+  late final CurrencyDao currencyDao = CurrencyDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5575,6 +5994,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     alternatives,
     transportModes,
     itineraryItems,
+    currencies,
     costs,
     costReasons,
     people,
@@ -9161,6 +9581,319 @@ typedef $$ItineraryItemsTableProcessedTableManager =
         bool costsRefs,
       })
     >;
+typedef $$CurrenciesTableCreateCompanionBuilder =
+    CurrenciesCompanion Function({
+      Value<int> id,
+      required String code,
+      required String symbol,
+      Value<int?> rateMicros,
+      Value<bool> isBase,
+      Value<int> sortOrder,
+    });
+typedef $$CurrenciesTableUpdateCompanionBuilder =
+    CurrenciesCompanion Function({
+      Value<int> id,
+      Value<String> code,
+      Value<String> symbol,
+      Value<int?> rateMicros,
+      Value<bool> isBase,
+      Value<int> sortOrder,
+    });
+
+final class $$CurrenciesTableReferences
+    extends BaseReferences<_$AppDatabase, $CurrenciesTable, CurrencyRow> {
+  $$CurrenciesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$CostsTable, List<Cost>> _costsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.costs,
+    aliasName: 'currencies__id__costs__currency',
+  );
+
+  $$CostsTableProcessedTableManager get costsRefs {
+    final manager = $$CostsTableTableManager(
+      $_db,
+      $_db.costs,
+    ).filter((f) => f.currency.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_costsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$CurrenciesTableFilterComposer
+    extends Composer<_$AppDatabase, $CurrenciesTable> {
+  $$CurrenciesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get rateMicros => $composableBuilder(
+    column: $table.rateMicros,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isBase => $composableBuilder(
+    column: $table.isBase,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> costsRefs(
+    Expression<bool> Function($$CostsTableFilterComposer f) f,
+  ) {
+    final $$CostsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.currency,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableFilterComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CurrenciesTableOrderingComposer
+    extends Composer<_$AppDatabase, $CurrenciesTable> {
+  $$CurrenciesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get symbol => $composableBuilder(
+    column: $table.symbol,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get rateMicros => $composableBuilder(
+    column: $table.rateMicros,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isBase => $composableBuilder(
+    column: $table.isBase,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$CurrenciesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $CurrenciesTable> {
+  $$CurrenciesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<String> get symbol =>
+      $composableBuilder(column: $table.symbol, builder: (column) => column);
+
+  GeneratedColumn<int> get rateMicros => $composableBuilder(
+    column: $table.rateMicros,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isBase =>
+      $composableBuilder(column: $table.isBase, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  Expression<T> costsRefs<T extends Object>(
+    Expression<T> Function($$CostsTableAnnotationComposer a) f,
+  ) {
+    final $$CostsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.costs,
+      getReferencedColumn: (t) => t.currency,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CostsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$CurrenciesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $CurrenciesTable,
+          CurrencyRow,
+          $$CurrenciesTableFilterComposer,
+          $$CurrenciesTableOrderingComposer,
+          $$CurrenciesTableAnnotationComposer,
+          $$CurrenciesTableCreateCompanionBuilder,
+          $$CurrenciesTableUpdateCompanionBuilder,
+          (CurrencyRow, $$CurrenciesTableReferences),
+          CurrencyRow,
+          PrefetchHooks Function({bool costsRefs})
+        > {
+  $$CurrenciesTableTableManager(_$AppDatabase db, $CurrenciesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$CurrenciesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$CurrenciesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$CurrenciesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> code = const Value.absent(),
+                Value<String> symbol = const Value.absent(),
+                Value<int?> rateMicros = const Value.absent(),
+                Value<bool> isBase = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => CurrenciesCompanion(
+                id: id,
+                code: code,
+                symbol: symbol,
+                rateMicros: rateMicros,
+                isBase: isBase,
+                sortOrder: sortOrder,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String code,
+                required String symbol,
+                Value<int?> rateMicros = const Value.absent(),
+                Value<bool> isBase = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => CurrenciesCompanion.insert(
+                id: id,
+                code: code,
+                symbol: symbol,
+                rateMicros: rateMicros,
+                isBase: isBase,
+                sortOrder: sortOrder,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$CurrenciesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({costsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (costsRefs) db.costs],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (costsRefs)
+                    await $_getPrefetchedData<
+                      CurrencyRow,
+                      $CurrenciesTable,
+                      Cost
+                    >(
+                      currentTable: table,
+                      referencedTable: $$CurrenciesTableReferences
+                          ._costsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$CurrenciesTableReferences(db, table, p0).costsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.currency == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$CurrenciesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $CurrenciesTable,
+      CurrencyRow,
+      $$CurrenciesTableFilterComposer,
+      $$CurrenciesTableOrderingComposer,
+      $$CurrenciesTableAnnotationComposer,
+      $$CurrenciesTableCreateCompanionBuilder,
+      $$CurrenciesTableUpdateCompanionBuilder,
+      (CurrencyRow, $$CurrenciesTableReferences),
+      CurrencyRow,
+      PrefetchHooks Function({bool costsRefs})
+    >;
 typedef $$CostsTableCreateCompanionBuilder =
     CostsCompanion Function({
       Value<int> id,
@@ -9168,7 +9901,7 @@ typedef $$CostsTableCreateCompanionBuilder =
       Value<int?> groupId,
       Value<int?> tripId,
       required int amountMinor,
-      required Currency currency,
+      required int currency,
       required String reason,
       Value<String?> paidBy,
       Value<bool> paid,
@@ -9182,7 +9915,7 @@ typedef $$CostsTableUpdateCompanionBuilder =
       Value<int?> groupId,
       Value<int?> tripId,
       Value<int> amountMinor,
-      Value<Currency> currency,
+      Value<int> currency,
       Value<String> reason,
       Value<String?> paidBy,
       Value<bool> paid,
@@ -9245,6 +9978,23 @@ final class $$CostsTableReferences
     );
   }
 
+  static $CurrenciesTable _currencyTable(_$AppDatabase db) =>
+      db.currencies.createAlias('costs__currency__currencies__id');
+
+  $$CurrenciesTableProcessedTableManager get currency {
+    final $_column = $_itemColumn<int>('currency')!;
+
+    final manager = $$CurrenciesTableTableManager(
+      $_db,
+      $_db.currencies,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_currencyTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
   static MultiTypedResultKey<$CostBeneficiariesTable, List<CostBeneficiary>>
   _costBeneficiariesRefsTable(_$AppDatabase db) =>
       MultiTypedResultKey.fromTable(
@@ -9284,12 +10034,6 @@ class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
     column: $table.amountMinor,
     builder: (column) => ColumnFilters(column),
   );
-
-  ColumnWithTypeConverterFilters<Currency, Currency, int> get currency =>
-      $composableBuilder(
-        column: $table.currency,
-        builder: (column) => ColumnWithTypeConverterFilters(column),
-      );
 
   ColumnFilters<String> get reason => $composableBuilder(
     column: $table.reason,
@@ -9385,6 +10129,29 @@ class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
     return composer;
   }
 
+  $$CurrenciesTableFilterComposer get currency {
+    final $$CurrenciesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.currency,
+      referencedTable: $db.currencies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CurrenciesTableFilterComposer(
+            $db: $db,
+            $table: $db.currencies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<bool> costBeneficiariesRefs(
     Expression<bool> Function($$CostBeneficiariesTableFilterComposer f) f,
   ) {
@@ -9427,11 +10194,6 @@ class $$CostsTableOrderingComposer
 
   ColumnOrderings<int> get amountMinor => $composableBuilder(
     column: $table.amountMinor,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get currency => $composableBuilder(
-    column: $table.currency,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9528,6 +10290,29 @@ class $$CostsTableOrderingComposer
     );
     return composer;
   }
+
+  $$CurrenciesTableOrderingComposer get currency {
+    final $$CurrenciesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.currency,
+      referencedTable: $db.currencies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CurrenciesTableOrderingComposer(
+            $db: $db,
+            $table: $db.currencies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$CostsTableAnnotationComposer
@@ -9546,9 +10331,6 @@ class $$CostsTableAnnotationComposer
     column: $table.amountMinor,
     builder: (column) => column,
   );
-
-  GeneratedColumnWithTypeConverter<Currency, int> get currency =>
-      $composableBuilder(column: $table.currency, builder: (column) => column);
 
   GeneratedColumn<String> get reason =>
       $composableBuilder(column: $table.reason, builder: (column) => column);
@@ -9636,6 +10418,29 @@ class $$CostsTableAnnotationComposer
     return composer;
   }
 
+  $$CurrenciesTableAnnotationComposer get currency {
+    final $$CurrenciesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.currency,
+      referencedTable: $db.currencies,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$CurrenciesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.currencies,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> costBeneficiariesRefs<T extends Object>(
     Expression<T> Function($$CostBeneficiariesTableAnnotationComposer a) f,
   ) {
@@ -9680,6 +10485,7 @@ class $$CostsTableTableManager
             bool itemId,
             bool groupId,
             bool tripId,
+            bool currency,
             bool costBeneficiariesRefs,
           })
         > {
@@ -9701,7 +10507,7 @@ class $$CostsTableTableManager
                 Value<int?> groupId = const Value.absent(),
                 Value<int?> tripId = const Value.absent(),
                 Value<int> amountMinor = const Value.absent(),
-                Value<Currency> currency = const Value.absent(),
+                Value<int> currency = const Value.absent(),
                 Value<String> reason = const Value.absent(),
                 Value<String?> paidBy = const Value.absent(),
                 Value<bool> paid = const Value.absent(),
@@ -9727,7 +10533,7 @@ class $$CostsTableTableManager
                 Value<int?> groupId = const Value.absent(),
                 Value<int?> tripId = const Value.absent(),
                 required int amountMinor,
-                required Currency currency,
+                required int currency,
                 required String reason,
                 Value<String?> paidBy = const Value.absent(),
                 Value<bool> paid = const Value.absent(),
@@ -9757,6 +10563,7 @@ class $$CostsTableTableManager
                 itemId = false,
                 groupId = false,
                 tripId = false,
+                currency = false,
                 costBeneficiariesRefs = false,
               }) {
                 return PrefetchHooks(
@@ -9819,6 +10626,19 @@ class $$CostsTableTableManager
                                   )
                                   as T;
                         }
+                        if (currency) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.currency,
+                                    referencedTable: $$CostsTableReferences
+                                        ._currencyTable(db),
+                                    referencedColumn: $$CostsTableReferences
+                                        ._currencyTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
                         return state;
                       },
@@ -9869,6 +10689,7 @@ typedef $$CostsTableProcessedTableManager =
         bool itemId,
         bool groupId,
         bool tripId,
+        bool currency,
         bool costBeneficiariesRefs,
       })
     >;
@@ -12140,6 +12961,8 @@ class $AppDatabaseManager {
       $$TransportModesTableTableManager(_db, _db.transportModes);
   $$ItineraryItemsTableTableManager get itineraryItems =>
       $$ItineraryItemsTableTableManager(_db, _db.itineraryItems);
+  $$CurrenciesTableTableManager get currencies =>
+      $$CurrenciesTableTableManager(_db, _db.currencies);
   $$CostsTableTableManager get costs =>
       $$CostsTableTableManager(_db, _db.costs);
   $$CostReasonsTableTableManager get costReasons =>

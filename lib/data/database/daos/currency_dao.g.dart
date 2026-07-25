@@ -1,27 +1,25 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'cost_dao.dart';
+part of 'currency_dao.dart';
 
 // ignore_for_file: type=lint
-mixin _$CostDaoMixin on DatabaseAccessor<AppDatabase> {
+mixin _$CurrencyDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CurrenciesTable get currencies => attachedDatabase.currencies;
   $TripsTable get trips => attachedDatabase.trips;
   $ItemGroupsTable get itemGroups => attachedDatabase.itemGroups;
   $AlternativeSetsTable get alternativeSets => attachedDatabase.alternativeSets;
   $AlternativesTable get alternatives => attachedDatabase.alternatives;
   $TransportModesTable get transportModes => attachedDatabase.transportModes;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
-  $CurrenciesTable get currencies => attachedDatabase.currencies;
   $CostsTable get costs => attachedDatabase.costs;
-  $CostReasonsTable get costReasons => attachedDatabase.costReasons;
-  $PeopleTable get people => attachedDatabase.people;
-  $CostBeneficiariesTable get costBeneficiaries =>
-      attachedDatabase.costBeneficiaries;
-  CostDaoManager get managers => CostDaoManager(this);
+  CurrencyDaoManager get managers => CurrencyDaoManager(this);
 }
 
-class CostDaoManager {
-  final _$CostDaoMixin _db;
-  CostDaoManager(this._db);
+class CurrencyDaoManager {
+  final _$CurrencyDaoMixin _db;
+  CurrencyDaoManager(this._db);
+  $$CurrenciesTableTableManager get currencies =>
+      $$CurrenciesTableTableManager(_db.attachedDatabase, _db.currencies);
   $$TripsTableTableManager get trips =>
       $$TripsTableTableManager(_db.attachedDatabase, _db.trips);
   $$ItemGroupsTableTableManager get itemGroups =>
@@ -43,17 +41,6 @@ class CostDaoManager {
         _db.attachedDatabase,
         _db.itineraryItems,
       );
-  $$CurrenciesTableTableManager get currencies =>
-      $$CurrenciesTableTableManager(_db.attachedDatabase, _db.currencies);
   $$CostsTableTableManager get costs =>
       $$CostsTableTableManager(_db.attachedDatabase, _db.costs);
-  $$CostReasonsTableTableManager get costReasons =>
-      $$CostReasonsTableTableManager(_db.attachedDatabase, _db.costReasons);
-  $$PeopleTableTableManager get people =>
-      $$PeopleTableTableManager(_db.attachedDatabase, _db.people);
-  $$CostBeneficiariesTableTableManager get costBeneficiaries =>
-      $$CostBeneficiariesTableTableManager(
-        _db.attachedDatabase,
-        _db.costBeneficiaries,
-      );
 }

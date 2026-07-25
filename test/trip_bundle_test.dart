@@ -46,7 +46,7 @@ void main() {
       BundleCost(
         itemLocalId: 100,
         amountMinor: 1600,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: 'Tickets',
         paidBy: 'Alice',
         paid: true,
@@ -56,13 +56,13 @@ void main() {
       BundleCost(
         groupLocalId: 10,
         amountMinor: 8000,
-        currency: Currency.eur,
+        currency: 'EUR',
         reason: 'Train',
         createdAt: DateTime(2026, 5, 1, 8),
       ),
       BundleCost(
         amountMinor: -500,
-        currency: Currency.usd,
+        currency: 'USD',
         reason: 'Refund',
         paidBy: 'Bob',
         createdAt: DateTime(2026, 5, 2),
@@ -122,7 +122,7 @@ void main() {
     expect(byReason['Refund']!.itemLocalId, isNull);
     expect(byReason['Refund']!.groupLocalId, isNull);
     expect(byReason['Refund']!.amountMinor, -500);
-    expect(byReason['Refund']!.currency, Currency.usd);
+    expect(byReason['Refund']!.currency, 'USD');
   });
 
   test('preserves defaults and nullable fields', () {
@@ -151,5 +151,61 @@ void main() {
     final json = sample().toJson();
     (json['items'] as List).first['kind'] = 'teleport';
     expect(() => TripBundle.fromJson(json), throwsFormatException);
+  });
+
+  group('currencies', () {
+    test('a built-in is written under the name the old format used', () {
+      final json = sample().toJson();
+      final costs = (json['costs'] as List).cast<Map<String, dynamic>>();
+      expect(costs.map((c) => c['currency']), ['eur', 'eur', 'usd']);
+      // …and reads back as the code.
+      expect(TripBundle.fromJson(json).costs.map((c) => c.currency), [
+        'EUR',
+        'EUR',
+        'USD',
+      ]);
+    });
+
+    test('a currency the old format lacked is written as its code', () {
+      expect(bundleCurrencyToken('JPY'), 'JPY');
+      expect(bundleCurrencyCode('JPY'), 'JPY');
+      expect(bundleNeedsCurrencyFormat(const ['EUR', 'USD']), isFalse);
+      expect(bundleNeedsCurrencyFormat(const ['EUR', 'JPY']), isTrue);
+    });
+
+    test('a bundle naming no currencies falls back to the old four', () {
+      final json = sample().toJson()..remove('currencies');
+      final bundle = TripBundle.fromJson(json);
+      expect(bundle.currencies.map((c) => c.code), [
+        'EUR',
+        'USD',
+        'GBP',
+        'CHF',
+      ]);
+      // Enough to still print an amount with its symbol.
+      expect(bundle.currencyBook.byCode('EUR')?.symbol, '€');
+      expect(bundle.currencyBook.base?.code, 'EUR');
+    });
+
+    test('the book resolves the currencies the bundle carries', () {
+      final bundle = TripBundle.fromJson(
+        sample().toJson()
+          ..['currencies'] = [
+            const BundleCurrency(
+              code: 'EUR',
+              symbol: '€',
+              rateMicros: kRateOne,
+              isBase: true,
+            ).toJson(),
+            const BundleCurrency(
+              code: 'USD',
+              symbol: r'US$',
+              rateMicros: 900000,
+            ).toJson(),
+          ],
+      );
+      expect(bundle.currencyBook.toBase(1000, 'USD'), 900);
+      expect(bundle.currencyBook.toBase(1000, 'GBP'), isNull);
+    });
   });
 }

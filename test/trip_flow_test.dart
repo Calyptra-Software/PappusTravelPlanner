@@ -7,6 +7,8 @@ import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/trips/presentation/trip_list_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
+import 'currency_fixture.dart';
+
 /// Pumps the overview screen with [tripListProvider] overridden to emit [trips],
 /// avoiding the real drift stream (which doesn't resolve under fake-async).
 Future<void> pumpOverview(
@@ -16,7 +18,10 @@ Future<void> pumpOverview(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [tripListProvider.overrideWith((ref) => Stream.value(trips))],
+      overrides: [
+        ...currencyOverrides,
+        tripListProvider.overrideWith((ref) => Stream.value(trips)),
+      ],
       child: MaterialApp(
         locale: locale,
         localizationsDelegates: const [

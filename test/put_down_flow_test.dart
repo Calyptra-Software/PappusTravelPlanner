@@ -21,6 +21,8 @@ import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/trips/presentation/trip_detail_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
+import 'currency_fixture.dart';
+
 /// Covers the *putting down* half of moving an entry, which only exists on the
 /// trip screen: the chip in each day's and each option's add-row, the bar naming
 /// what is being carried, and what the screen says about where it landed.
@@ -134,6 +136,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          ...currencyOverrides,
           repositoryProvider.overrideWithValue(repo),
           sharedPreferencesProvider.overrideWithValue(prefs),
           tripProvider(tripId).overrideWith((ref) => Stream.value(trip)),

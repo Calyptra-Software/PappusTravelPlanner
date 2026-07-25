@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
-import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
@@ -11,6 +10,7 @@ import '../../itinerary/transport_stats.dart';
 import '../../itinerary/widgets/transport_mode.dart';
 import '../../trips/application/trip_providers.dart';
 import '../application/cost_providers.dart';
+import '../application/currency_providers.dart';
 import '../cost_reason_icons.dart';
 import '../trip_stats.dart';
 import 'cost_form_sheet.dart';
@@ -32,7 +32,9 @@ class TripStatsScreen extends ConsumerStatefulWidget {
 }
 
 class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
-  Currency? _currency;
+  /// The currency **code** whose section is on screen; null until the stats
+  /// name one.
+  String? _currency;
   _PersonView _personView = _PersonView.balances;
 
   @override
@@ -49,6 +51,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
         ? ref.watch(allTripsTransportStatsProvider)
         : ref.watch(transportStatsProvider(tripId));
     final meName = ref.watch(mePersonProvider).value?.name;
+    final book = ref.watch(currencyBookProvider);
     final accent = trip != null
         ? Color(trip.colorValue)
         : Theme.of(context).colorScheme.primary;
@@ -85,6 +88,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
               currencies: currencies,
               selected: selected,
               current: current,
+              currency: book.byCode(selected),
             ),
             _TransportTab(stats: transportStats, accent: accent),
           ],
@@ -99,9 +103,10 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
     required String localeName,
     required Color accent,
     required String? meName,
-    required List<Currency> currencies,
-    required Currency? selected,
+    required List<String> currencies,
+    required String? selected,
     required CurrencyStats? current,
+    required CurrencyInfo? currency,
   }) {
     if (current == null) return _EmptyState(message: l10n.statsNoData);
     return ListView(
@@ -115,11 +120,20 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
           ),
           const SizedBox(height: 16),
         ],
-        _SummaryStrip(stats: current, localeName: localeName),
+        _SummaryStrip(
+          stats: current,
+          currency: currency,
+          localeName: localeName,
+        ),
         const SizedBox(height: 24),
         _SectionHeader(l10n.statsByCategory),
         const SizedBox(height: 12),
-        _CategoryList(stats: current, accent: accent, localeName: localeName),
+        _CategoryList(
+          stats: current,
+          currency: currency,
+          accent: accent,
+          localeName: localeName,
+        ),
         const SizedBox(height: 24),
         _SectionHeader(l10n.statsByPerson),
         const SizedBox(height: 12),
@@ -148,6 +162,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
         switch (_personView) {
           _PersonView.paid => _PersonAmountList(
             stats: current,
+            currency: currency,
             accent: accent,
             localeName: localeName,
             meName: meName,
@@ -155,6 +170,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
           ),
           _PersonView.share => _PersonAmountList(
             stats: current,
+            currency: currency,
             accent: accent,
             localeName: localeName,
             meName: meName,
@@ -162,6 +178,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
           ),
           _PersonView.balances => _BalancesSection(
             stats: current,
+            currency: currency,
             localeName: localeName,
             meName: meName,
             // Booking a settlement writes to one trip, so it is offered on a
@@ -181,18 +198,18 @@ class _CurrencySelector extends StatelessWidget {
     required this.onChanged,
   });
 
-  final List<Currency> currencies;
-  final Currency selected;
-  final ValueChanged<Currency> onChanged;
+  /// Currency codes, in the order the statistics report them.
+  final List<String> currencies;
+  final String selected;
+  final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
-      child: SegmentedButton<Currency>(
+      child: SegmentedButton<String>(
         segments: [
-          for (final c in currencies)
-            ButtonSegment(value: c, label: Text(c.code)),
+          for (final c in currencies) ButtonSegment(value: c, label: Text(c)),
         ],
         selected: {selected},
         onSelectionChanged: (s) => onChanged(s.first),
@@ -202,9 +219,17 @@ class _CurrencySelector extends StatelessWidget {
 }
 
 class _SummaryStrip extends StatelessWidget {
-  const _SummaryStrip({required this.stats, required this.localeName});
+  const _SummaryStrip({
+    required this.stats,
+    required this.currency,
+    required this.localeName,
+  });
 
   final CurrencyStats stats;
+
+  /// The currency [stats] is in, resolved for its symbol. Null only while the
+  /// currencies are still loading.
+  final CurrencyInfo? currency;
   final String localeName;
 
   @override
@@ -225,7 +250,7 @@ class _SummaryStrip extends StatelessWidget {
           textBaseline: TextBaseline.alphabetic,
           children: [
             Text(
-              formatMoney(stats.totalMinor, stats.currency, localeName),
+              formatMoney(stats.totalMinor, currency, localeName),
               style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -250,7 +275,7 @@ class _SummaryStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               l10n.statsPaidAmount(
-                formatMoney(stats.paidMinor, stats.currency, localeName),
+                formatMoney(stats.paidMinor, currency, localeName),
                 paidPercent,
               ),
               style: theme.textTheme.bodyMedium,
@@ -264,7 +289,7 @@ class _SummaryStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               l10n.statsOpenAmount(
-                formatMoney(stats.openMinor, stats.currency, localeName),
+                formatMoney(stats.openMinor, currency, localeName),
                 openPercent,
               ),
               style: theme.textTheme.bodyMedium,
@@ -294,11 +319,13 @@ class _SectionHeader extends StatelessWidget {
 class _CategoryList extends ConsumerWidget {
   const _CategoryList({
     required this.stats,
+    required this.currency,
     required this.accent,
     required this.localeName,
   });
 
   final CurrencyStats stats;
+  final CurrencyInfo? currency;
   final Color accent;
   final String localeName;
 
@@ -315,7 +342,7 @@ class _CategoryList extends ConsumerWidget {
               color: accent,
             ),
             label: cat.reason,
-            trailing: formatMoney(cat.amountMinor, stats.currency, localeName),
+            trailing: formatMoney(cat.amountMinor, currency, localeName),
             secondary: '${(cat.fraction * 100).round()}%',
             fraction: cat.fraction,
             color: accent,
@@ -331,6 +358,7 @@ class _CategoryList extends ConsumerWidget {
 class _PersonAmountList extends StatelessWidget {
   const _PersonAmountList({
     required this.stats,
+    required this.currency,
     required this.accent,
     required this.localeName,
     required this.meName,
@@ -338,6 +366,7 @@ class _PersonAmountList extends StatelessWidget {
   });
 
   final CurrencyStats stats;
+  final CurrencyInfo? currency;
   final Color accent;
   final String localeName;
   final String? meName;
@@ -360,7 +389,7 @@ class _PersonAmountList extends StatelessWidget {
               size: 20,
             ),
             label: person.name,
-            trailing: formatMoney(amountOf(person), stats.currency, localeName),
+            trailing: formatMoney(amountOf(person), currency, localeName),
             fraction: maxAmount == 0 ? 0 : amountOf(person) / maxAmount,
             color: accent,
           ),
@@ -372,12 +401,14 @@ class _PersonAmountList extends StatelessWidget {
 class _BalancesSection extends StatelessWidget {
   const _BalancesSection({
     required this.stats,
+    required this.currency,
     required this.localeName,
     required this.meName,
     this.tripId,
   });
 
   final CurrencyStats stats;
+  final CurrencyInfo? currency;
   final String localeName;
   final String? meName;
 
@@ -421,14 +452,14 @@ class _BalancesSection extends StatelessWidget {
                               ? l10n.statsSettlementSent(
                                   formatMoney(
                                     person.settledMinor,
-                                    stats.currency,
+                                    currency,
                                     localeName,
                                   ),
                                 )
                               : l10n.statsSettlementReceived(
                                   formatMoney(
                                     -person.settledMinor,
-                                    stats.currency,
+                                    currency,
                                     localeName,
                                   ),
                                 ),
@@ -443,7 +474,7 @@ class _BalancesSection extends StatelessWidget {
                   person.netMinor == 0
                       ? l10n.statsEven
                       : '${person.netMinor > 0 ? l10n.statsGetsBack : l10n.statsOwes} '
-                            '${formatMoney(person.netMinor.abs(), stats.currency, localeName)}',
+                            '${formatMoney(person.netMinor.abs(), currency, localeName)}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: person.netMinor == 0
@@ -478,7 +509,7 @@ class _BalancesSection extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(child: Text(l10n.statsTransfer(t.from, t.to))),
                   Text(
-                    formatMoney(t.amountMinor, stats.currency, localeName),
+                    formatMoney(t.amountMinor, currency, localeName),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -493,7 +524,7 @@ class _BalancesSection extends StatelessWidget {
                         context,
                         tripId: tripId!,
                         amountMinor: t.amountMinor,
-                        currency: stats.currency,
+                        currencyId: currency?.id,
                         from: t.from,
                         to: t.to,
                       ),

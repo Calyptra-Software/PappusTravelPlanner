@@ -10,7 +10,7 @@ import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
-import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/data/database/tables.dart' show ItemKind;
 import 'package:travelplanner/features/trips/presentation/trip_detail_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -54,7 +54,8 @@ void main() {
       CostsCompanion.insert(
         itemId: Value(museum),
         amountMinor: 1500,
-        currency: Currency.eur,
+        // The built-in currencies are seeded in enum order, so EUR is row 1.
+        currency: 1,
         reason: 'Ticket',
       ),
     );

@@ -4,6 +4,7 @@ import '../../core/database/database_location.dart';
 import 'daos/alternative_dao.dart';
 import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
+import 'daos/currency_dao.dart';
 import 'daos/group_dao.dart';
 import 'daos/itinerary_dao.dart';
 import 'daos/sharing_dao.dart';
@@ -29,6 +30,7 @@ const int kApplicationId = 0x5452504C;
     ItineraryItems,
     Costs,
     CostReasons,
+    Currencies,
     TransportModes,
     People,
     TripParticipants,
@@ -46,6 +48,7 @@ const int kApplicationId = 0x5452504C;
     AlternativeDao,
     SharingDao,
     TransportModeDao,
+    CurrencyDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -57,15 +60,17 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 22;
+  int get schemaVersion => 23;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       // A fresh database starts with the built-in transport modes so a leg has
-      // something to pick from; the user manages the list from there.
+      // something to pick from; the user manages the list from there. Same for
+      // the currencies an expense can be recorded in.
       await transportModeDao.seedBuiltinModes();
+      await currencyDao.seedBuiltinCurrencies();
     },
     onUpgrade: (m, from, to) async {
       // v2 introduced costs attached to itinerary items.
@@ -237,6 +242,26 @@ class AppDatabase extends _$AppDatabase {
       // existing row is an expense.
       if (from < 22) {
         await m.addColumn(costs, costs.isTransfer);
+      }
+      // v23 turned the fixed Currency enum into a user-managed table, the way
+      // v20 did for transport modes: the built-ins are now seeded rows the user
+      // can extend, re-code, reorder or delete, one of them is the base, and the
+      // others carry an exchange rate against it. Create and seed the table (the
+      // built-ins go in in enum order, so each gets id = its old enum index + 1),
+      // then repoint every cost's `currency` from that old index onto its new
+      // row and recreate the table so its foreign key to `currencies` takes
+      // effect.
+      if (from < 23) {
+        await m.createTable(currencies);
+        await currencyDao.seedBuiltinCurrencies();
+        await m.alterTable(
+          TableMigration(
+            costs,
+            columnTransformer: {
+              costs.currency: costs.currency + const Constant(1),
+            },
+          ),
+        );
       }
     },
     beforeOpen: (details) async {

@@ -5,6 +5,8 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/sharing/trip_bundle.dart';
 
+import 'currency_fixture.dart';
+
 void main() {
   // Several tests open a second in-memory database to stand in for a recipient
   // device; each uses its own executor, so the multi-database warning is noise.
@@ -63,7 +65,7 @@ void main() {
       CostsCompanion.insert(
         itemId: Value(place),
         amountMinor: 1600,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Tickets',
         paidBy: const Value('Alice'),
         paid: const Value(true),
@@ -76,7 +78,7 @@ void main() {
       CostsCompanion.insert(
         groupId: Value(groupId),
         amountMinor: 8000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Train',
       ),
     );
@@ -84,7 +86,7 @@ void main() {
       CostsCompanion.insert(
         tripId: Value(tripId),
         amountMinor: -500,
-        currency: Currency.usd,
+        currency: usdId,
         reason: 'Refund',
       ),
     );
@@ -201,7 +203,7 @@ void main() {
 
     // And it still isn't spending on the recipient's device either.
     final totals = await db.costDao.watchTotalsByTrip().first;
-    expect(totals[newId]![Currency.eur], 1600 + 8000);
+    expect(totals[newId]!['EUR'], 1600 + 8000);
   });
 
   test('a bundle written before settlements existed reads as expenses', () {
@@ -218,6 +220,150 @@ void main() {
       'beneficiaries': ['Alice'],
     };
     expect(BundleCost.fromJson(json).isTransfer, isFalse);
+  });
+
+  group('currencies', () {
+    test('travel by code, with their definitions alongside', () async {
+      final tripId = await _seedTrip(db);
+      // The base carries a rate of 1 by definition; give USD one too.
+      await db.currencyDao.setRate(usdId, 900000);
+
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+      expect(
+        bundle.costs.map((c) => c.currency),
+        everyElement(isIn(['EUR', 'USD'])),
+      );
+      // Only the currencies the trip actually uses ride along — plus the base,
+      // which is what the rates mean.
+      expect(bundle.currencies.map((c) => c.code), ['EUR', 'USD']);
+      final usd = bundle.currencies.firstWhere((c) => c.code == 'USD');
+      expect(usd.symbol, r'US$');
+      expect(usd.rateMicros, 900000);
+      expect(
+        bundle.currencies.firstWhere((c) => c.code == 'EUR').isBase,
+        isTrue,
+      );
+    });
+
+    test(
+      'a trip in the old four currencies stays readable by an older app',
+      () async {
+        final tripId = await _seedTrip(db);
+        final bundle = (await db.sharingDao.exportTrip(tripId))!;
+        // No decisions and no currency the old enum lacked: still a v1 bundle,
+        // whose costs name their currency the way that app expects.
+        expect(bundle.formatVersion, 1);
+        final json = bundle.costs.first.toJson();
+        expect(json['currency'], 'eur');
+      },
+    );
+
+    test('a trip using an added currency goes out as v3', () async {
+      final tripId = await _seedTrip(db);
+      final jpy = await db.currencyDao.addCurrency(code: 'JPY', symbol: '¥');
+      await db.costDao.addCost(
+        CostsCompanion.insert(
+          tripId: Value(tripId),
+          amountMinor: 300000,
+          currency: jpy,
+          reason: 'Ryokan',
+        ),
+      );
+
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+      expect(bundle.formatVersion, 3);
+      expect(
+        bundle.costs
+            .firstWhere((c) => c.reason == 'Ryokan')
+            .toJson()['currency'],
+        'JPY',
+      );
+    });
+
+    test(
+      'an unknown currency is created on import, keeping its symbol',
+      () async {
+        final source = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(source.close);
+        final sourceId = await _seedTrip(source);
+        final jpy = await source.currencyDao.addCurrency(
+          code: 'JPY',
+          symbol: '¥',
+          rateMicros: 6000,
+        );
+        await source.costDao.addCost(
+          CostsCompanion.insert(
+            tripId: Value(sourceId),
+            amountMinor: 300000,
+            currency: jpy,
+            reason: 'Ryokan',
+          ),
+        );
+        // The recipient deleted CHF and has never heard of JPY.
+        await db.currencyDao.deleteCurrency(chfId);
+
+        final bytes = (await source.sharingDao.exportTrip(sourceId))!.encode();
+        final newId = await db.sharingDao.importTrip(TripBundle.decode(bytes));
+
+        final currencies = await db.currencyDao.watchCurrencies().first;
+        final imported = currencies.firstWhere((c) => c.code == 'JPY');
+        expect(imported.symbol, '¥');
+        // Both databases have EUR as their base, so the rate means the same thing
+        // here and is adopted.
+        expect(imported.rateMicros, 6000);
+
+        final totals = await db.costDao.watchTotalsByTrip().first;
+        expect(totals[newId]!['JPY'], 300000);
+      },
+    );
+
+    test('a rate measured against another base is not adopted', () async {
+      final source = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(source.close);
+      final sourceId = await _seedTrip(source);
+      final jpy = await source.currencyDao.addCurrency(
+        code: 'JPY',
+        symbol: '¥',
+        rateMicros: 6000,
+      );
+      await source.costDao.addCost(
+        CostsCompanion.insert(
+          tripId: Value(sourceId),
+          amountMinor: 300000,
+          currency: jpy,
+          reason: 'Ryokan',
+        ),
+      );
+      // The recipient prices everything in GBP instead, so "¥1 = €0.006" says
+      // nothing here and must not be taken at face value.
+      await db.currencyDao.setBase(gbpId);
+
+      final bytes = (await source.sharingDao.exportTrip(sourceId))!.encode();
+      await db.sharingDao.importTrip(TripBundle.decode(bytes));
+
+      final currencies = await db.currencyDao.watchCurrencies().first;
+      expect(currencies.firstWhere((c) => c.code == 'JPY').rateMicros, isNull);
+    });
+
+    test(
+      'an existing currency keeps the importer\'s own symbol and rate',
+      () async {
+        final source = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(source.close);
+        final sourceId = await _seedTrip(source);
+        await source.currencyDao.setRate(usdId, 900000);
+        await source.currencyDao.editCurrency(usdId, symbol: r'$');
+
+        await db.currencyDao.setRate(usdId, 950000);
+        final bytes = (await source.sharingDao.exportTrip(sourceId))!.encode();
+        await db.sharingDao.importTrip(TripBundle.decode(bytes));
+
+        final currencies = await db.currencyDao.watchCurrencies().first;
+        final usd = currencies.firstWhere((c) => c.code == 'USD');
+        expect(usd.symbol, r'US$');
+        expect(usd.rateMicros, 950000);
+      },
+    );
   });
 
   test('importing merges rosters without duplicating or overriding', () async {
@@ -358,7 +504,7 @@ Future<int> _seedTrip(AppDatabase db) async {
     CostsCompanion.insert(
       itemId: Value(place),
       amountMinor: 1600,
-      currency: Currency.eur,
+      currency: eurId,
       reason: 'Tickets',
       paidBy: const Value('Alice'),
     ),
@@ -369,7 +515,7 @@ Future<int> _seedTrip(AppDatabase db) async {
     CostsCompanion.insert(
       groupId: Value(groupId),
       amountMinor: 8000,
-      currency: Currency.eur,
+      currency: eurId,
       reason: 'Train',
     ),
   );
@@ -377,7 +523,7 @@ Future<int> _seedTrip(AppDatabase db) async {
     CostsCompanion.insert(
       tripId: Value(tripId),
       amountMinor: -500,
-      currency: Currency.usd,
+      currency: usdId,
       reason: 'Refund',
     ),
   );
@@ -387,7 +533,7 @@ Future<int> _seedTrip(AppDatabase db) async {
     CostsCompanion.insert(
       tripId: Value(tripId),
       amountMinor: 2000,
-      currency: Currency.eur,
+      currency: eurId,
       reason: '',
       paidBy: const Value('Bob'),
       paid: const Value(true),

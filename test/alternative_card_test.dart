@@ -19,6 +19,8 @@ import 'package:travelplanner/features/itinerary/widgets/alternative_card.dart';
 import 'package:travelplanner/features/itinerary/widgets/now_line.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
+import 'currency_fixture.dart';
+
 /// Covers the swipeable decision card: only the option on screen is drawn,
 /// swiping merely browses (it must never move the trip's money), and every
 /// option's price stays visible in the indicator row so they can be compared.
@@ -42,6 +44,7 @@ void main() {
   /// drift stream behind the roster would never resolve under fake-async.
   Widget wrap(Widget card) => ProviderScope(
     overrides: [
+      ...currencyOverrides,
       repositoryProvider.overrideWithValue(repo),
       sharedPreferencesProvider.overrideWithValue(prefs),
       reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
@@ -81,7 +84,7 @@ void main() {
     id: id,
     itemId: itemId,
     amountMinor: amountMinor,
-    currency: Currency.eur,
+    currency: eurId,
     reason: 'Ticket',
     paid: false,
     isTransfer: false,

@@ -281,7 +281,7 @@ void main() {
               BundleCost(
                 itemLocalId: 1,
                 amountMinor: 1850,
-                currency: Currency.eur,
+                currency: 'EUR',
                 reason: 'Tickets',
                 createdAt: DateTime.utc(2026, 7, 1),
               ),

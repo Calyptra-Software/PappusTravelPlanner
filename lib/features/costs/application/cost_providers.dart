@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
-import '../../../data/database/tables.dart';
 import '../../trips/application/trip_providers.dart';
 import '../trip_stats.dart';
+import 'currency_providers.dart';
 
 /// A trip's costs bucketed by how they attach: to a single itinerary item
 /// ([byItem]), to a group of items sharing one expense ([byGroup]), or to the
@@ -109,10 +109,11 @@ final tripStatsProvider = Provider.autoDispose.family<TripStats, int>((
   final costs = ref.watch(countedCostsProvider(tripId)).value;
   final beneficiaries = ref.watch(tripBeneficiariesProvider(tripId)).value;
   final participants = ref.watch(tripParticipantsProvider(tripId)).value;
+  final book = ref.watch(currencyBookProvider);
   if (costs == null) return const TripStats([]);
   return computeTripStats(costs, beneficiaries ?? const {}, [
     for (final p in participants ?? const <Person>[]) p.name,
-  ]);
+  ], book);
 });
 
 /// Expense statistics pooled across **all** trips — the overall overview. Each
@@ -122,7 +123,7 @@ final allTripsStatsProvider = Provider.autoDispose<TripStats>((ref) {
   final trips = ref.watch(tripListProvider).value ?? const <Trip>[];
   return mergeTripStats([
     for (final trip in trips) ref.watch(tripStatsProvider(trip.id)),
-  ]);
+  ], ref.watch(currencyBookProvider));
 });
 
 final costControllerProvider = Provider<CostController>(
@@ -136,13 +137,14 @@ class CostController {
 
   /// Adds a cost attached to an itinerary item ([itemId]), a group of items
   /// sharing one expense ([groupId]), or the whole trip ([tripId]). Exactly one
-  /// should be provided.
+  /// should be provided. [currencyId] is a `Currencies` row id — the currencies
+  /// are user-managed, so an expense points at one rather than naming it.
   Future<void> addCost({
     int? itemId,
     int? groupId,
     int? tripId,
     required int amountMinor,
-    required Currency currency,
+    required int currencyId,
     required String reason,
     String? paidBy,
     List<String> paidFor = const [],
@@ -157,7 +159,7 @@ class CostController {
         groupId: Value(groupId),
         tripId: Value(tripId),
         amountMinor: amountMinor,
-        currency: currency,
+        currency: currencyId,
         reason: reason,
         paidBy: Value(paidBy),
         paid: Value(paid),
@@ -169,7 +171,7 @@ class CostController {
   Future<void> updateCost(
     Cost existing, {
     required int amountMinor,
-    required Currency currency,
+    required int currencyId,
     required String reason,
     String? paidBy,
     List<String> paidFor = const [],
@@ -181,7 +183,7 @@ class CostController {
     await repo.updateCost(
       existing.copyWith(
         amountMinor: amountMinor,
-        currency: currency,
+        currency: currencyId,
         reason: reason,
         paidBy: Value(paidBy),
         paid: paid,
@@ -200,7 +202,7 @@ class CostController {
   Future<void> addTransfer({
     required int tripId,
     required int amountMinor,
-    required Currency currency,
+    required int currencyId,
     required String from,
     required String to,
   }) async {
@@ -211,7 +213,7 @@ class CostController {
       CostsCompanion.insert(
         tripId: Value(tripId),
         amountMinor: amountMinor,
-        currency: currency,
+        currency: currencyId,
         reason: '',
         paidBy: Value(from),
         paid: const Value(true),
@@ -225,7 +227,7 @@ class CostController {
   Future<void> updateTransfer(
     Cost existing, {
     required int amountMinor,
-    required Currency currency,
+    required int currencyId,
     required String from,
     required String to,
   }) async {
@@ -235,7 +237,7 @@ class CostController {
     await repo.updateCost(
       existing.copyWith(
         amountMinor: amountMinor,
-        currency: currency,
+        currency: currencyId,
         reason: '',
         paidBy: Value(from),
         paid: true,

@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 
+import 'currency_fixture.dart';
+
 void main() {
   late AppDatabase db;
 
@@ -72,7 +74,7 @@ void main() {
         CostsCompanion.insert(
           groupId: Value(g2),
           amountMinor: 5000,
-          currency: Currency.eur,
+          currency: eurId,
           reason: 'Ticket',
         ),
       );
@@ -102,7 +104,7 @@ void main() {
       CostsCompanion.insert(
         groupId: Value(groupId),
         amountMinor: 5000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Ticket',
       ),
     );
@@ -132,7 +134,7 @@ void main() {
         CostsCompanion.insert(
           groupId: Value(groupId),
           amountMinor: 5000,
-          currency: Currency.eur,
+          currency: eurId,
           reason: 'Ticket',
         ),
       );
@@ -170,7 +172,7 @@ void main() {
         CostsCompanion.insert(
           groupId: Value(groupId),
           amountMinor: 5000,
-          currency: Currency.eur,
+          currency: eurId,
           reason: 'Ticket',
         ),
       );
@@ -196,7 +198,7 @@ void main() {
       CostsCompanion.insert(
         groupId: Value(groupId),
         amountMinor: 5000,
-        currency: Currency.eur,
+        currency: eurId,
         reason: 'Ticket',
       ),
     );
