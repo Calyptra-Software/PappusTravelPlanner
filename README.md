@@ -48,6 +48,10 @@ Linux, Windows, macOS, and iOS.
   use the app or for a paper copy: a cover with the trip's dates, notes, and participants,
   the day-by-day itinerary, an expense summary (per-currency total and a breakdown), and
   the checklists. Shared via the Android share sheet or saved to a file on desktop.
+- **Export to calendar** — put a trip into whatever calendar you already use, as a standard
+  `.ics` file: one event per place and transport leg, plus an all-day banner for the trip.
+  Times are *floating*, so 09:30 stays 09:30 wherever you read it; untimed entries become
+  all-day events, and only the **chosen** option of each decision is exported.
 - **Portable database** — all data lives in a single SQLite file. On desktop you can
   open/create the database anywhere; on Android you can import/export it. Copy the
   file between devices and platforms and open it as-is.
@@ -169,7 +173,7 @@ lib/
     itinerary/              # timeline, day blocks, alternatives card, item form, transport modes
     costs/                  # cost form, splitting/stats, reasons & people settings
     checklist/              # per-trip named checklists
-    sharing/                # portable trip bundles (export/import a single trip) + PDF export
+    sharing/                # portable trip bundles (export/import a single trip) + PDF and .ics export
     settings/               # language, cost reasons, people + database location screen
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
@@ -195,9 +199,11 @@ and open it directly. Deleting a trip cascades to its itinerary items and their 
 To move **one trip** rather than the whole database, use the share button on the trip
 screen: it writes a `.tpt` bundle (a portable snapshot of that trip alone) which the
 recipient imports from the trips overview. On Android a `.tpt` file shared to — or
-opened with — Travel Planner goes straight into the import flow. The same button also
-offers **Export as PDF** — a printable, read-only copy of the trip for anyone, whether or
-not they use the app.
+opened with — Travel Planner goes straight into the import flow.
+
+The same button also offers **Export as PDF** (a printable, read-only copy) and **Export to
+calendar** (an `.ics` file for a calendar app). Both are one-way views of the plan; only the
+`.tpt` bundle can be imported back.
 
 ## Localization
 

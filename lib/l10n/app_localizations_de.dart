@@ -141,6 +141,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Reise konnte nicht als PDF exportiert werden.';
 
   @override
+  String get exportIcs => 'In Kalender exportieren';
+
+  @override
+  String get exportIcsFailed =>
+      'Diese Reise konnte nicht in einen Kalender exportiert werden.';
+
+  @override
   String pdfOtherOptions(String options) {
     return 'Weitere Optionen: $options';
   }

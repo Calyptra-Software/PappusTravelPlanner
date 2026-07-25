@@ -51,6 +51,8 @@
   "shareTripFailed": "Could not share this trip.",
   "exportPdf": "Export as PDF",
   "exportPdfFailed": "Could not export this trip as PDF.",
+  "exportIcs": "Export to calendar",
+  "exportIcsFailed": "Could not export this trip to a calendar.",
   "pdfOtherOptions": "Other options: {options}",
   "@pdfOtherOptions": {
     "placeholders": { "options": { "type": "String" } }

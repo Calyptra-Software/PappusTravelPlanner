@@ -196,6 +196,19 @@ UI (features/*/presentation, *widgets)
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
+- **A trip leaves the app in three shapes, all built from one `TripBundle`** (`features/sharing/`,
+  all pure so they test without a database): the `.tpt` bundle itself — the only *lossless*,
+  round-tripping one, and the only one with an importer — plus two one-way views, `trip_pdf.dart`
+  and `trip_ics.dart`. All three read the plan the same way the timeline does: only *live* entries
+  (loose ones and the chosen option of each decision), so the road not taken never leaves either.
+  The `.ics` export leans on the fact that the app stores **no timezone at all** — a day plus
+  minutes since midnight — which is exactly iCalendar's *floating* time (`DTSTART` with neither a
+  `Z` nor a `TZID`), so nothing is converted and nothing can be converted wrongly. What a calendar
+  cannot hold is dropped rather than faked: an untimed entry becomes an all-day event and thereby
+  loses its `sortOrder` (a calendar orders by time or not at all), and groups, checklists,
+  participants and actual times have no mapping (costs ride along as description text, readable
+  but not counted). Import of `.ics` is deliberately **not** built — a calendar event routinely
+  spans days, which an item (one day, strictly) cannot represent.
 
 ### Database portability & schema changes
 

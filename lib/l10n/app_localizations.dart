@@ -314,6 +314,18 @@ abstract class AppLocalizations {
   /// **'Could not export this trip as PDF.'**
   String get exportPdfFailed;
 
+  /// No description provided for @exportIcs.
+  ///
+  /// In en, this message translates to:
+  /// **'Export to calendar'**
+  String get exportIcs;
+
+  /// No description provided for @exportIcsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export this trip to a calendar.'**
+  String get exportIcsFailed;
+
   /// No description provided for @pdfOtherOptions.
   ///
   /// In en, this message translates to:

@@ -139,6 +139,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportPdfFailed => 'Could not export this trip as PDF.';
 
   @override
+  String get exportIcs => 'Export to calendar';
+
+  @override
+  String get exportIcsFailed => 'Could not export this trip to a calendar.';
+
+  @override
   String pdfOtherOptions(String options) {
     return 'Other options: $options';
   }

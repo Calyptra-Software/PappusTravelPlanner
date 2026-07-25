@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
@@ -25,12 +27,13 @@ import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/alternative_card.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
 import '../../sharing/trip_bundle.dart';
+import '../../sharing/trip_ics.dart';
 import '../../sharing/trip_pdf.dart';
 import '../application/trip_providers.dart';
 
 /// The two ways to export a trip from the detail screen's share menu: the app's
 /// own portable `.tpt` bundle (re-importable) or a printable PDF.
-enum _ShareAction { tripFile, pdf }
+enum _ShareAction { tripFile, pdf, ics }
 
 /// Trip detail: header summary plus the day-by-day itinerary.
 class TripDetailScreen extends ConsumerStatefulWidget {
@@ -202,6 +205,40 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.exportPdfFailed)));
+    }
+  }
+
+  /// Exports the trip as an `.ics` calendar: shared via the OS share sheet on
+  /// mobile/web, saved to a file on desktop. [title] names the file.
+  ///
+  /// Unlike the `.tpt` bundle this is deliberately one-way and partial — see
+  /// `buildTripIcs` for what a calendar can and can't hold.
+  Future<void> _exportIcs(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final localeName = Localizations.localeOf(context).languageCode;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bundle = await ref.read(repositoryProvider).tripBundle(tripId);
+      if (bundle == null) return;
+      final ics = buildTripIcs(
+        bundle: bundle,
+        l10n: l10n,
+        localeName: localeName,
+      );
+      await _shareBytes(
+        messenger,
+        bytes: Uint8List.fromList(utf8.encode(ics)),
+        fileName: '${_fileBase(title)}.$tripIcsExtension',
+        mimeType: tripIcsMimeType,
+        subject: title,
+        savedMessage: l10n.shareTripSaved,
+      );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.exportIcsFailed)));
     }
   }
 
@@ -407,6 +444,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   _shareTrip(context, ref, title);
                 case _ShareAction.pdf:
                   _exportPdf(context, ref, title);
+                case _ShareAction.ics:
+                  _exportIcs(context, ref, title);
               }
             },
             itemBuilder: (context) => [
@@ -426,6 +465,15 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.picture_as_pdf_outlined),
                   title: Text(l10n.exportPdf),
+                ),
+              ),
+              PopupMenuItem(
+                value: _ShareAction.ics,
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.event_outlined),
+                  title: Text(l10n.exportIcs),
                 ),
               ),
             ],
