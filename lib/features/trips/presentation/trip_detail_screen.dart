@@ -26,9 +26,12 @@ import '../../itinerary/day_blocks.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/alternative_card.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
+import '../../sharing/application/pdf_sections_provider.dart';
+import '../../sharing/presentation/pdf_sections_sheet.dart';
 import '../../sharing/trip_bundle.dart';
 import '../../sharing/trip_ics.dart';
 import '../../sharing/trip_pdf.dart';
+import '../../sharing/trip_pdf_sections.dart';
 import '../application/trip_providers.dart';
 
 /// The two ways to export a trip from the detail screen's share menu: the app's
@@ -177,6 +180,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
 
   /// Exports the trip as a printable PDF: shared via the OS share sheet on
   /// mobile/web, saved to a file on desktop. [title] names the file.
+  ///
+  /// The bundle is read *before* the section picker opens so the sheet can say
+  /// what each section would contain, and grey out the ones this trip has
+  /// nothing for.
   Future<void> _exportPdf(
     BuildContext context,
     WidgetRef ref,
@@ -188,11 +195,20 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     try {
       final bundle = await ref.read(repositoryProvider).tripBundle(tripId);
       if (bundle == null) return;
+      if (!context.mounted) return;
+      final sections = await showPdfSectionsSheet(
+        context,
+        summary: summarizePdfSections(bundle),
+        initial: ref.read(pdfSectionsProvider),
+      );
+      if (sections == null) return;
+      await ref.read(pdfSectionsProvider.notifier).setSections(sections);
       final fonts = await TripPdfFonts.load();
       final bytes = await buildTripPdf(
         bundle: bundle,
         l10n: l10n,
         localeName: localeName,
+        sections: sections,
         fonts: fonts,
       );
       await _shareBytes(

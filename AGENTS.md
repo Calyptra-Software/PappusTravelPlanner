@@ -209,6 +209,20 @@ UI (features/*/presentation, *widgets)
   participants and actual times have no mapping (costs ride along as description text, readable
   but not counted). Import of `.ics` is deliberately **not** built — a calendar event routinely
   spans days, which an item (one day, strictly) cannot represent.
+- **The PDF is the one export the user composes** (`trip_pdf_sections.dart`, pure): a `PdfSection`
+  — itinerary, expenses, checklists — is ticked in `presentation/pdf_sections_sheet.dart` before
+  the document is built, and the choice is remembered across launches as a bitmask
+  (`pdfSectionsProvider`, append-only like every persisted enum here). Only the *paper* view is
+  choosable: `.tpt` must stay lossless and `.ics` holds what a calendar holds. Settlements are not
+  a section of their own — they ride with the expenses, since a repayment only reads beside the
+  balances it settles — and the header (title, dates, participants) is not one either: it is the
+  document's identity, so it is always printed and "nothing ticked" is simply not an export.
+  The trip bundle is read *before* the sheet opens so every row can say what it would print
+  ("5 days · 18 entries") and a section this trip has nothing for is greyed out rather than
+  offered as a switch that yields no pages. `summarizePdfSections` counts through the same
+  helpers the builder lays out with (`countedBundleCosts`, `bundleItemIsLive`,
+  `printableChecklists`), so the picker's numbers cannot drift from the document's contents.
+  A section unavailable on this trip keeps its stored setting for the next one.
 
 ### Database portability & schema changes
 

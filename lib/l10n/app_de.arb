@@ -41,6 +41,13 @@
   "exportPdfFailed": "Diese Reise konnte nicht als PDF exportiert werden.",
   "exportIcs": "In Kalender exportieren",
   "exportIcsFailed": "Diese Reise konnte nicht in einen Kalender exportiert werden.",
+  "exportAction": "Exportieren",
+  "pdfSectionsTitle": "Was ins PDF kommt",
+  "pdfSectionsSubtitle": "Name, Zeitraum und Teilnehmer der Reise sind immer dabei.",
+  "pdfSectionEmpty": "Nichts erfasst",
+  "pdfInclSettlements": "Ausgleichszahlungen enthalten",
+  "pdfLists": "{count, plural, =1{1 Liste} other{{count} Listen}}",
+  "pdfItems": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
   "pdfOtherOptions": "Weitere Optionen: {options}",
   "@pdfOtherOptions": {
     "placeholders": { "options": { "type": "String" } }

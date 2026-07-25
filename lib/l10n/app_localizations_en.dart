@@ -145,6 +145,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportIcsFailed => 'Could not export this trip to a calendar.';
 
   @override
+  String get exportAction => 'Export';
+
+  @override
+  String get pdfSectionsTitle => 'What goes into the PDF';
+
+  @override
+  String get pdfSectionsSubtitle =>
+      'The trip\'s name, dates and participants are always included.';
+
+  @override
+  String get pdfSectionEmpty => 'Nothing recorded';
+
+  @override
+  String get pdfInclSettlements => 'Settlements included';
+
+  @override
+  String pdfLists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lists',
+      one: '1 list',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pdfItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String pdfOtherOptions(String options) {
     return 'Other options: $options';
   }

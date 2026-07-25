@@ -10,6 +10,7 @@ import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
 import '../itinerary/widgets/transport_mode.dart';
 import 'trip_bundle.dart';
+import 'trip_pdf_sections.dart';
 
 /// Renders a [TripBundle] — the same portable, database-free snapshot the app
 /// shares as a `.tpt` file — into a printable PDF a traveller can save or hand
@@ -22,6 +23,11 @@ import 'trip_bundle.dart';
 /// branch of each decision) are laid out and only their costs are totalled, so
 /// the PDF shows the trip as it currently stands, matching the app's timeline.
 ///
+/// [sections] chooses which parts are laid out — the picker in
+/// `presentation/pdf_sections_sheet.dart` writes it — and defaults to all of
+/// them, so a caller that has no opinion gets the whole trip. The header is
+/// not among them: a document that can't say which trip it is isn't shareable.
+///
 /// [fonts] are embedded so glyphs the PDF standard fonts can't draw — the €
 /// sign above all — render correctly; without them the document falls back to
 /// Helvetica and non-Latin-1 characters come out blank. The app loads
@@ -31,6 +37,7 @@ Future<Uint8List> buildTripPdf({
   required TripBundle bundle,
   required AppLocalizations l10n,
   required String localeName,
+  Set<PdfSection> sections = kAllPdfSections,
   TripPdfFonts? fonts,
   DateTime? exportedAt,
 }) async {
@@ -38,6 +45,7 @@ Future<Uint8List> buildTripPdf({
     bundle: bundle,
     l10n: l10n,
     localeName: localeName,
+    sections: sections,
     fonts: fonts,
     exportedAt: exportedAt ?? DateTime.now(),
   );
@@ -66,18 +74,16 @@ class _TripPdfBuilder {
     required this.bundle,
     required this.l10n,
     required this.localeName,
+    required this.sections,
     required this.fonts,
     required this.exportedAt,
   }) : accent = PdfColor.fromInt(bundle.trip.colorValue),
-       chosenBranchIds = {
-         for (final s in bundle.alternativeSets)
-           for (final a in s.alternatives)
-             if (a.chosen) a.localId,
-       };
+       chosenBranchIds = chosenBranchLocalIds(bundle);
 
   final TripBundle bundle;
   final AppLocalizations l10n;
   final String localeName;
+  final Set<PdfSection> sections;
   final TripPdfFonts? fonts;
   final DateTime exportedAt;
   final PdfColor accent;
@@ -88,9 +94,7 @@ class _TripPdfBuilder {
   static const _muted = PdfColors.grey700;
   static const _faint = PdfColors.grey500;
 
-  bool _itemIsLive(BundleItem i) =>
-      i.alternativeLocalId == null ||
-      chosenBranchIds.contains(i.alternativeLocalId);
+  bool _itemIsLive(BundleItem i) => bundleItemIsLive(i, chosenBranchIds);
 
   Future<Uint8List> build() async {
     final doc = pw.Document(
@@ -195,6 +199,8 @@ class _TripPdfBuilder {
   // --- itinerary ---
 
   Iterable<pw.Widget> _itinerarySection() sync* {
+    if (!sections.contains(PdfSection.itinerary)) return;
+
     final days = <DateTime>{};
     for (final i in bundle.items) {
       if (_itemIsLive(i)) days.add(normalizeDay(i.date));
@@ -395,26 +401,12 @@ class _TripPdfBuilder {
   }
 
   Iterable<pw.Widget> _costsSection() sync* {
-    // Which costs count toward the total: trip-level, on a live item, or on a
-    // group with a live member — mirroring `CostDao._countsTowardTotals`.
-    final liveItemIds = {
-      for (final i in bundle.items)
-        if (_itemIsLive(i)) i.localId,
-    };
-    final liveGroupIds = {
-      for (final i in bundle.items)
-        if (_itemIsLive(i) && i.groupLocalId != null) i.groupLocalId!,
-    };
-    final counted = [
-      for (final c in bundle.costs)
-        if (!c.isTransfer &&
-            (c.itemLocalId == null && c.groupLocalId == null ||
-                (c.itemLocalId != null &&
-                    liveItemIds.contains(c.itemLocalId)) ||
-                (c.groupLocalId != null &&
-                    liveGroupIds.contains(c.groupLocalId))))
-          c,
-    ];
+    if (!sections.contains(PdfSection.expenses)) return;
+
+    final counted = countedBundleCosts(
+      bundle,
+      chosenBranchIds: chosenBranchIds,
+    );
     if (counted.isEmpty) return;
 
     yield pw.SizedBox(height: 16);
@@ -497,10 +489,11 @@ class _TripPdfBuilder {
   /// Rendered as two named columns rather than "A -> B" — the bundled Roboto
   /// has no arrow glyph.
   Iterable<pw.Widget> _transfersSection() sync* {
-    final transfers = [
-      for (final c in bundle.costs)
-        if (c.isTransfer) c,
-    ];
+    // Part of the expenses section, not a choice of its own: a repayment only
+    // reads next to the balances it settles.
+    if (!sections.contains(PdfSection.expenses)) return;
+
+    final transfers = bundleTransfers(bundle);
     if (transfers.isEmpty) return;
 
     pw.Widget cell(String text, {bool bold = false, pw.Alignment? align}) {
@@ -562,10 +555,9 @@ class _TripPdfBuilder {
   // --- checklists ---
 
   Iterable<pw.Widget> _checklistsSection() sync* {
-    final lists = [
-      for (final cl in bundle.checklists)
-        if (cl.items.isNotEmpty) cl,
-    ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    if (!sections.contains(PdfSection.checklists)) return;
+
+    final lists = printableChecklists(bundle);
     if (lists.isEmpty) return;
 
     yield pw.SizedBox(height: 16);

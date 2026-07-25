@@ -148,6 +148,44 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Reise konnte nicht in einen Kalender exportiert werden.';
 
   @override
+  String get exportAction => 'Exportieren';
+
+  @override
+  String get pdfSectionsTitle => 'Was ins PDF kommt';
+
+  @override
+  String get pdfSectionsSubtitle =>
+      'Name, Zeitraum und Teilnehmer der Reise sind immer dabei.';
+
+  @override
+  String get pdfSectionEmpty => 'Nichts erfasst';
+
+  @override
+  String get pdfInclSettlements => 'Ausgleichszahlungen enthalten';
+
+  @override
+  String pdfLists(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Listen',
+      one: '1 Liste',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String pdfItems(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge',
+      one: '1 Eintrag',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String pdfOtherOptions(String options) {
     return 'Weitere Optionen: $options';
   }

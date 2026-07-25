@@ -326,6 +326,48 @@ abstract class AppLocalizations {
   /// **'Could not export this trip to a calendar.'**
   String get exportIcsFailed;
 
+  /// No description provided for @exportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get exportAction;
+
+  /// No description provided for @pdfSectionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What goes into the PDF'**
+  String get pdfSectionsTitle;
+
+  /// No description provided for @pdfSectionsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The trip\'s name, dates and participants are always included.'**
+  String get pdfSectionsSubtitle;
+
+  /// No description provided for @pdfSectionEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing recorded'**
+  String get pdfSectionEmpty;
+
+  /// No description provided for @pdfInclSettlements.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlements included'**
+  String get pdfInclSettlements;
+
+  /// No description provided for @pdfLists.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 list} other{{count} lists}}'**
+  String pdfLists(int count);
+
+  /// No description provided for @pdfItems.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String pdfItems(int count);
+
   /// No description provided for @pdfOtherOptions.
   ///
   /// In en, this message translates to:
