@@ -33,17 +33,26 @@ Linux, Windows, macOS, and iOS.
 - **Checklists** — any number of named checklists per trip (packing list, to-dos, …),
   with reorderable, tickable items and collapsible cards.
 - **Costs & expense splitting** — attach costs to any place, transport, or the trip as a
-  whole, each with an amount, a currency (€ / US-$ / £ /
-  CHF), a category, who paid, and who it was for. Per-item subtotals and a per-trip total (grouped by currency) are
+  whole, each with an amount, a currency, a category, who paid, and who it was for.
+  Per-item subtotals and a per-trip total (grouped by currency) are
   shown automatically, and the overview can be scoped to *my* expenses.
+- **Your own currencies, with exchange rates** — the four built-ins (€ / US-$ / £ / CHF)
+  are just a starting list: add, rename, re-symbol, reorder, or remove currencies in
+  **Settings → Currencies**, mark one as the **base**, and give the others a rate against
+  it ("1 USD = 0.92 EUR"). Where a total spans several currencies and every one of them
+  has a rate, the base-currency equivalent is shown *beside* the exact figures
+  (`€349.90 · US$50.00 ≈ €394.90`) — never in place of them, and never from a partial set
+  of rates. Rates start unset, and the app declines to convert rather than guess one.
 - **Trip statistics & settle-up** — a per-trip stats screen breaks spending down by
   category and by person (paid vs. fair share) and suggests a minimal set of payments to
-  settle up, computed per currency (no conversion between currencies).
+  settle up. This is always computed **per currency**, with no conversion: what you owe is
+  what was actually spent, not a figure derived from a rate you typed in.
 - **Share a single trip** — export a trip as a self-contained `.tpt` bundle and send it
   to another user of the app (Android share sheet; desktop saves the file). Opening or
   importing a bundle recreates the trip with its itinerary, alternatives, groups, costs,
   and checklists. The format is independent of the local database's IDs, so sender and
-  recipient don't need matching data.
+  recipient don't need matching data — a currency the recipient doesn't have is created
+  from the bundle, and one they already have keeps their own symbol and rate.
 - **Export as PDF** — turn a trip into a printable PDF for sharing with people who don't
   use the app or for a paper copy: a cover with the trip's dates, notes, and participants,
   the day-by-day itinerary, an expense summary (per-currency total and a breakdown), and
@@ -171,10 +180,10 @@ lib/
   features/
     trips/                  # overview, create/edit, detail, participants
     itinerary/              # timeline, day blocks, alternatives card, item form, transport modes
-    costs/                  # cost form, splitting/stats, reasons & people settings
+    costs/                  # cost form, splitting/stats, reasons, currencies & people settings
     checklist/              # per-trip named checklists
     sharing/                # portable trip bundles (export/import a single trip) + PDF and .ics export
-    settings/               # language, cost reasons, people + database location screen
+    settings/               # language, cost reasons, currencies, people + database location screen
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
 android/ ios/ linux/ ...    # per-platform host projects
