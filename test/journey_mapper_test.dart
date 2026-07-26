@@ -15,7 +15,7 @@ int? _stubResolve(TransitMode m) => m == TransitMode.walk ? 1 : 6;
 
 JourneyOption _plan(String fixture) => parsePlanResponse(
   jsonDecode(File('test/fixtures/$fixture').readAsStringSync()),
-).single;
+).options.single;
 
 LegPoint _point(String name, DateTime utc, String? tz) =>
     LegPoint(name: name, scheduled: utc, timeZone: tz);

@@ -21,14 +21,24 @@ List<TransportPlace> parseGeocodeResponse(dynamic json) {
 }
 
 /// Parses the body of `GET /api/v1/plan` — an object whose `itineraries` are
-/// the routed options.
-List<JourneyOption> parsePlanResponse(dynamic json) {
+/// the routed options for one time window, alongside the cursors for the
+/// windows before and after it.
+JourneyResults parsePlanResponse(dynamic json) {
   final map = json as Map<String, dynamic>;
   final its = (map['itineraries'] as List<dynamic>?) ?? const [];
-  return its
-      .map((e) => _itinerary(e as Map<String, dynamic>))
-      .toList(growable: false);
+  return JourneyResults(
+    options: its
+        .map((e) => _itinerary(e as Map<String, dynamic>))
+        .toList(growable: false),
+    earlierCursor: _cursor(map['previousPageCursor']),
+    laterCursor: _cursor(map['nextPageCursor']),
+  );
 }
+
+/// A paging cursor, or null when the service offered none. An empty string is
+/// treated as absent — a handle to nothing is nothing.
+String? _cursor(dynamic value) =>
+    value is String && value.isNotEmpty ? value : null;
 
 /// Parses the body of `GET /api/v1/trip` — a single itinerary whose one leg's
 /// `from`, `intermediateStops` and `to` are the vehicle's ordered stops, each

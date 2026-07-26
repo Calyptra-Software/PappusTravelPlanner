@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:travelplanner/features/transport_search/data/motis_client.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
+import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
+import 'package:travelplanner/features/transport_search/domain/transit_filter.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 
@@ -60,12 +62,12 @@ void main() {
 
   group('parsePlanResponse (overnight Hamburg -> Wien)', () {
     test('decodes the itinerary, legs and modes', () {
-      final options = parsePlanResponse(
+      final results = parsePlanResponse(
         _decode(_fixture('motis_plan_overnight.json')),
       );
 
-      expect(options, hasLength(1));
-      final opt = options.single;
+      expect(results.options, hasLength(1));
+      final opt = results.options.single;
       expect(opt.transfers, 2);
       expect(opt.legs, hasLength(6));
       expect(opt.legs.map((l) => l.mode), [
@@ -81,7 +83,7 @@ void main() {
     test('times are UTC instants; no real-time => no actual', () {
       final opt = parsePlanResponse(
         _decode(_fixture('motis_plan_overnight.json')),
-      ).single;
+      ).options.single;
 
       expect(opt.departure.isUtc, isTrue);
       expect(
@@ -105,7 +107,7 @@ void main() {
     test('a walking transfer has no line', () {
       final opt = parsePlanResponse(
         _decode(_fixture('motis_plan_overnight.json')),
-      ).single;
+      ).options.single;
       final walk = opt.legs.firstWhere((l) => l.mode == TransitMode.walk);
       expect(walk.line, isNull);
     });
@@ -116,11 +118,29 @@ void main() {
       // sit in different time zones.
       final opt = parsePlanResponse(
         _decode(_fixture('motis_plan_overnight.json')),
-      ).single;
+      ).options.single;
       final coach = opt.legs.firstWhere((l) => l.mode == TransitMode.coach);
       expect(coach.from.scheduled.day, 27);
       expect(coach.to.scheduled.day, 28);
       expect(opt.legs.last.to.timeZone, 'Europe/Vienna');
+    });
+
+    test('carries the cursors for the windows either side', () {
+      final results = parsePlanResponse(
+        _decode(_fixture('motis_plan_overnight.json')),
+      );
+      expect(results.earlierCursor, 'EARLIER|1785168000');
+      expect(results.laterCursor, 'LATER|1785181920');
+    });
+
+    test('a missing or empty cursor is no cursor', () {
+      final results = parsePlanResponse({
+        'itineraries': <dynamic>[],
+        'previousPageCursor': '',
+      });
+      expect(results.options, isEmpty);
+      expect(results.earlierCursor, isNull);
+      expect(results.laterCursor, isNull);
     });
   });
 
@@ -160,17 +180,74 @@ void main() {
         }),
       );
 
-      final options = await client.journeys(
+      final results = await client.journeys(
         fromId: 'A',
         toId: 'B',
         time: DateTime.utc(2026, 7, 27, 18),
       );
 
-      expect(options, hasLength(1));
+      expect(results.options, hasLength(1));
       expect(seen.url.path, '/api/v1/plan');
       expect(seen.url.queryParameters['fromPlace'], 'A');
       expect(seen.url.queryParameters['toPlace'], 'B');
       expect(seen.url.queryParameters['arriveBy'], 'false');
+      expect(seen.url.queryParameters['time'], '2026-07-27T18:00:00Z');
+      // Unrestricted and unpaged: neither parameter is sent at all.
+      expect(seen.url.queryParameters, isNot(contains('transitModes')));
+      expect(seen.url.queryParameters, isNot(contains('pageCursor')));
+    });
+
+    test('a restricted search names the modes it allows', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(
+          modes: {TransitFilter.longDistanceRail, TransitFilter.ferry},
+        ),
+      );
+
+      expect(
+        seen.url.queryParameters['transitModes'],
+        'HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,FERRY',
+      );
+    });
+
+    test('a page cursor rides along with the original query', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        pageCursor: 'LATER|1785181920',
+      );
+
+      expect(seen.url.queryParameters['pageCursor'], 'LATER|1785181920');
+      // The cursor is only meaningful beside the query that produced it.
+      expect(seen.url.queryParameters['fromPlace'], 'A');
       expect(seen.url.queryParameters['time'], '2026-07-27T18:00:00Z');
     });
 

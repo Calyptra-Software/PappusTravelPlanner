@@ -1309,6 +1309,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionSearchNoResults => 'Keine Verbindungen gefunden';
 
   @override
+  String get connectionEarlier => 'Früher';
+
+  @override
+  String get connectionLater => 'Später';
+
+  @override
   String get connectionSearchError => 'Verbindungsdienst nicht erreichbar';
 
   @override

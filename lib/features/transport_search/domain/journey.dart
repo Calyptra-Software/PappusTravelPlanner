@@ -89,6 +89,60 @@ class TripStop {
   final DateTime? departure;
 }
 
+/// The journeys found, plus the handles that fetch the ones either side.
+///
+/// A plan query is answered with the options in a **time window** around the
+/// requested time — not with every connection that day — so "earlier" and
+/// "later" are first-class: [earlierCursor] and [laterCursor] are the routing
+/// service's opaque handles for the neighbouring windows, null when it offers
+/// none. Repeating the *original* query with one of them returns that window,
+/// which [merge] joins onto this one; the same type therefore describes both a
+/// single window and everything loaded so far.
+class JourneyResults {
+  const JourneyResults({
+    required this.options,
+    this.earlierCursor,
+    this.laterCursor,
+  });
+
+  final List<JourneyOption> options;
+  final String? earlierCursor;
+  final String? laterCursor;
+
+  /// Joins a freshly loaded window onto these results: an [earlier] one goes in
+  /// front, a later one behind. Only that end's cursor advances — the other
+  /// keeps pointing just past the edge of what is on screen. Windows are
+  /// contiguous, so concatenating them preserves the order the service put them
+  /// in and nothing is re-sorted.
+  ///
+  /// An option already on screen is not added a second time. The service is
+  /// meant to hand out disjoint windows, but a duplicate row would read as a
+  /// bug rather than as the edge case it is.
+  JourneyResults merge(JourneyResults page, {required bool earlier}) {
+    final seen = {for (final option in options) _signature(option)};
+    final added = [
+      // `add` is false for a signature already there — first occurrence wins.
+      for (final option in page.options)
+        if (seen.add(_signature(option))) option,
+    ];
+    return JourneyResults(
+      options: earlier ? [...added, ...options] : [...options, ...added],
+      earlierCursor: earlier ? page.earlierCursor : earlierCursor,
+      laterCursor: earlier ? laterCursor : page.laterCursor,
+    );
+  }
+
+  /// What makes two rows the same journey: when it runs, and what it is made
+  /// of. Deliberately structural — the service's own itinerary id is
+  /// experimental, and this is only ever used to keep a row from appearing
+  /// twice.
+  static String _signature(JourneyOption option) => [
+    option.departure.toIso8601String(),
+    option.arrival.toIso8601String(),
+    for (final leg in option.legs) leg.tripId ?? leg.line ?? leg.mode.name,
+  ].join('|');
+}
+
 /// One end-to-end option the router returned: an ordered list of [legs] with an
 /// overall [departure]/[arrival] and interchange count. Times are UTC instants
 /// (see [LegPoint]).

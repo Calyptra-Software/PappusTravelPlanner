@@ -1303,6 +1303,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionSearchNoResults => 'No connections found';
 
   @override
+  String get connectionEarlier => 'Earlier';
+
+  @override
+  String get connectionLater => 'Later';
+
+  @override
   String get connectionSearchError => 'Couldn\'t reach the connection service';
 
   @override

@@ -546,6 +546,8 @@
   "connectionDepart": "Depart at",
   "connectionArrive": "Arrive by",
   "connectionSearchNoResults": "No connections found",
+  "connectionEarlier": "Earlier",
+  "connectionLater": "Later",
   "connectionSearchError": "Couldn't reach the connection service",
   "connectionRetry": "Retry",
   "connectionChanges": "{count, plural, =0{Direct} =1{1 change} other{{count} changes}}",

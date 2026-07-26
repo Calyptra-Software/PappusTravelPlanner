@@ -2342,6 +2342,18 @@ abstract class AppLocalizations {
   /// **'No connections found'**
   String get connectionSearchNoResults;
 
+  /// No description provided for @connectionEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get connectionEarlier;
+
+  /// No description provided for @connectionLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get connectionLater;
+
   /// No description provided for @connectionSearchError.
   ///
   /// In en, this message translates to:

@@ -56,6 +56,10 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   JourneyQuery? _query;
   bool _importing = false;
 
+  /// Which end is currently fetching a window — true for "earlier", false for
+  /// "later", null when nothing is on its way.
+  bool? _pagingEarlier;
+
   bool get _canSearch => _from != null && _to != null;
 
   Future<void> _pick({required bool isFrom}) async {
@@ -253,7 +257,7 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   Widget _results(AppLocalizations l10n) {
     final query = _query;
     if (query == null) return const SizedBox.shrink();
-    final async = ref.watch(journeysProvider(query));
+    final async = ref.watch(journeyResultsProvider(query));
     return async.when(
       loading: () => const Padding(
         padding: EdgeInsets.all(24),
@@ -262,29 +266,80 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
       error: (_, _) => _ErrorRow(
         message: l10n.connectionSearchError,
         retryLabel: l10n.connectionRetry,
-        onRetry: () => ref.invalidate(journeysProvider(query)),
+        onRetry: () => ref.invalidate(journeyResultsProvider(query)),
       ),
-      data: (options) {
-        if (options.isEmpty) {
-          return Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(l10n.connectionSearchNoResults),
-          );
-        }
-        return AbsorbPointer(
-          absorbing: _importing,
-          child: ListView.builder(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            itemCount: options.length,
-            itemBuilder: (context, i) => _ResultCard(
-              option: options[i],
-              onTap: () => _import(options[i]),
-            ),
-          ),
-        );
-      },
+      data: (results) => AbsorbPointer(
+        absorbing: _importing,
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          children: [
+            _pageRow(l10n, earlier: true, cursor: results.earlierCursor),
+            // An empty window is not an empty timetable — the rows above and
+            // below still lead somewhere, so the message goes between them
+            // rather than in their place.
+            if (results.options.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Center(child: Text(l10n.connectionSearchNoResults)),
+              ),
+            for (final option in results.options)
+              _ResultCard(option: option, onTap: () => _import(option)),
+            _pageRow(l10n, earlier: false, cursor: results.laterCursor),
+          ],
+        ),
+      ),
     );
+  }
+
+  /// The "earlier"/"later" row, or nothing when the service offers no window
+  /// that way.
+  ///
+  /// While a window is on its way, the row that asked for it carries the
+  /// spinner: the wait belongs where the tap was, and a bar elsewhere would
+  /// only say that *something* is loading.
+  Widget _pageRow(
+    AppLocalizations l10n, {
+    required bool earlier,
+    required String? cursor,
+  }) {
+    if (cursor == null) return const SizedBox.shrink();
+    return Center(
+      child: TextButton.icon(
+        icon: _pagingEarlier == earlier
+            ? const SizedBox.square(
+                dimension: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(earlier ? Icons.expand_less : Icons.expand_more),
+        label: Text(earlier ? l10n.connectionEarlier : l10n.connectionLater),
+        onPressed: _pagingEarlier == null
+            ? () => _loadPage(earlier: earlier)
+            : null,
+      ),
+    );
+  }
+
+  /// Loads a neighbouring window onto the list. A failure is a snackbar, not an
+  /// emptied screen: what was already found is still good, and the button is
+  /// still there to tap again.
+  Future<void> _loadPage({required bool earlier}) async {
+    final query = _query;
+    if (query == null || _pagingEarlier != null) return;
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final controller = ref.read(journeyResultsProvider(query).notifier);
+    setState(() => _pagingEarlier = earlier);
+    final loaded = earlier
+        ? await controller.loadEarlier()
+        : await controller.loadLater();
+    if (!mounted) return;
+    setState(() => _pagingEarlier = null);
+    if (!loaded) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.connectionSearchError)),
+      );
+    }
   }
 }
 

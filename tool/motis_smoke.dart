@@ -39,15 +39,17 @@ Future<void> main(List<String> args) async {
         .copyWith(hour: 14, minute: 0);
     print('SENT time = ${when.toUtc().toIso8601String()}');
     print('SENT transitModes = ${motisTransitModes(modes)}\n');
-    final options = await search.journeys(
+    final results = await search.journeys(
       fromId: from.id,
       toId: to.id,
       time: when,
       options: JourneySearchOptions(modes: modes),
     );
 
-    print('${options.length} option(s):\n');
-    for (final (i, o) in options.indexed) {
+    print('${results.options.length} option(s) in this window:');
+    print('  earlier: ${results.earlierCursor}');
+    print('  later:   ${results.laterCursor}\n');
+    for (final (i, o) in results.options.indexed) {
       final overnight = o.arrival.toLocal().day != o.departure.toLocal().day;
       print(
         '#${i + 1}  ${_hm(o.departure)} -> ${_hm(o.arrival)}  '

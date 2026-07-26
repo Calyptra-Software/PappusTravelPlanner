@@ -28,12 +28,13 @@ class _FakeSearch implements TransportSearch {
   Future<List<TransportPlace>> searchPlaces(String query) =>
       throw UnimplementedError();
   @override
-  Future<List<JourneyOption>> journeys({
+  Future<JourneyResults> journeys({
     required String fromId,
     required String toId,
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    String? pageCursor,
   }) => throw UnimplementedError();
 }
 

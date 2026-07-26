@@ -44,17 +44,64 @@ typedef JourneyQuery = ({
   JourneySearchOptions options,
 });
 
-/// Planned journeys for a [JourneyQuery]. Driven by an explicit search (not per
-/// keystroke), so unlike [geocodeProvider] it isn't debounced.
-final journeysProvider = FutureProvider.autoDispose
-    .family<List<JourneyOption>, JourneyQuery>((ref, q) {
-      return ref
-          .watch(transportSearchProvider)
-          .journeys(
-            fromId: q.fromId,
-            toId: q.toId,
-            time: q.time,
-            arriveBy: q.arriveBy,
-            options: q.options,
-          );
-    });
+/// The journeys found for a [JourneyQuery], growing as further time windows are
+/// loaded. Driven by an explicit search (not per keystroke), so unlike
+/// [geocodeProvider] it isn't debounced.
+///
+/// A notifier rather than a `FutureProvider` because the results *accumulate*:
+/// the service answers with one window around the requested time, and
+/// "earlier"/"later" join the neighbouring windows onto the same list rather
+/// than replacing it.
+final journeyResultsProvider = AsyncNotifierProvider.autoDispose
+    .family<JourneyResultsController, JourneyResults, JourneyQuery>(
+      JourneyResultsController.new,
+    );
+
+class JourneyResultsController extends AsyncNotifier<JourneyResults> {
+  JourneyResultsController(this.query);
+
+  final JourneyQuery query;
+
+  @override
+  Future<JourneyResults> build() => _fetch();
+
+  /// Loads the window before the ones on screen. See [_loadMore].
+  Future<bool> loadEarlier() => _loadMore(earlier: true);
+
+  /// Loads the window after the ones on screen. See [_loadMore].
+  Future<bool> loadLater() => _loadMore(earlier: false);
+
+  /// Fetches a neighbouring window and joins it on, answering whether it
+  /// arrived.
+  ///
+  /// A failure here is deliberately **not** put into `state`: the journeys
+  /// already found are what the user is reading, and replacing them with an
+  /// error because one further window couldn't be fetched would throw away the
+  /// results to report a failure of something else. The caller shows the
+  /// failure instead, and the button is still there to tap again.
+  Future<bool> _loadMore({required bool earlier}) async {
+    final current = state.value;
+    final cursor = earlier ? current?.earlierCursor : current?.laterCursor;
+    if (current == null || cursor == null) return false;
+    try {
+      final page = await _fetch(pageCursor: cursor);
+      // The sheet can be closed mid-flight; this provider is autoDispose.
+      if (!ref.mounted) return false;
+      state = AsyncData(current.merge(page, earlier: earlier));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<JourneyResults> _fetch({String? pageCursor}) => ref
+      .read(transportSearchProvider)
+      .journeys(
+        fromId: query.fromId,
+        toId: query.toId,
+        time: query.time,
+        arriveBy: query.arriveBy,
+        options: query.options,
+        pageCursor: pageCursor,
+      );
+}

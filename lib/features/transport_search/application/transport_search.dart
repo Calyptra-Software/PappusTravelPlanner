@@ -14,17 +14,24 @@ abstract interface class TransportSearch {
   /// Resolves a (possibly partial) query into candidate origins/destinations.
   Future<List<TransportPlace>> searchPlaces(String query);
 
-  /// Plans journeys between two geocoded places.
+  /// Plans journeys between two geocoded places, returning the options in one
+  /// time window and the cursors for the windows either side.
   ///
   /// [time] is anchored by [arriveBy]: a departure time when false (the
   /// default), an arrival deadline when true. [options] narrows *how* the
   /// journey may be made; its default asks for no restriction at all.
-  Future<List<JourneyOption>> journeys({
+  ///
+  /// [pageCursor] asks for a neighbouring window instead of the one around
+  /// [time]: pass a cursor from an earlier result and leave **every other
+  /// argument exactly as it was**, since a cursor is only meaningful against
+  /// the query that produced it.
+  Future<JourneyResults> journeys({
     required String fromId,
     required String toId,
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    String? pageCursor,
   });
 
   /// The ordered stops of a vehicle trip, with planned and real-time times —

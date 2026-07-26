@@ -46,12 +46,13 @@ class MotisTransportSearch implements TransportSearch {
   }
 
   @override
-  Future<List<JourneyOption>> journeys({
+  Future<JourneyResults> journeys({
     required String fromId,
     required String toId,
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    String? pageCursor,
   }) async {
     // `transitModes` is sent only as a *restriction*: omitted, the server
     // applies its own `TRANSIT` default, which is the wider (and future-proof)
@@ -64,6 +65,10 @@ class MotisTransportSearch implements TransportSearch {
       'time': _rfc3339Seconds(time),
       'arriveBy': arriveBy.toString(),
       if (modes.isNotEmpty) 'transitModes': modes.join(','),
+      // The cursor carries the window; the rest of the query must be repeated
+      // unchanged beside it, which is why it is a parameter here and not a
+      // separate call.
+      'pageCursor': ?pageCursor,
     });
     return parsePlanResponse(body);
   }
