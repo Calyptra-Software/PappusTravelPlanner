@@ -1321,6 +1321,40 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get connectionModesTitle => 'Means of transport';
+
+  @override
+  String get connectionModesSubtitle =>
+      'Only these are used when planning the connection.';
+
+  @override
+  String get connectionModesAll => 'All means of transport';
+
+  @override
+  String get connectionModesNone => 'No means of transport';
+
+  @override
+  String get connectionModeLongDistance => 'Long-distance trains';
+
+  @override
+  String get connectionModeRegional => 'Regional trains';
+
+  @override
+  String get connectionModeCity => 'Underground & tram';
+
+  @override
+  String get connectionModeBus => 'Bus & coach';
+
+  @override
+  String get connectionModeFerry => 'Ferry';
+
+  @override
+  String get connectionModeAir => 'Flights';
+
+  @override
+  String get connectionModeOther => 'Cable car & other';
+
+  @override
   String get connectionAddToDay => 'Add to day';
 
   @override

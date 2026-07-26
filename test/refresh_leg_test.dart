@@ -12,6 +12,7 @@ import 'package:travelplanner/features/transport_search/application/transport_se
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
+import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 
 /// A backend that only answers tripStops (all the refresh needs), from a fixed
@@ -32,6 +33,7 @@ class _FakeSearch implements TransportSearch {
     required String toId,
     required DateTime time,
     bool arriveBy = false,
+    JourneySearchOptions options = const JourneySearchOptions(),
   }) => throw UnimplementedError();
 }
 

@@ -28,8 +28,9 @@ Linux, Windows, macOS, and iOS.
   an open routing service ([Transitous](https://transitous.org) / MOTIS, built on
   OpenStreetMap and public-transport open data — no account, no API key) and drop a chosen
   one straight into a day. Search *from* / *to* with live station suggestions, set a
-  departure or arrival time, and compare the options by time, duration, and number of
-  changes — with **live delays** shown where the service has them. Importing writes the
+  departure or arrival time, choose which **means of transport** may be used (long-distance
+  trains only, no flights, …— remembered for the next search), and compare the options by
+  time, duration, and number of changes — with **live delays** shown where the service has them. Importing writes the
   journey as that day's transport legs — a multi-leg trip bundled under one shared ticket —
   carrying each leg's line/train number, direction, and platform, and handling overnight
   legs that arrive the next morning. Each imported leg then gets its own **refresh** button

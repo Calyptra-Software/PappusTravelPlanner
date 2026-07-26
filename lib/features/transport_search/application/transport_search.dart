@@ -1,4 +1,5 @@
 import '../domain/journey.dart';
+import '../domain/journey_options.dart';
 import '../domain/transport_place.dart';
 
 /// A provider-agnostic connection-search backend.
@@ -16,12 +17,14 @@ abstract interface class TransportSearch {
   /// Plans journeys between two geocoded places.
   ///
   /// [time] is anchored by [arriveBy]: a departure time when false (the
-  /// default), an arrival deadline when true.
+  /// default), an arrival deadline when true. [options] narrows *how* the
+  /// journey may be made; its default asks for no restriction at all.
   Future<List<JourneyOption>> journeys({
     required String fromId,
     required String toId,
     required DateTime time,
     bool arriveBy = false,
+    JourneySearchOptions options = const JourneySearchOptions(),
   });
 
   /// The ordered stops of a vehicle trip, with planned and real-time times —

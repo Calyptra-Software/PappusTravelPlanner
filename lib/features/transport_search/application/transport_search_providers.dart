@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/motis_client.dart';
 import '../domain/journey.dart';
+import '../domain/journey_options.dart';
 import '../domain/transport_place.dart';
 import 'transport_search.dart';
 
@@ -33,12 +34,14 @@ final geocodeProvider = FutureProvider.autoDispose
     });
 
 /// The parameters of a journey search — a value type, so two identical searches
-/// share one cached result.
+/// share one cached result. [JourneySearchOptions] compares by value for the
+/// same reason.
 typedef JourneyQuery = ({
   String fromId,
   String toId,
   DateTime time,
   bool arriveBy,
+  JourneySearchOptions options,
 });
 
 /// Planned journeys for a [JourneyQuery]. Driven by an explicit search (not per
@@ -52,5 +55,6 @@ final journeysProvider = FutureProvider.autoDispose
             toId: q.toId,
             time: q.time,
             arriveBy: q.arriveBy,
+            options: q.options,
           );
     });

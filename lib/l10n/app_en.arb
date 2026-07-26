@@ -554,6 +554,17 @@
       "count": { "type": "int" }
     }
   },
+  "connectionModesTitle": "Means of transport",
+  "connectionModesSubtitle": "Only these are used when planning the connection.",
+  "connectionModesAll": "All means of transport",
+  "connectionModesNone": "No means of transport",
+  "connectionModeLongDistance": "Long-distance trains",
+  "connectionModeRegional": "Regional trains",
+  "connectionModeCity": "Underground & tram",
+  "connectionModeBus": "Bus & coach",
+  "connectionModeFerry": "Ferry",
+  "connectionModeAir": "Flights",
+  "connectionModeOther": "Cable car & other",
   "connectionAddToDay": "Add to day",
   "connectionAdded": "Connection added",
   "connectionAttribution": "Data © OpenStreetMap contributors, via Transitous",

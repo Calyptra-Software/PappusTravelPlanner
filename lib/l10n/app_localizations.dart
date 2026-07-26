@@ -2360,6 +2360,72 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Direct} =1{1 change} other{{count} changes}}'**
   String connectionChanges(int count);
 
+  /// No description provided for @connectionModesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Means of transport'**
+  String get connectionModesTitle;
+
+  /// No description provided for @connectionModesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Only these are used when planning the connection.'**
+  String get connectionModesSubtitle;
+
+  /// No description provided for @connectionModesAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All means of transport'**
+  String get connectionModesAll;
+
+  /// No description provided for @connectionModesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No means of transport'**
+  String get connectionModesNone;
+
+  /// No description provided for @connectionModeLongDistance.
+  ///
+  /// In en, this message translates to:
+  /// **'Long-distance trains'**
+  String get connectionModeLongDistance;
+
+  /// No description provided for @connectionModeRegional.
+  ///
+  /// In en, this message translates to:
+  /// **'Regional trains'**
+  String get connectionModeRegional;
+
+  /// No description provided for @connectionModeCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Underground & tram'**
+  String get connectionModeCity;
+
+  /// No description provided for @connectionModeBus.
+  ///
+  /// In en, this message translates to:
+  /// **'Bus & coach'**
+  String get connectionModeBus;
+
+  /// No description provided for @connectionModeFerry.
+  ///
+  /// In en, this message translates to:
+  /// **'Ferry'**
+  String get connectionModeFerry;
+
+  /// No description provided for @connectionModeAir.
+  ///
+  /// In en, this message translates to:
+  /// **'Flights'**
+  String get connectionModeAir;
+
+  /// No description provided for @connectionModeOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Cable car & other'**
+  String get connectionModeOther;
+
   /// No description provided for @connectionAddToDay.
   ///
   /// In en, this message translates to:

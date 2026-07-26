@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import '../application/transport_search.dart';
 import '../domain/journey.dart';
+import '../domain/journey_options.dart';
+import '../domain/transit_filter.dart';
 import '../domain/transport_place.dart';
 import 'motis_parser.dart';
 
@@ -49,12 +51,19 @@ class MotisTransportSearch implements TransportSearch {
     required String toId,
     required DateTime time,
     bool arriveBy = false,
+    JourneySearchOptions options = const JourneySearchOptions(),
   }) async {
+    // `transitModes` is sent only as a *restriction*: omitted, the server
+    // applies its own `TRANSIT` default, which is the wider (and future-proof)
+    // set. An unknown token is rejected outright (HTTP 500, "unknown value"),
+    // so the list may only ever be built from `motisTransitModes`.
+    final modes = motisTransitModes(options.modes);
     final body = await _get('/api/v1/plan', {
       'fromPlace': fromId,
       'toPlace': toId,
       'time': _rfc3339Seconds(time),
       'arriveBy': arriveBy.toString(),
+      if (modes.isNotEmpty) 'transitModes': modes.join(','),
     });
     return parsePlanResponse(body);
   }

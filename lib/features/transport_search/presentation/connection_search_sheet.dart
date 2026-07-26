@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/format/date_format.dart' show formatSignedMinutes;
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/widgets/item_times.dart' show delayColor;
+import '../application/transit_filter_provider.dart';
 import '../application/transport_search_controller.dart';
 import '../application/transport_search_providers.dart';
 import '../data/journey_mapper.dart' show localParts;
 import '../domain/journey.dart';
+import '../domain/journey_options.dart';
 import '../domain/transit_mode.dart';
 import '../domain/transport_place.dart';
+import 'transit_filter_sheet.dart';
 
 /// Opens the connection search for [tripId] on [day]. Resolves to true when a
 /// journey was imported (so the caller can close its own sheet), false/null
@@ -82,8 +85,22 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
         toId: _to!.id,
         time: when,
         arriveBy: _arriveBy,
+        options: JourneySearchOptions(modes: ref.read(transitFilterProvider)),
       );
     });
+  }
+
+  /// Narrowing the means of transport invalidates results already on screen —
+  /// they were found under the old rules — so the search is re-run with the new
+  /// filter rather than left showing a flight the user just excluded.
+  Future<void> _pickModes() async {
+    final picked = await showTransitFilterSheet(
+      context,
+      initial: ref.read(transitFilterProvider),
+    );
+    if (picked == null || !mounted) return;
+    await ref.read(transitFilterProvider.notifier).setFilters(picked);
+    if (_query != null && mounted) _runSearch();
   }
 
   Future<void> _import(JourneyOption option) async {
@@ -196,6 +213,17 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
                 ],
                 selected: {_arriveBy},
                 onSelectionChanged: (s) => setState(() => _arriveBy = s.first),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.tune),
+                label: Text(
+                  transitFilterSummary(l10n, ref.watch(transitFilterProvider)),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onPressed: _pickModes,
               ),
             ),
             Padding(

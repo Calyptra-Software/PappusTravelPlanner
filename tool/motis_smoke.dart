@@ -5,13 +5,25 @@
 //   dart run tool/motis_smoke.dart "Hamburg Hbf" "Wien Hbf"
 //
 // Defaults to Hamburg -> Wien (an overnight route) when no args are given.
+// A third argument restricts the means of transport, by [TransitFilter] name:
+//
+//   dart run tool/motis_smoke.dart "Hamburg Hbf" "Wien Hbf" bus,ferry
+//
 // Needs network access; not part of the test suite.
 // ignore_for_file: avoid_print
 import 'package:travelplanner/features/transport_search/data/motis_client.dart';
+import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
+import 'package:travelplanner/features/transport_search/domain/transit_filter.dart';
 
 Future<void> main(List<String> args) async {
   final fromQuery = args.isNotEmpty ? args[0] : 'Hamburg Hbf';
   final toQuery = args.length > 1 ? args[1] : 'Wien Hbf';
+  final modes = args.length > 2
+      ? {
+          for (final name in args[2].split(','))
+            TransitFilter.values.byName(name.trim()),
+        }
+      : kAllTransitFilters;
   final search = MotisTransportSearch();
 
   try {
@@ -21,15 +33,17 @@ Future<void> main(List<String> args) async {
     print('To:   ${to.name} (${to.area}) [${to.timeZone}]\n');
 
     // Evening tomorrow, to make overnight options likely.
-    final when = DateTime.now().toUtc().add(const Duration(days: 1)).copyWith(
-      hour: 14,
-      minute: 0,
-    );
-    print('SENT time = ${when.toUtc().toIso8601String()}\n');
+    final when = DateTime.now()
+        .toUtc()
+        .add(const Duration(days: 1))
+        .copyWith(hour: 14, minute: 0);
+    print('SENT time = ${when.toUtc().toIso8601String()}');
+    print('SENT transitModes = ${motisTransitModes(modes)}\n');
     final options = await search.journeys(
       fromId: from.id,
       toId: to.id,
       time: when,
+      options: JourneySearchOptions(modes: modes),
     );
 
     print('${options.length} option(s):\n');

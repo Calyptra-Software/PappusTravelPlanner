@@ -1327,6 +1327,40 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get connectionModesTitle => 'Verkehrsmittel';
+
+  @override
+  String get connectionModesSubtitle =>
+      'Nur diese werden für die Verbindung genutzt.';
+
+  @override
+  String get connectionModesAll => 'Alle Verkehrsmittel';
+
+  @override
+  String get connectionModesNone => 'Keine Verkehrsmittel';
+
+  @override
+  String get connectionModeLongDistance => 'Fernverkehr';
+
+  @override
+  String get connectionModeRegional => 'Regionalverkehr';
+
+  @override
+  String get connectionModeCity => 'U-Bahn & Straßenbahn';
+
+  @override
+  String get connectionModeBus => 'Bus & Fernbus';
+
+  @override
+  String get connectionModeFerry => 'Fähre';
+
+  @override
+  String get connectionModeAir => 'Flüge';
+
+  @override
+  String get connectionModeOther => 'Seilbahn & Sonstiges';
+
+  @override
   String get connectionAddToDay => 'Zum Tag hinzufügen';
 
   @override

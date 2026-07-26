@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/features/transport_search/application/transport_search_controller.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
 import 'package:travelplanner/features/transport_search/data/journey_mapper.dart'
     show DirectionLabel, TrackLabel;
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
+import 'package:travelplanner/features/transport_search/domain/transit_filter.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
@@ -69,13 +73,28 @@ void main() {
   );
 
   late _FakeController fake;
+  late SharedPreferences prefs;
+
+  /// The query the results were last asked for — how the search form's state
+  /// reaches the backend.
+  JourneyQuery? asked;
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+    asked = null;
+  });
 
   Future<void> pump(WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           geocodeProvider.overrideWith((ref, query) async => [place]),
-          journeysProvider.overrideWith((ref, query) async => [option]),
+          journeysProvider.overrideWith((ref, query) async {
+            asked = query;
+            return [option];
+          }),
           transportSearchControllerProvider.overrideWith(
             (ref) => fake = _FakeController(ref),
           ),
@@ -138,6 +157,60 @@ void main() {
 
     expect(fake.imports, 1);
     expect(find.text('Connection added'), findsOneWidget);
+  });
+
+  testWidgets('a narrowed transport filter reaches the search', (tester) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    // Unrestricted to begin with — the button says so.
+    expect(find.text('All means of transport'), findsOneWidget);
+
+    // Open the filter and drop flights.
+    await tester.tap(find.widgetWithIcon(OutlinedButton, Icons.tune));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flights'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // The button now names what is left in, rather than a count.
+    expect(find.textContaining('Long-distance trains'), findsOneWidget);
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(asked!.options.modes, isNot(contains(TransitFilter.air)));
+    expect(asked!.options.modes, contains(TransitFilter.longDistanceRail));
+    // ...and it is remembered for the next search.
+    expect(prefs.getInt('connection_transit_modes'), isNotNull);
+  });
+
+  testWidgets('narrowing the filter re-runs a search already on screen', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    expect(asked!.options.modes, kAllTransitFilters);
+
+    await tester.tap(find.widgetWithIcon(OutlinedButton, Icons.tune));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flights'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    // Results found under the old rules are not left standing.
+    expect(asked!.options.modes, isNot(contains(TransitFilter.air)));
   });
 
   testWidgets('search is disabled until both endpoints are set', (
