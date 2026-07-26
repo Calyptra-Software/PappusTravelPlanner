@@ -163,8 +163,48 @@ void main() {
       expect(places, hasLength(3));
       expect(seen.url.path, '/api/v1/geocode');
       expect(seen.url.queryParameters['text'], 'Hamburg Hbf');
-      expect(seen.url.queryParameters['language'], 'de');
       expect(seen.headers['User-Agent'], isNotEmpty);
+    });
+
+    test('every endpoint asks for the same language', () async {
+      final seen = <Uri>[];
+      final client = MotisTransportSearch(
+        language: 'nl',
+        httpClient: MockClient((req) async {
+          seen.add(req.url);
+          return http.Response(
+            // Every endpoint here is only asked for its query, not its body;
+            // the trip fixture parses as all three shapes' worth of JSON.
+            req.url.path.endsWith('geocode')
+                ? _fixture('motis_geocode_hamburg.json')
+                : req.url.path.endsWith('trip')
+                ? _fixture('motis_trip.json')
+                : _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.searchPlaces('Hamburg Hbf');
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+      );
+      await client.tripStops('T1');
+
+      // A leg imported in one language and refreshed in another would leave
+      // the live refresh's name fallback comparing two spellings of one stop.
+      expect(seen.map((u) => u.path), [
+        '/api/v1/geocode',
+        '/api/v1/plan',
+        '/api/v1/trip',
+      ]);
+      expect(
+        seen.map((u) => u.queryParameters['language']),
+        everyElement('nl'),
+      );
     });
 
     test('journeys builds the plan request and parses it', () async {

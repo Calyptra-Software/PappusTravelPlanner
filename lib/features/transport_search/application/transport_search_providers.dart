@@ -4,14 +4,21 @@ import '../data/motis_client.dart';
 import '../domain/journey.dart';
 import '../domain/journey_options.dart';
 import '../domain/transport_place.dart';
+import 'search_language_provider.dart';
 import 'transport_search.dart';
 
 /// The connection-search backend (MOTIS via Transitous by default). It holds an
 /// HTTP client, so it lives for the app session and is closed on dispose. A
 /// network service, it sits *beside* the repository, never inside it — the
 /// offline database has no dependency on it.
+///
+/// Watching [searchLanguageProvider] rebuilds it when the app's language
+/// changes, so every endpoint keeps answering in one language (see
+/// [MotisTransportSearch.language]).
 final transportSearchProvider = Provider<TransportSearch>((ref) {
-  final client = MotisTransportSearch();
+  final client = MotisTransportSearch(
+    language: ref.watch(searchLanguageProvider),
+  );
   ref.onDispose(client.close);
   return client;
 });

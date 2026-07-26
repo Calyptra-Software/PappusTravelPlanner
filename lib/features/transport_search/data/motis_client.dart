@@ -27,20 +27,35 @@ class MotisTransportSearch implements TransportSearch {
     http.Client? httpClient,
     Uri? baseUrl,
     this.userAgent = _defaultUserAgent,
+    this.language = _defaultLanguage,
   }) : _http = httpClient ?? http.Client(),
        _baseUrl = baseUrl ?? kTransitousBaseUrl;
 
   static const String _defaultUserAgent = 'TravelPlanner (connection search)';
 
+  /// Only a fallback for a client built without one (the smoke tool, tests) —
+  /// the app always passes the language it is showing, via
+  /// `searchLanguageProvider`.
+  static const String _defaultLanguage = 'en';
+
   final http.Client _http;
   final Uri _baseUrl;
   final String userAgent;
+
+  /// The language names come back in, sent on **every** endpoint.
+  ///
+  /// Not per call: a leg imported with Dutch stop names and later refreshed
+  /// with French ones would leave `refreshedActualTimes` comparing
+  /// `Brussel-Zuid` with `Brux.-Midi/Brus.-Zuid` on its name fallback. One
+  /// language per client keeps the plan and its live refresh talking about the
+  /// same stops.
+  final String language;
 
   @override
   Future<List<TransportPlace>> searchPlaces(String query) async {
     final body = await _get('/api/v1/geocode', {
       'text': query,
-      'language': 'de',
+      'language': language,
     });
     return parseGeocodeResponse(body);
   }
@@ -64,6 +79,7 @@ class MotisTransportSearch implements TransportSearch {
       'toPlace': toId,
       'time': _rfc3339Seconds(time),
       'arriveBy': arriveBy.toString(),
+      'language': language,
       if (modes.isNotEmpty) 'transitModes': modes.join(','),
       // The cursor carries the window; the rest of the query must be repeated
       // unchanged beside it, which is why it is a parameter here and not a
@@ -75,7 +91,10 @@ class MotisTransportSearch implements TransportSearch {
 
   @override
   Future<List<TripStop>> tripStops(String tripId) async {
-    final body = await _get('/api/v1/trip', {'tripId': tripId});
+    final body = await _get('/api/v1/trip', {
+      'tripId': tripId,
+      'language': language,
+    });
     return parseTripResponse(body);
   }
 

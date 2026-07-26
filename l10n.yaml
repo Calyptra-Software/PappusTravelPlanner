@@ -4,3 +4,10 @@ output-localization-file: app_localizations.dart
 output-dir: lib/l10n
 output-class: AppLocalizations
 nullable-getter: false
+# The generator orders supported locales alphabetically, which would make German
+# the fallback for a language the app does not speak (Flutter resolves an
+# unmatched locale to the *first* supported one). English is the better default
+# for everyone else — and the connection search follows the same list, so the
+# place names it asks for fall back with the UI.
+preferred-supported-locales:
+  - en
