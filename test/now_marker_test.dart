@@ -23,6 +23,7 @@ void main() {
     date: day,
     sortOrder: sortOrder,
     kind: ItemKind.place,
+    spansNextDay: false,
     title: 'Item $id',
     startMinutes: start,
     endMinutes: end,

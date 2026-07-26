@@ -76,6 +76,7 @@ void main() {
         date: day,
         sortOrder: 0,
         kind: ItemKind.place,
+        spansNextDay: false,
         title: title,
         alternativeId: alternativeId,
       );
@@ -326,6 +327,7 @@ void main() {
                   date: day,
                   sortOrder: 0,
                   kind: ItemKind.transport,
+                  spansNextDay: false,
                   mode: 6,
                   fromLocation: 'Hamburg',
                   toLocation: 'Kronberg',

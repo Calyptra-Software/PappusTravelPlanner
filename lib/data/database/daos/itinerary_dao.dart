@@ -35,8 +35,43 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
   Future<bool> updateItem(ItineraryItem item) =>
       update(itineraryItems).replace(item);
 
+  /// Writes just the actual (real-time) departure/arrival of an item, leaving
+  /// the plan and everything else untouched — the live-times refresh's write.
+  Future<void> setActualTimes(
+    int id, {
+    required int? actualStart,
+    required int? actualEnd,
+  }) => (update(itineraryItems)..where((i) => i.id.equals(id))).write(
+    ItineraryItemsCompanion(
+      actualStartMinutes: Value(actualStart),
+      actualEndMinutes: Value(actualEnd),
+    ),
+  );
+
   Future<int> deleteItem(int id) =>
       (delete(itineraryItems)..where((i) => i.id.equals(id))).go();
+
+  /// Inserts a run of connection legs (built elsewhere as transport companions),
+  /// giving each the next free sort order at the end of *its* day — a journey
+  /// crossing midnight lands its later legs on the following day. Returns the new
+  /// row ids in input order. One transaction, so an import never lands half its
+  /// legs. Grouping the legs (a shared ticket) is the caller's next step.
+  Future<List<int>> insertJourneyLegs(
+    int tripId,
+    List<ItineraryItemsCompanion> legs,
+  ) {
+    return transaction(() async {
+      final ids = <int>[];
+      final nextByDate = <DateTime, int>{};
+      for (final leg in legs) {
+        final date = leg.date.value;
+        final sortOrder = nextByDate[date] ?? await nextSortOrder(tripId, date);
+        nextByDate[date] = sortOrder + 1;
+        ids.add(await addItem(leg.copyWith(sortOrder: Value(sortOrder))));
+      }
+      return ids;
+    });
+  }
 
   /// Next sort order for a new entry on [date] within a trip (appended to the
   /// end). A day's ordering space is shared by its loose items and its

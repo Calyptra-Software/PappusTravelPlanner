@@ -26,6 +26,7 @@ void main() {
     endMinutes: end,
     actualStartMinutes: actualStart,
     actualEndMinutes: actualEnd,
+    spansNextDay: false,
   );
 
   Future<void> pump(WidgetTester tester, ItineraryItem it) => tester.pumpWidget(

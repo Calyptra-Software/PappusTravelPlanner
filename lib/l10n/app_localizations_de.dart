@@ -1283,4 +1283,78 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get calendarUndatedTooltip => 'Reisen ohne Datum anzeigen';
+
+  @override
+  String get connectionSearch => 'Verbindung suchen';
+
+  @override
+  String get connectionSearchOnline => 'Online suchen';
+
+  @override
+  String get connectionFrom => 'Von';
+
+  @override
+  String get connectionTo => 'Nach';
+
+  @override
+  String get connectionPickPlace => 'Bahnhof oder Ort suchen';
+
+  @override
+  String get connectionDepart => 'Abfahrt um';
+
+  @override
+  String get connectionArrive => 'Ankunft bis';
+
+  @override
+  String get connectionSearchNoResults => 'Keine Verbindungen gefunden';
+
+  @override
+  String get connectionSearchError => 'Verbindungsdienst nicht erreichbar';
+
+  @override
+  String get connectionRetry => 'Erneut versuchen';
+
+  @override
+  String connectionChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Umstiege',
+      one: '1 Umstieg',
+      zero: 'Direkt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get connectionAddToDay => 'Zum Tag hinzufügen';
+
+  @override
+  String get connectionAdded => 'Verbindung hinzugefügt';
+
+  @override
+  String get connectionAttribution =>
+      'Daten © OpenStreetMap-Mitwirkende, über Transitous';
+
+  @override
+  String get transportModeRestoreBuiltin => 'Standard wiederherstellen';
+
+  @override
+  String platformShort(String track) {
+    return 'Gl. $track';
+  }
+
+  @override
+  String directionTo(String destination) {
+    return 'Richtung $destination';
+  }
+
+  @override
+  String get liveTimesRefresh => 'Echtzeit aktualisieren';
+
+  @override
+  String get liveTimesNone => 'Keine Echtzeitdaten zu aktualisieren';
+
+  @override
+  String get liveTimesError => 'Echtzeitdaten konnten nicht geladen werden';
 }

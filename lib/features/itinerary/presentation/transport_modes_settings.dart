@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/transport_mode_providers.dart';
 import '../widgets/transport_mode.dart';
@@ -18,6 +19,17 @@ class TransportModesSettings extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final modes = ref.watch(transportModesProvider).value ?? const [];
+    // Built-ins the user has deleted — offered back so an accidental delete has
+    // a one-tap, identity-preserving undo (a hand-added same-named mode would
+    // not restore the builtinKey the sharing bundle and search mapping rely on).
+    final presentKeys = {
+      for (final m in modes)
+        if (m.builtinKey != null) m.builtinKey,
+    };
+    final missingBuiltins = [
+      for (final mode in kTransportModeOrder)
+        if (!presentKeys.contains(mode.name)) mode,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,13 +95,50 @@ class TransportModesSettings extends ConsumerWidget {
           ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              icon: const Icon(Icons.add),
-              label: Text(l10n.transportModeAdd),
-              onPressed: () => _addMode(context, ref),
-            ),
+          child: Row(
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.add),
+                label: Text(l10n.transportModeAdd),
+                onPressed: () => _addMode(context, ref),
+              ),
+              if (missingBuiltins.isNotEmpty) ...[
+                const Spacer(),
+                PopupMenuButton<TransportMode>(
+                  tooltip: l10n.transportModeRestoreBuiltin,
+                  onSelected: (mode) => ref
+                      .read(transportModeControllerProvider)
+                      .restoreBuiltinMode(mode),
+                  itemBuilder: (context) => [
+                    for (final mode in missingBuiltins)
+                      PopupMenuItem(
+                        value: mode,
+                        child: Row(
+                          children: [
+                            Icon(mode.icon),
+                            const SizedBox(width: 12),
+                            Text(mode.label(l10n)),
+                          ],
+                        ),
+                      ),
+                  ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.restore, size: 18),
+                        const SizedBox(width: 4),
+                        Text(l10n.transportModeRestoreBuiltin),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ],

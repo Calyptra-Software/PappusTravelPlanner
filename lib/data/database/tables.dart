@@ -216,6 +216,14 @@ class ItineraryItems extends Table {
   /// its own.
   IntColumn get actualStartMinutes => integer().nullable()();
   IntColumn get actualEndMinutes => integer().nullable()();
+
+  /// Whether this entry's **end** falls on the day *after* [date]. Almost always
+  /// an overnight transport leg — a night train that departs before midnight and
+  /// arrives the next morning: the entry stays anchored to its departure [date]
+  /// and appears once, on that day, while [endMinutes]/[actualEndMinutes] are
+  /// read as minutes into the following calendar day. This keeps the 0-1439
+  /// encoding intact rather than letting a single row straddle two dates.
+  BoolColumn get spansNextDay => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
   // --- place-only ---
@@ -232,6 +240,20 @@ class ItineraryItems extends Table {
   )();
   TextColumn get fromLocation => text().nullable()();
   TextColumn get toLocation => text().nullable()();
+
+  /// Coordinates (WGS84) of this leg's endpoints, when known — filled in by the
+  /// connection search from the routing service, null for a hand-entered leg.
+  /// Nothing renders them yet; they are stored so a future map can draw the leg
+  /// without having to re-geocode its stations.
+  RealColumn get fromLat => real().nullable()();
+  RealColumn get fromLon => real().nullable()();
+  RealColumn get toLat => real().nullable()();
+  RealColumn get toLon => real().nullable()();
+
+  /// The routing provider's trip identifier for an imported leg, kept so the
+  /// live-times refresh can re-query this exact trip and fill in the actual
+  /// departure/arrival. Null for a hand-entered leg (nothing to refresh).
+  TextColumn get sourceTripId => text().nullable()();
 }
 
 /// A single cost. Attached to exactly one of: a single itinerary item (via

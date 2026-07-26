@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
+import '../database/tables.dart';
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -36,6 +37,15 @@ class TripRepository {
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>
       _db.itineraryDao.updateItem(item);
+  Future<void> setActualTimes(
+    int itemId, {
+    required int? actualStart,
+    required int? actualEnd,
+  }) => _db.itineraryDao.setActualTimes(
+    itemId,
+    actualStart: actualStart,
+    actualEnd: actualEnd,
+  );
   // Routes through GroupDao so deleting a grouped item also tidies its group
   // (dissolving a group left with <2 members, preserving its shared costs).
   Future<void> deleteItem(int id) => _db.groupDao.deleteItem(id);
@@ -54,6 +64,36 @@ class TripRepository {
     day: day,
     alternativeId: alternativeId,
   );
+
+  /// Imports a planned journey as a run of transport legs. Each leg is appended
+  /// to the end of its day; then, unless [group] is false, each maximal run of
+  /// legs sharing a day is bundled into one group (a shared ticket) — a journey
+  /// crossing midnight becomes one group per day, since a group lives within a
+  /// single day. Returns the new item ids in order.
+  Future<List<int>> insertJourney(
+    int tripId,
+    List<ItineraryItemsCompanion> legs, {
+    bool group = true,
+  }) async {
+    final ids = await _db.itineraryDao.insertJourneyLegs(tripId, legs);
+    if (group) {
+      var i = 0;
+      while (i < legs.length) {
+        var j = i;
+        while (j + 1 < legs.length &&
+            legs[j + 1].date.value == legs[i].date.value) {
+          j++;
+        }
+        // Fold the whole same-day run onto its first member's group.
+        for (var k = i; k < j; k++) {
+          await _db.groupDao.groupItems(ids[i], ids[k + 1]);
+        }
+        i = j + 1;
+      }
+    }
+    return ids;
+  }
+
   Future<int> nextSortOrder(int tripId, DateTime date) =>
       _db.itineraryDao.nextSortOrder(tripId, date);
   Future<int> nextSortOrderInAlternative(int alternativeId) =>
@@ -176,6 +216,8 @@ class TripRepository {
       _db.transportModeDao.deleteMode(id);
   Future<void> reorderTransportModes(List<int> orderedIds) =>
       _db.transportModeDao.reorderModes(orderedIds);
+  Future<void> restoreBuiltinTransportMode(TransportMode mode) =>
+      _db.transportModeDao.restoreBuiltinMode(mode);
 
   // --- people ---
   Stream<List<String>> watchPeople() => _db.costDao.watchPeople();

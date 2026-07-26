@@ -7,6 +7,7 @@ import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
+import '../../transport_search/application/transport_search_controller.dart';
 import '../application/transport_mode_providers.dart';
 import 'item_times.dart';
 import 'now_line.dart';
@@ -415,6 +416,12 @@ class _TransportRow extends ConsumerWidget {
     final modeIcon = modeRow?.icon ?? kDefaultTransportModeIcon;
     final modeLabel = modeRow?.label(l10n) ?? l10n.modeOther;
     final hasTimes = ItemTimes.hasAny(item);
+    // The line/train number (e.g. "ICE 509"), stored as the item title, shown
+    // next to the mode label. Direction and platform ride along in the notes.
+    final line = item.title;
+    final header = (line != null && line.isNotEmpty)
+        ? '$modeLabel · $line'
+        : modeLabel;
     final from = item.fromLocation ?? '';
     final to = item.toLocation ?? '';
     final route = [from, to].where((s) => s.isNotEmpty).join('  →  ');
@@ -467,7 +474,7 @@ class _TransportRow extends ConsumerWidget {
                             Row(
                               children: [
                                 Text(
-                                  modeLabel,
+                                  header,
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -514,6 +521,10 @@ class _TransportRow extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    // An imported leg (one with a routing trip id) can pull its
+                    // live times; a walk transfer or hand-entered leg cannot.
+                    if (item.sourceTripId != null)
+                      _LiveRefreshButton(item: item),
                     ?dragHandle,
                   ],
                 ),
@@ -522,6 +533,60 @@ class _TransportRow extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Pulls one imported leg's live (real-time) times on demand. On success the
+/// refreshed actuals write to the DB and the tile redraws with the planned-vs-
+/// actual marks; a leg with no live data (already run, or schedule changed) or a
+/// network failure just reports via a snackbar. Manual only — one tap, one leg.
+class _LiveRefreshButton extends ConsumerStatefulWidget {
+  const _LiveRefreshButton({required this.item});
+
+  final ItineraryItem item;
+
+  @override
+  ConsumerState<_LiveRefreshButton> createState() => _LiveRefreshButtonState();
+}
+
+class _LiveRefreshButtonState extends ConsumerState<_LiveRefreshButton> {
+  bool _loading = false;
+
+  Future<void> _refresh() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _loading = true);
+    try {
+      final updated = await ref
+          .read(transportSearchControllerProvider)
+          .refreshLeg(widget.item);
+      // On success the tile updates in place; only speak up when there was
+      // nothing live to apply, or the fetch failed.
+      if (!updated) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesNone)));
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesError)));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: AppLocalizations.of(context).liveTimesRefresh,
+      visualDensity: VisualDensity.compact,
+      iconSize: 18,
+      icon: _loading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.sync),
+      onPressed: _loading ? null : _refresh,
     );
   }
 }

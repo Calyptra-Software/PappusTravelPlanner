@@ -1,0 +1,1978 @@
+{
+  "from": {
+    "name": "Hamburg Hauptbahnhof",
+    "stopId": "at-Railway-Current-Reference-Data-2026_de:02000:10950:11:1",
+    "importance": 0.3181765377521515,
+    "lat": 53.552475,
+    "lon": 10.008094999999999,
+    "level": -1.0,
+    "tz": "Europe/Berlin",
+    "vertexType": "TRANSIT",
+    "modes": [
+      "HIGHSPEED_RAIL",
+      "LONG_DISTANCE",
+      "COACH",
+      "NIGHT_RAIL",
+      "REGIONAL_RAIL",
+      "SUBURBAN",
+      "SUBWAY",
+      "BUS"
+    ]
+  },
+  "to": {
+    "name": "Wien Hauptbahnhof",
+    "stopId": "at-Railway-Current-Reference-Data-2026_Pat:49:1349",
+    "importance": 0.24647121131420135,
+    "lat": 48.185190000000006,
+    "lon": 16.376413,
+    "level": 1.0,
+    "tz": "Europe/Vienna",
+    "vertexType": "TRANSIT",
+    "modes": [
+      "HIGHSPEED_RAIL",
+      "LONG_DISTANCE",
+      "COACH",
+      "NIGHT_RAIL",
+      "REGIONAL_RAIL",
+      "SUBURBAN",
+      "SUBWAY",
+      "TRAM",
+      "BUS"
+    ]
+  },
+  "itineraries": [
+    {
+      "duration": 43920,
+      "startTime": "2026-07-27T16:34:00Z",
+      "endTime": "2026-07-28T04:46:00Z",
+      "transfers": 2,
+      "id": "CrwBCgdJQ0UgNjA3EiIyMDI2MDcyN18xODozNF9kZS1ERUxGSV8zMjk5MjMwMzY0GhdkZS1ERUxGSV9kZTowMjAwMDoxMDk1MCGSsdr8v8ZKQCmcGJKTiQMkQDIgZGUtREVMRklfZGU6MTEwMDA6OTAwMDU4MTAxOjM6NTQ5UBn/PuM8SkBBgmJkyRy7KkBI+JCe0wZQ3Mie0wZaDkhJR0hTUEVFRF9SQUlMYAFpAAAAAAAA8L9xAAAAAAAAAAAKmwEaIGRlLURFTEZJX2RlOjExMDAwOjkwMDA1ODEwMTozOjU0IVAZ/z7jPEpAKYJiZMkcuypAMi9ldS1mbGl4YnVzX2RjYmI5OTRmLTk2MDMtMTFlNi05MDY2LTU0OWYzNTBmY2IwYzliodY07zxKQEHoM6DejLoqQEjE6Z7TBlC86p7TBloEV0FMS2kAAAAAAAAAAHEAAAAAAAAAAArwAQoLRmxpeEJ1cyBONjASNDIwMjYwNzI3XzE5OjMwX2V1LWZsaXhidXNfTjYwLTIwLTE5MzAwNzIwMjYtQiNaQUctMDAaL2V1LWZsaXhidXNfZGNiYjk5NGYtOTYwMy0xMWU2LTkwNjYtNTQ5ZjM1MGZjYjBjIWKh1jTvPEpAKegzoN6MuipAMi9ldS1mbGl4YnVzX2RjYmRjMzRlLTk2MDMtMTFlNi05MDY2LTU0OWYzNTBmY2IwYznO5JttbhhIQEGpUN1c/GkwQEi86p7TBlDw26DTBloFQ09BQ0hgAWkAAAAAAAAAAHEAAAAAAAAAAAqqARovZXUtZmxpeGJ1c19kY2JkYzM0ZS05NjAzLTExZTYtOTA2Ni01NDlmMzUwZmNiMGMhzuSbbW4YSEApqVDdXPxpMEAyL2V1LWZsaXhidXNfZGNiZGMzNGUtOTYwMy0xMWU2LTkwNjYtNTQ5ZjM1MGZjYjBjOc7km21uGEhAQalQ3Vz8aTBASPDboNMGUOjcoNMGWgRXQUxLaQAAAAAAAAAAcQAAAAAAAAAACvEBCgtGbGl4QnVzIDkwMRI1MjAyNjA3MjhfMDI6NDVfZXUtZmxpeGJ1c185MDEtMy0wMjQ1MDcyMDI2LUJURiNXSEItMDAaL2V1LWZsaXhidXNfZGNiZGMzNGUtOTYwMy0xMWU2LTkwNjYtNTQ5ZjM1MGZjYjBjIc7km21uGEhAKalQ3Vz8aTBAMi9ldS1mbGl4YnVzX2FmNDU4NTdjLTdjN2UtNGYwZS1iYWUyLTM2NDYwNzRjMGEzZDlzLVqAthdIQEGg+Zy7XV8wQEjI4KDTBlCg5aDTBloFQ09BQ0hgAWkAAAAAAAAAAHEAAAAAAAAAAAqtARovZXUtZmxpeGJ1c19hZjQ1ODU3Yy03YzdlLTRmMGUtYmFlMi0zNjQ2MDc0YzBhM2Qhcy1agLYXSEApoPmcu11fMEAyMmF0LVJhaWx3YXktQ3VycmVudC1SZWZlcmVuY2UtRGF0YS0yMDI2X1BhdDo0OToxMzQ5OezFUE60F0hAQQzKNJpcYDBASKDloNMGUIjooNMGWgRXQUxLaQAAAAAAAAAAcQAAAAAAAPA/",
+      "legs": [
+        {
+          "mode": "HIGHSPEED_RAIL",
+          "from": {
+            "name": "Hamburg Hbf",
+            "stopId": "de-DELFI_de:02000:10950",
+            "importance": 0.3181765377521515,
+            "lat": 53.552734,
+            "lon": 10.006909,
+            "level": -1.0,
+            "tz": "Europe/Berlin",
+            "departure": "2026-07-27T16:34:00Z",
+            "scheduledDeparture": "2026-07-27T16:34:00Z",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NOT_ALLOWED",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "BUS"
+            ]
+          },
+          "to": {
+            "name": "S Südkreuz Bhf (Berlin)",
+            "stopId": "de-DELFI_de:11000:900058101:3:54",
+            "parentId": "de-DELFI_de:11000:900058101",
+            "importance": 0.1526402086019516,
+            "lat": 52.475685,
+            "lon": 13.365454000000003,
+            "level": 0.0,
+            "tz": "Europe/Berlin",
+            "arrival": "2026-07-27T18:33:00Z",
+            "scheduledArrival": "2026-07-27T18:33:00Z",
+            "scheduledTrack": "5",
+            "track": "5",
+            "description": "Bahnsteig Gleis 5",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "BUS"
+            ]
+          },
+          "duration": 7140,
+          "startTime": "2026-07-27T16:34:00Z",
+          "endTime": "2026-07-27T18:33:00Z",
+          "scheduledStartTime": "2026-07-27T16:34:00Z",
+          "scheduledEndTime": "2026-07-27T18:33:00Z",
+          "realTime": false,
+          "scheduled": true,
+          "interlineWithPreviousLeg": false,
+          "headsign": "Nürnberg Hbf",
+          "tripFrom": {
+            "name": "Hamburg Hbf",
+            "stopId": "de-DELFI_de:02000:10950",
+            "importance": 0.3181765377521515,
+            "lat": 53.552734,
+            "lon": 10.006909,
+            "level": -1.0,
+            "tz": "Europe/Berlin",
+            "departure": "2026-07-27T16:34:00Z",
+            "scheduledDeparture": "2026-07-27T16:34:00Z",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NOT_ALLOWED",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "BUS"
+            ]
+          },
+          "tripTo": {
+            "name": "Nürnberg Hbf",
+            "stopId": "de-DELFI_de:09564:510:6:8",
+            "parentId": "de-DELFI_de:09564:510",
+            "importance": 0.25843364000320435,
+            "lat": 49.445370000000004,
+            "lon": 11.082309,
+            "level": 1.0,
+            "tz": "Europe/Berlin",
+            "arrival": "2026-07-27T21:53:00Z",
+            "scheduledArrival": "2026-07-27T21:53:00Z",
+            "scheduledTrack": "8",
+            "track": "8",
+            "description": "Gleis 8+9",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "TRAM",
+              "BUS"
+            ]
+          },
+          "routeId": "de-DELFI_162300_101",
+          "routeUrl": "",
+          "directionId": "1",
+          "routeType": 101,
+          "agencyName": "DB Fernverkehr AG",
+          "agencyUrl": "",
+          "agencyId": "12681",
+          "tripId": "20260727_18:34_de-DELFI_3299230364",
+          "routeShortName": "ICE 607",
+          "routeLongName": "",
+          "tripShortName": "ICE 607",
+          "displayName": "ICE 607",
+          "cancelled": false,
+          "source": "de_DELFI.gtfs.zip/stop_times.txt:36767260:36767269",
+          "intermediateStops": [],
+          "legGeometry": {
+            "points": "",
+            "length": 0
+          },
+          "bikesAllowed": false,
+          "wheelchairAccessible": "NOT_ACCESSIBLE"
+        },
+        {
+          "mode": "WALK",
+          "from": {
+            "name": "S Südkreuz Bhf (Berlin)",
+            "stopId": "de-DELFI_de:11000:900058101:3:54",
+            "parentId": "de-DELFI_de:11000:900058101",
+            "importance": 0.1526402086019516,
+            "lat": 52.475685,
+            "lon": 13.365454000000003,
+            "level": 0.0,
+            "tz": "Europe/Berlin",
+            "arrival": "2026-07-27T18:33:00Z",
+            "departure": "2026-07-27T19:43:00Z",
+            "scheduledArrival": "2026-07-27T18:33:00Z",
+            "scheduledDeparture": "2026-07-27T19:43:00Z",
+            "scheduledTrack": "5",
+            "track": "5",
+            "description": "Bahnsteig Gleis 5",
+            "vertexType": "TRANSIT",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "BUS"
+            ]
+          },
+          "to": {
+            "name": "Berlin Südkreuz train station",
+            "stopId": "eu-flixbus_dcbb994f-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.018625477328896523,
+            "lat": 52.47605,
+            "lon": 13.364356,
+            "level": 0.0,
+            "tz": "Europe/Berlin",
+            "arrival": "2026-07-27T19:45:00Z",
+            "scheduledArrival": "2026-07-27T19:45:00Z",
+            "stopCode": "BSK",
+            "vertexType": "TRANSIT",
+            "modes": [
+              "COACH"
+            ]
+          },
+          "duration": 120,
+          "startTime": "2026-07-27T19:43:00Z",
+          "endTime": "2026-07-27T19:45:00Z",
+          "scheduledStartTime": "2026-07-27T19:43:00Z",
+          "scheduledEndTime": "2026-07-27T19:45:00Z",
+          "realTime": false,
+          "scheduled": false,
+          "distance": 292.0,
+          "legGeometry": {
+            "points": "",
+            "length": 0
+          },
+          "steps": [
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 32.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "polyline": {
+                "points": "ytr{g^}es|}FseDu}A",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 463382522,
+              "polyline": {
+                "points": "m{w{g^sdv|}FdBgN",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 463382523,
+              "polyline": {
+                "points": "gxw{g^{sv|}FnIzD",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "STAIRS",
+              "distance": 24.0,
+              "fromLevel": 0.0,
+              "toLevel": 1.0,
+              "osmWay": 381240797,
+              "polyline": {
+                "points": "wmw{g^_nv|}Fh}BlhA",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 6.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 381240833,
+              "polyline": {
+                "points": "mos{g^qdt|}Fp\\xQ",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 463280317,
+              "polyline": {
+                "points": "{qr{g^wqs|}FyJfk@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "u}r{g^oer|}Fkm@l[",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 6.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "alt{g^aiq|}Fw[~Q",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 6.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "yhu{g^avp|}Fm`@bT",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 7.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "gjv{g^}`p|}FyEhCq\\tQ",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 17.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "snw{g^}io|}F}wAfw@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "qgz{g^uqm|}FkZhP",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "}b{{g^k`m|}FcR`K",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 14.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 269167581,
+              "polyline": {
+                "points": "av{{g^itl|}F_kA`o@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 7.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 463280303,
+              "polyline": {
+                "points": "ab~{g^gdk|}Fac@nT",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "osmWay": 381240826,
+              "polyline": {
+                "points": "cf_|g^wnj|}FnA~IcR~J",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "STAIRS",
+              "distance": 24.0,
+              "fromLevel": 1.0,
+              "toLevel": 0.0,
+              "osmWay": 130633739,
+              "polyline": {
+                "points": "wv_|g^wwi|}Fk~B~lA",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 142159980,
+              "polyline": {
+                "points": "cvc|g^wig|}FaQmO",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 48124069,
+              "polyline": {
+                "points": "ehd|g^ezg|}Fan@|Z",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 33.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 463436752,
+              "polyline": {
+                "points": "gwe|g^g~f|}Ft`A~}G",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 387290329,
+              "polyline": {
+                "points": "quc|g^g_~{}FdHdc@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 699329057,
+              "polyline": {
+                "points": "klc|g^a{|{}FhDtVbClQ",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 13.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 320941809,
+              "polyline": {
+                "points": "}bc|g^}p{{}F~eAii@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 1236708388,
+              "polyline": {
+                "points": "}{`|g^g{|{}FnIlk@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 32.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 27730720,
+              "polyline": {
+                "points": "mq`|g^yn{{}FjqCgzAhT~H",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "Hildegard-Knef-Platz",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 1.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 656507388,
+              "polyline": {
+                "points": "wi{{g^a`~{}Fb@wC",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 11.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "polyline": {
+                "points": "sh{{g^yd~{}FlBgNrk@dZ",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            }
+          ],
+          "intermediateStops": []
+        },
+        {
+          "mode": "COACH",
+          "from": {
+            "name": "Berlin Südkreuz train station",
+            "stopId": "eu-flixbus_dcbb994f-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.018625477328896523,
+            "lat": 52.47605,
+            "lon": 13.364356,
+            "level": 0.0,
+            "tz": "Europe/Berlin",
+            "departure": "2026-07-27T19:45:00Z",
+            "scheduledDeparture": "2026-07-27T19:45:00Z",
+            "stopCode": "BSK",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "COACH"
+            ]
+          },
+          "to": {
+            "name": "Vienna Erdberg (Busterminal VIB)",
+            "stopId": "eu-flixbus_dcbdc34e-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.02870018780231476,
+            "lat": 48.190870000000004,
+            "lon": 16.414007,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:20:00Z",
+            "scheduledArrival": "2026-07-28T04:20:00Z",
+            "stopCode": "WIG",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "COACH"
+            ]
+          },
+          "duration": 30900,
+          "startTime": "2026-07-27T19:45:00Z",
+          "endTime": "2026-07-28T04:20:00Z",
+          "scheduledStartTime": "2026-07-27T19:45:00Z",
+          "scheduledEndTime": "2026-07-28T04:20:00Z",
+          "realTime": false,
+          "scheduled": true,
+          "interlineWithPreviousLeg": false,
+          "headsign": "Zagreb (Bus Station)",
+          "tripFrom": {
+            "name": "Berlin central bus station",
+            "stopId": "eu-flixbus_dcbaaee6-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.034888334572315216,
+            "lat": 52.50717,
+            "lon": 13.279399,
+            "level": 0.0,
+            "tz": "Europe/Berlin",
+            "departure": "2026-07-27T19:30:00Z",
+            "scheduledDeparture": "2026-07-27T19:30:00Z",
+            "stopCode": "B",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "COACH",
+              "BUS"
+            ]
+          },
+          "tripTo": {
+            "name": "Zagreb (Bus Station)",
+            "stopId": "eu-flixbus_dcbdbe76-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.040222037583589554,
+            "lat": 45.803416999999996,
+            "lon": 15.992277999999999,
+            "level": 0.0,
+            "tz": "Europe/Belgrade",
+            "arrival": "2026-07-28T10:00:00Z",
+            "scheduledArrival": "2026-07-28T10:00:00Z",
+            "stopCode": "ZAG",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "COACH"
+            ]
+          },
+          "routeId": "eu-flixbus_N60",
+          "routeUrl": "",
+          "directionId": "0",
+          "routeColor": "73d700",
+          "routeTextColor": "000000",
+          "routeType": 200,
+          "agencyName": "FlixBus-eu",
+          "agencyUrl": "https://global.flixbus.com",
+          "agencyId": "FLIXBUS-eu",
+          "tripId": "20260727_19:30_eu-flixbus_N60-20-1930072026-B#ZAG-00",
+          "routeShortName": "FlixBus N60",
+          "routeLongName": "Zingst/Berlin - Vienna/Zagreb",
+          "tripShortName": "",
+          "displayName": "FlixBus N60",
+          "cancelled": false,
+          "source": "eu_flixbus.gtfs.zip/stop_times.txt:302591:302600",
+          "intermediateStops": [],
+          "legGeometry": {
+            "points": "",
+            "length": 0
+          },
+          "bikesAllowed": false,
+          "wheelchairAccessible": "NOT_ACCESSIBLE"
+        },
+        {
+          "mode": "WALK",
+          "from": {
+            "name": "Vienna Erdberg (Busterminal VIB)",
+            "stopId": "eu-flixbus_dcbdc34e-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.02870018780231476,
+            "lat": 48.190870000000004,
+            "lon": 16.414007,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:20:00Z",
+            "departure": "2026-07-28T04:20:00Z",
+            "scheduledArrival": "2026-07-28T04:20:00Z",
+            "scheduledDeparture": "2026-07-28T04:20:00Z",
+            "stopCode": "WIG",
+            "vertexType": "TRANSIT",
+            "cancelled": false,
+            "modes": [
+              "COACH"
+            ]
+          },
+          "to": {
+            "name": "Vienna Erdberg (Busterminal VIB)",
+            "stopId": "eu-flixbus_dcbdc34e-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.02870018780231476,
+            "lat": 48.190870000000004,
+            "lon": 16.414007,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:22:00Z",
+            "scheduledArrival": "2026-07-28T04:22:00Z",
+            "stopCode": "WIG",
+            "vertexType": "TRANSIT",
+            "modes": [
+              "COACH"
+            ]
+          },
+          "duration": 120,
+          "startTime": "2026-07-28T04:20:00Z",
+          "endTime": "2026-07-28T04:22:00Z",
+          "scheduledStartTime": "2026-07-28T04:20:00Z",
+          "scheduledEndTime": "2026-07-28T04:22:00Z",
+          "realTime": false,
+          "scheduled": false,
+          "distance": 0.0,
+          "legGeometry": {
+            "points": "",
+            "length": 0
+          },
+          "steps": [
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 0.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "polyline": {
+                "points": "w|jdv[kaiaxH??",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            }
+          ],
+          "intermediateStops": []
+        },
+        {
+          "mode": "COACH",
+          "from": {
+            "name": "Vienna Erdberg (Busterminal VIB)",
+            "stopId": "eu-flixbus_dcbdc34e-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.02870018780231476,
+            "lat": 48.190870000000004,
+            "lon": 16.414007,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "departure": "2026-07-28T04:30:00Z",
+            "scheduledDeparture": "2026-07-28T04:30:00Z",
+            "stopCode": "WIG",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "COACH"
+            ]
+          },
+          "to": {
+            "name": "Vienna Central Station",
+            "stopId": "eu-flixbus_af45857c-7c7e-4f0e-bae2-3646074c0a3d",
+            "importance": 0.24647121131420135,
+            "lat": 48.185257,
+            "lon": 16.372524,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:40:00Z",
+            "scheduledArrival": "2026-07-28T04:40:00Z",
+            "stopCode": "WHB",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "TRAM",
+              "BUS"
+            ]
+          },
+          "duration": 600,
+          "startTime": "2026-07-28T04:30:00Z",
+          "endTime": "2026-07-28T04:40:00Z",
+          "scheduledStartTime": "2026-07-28T04:30:00Z",
+          "scheduledEndTime": "2026-07-28T04:40:00Z",
+          "realTime": false,
+          "scheduled": true,
+          "interlineWithPreviousLeg": false,
+          "headsign": "Vienna Central Station",
+          "tripFrom": {
+            "name": "Bratislava (Airport)",
+            "stopId": "eu-flixbus_dcbcbe7f-9603-11e6-9066-549f350fcb0c",
+            "importance": 0.00846271961927414,
+            "lat": 48.17065,
+            "lon": 17.199991000000004,
+            "level": 0.0,
+            "tz": "Europe/Prague",
+            "departure": "2026-07-28T02:45:00Z",
+            "scheduledDeparture": "2026-07-28T02:45:00Z",
+            "stopCode": "BTF",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "COACH"
+            ]
+          },
+          "tripTo": {
+            "name": "Vienna Central Station",
+            "stopId": "eu-flixbus_af45857c-7c7e-4f0e-bae2-3646074c0a3d",
+            "importance": 0.24647121131420135,
+            "lat": 48.185257,
+            "lon": 16.372524,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:40:00Z",
+            "scheduledArrival": "2026-07-28T04:40:00Z",
+            "stopCode": "WHB",
+            "vertexType": "TRANSIT",
+            "pickupType": "NORMAL",
+            "dropoffType": "NORMAL",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "TRAM",
+              "BUS"
+            ]
+          },
+          "routeId": "eu-flixbus_901",
+          "routeUrl": "",
+          "directionId": "0",
+          "routeColor": "73d700",
+          "routeTextColor": "000000",
+          "routeType": 200,
+          "agencyName": "FlixBus-eu",
+          "agencyUrl": "https://global.flixbus.com",
+          "agencyId": "FLIXBUS-eu",
+          "tripId": "20260728_02:45_eu-flixbus_901-3-0245072026-BTF#WHB-00",
+          "routeShortName": "FlixBus 901",
+          "routeLongName": "Vienna - Bratislava",
+          "tripShortName": "",
+          "displayName": "FlixBus 901",
+          "cancelled": false,
+          "source": "eu_flixbus.gtfs.zip/stop_times.txt:274315:274321",
+          "intermediateStops": [],
+          "legGeometry": {
+            "points": "",
+            "length": 0
+          },
+          "bikesAllowed": false,
+          "wheelchairAccessible": "NOT_ACCESSIBLE"
+        },
+        {
+          "mode": "WALK",
+          "from": {
+            "name": "Vienna Central Station",
+            "stopId": "eu-flixbus_af45857c-7c7e-4f0e-bae2-3646074c0a3d",
+            "importance": 0.24647121131420135,
+            "lat": 48.185257,
+            "lon": 16.372524,
+            "level": 0.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:40:00Z",
+            "departure": "2026-07-28T04:40:00Z",
+            "scheduledArrival": "2026-07-28T04:40:00Z",
+            "scheduledDeparture": "2026-07-28T04:40:00Z",
+            "stopCode": "WHB",
+            "vertexType": "TRANSIT",
+            "cancelled": false,
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "TRAM",
+              "BUS"
+            ]
+          },
+          "to": {
+            "name": "Wien Hauptbahnhof",
+            "stopId": "at-Railway-Current-Reference-Data-2026_Pat:49:1349",
+            "importance": 0.24647121131420135,
+            "lat": 48.185190000000006,
+            "lon": 16.376413,
+            "level": 1.0,
+            "tz": "Europe/Vienna",
+            "arrival": "2026-07-28T04:46:00Z",
+            "scheduledArrival": "2026-07-28T04:46:00Z",
+            "vertexType": "TRANSIT",
+            "modes": [
+              "HIGHSPEED_RAIL",
+              "LONG_DISTANCE",
+              "COACH",
+              "NIGHT_RAIL",
+              "REGIONAL_RAIL",
+              "SUBURBAN",
+              "SUBWAY",
+              "TRAM",
+              "BUS"
+            ]
+          },
+          "duration": 360,
+          "startTime": "2026-07-28T04:40:00Z",
+          "endTime": "2026-07-28T04:46:00Z",
+          "scheduledStartTime": "2026-07-28T04:40:00Z",
+          "scheduledEndTime": "2026-07-28T04:46:00Z",
+          "realTime": false,
+          "scheduled": false,
+          "distance": 402.0,
+          "legGeometry": {
+            "points": "",
+            "length": 0
+          },
+          "steps": [
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 16.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "polyline": {
+                "points": "mj}`v[cd_hwHsC~@wUcuB",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 6.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 122871698,
+              "polyline": {
+                "points": "ye~`v[gxbhwHsHgl@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "A1",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 122871706,
+              "polyline": {
+                "points": "mo~`v[oedhwHcNwkA",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "B1",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 122871706,
+              "polyline": {
+                "points": "q~~`v[grfhwHwB}Q",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "B1",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 122871706,
+              "polyline": {
+                "points": "ib_av[eeghwHoByP",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "B1",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 17.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 122871725,
+              "polyline": {
+                "points": "ye_av[_wghwHqXs`CeEvA",
+                "precision": 7,
+                "length": 3
+              },
+              "streetName": "Internationales Busterminal Wien Hauptbahnhof",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 7.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 422222496,
+              "polyline": {
+                "points": "qe`av[{ukhwHuKcs@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 422222496,
+              "polyline": {
+                "points": "gr`av[_jmhwHqBwM",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 175970543,
+              "polyline": {
+                "points": "yu`av[wxmhwHso@~A",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 3.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793534,
+              "polyline": {
+                "points": "mfbav[wumhwH]cW",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793534,
+              "polyline": {
+                "points": "kgbav[{mnhwH{AsfA",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 6.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793534,
+              "polyline": {
+                "points": "gjbav[ouphwHaAer@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793533,
+              "polyline": {
+                "points": "ilbav[uhrhwHi@ga@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793532,
+              "polyline": {
+                "points": "smbav[}jshwHQeM",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793532,
+              "polyline": {
+                "points": "enbav[cyshwHSmM",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793532,
+              "polyline": {
+                "points": "ynbav[qgthwHQoM",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 2.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793532,
+              "polyline": {
+                "points": "kobav[avthwHSqN",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 1287811010,
+              "polyline": {
+                "points": "_pbav[seuhwHmHye@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 627437334,
+              "polyline": {
+                "points": "mybav[mlvhwHuVo}@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 627437334,
+              "polyline": {
+                "points": "cqcav[}jxhwH_X{`A",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 3.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 967957291,
+              "polyline": {
+                "points": "cjdav[ylzhwHiG{T",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 967957291,
+              "polyline": {
+                "points": "mrdav[ub{hwHgJq\\",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 19.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793491,
+              "polyline": {
+                "points": "u}dav[g`|hwHqr@}fC",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 1.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793491,
+              "polyline": {
+                "points": "gqfav[eh`iwHeBmG",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 3.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793491,
+              "polyline": {
+                "points": "mtfav[sp`iwHoH}W",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 3.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 422222494,
+              "polyline": {
+                "points": "}}fav[qiaiwH_FqQ",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 3.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 422222494,
+              "polyline": {
+                "points": "}dgav[c|aiwHqGoU",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 775793490,
+              "polyline": {
+                "points": "omgav[srbiwHoJm]",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 6.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 175970545,
+              "polyline": {
+                "points": "_ygav[aqciwHx\\sX",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 4.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 195717389,
+              "polyline": {
+                "points": "e{fav[ujdiwH|TyQ",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 10.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 195717389,
+              "polyline": {
+                "points": "gefav[o}diwHdr@_k@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 9.0,
+              "fromLevel": 0.0,
+              "toLevel": 0.0,
+              "osmWay": 320835492,
+              "polyline": {
+                "points": "ardav[oifiwHa\\iz@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "STAIRS",
+              "distance": 20.0,
+              "fromLevel": -1.0,
+              "toLevel": 0.0,
+              "osmWay": 147160338,
+              "polyline": {
+                "points": "coeav[ydhiwH{w@mrC",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 147160340,
+              "polyline": {
+                "points": "_hgav[gxliwHcMug@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 86.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 372026598,
+              "polyline": {
+                "points": "cvgav[}`niwHrX}d@xCuQsWclD`Gs`KbKqqA",
+                "precision": 7,
+                "length": 6
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 7.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 372026598,
+              "polyline": {
+                "points": "c|fav[{zcjwHjG_x@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 8.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 421825577,
+              "polyline": {
+                "points": "wsfav[{sejwH`g@{V",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "STAIRS",
+              "distance": 1.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 421825575,
+              "polyline": {
+                "points": "ukeav[wkfjwHlB{D",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 33.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 421825571,
+              "polyline": {
+                "points": "gheav[sqfjwHlhBkbF",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 14.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 372026597,
+              "polyline": {
+                "points": "y~aav[_umjwHzlAvX",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 23.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 372026597,
+              "polyline": {
+                "points": "}p_av[g{ljwHf{Bbh@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 5.0,
+              "fromLevel": -1.0,
+              "toLevel": -1.0,
+              "osmWay": 421825572,
+              "polyline": {
+                "points": "ut{`v[crkjwHkLwa@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            },
+            {
+              "relativeDirection": "ELEVATOR",
+              "distance": 0.0,
+              "fromLevel": 0.0,
+              "toLevel": 1.0,
+              "polyline": {
+                "points": "",
+                "precision": 0,
+                "length": 0
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false
+            },
+            {
+              "relativeDirection": "CONTINUE",
+              "distance": 8.0,
+              "fromLevel": 1.0,
+              "toLevel": 1.0,
+              "polyline": {
+                "points": "ab|`v[{tljwHjLva@",
+                "precision": 7,
+                "length": 2
+              },
+              "streetName": "",
+              "exit": "",
+              "stayOn": false,
+              "area": false,
+              "toll": false,
+              "elevationUp": 0,
+              "elevationDown": 0
+            }
+          ],
+          "intermediateStops": []
+        }
+      ]
+    }
+  ],
+  "previousPageCursor": "EARLIER|1785168000",
+  "nextPageCursor": "LATER|1785181920"
+}

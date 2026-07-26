@@ -14,6 +14,7 @@ import '../../costs/application/cost_providers.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
+import '../../transport_search/presentation/connection_search_sheet.dart';
 import '../application/item_clipboard.dart';
 import '../application/itinerary_providers.dart';
 import '../application/transport_mode_providers.dart';
@@ -215,11 +216,22 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           endMinutes: _times[_TimeSlot.plannedEnd],
           actualStartMinutes: _times[_TimeSlot.actualStart],
           actualEndMinutes: _times[_TimeSlot.actualEnd],
+          // The form doesn't expose these yet; carry them through unchanged so
+          // editing a leg doesn't wipe an imported connection's overnight flag,
+          // endpoint coordinates or its source trip id (which the live-times
+          // refresh needs). Direction/platform ride along in notes, which the
+          // form does edit.
+          spansNextDay: existing.spansNextDay,
           notes: nullIfEmpty(notes),
           location: _isTransport ? null : nullIfEmpty(location),
           mode: _isTransport ? _mode : null,
           fromLocation: _isTransport ? nullIfEmpty(from) : null,
           toLocation: _isTransport ? nullIfEmpty(to) : null,
+          fromLat: _isTransport ? existing.fromLat : null,
+          fromLon: _isTransport ? existing.fromLon : null,
+          toLat: _isTransport ? existing.toLat : null,
+          toLon: _isTransport ? existing.toLon : null,
+          sourceTripId: _isTransport ? existing.sourceTripId : null,
         ),
       );
     } else {
@@ -345,6 +357,24 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(heading, style: theme.textTheme.titleLarge),
+                if (_isTransport && !_isEditing) ...[
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.travel_explore),
+                    label: Text(l10n.connectionSearchOnline),
+                    onPressed: () async {
+                      final navigator = Navigator.of(context);
+                      final imported = await showConnectionSearchSheet(
+                        context,
+                        tripId: widget.tripId,
+                        day: _date,
+                      );
+                      // The search imported and closed itself; close the manual
+                      // form too so we don't leave an empty leg behind it.
+                      if (imported && mounted) navigator.pop();
+                    },
+                  ),
+                ],
                 const SizedBox(height: 16),
                 if (_isTransport) ...[
                   _buildModeDropdown(l10n),

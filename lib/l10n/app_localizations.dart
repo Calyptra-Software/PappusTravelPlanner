@@ -2293,6 +2293,126 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show undated trips'**
   String get calendarUndatedTooltip;
+
+  /// No description provided for @connectionSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search connection'**
+  String get connectionSearch;
+
+  /// No description provided for @connectionSearchOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Search online'**
+  String get connectionSearchOnline;
+
+  /// No description provided for @connectionFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get connectionFrom;
+
+  /// No description provided for @connectionTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get connectionTo;
+
+  /// No description provided for @connectionPickPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Search station or place'**
+  String get connectionPickPlace;
+
+  /// No description provided for @connectionDepart.
+  ///
+  /// In en, this message translates to:
+  /// **'Depart at'**
+  String get connectionDepart;
+
+  /// No description provided for @connectionArrive.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrive by'**
+  String get connectionArrive;
+
+  /// No description provided for @connectionSearchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No connections found'**
+  String get connectionSearchNoResults;
+
+  /// No description provided for @connectionSearchError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the connection service'**
+  String get connectionSearchError;
+
+  /// No description provided for @connectionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get connectionRetry;
+
+  /// No description provided for @connectionChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Direct} =1{1 change} other{{count} changes}}'**
+  String connectionChanges(int count);
+
+  /// No description provided for @connectionAddToDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to day'**
+  String get connectionAddToDay;
+
+  /// No description provided for @connectionAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection added'**
+  String get connectionAdded;
+
+  /// No description provided for @connectionAttribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Data © OpenStreetMap contributors, via Transitous'**
+  String get connectionAttribution;
+
+  /// No description provided for @transportModeRestoreBuiltin.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore built-in'**
+  String get transportModeRestoreBuiltin;
+
+  /// No description provided for @platformShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Pl. {track}'**
+  String platformShort(String track);
+
+  /// No description provided for @directionTo.
+  ///
+  /// In en, this message translates to:
+  /// **'to {destination}'**
+  String directionTo(String destination);
+
+  /// No description provided for @liveTimesRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Update live times'**
+  String get liveTimesRefresh;
+
+  /// No description provided for @liveTimesNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No live times to update'**
+  String get liveTimesNone;
+
+  /// No description provided for @liveTimesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t fetch live times'**
+  String get liveTimesError;
 }
 
 class _AppLocalizationsDelegate

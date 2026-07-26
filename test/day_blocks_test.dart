@@ -21,6 +21,7 @@ void main() {
     date: date ?? day,
     sortOrder: sortOrder,
     kind: ItemKind.place,
+    spansNextDay: false,
     title: title,
     alternativeId: alternativeId,
   );

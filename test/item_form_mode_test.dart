@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -79,6 +80,7 @@ void main() {
     date: day,
     sortOrder: 0,
     kind: ItemKind.transport,
+    spansNextDay: false,
     fromLocation: 'Zurich',
     toLocation: 'Chur',
     mode: mode,
@@ -151,4 +153,64 @@ void main() {
       expect(dropdownOf(tester).initialValue, isNull);
     },
   );
+
+  // The form rebuilds the whole row on save, so any column it doesn't expose has
+  // to be carried through explicitly. Editing an imported leg must not wipe its
+  // source trip id (the live-times refresh needs it) or its coordinates.
+  testWidgets('editing a leg preserves its source trip id and coordinates', (
+    tester,
+  ) async {
+    final tripId = await db.tripDao.createTrip(
+      TripsCompanion.insert(title: 'T'),
+    );
+    final itemId = await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day,
+        kind: ItemKind.transport,
+        sortOrder: const Value(0),
+        fromLocation: const Value('Hamburg'),
+        toLocation: const Value('Berlin'),
+        startMinutes: const Value(600),
+        endMinutes: const Value(700),
+        sourceTripId: const Value('trip-42'),
+        fromLat: const Value(53.5),
+      ),
+    );
+    final existing = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.id.equals(itemId))).getSingle();
+
+    // Open the sheet as a real modal route so that saving (which pops) can be
+    // detected — proving the save actually ran, not that the tap missed.
+    await tester.pumpWidget(
+      wrap(
+        Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () => showItemFormSheet(
+              context,
+              tripId: tripId,
+              kind: ItemKind.transport,
+              existing: existing,
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    final save = find.widgetWithText(FilledButton, 'Save');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ItemFormSheet), findsNothing); // saved and closed
+    final after = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.id.equals(itemId))).getSingle();
+    expect(after.sourceTripId, 'trip-42'); // the trip id survived the edit
+    expect(after.fromLat, 53.5);
+  });
 }

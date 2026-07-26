@@ -537,5 +537,40 @@
   "calendarPreviousMonth": "Previous month",
   "calendarNextMonth": "Next month",
   "calendarUndatedTitle": "Undated trips",
-  "calendarUndatedTooltip": "Show undated trips"
+  "calendarUndatedTooltip": "Show undated trips",
+  "connectionSearch": "Search connection",
+  "connectionSearchOnline": "Search online",
+  "connectionFrom": "From",
+  "connectionTo": "To",
+  "connectionPickPlace": "Search station or place",
+  "connectionDepart": "Depart at",
+  "connectionArrive": "Arrive by",
+  "connectionSearchNoResults": "No connections found",
+  "connectionSearchError": "Couldn't reach the connection service",
+  "connectionRetry": "Retry",
+  "connectionChanges": "{count, plural, =0{Direct} =1{1 change} other{{count} changes}}",
+  "@connectionChanges": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionAddToDay": "Add to day",
+  "connectionAdded": "Connection added",
+  "connectionAttribution": "Data © OpenStreetMap contributors, via Transitous",
+  "transportModeRestoreBuiltin": "Restore built-in",
+  "platformShort": "Pl. {track}",
+  "@platformShort": {
+    "placeholders": {
+      "track": { "type": "String" }
+    }
+  },
+  "directionTo": "to {destination}",
+  "@directionTo": {
+    "placeholders": {
+      "destination": { "type": "String" }
+    }
+  },
+  "liveTimesRefresh": "Update live times",
+  "liveTimesNone": "No live times to update",
+  "liveTimesError": "Couldn't fetch live times"
 }

@@ -1,0 +1,54 @@
+{
+  "duration": 23700,
+  "startTime": "2026-07-26T14:34:00Z",
+  "endTime": "2026-07-26T21:09:00Z",
+  "transfers": 0,
+  "legs": [
+    {
+      "mode": "HIGHSPEED_RAIL",
+      "realTime": true,
+      "from": {
+        "name": "Hamburg Hbf",
+        "tz": "Europe/Berlin",
+        "scheduledArrival": null,
+        "arrival": null,
+        "scheduledDeparture": "2026-07-26T14:34:00Z",
+        "departure": "2026-07-26T14:34:00Z"
+      },
+      "intermediateStops": [
+        {
+          "name": "S+U Berlin Hauptbahnhof",
+          "tz": "Europe/Berlin",
+          "scheduledArrival": "2026-07-26T16:22:00Z",
+          "arrival": "2026-07-26T16:31:00Z",
+          "scheduledDeparture": "2026-07-26T16:29:00Z",
+          "departure": "2026-07-26T16:35:00Z"
+        },
+        {
+          "name": "S Südkreuz Bhf (Berlin)",
+          "tz": "Europe/Berlin",
+          "scheduledArrival": "2026-07-26T16:33:00Z",
+          "arrival": "2026-07-26T16:39:00Z",
+          "scheduledDeparture": "2026-07-26T16:35:00Z",
+          "departure": "2026-07-26T16:41:00Z"
+        },
+        {
+          "name": "Lutherstadt Wittenberg Hbf",
+          "tz": "Europe/Berlin",
+          "scheduledArrival": "2026-07-26T17:10:00Z",
+          "arrival": "2026-07-26T17:14:00Z",
+          "scheduledDeparture": "2026-07-26T17:12:00Z",
+          "departure": "2026-07-26T17:16:00Z"
+        }
+      ],
+      "to": {
+        "name": "München Hbf",
+        "tz": "Europe/Berlin",
+        "scheduledArrival": "2026-07-26T21:10:00Z",
+        "arrival": "2026-07-26T21:09:00Z",
+        "scheduledDeparture": null,
+        "departure": null
+      }
+    }
+  ]
+}

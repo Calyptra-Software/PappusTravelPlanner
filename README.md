@@ -24,6 +24,18 @@ Linux, Windows, macOS, and iOS.
   once you record them, the times it *actually* started and ended (departed and arrived).
   The timeline keeps showing the plan, with a green or red **+/−** on each end saying how
   early or late it ran, and "you are here" follows what really happened rather than the plan.
+- **Online connection search & live times** — look up real train and transit journeys from
+  an open routing service ([Transitous](https://transitous.org) / MOTIS, built on
+  OpenStreetMap and public-transport open data — no account, no API key) and drop a chosen
+  one straight into a day. Search *from* / *to* with live station suggestions, set a
+  departure or arrival time, and compare the options by time, duration, and number of
+  changes — with **live delays** shown where the service has them. Importing writes the
+  journey as that day's transport legs — a multi-leg trip bundled under one shared ticket —
+  carrying each leg's line/train number, direction, and platform, and handling overnight
+  legs that arrive the next morning. Each imported leg then gets its own **refresh** button
+  that pulls its current real-time departure and arrival, which surface through the
+  planned-vs-actual marks above. This is the app's one online feature; everything it imports
+  lives in your local database like anything else.
 - **Alternatives** — plan competing options for one stretch of a day ("museum or boat
   trip?"). The decision sits in the timeline as a card you **swipe** between options; each option holds its own places, legs, and costs.
   Every option's price stays visible side by side so they can be compared, but only the
@@ -68,7 +80,9 @@ Linux, Windows, macOS, and iOS.
   switchable in-app. Dates and currencies use locale-correct formatting.
 - **Android home-screen widget** — shows your current/next trip, a countdown, and
   today's plan; tapping it opens the trip.
-- **Offline-first** — no account, no server; everything works without a network.
+- **Offline-first** — no account and no server; the app works without a network. The one
+  exception is the optional connection search above, which fetches journeys and live times
+  from the routing service — and even that only enriches the plan, which then stays offline.
 
 ## Quick facts
 
@@ -180,6 +194,7 @@ lib/
   features/
     trips/                  # overview, create/edit, detail, participants
     itinerary/              # timeline, day blocks, alternatives card, item form, transport modes
+    transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
     costs/                  # cost form, splitting/stats, reasons, currencies & people settings
     checklist/              # per-trip named checklists
     sharing/                # portable trip bundles (export/import a single trip) + PDF and .ics export

@@ -2025,6 +2025,21 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _spansNextDayMeta = const VerificationMeta(
+    'spansNextDay',
+  );
+  @override
+  late final GeneratedColumn<bool> spansNextDay = GeneratedColumn<bool>(
+    'spans_next_day',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("spans_next_day" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -2079,6 +2094,57 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fromLatMeta = const VerificationMeta(
+    'fromLat',
+  );
+  @override
+  late final GeneratedColumn<double> fromLat = GeneratedColumn<double>(
+    'from_lat',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fromLonMeta = const VerificationMeta(
+    'fromLon',
+  );
+  @override
+  late final GeneratedColumn<double> fromLon = GeneratedColumn<double>(
+    'from_lon',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toLatMeta = const VerificationMeta('toLat');
+  @override
+  late final GeneratedColumn<double> toLat = GeneratedColumn<double>(
+    'to_lat',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toLonMeta = const VerificationMeta('toLon');
+  @override
+  late final GeneratedColumn<double> toLon = GeneratedColumn<double>(
+    'to_lon',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _sourceTripIdMeta = const VerificationMeta(
+    'sourceTripId',
+  );
+  @override
+  late final GeneratedColumn<String> sourceTripId = GeneratedColumn<String>(
+    'source_trip_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2093,11 +2159,17 @@ class $ItineraryItemsTable extends ItineraryItems
     endMinutes,
     actualStartMinutes,
     actualEndMinutes,
+    spansNextDay,
     notes,
     location,
     mode,
     fromLocation,
     toLocation,
+    fromLat,
+    fromLon,
+    toLat,
+    toLon,
+    sourceTripId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2190,6 +2262,15 @@ class $ItineraryItemsTable extends ItineraryItems
         ),
       );
     }
+    if (data.containsKey('spans_next_day')) {
+      context.handle(
+        _spansNextDayMeta,
+        spansNextDay.isAcceptableOrUnknown(
+          data['spans_next_day']!,
+          _spansNextDayMeta,
+        ),
+      );
+    }
     if (data.containsKey('notes')) {
       context.handle(
         _notesMeta,
@@ -2221,6 +2302,39 @@ class $ItineraryItemsTable extends ItineraryItems
       context.handle(
         _toLocationMeta,
         toLocation.isAcceptableOrUnknown(data['to_location']!, _toLocationMeta),
+      );
+    }
+    if (data.containsKey('from_lat')) {
+      context.handle(
+        _fromLatMeta,
+        fromLat.isAcceptableOrUnknown(data['from_lat']!, _fromLatMeta),
+      );
+    }
+    if (data.containsKey('from_lon')) {
+      context.handle(
+        _fromLonMeta,
+        fromLon.isAcceptableOrUnknown(data['from_lon']!, _fromLonMeta),
+      );
+    }
+    if (data.containsKey('to_lat')) {
+      context.handle(
+        _toLatMeta,
+        toLat.isAcceptableOrUnknown(data['to_lat']!, _toLatMeta),
+      );
+    }
+    if (data.containsKey('to_lon')) {
+      context.handle(
+        _toLonMeta,
+        toLon.isAcceptableOrUnknown(data['to_lon']!, _toLonMeta),
+      );
+    }
+    if (data.containsKey('source_trip_id')) {
+      context.handle(
+        _sourceTripIdMeta,
+        sourceTripId.isAcceptableOrUnknown(
+          data['source_trip_id']!,
+          _sourceTripIdMeta,
+        ),
       );
     }
     return context;
@@ -2282,6 +2396,10 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.int,
         data['${effectivePrefix}actual_end_minutes'],
       ),
+      spansNextDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}spans_next_day'],
+      )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
@@ -2301,6 +2419,26 @@ class $ItineraryItemsTable extends ItineraryItems
       toLocation: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}to_location'],
+      ),
+      fromLat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}from_lat'],
+      ),
+      fromLon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}from_lon'],
+      ),
+      toLat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}to_lat'],
+      ),
+      toLon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}to_lon'],
+      ),
+      sourceTripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_trip_id'],
       ),
     );
   }
@@ -2354,6 +2492,14 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   /// its own.
   final int? actualStartMinutes;
   final int? actualEndMinutes;
+
+  /// Whether this entry's **end** falls on the day *after* [date]. Almost always
+  /// an overnight transport leg — a night train that departs before midnight and
+  /// arrives the next morning: the entry stays anchored to its departure [date]
+  /// and appears once, on that day, while [endMinutes]/[actualEndMinutes] are
+  /// read as minutes into the following calendar day. This keeps the 0-1439
+  /// encoding intact rather than letting a single row straddle two dates.
+  final bool spansNextDay;
   final String? notes;
   final String? location;
 
@@ -2363,6 +2509,20 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final int? mode;
   final String? fromLocation;
   final String? toLocation;
+
+  /// Coordinates (WGS84) of this leg's endpoints, when known — filled in by the
+  /// connection search from the routing service, null for a hand-entered leg.
+  /// Nothing renders them yet; they are stored so a future map can draw the leg
+  /// without having to re-geocode its stations.
+  final double? fromLat;
+  final double? fromLon;
+  final double? toLat;
+  final double? toLon;
+
+  /// The routing provider's trip identifier for an imported leg, kept so the
+  /// live-times refresh can re-query this exact trip and fill in the actual
+  /// departure/arrival. Null for a hand-entered leg (nothing to refresh).
+  final String? sourceTripId;
   const ItineraryItem({
     required this.id,
     required this.tripId,
@@ -2376,11 +2536,17 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     this.endMinutes,
     this.actualStartMinutes,
     this.actualEndMinutes,
+    required this.spansNextDay,
     this.notes,
     this.location,
     this.mode,
     this.fromLocation,
     this.toLocation,
+    this.fromLat,
+    this.fromLon,
+    this.toLat,
+    this.toLon,
+    this.sourceTripId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2415,6 +2581,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     if (!nullToAbsent || actualEndMinutes != null) {
       map['actual_end_minutes'] = Variable<int>(actualEndMinutes);
     }
+    map['spans_next_day'] = Variable<bool>(spansNextDay);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -2429,6 +2596,21 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     }
     if (!nullToAbsent || toLocation != null) {
       map['to_location'] = Variable<String>(toLocation);
+    }
+    if (!nullToAbsent || fromLat != null) {
+      map['from_lat'] = Variable<double>(fromLat);
+    }
+    if (!nullToAbsent || fromLon != null) {
+      map['from_lon'] = Variable<double>(fromLon);
+    }
+    if (!nullToAbsent || toLat != null) {
+      map['to_lat'] = Variable<double>(toLat);
+    }
+    if (!nullToAbsent || toLon != null) {
+      map['to_lon'] = Variable<double>(toLon);
+    }
+    if (!nullToAbsent || sourceTripId != null) {
+      map['source_trip_id'] = Variable<String>(sourceTripId);
     }
     return map;
   }
@@ -2461,6 +2643,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       actualEndMinutes: actualEndMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(actualEndMinutes),
+      spansNextDay: Value(spansNextDay),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -2474,6 +2657,21 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       toLocation: toLocation == null && nullToAbsent
           ? const Value.absent()
           : Value(toLocation),
+      fromLat: fromLat == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromLat),
+      fromLon: fromLon == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromLon),
+      toLat: toLat == null && nullToAbsent
+          ? const Value.absent()
+          : Value(toLat),
+      toLon: toLon == null && nullToAbsent
+          ? const Value.absent()
+          : Value(toLon),
+      sourceTripId: sourceTripId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(sourceTripId),
     );
   }
 
@@ -2497,11 +2695,17 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       endMinutes: serializer.fromJson<int?>(json['endMinutes']),
       actualStartMinutes: serializer.fromJson<int?>(json['actualStartMinutes']),
       actualEndMinutes: serializer.fromJson<int?>(json['actualEndMinutes']),
+      spansNextDay: serializer.fromJson<bool>(json['spansNextDay']),
       notes: serializer.fromJson<String?>(json['notes']),
       location: serializer.fromJson<String?>(json['location']),
       mode: serializer.fromJson<int?>(json['mode']),
       fromLocation: serializer.fromJson<String?>(json['fromLocation']),
       toLocation: serializer.fromJson<String?>(json['toLocation']),
+      fromLat: serializer.fromJson<double?>(json['fromLat']),
+      fromLon: serializer.fromJson<double?>(json['fromLon']),
+      toLat: serializer.fromJson<double?>(json['toLat']),
+      toLon: serializer.fromJson<double?>(json['toLon']),
+      sourceTripId: serializer.fromJson<String?>(json['sourceTripId']),
     );
   }
   @override
@@ -2522,11 +2726,17 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'endMinutes': serializer.toJson<int?>(endMinutes),
       'actualStartMinutes': serializer.toJson<int?>(actualStartMinutes),
       'actualEndMinutes': serializer.toJson<int?>(actualEndMinutes),
+      'spansNextDay': serializer.toJson<bool>(spansNextDay),
       'notes': serializer.toJson<String?>(notes),
       'location': serializer.toJson<String?>(location),
       'mode': serializer.toJson<int?>(mode),
       'fromLocation': serializer.toJson<String?>(fromLocation),
       'toLocation': serializer.toJson<String?>(toLocation),
+      'fromLat': serializer.toJson<double?>(fromLat),
+      'fromLon': serializer.toJson<double?>(fromLon),
+      'toLat': serializer.toJson<double?>(toLat),
+      'toLon': serializer.toJson<double?>(toLon),
+      'sourceTripId': serializer.toJson<String?>(sourceTripId),
     };
   }
 
@@ -2543,11 +2753,17 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<int?> endMinutes = const Value.absent(),
     Value<int?> actualStartMinutes = const Value.absent(),
     Value<int?> actualEndMinutes = const Value.absent(),
+    bool? spansNextDay,
     Value<String?> notes = const Value.absent(),
     Value<String?> location = const Value.absent(),
     Value<int?> mode = const Value.absent(),
     Value<String?> fromLocation = const Value.absent(),
     Value<String?> toLocation = const Value.absent(),
+    Value<double?> fromLat = const Value.absent(),
+    Value<double?> fromLon = const Value.absent(),
+    Value<double?> toLat = const Value.absent(),
+    Value<double?> toLon = const Value.absent(),
+    Value<String?> sourceTripId = const Value.absent(),
   }) => ItineraryItem(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
@@ -2567,11 +2783,17 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     actualEndMinutes: actualEndMinutes.present
         ? actualEndMinutes.value
         : this.actualEndMinutes,
+    spansNextDay: spansNextDay ?? this.spansNextDay,
     notes: notes.present ? notes.value : this.notes,
     location: location.present ? location.value : this.location,
     mode: mode.present ? mode.value : this.mode,
     fromLocation: fromLocation.present ? fromLocation.value : this.fromLocation,
     toLocation: toLocation.present ? toLocation.value : this.toLocation,
+    fromLat: fromLat.present ? fromLat.value : this.fromLat,
+    fromLon: fromLon.present ? fromLon.value : this.fromLon,
+    toLat: toLat.present ? toLat.value : this.toLat,
+    toLon: toLon.present ? toLon.value : this.toLon,
+    sourceTripId: sourceTripId.present ? sourceTripId.value : this.sourceTripId,
   );
   ItineraryItem copyWithCompanion(ItineraryItemsCompanion data) {
     return ItineraryItem(
@@ -2597,6 +2819,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       actualEndMinutes: data.actualEndMinutes.present
           ? data.actualEndMinutes.value
           : this.actualEndMinutes,
+      spansNextDay: data.spansNextDay.present
+          ? data.spansNextDay.value
+          : this.spansNextDay,
       notes: data.notes.present ? data.notes.value : this.notes,
       location: data.location.present ? data.location.value : this.location,
       mode: data.mode.present ? data.mode.value : this.mode,
@@ -2606,6 +2831,13 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       toLocation: data.toLocation.present
           ? data.toLocation.value
           : this.toLocation,
+      fromLat: data.fromLat.present ? data.fromLat.value : this.fromLat,
+      fromLon: data.fromLon.present ? data.fromLon.value : this.fromLon,
+      toLat: data.toLat.present ? data.toLat.value : this.toLat,
+      toLon: data.toLon.present ? data.toLon.value : this.toLon,
+      sourceTripId: data.sourceTripId.present
+          ? data.sourceTripId.value
+          : this.sourceTripId,
     );
   }
 
@@ -2624,17 +2856,23 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('endMinutes: $endMinutes, ')
           ..write('actualStartMinutes: $actualStartMinutes, ')
           ..write('actualEndMinutes: $actualEndMinutes, ')
+          ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
           ..write('mode: $mode, ')
           ..write('fromLocation: $fromLocation, ')
-          ..write('toLocation: $toLocation')
+          ..write('toLocation: $toLocation, ')
+          ..write('fromLat: $fromLat, ')
+          ..write('fromLon: $fromLon, ')
+          ..write('toLat: $toLat, ')
+          ..write('toLon: $toLon, ')
+          ..write('sourceTripId: $sourceTripId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     tripId,
     groupId,
@@ -2647,12 +2885,18 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     endMinutes,
     actualStartMinutes,
     actualEndMinutes,
+    spansNextDay,
     notes,
     location,
     mode,
     fromLocation,
     toLocation,
-  );
+    fromLat,
+    fromLon,
+    toLat,
+    toLon,
+    sourceTripId,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2669,11 +2913,17 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.endMinutes == this.endMinutes &&
           other.actualStartMinutes == this.actualStartMinutes &&
           other.actualEndMinutes == this.actualEndMinutes &&
+          other.spansNextDay == this.spansNextDay &&
           other.notes == this.notes &&
           other.location == this.location &&
           other.mode == this.mode &&
           other.fromLocation == this.fromLocation &&
-          other.toLocation == this.toLocation);
+          other.toLocation == this.toLocation &&
+          other.fromLat == this.fromLat &&
+          other.fromLon == this.fromLon &&
+          other.toLat == this.toLat &&
+          other.toLon == this.toLon &&
+          other.sourceTripId == this.sourceTripId);
 }
 
 class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
@@ -2689,11 +2939,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<int?> endMinutes;
   final Value<int?> actualStartMinutes;
   final Value<int?> actualEndMinutes;
+  final Value<bool> spansNextDay;
   final Value<String?> notes;
   final Value<String?> location;
   final Value<int?> mode;
   final Value<String?> fromLocation;
   final Value<String?> toLocation;
+  final Value<double?> fromLat;
+  final Value<double?> fromLon;
+  final Value<double?> toLat;
+  final Value<double?> toLon;
+  final Value<String?> sourceTripId;
   const ItineraryItemsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
@@ -2707,11 +2963,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.endMinutes = const Value.absent(),
     this.actualStartMinutes = const Value.absent(),
     this.actualEndMinutes = const Value.absent(),
+    this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
     this.mode = const Value.absent(),
     this.fromLocation = const Value.absent(),
     this.toLocation = const Value.absent(),
+    this.fromLat = const Value.absent(),
+    this.fromLon = const Value.absent(),
+    this.toLat = const Value.absent(),
+    this.toLon = const Value.absent(),
+    this.sourceTripId = const Value.absent(),
   });
   ItineraryItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -2726,11 +2988,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.endMinutes = const Value.absent(),
     this.actualStartMinutes = const Value.absent(),
     this.actualEndMinutes = const Value.absent(),
+    this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
     this.mode = const Value.absent(),
     this.fromLocation = const Value.absent(),
     this.toLocation = const Value.absent(),
+    this.fromLat = const Value.absent(),
+    this.fromLon = const Value.absent(),
+    this.toLat = const Value.absent(),
+    this.toLon = const Value.absent(),
+    this.sourceTripId = const Value.absent(),
   }) : tripId = Value(tripId),
        date = Value(date),
        kind = Value(kind);
@@ -2747,11 +3015,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<int>? endMinutes,
     Expression<int>? actualStartMinutes,
     Expression<int>? actualEndMinutes,
+    Expression<bool>? spansNextDay,
     Expression<String>? notes,
     Expression<String>? location,
     Expression<int>? mode,
     Expression<String>? fromLocation,
     Expression<String>? toLocation,
+    Expression<double>? fromLat,
+    Expression<double>? fromLon,
+    Expression<double>? toLat,
+    Expression<double>? toLon,
+    Expression<String>? sourceTripId,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2767,11 +3041,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (actualStartMinutes != null)
         'actual_start_minutes': actualStartMinutes,
       if (actualEndMinutes != null) 'actual_end_minutes': actualEndMinutes,
+      if (spansNextDay != null) 'spans_next_day': spansNextDay,
       if (notes != null) 'notes': notes,
       if (location != null) 'location': location,
       if (mode != null) 'mode': mode,
       if (fromLocation != null) 'from_location': fromLocation,
       if (toLocation != null) 'to_location': toLocation,
+      if (fromLat != null) 'from_lat': fromLat,
+      if (fromLon != null) 'from_lon': fromLon,
+      if (toLat != null) 'to_lat': toLat,
+      if (toLon != null) 'to_lon': toLon,
+      if (sourceTripId != null) 'source_trip_id': sourceTripId,
     });
   }
 
@@ -2788,11 +3068,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<int?>? endMinutes,
     Value<int?>? actualStartMinutes,
     Value<int?>? actualEndMinutes,
+    Value<bool>? spansNextDay,
     Value<String?>? notes,
     Value<String?>? location,
     Value<int?>? mode,
     Value<String?>? fromLocation,
     Value<String?>? toLocation,
+    Value<double?>? fromLat,
+    Value<double?>? fromLon,
+    Value<double?>? toLat,
+    Value<double?>? toLon,
+    Value<String?>? sourceTripId,
   }) {
     return ItineraryItemsCompanion(
       id: id ?? this.id,
@@ -2807,11 +3093,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       endMinutes: endMinutes ?? this.endMinutes,
       actualStartMinutes: actualStartMinutes ?? this.actualStartMinutes,
       actualEndMinutes: actualEndMinutes ?? this.actualEndMinutes,
+      spansNextDay: spansNextDay ?? this.spansNextDay,
       notes: notes ?? this.notes,
       location: location ?? this.location,
       mode: mode ?? this.mode,
       fromLocation: fromLocation ?? this.fromLocation,
       toLocation: toLocation ?? this.toLocation,
+      fromLat: fromLat ?? this.fromLat,
+      fromLon: fromLon ?? this.fromLon,
+      toLat: toLat ?? this.toLat,
+      toLon: toLon ?? this.toLon,
+      sourceTripId: sourceTripId ?? this.sourceTripId,
     );
   }
 
@@ -2856,6 +3148,9 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (actualEndMinutes.present) {
       map['actual_end_minutes'] = Variable<int>(actualEndMinutes.value);
     }
+    if (spansNextDay.present) {
+      map['spans_next_day'] = Variable<bool>(spansNextDay.value);
+    }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
@@ -2870,6 +3165,21 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     }
     if (toLocation.present) {
       map['to_location'] = Variable<String>(toLocation.value);
+    }
+    if (fromLat.present) {
+      map['from_lat'] = Variable<double>(fromLat.value);
+    }
+    if (fromLon.present) {
+      map['from_lon'] = Variable<double>(fromLon.value);
+    }
+    if (toLat.present) {
+      map['to_lat'] = Variable<double>(toLat.value);
+    }
+    if (toLon.present) {
+      map['to_lon'] = Variable<double>(toLon.value);
+    }
+    if (sourceTripId.present) {
+      map['source_trip_id'] = Variable<String>(sourceTripId.value);
     }
     return map;
   }
@@ -2889,11 +3199,17 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('endMinutes: $endMinutes, ')
           ..write('actualStartMinutes: $actualStartMinutes, ')
           ..write('actualEndMinutes: $actualEndMinutes, ')
+          ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
           ..write('mode: $mode, ')
           ..write('fromLocation: $fromLocation, ')
-          ..write('toLocation: $toLocation')
+          ..write('toLocation: $toLocation, ')
+          ..write('fromLat: $fromLat, ')
+          ..write('fromLon: $fromLon, ')
+          ..write('toLat: $toLat, ')
+          ..write('toLon: $toLon, ')
+          ..write('sourceTripId: $sourceTripId')
           ..write(')'))
         .toString();
   }
@@ -8660,11 +8976,17 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<int?> endMinutes,
       Value<int?> actualStartMinutes,
       Value<int?> actualEndMinutes,
+      Value<bool> spansNextDay,
       Value<String?> notes,
       Value<String?> location,
       Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
+      Value<double?> fromLat,
+      Value<double?> fromLon,
+      Value<double?> toLat,
+      Value<double?> toLon,
+      Value<String?> sourceTripId,
     });
 typedef $$ItineraryItemsTableUpdateCompanionBuilder =
     ItineraryItemsCompanion Function({
@@ -8680,11 +9002,17 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<int?> endMinutes,
       Value<int?> actualStartMinutes,
       Value<int?> actualEndMinutes,
+      Value<bool> spansNextDay,
       Value<String?> notes,
       Value<String?> location,
       Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
+      Value<double?> fromLat,
+      Value<double?> fromLon,
+      Value<double?> toLat,
+      Value<double?> toLon,
+      Value<String?> sourceTripId,
     });
 
 final class $$ItineraryItemsTableReferences
@@ -8839,6 +9167,11 @@ class $$ItineraryItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get spansNextDay => $composableBuilder(
+    column: $table.spansNextDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnFilters(column),
@@ -8856,6 +9189,31 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<String> get toLocation => $composableBuilder(
     column: $table.toLocation,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fromLat => $composableBuilder(
+    column: $table.fromLat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get fromLon => $composableBuilder(
+    column: $table.fromLon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get toLat => $composableBuilder(
+    column: $table.toLat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get toLon => $composableBuilder(
+    column: $table.toLon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceTripId => $composableBuilder(
+    column: $table.sourceTripId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9031,6 +9389,11 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get spansNextDay => $composableBuilder(
+    column: $table.spansNextDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get notes => $composableBuilder(
     column: $table.notes,
     builder: (column) => ColumnOrderings(column),
@@ -9048,6 +9411,31 @@ class $$ItineraryItemsTableOrderingComposer
 
   ColumnOrderings<String> get toLocation => $composableBuilder(
     column: $table.toLocation,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fromLat => $composableBuilder(
+    column: $table.fromLat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get fromLon => $composableBuilder(
+    column: $table.fromLon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get toLat => $composableBuilder(
+    column: $table.toLat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get toLon => $composableBuilder(
+    column: $table.toLon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceTripId => $composableBuilder(
+    column: $table.sourceTripId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -9188,6 +9576,11 @@ class $$ItineraryItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get spansNextDay => $composableBuilder(
+    column: $table.spansNextDay,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
@@ -9201,6 +9594,23 @@ class $$ItineraryItemsTableAnnotationComposer
 
   GeneratedColumn<String> get toLocation => $composableBuilder(
     column: $table.toLocation,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get fromLat =>
+      $composableBuilder(column: $table.fromLat, builder: (column) => column);
+
+  GeneratedColumn<double> get fromLon =>
+      $composableBuilder(column: $table.fromLon, builder: (column) => column);
+
+  GeneratedColumn<double> get toLat =>
+      $composableBuilder(column: $table.toLat, builder: (column) => column);
+
+  GeneratedColumn<double> get toLon =>
+      $composableBuilder(column: $table.toLon, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceTripId => $composableBuilder(
+    column: $table.sourceTripId,
     builder: (column) => column,
   );
 
@@ -9370,11 +9780,17 @@ class $$ItineraryItemsTableTableManager
                 Value<int?> endMinutes = const Value.absent(),
                 Value<int?> actualStartMinutes = const Value.absent(),
                 Value<int?> actualEndMinutes = const Value.absent(),
+                Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
+                Value<double?> fromLat = const Value.absent(),
+                Value<double?> fromLon = const Value.absent(),
+                Value<double?> toLat = const Value.absent(),
+                Value<double?> toLon = const Value.absent(),
+                Value<String?> sourceTripId = const Value.absent(),
               }) => ItineraryItemsCompanion(
                 id: id,
                 tripId: tripId,
@@ -9388,11 +9804,17 @@ class $$ItineraryItemsTableTableManager
                 endMinutes: endMinutes,
                 actualStartMinutes: actualStartMinutes,
                 actualEndMinutes: actualEndMinutes,
+                spansNextDay: spansNextDay,
                 notes: notes,
                 location: location,
                 mode: mode,
                 fromLocation: fromLocation,
                 toLocation: toLocation,
+                fromLat: fromLat,
+                fromLon: fromLon,
+                toLat: toLat,
+                toLon: toLon,
+                sourceTripId: sourceTripId,
               ),
           createCompanionCallback:
               ({
@@ -9408,11 +9830,17 @@ class $$ItineraryItemsTableTableManager
                 Value<int?> endMinutes = const Value.absent(),
                 Value<int?> actualStartMinutes = const Value.absent(),
                 Value<int?> actualEndMinutes = const Value.absent(),
+                Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
+                Value<double?> fromLat = const Value.absent(),
+                Value<double?> fromLon = const Value.absent(),
+                Value<double?> toLat = const Value.absent(),
+                Value<double?> toLon = const Value.absent(),
+                Value<String?> sourceTripId = const Value.absent(),
               }) => ItineraryItemsCompanion.insert(
                 id: id,
                 tripId: tripId,
@@ -9426,11 +9854,17 @@ class $$ItineraryItemsTableTableManager
                 endMinutes: endMinutes,
                 actualStartMinutes: actualStartMinutes,
                 actualEndMinutes: actualEndMinutes,
+                spansNextDay: spansNextDay,
                 notes: notes,
                 location: location,
                 mode: mode,
                 fromLocation: fromLocation,
                 toLocation: toLocation,
+                fromLat: fromLat,
+                fromLon: fromLon,
+                toLat: toLat,
+                toLon: toLon,
+                sourceTripId: sourceTripId,
               ),
           withReferenceMapper: (p0) => p0
               .map(

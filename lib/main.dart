@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
 
 import 'app.dart';
 import 'core/database/database_location.dart';
@@ -9,6 +10,9 @@ import 'core/settings/locale_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Loads the IANA timezone database so an imported connection's UTC times can
+  // be turned into each stop's local wall-clock (see journey_mapper).
+  tzdata.initializeTimeZones();
   final prefs = await SharedPreferences.getInstance();
   // Resolve the database path once at startup: the user's saved choice, or the
   // default app location.

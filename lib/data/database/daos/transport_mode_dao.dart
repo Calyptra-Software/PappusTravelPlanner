@@ -105,6 +105,22 @@ class TransportModeDao extends DatabaseAccessor<AppDatabase>
     }
   }
 
+  /// Re-adds a single built-in the user deleted, restoring its stable
+  /// `builtinKey` — and with it the mode's identity across sharing and the
+  /// connection-search mapping. Appended to the end of the list; a no-op if the
+  /// built-in is already present. This is the deliberate way back for an
+  /// accidental delete, as opposed to adding a same-named custom mode (which has
+  /// no `builtinKey` and so would not restore either).
+  Future<void> restoreBuiltinMode(TransportMode mode) async {
+    await into(transportModes).insert(
+      TransportModesCompanion.insert(
+        builtinKey: Value(mode.name),
+        sortOrder: Value(await _nextSortOrder()),
+      ),
+      mode: InsertMode.insertOrIgnore,
+    );
+  }
+
   Future<int> _nextSortOrder() async {
     final maxOrder = transportModes.sortOrder.max();
     final row = await (selectOnly(

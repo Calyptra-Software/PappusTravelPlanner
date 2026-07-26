@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 
 /// The reusable transport modes in display order — the built-ins plus any the
 /// user added. Feeds the item form's mode dropdown and the settings list.
@@ -44,4 +45,9 @@ class TransportModeController {
 
   Future<void> reorderModes(List<int> orderedIds) =>
       _ref.read(repositoryProvider).reorderTransportModes(orderedIds);
+
+  /// Re-adds a built-in the user deleted, restoring its identity (and the
+  /// connection-search mapping) rather than creating a same-named custom mode.
+  Future<void> restoreBuiltinMode(TransportMode mode) =>
+      _ref.read(repositoryProvider).restoreBuiltinTransportMode(mode);
 }

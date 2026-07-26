@@ -60,7 +60,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 25;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -263,6 +263,33 @@ class AppDatabase extends _$AppDatabase {
           ),
         );
       }
+      // v24 prepares the itinerary for the connection-search feature: a flag
+      // marking an entry whose end falls on the day after its date (an overnight
+      // leg — a night train arriving next morning), and the coordinates of a
+      // transport leg's endpoints (stored for a future map). All nullable/
+      // defaulted, so there is nothing to backfill on existing rows.
+      //
+      // Add each only if it isn't already there: a database coming from below v20
+      // is recreated by `_seedTransportModesAndRepointLegs` above, whose
+      // TableMigration builds the table from the *current* schema and so already
+      // carries these columns (listed in its `newColumns`). Adding them a second
+      // time would fail. Coming from v20-v23 the recreation didn't run and the
+      // columns are genuinely missing, so they are added here.
+      if (from < 24) {
+        await _addItineraryColumnsIfMissing(m, [
+          itineraryItems.spansNextDay,
+          itineraryItems.fromLat,
+          itineraryItems.fromLon,
+          itineraryItems.toLat,
+          itineraryItems.toLon,
+        ]);
+      }
+      // v25 keeps the routing provider's trip id on an imported leg, so the
+      // live-times refresh can re-query it. Nullable, nothing to backfill; added
+      // only when a recreation above hasn't already (as v24).
+      if (from < 25) {
+        await _addItineraryColumnsIfMissing(m, [itineraryItems.sourceTripId]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -294,6 +321,26 @@ class AppDatabase extends _$AppDatabase {
   /// each gets id = its old enum index + 1), then repoint every leg's `mode`
   /// from that old index onto its new row and recreate the table so its foreign
   /// key to `transport_modes` takes effect.
+  /// Adds each of [columns] to itinerary_items unless it is already there.
+  /// A database coming from below v20 is recreated by the transport-modes
+  /// migration, whose TableMigration builds the table from the *current* schema
+  /// and so already carries later columns (listed in its `newColumns`); adding
+  /// one a second time would fail, while a database from v20 onward is missing
+  /// them and needs them added.
+  Future<void> _addItineraryColumnsIfMissing(
+    Migrator m,
+    List<GeneratedColumn> columns,
+  ) async {
+    final existing = (await customSelect(
+      'PRAGMA table_info(itinerary_items)',
+    ).get()).map((r) => r.read<String>('name')).toSet();
+    for (final column in columns) {
+      if (!existing.contains(column.name)) {
+        await m.addColumn(itineraryItems, column);
+      }
+    }
+  }
+
   Future<void> _seedTransportModesAndRepointLegs(Migrator m) async {
     await m.createTable(transportModes);
     await transportModeDao.seedBuiltinModes();
@@ -303,6 +350,18 @@ class AppDatabase extends _$AppDatabase {
         columnTransformer: {
           itineraryItems.mode: itineraryItems.mode + const Constant(1),
         },
+        // This recreates itinerary_items from the *current* schema, so any
+        // column added to the table *after* v20 must be declared new here —
+        // otherwise the copy step selects a column the old table lacks. The v24
+        // and v25 additions; extend this list when a later version adds more.
+        newColumns: [
+          itineraryItems.spansNextDay,
+          itineraryItems.fromLat,
+          itineraryItems.fromLon,
+          itineraryItems.toLat,
+          itineraryItems.toLon,
+          itineraryItems.sourceTripId,
+        ],
       ),
     );
   }

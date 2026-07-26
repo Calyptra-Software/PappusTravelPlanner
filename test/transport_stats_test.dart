@@ -27,6 +27,7 @@ void main() {
     date: date ?? day,
     sortOrder: 0,
     kind: ItemKind.transport,
+    spansNextDay: false,
     mode: mode == null ? null : idOf(mode),
     startMinutes: startMinutes,
     endMinutes: endMinutes,
@@ -40,6 +41,7 @@ void main() {
     date: day,
     sortOrder: 0,
     kind: ItemKind.place,
+    spansNextDay: false,
     title: 'Somewhere',
   );
 

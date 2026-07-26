@@ -1,0 +1,173 @@
+[
+  {
+    "type": "STOP",
+    "tokens": [
+      [
+        0.0,
+        7.0
+      ],
+      [
+        8.0,
+        3.0
+      ]
+    ],
+    "name": "Hauptbahnhof/ZOB",
+    "id": "at-Railway-Current-Reference-Data-2026_de:02000:10950:11:1",
+    "lat": 53.552475,
+    "lon": 10.008094999999999,
+    "level": -1.0,
+    "country": "DE",
+    "zip": "20099",
+    "tz": "Europe/Berlin",
+    "areas": [
+      {
+        "name": "Deutschland",
+        "adminLevel": 2.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      },
+      {
+        "name": "Hamburg",
+        "adminLevel": 4.0,
+        "matched": true,
+        "unique": true,
+        "default": true
+      },
+      {
+        "name": "Hamburg-Mitte",
+        "adminLevel": 9.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      },
+      {
+        "name": "St. Georg",
+        "adminLevel": 10.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      }
+    ],
+    "score": -30.399999618530273,
+    "modes": [
+      "HIGHSPEED_RAIL",
+      "LONG_DISTANCE",
+      "COACH",
+      "NIGHT_RAIL",
+      "REGIONAL_RAIL",
+      "SUBURBAN",
+      "SUBWAY",
+      "BUS"
+    ],
+    "importance": 0.3181765377521515
+  },
+  {
+    "type": "STOP",
+    "tokens": [
+      [
+        0.0,
+        7.0
+      ],
+      [
+        8.0,
+        3.0
+      ]
+    ],
+    "name": "Hauptbahnhof Nord",
+    "id": "de-DELFI_de:02000:10905:1:109013",
+    "lat": 53.55402399999999,
+    "lon": 10.005202,
+    "level": -3.0,
+    "country": "DE",
+    "zip": "20099",
+    "tz": "Europe/Berlin",
+    "areas": [
+      {
+        "name": "Deutschland",
+        "adminLevel": 2.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      },
+      {
+        "name": "Hamburg",
+        "adminLevel": 4.0,
+        "matched": true,
+        "unique": true,
+        "default": true
+      },
+      {
+        "name": "Hamburg-Mitte",
+        "adminLevel": 9.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      },
+      {
+        "name": "St. Georg",
+        "adminLevel": 10.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      }
+    ],
+    "score": -30.149999618530273,
+    "modes": [
+      "SUBWAY"
+    ],
+    "importance": 0.050943292677402496
+  },
+  {
+    "type": "PLACE",
+    "category": "artwork_14",
+    "tokens": [
+      [
+        0.0,
+        7.0
+      ],
+      [
+        8.0,
+        3.0
+      ]
+    ],
+    "name": "Hauptbahnhof Nord",
+    "id": "way/[995742843]",
+    "lat": 53.5541916,
+    "lon": 10.0050089,
+    "country": "DE",
+    "zip": "20099",
+    "tz": "Europe/Berlin",
+    "areas": [
+      {
+        "name": "Deutschland",
+        "adminLevel": 2.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      },
+      {
+        "name": "Hamburg",
+        "adminLevel": 4.0,
+        "matched": true,
+        "unique": true,
+        "default": true
+      },
+      {
+        "name": "Hamburg-Mitte",
+        "adminLevel": 9.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      },
+      {
+        "name": "St. Georg",
+        "adminLevel": 10.0,
+        "matched": false,
+        "unique": false,
+        "default": false
+      }
+    ],
+    "score": -24.75
+  }
+]

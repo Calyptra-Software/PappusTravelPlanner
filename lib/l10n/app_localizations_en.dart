@@ -1277,4 +1277,78 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarUndatedTooltip => 'Show undated trips';
+
+  @override
+  String get connectionSearch => 'Search connection';
+
+  @override
+  String get connectionSearchOnline => 'Search online';
+
+  @override
+  String get connectionFrom => 'From';
+
+  @override
+  String get connectionTo => 'To';
+
+  @override
+  String get connectionPickPlace => 'Search station or place';
+
+  @override
+  String get connectionDepart => 'Depart at';
+
+  @override
+  String get connectionArrive => 'Arrive by';
+
+  @override
+  String get connectionSearchNoResults => 'No connections found';
+
+  @override
+  String get connectionSearchError => 'Couldn\'t reach the connection service';
+
+  @override
+  String get connectionRetry => 'Retry';
+
+  @override
+  String connectionChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count changes',
+      one: '1 change',
+      zero: 'Direct',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get connectionAddToDay => 'Add to day';
+
+  @override
+  String get connectionAdded => 'Connection added';
+
+  @override
+  String get connectionAttribution =>
+      'Data © OpenStreetMap contributors, via Transitous';
+
+  @override
+  String get transportModeRestoreBuiltin => 'Restore built-in';
+
+  @override
+  String platformShort(String track) {
+    return 'Pl. $track';
+  }
+
+  @override
+  String directionTo(String destination) {
+    return 'to $destination';
+  }
+
+  @override
+  String get liveTimesRefresh => 'Update live times';
+
+  @override
+  String get liveTimesNone => 'No live times to update';
+
+  @override
+  String get liveTimesError => 'Couldn\'t fetch live times';
 }

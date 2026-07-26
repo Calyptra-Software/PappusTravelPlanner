@@ -45,6 +45,7 @@ void main() {
       date: DateTime(2026, 7, 5),
       sortOrder: id,
       kind: ItemKind.place,
+      spansNextDay: false,
       title: null,
       startMinutes: minutes,
       endMinutes: endMinutes,
