@@ -1327,6 +1327,73 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get connectionOptionsTitle => 'Search options';
+
+  @override
+  String get connectionOptionsReset => 'Reset';
+
+  @override
+  String get connectionMinTransfer => 'Shortest change';
+
+  @override
+  String get connectionMinTransferHint =>
+      'No connection with less time than this between arriving and departing again.';
+
+  @override
+  String get connectionMinTransferAny => 'Any';
+
+  @override
+  String connectionMinutesShort(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get connectionWalkingSpeed => 'Walking speed';
+
+  @override
+  String get connectionWalkingSpeedHint =>
+      'Used for walking to, from and between stops.';
+
+  @override
+  String connectionSpeedValue(String speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String get connectionSpeedNormal => 'normal';
+
+  @override
+  String get connectionMaxTransfers => 'Most changes';
+
+  @override
+  String get connectionMaxTransfersAny => 'Any';
+
+  @override
+  String get connectionMaxTransfersDirect => 'Direct';
+
+  @override
+  String connectionMaxTransfersAtMost(int count) {
+    return '≤$count';
+  }
+
+  @override
+  String connectionSummaryMinTransfer(int minutes) {
+    return 'changes ≥ $minutes min';
+  }
+
+  @override
+  String connectionSummaryMaxChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'max $count changes',
+      one: 'max 1 change',
+      zero: 'direct only',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get connectionModesTitle => 'Means of transport';
 
   @override

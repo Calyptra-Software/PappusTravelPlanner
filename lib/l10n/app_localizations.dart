@@ -2372,6 +2372,102 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Direct} =1{1 change} other{{count} changes}}'**
   String connectionChanges(int count);
 
+  /// No description provided for @connectionOptionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search options'**
+  String get connectionOptionsTitle;
+
+  /// No description provided for @connectionOptionsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get connectionOptionsReset;
+
+  /// No description provided for @connectionMinTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Shortest change'**
+  String get connectionMinTransfer;
+
+  /// No description provided for @connectionMinTransferHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection with less time than this between arriving and departing again.'**
+  String get connectionMinTransferHint;
+
+  /// No description provided for @connectionMinTransferAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get connectionMinTransferAny;
+
+  /// No description provided for @connectionMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String connectionMinutesShort(int minutes);
+
+  /// No description provided for @connectionWalkingSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking speed'**
+  String get connectionWalkingSpeed;
+
+  /// No description provided for @connectionWalkingSpeedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for walking to, from and between stops.'**
+  String get connectionWalkingSpeedHint;
+
+  /// No description provided for @connectionSpeedValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed} km/h'**
+  String connectionSpeedValue(String speed);
+
+  /// No description provided for @connectionSpeedNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'normal'**
+  String get connectionSpeedNormal;
+
+  /// No description provided for @connectionMaxTransfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Most changes'**
+  String get connectionMaxTransfers;
+
+  /// No description provided for @connectionMaxTransfersAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any'**
+  String get connectionMaxTransfersAny;
+
+  /// No description provided for @connectionMaxTransfersDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get connectionMaxTransfersDirect;
+
+  /// No description provided for @connectionMaxTransfersAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'≤{count}'**
+  String connectionMaxTransfersAtMost(int count);
+
+  /// No description provided for @connectionSummaryMinTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'changes ≥ {minutes} min'**
+  String connectionSummaryMinTransfer(int minutes);
+
+  /// No description provided for @connectionSummaryMaxChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{direct only} =1{max 1 change} other{max {count} changes}}'**
+  String connectionSummaryMaxChanges(int count);
+
   /// No description provided for @connectionModesTitle.
   ///
   /// In en, this message translates to:

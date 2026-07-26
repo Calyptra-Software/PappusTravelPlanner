@@ -556,6 +556,47 @@
       "count": { "type": "int" }
     }
   },
+  "connectionOptionsTitle": "Search options",
+  "connectionOptionsReset": "Reset",
+  "connectionMinTransfer": "Shortest change",
+  "connectionMinTransferHint": "No connection with less time than this between arriving and departing again.",
+  "connectionMinTransferAny": "Any",
+  "connectionMinutesShort": "{minutes} min",
+  "@connectionMinutesShort": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionWalkingSpeed": "Walking speed",
+  "connectionWalkingSpeedHint": "Used for walking to, from and between stops.",
+  "connectionSpeedValue": "{speed} km/h",
+  "@connectionSpeedValue": {
+    "placeholders": {
+      "speed": { "type": "String" }
+    }
+  },
+  "connectionSpeedNormal": "normal",
+  "connectionMaxTransfers": "Most changes",
+  "connectionMaxTransfersAny": "Any",
+  "connectionMaxTransfersDirect": "Direct",
+  "connectionMaxTransfersAtMost": "≤{count}",
+  "@connectionMaxTransfersAtMost": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionSummaryMinTransfer": "changes ≥ {minutes} min",
+  "@connectionSummaryMinTransfer": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionSummaryMaxChanges": "{count, plural, =0{direct only} =1{max 1 change} other{max {count} changes}}",
+  "@connectionSummaryMaxChanges": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "connectionModesTitle": "Means of transport",
   "connectionModesSubtitle": "Only these are used when planning the connection.",
   "connectionModesAll": "All means of transport",

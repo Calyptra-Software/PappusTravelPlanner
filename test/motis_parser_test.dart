@@ -198,8 +198,8 @@ void main() {
       // the live refresh's name fallback comparing two spellings of one stop.
       expect(seen.map((u) => u.path), [
         '/api/v1/geocode',
-        '/api/v1/plan',
-        '/api/v1/trip',
+        '/api/v6/plan',
+        '/api/v6/trip',
       ]);
       expect(
         seen.map((u) => u.queryParameters['language']),
@@ -227,7 +227,7 @@ void main() {
       );
 
       expect(results.options, hasLength(1));
-      expect(seen.url.path, '/api/v1/plan');
+      expect(seen.url.path, '/api/v6/plan');
       expect(seen.url.queryParameters['fromPlace'], 'A');
       expect(seen.url.queryParameters['toPlace'], 'B');
       expect(seen.url.queryParameters['arriveBy'], 'false');
@@ -264,6 +264,105 @@ void main() {
         'HIGHSPEED_RAIL,LONG_DISTANCE,NIGHT_RAIL,FERRY',
       );
     });
+
+    test('transfer and interchange limits go on the wire as asked', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(
+          minTransferMinutes: 12,
+          maxTransfers: 0,
+        ),
+      );
+
+      expect(seen.url.queryParameters['minTransferTime'], '12');
+      // "Direct only" is a real restriction; it must survive as 0 rather than
+      // being mistaken for "unset". It only means this from plan v3 on.
+      expect(seen.url.queryParameters['maxTransfers'], '0');
+      expect(seen.url.path, '/api/v6/plan');
+    });
+
+    test('a slow walker also gets the time to be slow in', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      // Half the normal speed: 2.25 km/h = 0.625 m/s, everything walking twice
+      // as long, every walking budget twice as big.
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(
+          walkingSpeedKmh: kNormalWalkingSpeedKmh / 2,
+        ),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q['pedestrianSpeed'], '0.625');
+      // `pedestrianSpeed` does not touch footpaths inside a station; only this
+      // does.
+      expect(q['transferTimeFactor'], '2.00');
+      // Without these, the walk to the first stop stops fitting in the default
+      // 900 s and the search silently returns nothing at all.
+      expect(q['maxPreTransitTime'], '1800');
+      expect(q['maxPostTransitTime'], '1800');
+      expect(q['maxDirectTime'], '3600');
+    });
+
+    test(
+      'a fast walker never buys a tighter change than the timetable',
+      () async {
+        late http.Request seen;
+        final client = MotisTransportSearch(
+          httpClient: MockClient((req) async {
+            seen = req;
+            return http.Response(
+              _fixture('motis_plan_overnight.json'),
+              200,
+              headers: _jsonUtf8,
+            );
+          }),
+        );
+
+        await client.journeys(
+          fromId: 'A',
+          toId: 'B',
+          time: DateTime.utc(2026, 7, 27, 18),
+          options: const JourneySearchOptions(walkingSpeedKmh: 6.5),
+        );
+
+        final q = seen.url.queryParameters;
+        expect(q['pedestrianSpeed'], (6.5 / 3.6).toStringAsFixed(3));
+        // A factor below 1.0 is declared unsupported, and shrinking the minimum
+        // interchange time is the wrong direction to gamble in. Budgets stay at
+        // the server's defaults too — a fast walker needs no extra allowance.
+        expect(q, isNot(contains('transferTimeFactor')));
+        expect(q, isNot(contains('maxPreTransitTime')));
+        expect(q, isNot(contains('maxDirectTime')));
+      },
+    );
 
     test('a page cursor rides along with the original query', () async {
       late http.Request seen;

@@ -65,12 +65,39 @@ void main() {
       expect(a, isNot(const JourneySearchOptions(modes: {TransitFilter.bus})));
     });
 
-    test('defaults to unrestricted', () {
-      expect(const JourneySearchOptions().isUnrestricted, isTrue);
+    test('every field counts towards equality — it is the cache key', () {
+      const base = JourneySearchOptions();
+      expect(base, const JourneySearchOptions());
+      expect(base, isNot(const JourneySearchOptions(minTransferMinutes: 10)));
+      expect(base, isNot(const JourneySearchOptions(walkingSpeedKmh: 3)));
+      expect(base, isNot(const JourneySearchOptions(maxTransfers: 0)));
       expect(
-        const JourneySearchOptions(modes: {TransitFilter.bus}).isUnrestricted,
+        const JourneySearchOptions(minTransferMinutes: 10).hashCode,
+        const JourneySearchOptions(minTransferMinutes: 10).hashCode,
+      );
+    });
+
+    test('defaults ask for nothing beyond the service’s own', () {
+      expect(const JourneySearchOptions().isDefault, isTrue);
+      expect(
+        const JourneySearchOptions(modes: {TransitFilter.bus}).isDefault,
         isFalse,
       );
+      expect(
+        const JourneySearchOptions(minTransferMinutes: 5).isDefault,
+        isFalse,
+      );
+      expect(const JourneySearchOptions(walkingSpeedKmh: 3).isDefault, isFalse);
+      // "Direct only" is a restriction, and 0 must not read as "unset".
+      expect(const JourneySearchOptions(maxTransfers: 0).isDefault, isFalse);
+    });
+
+    test('copyWith can clear the transfer limit, not just change it', () {
+      const limited = JourneySearchOptions(maxTransfers: 1);
+      expect(limited.copyWith(maxTransfers: 0).maxTransfers, 0);
+      expect(limited.copyWith(clearMaxTransfers: true).maxTransfers, isNull);
+      // Without the flag, a null argument means "leave it alone".
+      expect(limited.copyWith().maxTransfers, 1);
     });
   });
 }

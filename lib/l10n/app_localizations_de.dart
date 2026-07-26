@@ -1333,6 +1333,73 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get connectionOptionsTitle => 'Sucheinstellungen';
+
+  @override
+  String get connectionOptionsReset => 'Zurücksetzen';
+
+  @override
+  String get connectionMinTransfer => 'Kürzester Umstieg';
+
+  @override
+  String get connectionMinTransferHint =>
+      'Keine Verbindung mit weniger Zeit zwischen Ankunft und Weiterfahrt.';
+
+  @override
+  String get connectionMinTransferAny => 'Beliebig';
+
+  @override
+  String connectionMinutesShort(int minutes) {
+    return '$minutes Min.';
+  }
+
+  @override
+  String get connectionWalkingSpeed => 'Gehgeschwindigkeit';
+
+  @override
+  String get connectionWalkingSpeedHint =>
+      'Gilt für Wege zu, von und zwischen Haltestellen.';
+
+  @override
+  String connectionSpeedValue(String speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String get connectionSpeedNormal => 'normal';
+
+  @override
+  String get connectionMaxTransfers => 'Maximale Umstiege';
+
+  @override
+  String get connectionMaxTransfersAny => 'Beliebig';
+
+  @override
+  String get connectionMaxTransfersDirect => 'Direkt';
+
+  @override
+  String connectionMaxTransfersAtMost(int count) {
+    return '≤$count';
+  }
+
+  @override
+  String connectionSummaryMinTransfer(int minutes) {
+    return 'Umstieg ≥ $minutes Min.';
+  }
+
+  @override
+  String connectionSummaryMaxChanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'max. $count Umstiege',
+      one: 'max. 1 Umstieg',
+      zero: 'nur direkt',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get connectionModesTitle => 'Verkehrsmittel';
 
   @override

@@ -74,13 +74,21 @@ class MotisTransportSearch implements TransportSearch {
     // set. An unknown token is rejected outright (HTTP 500, "unknown value"),
     // so the list may only ever be built from `motisTransitModes`.
     final modes = motisTransitModes(options.modes);
-    final body = await _get('/api/v1/plan', {
+    final body = await _get('/api/v6/plan', {
       'fromPlace': fromId,
       'toPlace': toId,
       'time': _rfc3339Seconds(time),
       'arriveBy': arriveBy.toString(),
       'language': language,
       if (modes.isNotEmpty) 'transitModes': modes.join(','),
+      if (options.minTransferMinutes > 0)
+        'minTransferTime': '${options.minTransferMinutes}',
+      // `maxTransfers` counts interchanges only from v3 on — before that
+      // `maxTransfers=1` means "direct only", the opposite of what the user
+      // picked. This client talks v6 (see the paths above); do not move it back.
+      if (options.maxTransfers != null)
+        'maxTransfers': '${options.maxTransfers}',
+      ..._walkingParams(options.walkingSpeedKmh),
       // The cursor carries the window; the rest of the query must be repeated
       // unchanged beside it, which is why it is a parameter here and not a
       // separate call.
@@ -89,9 +97,47 @@ class MotisTransportSearch implements TransportSearch {
     return parsePlanResponse(body);
   }
 
+  /// The service's own defaults, in seconds, for the walking budgets scaled
+  /// below. Nothing reads them back — they are only the base a slow walker's
+  /// allowance is grown from.
+  static const int _defaultPrePostTransitSeconds = 900;
+  static const int _defaultDirectSeconds = 1800;
+
+  /// Everything one "how fast do you walk" setting turns into.
+  ///
+  /// Three parameters, because the service scales the two halves of a journey's
+  /// walking separately (both verified against Transitous):
+  ///
+  /// - `pedestrianSpeed` (m/s) governs the street legs — to the first stop,
+  ///   from the last, and any direct walk.
+  /// - `transferTimeFactor` governs the footpaths *inside* stations, which are
+  ///   precomputed and which `pedestrianSpeed` does not touch at all. Sent only
+  ///   when it would **lengthen** them: the spec declares factors below 1.0
+  ///   unsupported, and buying tighter changes than the timetable's own minimum
+  ///   is not a trade worth making on undefined behaviour.
+  /// - the three time budgets, grown by the same ratio, because a slow walker
+  ///   otherwise falls off a cliff: at 0.6 m/s the walk to the first stop no
+  ///   longer fits in the default 900 s and the search returns **nothing** —
+  ///   an empty screen that blames the route rather than the setting. Oversized
+  ///   values are safe; the server clamps them to its own configuration.
+  static Map<String, String> _walkingParams(double kmh) {
+    final slowdown = kNormalWalkingSpeedKmh / kmh;
+    return {
+      'pedestrianSpeed': (kmh / 3.6).toStringAsFixed(3),
+      if (slowdown > 1.0) ...{
+        'transferTimeFactor': slowdown.toStringAsFixed(2),
+        'maxPreTransitTime':
+            '${(_defaultPrePostTransitSeconds * slowdown).round()}',
+        'maxPostTransitTime':
+            '${(_defaultPrePostTransitSeconds * slowdown).round()}',
+        'maxDirectTime': '${(_defaultDirectSeconds * slowdown).round()}',
+      },
+    };
+  }
+
   @override
   Future<List<TripStop>> tripStops(String tripId) async {
-    final body = await _get('/api/v1/trip', {
+    final body = await _get('/api/v6/trip', {
       'tripId': tripId,
       'language': language,
     });

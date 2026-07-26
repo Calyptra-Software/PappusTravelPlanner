@@ -218,6 +218,12 @@ void main() {
     expect(find.text('Connection added'), findsOneWidget);
   });
 
+  /// Opens the search options sheet from the row that summarises it.
+  Future<void> openOptions(WidgetTester tester) async {
+    await tester.tap(find.widgetWithIcon(ListTile, Icons.tune));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('a narrowed transport filter reaches the search', (tester) async {
     await pump(tester);
     await tester.tap(find.text('open'));
@@ -226,18 +232,17 @@ void main() {
     await pickInto(tester, 'From');
     await pickInto(tester, 'To');
 
-    // Unrestricted to begin with — the button says so.
+    // Unrestricted to begin with — the row says so.
     expect(find.text('All means of transport'), findsOneWidget);
 
-    // Open the filter and drop flights.
-    await tester.tap(find.widgetWithIcon(OutlinedButton, Icons.tune));
-    await tester.pumpAndSettle();
+    // Open the options and drop flights.
+    await openOptions(tester);
     await tester.tap(find.text('Flights'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
 
-    // The button now names what is left in, rather than a count.
+    // The row now names what is left in, rather than a count.
     expect(find.textContaining('Long-distance trains'), findsOneWidget);
 
     await tester.tap(find.text('Search'));
@@ -264,8 +269,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(search.calls.last.options.modes, kAllTransitFilters);
 
-    await tester.tap(find.widgetWithIcon(OutlinedButton, Icons.tune));
-    await tester.pumpAndSettle();
+    await openOptions(tester);
     await tester.tap(find.text('Flights'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
@@ -273,6 +277,92 @@ void main() {
 
     // Results found under the old rules are not left standing.
     expect(search.calls.last.options.modes, isNot(contains(TransitFilter.air)));
+  });
+
+  testWidgets('the transfer and interchange limits reach the search', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    // Drag the "shortest change" slider off zero, and rule out anything but a
+    // single change.
+    await tester.drag(find.byType(Slider).first, const Offset(60, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('≤1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    final asked = search.calls.last.options;
+    expect(asked.minTransferMinutes, greaterThan(0));
+    expect(asked.maxTransfers, 1);
+    // The row states the terms it is now searching under.
+    expect(find.textContaining('max 1 change'), findsOneWidget);
+    expect(
+      prefs.getInt('connection_min_transfer_minutes'),
+      asked.minTransferMinutes,
+    );
+    expect(prefs.getInt('connection_max_transfers'), 1);
+  });
+
+  testWidgets('a slower walking speed is remembered and summarised', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    // The walking slider is the second one; drag it left, towards slower.
+    await tester.drag(find.byType(Slider).last, const Offset(-80, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    final asked = search.calls.last.options;
+    expect(asked.walkingSpeedKmh, lessThan(kNormalWalkingSpeedKmh));
+    expect(find.textContaining('km/h'), findsOneWidget);
+    expect(
+      prefs.getDouble('connection_walking_speed_kmh'),
+      asked.walkingSpeedKmh,
+    );
+  });
+
+  testWidgets('reset puts every option back, and is the only way to', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await openOptions(tester);
+    // Nothing to reset yet.
+    final before = tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Reset'),
+    );
+    expect(before.onPressed, isNull);
+
+    await tester.tap(find.text('Direct'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('All means of transport'), findsOneWidget);
   });
 
   /// Searches Hamburg -> Hamburg so the results (and their paging rows) are on
