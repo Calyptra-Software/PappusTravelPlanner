@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -69,7 +70,18 @@ class MotisTransportSearch implements TransportSearch {
       path: path,
       queryParameters: {..._baseUrl.queryParameters, ...query},
     );
-    final response = await _http.get(uri, headers: {'User-Agent': userAgent});
+    final http.Response response;
+    try {
+      response = await _http
+          .get(uri, headers: {'User-Agent': userAgent})
+          .timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      throw const TransportSearchException('Connection search timed out');
+    } on http.ClientException catch (e) {
+      // No connectivity, DNS failure, TLS error, etc. — surface it so the UI
+      // shows a retry instead of spinning forever.
+      throw TransportSearchException('Connection search failed: ${e.message}');
+    }
     if (response.statusCode != 200) {
       throw TransportSearchException(
         'MOTIS request failed (${response.statusCode})',

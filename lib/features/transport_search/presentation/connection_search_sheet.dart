@@ -448,6 +448,12 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
               ),
             ),
             if (async.isLoading) const LinearProgressIndicator(minHeight: 2),
+            if (async.hasError)
+              _ErrorRow(
+                message: l10n.connectionSearchError,
+                retryLabel: l10n.connectionRetry,
+                onRetry: () => ref.invalidate(geocodeProvider(_query)),
+              ),
             Flexible(
               child: ListView(
                 shrinkWrap: true,
