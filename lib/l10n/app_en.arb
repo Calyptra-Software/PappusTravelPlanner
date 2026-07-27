@@ -545,6 +545,7 @@
   "connectionPickPlace": "Search station or place",
   "connectionDepart": "Depart at",
   "connectionArrive": "Arrive by",
+  "connectionWithoutTransit": "Without public transport",
   "connectionSearchNoResults": "No connections found",
   "connectionEarlier": "Earlier",
   "connectionLater": "Later",

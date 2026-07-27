@@ -467,6 +467,7 @@
   "connectionPickPlace": "Bahnhof oder Ort suchen",
   "connectionDepart": "Abfahrt um",
   "connectionArrive": "Ankunft bis",
+  "connectionWithoutTransit": "Ohne öffentliche Verkehrsmittel",
   "connectionSearchNoResults": "Keine Verbindungen gefunden",
   "connectionEarlier": "Früher",
   "connectionLater": "Später",

@@ -276,11 +276,13 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
           shrinkWrap: true,
           padding: const EdgeInsets.symmetric(vertical: 4),
           children: [
+            if (results.direct.isNotEmpty) _directRow(l10n, results.direct),
             _pageRow(l10n, earlier: true, cursor: results.earlierCursor),
             // An empty window is not an empty timetable — the rows above and
             // below still lead somewhere, so the message goes between them
-            // rather than in their place.
-            if (results.options.isEmpty)
+            // rather than in their place. It is also not said at all when the
+            // journey can simply be walked: the answer is right above.
+            if (results.options.isEmpty && results.direct.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Center(child: Text(l10n.connectionSearchNoResults)),
@@ -290,6 +292,48 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
             _pageRow(l10n, earlier: false, cursor: results.laterCursor),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Ways to make the journey without public transport, as compact chips above
+  /// the timetable.
+  ///
+  /// Chips rather than result cards because a direct connection has no
+  /// departure: it starts when the traveller does, so the times a card is built
+  /// around — and the delay marks beside them — would be inventing precision.
+  /// It sits above the "earlier" row because it belongs to no window: paging
+  /// moves the trains, not the walk.
+  Widget _directRow(AppLocalizations l10n, List<JourneyOption> direct) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.connectionWithoutTransit,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final option in direct)
+                ActionChip(
+                  avatar: Icon(
+                    _transitIcon(option.legs.firstOrNull?.mode),
+                    size: 18,
+                  ),
+                  label: Text(_formatDuration(option.duration)),
+                  onPressed: () => _import(option),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -428,8 +472,6 @@ class _ResultCard extends StatelessWidget {
         .where((l) => l.mode != TransitMode.walk)
         .toList();
     final summary = vehicleLegs.map((l) => l.line ?? l.mode.name).join(' → ');
-    final h = option.duration.inHours;
-    final m = option.duration.inMinutes % 60;
 
     return ListTile(
       leading: Icon(_transitIcon(vehicleLegs.firstOrNull?.mode)),
@@ -450,7 +492,8 @@ class _ResultCard extends StatelessWidget {
         ),
       ),
       subtitle: Text(
-        '${h}h ${m}m · ${l10n.connectionChanges(option.transfers)}'
+        '${_formatDuration(option.duration)} · '
+        '${l10n.connectionChanges(option.transfers)}'
         '${summary.isEmpty ? '' : ' · $summary'}',
       ),
       onTap: onTap,
@@ -559,6 +602,15 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
       ),
     );
   }
+}
+
+/// How long a journey takes, as the results write it: "7h 7m", or bare minutes
+/// under the hour — a walk across town is a matter of minutes, and "0h 12m"
+/// reads like something went wrong.
+String _formatDuration(Duration duration) {
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes % 60;
+  return hours == 0 ? '${minutes}m' : '${hours}h ${minutes}m';
 }
 
 IconData _transitIcon(TransitMode? mode) {

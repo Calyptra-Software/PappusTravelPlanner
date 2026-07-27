@@ -101,11 +101,24 @@ class TripStop {
 class JourneyResults {
   const JourneyResults({
     required this.options,
+    this.direct = const [],
     this.earlierCursor,
     this.laterCursor,
   });
 
   final List<JourneyOption> options;
+
+  /// Ways to make the journey **without public transport** — on foot, over
+  /// whatever distance the router was willing to walk.
+  ///
+  /// These are not a window and have no real departure: they start whenever the
+  /// traveller does, so the service dates them from the requested time and
+  /// returns them **only for the first query**, not for a paging one. They also
+  /// explain an otherwise baffling result: transit options slower than the
+  /// fastest direct one are cut off during routing, so a fast walker on a short
+  /// hop gets *no* [options] at all and the whole answer is here.
+  final List<JourneyOption> direct;
+
   final String? earlierCursor;
   final String? laterCursor;
 
@@ -127,6 +140,10 @@ class JourneyResults {
     ];
     return JourneyResults(
       options: earlier ? [...added, ...options] : [...options, ...added],
+      // Walking the whole way does not belong to a window, so a further window
+      // neither adds to it nor replaces it — the service is entitled to leave
+      // it out of a paging response, and usually does.
+      direct: direct.isNotEmpty ? direct : page.direct,
       earlierCursor: earlier ? page.earlierCursor : earlierCursor,
       laterCursor: earlier ? laterCursor : page.laterCursor,
     );

@@ -6,7 +6,7 @@ import 'transit_filter.dart';
 /// is a position a user can drag back to.
 const double kMinWalkingSpeedKmh = 2.0;
 const double kNormalWalkingSpeedKmh = 4.5;
-const double kMaxWalkingSpeedKmh = 7.0;
+const double kMaxWalkingSpeedKmh = 10.0;
 const double kWalkingSpeedStepKmh = 0.5;
 
 /// The longest change the search will let someone ask for. Beyond half an hour

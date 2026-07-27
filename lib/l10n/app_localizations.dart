@@ -2336,6 +2336,12 @@ abstract class AppLocalizations {
   /// **'Arrive by'**
   String get connectionArrive;
 
+  /// No description provided for @connectionWithoutTransit.
+  ///
+  /// In en, this message translates to:
+  /// **'Without public transport'**
+  String get connectionWithoutTransit;
+
   /// No description provided for @connectionSearchNoResults.
   ///
   /// In en, this message translates to:

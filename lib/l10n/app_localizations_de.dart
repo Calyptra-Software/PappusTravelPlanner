@@ -1306,6 +1306,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionArrive => 'Ankunft bis';
 
   @override
+  String get connectionWithoutTransit => 'Ohne öffentliche Verkehrsmittel';
+
+  @override
   String get connectionSearchNoResults => 'Keine Verbindungen gefunden';
 
   @override

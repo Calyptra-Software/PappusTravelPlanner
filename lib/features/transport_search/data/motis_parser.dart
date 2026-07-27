@@ -25,15 +25,21 @@ List<TransportPlace> parseGeocodeResponse(dynamic json) {
 /// windows before and after it.
 JourneyResults parsePlanResponse(dynamic json) {
   final map = json as Map<String, dynamic>;
-  final its = (map['itineraries'] as List<dynamic>?) ?? const [];
   return JourneyResults(
-    options: its
-        .map((e) => _itinerary(e as Map<String, dynamic>))
-        .toList(growable: false),
+    options: _itineraries(map['itineraries']),
+    // Same shape as an itinerary, different meaning: no transit, no departure
+    // to speak of. Reading it is what keeps a short hop from looking like "no
+    // connections" when the answer is simply to walk.
+    direct: _itineraries(map['direct']),
     earlierCursor: _cursor(map['previousPageCursor']),
     laterCursor: _cursor(map['nextPageCursor']),
   );
 }
+
+List<JourneyOption> _itineraries(dynamic value) => [
+  for (final e in (value as List<dynamic>?) ?? const [])
+    _itinerary(e as Map<String, dynamic>),
+];
 
 /// A paging cursor, or null when the service offered none. An empty string is
 /// treated as absent — a handle to nothing is nothing.

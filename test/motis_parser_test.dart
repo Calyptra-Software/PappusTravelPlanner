@@ -133,6 +133,37 @@ void main() {
       expect(results.laterCursor, 'LATER|1785181920');
     });
 
+    test('reads the direct (no-transit) options beside the timetable', () {
+      // A fast walker on a short hop: transit slower than the fastest direct
+      // connection is cut off during routing, so `itineraries` comes back empty
+      // and the whole answer is the walk.
+      final results = parsePlanResponse({
+        'itineraries': <dynamic>[],
+        'direct': [
+          {
+            'duration': 720,
+            'startTime': '2026-07-28T09:00:00Z',
+            'endTime': '2026-07-28T09:12:00Z',
+            'transfers': 0,
+            'legs': [
+              {
+                'mode': 'WALK',
+                'realTime': false,
+                'from': {'name': 'START', 'departure': '2026-07-28T09:00:00Z'},
+                'to': {'name': 'END', 'arrival': '2026-07-28T09:12:00Z'},
+              },
+            ],
+          },
+        ],
+        'nextPageCursor': 'LATER|1',
+      });
+
+      expect(results.options, isEmpty);
+      expect(results.direct, hasLength(1));
+      expect(results.direct.single.duration, const Duration(minutes: 12));
+      expect(results.direct.single.legs.single.mode, TransitMode.walk);
+    });
+
     test('a missing or empty cursor is no cursor', () {
       final results = parsePlanResponse({
         'itineraries': <dynamic>[],

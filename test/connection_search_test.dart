@@ -47,37 +47,43 @@ const _place = TransportPlace(
   timeZone: 'Europe/Berlin',
 );
 
-/// One journey departing at [hour] UTC and arriving two hours later. [live]
-/// gives it real-time data — a 5-minute departure delay, arriving on time.
+/// One journey departing at [hour] UTC and running for [duration]. [live] gives
+/// it real-time data — a 5-minute departure delay, arriving on time.
 JourneyOption _option({
-  required String line,
+  required String? line,
   required int hour,
   bool live = false,
-}) => JourneyOption(
-  departure: DateTime.utc(2026, 7, 27, hour),
-  arrival: DateTime.utc(2026, 7, 27, hour + 2),
-  duration: const Duration(hours: 2),
-  transfers: 1,
-  legs: [
-    JourneyLeg(
-      mode: TransitMode.highSpeedRail,
-      from: LegPoint(
-        name: 'Hamburg',
-        scheduled: DateTime.utc(2026, 7, 27, hour),
-        actual: live ? DateTime.utc(2026, 7, 27, hour, 5) : null,
-        timeZone: 'Europe/Berlin',
+  TransitMode mode = TransitMode.highSpeedRail,
+  Duration duration = const Duration(hours: 2),
+}) {
+  final departure = DateTime.utc(2026, 7, 27, hour);
+  final arrival = departure.add(duration);
+  return JourneyOption(
+    departure: departure,
+    arrival: arrival,
+    duration: duration,
+    transfers: 1,
+    legs: [
+      JourneyLeg(
+        mode: mode,
+        from: LegPoint(
+          name: 'Hamburg',
+          scheduled: departure,
+          actual: live ? departure.add(const Duration(minutes: 5)) : null,
+          timeZone: 'Europe/Berlin',
+        ),
+        to: LegPoint(
+          name: 'Berlin',
+          scheduled: arrival,
+          actual: live ? arrival : null,
+          timeZone: 'Europe/Berlin',
+        ),
+        realTime: live,
+        line: line,
       ),
-      to: LegPoint(
-        name: 'Berlin',
-        scheduled: DateTime.utc(2026, 7, 27, hour + 2),
-        actual: live ? DateTime.utc(2026, 7, 27, hour + 2) : null,
-        timeZone: 'Europe/Berlin',
-      ),
-      realTime: live,
-      line: line,
-    ),
-  ],
-);
+    ],
+  );
+}
 
 /// A backend serving one journey per time window, so paging is observable: the
 /// searched window holds `ICE 1` and points at a window either side, each of
@@ -88,6 +94,11 @@ class _FakeSearch implements TransportSearch {
   /// When set, only *paging* requests fail — the first window still answers, so
   /// a test can check that results already found survive a failed "later".
   bool failPaging = false;
+
+  /// When set, the service answers the way it does for a walker who outruns
+  /// the timetable: transit slower than the fastest direct connection is cut
+  /// off, so there are **no** itineraries and the answer is the walk.
+  bool outrunsTransit = false;
 
   @override
   Future<JourneyResults> journeys({
@@ -101,6 +112,19 @@ class _FakeSearch implements TransportSearch {
     calls.add((options: options, pageCursor: pageCursor));
     if (pageCursor != null && failPaging) {
       throw const TransportSearchException('offline');
+    }
+    if (outrunsTransit) {
+      return JourneyResults(
+        options: const [],
+        direct: [
+          _option(
+            line: null,
+            hour: 9,
+            mode: TransitMode.walk,
+            duration: const Duration(minutes: 12),
+          ),
+        ],
+      );
     }
     return switch (pageCursor) {
       null => JourneyResults(
@@ -323,8 +347,11 @@ void main() {
     await pickInto(tester, 'To');
 
     await openOptions(tester);
-    // The walking slider is the second one; drag it left, towards slower.
-    await tester.drag(find.byType(Slider).last, const Offset(-80, 0));
+    // The walking slider is the second one. A drag starts at the widget's
+    // centre — i.e. the middle of the *range* — so this pulls well past the
+    // left edge rather than by a distance that would mean different speeds if
+    // the range ever changes.
+    await tester.drag(find.byType(Slider).last, const Offset(-400, 0));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
@@ -424,6 +451,36 @@ void main() {
     // again, rather than an emptied screen.
     expect(find.textContaining('ICE 1'), findsOneWidget);
     expect(find.text('Later'), findsOneWidget);
+  });
+
+  testWidgets('outrunning the timetable shows the walk, not "no connections"', (
+    tester,
+  ) async {
+    search.outrunsTransit = true;
+    await searchFrom(tester);
+
+    // The router cut off every transit option as slower than simply walking, so
+    // the answer is the walk — saying "no connections found" beside it would be
+    // both discouraging and untrue.
+    expect(find.text('Without public transport'), findsOneWidget);
+    expect(find.text('12m'), findsOneWidget);
+    expect(find.text('No connections found'), findsNothing);
+    // It belongs to no time window, so paging is not offered for it.
+    expect(find.text('Earlier'), findsNothing);
+    expect(find.text('Later'), findsNothing);
+  });
+
+  testWidgets('a direct connection can be added to the day like any other', (
+    tester,
+  ) async {
+    search.outrunsTransit = true;
+    await searchFrom(tester);
+
+    await tester.tap(find.text('12m'));
+    await tester.pumpAndSettle();
+
+    expect(fake.imports, 1);
+    expect(find.text('Connection added'), findsOneWidget);
   });
 
   testWidgets('search is disabled until both endpoints are set', (

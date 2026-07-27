@@ -1300,6 +1300,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionArrive => 'Arrive by';
 
   @override
+  String get connectionWithoutTransit => 'Without public transport';
+
+  @override
   String get connectionSearchNoResults => 'No connections found';
 
   @override
