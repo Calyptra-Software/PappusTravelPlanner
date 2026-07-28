@@ -106,4 +106,64 @@ void main() {
       expect(r, isNull);
     });
   });
+
+  group('cancellation', () {
+    /// Only the stops a leg actually uses matter: a trip cancelled between two
+    /// other stations still runs for someone boarding outside that stretch.
+    List<TripStop> stops({
+      bool boardCancelled = false,
+      bool alightCancelled = false,
+      bool middleCancelled = false,
+    }) => [
+      TripStop(
+        name: 'A',
+        timeZone: 'Europe/Berlin',
+        scheduledDeparture: DateTime.utc(2026, 7, 26, 14),
+        cancelled: boardCancelled,
+      ),
+      TripStop(
+        name: 'M',
+        timeZone: 'Europe/Berlin',
+        scheduledArrival: DateTime.utc(2026, 7, 26, 14, 30),
+        scheduledDeparture: DateTime.utc(2026, 7, 26, 14, 31),
+        cancelled: middleCancelled,
+      ),
+      TripStop(
+        name: 'B',
+        timeZone: 'Europe/Berlin',
+        scheduledArrival: DateTime.utc(2026, 7, 26, 15),
+        cancelled: alightCancelled,
+      ),
+    ];
+
+    RefreshedTimes? refresh(List<TripStop> s) => refreshedActualTimes(
+      stops: s,
+      date: DateTime(2026, 7, 26),
+      startMinutes: 16 * 60,
+      endMinutes: 17 * 60,
+      spansNextDay: false,
+      fromName: 'A',
+      toName: 'B',
+    );
+
+    test('a skipped boarding stop strands the leg', () {
+      final result = refresh(stops(boardCancelled: true));
+
+      expect(result, isNotNull);
+      expect(result!.cancelled, isTrue);
+      // Cancelled trips carry no real-time, so there is nothing to write.
+      expect(result.actualStartMinutes, isNull);
+      expect(result.actualEndMinutes, isNull);
+    });
+
+    test('a skipped alighting stop strands it just as much', () {
+      expect(refresh(stops(alightCancelled: true))!.cancelled, isTrue);
+    });
+
+    test('a stop skipped in between is not this leg\'s problem', () {
+      // The traveller boards at A and alights at B; what the train does at M
+      // does not concern them.
+      expect(refresh(stops(middleCancelled: true)), isNull);
+    });
+  });
 }

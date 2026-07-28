@@ -1,14 +1,28 @@
 import '../domain/journey.dart';
 import 'journey_mapper.dart' show localParts;
 
-/// The refreshed actual times for a stored leg, in minutes-since-midnight (the
-/// same encoding as the itinerary). Either end may be null when the live trip
-/// had no real-time value for it.
+/// What the live trip says about a stored leg: its actual times, in
+/// minutes-since-midnight (the same encoding as the itinerary), or that the
+/// service is not running at all. Either end may be null when the live trip had
+/// no real-time value for it.
 class RefreshedTimes {
-  const RefreshedTimes({this.actualStartMinutes, this.actualEndMinutes});
+  const RefreshedTimes({
+    this.actualStartMinutes,
+    this.actualEndMinutes,
+    this.cancelled = false,
+  });
 
   final int? actualStartMinutes;
   final int? actualEndMinutes;
+
+  /// Whether the service will not call at the stops this leg uses — the whole
+  /// trip cancelled, or just this stretch of it skipped.
+  ///
+  /// A cancelled trip carries **no** real-time times (the service reports
+  /// `realTime: false` for it), so this never arrives alongside actual times;
+  /// it is the answer *instead* of them, and the reason the refresh cannot
+  /// simply say "nothing to update".
+  final bool cancelled;
 }
 
 /// Reads a stored leg's *actual* departure/arrival from its trip's live [stops]
@@ -21,6 +35,10 @@ class RefreshedTimes {
 /// be matched — so a leg whose schedule has since changed is left untouched
 /// rather than mis-timed. [spansNextDay] places the arrival on the following day,
 /// as the itinerary does.
+///
+/// A **cancellation** is reported the moment either end of the leg is skipped,
+/// even though there are then no times to go with it: not being run is the most
+/// important thing a live trip can say about a leg.
 RefreshedTimes? refreshedActualTimes({
   required List<TripStop> stops,
   required DateTime date,
@@ -54,10 +72,14 @@ RefreshedTimes? refreshedActualTimes({
       ? null
       : localParts(alight!.arrival!, alight.timeZone).minutes;
 
-  if (actualStart == null && actualEnd == null) return null;
+  // Either end being skipped strands the leg, so either end is enough to
+  // report — and a matched-but-cancelled stop is a finding, not a miss.
+  final cancelled = (board?.cancelled ?? false) || (alight?.cancelled ?? false);
+  if (actualStart == null && actualEnd == null && !cancelled) return null;
   return RefreshedTimes(
     actualStartMinutes: actualStart,
     actualEndMinutes: actualEnd,
+    cancelled: cancelled,
   );
 }
 

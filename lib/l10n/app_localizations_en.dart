@@ -1358,6 +1358,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionNoBikeConnections => 'No connections that take bikes';
 
   @override
+  String get connectionCancelled => 'Cancelled';
+
+  @override
   String get connectionWithoutTransit => 'Without public transport';
 
   @override
@@ -1516,6 +1519,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTimesNone => 'No live times to update';
+
+  @override
+  String get liveTimesCancelled => 'This service has been cancelled';
 
   @override
   String get liveTimesError => 'Couldn\'t fetch live times';

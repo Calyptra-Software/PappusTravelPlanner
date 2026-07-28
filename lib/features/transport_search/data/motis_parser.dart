@@ -70,6 +70,7 @@ List<TripStop> parseTripResponse(dynamic json) {
 
 TripStop _tripStop(Map<String, dynamic> j, bool realTime) => TripStop(
   name: j['name'] as String? ?? '',
+  cancelled: j['cancelled'] as bool? ?? false,
   timeZone: j['tz'] as String?,
   scheduledArrival: _parseUtcOrNull(j['scheduledArrival']),
   arrival: realTime ? _parseUtcOrNull(j['arrival']) : null,
@@ -145,6 +146,7 @@ JourneyLeg _leg(Map<String, dynamic> j) {
     line: (j['routeShortName'] ?? j['displayName']) as String?,
     headsign: j['headsign'] as String?,
     tripId: j['tripId'] as String?,
+    cancelled: j['cancelled'] as bool? ?? false,
   );
 }
 

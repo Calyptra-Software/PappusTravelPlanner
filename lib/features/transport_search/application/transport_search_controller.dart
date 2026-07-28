@@ -49,16 +49,16 @@ class TransportSearchController {
   }
 
   /// Refreshes one imported leg's live (real-time) times: re-queries its trip and
-  /// writes the actual departure/arrival read off the live stops. Returns whether
-  /// anything was written — false for a leg with no `sourceTripId`, or whose trip
-  /// carries no real-time (e.g. it has already run, or its schedule no longer
-  /// matches). A network failure propagates (the UI shows it). Manual only —
-  /// invoked from the leg's own refresh button, never on a timer.
-  Future<bool> refreshLeg(ItineraryItem item) async {
+  /// writes the actual departure/arrival read off the live stops. A network
+  /// failure propagates (the UI shows it). Manual only — invoked from the leg's
+  /// own refresh button, never on a timer.
+  Future<LegRefresh> refreshLeg(ItineraryItem item) async {
     final sourceTripId = item.sourceTripId;
     final start = item.startMinutes;
     final end = item.endMinutes;
-    if (sourceTripId == null || start == null || end == null) return false;
+    if (sourceTripId == null || start == null || end == null) {
+      return LegRefresh.nothing;
+    }
 
     final stops = await _ref
         .read(transportSearchProvider)
@@ -72,7 +72,11 @@ class TransportSearchController {
       fromName: item.fromLocation ?? '',
       toName: item.toLocation ?? '',
     );
-    if (refreshed == null) return false;
+    if (refreshed == null) return LegRefresh.nothing;
+    // A cancelled service reports no times at all, so there is nothing to
+    // write — and nothing *should* be written: an actual time would say the leg
+    // ran. What the traveller needs is the news itself.
+    if (refreshed.cancelled) return LegRefresh.cancelled;
     await _ref
         .read(repositoryProvider)
         .setActualTimes(
@@ -80,6 +84,20 @@ class TransportSearchController {
           actualStart: refreshed.actualStartMinutes,
           actualEnd: refreshed.actualEndMinutes,
         );
-    return true;
+    return LegRefresh.updated;
   }
+}
+
+/// What asking a leg's trip for live information turned up.
+enum LegRefresh {
+  /// Actual times were read and written; the tile now shows the delay marks.
+  updated,
+
+  /// The service is not running — cancelled outright, or skipping the stops
+  /// this leg uses.
+  cancelled,
+
+  /// Nothing live to apply: no trip id, or a trip carrying no real-time at all
+  /// (it has already run, or its schedule no longer matches what was imported).
+  nothing,
 }

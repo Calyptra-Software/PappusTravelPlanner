@@ -113,12 +113,54 @@ void main() {
 
     final updated = await controller.refreshLeg(item);
 
-    expect(updated, isTrue);
+    expect(updated, LegRefresh.updated);
     final after = await (db.select(
       db.itineraryItems,
     )..where((i) => i.id.equals(item.id))).getSingle();
     expect(after.actualStartMinutes, 16 * 60 + 5); // the +5 delay
     expect(after.actualEndMinutes, 17 * 60); // on time
+  });
+
+  /// A cancelled trip, exactly as the service reports one: every stop flagged,
+  /// and — the trap — `realTime: false`, so there are no live times to read.
+  List<TripStop> cancelledStops() => parseTripResponse({
+    'legs': [
+      {
+        'realTime': false,
+        'cancelled': true,
+        'from': {
+          'name': 'A',
+          'tz': 'Europe/Berlin',
+          'scheduledDeparture': '2026-07-26T14:00:00Z', // 16:00 local
+          'cancelled': true,
+        },
+        'intermediateStops': [],
+        'to': {
+          'name': 'B',
+          'tz': 'Europe/Berlin',
+          'scheduledArrival': '2026-07-26T15:00:00Z', // 17:00 local
+          'cancelled': true,
+        },
+      },
+    ],
+  });
+
+  test('a cancelled service is reported, and no times are invented', () async {
+    final item = await seedLeg(sourceTripId: 'trip-1');
+    final controller = containerWith(
+      _FakeSearch(cancelledStops()),
+    ).read(transportSearchControllerProvider);
+
+    // Without this the leg looks like "nothing to update" — the one answer that
+    // reads as "all is well" about a train that is not running.
+    expect(await controller.refreshLeg(item), LegRefresh.cancelled);
+
+    final after = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.id.equals(item.id))).getSingle();
+    // A cancelled leg has no actual times: writing one would say it ran.
+    expect(after.actualStartMinutes, isNull);
+    expect(after.actualEndMinutes, isNull);
   });
 
   test('a leg with no source trip id is a no-op (no query)', () async {
@@ -128,7 +170,7 @@ void main() {
       _FakeSearch(const []),
     ).read(transportSearchControllerProvider);
 
-    expect(await controller.refreshLeg(item), isFalse);
+    expect(await controller.refreshLeg(item), LegRefresh.nothing);
     final after = await (db.select(
       db.itineraryItems,
     )..where((i) => i.id.equals(item.id))).getSingle();

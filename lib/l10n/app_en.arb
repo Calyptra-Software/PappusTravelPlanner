@@ -570,6 +570,7 @@
   "connectionCyclingSpeed": "Cycling speed",
   "connectionCyclingSpeedHint": "Used for the parts of the journey you ride.",
   "connectionNoBikeConnections": "No connections that take bikes",
+  "connectionCancelled": "Cancelled",
   "connectionWithoutTransit": "Without public transport",
   "connectionSearchNoResults": "No connections found",
   "connectionEarlier": "Earlier",
@@ -652,5 +653,6 @@
   },
   "liveTimesRefresh": "Update live times",
   "liveTimesNone": "No live times to update",
+  "liveTimesCancelled": "This service has been cancelled",
   "liveTimesError": "Couldn't fetch live times"
 }

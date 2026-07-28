@@ -2432,6 +2432,12 @@ abstract class AppLocalizations {
   /// **'No connections that take bikes'**
   String get connectionNoBikeConnections;
 
+  /// No description provided for @connectionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get connectionCancelled;
+
   /// No description provided for @connectionWithoutTransit.
   ///
   /// In en, this message translates to:
@@ -2683,6 +2689,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No live times to update'**
   String get liveTimesNone;
+
+  /// No description provided for @liveTimesCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'This service has been cancelled'**
+  String get liveTimesCancelled;
 
   /// No description provided for @liveTimesError.
   ///

@@ -485,6 +485,10 @@ class _ResultCard extends StatelessWidget {
     final vehicleLegs = option.legs
         .where((l) => l.mode != TransitMode.walk)
         .toList();
+    // The router plans around cancellations, so this is all but unreachable in
+    // practice — which is exactly why it must not import silently if it ever is
+    // reached.
+    final cancelled = option.legs.any((l) => l.cancelled);
     final summary = vehicleLegs.map((l) => l.line ?? l.mode.name).join(' → ');
 
     return ListTile(
@@ -505,10 +509,25 @@ class _ResultCard extends StatelessWidget {
           ],
         ),
       ),
-      subtitle: Text(
-        '${_formatDuration(option.duration)} · '
-        '${l10n.connectionChanges(option.transfers)}'
-        '${summary.isEmpty ? '' : ' · $summary'}',
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            if (cancelled)
+              TextSpan(
+                text: '${l10n.connectionCancelled} · ',
+                style: TextStyle(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            TextSpan(
+              text:
+                  '${_formatDuration(option.duration)} · '
+                  '${l10n.connectionChanges(option.transfers)}'
+                  '${summary.isEmpty ? '' : ' · $summary'}',
+            ),
+          ],
+        ),
       ),
       onTap: onTap,
     );

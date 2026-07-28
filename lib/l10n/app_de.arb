@@ -492,6 +492,7 @@
   "connectionCyclingSpeed": "Fahrgeschwindigkeit",
   "connectionCyclingSpeedHint": "Gilt für die Abschnitte, die du fährst.",
   "connectionNoBikeConnections": "Keine Verbindungen mit Fahrradmitnahme",
+  "connectionCancelled": "Fällt aus",
   "connectionWithoutTransit": "Ohne öffentliche Verkehrsmittel",
   "connectionSearchNoResults": "Keine Verbindungen gefunden",
   "connectionEarlier": "Früher",
@@ -559,5 +560,6 @@
   "directionTo": "Richtung {destination}",
   "liveTimesRefresh": "Echtzeit aktualisieren",
   "liveTimesNone": "Keine Echtzeitdaten zu aktualisieren",
+  "liveTimesCancelled": "Diese Verbindung fällt aus",
   "liveTimesError": "Echtzeitdaten konnten nicht geladen werden"
 }

@@ -47,6 +47,7 @@ class JourneyLeg {
     this.line,
     this.headsign,
     this.tripId,
+    this.cancelled = false,
   });
 
   final TransitMode mode;
@@ -65,6 +66,11 @@ class JourneyLeg {
 
   /// The routing service's trip identifier, when given.
   final String? tripId;
+
+  /// Whether the service has been **cancelled**. In practice a search never
+  /// returns one — the router plans around cancellations — so this is read for
+  /// the case where it does rather than as a promise that it will.
+  final bool cancelled;
 }
 
 /// One stop of a vehicle's whole trip, as returned by the per-trip live query.
@@ -79,6 +85,7 @@ class TripStop {
     this.arrival,
     this.scheduledDeparture,
     this.departure,
+    this.cancelled = false,
   });
 
   final String name;
@@ -87,6 +94,12 @@ class TripStop {
   final DateTime? arrival;
   final DateTime? scheduledDeparture;
   final DateTime? departure;
+
+  /// Whether the service will not call here. A whole cancelled trip marks every
+  /// stop; a partial cancellation marks only the ones being skipped — which is
+  /// why this is asked of the two stops a leg actually uses rather than of the
+  /// trip as a whole.
+  final bool cancelled;
 }
 
 /// The journeys found, plus the handles that fetch the ones either side.

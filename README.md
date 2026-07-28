@@ -41,8 +41,9 @@ Linux, Windows, macOS, and iOS.
   carrying each leg's line/train number, direction, and platform, and handling overnight
   legs that arrive the next morning. Each imported leg then gets its own **refresh** button
   that pulls its current real-time departure and arrival, which surface through the
-  planned-vs-actual marks above. This is the app's one online feature; everything it imports
-  lives in your local database like anything else.
+  planned-vs-actual marks above — and says so plainly when the service has been
+  **cancelled**. This is the app's one online feature; everything it imports lives in your
+  local database like anything else.
 - **Alternatives** — plan competing options for one stretch of a day ("museum or boat
   trip?"). The decision sits in the timeline as a card you **swipe** between options; each option holds its own places, legs, and costs.
   Every option's price stays visible side by side so they can be compared, but only the

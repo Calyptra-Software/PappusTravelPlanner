@@ -1366,6 +1366,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine Verbindungen mit Fahrradmitnahme';
 
   @override
+  String get connectionCancelled => 'Fällt aus';
+
+  @override
   String get connectionWithoutTransit => 'Ohne öffentliche Verkehrsmittel';
 
   @override
@@ -1524,6 +1527,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get liveTimesNone => 'Keine Echtzeitdaten zu aktualisieren';
+
+  @override
+  String get liveTimesCancelled => 'Diese Verbindung fällt aus';
 
   @override
   String get liveTimesError => 'Echtzeitdaten konnten nicht geladen werden';

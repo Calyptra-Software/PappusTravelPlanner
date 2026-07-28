@@ -558,13 +558,25 @@ class _LiveRefreshButtonState extends ConsumerState<_LiveRefreshButton> {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     try {
-      final updated = await ref
+      final result = await ref
           .read(transportSearchControllerProvider)
           .refreshLeg(widget.item);
-      // On success the tile updates in place; only speak up when there was
-      // nothing live to apply, or the fetch failed.
-      if (!updated) {
-        messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesNone)));
+      // On an update the tile speaks for itself, in place; the other two
+      // outcomes leave nothing on screen, so they have to be said. A
+      // cancellation especially: "nothing to update" would read as "all is
+      // well" about a train that is not running.
+      switch (result) {
+        case LegRefresh.updated:
+          break;
+        case LegRefresh.cancelled:
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(l10n.liveTimesCancelled),
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        case LegRefresh.nothing:
+          messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesNone)));
       }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesError)));
