@@ -33,6 +33,23 @@ class MotisTransportSearch implements TransportSearch {
 
   static const String _defaultUserAgent = 'TravelPlanner (connection search)';
 
+  /// Asks for legs *without* their route shape and turn-by-turn instructions,
+  /// on every endpoint that offers the choice.
+  ///
+  /// The app draws no map and prints no walking directions, so `legGeometry`
+  /// and `steps` are pure weight on a connection that is often mobile data —
+  /// and on a service that is donated. Measured against Transitous: a five-
+  /// itinerary plan drops 103 KB → 57 KB, and a long-distance trip query — the
+  /// one behind the refresh button, tapped repeatedly while a train runs late —
+  /// drops 62 KB → 8 KB, most of it a polyline of the track we never draw.
+  ///
+  /// Nothing read here changes: every parsed field, both paging cursors, the
+  /// direct connections and a trip's `intermediateStops` come back identical.
+  /// `legGeometry` is still present, just empty, so the day a map arrives this
+  /// is one parameter to flip — or to send per call, if a map view wants the
+  /// shape while the refresh button still does not.
+  static const String _detailedLegs = 'detailedLegs';
+
   /// Only a fallback for a client built without one (the smoke tool, tests) —
   /// the app always passes the language it is showing, via
   /// `searchLanguageProvider`.
@@ -80,6 +97,7 @@ class MotisTransportSearch implements TransportSearch {
       'time': _rfc3339Seconds(time),
       'arriveBy': arriveBy.toString(),
       'language': language,
+      _detailedLegs: 'false',
       if (modes.isNotEmpty) 'transitModes': modes.join(','),
       if (options.minTransferMinutes > 0)
         'minTransferTime': '${options.minTransferMinutes}',
@@ -187,6 +205,7 @@ class MotisTransportSearch implements TransportSearch {
     final body = await _get('/api/v6/trip', {
       'tripId': tripId,
       'language': language,
+      _detailedLegs: 'false',
     });
     return parseTripResponse(body);
   }

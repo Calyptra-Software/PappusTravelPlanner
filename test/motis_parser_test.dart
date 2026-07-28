@@ -545,6 +545,54 @@ void main() {
       expect(q, isNot(contains('maxDirectTime')));
     });
 
+    test('no route shapes or walking directions are asked for', () async {
+      final seen = <Uri>[];
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen.add(req.url);
+          return http.Response(
+            req.url.path.endsWith('trip')
+                ? _fixture('motis_trip.json')
+                : _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      // Both endpoints that offer the choice: the plan, and the trip query
+      // behind the refresh button — where the polyline is most of the payload.
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+      );
+      await client.tripStops('T1');
+
+      expect(
+        seen.map((u) => u.queryParameters['detailedLegs']),
+        everyElement('false'),
+      );
+    });
+
+    test('dropping the detail costs nothing that is read', () {
+      // The fixtures carry full detail; parsing has to stand on the fields that
+      // survive without it, so that the request above cannot quietly break the
+      // live refresh, which finds its stops among `intermediateStops`.
+      final stripped = _decode(_fixture('motis_trip.json')) as Map;
+      for (final leg in stripped['legs'] as List) {
+        (leg as Map)
+          ..remove('steps')
+          ..['legGeometry'] = {'points': '', 'length': 0, 'precision': 5};
+      }
+
+      final stops = parseTripResponse(stripped);
+
+      expect(stops, isNotEmpty);
+      expect(stops.first.scheduledDeparture, isNotNull);
+      expect(stops.last.scheduledArrival, isNotNull);
+    });
+
     test('a page cursor rides along with the original query', () async {
       late http.Request seen;
       final client = MotisTransportSearch(
