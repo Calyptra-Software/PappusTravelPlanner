@@ -1300,6 +1300,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionArrive => 'Arrive by';
 
   @override
+  String get connectionBudgetsTitle => 'Time to and from stops';
+
+  @override
+  String get connectionBudgetsHint =>
+      'The first and last stretch only apply when you search from an address rather than a station.';
+
+  @override
+  String get connectionBudgetAuto => 'Auto';
+
+  @override
+  String get connectionBudgetPre => 'To the first stop';
+
+  @override
+  String get connectionBudgetPost => 'From the last stop';
+
+  @override
+  String get connectionBudgetDirect => 'Whole way without public transport';
+
+  @override
+  String connectionSummaryToStop(int minutes) {
+    return '≤$minutes min to stop';
+  }
+
+  @override
+  String connectionSummaryFromStop(int minutes) {
+    return '≤$minutes min from stop';
+  }
+
+  @override
+  String connectionSummaryOwnWay(int minutes) {
+    return '≤$minutes min on your own';
+  }
+
+  @override
+  String get connectionByBike => 'Travelling by bike';
+
+  @override
+  String get connectionByBikeHint =>
+      'Cycle the whole way, or to the first stop.';
+
+  @override
+  String get connectionBikeOnBoard => 'Bike comes along';
+
+  @override
+  String get connectionBikeOnBoardHint =>
+      'Only services that carry bikes. Many networks publish nothing about this, and then nothing is found.';
+
+  @override
+  String get connectionCyclingSpeed => 'Cycling speed';
+
+  @override
+  String get connectionCyclingSpeedHint =>
+      'Used for the parts of the journey you ride.';
+
+  @override
+  String get connectionNoBikeConnections => 'No connections that take bikes';
+
+  @override
   String get connectionWithoutTransit => 'Without public transport';
 
   @override

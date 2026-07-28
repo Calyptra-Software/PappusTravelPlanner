@@ -2336,6 +2336,102 @@ abstract class AppLocalizations {
   /// **'Arrive by'**
   String get connectionArrive;
 
+  /// No description provided for @connectionBudgetsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to and from stops'**
+  String get connectionBudgetsTitle;
+
+  /// No description provided for @connectionBudgetsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The first and last stretch only apply when you search from an address rather than a station.'**
+  String get connectionBudgetsHint;
+
+  /// No description provided for @connectionBudgetAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get connectionBudgetAuto;
+
+  /// No description provided for @connectionBudgetPre.
+  ///
+  /// In en, this message translates to:
+  /// **'To the first stop'**
+  String get connectionBudgetPre;
+
+  /// No description provided for @connectionBudgetPost.
+  ///
+  /// In en, this message translates to:
+  /// **'From the last stop'**
+  String get connectionBudgetPost;
+
+  /// No description provided for @connectionBudgetDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Whole way without public transport'**
+  String get connectionBudgetDirect;
+
+  /// No description provided for @connectionSummaryToStop.
+  ///
+  /// In en, this message translates to:
+  /// **'≤{minutes} min to stop'**
+  String connectionSummaryToStop(int minutes);
+
+  /// No description provided for @connectionSummaryFromStop.
+  ///
+  /// In en, this message translates to:
+  /// **'≤{minutes} min from stop'**
+  String connectionSummaryFromStop(int minutes);
+
+  /// No description provided for @connectionSummaryOwnWay.
+  ///
+  /// In en, this message translates to:
+  /// **'≤{minutes} min on your own'**
+  String connectionSummaryOwnWay(int minutes);
+
+  /// No description provided for @connectionByBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Travelling by bike'**
+  String get connectionByBike;
+
+  /// No description provided for @connectionByBikeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle the whole way, or to the first stop.'**
+  String get connectionByBikeHint;
+
+  /// No description provided for @connectionBikeOnBoard.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike comes along'**
+  String get connectionBikeOnBoard;
+
+  /// No description provided for @connectionBikeOnBoardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only services that carry bikes. Many networks publish nothing about this, and then nothing is found.'**
+  String get connectionBikeOnBoardHint;
+
+  /// No description provided for @connectionCyclingSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycling speed'**
+  String get connectionCyclingSpeed;
+
+  /// No description provided for @connectionCyclingSpeedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for the parts of the journey you ride.'**
+  String get connectionCyclingSpeedHint;
+
+  /// No description provided for @connectionNoBikeConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'No connections that take bikes'**
+  String get connectionNoBikeConnections;
+
   /// No description provided for @connectionWithoutTransit.
   ///
   /// In en, this message translates to:

@@ -84,8 +84,10 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     );
     setState(() {
       _query = (
-        fromId: _from!.id,
-        toId: _to!.id,
+        // Not `id`: only a stop is addressable by one, and a picked address
+        // has to travel as a coordinate (see `TransportPlace.queryId`).
+        fromId: _from!.queryId,
+        toId: _to!.queryId,
         time: when,
         arriveBy: _arriveBy,
         options: ref.read(journeySearchOptionsProvider),
@@ -285,7 +287,19 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
             if (results.options.isEmpty && results.direct.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
-                child: Center(child: Text(l10n.connectionSearchNoResults)),
+                child: Center(
+                  child: Text(
+                    // Requiring bike carriage is the one filter that routinely
+                    // finds nothing through no fault of the route: most feeds
+                    // simply do not say whether bikes are allowed. Naming it
+                    // beats "no connections found" sending someone hunting for
+                    // a better departure time.
+                    query.options.bikeOnBoard
+                        ? l10n.connectionNoBikeConnections
+                        : l10n.connectionSearchNoResults,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               ),
             for (final option in results.options)
               _ResultCard(option: option, onTap: () => _import(option)),

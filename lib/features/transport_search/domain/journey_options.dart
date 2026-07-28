@@ -13,6 +13,33 @@ const double kWalkingSpeedStepKmh = 0.5;
 /// the answer is "leave later", which the date/time field already says better.
 const int kMaxMinTransferMinutes = 30;
 
+/// How long the traveller is willing to spend getting to the first stop, away
+/// from the last, and making the whole journey without public transport at all.
+///
+/// `null` in [JourneySearchOptions] means **automatic**: the service's own
+/// 15/15/30 minutes, stretched for someone who walks slowly so that a slow
+/// walker is not simply told there are no connections. A value chosen here is
+/// used exactly as chosen — a budget someone picked is not silently multiplied.
+/// Beyond an hour the answers stop changing, so the lists end there.
+const List<int?> kPrePostTransitMinuteOptions = [
+  null,
+  5,
+  10,
+  15,
+  20,
+  30,
+  45,
+  60,
+];
+const List<int?> kDirectMinuteOptions = [null, 15, 30, 45, 60, 90, 120];
+
+/// Cycling speeds the search offers, in km/h — roughly the range the routing
+/// service's own client uses (2.7–7.0 m/s).
+const double kMinCyclingSpeedKmh = 10.0;
+const double kNormalCyclingSpeedKmh = 15.0;
+const double kMaxCyclingSpeedKmh = 25.0;
+const double kCyclingSpeedStepKmh = 0.5;
+
 /// How a journey search should be run, apart from *where* and *when*.
 ///
 /// A value type, and the one place every routing preference lands, so adding
@@ -31,6 +58,12 @@ class JourneySearchOptions {
     this.minTransferMinutes = 0,
     this.walkingSpeedKmh = kNormalWalkingSpeedKmh,
     this.maxTransfers,
+    this.byBike = false,
+    this.bikeOnBoard = false,
+    this.cyclingSpeedKmh = kNormalCyclingSpeedKmh,
+    this.maxPreTransitMinutes,
+    this.maxPostTransitMinutes,
+    this.maxDirectMinutes,
   });
 
   /// The kinds of transport the search may use. Everything, by default.
@@ -50,12 +83,42 @@ class JourneySearchOptions {
   /// The most interchanges to accept; `0` is "direct only", null no limit.
   final int? maxTransfers;
 
+  /// Whether the traveller has a bike with them: it may then make the whole
+  /// journey, or carry them to the first stop.
+  final bool byBike;
+
+  /// Whether the bike comes *on board*, which both restricts the search to
+  /// services that carry bikes and means the bike is still there at the far
+  /// end. Meaningless without [byBike].
+  final bool bikeOnBoard;
+
+  /// How fast the traveller cycles. Only asked about when [byBike].
+  final double cyclingSpeedKmh;
+
+  /// Minutes allowed for reaching the first stop and for leaving the last one —
+  /// null for automatic (see [kPrePostTransitMinuteOptions]). Both only bite
+  /// when that end of the journey is a *coordinate*: from a station there is no
+  /// first mile to route.
+  final int? maxPreTransitMinutes;
+  final int? maxPostTransitMinutes;
+
+  /// Minutes allowed for making the whole journey without public transport —
+  /// on foot, or by bike when [byBike]. This is what decides whether the
+  /// results offer to simply walk (or ride) it.
+  final int? maxDirectMinutes;
+
   /// Whether this asks for nothing beyond the service's own defaults.
   bool get isDefault =>
       modes.length >= kAllTransitFilters.length &&
       minTransferMinutes == 0 &&
       walkingSpeedKmh == kNormalWalkingSpeedKmh &&
-      maxTransfers == null;
+      maxTransfers == null &&
+      !byBike &&
+      !bikeOnBoard &&
+      cyclingSpeedKmh == kNormalCyclingSpeedKmh &&
+      maxPreTransitMinutes == null &&
+      maxPostTransitMinutes == null &&
+      maxDirectMinutes == null;
 
   /// The [modes] as the bitmask they are persisted as — also what makes a set
   /// (which compares by identity) usable in [==].
@@ -68,11 +131,35 @@ class JourneySearchOptions {
     double? walkingSpeedKmh,
     int? maxTransfers,
     bool clearMaxTransfers = false,
+    bool? byBike,
+    bool? bikeOnBoard,
+    double? cyclingSpeedKmh,
+    int? maxPreTransitMinutes,
+    int? maxPostTransitMinutes,
+    int? maxDirectMinutes,
+    bool clearBudgets = false,
   }) => JourneySearchOptions(
     modes: modes ?? this.modes,
     minTransferMinutes: minTransferMinutes ?? this.minTransferMinutes,
     walkingSpeedKmh: walkingSpeedKmh ?? this.walkingSpeedKmh,
     maxTransfers: clearMaxTransfers ? null : maxTransfers ?? this.maxTransfers,
+    byBike: byBike ?? this.byBike,
+    // Leaving the bike behind takes it off the train with it.
+    bikeOnBoard: (byBike ?? this.byBike)
+        ? bikeOnBoard ?? this.bikeOnBoard
+        : false,
+    cyclingSpeedKmh: cyclingSpeedKmh ?? this.cyclingSpeedKmh,
+    // Each budget is nullable *and* null means something ("automatic"), so
+    // clearing one has to be asked for rather than implied by a null argument.
+    maxPreTransitMinutes: clearBudgets
+        ? null
+        : maxPreTransitMinutes ?? this.maxPreTransitMinutes,
+    maxPostTransitMinutes: clearBudgets
+        ? null
+        : maxPostTransitMinutes ?? this.maxPostTransitMinutes,
+    maxDirectMinutes: clearBudgets
+        ? null
+        : maxDirectMinutes ?? this.maxDirectMinutes,
   );
 
   @override
@@ -81,9 +168,25 @@ class JourneySearchOptions {
       other.modeMask == modeMask &&
       other.minTransferMinutes == minTransferMinutes &&
       other.walkingSpeedKmh == walkingSpeedKmh &&
-      other.maxTransfers == maxTransfers;
+      other.maxTransfers == maxTransfers &&
+      other.byBike == byBike &&
+      other.bikeOnBoard == bikeOnBoard &&
+      other.cyclingSpeedKmh == cyclingSpeedKmh &&
+      other.maxPreTransitMinutes == maxPreTransitMinutes &&
+      other.maxPostTransitMinutes == maxPostTransitMinutes &&
+      other.maxDirectMinutes == maxDirectMinutes;
 
   @override
-  int get hashCode =>
-      Object.hash(modeMask, minTransferMinutes, walkingSpeedKmh, maxTransfers);
+  int get hashCode => Object.hash(
+    modeMask,
+    minTransferMinutes,
+    walkingSpeedKmh,
+    maxTransfers,
+    byBike,
+    bikeOnBoard,
+    cyclingSpeedKmh,
+    maxPreTransitMinutes,
+    maxPostTransitMinutes,
+    maxDirectMinutes,
+  );
 }

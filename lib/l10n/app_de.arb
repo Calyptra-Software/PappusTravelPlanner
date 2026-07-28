@@ -467,6 +467,31 @@
   "connectionPickPlace": "Bahnhof oder Ort suchen",
   "connectionDepart": "Abfahrt um",
   "connectionArrive": "Ankunft bis",
+  "connectionBudgetsTitle": "Zeit zu und von Haltestellen",
+  "connectionBudgetsHint": "Der erste und letzte Abschnitt gelten nur, wenn du von einer Adresse statt einer Haltestelle suchst.",
+  "connectionBudgetAuto": "Automatisch",
+  "connectionBudgetPre": "Zur ersten Haltestelle",
+  "connectionBudgetPost": "Von der letzten Haltestelle",
+  "connectionBudgetDirect": "Ganze Strecke ohne öffentliche Verkehrsmittel",
+  "connectionSummaryToStop": "≤{minutes} Min. zur Haltestelle",
+  "@connectionSummaryToStop": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionSummaryFromStop": "≤{minutes} Min. ab Haltestelle",
+  "@connectionSummaryFromStop": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionSummaryOwnWay": "≤{minutes} Min. aus eigener Kraft",
+  "@connectionSummaryOwnWay": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionByBike": "Mit dem Fahrrad",
+  "connectionByBikeHint": "Die ganze Strecke fahren oder bis zur ersten Haltestelle.",
+  "connectionBikeOnBoard": "Fahrrad kommt mit",
+  "connectionBikeOnBoardHint": "Nur Verbindungen mit Fahrradmitnahme. Viele Netze veröffentlichen dazu nichts — dann wird nichts gefunden.",
+  "connectionCyclingSpeed": "Fahrgeschwindigkeit",
+  "connectionCyclingSpeedHint": "Gilt für die Abschnitte, die du fährst.",
+  "connectionNoBikeConnections": "Keine Verbindungen mit Fahrradmitnahme",
   "connectionWithoutTransit": "Ohne öffentliche Verkehrsmittel",
   "connectionSearchNoResults": "Keine Verbindungen gefunden",
   "connectionEarlier": "Früher",

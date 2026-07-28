@@ -395,6 +395,156 @@ void main() {
       },
     );
 
+    test('a bike travels to the first stop, and no further', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(byBike: true, cyclingSpeedKmh: 18),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q['directModes'], 'WALK,BIKE');
+      expect(q['preTransitModes'], 'WALK,BIKE');
+      // A bike left at the station is not waiting at the far end.
+      expect(q['postTransitModes'], 'WALK');
+      expect(q['cyclingSpeed'], (18 / 3.6).toStringAsFixed(3));
+      expect(q, isNot(contains('requireBikeTransport')));
+    });
+
+    test(
+      'a bike that comes along rides both ends and filters the trains',
+      () async {
+        late http.Request seen;
+        final client = MotisTransportSearch(
+          httpClient: MockClient((req) async {
+            seen = req;
+            return http.Response(
+              _fixture('motis_plan_overnight.json'),
+              200,
+              headers: _jsonUtf8,
+            );
+          }),
+        );
+
+        await client.journeys(
+          fromId: 'A',
+          toId: 'B',
+          time: DateTime.utc(2026, 7, 27, 18),
+          options: const JourneySearchOptions(byBike: true, bikeOnBoard: true),
+        );
+
+        final q = seen.url.queryParameters;
+        expect(q['postTransitModes'], 'WALK,BIKE');
+        expect(q['requireBikeTransport'], 'true');
+      },
+    );
+
+    test('no bike, nothing said about bikes', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+      );
+
+      final q = seen.url.queryParameters;
+      for (final key in [
+        'directModes',
+        'preTransitModes',
+        'postTransitModes',
+        'cyclingSpeed',
+        'requireBikeTransport',
+      ]) {
+        expect(
+          q,
+          isNot(contains(key)),
+          reason: '$key should be left to default',
+        );
+      }
+    });
+
+    test('a chosen walking budget is sent exactly, never scaled', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(
+          // Slow enough that the automatic budgets would be doubled…
+          walkingSpeedKmh: kNormalWalkingSpeedKmh / 2,
+          // …but these were asked for, so they stand as asked.
+          maxPreTransitMinutes: 10,
+          maxDirectMinutes: 45,
+        ),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q['maxPreTransitTime'], '600');
+      expect(q['maxDirectTime'], '2700');
+      // The one left automatic still gets the slow walker's stretch.
+      expect(q['maxPostTransitTime'], '1800');
+    });
+
+    test('automatic budgets say nothing at a normal pace', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q, isNot(contains('maxPreTransitTime')));
+      expect(q, isNot(contains('maxPostTransitTime')));
+      expect(q, isNot(contains('maxDirectTime')));
+    });
+
     test('a page cursor rides along with the original query', () async {
       late http.Request seen;
       final client = MotisTransportSearch(

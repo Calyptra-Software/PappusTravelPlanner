@@ -71,6 +71,12 @@ void main() {
       expect(base, isNot(const JourneySearchOptions(minTransferMinutes: 10)));
       expect(base, isNot(const JourneySearchOptions(walkingSpeedKmh: 3)));
       expect(base, isNot(const JourneySearchOptions(maxTransfers: 0)));
+      expect(base, isNot(const JourneySearchOptions(byBike: true)));
+      expect(base, isNot(const JourneySearchOptions(cyclingSpeedKmh: 22)));
+      expect(
+        const JourneySearchOptions(byBike: true, bikeOnBoard: true),
+        isNot(const JourneySearchOptions(byBike: true)),
+      );
       expect(
         const JourneySearchOptions(minTransferMinutes: 10).hashCode,
         const JourneySearchOptions(minTransferMinutes: 10).hashCode,
@@ -88,8 +94,40 @@ void main() {
         isFalse,
       );
       expect(const JourneySearchOptions(walkingSpeedKmh: 3).isDefault, isFalse);
+      expect(const JourneySearchOptions(byBike: true).isDefault, isFalse);
+      expect(
+        const JourneySearchOptions(cyclingSpeedKmh: 22).isDefault,
+        isFalse,
+      );
       // "Direct only" is a restriction, and 0 must not read as "unset".
       expect(const JourneySearchOptions(maxTransfers: 0).isDefault, isFalse);
+    });
+
+    test('putting the bike away takes it off the train too', () {
+      const withBike = JourneySearchOptions(byBike: true, bikeOnBoard: true);
+
+      // "Comes along" is a claim about a bike you have; dropping the bike must
+      // not leave a filter behind that quietly finds nothing.
+      expect(withBike.copyWith(byBike: false).bikeOnBoard, isFalse);
+      expect(withBike.copyWith(byBike: true).bikeOnBoard, isTrue);
+    });
+
+    test('a budget of "automatic" is a value, not a missing one', () {
+      const budgeted = JourneySearchOptions(
+        maxPreTransitMinutes: 10,
+        maxDirectMinutes: 45,
+      );
+
+      expect(budgeted.isDefault, isFalse);
+      expect(budgeted, isNot(const JourneySearchOptions()));
+      // A null argument means "leave it alone" — going back to automatic has
+      // to be asked for.
+      expect(budgeted.copyWith().maxPreTransitMinutes, 10);
+      expect(
+        budgeted.copyWith(clearBudgets: true).maxPreTransitMinutes,
+        isNull,
+      );
+      expect(budgeted.copyWith(clearBudgets: true).maxDirectMinutes, isNull);
     });
 
     test('copyWith can clear the transfer limit, not just change it', () {

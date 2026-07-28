@@ -100,6 +100,10 @@ class _FakeSearch implements TransportSearch {
   /// off, so there are **no** itineraries and the answer is the walk.
   bool outrunsTransit = false;
 
+  /// When set, nothing is found at all — what requiring bike carriage does on
+  /// the many networks that publish nothing about it.
+  bool findsNothing = false;
+
   @override
   Future<JourneyResults> journeys({
     required String fromId,
@@ -113,6 +117,7 @@ class _FakeSearch implements TransportSearch {
     if (pageCursor != null && failPaging) {
       throw const TransportSearchException('offline');
     }
+    if (findsNothing) return const JourneyResults(options: []);
     if (outrunsTransit) {
       return JourneyResults(
         options: const [],
@@ -451,6 +456,110 @@ void main() {
     // again, rather than an emptied screen.
     expect(find.textContaining('ICE 1'), findsOneWidget);
     expect(find.text('Later'), findsOneWidget);
+  });
+
+  testWidgets('taking a bike reaches the search, and reads back on the row', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    // The cycling controls only exist once there is a bike to ride.
+    expect(find.text('Cycling speed'), findsNothing);
+    expect(find.text('Bike comes along'), findsNothing);
+    await tester.tap(find.text('Travelling by bike'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cycling speed'), findsOneWidget);
+
+    await tester.tap(find.text('Bike comes along'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    final asked = search.calls.last.options;
+    expect(asked.byBike, isTrue);
+    expect(asked.bikeOnBoard, isTrue);
+    expect(find.textContaining('Bike comes along'), findsOneWidget);
+    expect(prefs.getBool('connection_by_bike'), isTrue);
+    expect(prefs.getBool('connection_bike_on_board'), isTrue);
+  });
+
+  testWidgets('a walking budget can be pinned, and goes back to automatic', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    // Every budget starts automatic.
+    expect(find.text('Auto'), findsNWidgets(3));
+    await tester.tap(find.text('To the first stop'));
+    await tester.pumpAndSettle();
+    // Open that row's menu and choose 10 minutes.
+    await tester.tap(find.byType(DropdownButton<int?>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('10 min').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(search.calls.last.options.maxPreTransitMinutes, 10);
+    // The others stay automatic rather than being pinned to a number.
+    expect(search.calls.last.options.maxPostTransitMinutes, isNull);
+    expect(prefs.getInt('connection_max_pre_transit_minutes'), 10);
+    expect(find.textContaining('≤10 min to stop'), findsOneWidget);
+
+    // Back to automatic: the stored value is removed, not set to something.
+    await openOptions(tester);
+    await tester.tap(find.byType(DropdownButton<int?>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Auto').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(prefs.getInt('connection_max_pre_transit_minutes'), isNull);
+  });
+
+  testWidgets('requiring bike carriage says why nothing was found', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    await tester.tap(find.text('Travelling by bike'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Bike comes along'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    search.findsNothing = true;
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    // Most feeds say nothing about bike carriage, so this filter finds nothing
+    // through no fault of the route — "no connections found" would send the
+    // user hunting for a better time instead of the switch they just flipped.
+    expect(find.text('No connections that take bikes'), findsOneWidget);
+    expect(find.text('No connections found'), findsNothing);
   });
 
   testWidgets('outrunning the timetable shows the walk, not "no connections"', (

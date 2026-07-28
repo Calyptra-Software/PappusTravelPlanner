@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
@@ -25,6 +26,12 @@ class JourneySearchOptionsController extends Notifier<JourneySearchOptions> {
   static const _minTransferKey = 'connection_min_transfer_minutes';
   static const _speedKey = 'connection_walking_speed_kmh';
   static const _maxTransfersKey = 'connection_max_transfers';
+  static const _byBikeKey = 'connection_by_bike';
+  static const _bikeOnBoardKey = 'connection_bike_on_board';
+  static const _cyclingSpeedKey = 'connection_cycling_speed_kmh';
+  static const _preTransitKey = 'connection_max_pre_transit_minutes';
+  static const _postTransitKey = 'connection_max_post_transit_minutes';
+  static const _directKey = 'connection_max_direct_minutes';
 
   @override
   JourneySearchOptions build() {
@@ -36,6 +43,15 @@ class JourneySearchOptionsController extends Notifier<JourneySearchOptions> {
           prefs.getInt(_minTransferKey) ?? defaults.minTransferMinutes,
       walkingSpeedKmh: prefs.getDouble(_speedKey) ?? defaults.walkingSpeedKmh,
       maxTransfers: prefs.getInt(_maxTransfersKey),
+      byBike: prefs.getBool(_byBikeKey) ?? defaults.byBike,
+      bikeOnBoard: prefs.getBool(_bikeOnBoardKey) ?? defaults.bikeOnBoard,
+      cyclingSpeedKmh:
+          prefs.getDouble(_cyclingSpeedKey) ?? defaults.cyclingSpeedKmh,
+      // Absent means automatic here, which is also the default — so a missing
+      // key needs no fallback of its own.
+      maxPreTransitMinutes: prefs.getInt(_preTransitKey),
+      maxPostTransitMinutes: prefs.getInt(_postTransitKey),
+      maxDirectMinutes: prefs.getInt(_directKey),
     );
   }
 
@@ -56,13 +72,18 @@ class JourneySearchOptionsController extends Notifier<JourneySearchOptions> {
     await prefs.setInt(_modesKey, options.modeMask);
     await prefs.setInt(_minTransferKey, options.minTransferMinutes);
     await prefs.setDouble(_speedKey, options.walkingSpeedKmh);
-    // "No limit" is the absence of a value, not a number standing in for one.
-    final maxTransfers = options.maxTransfers;
-    if (maxTransfers == null) {
-      await prefs.remove(_maxTransfersKey);
-    } else {
-      await prefs.setInt(_maxTransfersKey, maxTransfers);
-    }
+    await prefs.setBool(_byBikeKey, options.byBike);
+    await prefs.setBool(_bikeOnBoardKey, options.bikeOnBoard);
+    await prefs.setDouble(_cyclingSpeedKey, options.cyclingSpeedKmh);
+    // "No limit" and "automatic" are the absence of a value, not numbers
+    // standing in for one.
+    await _setOrRemove(prefs, _maxTransfersKey, options.maxTransfers);
+    await _setOrRemove(prefs, _preTransitKey, options.maxPreTransitMinutes);
+    await _setOrRemove(prefs, _postTransitKey, options.maxPostTransitMinutes);
+    await _setOrRemove(prefs, _directKey, options.maxDirectMinutes);
     state = options;
   }
+
+  Future<void> _setOrRemove(SharedPreferences prefs, String key, int? value) =>
+      value == null ? prefs.remove(key) : prefs.setInt(key, value);
 }

@@ -88,13 +88,40 @@ class MotisTransportSearch implements TransportSearch {
       // picked. This client talks v6 (see the paths above); do not move it back.
       if (options.maxTransfers != null)
         'maxTransfers': '${options.maxTransfers}',
-      ..._walkingParams(options.walkingSpeedKmh),
+      ..._walkingParams(options),
+      ..._bikeParams(options),
       // The cursor carries the window; the rest of the query must be repeated
       // unchanged beside it, which is why it is a parameter here and not a
       // separate call.
       'pageCursor': ?pageCursor,
     });
     return parsePlanResponse(body);
+  }
+
+  /// Everything travelling with a bike turns into.
+  ///
+  /// Nothing at all when there is no bike: the service then applies its own
+  /// `WALK` defaults, and a `cyclingSpeed` for a bike nobody is riding would
+  /// only be noise on the wire.
+  ///
+  /// The asymmetry between the two ends is deliberate. A bike ridden to the
+  /// first stop and left there is not waiting at the far end, so only
+  /// `preTransitModes` gets it; it is [JourneySearchOptions.bikeOnBoard] —
+  /// which also restricts the search to services that carry bikes — that puts
+  /// the bike back under the traveller for the last mile. Both ends apply to a
+  /// *coordinate* endpoint only, which is why a picked address is queried by
+  /// coordinate (see [TransportPlace.queryId]); from a station id the router
+  /// has no first mile to route.
+  static Map<String, String> _bikeParams(JourneySearchOptions options) {
+    if (!options.byBike) return const {};
+    const withBike = 'WALK,BIKE';
+    return {
+      'directModes': withBike,
+      'preTransitModes': withBike,
+      'postTransitModes': options.bikeOnBoard ? withBike : 'WALK',
+      'cyclingSpeed': (options.cyclingSpeedKmh / 3.6).toStringAsFixed(3),
+      if (options.bikeOnBoard) 'requireBikeTransport': 'true',
+    };
   }
 
   /// The service's own defaults, in seconds, for the walking budgets scaled
@@ -115,24 +142,44 @@ class MotisTransportSearch implements TransportSearch {
   ///   when it would **lengthen** them: the spec declares factors below 1.0
   ///   unsupported, and buying tighter changes than the timetable's own minimum
   ///   is not a trade worth making on undefined behaviour.
-  /// - the three time budgets, grown by the same ratio, because a slow walker
-  ///   otherwise falls off a cliff: at 0.6 m/s the walk to the first stop no
-  ///   longer fits in the default 900 s and the search returns **nothing** —
-  ///   an empty screen that blames the route rather than the setting. Oversized
-  ///   values are safe; the server clamps them to its own configuration.
-  static Map<String, String> _walkingParams(double kmh) {
+  /// - the three time budgets, which are either what the traveller asked for or
+  ///   — left automatic — the service's own, grown by the same ratio, because a
+  ///   slow walker otherwise falls off a cliff: at 0.6 m/s the walk to the
+  ///   first stop no longer fits in the default 900 s and the search returns
+  ///   **nothing**, an empty screen that blames the route rather than the
+  ///   setting. Oversized values are safe; the server clamps them to its own
+  ///   configuration.
+  static Map<String, String> _walkingParams(JourneySearchOptions options) {
+    final kmh = options.walkingSpeedKmh;
     final slowdown = kNormalWalkingSpeedKmh / kmh;
     return {
       'pedestrianSpeed': (kmh / 3.6).toStringAsFixed(3),
-      if (slowdown > 1.0) ...{
-        'transferTimeFactor': slowdown.toStringAsFixed(2),
-        'maxPreTransitTime':
-            '${(_defaultPrePostTransitSeconds * slowdown).round()}',
-        'maxPostTransitTime':
-            '${(_defaultPrePostTransitSeconds * slowdown).round()}',
-        'maxDirectTime': '${(_defaultDirectSeconds * slowdown).round()}',
-      },
+      if (slowdown > 1.0) 'transferTimeFactor': slowdown.toStringAsFixed(2),
+      'maxPreTransitTime': ?_budget(
+        options.maxPreTransitMinutes,
+        _defaultPrePostTransitSeconds,
+        slowdown,
+      ),
+      'maxPostTransitTime': ?_budget(
+        options.maxPostTransitMinutes,
+        _defaultPrePostTransitSeconds,
+        slowdown,
+      ),
+      'maxDirectTime': ?_budget(
+        options.maxDirectMinutes,
+        _defaultDirectSeconds,
+        slowdown,
+      ),
     };
+  }
+
+  /// One walking budget in seconds: what was **chosen**, used exactly as
+  /// chosen — a number someone picked is never quietly multiplied because they
+  /// also said they walk slowly — else the stretched default for a slow walker,
+  /// else nothing at all, leaving the service on its own default.
+  static String? _budget(int? minutes, int defaultSeconds, double slowdown) {
+    if (minutes != null) return '${minutes * 60}';
+    return slowdown > 1.0 ? '${(defaultSeconds * slowdown).round()}' : null;
   }
 
   @override

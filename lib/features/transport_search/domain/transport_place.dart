@@ -33,6 +33,25 @@ class TransportPlace {
   /// The IANA timezone of this location (e.g. `Europe/Berlin`), when known.
   final String? timeZone;
 
+  /// How a journey query addresses this place.
+  ///
+  /// Only a **stop** is addressable by its [id]: the geocoder answers for
+  /// addresses and points of interest with identifiers of its own (`way/[…]`)
+  /// that the routing endpoint rejects outright — a search from a picked
+  /// address fails with a 404 rather than routing from it. Those are therefore
+  /// addressed by coordinate, which the router accepts anywhere a stop id is
+  /// accepted, and which is also the only form that lets it route *to the door*
+  /// (cycling or walking the first and last mile).
+  ///
+  /// A place with neither a usable kind nor coordinates falls back to [id];
+  /// there is nothing better to send, and the service says so plainly.
+  String get queryId {
+    if (kind == PlaceKind.stop) return id;
+    final lat = this.lat;
+    final lon = this.lon;
+    return lat == null || lon == null ? id : '$lat,$lon';
+  }
+
   @override
   String toString() => 'TransportPlace($name${area == null ? '' : ', $area'})';
 }

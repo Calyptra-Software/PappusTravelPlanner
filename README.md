@@ -31,8 +31,10 @@ Linux, Windows, macOS, and iOS.
   departure or arrival time, and compare the options by time, duration, and number of
   changes — with **live delays** shown where the service has them. Search options (all
   remembered for next time) say which **means of transport** may be used, the **shortest
-  change** you want to be planned for, **how fast you walk**, and the **most changes** to
-  accept — so a search never books you a three-minute sprint across a terminus.
+  change** you want to be planned for, **how fast you walk**, whether you have a **bike**
+  with you (and whether it comes on board), how long you'll spend **getting to and from
+  stops**, and the **most changes** to accept — so a search never books you a three-minute
+  sprint across a terminus.
   Results come back as a time window around what you asked for, with **earlier** and **later**
   loading the departures either side onto the same list. Importing writes the
   journey as that day's transport legs — a multi-leg trip bundled under one shared ticket —

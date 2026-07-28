@@ -1306,6 +1306,66 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionArrive => 'Ankunft bis';
 
   @override
+  String get connectionBudgetsTitle => 'Zeit zu und von Haltestellen';
+
+  @override
+  String get connectionBudgetsHint =>
+      'Der erste und letzte Abschnitt gelten nur, wenn du von einer Adresse statt einer Haltestelle suchst.';
+
+  @override
+  String get connectionBudgetAuto => 'Automatisch';
+
+  @override
+  String get connectionBudgetPre => 'Zur ersten Haltestelle';
+
+  @override
+  String get connectionBudgetPost => 'Von der letzten Haltestelle';
+
+  @override
+  String get connectionBudgetDirect =>
+      'Ganze Strecke ohne öffentliche Verkehrsmittel';
+
+  @override
+  String connectionSummaryToStop(int minutes) {
+    return '≤$minutes Min. zur Haltestelle';
+  }
+
+  @override
+  String connectionSummaryFromStop(int minutes) {
+    return '≤$minutes Min. ab Haltestelle';
+  }
+
+  @override
+  String connectionSummaryOwnWay(int minutes) {
+    return '≤$minutes Min. aus eigener Kraft';
+  }
+
+  @override
+  String get connectionByBike => 'Mit dem Fahrrad';
+
+  @override
+  String get connectionByBikeHint =>
+      'Die ganze Strecke fahren oder bis zur ersten Haltestelle.';
+
+  @override
+  String get connectionBikeOnBoard => 'Fahrrad kommt mit';
+
+  @override
+  String get connectionBikeOnBoardHint =>
+      'Nur Verbindungen mit Fahrradmitnahme. Viele Netze veröffentlichen dazu nichts — dann wird nichts gefunden.';
+
+  @override
+  String get connectionCyclingSpeed => 'Fahrgeschwindigkeit';
+
+  @override
+  String get connectionCyclingSpeedHint =>
+      'Gilt für die Abschnitte, die du fährst.';
+
+  @override
+  String get connectionNoBikeConnections =>
+      'Keine Verbindungen mit Fahrradmitnahme';
+
+  @override
   String get connectionWithoutTransit => 'Ohne öffentliche Verkehrsmittel';
 
   @override

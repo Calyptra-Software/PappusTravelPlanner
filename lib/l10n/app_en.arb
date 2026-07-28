@@ -545,6 +545,31 @@
   "connectionPickPlace": "Search station or place",
   "connectionDepart": "Depart at",
   "connectionArrive": "Arrive by",
+  "connectionBudgetsTitle": "Time to and from stops",
+  "connectionBudgetsHint": "The first and last stretch only apply when you search from an address rather than a station.",
+  "connectionBudgetAuto": "Auto",
+  "connectionBudgetPre": "To the first stop",
+  "connectionBudgetPost": "From the last stop",
+  "connectionBudgetDirect": "Whole way without public transport",
+  "connectionSummaryToStop": "≤{minutes} min to stop",
+  "@connectionSummaryToStop": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionSummaryFromStop": "≤{minutes} min from stop",
+  "@connectionSummaryFromStop": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionSummaryOwnWay": "≤{minutes} min on your own",
+  "@connectionSummaryOwnWay": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionByBike": "Travelling by bike",
+  "connectionByBikeHint": "Cycle the whole way, or to the first stop.",
+  "connectionBikeOnBoard": "Bike comes along",
+  "connectionBikeOnBoardHint": "Only services that carry bikes. Many networks publish nothing about this, and then nothing is found.",
+  "connectionCyclingSpeed": "Cycling speed",
+  "connectionCyclingSpeedHint": "Used for the parts of the journey you ride.",
+  "connectionNoBikeConnections": "No connections that take bikes",
   "connectionWithoutTransit": "Without public transport",
   "connectionSearchNoResults": "No connections found",
   "connectionEarlier": "Earlier",
