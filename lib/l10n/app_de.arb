@@ -500,6 +500,27 @@
   "connectionSearchError": "Verbindungsdienst nicht erreichbar",
   "connectionRetry": "Erneut versuchen",
   "connectionChanges": "{count, plural, =0{Direkt} =1{1 Umstieg} other{{count} Umstiege}}",
+  "connectionChangeIn": "{minutes} Min. Umstieg in {place}",
+  "@connectionChangeIn": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "place": { "type": "String" }
+    }
+  },
+  "connectionChangeBetween": "{minutes} Min. Umstieg: {from} → {to}",
+  "@connectionChangeBetween": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "connectionChangeNow": "aktuell {minutes} Min.",
+  "@connectionChangeNow": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
   "connectionOptionsTitle": "Sucheinstellungen",
   "connectionOptionsReset": "Zurücksetzen",
   "connectionMinTransfer": "Kürzester Umstieg",

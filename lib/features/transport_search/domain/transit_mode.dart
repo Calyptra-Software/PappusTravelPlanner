@@ -33,6 +33,20 @@ enum TransitMode {
   other,
 }
 
+extension TransitModeKind on TransitMode {
+  /// Whether this leg is covered under the traveller's own steam — on foot, by
+  /// bike, by car — rather than by boarding a scheduled service.
+  ///
+  /// It is the distinction a **change** is defined against: the walk from one
+  /// platform to the next is part of the change, not a leg of the journey, so
+  /// the preview folds it into the change and counts changes between the
+  /// services either side of it.
+  bool get isOwnSteam =>
+      this == TransitMode.walk ||
+      this == TransitMode.bike ||
+      this == TransitMode.car;
+}
+
 /// Maps a MOTIS `Mode` string (as seen on a leg) onto a [TransitMode].
 ///
 /// The live MOTIS/Transitous instances return the *rich* rail vocabulary

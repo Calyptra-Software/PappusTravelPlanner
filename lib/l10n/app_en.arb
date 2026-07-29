@@ -583,6 +583,27 @@
       "count": { "type": "int" }
     }
   },
+  "connectionChangeIn": "{minutes} min change in {place}",
+  "@connectionChangeIn": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "place": { "type": "String" }
+    }
+  },
+  "connectionChangeBetween": "{minutes} min change: {from} → {to}",
+  "@connectionChangeBetween": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "connectionChangeNow": "now {minutes} min",
+  "@connectionChangeNow": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
   "connectionOptionsTitle": "Search options",
   "connectionOptionsReset": "Reset",
   "connectionMinTransfer": "Shortest change",

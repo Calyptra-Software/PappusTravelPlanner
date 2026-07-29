@@ -2480,6 +2480,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =0{Direct} =1{1 change} other{{count} changes}}'**
   String connectionChanges(int count);
 
+  /// No description provided for @connectionChangeIn.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min change in {place}'**
+  String connectionChangeIn(int minutes, String place);
+
+  /// No description provided for @connectionChangeBetween.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min change: {from} → {to}'**
+  String connectionChangeBetween(int minutes, String from, String to);
+
+  /// No description provided for @connectionChangeNow.
+  ///
+  /// In en, this message translates to:
+  /// **'now {minutes} min'**
+  String connectionChangeNow(int minutes);
+
   /// No description provided for @connectionOptionsTitle.
   ///
   /// In en, this message translates to:

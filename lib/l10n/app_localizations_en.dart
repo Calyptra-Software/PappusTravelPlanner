@@ -1391,6 +1391,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String connectionChangeIn(int minutes, String place) {
+    return '$minutes min change in $place';
+  }
+
+  @override
+  String connectionChangeBetween(int minutes, String from, String to) {
+    return '$minutes min change: $from → $to';
+  }
+
+  @override
+  String connectionChangeNow(int minutes) {
+    return 'now $minutes min';
+  }
+
+  @override
   String get connectionOptionsTitle => 'Search options';
 
   @override

@@ -239,8 +239,16 @@ void main() {
     expect(find.textContaining('(+5)'), findsOneWidget);
     expect(find.textContaining('ICE 1'), findsOneWidget);
 
-    // Import it.
+    // Tapping only opens the preview — nothing is added yet. (The controller
+    // is not even built at this point, so its call count cannot be asked; that
+    // nothing was imported is exactly what the missing confirmation says.)
     await tester.tap(find.textContaining('ICE 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('Connection added'), findsNothing);
+    expect(find.text('Add to day'), findsOneWidget);
+
+    // The button in the preview is what commits it.
+    await tester.tap(find.text('Add to day'));
     await tester.pumpAndSettle();
 
     expect(fake.imports, 1);
@@ -586,6 +594,8 @@ void main() {
     await searchFrom(tester);
 
     await tester.tap(find.text('12m'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add to day'));
     await tester.pumpAndSettle();
 
     expect(fake.imports, 1);

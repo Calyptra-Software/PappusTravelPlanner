@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/format/date_format.dart' show formatSignedMinutes;
 import '../../../l10n/app_localizations.dart';
-import '../../itinerary/widgets/item_times.dart' show delayColor;
 import '../application/journey_search_options_provider.dart';
 import '../application/transport_search_controller.dart';
 import '../application/transport_search_providers.dart';
@@ -11,6 +9,8 @@ import '../data/journey_mapper.dart' show localParts;
 import '../domain/journey.dart';
 import '../domain/transit_mode.dart';
 import '../domain/transport_place.dart';
+import 'journey_formats.dart';
+import 'journey_preview_sheet.dart';
 import 'search_options_sheet.dart';
 
 /// Opens the connection search for [tripId] on [day]. Resolves to true when a
@@ -107,6 +107,17 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     if (picked == null || !mounted) return;
     await ref.read(journeySearchOptionsProvider.notifier).setOptions(picked);
     if (_query != null && mounted) _runSearch();
+  }
+
+  /// Opens a result, and imports it only if the preview is confirmed there.
+  ///
+  /// A row cannot say which platform, or how long the change in Frankfurt is —
+  /// so tapping one *shows* the journey and the preview's own button commits
+  /// it. That keeps the rule the rest of the app runs on: a tap browses, a
+  /// button spends. It also means the results list is safe to poke at.
+  Future<void> _preview(JourneyOption option) async {
+    final confirmed = await showJourneyPreviewSheet(context, option: option);
+    if (confirmed && mounted) await _import(option);
   }
 
   Future<void> _import(JourneyOption option) async {
@@ -302,7 +313,7 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
                 ),
               ),
             for (final option in results.options)
-              _ResultCard(option: option, onTap: () => _import(option)),
+              _ResultCard(option: option, onTap: () => _preview(option)),
             _pageRow(l10n, earlier: false, cursor: results.laterCursor),
           ],
         ),
@@ -339,11 +350,11 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
               for (final option in direct)
                 ActionChip(
                   avatar: Icon(
-                    _transitIcon(option.legs.firstOrNull?.mode),
+                    transitIcon(option.legs.firstOrNull?.mode),
                     size: 18,
                   ),
-                  label: Text(_formatDuration(option.duration)),
-                  onPressed: () => _import(option),
+                  label: Text(formatJourneyDuration(option.duration)),
+                  onPressed: () => _preview(option),
                 ),
             ],
           ),
@@ -437,40 +448,6 @@ class _ResultCard extends StatelessWidget {
   final JourneyOption option;
   final VoidCallback onTap;
 
-  /// The local departure/arrival time of a leg end, plus — when the option
-  /// carries real-time data — a coloured signed delta ("(+5)", or green "(+0)"
-  /// when it is running to plan), matching the itinerary's delay marks.
-  List<InlineSpan> _timeSpans(BuildContext context, LegPoint end) {
-    final theme = Theme.of(context);
-    final materialL10n = MaterialLocalizations.of(context);
-    final scheduled = localParts(end.scheduled, end.timeZone);
-    final spans = <InlineSpan>[
-      TextSpan(
-        text: materialL10n.formatTimeOfDay(
-          TimeOfDay(
-            hour: scheduled.minutes ~/ 60,
-            minute: scheduled.minutes % 60,
-          ),
-        ),
-      ),
-    ];
-    final actual = end.actual;
-    if (actual != null) {
-      final delta =
-          localParts(actual, end.timeZone).minutes - scheduled.minutes;
-      spans.add(
-        TextSpan(
-          text: ' (${formatSignedMinutes(delta)})',
-          style: TextStyle(
-            color: delayColor(theme, delta),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      );
-    }
-    return spans;
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -492,13 +469,13 @@ class _ResultCard extends StatelessWidget {
     final summary = vehicleLegs.map((l) => l.line ?? l.mode.name).join(' → ');
 
     return ListTile(
-      leading: Icon(_transitIcon(vehicleLegs.firstOrNull?.mode)),
+      leading: Icon(transitIcon(vehicleLegs.firstOrNull?.mode)),
       title: Text.rich(
         TextSpan(
           children: [
-            ..._timeSpans(context, dep),
+            ...legTimeSpans(context, dep),
             const TextSpan(text: ' – '),
-            ..._timeSpans(context, arr),
+            ...legTimeSpans(context, arr),
             if (nextDay)
               TextSpan(
                 text: ' +1',
@@ -522,7 +499,7 @@ class _ResultCard extends StatelessWidget {
               ),
             TextSpan(
               text:
-                  '${_formatDuration(option.duration)} · '
+                  '${formatJourneyDuration(option.duration)} · '
                   '${l10n.connectionChanges(option.transfers)}'
                   '${summary.isEmpty ? '' : ' · $summary'}',
             ),
@@ -634,39 +611,5 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
         ),
       ),
     );
-  }
-}
-
-/// How long a journey takes, as the results write it: "7h 7m", or bare minutes
-/// under the hour — a walk across town is a matter of minutes, and "0h 12m"
-/// reads like something went wrong.
-String _formatDuration(Duration duration) {
-  final hours = duration.inHours;
-  final minutes = duration.inMinutes % 60;
-  return hours == 0 ? '${minutes}m' : '${hours}h ${minutes}m';
-}
-
-IconData _transitIcon(TransitMode? mode) {
-  switch (mode) {
-    case TransitMode.walk:
-      return Icons.directions_walk;
-    case TransitMode.bike:
-      return Icons.directions_bike;
-    case TransitMode.car:
-      return Icons.directions_car;
-    case TransitMode.bus:
-    case TransitMode.coach:
-      return Icons.directions_bus;
-    case TransitMode.tram:
-      return Icons.tram;
-    case TransitMode.subway:
-    case TransitMode.monorail:
-      return Icons.subway;
-    case TransitMode.ferry:
-      return Icons.directions_boat;
-    case null:
-      return Icons.more_horiz;
-    default:
-      return Icons.train;
   }
 }
