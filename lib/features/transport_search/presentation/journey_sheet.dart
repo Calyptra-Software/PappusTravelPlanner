@@ -301,6 +301,7 @@ class _StopsSectionState extends State<_StopsSection> {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
+    final cancelled = widget.stops.where((stop) => stop.cancelled).length;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -321,6 +322,18 @@ class _StopsSectionState extends State<_StopsSection> {
                   l10n.connectionStops(widget.stops.length),
                   style: theme.textTheme.bodySmall?.copyWith(color: muted),
                 ),
+                // The list is folded away by default, so the one thing that
+                // cannot wait to be opened is said on the fold itself.
+                if (cancelled > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.connectionStopsCancelled(cancelled),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -330,48 +343,89 @@ class _StopsSectionState extends State<_StopsSection> {
             padding: const EdgeInsets.only(bottom: 4),
             child: Column(
               children: [
-                for (final stop in widget.stops)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 1),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text.rich(
-                          TextSpan(
-                            children: timeSpans(
-                              context,
-                              minutes: stop.minutes,
-                              delay: stop.delay,
-                            ),
-                          ),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: muted,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        if (stop.dayOffset > 0)
-                          Text(
-                            ' +${stop.dayOffset}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            stop.name,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: muted,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                for (final stop in widget.stops) _StopLine(stop: stop),
               ],
             ),
           ),
       ],
+    );
+  }
+}
+
+/// One stop passed through: when the service leaves it, how late that is, and
+/// where it is.
+///
+/// A stop the service **skips** is struck through and named as cancelled rather
+/// than removed from the list — the timetable still says the train comes past at
+/// this minute, and a stop that quietly vanished would leave someone standing on
+/// its platform. It shows no time-keeping either: a partially cancelled service
+/// goes on reporting the planned departure for the stops it is dropping, and
+/// printing that as a punctual "(+0)" is the one thing a stop list must not say.
+class _StopLine extends StatelessWidget {
+  const _StopLine({required this.stop});
+
+  final ViewStop stop;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final colour = stop.cancelled
+        ? theme.colorScheme.error
+        : theme.colorScheme.onSurfaceVariant;
+    final struck = stop.cancelled ? TextDecoration.lineThrough : null;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text.rich(
+            TextSpan(
+              children: timeSpans(
+                context,
+                minutes: stop.minutes,
+                delay: stop.delay,
+              ),
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colour,
+              decoration: struck,
+              decorationColor: colour,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          if (stop.dayOffset > 0)
+            Text(
+              ' +${stop.dayOffset}',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              stop.name,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colour,
+                decoration: struck,
+                decorationColor: colour,
+              ),
+            ),
+          ),
+          if (stop.cancelled)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Text(
+                l10n.connectionCancelled,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

@@ -1541,6 +1541,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String connectionStopsCancelled(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stops cancelled',
+      one: '1 stop cancelled',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String connectionChangePlace(String place) {
     return 'Change in $place';
   }

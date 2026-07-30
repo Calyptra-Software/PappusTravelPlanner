@@ -64,7 +64,7 @@ final _journey = [
     stopovers: encodeStopovers(const [
       Stopover(name: 'Hannover Hbf', minutes: 520, delayMinutes: 5),
       Stopover(name: 'Göttingen', minutes: 545),
-      Stopover(name: 'Kassel-Wilhelmshöhe', minutes: 565),
+      Stopover(name: 'Kassel-Wilhelmshöhe', minutes: 565, cancelled: true),
     ]),
   ),
   // The walking transfer, as the import wrote it: no line to name, the walk
@@ -152,6 +152,26 @@ void main() {
     expect(find.textContaining('(+5)'), findsOneWidget);
     // A stop nothing is known about says nothing: 09:05 with no figure.
     expect(find.textContaining('9:05 AM'), findsOneWidget);
+  });
+
+  testWidgets('a stop the train skips is struck out, and said on the fold', (
+    tester,
+  ) async {
+    await _pumpSheet(tester, _journey);
+
+    // Folded away is where a cancellation would hide, so the count says it.
+    expect(find.text('1 stop cancelled'), findsOneWidget);
+
+    await tester.tap(find.text('3 stops'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cancelled'), findsOneWidget);
+    final name = tester.widget<Text>(find.text('Kassel-Wilhelmshöhe'));
+    expect(name.style?.decoration, TextDecoration.lineThrough);
+    // 09:25 with no figure beside it: the feed repeats the plan for a stop it
+    // is dropping, and printing that as "(+0)" is what this must never do.
+    expect(find.textContaining('9:25 AM'), findsOneWidget);
+    expect(find.textContaining('(+0)'), findsNothing);
   });
 
   testWidgets('a leg with no stops recorded offers no toggle', (tester) async {

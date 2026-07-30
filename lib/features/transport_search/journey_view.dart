@@ -112,11 +112,17 @@ class ViewStop {
     required this.minutes,
     this.dayOffset = 0,
     this.delay,
+    this.cancelled = false,
   });
 
   final String name;
   final int minutes;
   final int dayOffset;
+
+  /// Whether the service skips this stop. Shown *struck through* rather than
+  /// dropped: the timetable still says the train passes here, and a stop that
+  /// silently disappeared would leave someone waiting at it.
+  final bool cancelled;
 
   /// How late the service leaves here, in minutes (negative: early), or null
   /// when nothing real-time is known about this stop. Printed beside the planned
@@ -222,8 +228,12 @@ ViewStop _routedStop(LegStop stop, DateTime legDate) {
     name: stop.name,
     minutes: local.minutes,
     dayOffset: local.date.difference(legDate).inDays,
-    // From the UTC instants, where no projection can make a miss wrong.
-    delay: stop.actualDeparture?.difference(stop.scheduledDeparture).inMinutes,
+    // From the UTC instants, where no projection can make a miss wrong — and
+    // never for a stop being skipped, whose planned time the feed repeats.
+    delay: stop.cancelled
+        ? null
+        : stop.actualDeparture?.difference(stop.scheduledDeparture).inMinutes,
+    cancelled: stop.cancelled,
   );
 }
 

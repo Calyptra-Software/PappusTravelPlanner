@@ -12,11 +12,23 @@ class Stopover {
     required this.minutes,
     this.dayOffset = 0,
     this.delayMinutes,
+    this.cancelled = false,
   });
 
   final String name;
   final int minutes;
   final int dayOffset;
+
+  /// Whether the service **skips** this stop — a partial cancellation, the train
+  /// still running but no longer calling here.
+  ///
+  /// It is kept beside the plan rather than removing the stop: the timetable
+  /// still says the train passes at this minute, and a stop that quietly
+  /// vanished would leave a traveller waiting for it. A skipped stop never
+  /// carries a [delayMinutes]: there is no departure to be late for, and the
+  /// feed repeats the planned time for it, which would otherwise print as a
+  /// confident "(+0)".
+  final bool cancelled;
 
   /// How late the service is leaving here, in minutes (negative: early), or null
   /// when nothing real-time is known about this stop. Captured at import when
@@ -30,11 +42,14 @@ class Stopover {
   /// late is `(+5)`, where an actual of `3` would be −1435.
   final int? delayMinutes;
 
-  Stopover withDelay(int? delay) => Stopover(
+  /// This stop as the live trip now has it: skipped, or running [delay] late.
+  /// The two are exclusive — see [cancelled].
+  Stopover withLive({int? delay, bool cancelled = false}) => Stopover(
     name: name,
     minutes: minutes,
     dayOffset: dayOffset,
-    delayMinutes: delay,
+    delayMinutes: cancelled ? null : delay,
+    cancelled: cancelled,
   );
 
   @override
@@ -43,14 +58,18 @@ class Stopover {
       other.name == name &&
       other.minutes == minutes &&
       other.dayOffset == dayOffset &&
-      other.delayMinutes == delayMinutes;
+      other.delayMinutes == delayMinutes &&
+      other.cancelled == cancelled;
 
   @override
-  int get hashCode => Object.hash(name, minutes, dayOffset, delayMinutes);
+  int get hashCode =>
+      Object.hash(name, minutes, dayOffset, delayMinutes, cancelled);
 
   @override
   String toString() =>
-      'Stopover($name, $minutes, +$dayOffset${delayMinutes == null ? '' : ', ${delayMinutes}late'})';
+      'Stopover($name, $minutes, +$dayOffset'
+      '${delayMinutes == null ? '' : ', ${delayMinutes}late'}'
+      '${cancelled ? ', cancelled' : ''})';
 }
 
 /// Encodes a leg's stopovers for its `ItineraryItems.stopovers` column, or null
@@ -71,6 +90,7 @@ String? encodeStopovers(List<Stopover> stops) {
         'minutes': stop.minutes,
         if (stop.dayOffset != 0) 'day': stop.dayOffset,
         if (stop.delayMinutes != null) 'delay': stop.delayMinutes,
+        if (stop.cancelled) 'cancelled': true,
       },
   ]);
 }
@@ -92,6 +112,7 @@ List<Stopover> decodeStopovers(String? encoded) {
             minutes: e['minutes'] as int,
             dayOffset: e['day'] as int? ?? 0,
             delayMinutes: e['delay'] is int ? e['delay'] as int : null,
+            cancelled: e['cancelled'] == true,
           ),
     ];
   } on FormatException {

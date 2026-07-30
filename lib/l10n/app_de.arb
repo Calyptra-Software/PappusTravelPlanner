@@ -580,6 +580,7 @@
   "platformShort": "Gl. {track}",
   "directionTo": "Richtung {destination}",
   "connectionStops": "{count, plural, =1{1 Halt} other{{count} Halte}}",
+  "connectionStopsCancelled": "{count, plural, =1{1 Halt entfällt} other{{count} Halte entfallen}}",
   "connectionChangePlace": "Umstieg in {place}",
   "connectionChangePlaces": "Umstieg: {from} → {to}",
   "journeyDetails": "Reise anzeigen",

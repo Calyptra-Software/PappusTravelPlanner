@@ -168,7 +168,13 @@ UI (features/*/presentation, *widgets)
   a night train's small hours). A column, not a table: they belong to exactly one leg, are
   written once by the import and read only when that leg is looked at, so they ride in the
   row they describe and are there offline. Departure only, plus how late the service leaves
-  it when that is known: the live-times refresh rewrites a leg's stops along with its ends
+  it — or that it **skips** it, which is the one thing a stop list must not get wrong: a
+  partially cancelled train goes on reporting the planned departure for the stops it is
+  dropping, so reading that as a time tells a traveller their station is served, punctually,
+  by a train that will pass straight through. A skipped stop is therefore struck through and
+  never timed, and stays in the list rather than vanishing — the timetable still says the
+  train comes past at that minute. The live-times refresh rewrites a leg's stops along with
+  its ends
   (`refreshedStopovers`, one write via `setLiveTimes`), so one tap leaves the whole leg
   current — and a stop the live trip no longer mentions loses its old figure rather than
   keeping it. The **miss** is stored rather than an actual time, unlike the leg's ends: it is

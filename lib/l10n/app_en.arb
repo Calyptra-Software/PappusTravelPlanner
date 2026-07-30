@@ -678,6 +678,12 @@
       "count": { "type": "int" }
     }
   },
+  "connectionStopsCancelled": "{count, plural, =1{1 stop cancelled} other{{count} stops cancelled}}",
+  "@connectionStopsCancelled": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
   "connectionChangePlace": "Change in {place}",
   "@connectionChangePlace": {
     "placeholders": {

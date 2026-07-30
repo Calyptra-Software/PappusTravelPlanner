@@ -30,6 +30,19 @@ void main() {
     expect(encoded.split('delay'), hasLength(3));
   });
 
+  test('a skipped stop is stored as skipped, never as punctual', () {
+    const stops = [
+      Stopover(name: 'Lüneburg', minutes: 1385, cancelled: true),
+      Stopover(name: 'Uelzen', minutes: 1410, cancelled: true),
+      Stopover(name: 'Celle Bahnhof', minutes: 1440 - 5, delayMinutes: 45),
+    ];
+
+    expect(decodeStopovers(encodeStopovers(stops)), stops);
+    // The flag says what the delay cannot: a train that is not calling here is
+    // not calling here on time.
+    expect(decodeStopovers(encodeStopovers(stops)).first.delayMinutes, isNull);
+  });
+
   test('no stops are stored as nothing at all', () {
     expect(encodeStopovers(const []), isNull);
     expect(decodeStopovers(null), isEmpty);

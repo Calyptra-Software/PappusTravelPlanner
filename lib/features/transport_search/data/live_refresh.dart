@@ -94,16 +94,25 @@ RefreshedTimes? refreshedActualTimes({
 /// say about, comes back with **no** delay rather than the one it had: we have
 /// just asked, and an answer that no longer mentions the stop is not evidence
 /// for the old figure.
+///
+/// A stop the trip now **skips** is marked as such instead of timed. This is the
+/// one thing a stop list must not get wrong: a partially cancelled service goes
+/// on reporting the planned departure for the stops it is dropping, so reading
+/// that as a time would tell a traveller their station is served, punctually, by
+/// a train that will pass straight through it.
 List<Stopover> refreshedStopovers({
   required List<TripStop> stops,
   required List<Stopover> stopovers,
   required DateTime date,
 }) => [
-  for (final stopover in stopovers)
-    stopover.withDelay(_stopoverDelay(stops, stopover, date)),
+  for (final stopover in stopovers) _refreshedStopover(stops, stopover, date),
 ];
 
-int? _stopoverDelay(List<TripStop> stops, Stopover stopover, DateTime date) {
+Stopover _refreshedStopover(
+  List<TripStop> stops,
+  Stopover stopover,
+  DateTime date,
+) {
   final match = _match(
     stops,
     name: stopover.name,
@@ -111,10 +120,15 @@ int? _stopoverDelay(List<TripStop> stops, Stopover stopover, DateTime date) {
     wantMinutes: stopover.minutes,
     scheduled: (s) => s.scheduledDeparture,
   );
-  final planned = match?.scheduledDeparture;
-  final live = match?.departure;
-  if (planned == null || live == null) return null;
-  return live.difference(planned).inMinutes;
+  if (match == null) return stopover.withLive();
+  if (match.cancelled) return stopover.withLive(cancelled: true);
+  final planned = match.scheduledDeparture;
+  final live = match.departure;
+  return stopover.withLive(
+    delay: planned == null || live == null
+        ? null
+        : live.difference(planned).inMinutes,
+  );
 }
 
 /// Finds the stop whose planned local time equals ([wantDate], [wantMinutes]);

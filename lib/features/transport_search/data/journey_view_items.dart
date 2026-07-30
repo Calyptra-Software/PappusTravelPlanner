@@ -71,6 +71,7 @@ ViewLeg _storedLeg(ItineraryItem item, Map<int, TransportModeRow> modesById) {
           minutes: stop.minutes,
           dayOffset: stop.dayOffset,
           delay: stop.delayMinutes,
+          cancelled: stop.cancelled,
         ),
     ],
     itemId: item.id,

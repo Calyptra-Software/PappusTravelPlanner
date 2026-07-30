@@ -243,6 +243,46 @@ void main() {
       );
     });
 
+    test('a stop the service skips comes through flagged', () {
+      final leg = parsePlanResponse({
+        'itineraries': [
+          {
+            'duration': 3600,
+            'startTime': '2026-07-30T20:28:00Z',
+            'endTime': '2026-07-30T21:28:00Z',
+            'transfers': 0,
+            'legs': [
+              {
+                'mode': 'HIGHSPEED_RAIL',
+                'realTime': true,
+                'from': {
+                  'name': 'Hamburg Hbf',
+                  'scheduledDeparture': '2026-07-30T20:28:00Z',
+                  'departure': '2026-07-30T20:49:00Z',
+                },
+                'to': {
+                  'name': 'Hannover Hbf',
+                  'scheduledArrival': '2026-07-30T21:28:00Z',
+                  'arrival': '2026-07-30T22:13:00Z',
+                },
+                'intermediateStops': [
+                  {
+                    'name': 'Lüneburg',
+                    'tz': 'Europe/Berlin',
+                    'cancelled': true,
+                    'scheduledDeparture': '2026-07-30T20:55:00Z',
+                    'departure': '2026-07-30T20:55:00Z',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }).options.single.legs.single;
+
+      expect(leg.stops.single.cancelled, isTrue);
+    });
+
     test('a leg the service gave no stops for simply has none', () {
       final option = parsePlanResponse(
         _decode(_fixture('motis_plan_overnight.json')),

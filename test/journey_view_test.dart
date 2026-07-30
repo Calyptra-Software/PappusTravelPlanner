@@ -44,11 +44,21 @@ void main() {
         track: track,
       );
 
-  LegStop stop(String name, int minutes, {int? late}) => LegStop(
+  LegStop stop(
+    String name,
+    int minutes, {
+    int? late,
+    bool cancelled = false,
+  }) => LegStop(
     name: name,
     scheduledDeparture: at(minutes),
-    actualDeparture: late == null ? null : at(minutes + late),
+    // A skipped stop is reported with its planned time repeated as the live one
+    // — the shape that made the app call it punctual.
+    actualDeparture: cancelled
+        ? at(minutes)
+        : (late == null ? null : at(minutes + late)),
     timeZone: 'Europe/Berlin',
+    cancelled: cancelled,
   );
 
   /// Hamburg → Basel: an ICE calling at three places on the way, an 8-minute
@@ -174,6 +184,40 @@ void main() {
       // and stay silent rather than claiming to be on time.
       expect(leg.stops.map((s) => s.delay), [12, null, null]);
       expect(leg.stops.first.minutes, 520);
+    }
+  });
+
+  test('a stop the service skips imports as skipped, not on time', () async {
+    final option = JourneyOption(
+      departure: at(0),
+      arrival: at(110),
+      duration: const Duration(minutes: 110),
+      transfers: 0,
+      legs: [
+        JourneyLeg(
+          mode: TransitMode.highSpeedRail,
+          line: 'ICE 507',
+          tripId: 'trip-507',
+          from: point('Hamburg Hbf', 0, late: 21),
+          to: point('Hannover Hbf', 110, late: 45),
+          realTime: true,
+          stops: [
+            stop('Hamburg-Harburg', 15, late: 17),
+            stop('Lüneburg', 40, cancelled: true),
+            stop('Uelzen', 60, cancelled: true),
+          ],
+        ),
+      ],
+    );
+
+    final routed = journeyViewFromOption(option).legs.single;
+    final stored = (await importAndReadBack(option)).legs.single;
+
+    for (final leg in [routed, stored]) {
+      expect(leg.stops.map((s) => s.cancelled), [false, true, true]);
+      // The stop it does call at keeps its delay; the two it drops claim
+      // nothing — the repeated planned time is not a promise of punctuality.
+      expect(leg.stops.map((s) => s.delay), [17, null, null]);
     }
   });
 

@@ -2702,6 +2702,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 stop} other{{count} stops}}'**
   String connectionStops(int count);
 
+  /// No description provided for @connectionStopsCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 stop cancelled} other{{count} stops cancelled}}'**
+  String connectionStopsCancelled(int count);
+
   /// No description provided for @connectionChangePlace.
   ///
   /// In en, this message translates to:

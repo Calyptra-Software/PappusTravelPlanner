@@ -133,9 +133,12 @@ Stopover _mapStop(LegStop stop, DateTime legDate) {
     name: stop.name,
     minutes: local.minutes,
     dayOffset: local.date.difference(legDate).inDays,
-    delayMinutes: stop.actualDeparture
-        ?.difference(stop.scheduledDeparture)
-        .inMinutes,
+    // A skipped stop is not a punctual one: the feed goes on repeating its
+    // planned departure, which would otherwise import as "(+0)".
+    delayMinutes: stop.cancelled
+        ? null
+        : stop.actualDeparture?.difference(stop.scheduledDeparture).inMinutes,
+    cancelled: stop.cancelled,
   );
 }
 

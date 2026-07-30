@@ -62,6 +62,79 @@ void main() {
     });
   });
 
+  group('refreshedStopovers and cancellations', () {
+    /// A train that is running — late — but has dropped two of its stops, which
+    /// is exactly how a partial cancellation reads on the wire: the trip carries
+    /// real-time, and the skipped stops go on reporting their planned times.
+    List<TripStop> partlyCancelled() => parseTripResponse({
+      'legs': [
+        {
+          'realTime': true,
+          'from': {
+            'name': 'Hamburg Hbf',
+            'tz': 'Europe/Berlin',
+            'scheduledDeparture': '2026-07-26T20:28:00Z',
+            'departure': '2026-07-26T20:49:00Z', // +21
+          },
+          'intermediateStops': [
+            {
+              'name': 'Lüneburg',
+              'tz': 'Europe/Berlin',
+              'cancelled': true,
+              'scheduledDeparture': '2026-07-26T21:00:00Z',
+              'departure': '2026-07-26T21:00:00Z', // the plan, repeated
+            },
+            {
+              'name': 'Celle',
+              'tz': 'Europe/Berlin',
+              'scheduledDeparture': '2026-07-26T21:30:00Z',
+              'departure': '2026-07-26T22:15:00Z', // +45
+            },
+          ],
+          'to': {
+            'name': 'Hannover Hbf',
+            'tz': 'Europe/Berlin',
+            'scheduledArrival': '2026-07-26T22:00:00Z',
+            'arrival': '2026-07-26T22:45:00Z',
+          },
+        },
+      ],
+    });
+
+    test('a stop the train now skips is flagged, not timed', () {
+      final stops = refreshedStopovers(
+        stops: partlyCancelled(),
+        stopovers: const [
+          Stopover(name: 'Lüneburg', minutes: 23 * 60), // 23:00 local
+          Stopover(name: 'Celle', minutes: 23 * 60 + 30),
+        ],
+        date: day,
+      );
+
+      // The skipped stop reports its planned departure unchanged, which would
+      // otherwise read as a confident "on time" for a train passing straight
+      // through it.
+      expect(stops.first.cancelled, isTrue);
+      expect(stops.first.delayMinutes, isNull);
+      // The stop it does still call at is timed as usual.
+      expect(stops.last.cancelled, isFalse);
+      expect(stops.last.delayMinutes, 45);
+    });
+
+    test('a stop that is running again loses the flag', () {
+      final stops = refreshedStopovers(
+        stops: partlyCancelled(),
+        stopovers: const [
+          Stopover(name: 'Celle', minutes: 23 * 60 + 30, cancelled: true),
+        ],
+        date: day,
+      );
+
+      expect(stops.single.cancelled, isFalse);
+      expect(stops.single.delayMinutes, 45);
+    });
+  });
+
   group('refreshedActualTimes', () {
     test('reads actual departure/arrival for the whole leg', () {
       final r = refreshedActualTimes(
