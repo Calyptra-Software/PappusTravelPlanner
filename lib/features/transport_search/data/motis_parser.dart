@@ -147,8 +147,34 @@ JourneyLeg _leg(Map<String, dynamic> j) {
     headsign: j['headsign'] as String?,
     tripId: j['tripId'] as String?,
     cancelled: j['cancelled'] as bool? ?? false,
+    stops: _legStops(j['intermediateStops'], realTime),
   );
 }
+
+/// The stops between a leg's two ends. The plan response carries them on the
+/// leg itself, so nothing extra is fetched to read them.
+///
+/// Only the **departure** is taken (see [LegStop]); a terminus-shaped entry
+/// without one — nothing in a well-formed response, but feeds vary — falls back
+/// to its arrival, and one with neither is dropped rather than dated from thin
+/// air. The live departure is read on the leg's own [realTime] terms, exactly as
+/// its ends are: a trip that has already run reports its plan as if it were
+/// live, and taking that would invent an on-time record.
+List<LegStop> _legStops(dynamic value, bool realTime) => [
+  for (final e in (value as List<dynamic>?) ?? const [])
+    if (e is Map<String, dynamic>)
+      if (_parseUtcOrNull(e['scheduledDeparture'] ?? e['scheduledArrival'])
+          case final departure?)
+        LegStop(
+          name: e['name'] as String? ?? '',
+          scheduledDeparture: departure,
+          actualDeparture: realTime
+              ? _parseUtcOrNull(e['departure'] ?? e['arrival'])
+              : null,
+          timeZone: e['tz'] as String?,
+          cancelled: e['cancelled'] as bool? ?? false,
+        ),
+];
 
 LegPoint _legEnd(
   Map<String, dynamic> j, {

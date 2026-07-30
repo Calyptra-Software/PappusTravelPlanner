@@ -1,8 +1,8 @@
-import 'domain/journey.dart';
-import 'domain/transit_mode.dart';
+import 'journey_view.dart';
 
-/// Reads a routed [JourneyOption] as the rows a traveller wants before
-/// committing to it: *what do I board, and where and how long do I change?*
+/// Reads a [JourneyView] as the rows a traveller wants: *what do I board, and
+/// where and how long do I change?* — before committing to a connection, and
+/// afterwards for one the trip already holds.
 ///
 /// Pure, so it tests without a network or a database — the same arrangement the
 /// itinerary's `day_blocks.dart` uses for a day.
@@ -25,7 +25,7 @@ sealed class PreviewRow {
 class LegRow extends PreviewRow {
   const LegRow(this.leg);
 
-  final JourneyLeg leg;
+  final ViewLeg leg;
 }
 
 /// The gap between two boarded services: where to get off, where to get on
@@ -47,8 +47,10 @@ class ChangeRow extends PreviewRow {
   /// null when the change happens within one station, which is the normal case.
   final String? toPlace;
 
-  /// The change as *planned*: scheduled arrival to scheduled departure.
-  final int minutes;
+  /// The change as *planned*: scheduled arrival to scheduled departure. Null
+  /// when one of the two services carries no time — a stored journey may hold a
+  /// leg nobody timed, and a change no one can measure is still a change.
+  final int? minutes;
 
   /// The change as it currently stands once real-time times are taken into
   /// account, and only when that differs from [minutes] — null otherwise, so
@@ -64,21 +66,21 @@ class ChangeRow extends PreviewRow {
 
   /// How that stretch is covered (walking, normally). Null exactly when
   /// [ownSteamMinutes] is.
-  final TransitMode? ownSteamMode;
+  final ViewMode? ownSteamMode;
 }
 
-/// Splits [option] into the rows described on [PreviewRow].
-List<PreviewRow> journeyPreview(JourneyOption option) {
-  final legs = option.legs;
+/// Splits [view] into the rows described on [PreviewRow].
+List<PreviewRow> journeyPreview(JourneyView view) {
+  final legs = view.legs;
   // Past this index there is no service left to change onto, so an own-steam
   // leg beyond it is the journey's final stretch rather than a transfer.
-  final lastService = legs.lastIndexWhere((leg) => !leg.mode.isOwnSteam);
+  final lastService = legs.lastIndexWhere((leg) => !leg.ownSteam);
 
   final rows = <PreviewRow>[];
   var boarded = -1; // index of the last service already emitted
   for (var i = 0; i < legs.length; i++) {
     final leg = legs[i];
-    if (leg.mode.isOwnSteam) {
+    if (leg.ownSteam) {
       // Between two services this stretch belongs to the change, which the
       // service on the far side of it will emit.
       if (boarded >= 0 && i < lastService) continue;
@@ -96,24 +98,32 @@ List<PreviewRow> journeyPreview(JourneyOption option) {
 
 /// The change between the service [from] arrives on and the one [to] leaves on,
 /// with whatever own-steam legs [between] them the router put in.
-ChangeRow _change(JourneyLeg from, JourneyLeg to, List<JourneyLeg> between) {
-  // Both ends are UTC instants, so the gap needs no timezone to be right — even
-  // when the change straddles one.
-  final planned = to.from.scheduled.difference(from.to.scheduled).inMinutes;
-  final live = from.to.actual == null && to.from.actual == null
+///
+/// Both ends are read on the view's own scale (see [JourneyView]), so the gap
+/// needs no timezone to be right — even when the change straddles one.
+ChangeRow _change(ViewLeg from, ViewLeg to, List<ViewLeg> between) {
+  final arrival = from.to;
+  final departure = to.from;
+  final planned = _gap(arrival.absolute, departure.absolute);
+  final live =
+      arrival.actualAbsolute == null && departure.actualAbsolute == null
       ? null
-      : to.from.effective.difference(from.to.effective).inMinutes;
+      : _gap(
+          arrival.actualAbsolute ?? arrival.absolute,
+          departure.actualAbsolute ?? departure.absolute,
+        );
   final ownSteam = between.fold<int>(
     0,
-    (sum, leg) =>
-        sum + leg.to.scheduled.difference(leg.from.scheduled).inMinutes,
+    (sum, leg) => sum + (leg.duration?.inMinutes ?? 0),
   );
   return ChangeRow(
-    place: from.to.name,
-    toPlace: to.from.name == from.to.name ? null : to.from.name,
+    place: arrival.name,
+    toPlace: departure.name == arrival.name ? null : departure.name,
     minutes: planned,
     actualMinutes: live == planned ? null : live,
     ownSteamMinutes: ownSteam == 0 ? null : ownSteam,
     ownSteamMode: ownSteam == 0 ? null : between.first.mode,
   );
 }
+
+int? _gap(int? from, int? to) => from == null || to == null ? null : to - from;

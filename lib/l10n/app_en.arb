@@ -672,6 +672,26 @@
       "destination": { "type": "String" }
     }
   },
+  "connectionStops": "{count, plural, =1{1 stop} other{{count} stops}}",
+  "@connectionStops": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionChangePlace": "Change in {place}",
+  "@connectionChangePlace": {
+    "placeholders": {
+      "place": { "type": "String" }
+    }
+  },
+  "connectionChangePlaces": "Change: {from} → {to}",
+  "@connectionChangePlaces": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "journeyDetails": "Show journey",
   "liveTimesRefresh": "Update live times",
   "liveTimesNone": "No live times to update",
   "liveTimesCancelled": "This service has been cancelled",

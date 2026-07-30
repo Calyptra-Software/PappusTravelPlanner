@@ -37,14 +37,16 @@ class TripRepository {
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>
       _db.itineraryDao.updateItem(item);
-  Future<void> setActualTimes(
+  Future<void> setLiveTimes(
     int itemId, {
     required int? actualStart,
     required int? actualEnd,
-  }) => _db.itineraryDao.setActualTimes(
+    required String? stopovers,
+  }) => _db.itineraryDao.setLiveTimes(
     itemId,
     actualStart: actualStart,
     actualEnd: actualEnd,
+    stopovers: stopovers,
   );
   // Routes through GroupDao so deleting a grouped item also tidies its group
   // (dissolving a group left with <2 members, preserving its shared costs).

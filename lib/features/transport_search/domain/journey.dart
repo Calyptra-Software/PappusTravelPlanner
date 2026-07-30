@@ -36,6 +36,37 @@ class LegPoint {
   DateTime get effective => actual ?? scheduled;
 }
 
+/// A stop the vehicle calls at **between** a leg's two ends.
+///
+/// Only the departure is carried: a stopover is read to answer *does this train
+/// pass through, and when am I there?*, and the minute it leaves is the one a
+/// traveller acts on (it is also the last one — an arrival plus a dwell says the
+/// same thing twice).
+class LegStop {
+  const LegStop({
+    required this.name,
+    required this.scheduledDeparture,
+    this.actualDeparture,
+    this.timeZone,
+    this.cancelled = false,
+  });
+
+  final String name;
+
+  /// The planned departure, a **UTC instant** like every other time here (see
+  /// [LegPoint]) — projected into [timeZone] to be read.
+  final DateTime scheduledDeparture;
+
+  /// The real-time departure, when the service reported one — read on the same
+  /// terms as a leg end's [LegPoint.actual], and only ever shown as the miss
+  /// against [scheduledDeparture].
+  final DateTime? actualDeparture;
+  final String? timeZone;
+
+  /// Whether the service skips this stop.
+  final bool cancelled;
+}
+
 /// A single leg of a journey — one vehicle run, or a walking transfer between
 /// two of them ([mode] == [TransitMode.walk]).
 class JourneyLeg {
@@ -48,6 +79,7 @@ class JourneyLeg {
     this.headsign,
     this.tripId,
     this.cancelled = false,
+    this.stops = const [],
   });
 
   final TransitMode mode;
@@ -71,6 +103,10 @@ class JourneyLeg {
   /// returns one — the router plans around cancellations — so this is read for
   /// the case where it does rather than as a promise that it will.
   final bool cancelled;
+
+  /// The stops called at between [from] and [to], in order. Empty for a walking
+  /// transfer, and for a service the router reported without them.
+  final List<LegStop> stops;
 }
 
 /// One stop of a vehicle's whole trip, as returned by the per-trip live query.

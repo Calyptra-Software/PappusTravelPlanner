@@ -170,11 +170,13 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             endMinutes: i.endMinutes,
             actualStartMinutes: i.actualStartMinutes,
             actualEndMinutes: i.actualEndMinutes,
+            spansNextDay: i.spansNextDay,
             notes: i.notes,
             location: i.location,
             mode: _modeKey(i.mode, modeById),
             fromLocation: i.fromLocation,
             toLocation: i.toLocation,
+            stopovers: i.stopovers,
           ),
       ],
       costs: [
@@ -333,11 +335,13 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             endMinutes: Value(i.endMinutes),
             actualStartMinutes: Value(i.actualStartMinutes),
             actualEndMinutes: Value(i.actualEndMinutes),
+            spansNextDay: Value(i.spansNextDay),
             notes: Value(i.notes),
             location: Value(i.location),
             mode: Value(await _ensureMode(i.mode, bundle, modeIds)),
             fromLocation: Value(i.fromLocation),
             toLocation: Value(i.toLocation),
+            stopovers: Value(i.stopovers),
           ),
         );
       }

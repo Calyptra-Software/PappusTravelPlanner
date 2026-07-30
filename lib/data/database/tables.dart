@@ -254,6 +254,12 @@ class ItineraryItems extends Table {
   /// live-times refresh can re-query this exact trip and fill in the actual
   /// departure/arrival. Null for a hand-entered leg (nothing to refresh).
   TextColumn get sourceTripId => text().nullable()();
+
+  /// The stops this leg passes through, encoded by `stopovers.dart` — written by
+  /// the connection import, null for a hand-entered leg. Stored on the leg
+  /// rather than in a table of their own so they are read offline, with the row
+  /// they belong to, long after the routing service is out of reach.
+  TextColumn get stopovers => text().nullable()();
 }
 
 /// A single cost. Attached to exactly one of: a single itinerary item (via

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
@@ -50,7 +51,8 @@ void main() {
   });
   tearDown(() => db.close());
 
-  // Berlin +2 in July: 'A' departs 5 min late, 'B' arrives on time.
+  // Berlin +2 in July: 'A' departs 5 min late, 'B' arrives on time, and the one
+  // stop in between is 8 late by the time the train gets there.
   List<TripStop> stopsWithDelay() => parseTripResponse({
     'legs': [
       {
@@ -61,7 +63,14 @@ void main() {
           'scheduledDeparture': '2026-07-26T14:00:00Z', // 16:00 local
           'departure': '2026-07-26T14:05:00Z', // 16:05, +5
         },
-        'intermediateStops': [],
+        'intermediateStops': [
+          {
+            'name': 'Mid',
+            'tz': 'Europe/Berlin',
+            'scheduledDeparture': '2026-07-26T14:30:00Z', // 16:30 local
+            'departure': '2026-07-26T14:38:00Z', // 16:38, +8
+          },
+        ],
         'to': {
           'name': 'B',
           'tz': 'Europe/Berlin',
@@ -72,7 +81,10 @@ void main() {
     ],
   });
 
-  Future<ItineraryItem> seedLeg({String? sourceTripId}) async {
+  Future<ItineraryItem> seedLeg({
+    String? sourceTripId,
+    List<Stopover> stopovers = const [],
+  }) async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),
     );
@@ -87,6 +99,7 @@ void main() {
         startMinutes: const Value(16 * 60), // 16:00
         endMinutes: const Value(17 * 60), // 17:00
         sourceTripId: Value(sourceTripId),
+        stopovers: Value(encodeStopovers(stopovers)),
       ),
     );
     return (db.select(
@@ -120,6 +133,58 @@ void main() {
     expect(after.actualStartMinutes, 16 * 60 + 5); // the +5 delay
     expect(after.actualEndMinutes, 17 * 60); // on time
   });
+
+  test('the stops in between are refreshed with the ends', () async {
+    // One tap, one leg — all of it: the stop's delay comes from the same live
+    // trip the ends do, so the journey sheet cannot show a fresh departure over
+    // stale stops.
+    final item = await seedLeg(
+      sourceTripId: 'trip-1',
+      stopovers: const [Stopover(name: 'Mid', minutes: 16 * 60 + 30)],
+    );
+    final controller = containerWith(
+      _FakeSearch(stopsWithDelay()),
+    ).read(transportSearchControllerProvider);
+
+    expect(await controller.refreshLeg(item), LegRefresh.updated);
+
+    final after = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.id.equals(item.id))).getSingle();
+    expect(decodeStopovers(after.stopovers), [
+      const Stopover(name: 'Mid', minutes: 16 * 60 + 30, delayMinutes: 8),
+    ]);
+    // The plan itself is untouched — a delay is a miss against it, not a new one.
+    expect(after.startMinutes, 16 * 60);
+  });
+
+  test(
+    'a stop the live trip no longer calls at drops its stale delay',
+    () async {
+      final item = await seedLeg(
+        sourceTripId: 'trip-1',
+        stopovers: const [
+          Stopover(name: 'Mid', minutes: 16 * 60 + 30, delayMinutes: 8),
+          // A stop this train no longer makes; its "+12" is last week's news.
+          Stopover(name: 'Gone', minutes: 16 * 60 + 45, delayMinutes: 12),
+        ],
+      );
+      final controller = containerWith(
+        _FakeSearch(stopsWithDelay()),
+      ).read(transportSearchControllerProvider);
+
+      await controller.refreshLeg(item);
+
+      final after = await (db.select(
+        db.itineraryItems,
+      )..where((i) => i.id.equals(item.id))).getSingle();
+      final stops = decodeStopovers(after.stopovers);
+      expect(stops[0].delayMinutes, 8);
+      // Kept as a stop of the plan, but with nothing claimed about it.
+      expect(stops[1].name, 'Gone');
+      expect(stops[1].delayMinutes, isNull);
+    },
+  );
 
   /// A cancelled trip, exactly as the service reports one: every stop flagged,
   /// and — the trap — `realTime: false`, so there are no live times to read.

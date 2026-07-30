@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/day_blocks.dart';
 
@@ -179,6 +180,40 @@ void main() {
     // money inside the trip's totals and its settle-up.
     final costs = await db.costDao.watchCostsForTrip(tripId).first;
     expect(costs.single.itemId, dinner);
+  });
+
+  test('a copied leg keeps the plan the router gave it, not its run', () async {
+    final tripId = await makeTrip();
+    final night = await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day1,
+        kind: ItemKind.transport,
+        title: const Value('NJ 401'),
+        startMinutes: const Value(22 * 60 + 30),
+        endMinutes: const Value(7 * 60 + 15),
+        spansNextDay: const Value(true),
+        fromLat: const Value(53.5),
+        fromLon: const Value(10.0),
+        sourceTripId: const Value('trip-401'),
+        stopovers: Value(
+          encodeStopovers(const [Stopover(name: 'Basel SBB', minutes: 360)]),
+        ),
+      ),
+    );
+
+    final copy = await readItem(
+      await db.itineraryDao.duplicateItem(night, day: day2),
+    );
+
+    // What describes the journey comes along — without the overnight flag the
+    // copy would claim to arrive at 07:15 on the evening it departs.
+    expect(copy.spansNextDay, isTrue);
+    expect(copy.fromLat, 53.5);
+    expect(decodeStopovers(copy.stopovers).single.name, 'Basel SBB');
+    // Its identity at the routing service does not: that names one dated run of
+    // one train, and the copy is on another day.
+    expect(copy.sourceTripId, isNull);
   });
 
   test('a copy does not join the original\'s group', () async {

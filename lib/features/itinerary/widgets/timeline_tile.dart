@@ -7,9 +7,9 @@ import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
-import '../../transport_search/application/transport_search_controller.dart';
 import '../application/transport_mode_providers.dart';
 import 'item_times.dart';
+import 'live_refresh_button.dart';
 import 'now_line.dart';
 import 'transport_mode.dart';
 
@@ -42,6 +42,7 @@ class TimelineTile extends StatelessWidget {
     this.isFirstInGroup = false,
     this.isLastInGroup = false,
     this.groupCosts = const [],
+    this.onShowJourney,
     this.dragHandle,
     this.isNow = false,
     this.nowLineMinutes,
@@ -63,6 +64,15 @@ class TimelineTile extends StatelessWidget {
 
   /// The group's shared costs, rendered once under the run's last member.
   final List<Cost> groupCosts;
+
+  /// Opens this entry's journey — the whole group's when it is in one, the leg's
+  /// own when it stands alone. Null when there is no journey to read: the caller
+  /// decides that, since it is the one holding the group's other members.
+  ///
+  /// It is drawn where the unit it opens lives: on the group's header, which
+  /// names the run, or on the leg's own row. Never on both — a grouped leg's
+  /// journey is its group's.
+  final VoidCallback? onShowJourney;
   final Widget? dragHandle;
 
   /// Whether this entry is under way right now.
@@ -96,6 +106,7 @@ class TimelineTile extends StatelessWidget {
             dragHandle: dragHandle,
             costsSection: costsSection,
             isNow: isNow,
+            onShowJourney: group == null ? onShowJourney : null,
           )
         : _PlaceRow(
             item: item,
@@ -114,6 +125,7 @@ class TimelineTile extends StatelessWidget {
             isLast: isLastInGroup,
             label: group!.label,
             groupCosts: groupCosts,
+            onShowJourney: onShowJourney,
             localeName: localeName,
             onTapCost: onTapCost,
             child: row,
@@ -144,6 +156,7 @@ class _GroupBand extends StatelessWidget {
     required this.isLast,
     required this.label,
     required this.groupCosts,
+    required this.onShowJourney,
     required this.localeName,
     required this.onTapCost,
     required this.child,
@@ -154,6 +167,7 @@ class _GroupBand extends StatelessWidget {
   final bool isLast;
   final String? label;
   final List<Cost> groupCosts;
+  final VoidCallback? onShowJourney;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
   final Widget child;
@@ -195,6 +209,18 @@ class _GroupBand extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // A group of legs is a journey — the run added by one import,
+                  // sharing one ticket — so the way to read it back sits on the
+                  // label that says as much.
+                  if (onShowJourney case final show?)
+                    IconButton(
+                      tooltip: l10n.journeyDetails,
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      icon: const Icon(Icons.route),
+                      color: accent,
+                      onPressed: show,
+                    ),
                 ],
               ),
             ),
@@ -399,6 +425,7 @@ class _TransportRow extends ConsumerWidget {
     required this.dragHandle,
     required this.costsSection,
     required this.isNow,
+    required this.onShowJourney,
   });
 
   final ItineraryItem item;
@@ -406,6 +433,7 @@ class _TransportRow extends ConsumerWidget {
   final Widget? dragHandle;
   final Widget costsSection;
   final bool isNow;
+  final VoidCallback? onShowJourney;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -521,10 +549,21 @@ class _TransportRow extends ConsumerWidget {
                         ),
                       ),
                     ),
+                    // An imported leg standing outside a group carries its own
+                    // way into the journey sheet; inside a group the run's
+                    // header has it.
+                    if (onShowJourney case final show?)
+                      IconButton(
+                        tooltip: l10n.journeyDetails,
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 18,
+                        icon: const Icon(Icons.route),
+                        onPressed: show,
+                      ),
                     // An imported leg (one with a routing trip id) can pull its
                     // live times; a walk transfer or hand-entered leg cannot.
                     if (item.sourceTripId != null)
-                      _LiveRefreshButton(item: item),
+                      LiveRefreshButton(item: item),
                     ?dragHandle,
                   ],
                 ),
@@ -533,72 +572,6 @@ class _TransportRow extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Pulls one imported leg's live (real-time) times on demand. On success the
-/// refreshed actuals write to the DB and the tile redraws with the planned-vs-
-/// actual marks; a leg with no live data (already run, or schedule changed) or a
-/// network failure just reports via a snackbar. Manual only — one tap, one leg.
-class _LiveRefreshButton extends ConsumerStatefulWidget {
-  const _LiveRefreshButton({required this.item});
-
-  final ItineraryItem item;
-
-  @override
-  ConsumerState<_LiveRefreshButton> createState() => _LiveRefreshButtonState();
-}
-
-class _LiveRefreshButtonState extends ConsumerState<_LiveRefreshButton> {
-  bool _loading = false;
-
-  Future<void> _refresh() async {
-    final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _loading = true);
-    try {
-      final result = await ref
-          .read(transportSearchControllerProvider)
-          .refreshLeg(widget.item);
-      // On an update the tile speaks for itself, in place; the other two
-      // outcomes leave nothing on screen, so they have to be said. A
-      // cancellation especially: "nothing to update" would read as "all is
-      // well" about a train that is not running.
-      switch (result) {
-        case LegRefresh.updated:
-          break;
-        case LegRefresh.cancelled:
-          messenger.showSnackBar(
-            SnackBar(
-              content: Text(l10n.liveTimesCancelled),
-              duration: const Duration(seconds: 6),
-            ),
-          );
-        case LegRefresh.nothing:
-          messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesNone)));
-      }
-    } catch (_) {
-      messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesError)));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      tooltip: AppLocalizations.of(context).liveTimesRefresh,
-      visualDensity: VisualDensity.compact,
-      iconSize: 18,
-      icon: _loading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.sync),
-      onPressed: _loading ? null : _refresh,
     );
   }
 }

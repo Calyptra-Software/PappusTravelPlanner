@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../data/database/app_database.dart';
+import '../../../data/database/stopovers.dart';
 import '../../../data/database/tables.dart';
 import '../domain/journey.dart';
 import '../domain/transit_mode.dart';
@@ -74,6 +75,7 @@ ItineraryItemsCompanion mappedLegToCompanion(int tripId, MappedLeg leg) =>
       fromLon: Value(leg.fromLon),
       toLat: Value(leg.toLat),
       toLon: Value(leg.toLon),
+      stopovers: Value(encodeStopovers(leg.stopovers)),
     );
 
 MappedLeg _mapLeg(
@@ -111,6 +113,29 @@ MappedLeg _mapLeg(
     fromLon: leg.from.lon,
     toLat: leg.to.lat,
     toLon: leg.to.lon,
+    stopovers: _mapStops(leg, from.date),
+  );
+}
+
+/// The leg's intermediate stops in the app's own terms: each stop's departure as
+/// wall-clock minutes, dated by how many days it falls after the leg's own
+/// [legDate], plus any delay the search already knew of. Each stop is projected
+/// into *its own* timezone, exactly as the leg's ends are — a night train
+/// crosses zones between them — while the delay is taken from the UTC instants,
+/// where no projection can make it wrong.
+List<Stopover> _mapStops(JourneyLeg leg, DateTime legDate) => [
+  for (final stop in leg.stops) _mapStop(stop, legDate),
+];
+
+Stopover _mapStop(LegStop stop, DateTime legDate) {
+  final local = localParts(stop.scheduledDeparture, stop.timeZone);
+  return Stopover(
+    name: stop.name,
+    minutes: local.minutes,
+    dayOffset: local.date.difference(legDate).inDays,
+    delayMinutes: stop.actualDeparture
+        ?.difference(stop.scheduledDeparture)
+        .inMinutes,
   );
 }
 
@@ -182,6 +207,7 @@ class MappedLeg {
     required this.fromLon,
     required this.toLat,
     required this.toLon,
+    this.stopovers = const [],
   });
 
   final DateTime date;
@@ -208,6 +234,10 @@ class MappedLeg {
   final double? fromLon;
   final double? toLat;
   final double? toLon;
+
+  /// The stops passed through between the two ends, kept so the journey can be
+  /// read back offline (see [Stopover]).
+  final List<Stopover> stopovers;
 }
 
 /// Builds the resolver [journeyToLegs] needs: a routing mode → a concrete

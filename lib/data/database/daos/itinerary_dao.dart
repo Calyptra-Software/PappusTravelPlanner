@@ -37,14 +37,20 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
 
   /// Writes just the actual (real-time) departure/arrival of an item, leaving
   /// the plan and everything else untouched — the live-times refresh's write.
-  Future<void> setActualTimes(
+  /// Writes everything the live-times refresh learned about one leg: its actual
+  /// departure/arrival and the delay at each stop it passes through, in a single
+  /// update — they are one answer to one question, and writing them separately
+  /// would flash a leg whose ends had moved but whose stops had not.
+  Future<void> setLiveTimes(
     int id, {
     required int? actualStart,
     required int? actualEnd,
+    required String? stopovers,
   }) => (update(itineraryItems)..where((i) => i.id.equals(id))).write(
     ItineraryItemsCompanion(
       actualStartMinutes: Value(actualStart),
       actualEndMinutes: Value(actualEnd),
+      stopovers: Value(stopovers),
     ),
   );
 

@@ -1530,6 +1530,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String connectionStops(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stops',
+      one: '1 stop',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String connectionChangePlace(String place) {
+    return 'Change in $place';
+  }
+
+  @override
+  String connectionChangePlaces(String from, String to) {
+    return 'Change: $from → $to';
+  }
+
+  @override
+  String get journeyDetails => 'Show journey';
+
+  @override
   String get liveTimesRefresh => 'Update live times';
 
   @override

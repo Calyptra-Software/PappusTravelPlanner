@@ -13,6 +13,7 @@ import '../../../data/database/tables.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
+import '../../transport_search/presentation/journey_details_sheet.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
@@ -192,6 +193,28 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
 
   String _branchLabel(AppLocalizations l10n, int index) =>
       optionLabel(l10n, _branches[index], index);
+
+  /// The journey an entry inside an option belongs to, read within that option:
+  /// a group never straddles two options, so its whole run is on this page.
+  VoidCallback? _showJourney(
+    BuildContext context,
+    List<ItineraryItem> items,
+    ItineraryItem item,
+    int? groupId,
+  ) {
+    if (groupId != null) {
+      if (!groupHasJourney(items, groupId)) return null;
+      return () => showJourneyDetailsSheet(
+        context,
+        tripId: item.tripId,
+        groupId: groupId,
+        title: widget.groups[groupId]?.label,
+      );
+    }
+    if (!hasStandaloneJourney(item)) return null;
+    return () =>
+        showJourneyDetailsSheet(context, tripId: item.tripId, itemId: item.id);
+  }
 
   /// Interpolates between the two pages the swipe is between, so the card's
   /// height follows the finger rather than jumping when the page settles.
@@ -524,6 +547,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
               final groupId = item.groupId;
               return TimelineTile(
                 key: ValueKey(item.id),
+                onShowJourney: _showJourney(context, items, item, groupId),
                 item: item,
                 accent: widget.accent,
                 onTap: () => widget.onTapItem(item),

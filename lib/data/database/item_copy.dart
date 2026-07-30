@@ -12,6 +12,12 @@ import 'app_database.dart';
 /// [groupId] is given — the caller decides where the copy lands ([date],
 /// [alternativeId], [groupId], [sortOrder]).
 ///
+/// Nor its **provenance**: `sourceTripId` names one dated run of one service at
+/// the routing provider, so a copy on another day would refresh its live times
+/// from a train it is not. What the routing service told us *about the plan* —
+/// the overnight flag, the endpoint coordinates, the stops passed through — is
+/// part of what the entry is and does travel.
+///
 /// Shared by every duplicate in the app (an item, a group, a whole option) so
 /// they all carry exactly the same fields — a new column added here reaches all
 /// of them at once.
@@ -33,9 +39,15 @@ ItineraryItemsCompanion copyItemPlan(
   endMinutes: Value(item.endMinutes),
   actualStartMinutes: Value(item.actualStartMinutes),
   actualEndMinutes: Value(item.actualEndMinutes),
+  spansNextDay: Value(item.spansNextDay),
   notes: Value(item.notes),
   location: Value(item.location),
   mode: Value(item.mode),
   fromLocation: Value(item.fromLocation),
   toLocation: Value(item.toLocation),
+  fromLat: Value(item.fromLat),
+  fromLon: Value(item.fromLon),
+  toLat: Value(item.toLat),
+  toLon: Value(item.toLon),
+  stopovers: Value(item.stopovers),
 );

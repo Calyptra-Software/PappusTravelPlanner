@@ -150,6 +150,34 @@ UI (features/*/presentation, *widgets)
   `widgets/item_times.dart` (coloured spans) and the home widget (see below). An actual time
   outranks its planned one in `now_marker.dart`, though: "you are here" is a claim about the
   day as it is going.
+- **A journey is read the same way before and after it is imported.** A connection found by
+  the search and a run of legs the trip already holds are both mapped onto one
+  `JourneyView` (`features/transport_search/journey_view.dart`, pure — plus the DB-side
+  adapter in `data/journey_view_items.dart`), which the pure `journey_preview.dart` folds
+  into `LegRow`/`ChangeRow` and one `presentation/journey_sheet.dart` draws. So the walking
+  transfer the router puts between two trains reads as *the change* on both sides of the
+  import, where the timeline can only show it as another leg. The arithmetic that survives
+  the fan-in is `ViewPoint.absolute`, a monotone minute count each adapter defines in its own
+  terms — UTC minutes from the router, wall-clock minutes from the trip, which has no
+  timezones to be exact with. The sheet's unit is the **group**: importing bundles each day's
+  legs into one, so a group already *is* a journey and the button sits on the run's label
+  (`TimelineTile.onShowJourney`); an imported leg standing alone carries its own. Each leg
+  card hosts the leg's own `LiveRefreshButton` — still one tap, one leg.
+- **An imported leg keeps the stops it calls at**, encoded in `ItineraryItems.stopovers` by
+  `data/database/stopovers.dart` (a JSON list of name + departure minutes + a day offset for
+  a night train's small hours). A column, not a table: they belong to exactly one leg, are
+  written once by the import and read only when that leg is looked at, so they ride in the
+  row they describe and are there offline. Departure only, plus how late the service leaves
+  it when that is known: the live-times refresh rewrites a leg's stops along with its ends
+  (`refreshedStopovers`, one write via `setLiveTimes`), so one tap leaves the whole leg
+  current — and a stop the live trip no longer mentions loses its old figure rather than
+  keeping it. The **miss** is stored rather than an actual time, unlike the leg's ends: it is
+  what gets printed either way, it comes from the UTC instants and so is exact, and a delay
+  past midnight cannot read as a day early. The stops are *plan*, so they travel with a copy
+  (`copyItemPlan`) and in the `.tpt` bundle; `sourceTripId` does not, since it names one
+  dated run of one service — which is also what says a lone leg has a journey to show
+  (`hasStandaloneJourney`), since a service the feed lists no stops for is an imported
+  journey all the same.
 - Times are stored as **minutes since midnight** (int, 0–1439); money as **minor units**
   (int cents) to avoid float rounding, and amounts may be negative (refunds/income). The
   SharedPreferences-backed `CostReasonDisplay` / `ExpenseScope` enums are persisted by
@@ -266,7 +294,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 23) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 26) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

@@ -60,7 +60,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 25;
+  int get schemaVersion => 26;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -290,6 +290,13 @@ class AppDatabase extends _$AppDatabase {
       if (from < 25) {
         await _addItineraryColumnsIfMissing(m, [itineraryItems.sourceTripId]);
       }
+      // v26 keeps an imported leg's intermediate stops, so the journey it came
+      // from can be read back — with the times it calls at each stop — offline
+      // and long after the search that found it. Nullable, nothing to backfill:
+      // legs imported before this simply have none.
+      if (from < 26) {
+        await _addItineraryColumnsIfMissing(m, [itineraryItems.stopovers]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -352,8 +359,8 @@ class AppDatabase extends _$AppDatabase {
         },
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
-        // otherwise the copy step selects a column the old table lacks. The v24
-        // and v25 additions; extend this list when a later version adds more.
+        // otherwise the copy step selects a column the old table lacks. The v24,
+        // v25 and v26 additions; extend this list when a later version adds more.
         newColumns: [
           itineraryItems.spansNextDay,
           itineraryItems.fromLat,
@@ -361,6 +368,7 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.toLat,
           itineraryItems.toLon,
           itineraryItems.sourceTripId,
+          itineraryItems.stopovers,
         ],
       ),
     );

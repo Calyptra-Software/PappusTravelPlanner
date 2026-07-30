@@ -2,6 +2,7 @@ import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/sharing/trip_bundle.dart';
 
@@ -52,6 +53,13 @@ void main() {
         mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         fromLocation: const Value('Florence'),
         toLocation: const Value('Rome'),
+        spansNextDay: const Value(true),
+        sourceTripId: const Value('trip-99'),
+        stopovers: Value(
+          encodeStopovers(const [
+            Stopover(name: 'Innsbruck Hbf', minutes: 300),
+          ]),
+        ),
       ),
     );
     // Group the leg with the place so a shared cost can attach to the group.
@@ -123,6 +131,12 @@ void main() {
     final transport = b.items.firstWhere((i) => i.kind == ItemKind.transport);
     expect(transport.groupLocalId, groupLocal);
     expect(transport.mode, 'train');
+    // A routed leg's plan travels: the overnight flag and the stops it calls
+    // at. Its routing trip id does not — that is provenance, not plan.
+    expect(transport.spansNextDay, isTrue);
+    expect(decodeStopovers(transport.stopovers).map((s) => s.name), [
+      'Innsbruck Hbf',
+    ]);
     final placeItem = b.items.firstWhere((i) => i.kind == ItemKind.place);
     expect(placeItem.groupLocalId, groupLocal);
     expect(placeItem.location, 'Piazza del Colosseo');
@@ -495,6 +509,15 @@ Future<int> _seedTrip(AppDatabase db) async {
       date: DateTime(2026, 5, 1),
       kind: ItemKind.transport,
       mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
+      // An imported overnight leg: both are read back on the recipient's side,
+      // so both have to travel.
+      spansNextDay: const Value(true),
+      stopovers: Value(
+        encodeStopovers(const [
+          Stopover(name: 'Firenze S.M.N.', minutes: 1320),
+          Stopover(name: 'Roma Tiburtina', minutes: 75, dayOffset: 1),
+        ]),
+      ),
     ),
   );
   final groupId = await db.groupDao.groupItems(place, leg);

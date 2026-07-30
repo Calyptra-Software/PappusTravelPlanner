@@ -2696,6 +2696,30 @@ abstract class AppLocalizations {
   /// **'to {destination}'**
   String directionTo(String destination);
 
+  /// No description provided for @connectionStops.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 stop} other{{count} stops}}'**
+  String connectionStops(int count);
+
+  /// No description provided for @connectionChangePlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Change in {place}'**
+  String connectionChangePlace(String place);
+
+  /// No description provided for @connectionChangePlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Change: {from} → {to}'**
+  String connectionChangePlaces(String from, String to);
+
+  /// No description provided for @journeyDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show journey'**
+  String get journeyDetails;
+
   /// No description provided for @liveTimesRefresh.
   ///
   /// In en, this message translates to:

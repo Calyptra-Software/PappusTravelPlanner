@@ -164,6 +164,92 @@ void main() {
       expect(results.direct.single.legs.single.mode, TransitMode.walk);
     });
 
+    test('a leg carries the stops it calls at between its ends', () {
+      // Recorded from Transitous with `detailedLegs=false` — the app's own
+      // query — which strips the route geometry but leaves the stops: the whole
+      // reason the preview can list them without a second request.
+      final option = parsePlanResponse(
+        _decode(_fixture('motis_plan_stops.json')),
+      ).options.single;
+      final leg = option.legs.firstWhere((l) => l.mode != TransitMode.walk);
+
+      expect(leg.stops.map((s) => s.name), [
+        'Büchen',
+        'Ludwigslust Bahnhof',
+        'Wittenberge, Bahnhof',
+      ]);
+      // Departures, as UTC instants with the stop's own zone beside them.
+      expect(
+        leg.stops.first.scheduledDeparture,
+        DateTime.utc(2026, 8, 3, 9, 37),
+      );
+      expect(leg.stops.first.timeZone, 'Europe/Berlin');
+      expect(leg.stops.every((s) => !s.cancelled), isTrue);
+      // The ends of the leg are not stopovers of it.
+      expect(leg.stops.map((s) => s.name), isNot(contains(leg.from.name)));
+    });
+
+    test('a stop carries its live departure, on the leg\'s realTime terms', () {
+      Map<String, dynamic> plan(bool realTime) => {
+        'itineraries': [
+          {
+            'duration': 3600,
+            'startTime': '2026-08-03T09:13:00Z',
+            'endTime': '2026-08-03T10:13:00Z',
+            'transfers': 0,
+            'legs': [
+              {
+                'mode': 'HIGHSPEED_RAIL',
+                'realTime': realTime,
+                'from': {
+                  'name': 'Hamburg Hbf',
+                  'scheduledDeparture': '2026-08-03T09:13:00Z',
+                  'departure': '2026-08-03T09:13:00Z',
+                },
+                'to': {
+                  'name': 'Berlin Hbf',
+                  'scheduledArrival': '2026-08-03T10:13:00Z',
+                  'arrival': '2026-08-03T10:13:00Z',
+                },
+                'intermediateStops': [
+                  {
+                    'name': 'Büchen',
+                    'tz': 'Europe/Berlin',
+                    'scheduledDeparture': '2026-08-03T09:37:00Z',
+                    'departure': '2026-08-03T09:42:00Z',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      final live = parsePlanResponse(plan(true)).options.single.legs.single;
+      expect(
+        live.stops.single.actualDeparture,
+        DateTime.utc(2026, 8, 3, 9, 42),
+      );
+
+      // Without real-time the service repeats the plan as if it were live;
+      // reading it would record an on-time stop nobody has confirmed.
+      final scheduled = parsePlanResponse(
+        plan(false),
+      ).options.single.legs.single;
+      expect(scheduled.stops.single.actualDeparture, isNull);
+      expect(
+        scheduled.stops.single.scheduledDeparture,
+        DateTime.utc(2026, 8, 3, 9, 37),
+      );
+    });
+
+    test('a leg the service gave no stops for simply has none', () {
+      final option = parsePlanResponse(
+        _decode(_fixture('motis_plan_overnight.json')),
+      ).options.single;
+      expect(option.legs.every((leg) => leg.stops.isEmpty), isTrue);
+    });
+
     test('a missing or empty cursor is no cursor', () {
       final results = parsePlanResponse({
         'itineraries': <dynamic>[],

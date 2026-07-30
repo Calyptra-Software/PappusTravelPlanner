@@ -381,11 +381,13 @@ class BundleItem {
     this.endMinutes,
     this.actualStartMinutes,
     this.actualEndMinutes,
+    this.spansNextDay = false,
     this.notes,
     this.location,
     this.mode,
     this.fromLocation,
     this.toLocation,
+    this.stopovers,
   });
 
   final int localId;
@@ -402,6 +404,11 @@ class BundleItem {
   /// they were recorded at all, and simply unset on import then.
   final int? actualStartMinutes;
   final int? actualEndMinutes;
+
+  /// Whether the entry's end falls on the day after [date] — an overnight leg.
+  /// Absent from bundles written before it was recorded, and read as false then,
+  /// which is what such a bundle meant.
+  final bool spansNextDay;
   final String? notes;
 
   // place-only
@@ -416,6 +423,11 @@ class BundleItem {
   final String? fromLocation;
   final String? toLocation;
 
+  /// The leg's intermediate stops, in the encoding `stopovers.dart` reads — the
+  /// one part of a routed leg that is content rather than provenance, so it
+  /// travels while the routing trip id does not. Null for a leg with none.
+  final String? stopovers;
+
   Map<String, dynamic> toJson() => {
     'localId': localId,
     'groupLocalId': groupLocalId,
@@ -428,11 +440,13 @@ class BundleItem {
     'endMinutes': endMinutes,
     'actualStartMinutes': actualStartMinutes,
     'actualEndMinutes': actualEndMinutes,
+    'spansNextDay': spansNextDay,
     'notes': notes,
     'location': location,
     'mode': mode,
     'fromLocation': fromLocation,
     'toLocation': toLocation,
+    'stopovers': stopovers,
   };
 
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
@@ -447,11 +461,13 @@ class BundleItem {
     endMinutes: json['endMinutes'] as int?,
     actualStartMinutes: json['actualStartMinutes'] as int?,
     actualEndMinutes: json['actualEndMinutes'] as int?,
+    spansNextDay: json['spansNextDay'] as bool? ?? false,
     notes: json['notes'] as String?,
     location: json['location'] as String?,
     mode: json['mode'] as String?,
     fromLocation: json['fromLocation'] as String?,
     toLocation: json['toLocation'] as String?,
+    stopovers: json['stopovers'] as String?,
   );
 }
 

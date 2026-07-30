@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/stopovers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../data/journey_mapper.dart';
 import '../data/live_refresh.dart';
@@ -49,9 +50,10 @@ class TransportSearchController {
   }
 
   /// Refreshes one imported leg's live (real-time) times: re-queries its trip and
-  /// writes the actual departure/arrival read off the live stops. A network
-  /// failure propagates (the UI shows it). Manual only — invoked from the leg's
-  /// own refresh button, never on a timer.
+  /// writes the actual departure/arrival read off the live stops, together with
+  /// the delay at each stop the leg passes through. A network failure propagates
+  /// (the UI shows it). Manual only — invoked from the leg's own refresh button,
+  /// never on a timer.
   Future<LegRefresh> refreshLeg(ItineraryItem item) async {
     final sourceTripId = item.sourceTripId;
     final start = item.startMinutes;
@@ -63,6 +65,7 @@ class TransportSearchController {
     final stops = await _ref
         .read(transportSearchProvider)
         .tripStops(sourceTripId);
+    final stopovers = decodeStopovers(item.stopovers);
     final refreshed = refreshedActualTimes(
       stops: stops,
       date: item.date,
@@ -77,12 +80,21 @@ class TransportSearchController {
     // write — and nothing *should* be written: an actual time would say the leg
     // ran. What the traveller needs is the news itself.
     if (refreshed.cancelled) return LegRefresh.cancelled;
+    // The stops in between ride along with the ends: the same live trip answers
+    // for all of them, so one tap leaves the whole leg current.
     await _ref
         .read(repositoryProvider)
-        .setActualTimes(
+        .setLiveTimes(
           item.id,
           actualStart: refreshed.actualStartMinutes,
           actualEnd: refreshed.actualEndMinutes,
+          stopovers: encodeStopovers(
+            refreshedStopovers(
+              stops: stops,
+              stopovers: stopovers,
+              date: item.date,
+            ),
+          ),
         );
     return LegRefresh.updated;
   }

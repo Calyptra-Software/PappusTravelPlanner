@@ -9,6 +9,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
+import '../../transport_search/presentation/journey_details_sheet.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
@@ -474,6 +475,7 @@ class _DaySection extends ConsumerWidget {
               );
               return switch (block) {
                 ItemBlock(:final item) => _itemTile(
+                  context: context,
                   index: index,
                   item: item,
                   dragHandle: dragHandle,
@@ -555,6 +557,7 @@ class _DaySection extends ConsumerWidget {
   /// A loose item's tile. Its group run is read against its neighbouring blocks:
   /// a group never spans a decision, so a decision in between simply ends the run.
   Widget _itemTile({
+    required BuildContext context,
     required int index,
     required ItineraryItem item,
     required Widget dragHandle,
@@ -570,6 +573,7 @@ class _DaySection extends ConsumerWidget {
     final groupId = item.groupId;
     return TimelineTile(
       key: ValueKey('item-${item.id}'),
+      onShowJourney: _showJourney(context, item, groupId),
       item: item,
       accent: accent,
       onTap: () => onTapItem(item),
@@ -587,6 +591,32 @@ class _DaySection extends ConsumerWidget {
       nowLineMinutes: nowLineMinutes,
       held: isHeldItem(held, item),
     );
+  }
+
+  /// Opens the journey this entry is part of, or null when it is not part of
+  /// one. A grouped entry opens its whole group — the run one import added,
+  /// under the label the group carries; an imported leg on its own opens itself.
+  VoidCallback? _showJourney(
+    BuildContext context,
+    ItineraryItem item,
+    int? groupId,
+  ) {
+    if (groupId != null) {
+      final members = [
+        for (final block in blocks)
+          if (block is ItemBlock) block.item,
+      ];
+      if (!groupHasJourney(members, groupId)) return null;
+      return () => showJourneyDetailsSheet(
+        context,
+        tripId: item.tripId,
+        groupId: groupId,
+        title: groups[groupId]?.label,
+      );
+    }
+    if (!hasStandaloneJourney(item)) return null;
+    return () =>
+        showJourneyDetailsSheet(context, tripId: item.tripId, itemId: item.id);
   }
 
   /// Where an option's last entry leaves you, to pre-fill the "from" field of a

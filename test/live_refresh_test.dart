@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/features/transport_search/data/live_refresh.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
@@ -25,6 +26,39 @@ void main() {
       final berlin = stops.firstWhere((s) => s.name.contains('Berlin'));
       expect(berlin.scheduledDeparture, DateTime.utc(2026, 7, 26, 16, 29));
       expect(berlin.departure, DateTime.utc(2026, 7, 26, 16, 35));
+    });
+  });
+
+  group('refreshedStopovers', () {
+    test('reads each stop\'s delay off the same live trip', () {
+      // The leg runs Hamburg -> München; Berlin Hbf is one of the stops it
+      // passes through, and the live trip has it leaving 6 min late.
+      final stops = refreshedStopovers(
+        stops: _tripStops(),
+        stopovers: const [
+          Stopover(name: 'S+U Berlin Hauptbahnhof', minutes: 18 * 60 + 29),
+        ],
+        date: day,
+      );
+
+      expect(stops.single.delayMinutes, 6);
+      // The plan is left exactly as it was; the miss rides beside it.
+      expect(stops.single.minutes, 18 * 60 + 29);
+    });
+
+    test('a stop the trip says nothing about keeps no delay', () {
+      final stops = refreshedStopovers(
+        stops: _tripStops(),
+        stopovers: const [
+          Stopover(name: 'Nowhere', minutes: 5, delayMinutes: 12),
+        ],
+        date: day,
+      );
+
+      // We have just asked, and the answer no longer mentions it: the old
+      // figure is not evidence of anything.
+      expect(stops.single.delayMinutes, isNull);
+      expect(stops.single.name, 'Nowhere');
     });
   });
 

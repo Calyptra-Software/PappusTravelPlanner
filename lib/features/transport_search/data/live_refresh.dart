@@ -1,3 +1,4 @@
+import '../../../data/database/stopovers.dart';
 import '../domain/journey.dart';
 import 'journey_mapper.dart' show localParts;
 
@@ -81,6 +82,39 @@ RefreshedTimes? refreshedActualTimes({
     actualEndMinutes: actualEnd,
     cancelled: cancelled,
   );
+}
+
+/// Re-reads the delay at each of a leg's stored [stopovers] from the same live
+/// [stops] the leg's own ends are refreshed from — so one tap updates the whole
+/// leg, ends and everything in between.
+///
+/// Each stopover is found in the trip the same way the ends are: by its planned
+/// local time, dated from the leg's [date] plus its own day offset, with a name
+/// fallback. A stop that cannot be found, or that the live trip has nothing to
+/// say about, comes back with **no** delay rather than the one it had: we have
+/// just asked, and an answer that no longer mentions the stop is not evidence
+/// for the old figure.
+List<Stopover> refreshedStopovers({
+  required List<TripStop> stops,
+  required List<Stopover> stopovers,
+  required DateTime date,
+}) => [
+  for (final stopover in stopovers)
+    stopover.withDelay(_stopoverDelay(stops, stopover, date)),
+];
+
+int? _stopoverDelay(List<TripStop> stops, Stopover stopover, DateTime date) {
+  final match = _match(
+    stops,
+    name: stopover.name,
+    wantDate: date.add(Duration(days: stopover.dayOffset)),
+    wantMinutes: stopover.minutes,
+    scheduled: (s) => s.scheduledDeparture,
+  );
+  final planned = match?.scheduledDeparture;
+  final live = match?.departure;
+  if (planned == null || live == null) return null;
+  return live.difference(planned).inMinutes;
 }
 
 /// Finds the stop whose planned local time equals ([wantDate], [wantMinutes]);

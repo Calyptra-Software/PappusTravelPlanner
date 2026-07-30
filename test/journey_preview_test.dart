@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
 import 'package:travelplanner/features/transport_search/journey_preview.dart';
+import 'package:travelplanner/features/transport_search/journey_view.dart';
 
 /// A leg from [fromName] at [from] to [toName] at [to], given as minutes past
 /// 08:00 UTC so a journey reads as a small timetable.
@@ -44,9 +46,16 @@ JourneyOption _option(List<JourneyLeg> legs) => JourneyOption(
   legs: legs,
 );
 
+/// The rows a routed journey reads as — the search's way into the shared
+/// preview.
+List<PreviewRow> _preview(JourneyOption option) =>
+    journeyPreview(journeyViewFromOption(option));
+
 void main() {
+  setUpAll(tzdata.initializeTimeZones);
+
   test('a direct ride is one leg and no change', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.highSpeedRail,
@@ -64,7 +73,7 @@ void main() {
   });
 
   test('the walk between two trains becomes the change, not a leg', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.highSpeedRail,
@@ -103,13 +112,13 @@ void main() {
     expect(change.place, 'Frankfurt Hbf');
     expect(change.toPlace, isNull);
     expect(change.ownSteamMinutes, 8);
-    expect(change.ownSteamMode, TransitMode.walk);
+    expect((change.ownSteamMode as RoutedMode).mode, TransitMode.walk);
     // Nothing is running late, so there is no second figure to report.
     expect(change.actualMinutes, isNull);
   });
 
   test('a change that walks to another station names both', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.regionalRail,
@@ -145,7 +154,7 @@ void main() {
   });
 
   test('a delay on the arriving train shortens the change', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.highSpeedRail,
@@ -173,7 +182,7 @@ void main() {
   });
 
   test('a change running exactly to plan reports no live figure', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.highSpeedRail,
@@ -200,7 +209,7 @@ void main() {
   });
 
   test('walks at either end stay legs of their own', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.walk,
@@ -233,7 +242,7 @@ void main() {
   });
 
   test('an all-walking direct connection is a single leg', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.walk,
@@ -246,11 +255,14 @@ void main() {
     );
 
     expect(rows, hasLength(1));
-    expect((rows.single as LegRow).leg.mode, TransitMode.walk);
+    expect(
+      ((rows.single as LegRow).leg.mode as RoutedMode).mode,
+      TransitMode.walk,
+    );
   });
 
   test('a change with no walk through it is pure waiting', () {
-    final rows = journeyPreview(
+    final rows = _preview(
       _option([
         _leg(
           mode: TransitMode.regionalRail,
