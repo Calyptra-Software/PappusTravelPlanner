@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/icons/transport_glyphs.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
@@ -23,22 +24,12 @@ const List<TransportMode> kTransportModeOrder = [
   TransportMode.other,
 ];
 
-/// Codepoints in the bundled `TransportGlyphs` icon font (assets/fonts/
-/// TransportGlyphs.ttf, built by `build_transport_glyphs.py`) — transport modes
-/// Material Icons has no symbol for. Const `IconData`, so they tree-shake and
-/// render exactly like a Material icon; the custom `fontFamily` is what points
-/// at the bundled font.
-const IconData _horse = IconData(0xE800, fontFamily: 'TransportGlyphs');
-const IconData _gondola = IconData(0xE801, fontFamily: 'TransportGlyphs');
-const IconData _chairlift = IconData(0xE802, fontFamily: 'TransportGlyphs');
-const IconData _tbar = IconData(0xE803, fontFamily: 'TransportGlyphs');
-
 /// Curated set of icons a transport mode can be tagged with — everything that
 /// plausibly moves a traveller from A to B. Keyed by a stable integer stored in
 /// `TransportModes.iconId`; values are `const IconData` so Flutter's icon
 /// tree-shaking keeps working (a dynamically built `IconData` would force
 /// `--no-tree-shake-icons`). A few come from the bundled `TransportGlyphs` font
-/// (above) rather than Material Icons. Only append new entries — never reuse or
+/// (`core/icons/`) rather than Material Icons. Only append new entries — never reuse or
 /// reorder a key, since it is persisted in the database.
 const Map<int, IconData> kTransportModeIcons = {
   // on foot
@@ -78,11 +69,11 @@ const Map<int, IconData> kTransportModeIcons = {
   27: Icons.downhill_skiing,
   28: Icons.snowshoeing,
   29: Icons.snowmobile,
-  30: _gondola,
-  31: _chairlift,
-  32: _tbar,
+  30: kGondolaGlyph,
+  31: kChairliftGlyph,
+  32: kTbarGlyph,
   // animal (bundled TransportGlyphs font)
-  33: _horse,
+  33: kHorseGlyph,
   // catch-alls — the generic "three dots" stays last
   34: Icons.commute,
   35: Icons.emoji_transportation,

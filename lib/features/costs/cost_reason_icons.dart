@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../core/icons/transport_glyphs.dart';
+
 /// Curated set of icons a cost reason can be tagged with. Keyed by a stable
 /// integer stored in `CostReasons.iconId`; values are `const IconData` so
 /// Flutter's icon tree-shaking keeps working (a dynamically built `IconData`
-/// would force `--no-tree-shake-icons`). Only append new entries — never reuse
-/// or reorder a key, since it is persisted in the database.
+/// would force `--no-tree-shake-icons`), a few of them from the bundled
+/// `TransportGlyphs` font (`core/icons/`) where Material Icons has no symbol.
+/// Only ever hand a new icon a fresh key — a key is persisted in the database,
+/// so it must never be reused or point at a different icon. Where an entry sits
+/// in the literal is only the order the picker lays it out in, so a later
+/// addition may join the group it belongs to.
 const Map<int, IconData> kCostReasonIcons = {
   // food & drink
   0: Icons.restaurant,
@@ -18,12 +24,14 @@ const Map<int, IconData> kCostReasonIcons = {
   7: Icons.museum,
   8: Icons.beach_access,
   9: Icons.downhill_skiing, // ski
+  28: kHorseGlyph, // riding
   // transport
   10: Icons.train,
   11: Icons.flight,
   12: Icons.directions_car,
   13: Icons.local_taxi,
   14: Icons.directions_bus,
+  27: Icons.directions_bike,
   15: Icons.directions_boat,
   16: Icons.local_gas_station,
   // shopping & apparel
