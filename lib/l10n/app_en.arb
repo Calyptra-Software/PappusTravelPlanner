@@ -570,6 +570,9 @@
   "@connectionSummaryOwnWay": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "connectionWheelchair": "Wheelchair accessible",
+  "connectionWheelchairHint": "Step-free walking and changes, and only services marked as accessible. Many networks publish nothing about this, and then little or nothing is found.",
+  "connectionNoAccessibleConnections": "No step-free connections found",
   "connectionByBike": "Travelling by bike",
   "connectionByBikeHint": "Cycle the whole way, or to the first stop.",
   "connectionBikeOnBoard": "Bike comes along",

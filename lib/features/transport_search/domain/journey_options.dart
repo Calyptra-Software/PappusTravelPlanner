@@ -57,6 +57,7 @@ class JourneySearchOptions {
     this.modes = kAllTransitFilters,
     this.minTransferMinutes = 0,
     this.walkingSpeedKmh = kNormalWalkingSpeedKmh,
+    this.wheelchair = false,
     this.maxTransfers,
     this.byBike = false,
     this.bikeOnBoard = false,
@@ -79,6 +80,15 @@ class JourneySearchOptions {
   /// service scales the two separately — the footpaths inside a station; see
   /// the client for that mapping.
   final double walkingSpeedKmh;
+
+  /// Whether the journey has to be step-free: footpaths — to the first stop,
+  /// between services, from the last — routed for a wheelchair, and only
+  /// services the timetable marks as carrying wheelchairs.
+  ///
+  /// Both halves of that are one setting because the service makes them one:
+  /// see the client, where it is the pedestrian profile that also filters the
+  /// vehicles.
+  final bool wheelchair;
 
   /// The most interchanges to accept; `0` is "direct only", null no limit.
   final int? maxTransfers;
@@ -112,6 +122,7 @@ class JourneySearchOptions {
       modes.length >= kAllTransitFilters.length &&
       minTransferMinutes == 0 &&
       walkingSpeedKmh == kNormalWalkingSpeedKmh &&
+      !wheelchair &&
       maxTransfers == null &&
       !byBike &&
       !bikeOnBoard &&
@@ -129,6 +140,7 @@ class JourneySearchOptions {
     Set<TransitFilter>? modes,
     int? minTransferMinutes,
     double? walkingSpeedKmh,
+    bool? wheelchair,
     int? maxTransfers,
     bool clearMaxTransfers = false,
     bool? byBike,
@@ -142,6 +154,7 @@ class JourneySearchOptions {
     modes: modes ?? this.modes,
     minTransferMinutes: minTransferMinutes ?? this.minTransferMinutes,
     walkingSpeedKmh: walkingSpeedKmh ?? this.walkingSpeedKmh,
+    wheelchair: wheelchair ?? this.wheelchair,
     maxTransfers: clearMaxTransfers ? null : maxTransfers ?? this.maxTransfers,
     byBike: byBike ?? this.byBike,
     // Leaving the bike behind takes it off the train with it.
@@ -168,6 +181,7 @@ class JourneySearchOptions {
       other.modeMask == modeMask &&
       other.minTransferMinutes == minTransferMinutes &&
       other.walkingSpeedKmh == walkingSpeedKmh &&
+      other.wheelchair == wheelchair &&
       other.maxTransfers == maxTransfers &&
       other.byBike == byBike &&
       other.bikeOnBoard == bikeOnBoard &&
@@ -181,6 +195,7 @@ class JourneySearchOptions {
     modeMask,
     minTransferMinutes,
     walkingSpeedKmh,
+    wheelchair,
     maxTransfers,
     byBike,
     bikeOnBoard,

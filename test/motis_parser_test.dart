@@ -744,6 +744,59 @@ void main() {
       }
     });
 
+    test('step-free travel routes the transfers as well as the walk', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(wheelchair: true),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q['pedestrianProfile'], 'WHEELCHAIR');
+      // Not decoration: the profile only reaches the routing engine — and only
+      // then filters out services marked inaccessible — when transfers are
+      // routed. Sending the profile alone would leave the in-station footpaths
+      // on foot times and the inaccessible trains in the results.
+      expect(q['useRoutedTransfers'], 'true');
+    });
+
+    test('nothing said about accessibility when it is not asked for', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q, isNot(contains('pedestrianProfile')));
+      expect(q, isNot(contains('useRoutedTransfers')));
+    });
+
     test('a chosen walking budget is sent exactly, never scaled', () async {
       late http.Request seen;
       final client = MotisTransportSearch(

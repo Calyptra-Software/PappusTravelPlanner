@@ -1355,6 +1355,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get connectionWheelchair => 'Wheelchair accessible';
+
+  @override
+  String get connectionWheelchairHint =>
+      'Step-free walking and changes, and only services marked as accessible. Many networks publish nothing about this, and then little or nothing is found.';
+
+  @override
+  String get connectionNoAccessibleConnections =>
+      'No step-free connections found';
+
+  @override
   String get connectionByBike => 'Travelling by bike';
 
   @override

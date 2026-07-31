@@ -1363,6 +1363,17 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get connectionWheelchair => 'Barrierefrei';
+
+  @override
+  String get connectionWheelchairHint =>
+      'Stufenlose Fuß- und Umsteigewege, nur als barrierefrei gekennzeichnete Verbindungen. Viele Netze veröffentlichen dazu nichts — dann wird wenig oder nichts gefunden.';
+
+  @override
+  String get connectionNoAccessibleConnections =>
+      'Keine barrierefreien Verbindungen gefunden';
+
+  @override
   String get connectionByBike => 'Mit dem Fahrrad';
 
   @override

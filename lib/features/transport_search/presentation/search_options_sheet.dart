@@ -39,6 +39,7 @@ String searchOptionsSummary(
     l10n.connectionSummaryMinTransfer(options.minTransferMinutes),
   if (options.walkingSpeedKmh != kNormalWalkingSpeedKmh)
     l10n.connectionSpeedValue(formatWalkingSpeed(options.walkingSpeedKmh)),
+  if (options.wheelchair) l10n.connectionWheelchair,
   if (options.byBike)
     options.bikeOnBoard ? l10n.connectionBikeOnBoard : l10n.connectionByBike,
   if (options.maxTransfers != null)
@@ -202,6 +203,19 @@ class _SearchOptionsSheetState extends State<_SearchOptionsSheet> {
                 ),
               ),
               const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                secondary: const Icon(Icons.accessible),
+                title: Text(l10n.connectionWheelchair),
+                // Like bike carriage, this filter routinely finds nothing
+                // through no fault of the route: a timetable that says nothing
+                // about accessibility counts as "not accessible".
+                subtitle: Text(l10n.connectionWheelchairHint),
+                value: _draft.wheelchair,
+                onChanged: (on) =>
+                    setState(() => _draft = _draft.copyWith(wheelchair: on)),
+              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,

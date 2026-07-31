@@ -71,6 +71,7 @@ void main() {
       expect(base, isNot(const JourneySearchOptions(minTransferMinutes: 10)));
       expect(base, isNot(const JourneySearchOptions(walkingSpeedKmh: 3)));
       expect(base, isNot(const JourneySearchOptions(maxTransfers: 0)));
+      expect(base, isNot(const JourneySearchOptions(wheelchair: true)));
       expect(base, isNot(const JourneySearchOptions(byBike: true)));
       expect(base, isNot(const JourneySearchOptions(cyclingSpeedKmh: 22)));
       expect(
@@ -94,6 +95,7 @@ void main() {
         isFalse,
       );
       expect(const JourneySearchOptions(walkingSpeedKmh: 3).isDefault, isFalse);
+      expect(const JourneySearchOptions(wheelchair: true).isDefault, isFalse);
       expect(const JourneySearchOptions(byBike: true).isDefault, isFalse);
       expect(
         const JourneySearchOptions(cyclingSpeedKmh: 22).isDefault,

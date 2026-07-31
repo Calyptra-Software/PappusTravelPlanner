@@ -599,6 +599,57 @@ void main() {
     expect(prefs.getInt('connection_max_pre_transit_minutes'), isNull);
   });
 
+  testWidgets('asking for step-free travel reaches the search, and sticks', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    await tester.tap(find.text('Wheelchair accessible'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(search.calls.last.options.wheelchair, isTrue);
+    // A filter someone forgot they set is how a missing connection turns into
+    // a puzzle, so the row that opens the sheet names it.
+    expect(find.textContaining('Wheelchair accessible'), findsOneWidget);
+    expect(prefs.getBool('connection_wheelchair'), isTrue);
+  });
+
+  testWidgets('requiring step-free travel says why nothing was found', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    await tester.tap(find.text('Wheelchair accessible'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    search.findsNothing = true;
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    // A timetable that says nothing about accessibility counts as "not
+    // accessible", so this filter empties whole regions through no fault of
+    // the route — the message has to name the filter, not the timetable.
+    expect(find.text('No step-free connections found'), findsOneWidget);
+    expect(find.text('No connections found'), findsNothing);
+  });
+
   testWidgets('requiring bike carriage says why nothing was found', (
     tester,
   ) async {

@@ -2432,6 +2432,24 @@ abstract class AppLocalizations {
   /// **'≤{minutes} min on your own'**
   String connectionSummaryOwnWay(int minutes);
 
+  /// No description provided for @connectionWheelchair.
+  ///
+  /// In en, this message translates to:
+  /// **'Wheelchair accessible'**
+  String get connectionWheelchair;
+
+  /// No description provided for @connectionWheelchairHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Step-free walking and changes, and only services marked as accessible. Many networks publish nothing about this, and then little or nothing is found.'**
+  String get connectionWheelchairHint;
+
+  /// No description provided for @connectionNoAccessibleConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'No step-free connections found'**
+  String get connectionNoAccessibleConnections;
+
   /// No description provided for @connectionByBike.
   ///
   /// In en, this message translates to:

@@ -421,14 +421,21 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
                 padding: const EdgeInsets.all(24),
                 child: Center(
                   child: Text(
-                    // Requiring bike carriage is the one filter that routinely
-                    // finds nothing through no fault of the route: most feeds
-                    // simply do not say whether bikes are allowed. Naming it
-                    // beats "no connections found" sending someone hunting for
-                    // a better departure time.
-                    query.options.bikeOnBoard
-                        ? l10n.connectionNoBikeConnections
-                        : l10n.connectionSearchNoResults,
+                    // Bike carriage and step-free travel are the two filters
+                    // that routinely find nothing through no fault of the
+                    // route: most feeds simply do not say whether bikes are
+                    // allowed or whether a service is accessible, and silence
+                    // counts as "no". Naming the filter beats "no connections
+                    // found" sending someone hunting for a better departure
+                    // time. Accessibility is named first when both are on: it
+                    // is the harder constraint to trade away.
+                    switch (query.options) {
+                      final o when o.wheelchair =>
+                        l10n.connectionNoAccessibleConnections,
+                      final o when o.bikeOnBoard =>
+                        l10n.connectionNoBikeConnections,
+                      _ => l10n.connectionSearchNoResults,
+                    },
                     textAlign: TextAlign.center,
                   ),
                 ),

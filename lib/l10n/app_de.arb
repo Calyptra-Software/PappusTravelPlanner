@@ -492,6 +492,9 @@
   "@connectionSummaryOwnWay": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "connectionWheelchair": "Barrierefrei",
+  "connectionWheelchairHint": "Stufenlose Fuß- und Umsteigewege, nur als barrierefrei gekennzeichnete Verbindungen. Viele Netze veröffentlichen dazu nichts — dann wird wenig oder nichts gefunden.",
+  "connectionNoAccessibleConnections": "Keine barrierefreien Verbindungen gefunden",
   "connectionByBike": "Mit dem Fahrrad",
   "connectionByBikeHint": "Die ganze Strecke fahren oder bis zur ersten Haltestelle.",
   "connectionBikeOnBoard": "Fahrrad kommt mit",

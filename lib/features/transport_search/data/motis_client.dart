@@ -109,6 +109,7 @@ class MotisTransportSearch implements TransportSearch {
       if (options.maxTransfers != null)
         'maxTransfers': '${options.maxTransfers}',
       ..._walkingParams(options),
+      ..._wheelchairParams(options),
       ..._bikeParams(options),
       ..._viaParams(via),
       // The cursor carries the window; the rest of the query must be repeated
@@ -148,6 +149,33 @@ class MotisTransportSearch implements TransportSearch {
       if (stays.any((minutes) => minutes > 0))
         'viaMinimumStay': stays.join(','),
     };
+  }
+
+  /// Everything "step-free only" turns into: **two** parameters, and the second
+  /// is not optional decoration.
+  ///
+  /// `pedestrianProfile=WHEELCHAIR` alone routes the street legs for a
+  /// wheelchair (verified live: the walk to the first stop grows from 5 to 12
+  /// minutes) and does nothing else — the transfers inside stations keep their
+  /// precomputed foot times, and the search still offers services the timetable
+  /// marks `NOT_ACCESSIBLE`. Both of those only change with
+  /// `useRoutedTransfers=true`, because the server passes the wheelchair
+  /// profile down to the routing engine *only* when transfers are routed on OSM
+  /// data, and it is that same profile flag which filters the trips. So one
+  /// without the other is a half-answer wearing an accessibility label; they are
+  /// sent together, exactly as the official MOTIS UI couples its two switches.
+  ///
+  /// Nothing at all when it is off: the service's own `FOOT` and precomputed
+  /// transfers, which is what every other search here has always used.
+  ///
+  /// A caveat the UI has to carry, like bike carriage: GTFS `wheelchair_
+  /// accessible` counts only an explicit "yes" (`1`), so a feed that simply
+  /// says nothing reports `NOT_ACCESSIBLE` and is filtered out. Verified live —
+  /// Hamburg→Lüneburg drops from 6 connections to 1 (and from 43 to 316
+  /// minutes), Amsterdam→Utrecht from 5 to **none at all**.
+  static Map<String, String> _wheelchairParams(JourneySearchOptions options) {
+    if (!options.wheelchair) return const {};
+    return {'pedestrianProfile': 'WHEELCHAIR', 'useRoutedTransfers': 'true'};
   }
 
   /// Everything travelling with a bike turns into.
