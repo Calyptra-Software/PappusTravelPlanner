@@ -1297,7 +1297,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionTo => 'Nach';
 
   @override
+  String get connectionVia => 'Zwischenhalt';
+
+  @override
+  String get connectionViaAdd => 'Zwischenhalt hinzufügen';
+
+  @override
+  String get connectionViaRemove => 'Zwischenhalt entfernen';
+
+  @override
+  String get connectionViaHint =>
+      'Als Zwischenhalt sind nur Haltestellen möglich.';
+
+  @override
+  String get connectionViaStay => 'Mindestens bleiben';
+
+  @override
+  String get connectionViaStayNone => 'Kein Minimum';
+
+  @override
   String get connectionPickPlace => 'Bahnhof oder Ort suchen';
+
+  @override
+  String get connectionPickStop => 'Bahnhof oder Haltestelle suchen';
 
   @override
   String get connectionDepart => 'Abfahrt um';
@@ -1432,6 +1454,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String connectionMinutesShort(int minutes) {
     return '$minutes Min.';
+  }
+
+  @override
+  String connectionHoursShort(int hours) {
+    return '$hours Std.';
+  }
+
+  @override
+  String connectionHoursMinutesShort(int hours, int minutes) {
+    return '$hours Std. $minutes Min.';
   }
 
   @override

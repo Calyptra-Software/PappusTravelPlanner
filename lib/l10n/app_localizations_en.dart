@@ -1291,7 +1291,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionTo => 'To';
 
   @override
+  String get connectionVia => 'Via stop';
+
+  @override
+  String get connectionViaAdd => 'Add via stop';
+
+  @override
+  String get connectionViaRemove => 'Remove via stop';
+
+  @override
+  String get connectionViaHint => 'Only stations can be a via stop.';
+
+  @override
+  String get connectionViaStay => 'Stay at least';
+
+  @override
+  String get connectionViaStayNone => 'No minimum';
+
+  @override
   String get connectionPickPlace => 'Search station or place';
+
+  @override
+  String get connectionPickStop => 'Search station';
 
   @override
   String get connectionDepart => 'Depart at';
@@ -1424,6 +1445,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String connectionMinutesShort(int minutes) {
     return '$minutes min';
+  }
+
+  @override
+  String connectionHoursShort(int hours) {
+    return '$hours h';
+  }
+
+  @override
+  String connectionHoursMinutesShort(int hours, int minutes) {
+    return '$hours h $minutes min';
   }
 
   @override

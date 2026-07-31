@@ -2318,11 +2318,53 @@ abstract class AppLocalizations {
   /// **'To'**
   String get connectionTo;
 
+  /// No description provided for @connectionVia.
+  ///
+  /// In en, this message translates to:
+  /// **'Via stop'**
+  String get connectionVia;
+
+  /// No description provided for @connectionViaAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add via stop'**
+  String get connectionViaAdd;
+
+  /// No description provided for @connectionViaRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove via stop'**
+  String get connectionViaRemove;
+
+  /// No description provided for @connectionViaHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Only stations can be a via stop.'**
+  String get connectionViaHint;
+
+  /// No description provided for @connectionViaStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay at least'**
+  String get connectionViaStay;
+
+  /// No description provided for @connectionViaStayNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No minimum'**
+  String get connectionViaStayNone;
+
   /// No description provided for @connectionPickPlace.
   ///
   /// In en, this message translates to:
   /// **'Search station or place'**
   String get connectionPickPlace;
+
+  /// No description provided for @connectionPickStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Search station'**
+  String get connectionPickStop;
 
   /// No description provided for @connectionDepart.
   ///
@@ -2533,6 +2575,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{minutes} min'**
   String connectionMinutesShort(int minutes);
+
+  /// No description provided for @connectionHoursShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h'**
+  String connectionHoursShort(int hours);
+
+  /// No description provided for @connectionHoursMinutesShort.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String connectionHoursMinutesShort(int hours, int minutes);
 
   /// No description provided for @connectionWalkingSpeed.
   ///

@@ -10,6 +10,7 @@ import 'package:travelplanner/features/transport_search/domain/journey_options.d
 import 'package:travelplanner/features/transport_search/domain/transit_filter.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
+import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 
 String _fixture(String name) => File('test/fixtures/$name').readAsStringSync();
 
@@ -450,6 +451,136 @@ void main() {
       // being mistaken for "unset". It only means this from plan v3 on.
       expect(seen.url.queryParameters['maxTransfers'], '0');
       expect(seen.url.path, '/api/v6/plan');
+    });
+
+    test('a via stop travels with the stay it was given', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        via: const ViaStops([ViaStop(id: 'V', minimumStayMinutes: 120)]),
+      );
+
+      expect(seen.url.queryParameters['via'], 'V');
+      expect(seen.url.queryParameters['viaMinimumStay'], '120');
+    });
+
+    test('two via stops keep the order they are visited in', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        via: const ViaStops([
+          ViaStop(id: 'V1', minimumStayMinutes: 30),
+          ViaStop(id: 'V2', minimumStayMinutes: 120),
+        ]),
+      );
+
+      // One comma-joined list each (the spec's `explode: false`), the second
+      // parallel to the first.
+      expect(seen.url.queryParameters['via'], 'V1,V2');
+      expect(seen.url.queryParameters['viaMinimumStay'], '30,120');
+    });
+
+    test('a stay on the second stop still states the first one', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        via: const ViaStops([
+          ViaStop(id: 'V1'),
+          ViaStop(id: 'V2', minimumStayMinutes: 120),
+        ]),
+      );
+
+      // The arrays are parallel: sending only the stay that was asked for would
+      // pin those two hours on the *first* stop.
+      expect(seen.url.queryParameters['viaMinimumStay'], '0,120');
+    });
+
+    test('a via stop with no minimum stay says only where', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        via: const ViaStops([ViaStop(id: 'V')]),
+      );
+
+      expect(seen.url.queryParameters['via'], 'V');
+      // The service's own default, and it means something — the traveller may
+      // stay on the same vehicle through the via — so it is left to say itself.
+      expect(seen.url.queryParameters, isNot(contains('viaMinimumStay')));
+    });
+
+    test('no via stop, nothing about one on the wire', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+      );
+
+      expect(seen.url.queryParameters, isNot(contains('via')));
+      expect(seen.url.queryParameters, isNot(contains('viaMinimumStay')));
     });
 
     test('a slow walker also gets the time to be slow in', () async {

@@ -9,6 +9,7 @@ import '../data/journey_mapper.dart' show localParts;
 import '../domain/journey.dart';
 import '../domain/transit_mode.dart';
 import '../domain/transport_place.dart';
+import '../domain/via_stop.dart';
 import 'journey_formats.dart';
 import 'journey_preview_sheet.dart';
 import 'search_options_sheet.dart';
@@ -31,6 +32,9 @@ Future<bool> showConnectionSearchSheet(
   return imported ?? false;
 }
 
+/// One via stop on the form: the station itself, and how long to stay there.
+typedef _Via = ({TransportPlace place, int stayMinutes});
+
 class ConnectionSearchSheet extends ConsumerStatefulWidget {
   const ConnectionSearchSheet({
     super.key,
@@ -49,6 +53,18 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
 class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   TransportPlace? _from;
   TransportPlace? _to;
+
+  /// The stops to be routed through, in the order the journey visits them, each
+  /// with the least time to spend there.
+  ///
+  /// Empty until someone adds one, and a row exists only once it *has* a stop:
+  /// travelling straight from A to B is the ordinary case, so an empty via field
+  /// standing there would ask everyone a question almost nobody is answering —
+  /// and a row with nothing in it would have to be silently dropped from the
+  /// query anyway. Held as the picked places (the tiles show their names) while
+  /// the query carries only their ids.
+  final List<_Via> _vias = [];
+
   late DateTime _date = DateUtils.dateOnly(widget.day);
   TimeOfDay _time = TimeOfDay.now();
   bool _arriveBy = false;
@@ -61,18 +77,40 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
 
   bool get _canSearch => _from != null && _to != null;
 
-  Future<void> _pick({required bool isFrom}) async {
+  /// Opens the place picker and hands what was chosen to [onPicked].
+  ///
+  /// [stopsOnly] narrows it to stations, which is what a via stop must be: the
+  /// routing service takes a stop id there and no coordinates, so an address
+  /// offered in that list would be a choice that could only fail.
+  Future<void> _pick({
+    required ValueSetter<TransportPlace> onPicked,
+    bool stopsOnly = false,
+  }) async {
     final place = await showModalBottomSheet<TransportPlace>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => const _PlacePickerSheet(),
+      builder: (_) => _PlacePickerSheet(stopsOnly: stopsOnly),
     );
-    if (place != null) {
-      setState(() => isFrom ? _from = place : _to = place);
-    }
+    if (place != null && mounted) setState(() => onPicked(place));
   }
+
+  /// Adds a via stop — by picking it, so the row appears already holding one.
+  /// Backing out of the picker leaves the form exactly as it was.
+  Future<void> _addVia() => _pick(
+    stopsOnly: true,
+    onPicked: (place) => _vias.add((place: place, stayMinutes: 0)),
+  );
+
+  /// Swaps the station at [index], keeping the stay: this is an edit of that
+  /// row — "not *that* Hannover" — where removing the row is how one says the
+  /// journey should not go this way at all.
+  Future<void> _changeVia(int index) => _pick(
+    stopsOnly: true,
+    onPicked: (place) =>
+        _vias[index] = (place: place, stayMinutes: _vias[index].stayMinutes),
+  );
 
   void _runSearch() {
     final when = DateTime(
@@ -88,6 +126,12 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
         // has to travel as a coordinate (see `TransportPlace.queryId`).
         fromId: _from!.queryId,
         toId: _to!.queryId,
+        // A via *is* always a stop (the picker allows nothing else), so each
+        // queryId here is a stop id — the only thing the service takes.
+        via: ViaStops([
+          for (final via in _vias)
+            ViaStop(id: via.place.queryId, minimumStayMinutes: via.stayMinutes),
+        ]),
         time: when,
         arriveBy: _arriveBy,
         options: ref.read(journeySearchOptionsProvider),
@@ -185,13 +229,43 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
               icon: Icons.trip_origin,
               label: l10n.connectionFrom,
               place: _from,
-              onTap: () => _pick(isFrom: true),
+              onTap: () => _pick(onPicked: (place) => _from = place),
             ),
+            for (var i = 0; i < _vias.length; i++) ...[
+              _EndpointTile(
+                // The dots on the rail between origin and destination: this is
+                // somewhere the journey passes, not somewhere it ends.
+                icon: Icons.more_vert,
+                label: l10n.connectionVia,
+                place: _vias[i].place,
+                onTap: () => _changeVia(i),
+                // The stay hangs off the stop, so removing the row takes it
+                // with it — and the next via starts from no minimum again.
+                onClear: () => setState(() => _vias.removeAt(i)),
+                clearTooltip: l10n.connectionViaRemove,
+              ),
+              _viaStayRow(l10n, i),
+            ],
+            // Between the two ends, because that is where a via stop goes. It
+            // stops being offered at the service's own limit rather than
+            // standing there disabled with nothing to say why.
+            if (_vias.length < kMaxViaStops)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
+                  child: TextButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: Text(l10n.connectionViaAdd),
+                    onPressed: _addVia,
+                  ),
+                ),
+              ),
             _EndpointTile(
               icon: Icons.place_outlined,
               label: l10n.connectionTo,
               place: _to,
-              onTap: () => _pick(isFrom: false),
+              onTap: () => _pick(onPicked: (place) => _to = place),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -265,6 +339,53 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// How long to spend at the via stop at [index] before travelling on.
+  ///
+  /// It sits under its stop rather than in the search options: it is a fact
+  /// about *this* journey ("two hours in Nuremberg"), not a preference to carry
+  /// into the next search, and it means nothing on its own. Indented to the
+  /// stop's title so it reads as belonging to it rather than to the row below.
+  Widget _viaStayRow(AppLocalizations l10n, int index) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(72, 0, 24, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              l10n.connectionViaStay,
+              style: theme.textTheme.bodyMedium,
+            ),
+          ),
+          const SizedBox(width: 8),
+          DropdownButton<int>(
+            value: _vias[index].stayMinutes,
+            underline: const SizedBox.shrink(),
+            items: [
+              for (final minutes in kViaStayMinuteOptions)
+                DropdownMenuItem(
+                  value: minutes,
+                  child: Text(
+                    // Zero is not the absence of an answer: it tells the
+                    // service the traveller need not get off at all.
+                    minutes == 0
+                        ? l10n.connectionViaStayNone
+                        : formatStayDuration(l10n, minutes),
+                  ),
+                ),
+            ],
+            onChanged: (v) => setState(
+              () => _vias[index] = (
+                place: _vias[index].place,
+                stayMinutes: v ?? 0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -414,19 +535,26 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   }
 }
 
-/// A From/To row showing the chosen place or a prompt.
+/// A From/Via/To row showing the chosen place or a prompt.
 class _EndpointTile extends StatelessWidget {
   const _EndpointTile({
     required this.icon,
     required this.label,
     required this.place,
     required this.onTap,
+    this.onClear,
+    this.clearTooltip,
   });
 
   final IconData icon;
   final String label;
   final TransportPlace? place;
   final VoidCallback onTap;
+
+  /// Offered only where the place is optional — a journey always has two ends,
+  /// so From and To have nothing to clear *to*.
+  final VoidCallback? onClear;
+  final String? clearTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -435,6 +563,13 @@ class _EndpointTile extends StatelessWidget {
       leading: Icon(icon),
       title: Text(place?.name ?? label),
       subtitle: place?.area == null ? null : Text(place!.area!),
+      trailing: onClear == null
+          ? null
+          : IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: clearTooltip,
+              onPressed: onClear,
+            ),
       onTap: onTap,
     );
   }
@@ -543,7 +678,13 @@ class _ErrorRow extends StatelessWidget {
 
 /// A place picker: a search field over live geocode suggestions.
 class _PlacePickerSheet extends ConsumerStatefulWidget {
-  const _PlacePickerSheet();
+  const _PlacePickerSheet({this.stopsOnly = false});
+
+  /// Whether addresses and points of interest are dropped from the suggestions,
+  /// leaving stations alone. Set for a via stop, which the routing service
+  /// addresses by stop id and by nothing else — an address offered here could
+  /// only be picked and then fail.
+  final bool stopsOnly;
 
   @override
   ConsumerState<_PlacePickerSheet> createState() => _PlacePickerSheetState();
@@ -562,8 +703,13 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final media = MediaQuery.of(context);
     final async = ref.watch(geocodeProvider(_query));
+    final places = [
+      for (final place in async.value ?? const <TransportPlace>[])
+        if (!widget.stopsOnly || place.kind == PlaceKind.stop) place,
+    ];
 
     return Padding(
       padding: EdgeInsets.only(bottom: media.viewInsets.bottom),
@@ -574,15 +720,33 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-              child: TextField(
-                controller: _controller,
-                autofocus: true,
-                textInputAction: TextInputAction.search,
-                decoration: InputDecoration(
-                  labelText: l10n.connectionPickPlace,
-                  prefixIcon: const Icon(Icons.search),
-                ),
-                onChanged: (v) => setState(() => _query = v),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _controller,
+                    autofocus: true,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      labelText: widget.stopsOnly
+                          ? l10n.connectionPickStop
+                          : l10n.connectionPickPlace,
+                      prefixIcon: const Icon(Icons.search),
+                    ),
+                    onChanged: (v) => setState(() => _query = v),
+                  ),
+                  // Said here rather than discovered as a suggestion list that
+                  // silently omits the address just typed into it.
+                  if (widget.stopsOnly) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.connectionViaHint,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             if (async.isLoading) const LinearProgressIndicator(minHeight: 2),
@@ -597,7 +761,7 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
                 shrinkWrap: true,
                 padding: EdgeInsets.only(bottom: 12 + media.padding.bottom),
                 children: [
-                  for (final place in async.value ?? const <TransportPlace>[])
+                  for (final place in places)
                     ListTile(
                       leading: const Icon(Icons.place_outlined),
                       title: Text(place.name),

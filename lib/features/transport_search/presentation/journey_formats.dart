@@ -99,6 +99,21 @@ String formatJourneyDuration(Duration duration) {
   return hours == 0 ? '${minutes}m' : '${hours}h ${minutes}m';
 }
 
+/// A stay someone *chooses* — the minimum time at a via stop — written out in
+/// words rather than the compact "1h 30m" a journey's duration uses.
+///
+/// A duration read off a result is scanned beside a dozen others, where terse
+/// is a virtue; this one is picked from a menu, and "2 h" reads as an amount of
+/// time to spend somewhere.
+String formatStayDuration(AppLocalizations l10n, int minutes) {
+  final hours = minutes ~/ 60;
+  final rest = minutes % 60;
+  if (hours == 0) return l10n.connectionMinutesShort(rest);
+  return rest == 0
+      ? l10n.connectionHoursShort(hours)
+      : l10n.connectionHoursMinutesShort(hours, rest);
+}
+
 IconData transitIcon(TransitMode? mode) {
   switch (mode) {
     case TransitMode.walk:

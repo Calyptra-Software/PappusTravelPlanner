@@ -464,7 +464,14 @@
   "connectionSearchOnline": "Online suchen",
   "connectionFrom": "Von",
   "connectionTo": "Nach",
+  "connectionVia": "Zwischenhalt",
+  "connectionViaAdd": "Zwischenhalt hinzufügen",
+  "connectionViaRemove": "Zwischenhalt entfernen",
+  "connectionViaHint": "Als Zwischenhalt sind nur Haltestellen möglich.",
+  "connectionViaStay": "Mindestens bleiben",
+  "connectionViaStayNone": "Kein Minimum",
   "connectionPickPlace": "Bahnhof oder Ort suchen",
+  "connectionPickStop": "Bahnhof oder Haltestelle suchen",
   "connectionDepart": "Abfahrt um",
   "connectionArrive": "Ankunft bis",
   "connectionBudgetsTitle": "Zeit zu und von Haltestellen",
@@ -529,6 +536,19 @@
   "connectionMinutesShort": "{minutes} Min.",
   "@connectionMinutesShort": {
     "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionHoursShort": "{hours} Std.",
+  "@connectionHoursShort": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "connectionHoursMinutesShort": "{hours} Std. {minutes} Min.",
+  "@connectionHoursMinutesShort": {
+    "placeholders": {
+      "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
   },

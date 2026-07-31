@@ -15,6 +15,7 @@ import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
 import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
+import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 
 /// A backend that only answers tripStops (all the refresh needs), from a fixed
 /// list of stops.
@@ -35,6 +36,7 @@ class _FakeSearch implements TransportSearch {
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
     String? pageCursor,
   }) => throw UnimplementedError();
 }

@@ -4,6 +4,7 @@ import '../data/motis_client.dart';
 import '../domain/journey.dart';
 import '../domain/journey_options.dart';
 import '../domain/transport_place.dart';
+import '../domain/via_stop.dart';
 import 'search_language_provider.dart';
 import 'transport_search.dart';
 
@@ -41,11 +42,12 @@ final geocodeProvider = FutureProvider.autoDispose
     });
 
 /// The parameters of a journey search — a value type, so two identical searches
-/// share one cached result. [JourneySearchOptions] compares by value for the
-/// same reason.
+/// share one cached result. [JourneySearchOptions] and [ViaStops] compare by
+/// value for the same reason.
 typedef JourneyQuery = ({
   String fromId,
   String toId,
+  ViaStops via,
   DateTime time,
   bool arriveBy,
   JourneySearchOptions options,
@@ -106,6 +108,7 @@ class JourneyResultsController extends AsyncNotifier<JourneyResults> {
       .journeys(
         fromId: query.fromId,
         toId: query.toId,
+        via: query.via,
         time: query.time,
         arriveBy: query.arriveBy,
         options: query.options,

@@ -1,6 +1,7 @@
 import '../domain/journey.dart';
 import '../domain/journey_options.dart';
 import '../domain/transport_place.dart';
+import '../domain/via_stop.dart';
 
 /// A provider-agnostic connection-search backend.
 ///
@@ -21,6 +22,11 @@ abstract interface class TransportSearch {
   /// default), an arrival deadline when true. [options] narrows *how* the
   /// journey may be made; its default asks for no restriction at all.
   ///
+  /// [via] adds up to [kMaxViaStops] stops the journey must pass through, in
+  /// order, each with the least time to spend there. Unlike [options] it is part
+  /// of *where* the journey goes, so it belongs to this one search rather than
+  /// to the traveller's preferences.
+  ///
   /// [pageCursor] asks for a neighbouring window instead of the one around
   /// [time]: pass a cursor from an earlier result and leave **every other
   /// argument exactly as it was**, since a cursor is only meaningful against
@@ -31,6 +37,7 @@ abstract interface class TransportSearch {
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
     String? pageCursor,
   });
 

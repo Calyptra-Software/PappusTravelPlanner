@@ -542,7 +542,14 @@
   "connectionSearchOnline": "Search online",
   "connectionFrom": "From",
   "connectionTo": "To",
+  "connectionVia": "Via stop",
+  "connectionViaAdd": "Add via stop",
+  "connectionViaRemove": "Remove via stop",
+  "connectionViaHint": "Only stations can be a via stop.",
+  "connectionViaStay": "Stay at least",
+  "connectionViaStayNone": "No minimum",
   "connectionPickPlace": "Search station or place",
+  "connectionPickStop": "Search station",
   "connectionDepart": "Depart at",
   "connectionArrive": "Arrive by",
   "connectionBudgetsTitle": "Time to and from stops",
@@ -612,6 +619,19 @@
   "connectionMinutesShort": "{minutes} min",
   "@connectionMinutesShort": {
     "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionHoursShort": "{hours} h",
+  "@connectionHoursShort": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "connectionHoursMinutesShort": "{hours} h {minutes} min",
+  "@connectionHoursMinutesShort": {
+    "placeholders": {
+      "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
   },

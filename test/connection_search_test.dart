@@ -18,6 +18,7 @@ import 'package:travelplanner/features/transport_search/domain/journey_options.d
 import 'package:travelplanner/features/transport_search/domain/transit_filter.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
+import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -45,6 +46,34 @@ const _place = TransportPlace(
   kind: PlaceKind.stop,
   area: 'Hamburg',
   timeZone: 'Europe/Berlin',
+);
+
+/// Two more stops, so vias can be told apart from the ends and from each other.
+const _viaPlace = TransportPlace(
+  id: 'V1',
+  name: 'Hannover Hbf',
+  kind: PlaceKind.stop,
+  area: 'Hannover',
+  timeZone: 'Europe/Berlin',
+);
+const _viaPlace2 = TransportPlace(
+  id: 'V2',
+  name: 'Nürnberg Hbf',
+  kind: PlaceKind.stop,
+  area: 'Nürnberg',
+  timeZone: 'Europe/Berlin',
+);
+
+/// What the geocoder answers with for anything that is *not* a stop — the
+/// routing service takes no coordinates for a via, so this must never be
+/// offered as one.
+const _address = TransportPlace(
+  id: 'way/[142944431]',
+  name: 'Rathausmarkt 1',
+  kind: PlaceKind.address,
+  area: 'Hamburg',
+  lat: 53.55,
+  lon: 9.99,
 );
 
 /// One journey departing at [hour] UTC and running for [duration]. [live] gives
@@ -89,7 +118,8 @@ JourneyOption _option({
 /// searched window holds `ICE 1` and points at a window either side, each of
 /// which holds one more.
 class _FakeSearch implements TransportSearch {
-  final calls = <({JourneySearchOptions options, String? pageCursor})>[];
+  final calls =
+      <({JourneySearchOptions options, ViaStops via, String? pageCursor})>[];
 
   /// When set, only *paging* requests fail — the first window still answers, so
   /// a test can check that results already found survive a failed "later".
@@ -111,9 +141,10 @@ class _FakeSearch implements TransportSearch {
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
     String? pageCursor,
   }) async {
-    calls.add((options: options, pageCursor: pageCursor));
+    calls.add((options: options, via: via, pageCursor: pageCursor));
     if (pageCursor != null && failPaging) {
       throw const TransportSearchException('offline');
     }
@@ -159,16 +190,19 @@ class _FakeSearch implements TransportSearch {
 void main() {
   setUpAll(tzdata.initializeTimeZones);
 
-  const place = _place;
-
   late _FakeController fake;
   late _FakeSearch search;
   late SharedPreferences prefs;
+
+  /// What the place picker is offered, so a test can put a non-stop in front of
+  /// it. Read through the geocode override below, which every picker shares.
+  late List<TransportPlace> suggestions;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     search = _FakeSearch();
+    suggestions = const [_place];
   });
 
   Future<void> pump(WidgetTester tester) async {
@@ -181,7 +215,7 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
-          geocodeProvider.overrideWith((ref, query) async => [place]),
+          geocodeProvider.overrideWith((ref, query) async => suggestions),
           transportSearchProvider.overrideWithValue(search),
           transportSearchControllerProvider.overrideWith(
             (ref) => fake = _FakeController(ref),
@@ -212,12 +246,35 @@ void main() {
     );
   }
 
-  Future<void> pickInto(WidgetTester tester, String fieldLabel) async {
+  Future<void> pickInto(
+    WidgetTester tester,
+    String fieldLabel, {
+    String pick = 'Hamburg Hbf',
+  }) async {
     await tester.tap(find.text(fieldLabel));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, 'Ham');
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hamburg Hbf').last);
+    await tester.tap(find.text(pick).last);
+    await tester.pumpAndSettle();
+  }
+
+  /// Adds a via stop through the button that offers one. Unlike From and To
+  /// there is no field to tap: the row appears only once it holds a station.
+  Future<void> addVia(WidgetTester tester, String pick) async {
+    await tester.tap(find.text('Add via stop'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Ham');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(pick).last);
+    await tester.pumpAndSettle();
+  }
+
+  /// Sets the [index]-th via stop's minimum stay to the entry reading [label].
+  Future<void> setStay(WidgetTester tester, int index, String label) async {
+    await tester.tap(find.byType(DropdownButton<int>).at(index));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label).last);
     await tester.pumpAndSettle();
   }
 
@@ -600,6 +657,163 @@ void main() {
 
     expect(fake.imports, 1);
     expect(find.text('Connection added'), findsOneWidget);
+  });
+
+  testWidgets('an ordinary search asks nothing about via stops', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    // Straight from A to B is the ordinary journey, so the form holds no via
+    // field at all — only the offer of one.
+    expect(find.text('Via stop'), findsNothing);
+    expect(find.text('Stay at least'), findsNothing);
+    expect(find.text('Add via stop'), findsOneWidget);
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(search.calls.last.via.isEmpty, isTrue);
+  });
+
+  testWidgets('a via stop and its minimum stay reach the search', (
+    tester,
+  ) async {
+    suggestions = const [_place, _viaPlace];
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+    await addVia(tester, 'Hannover Hbf');
+
+    // The row exists only now, and it came with its stay.
+    expect(find.text('Hannover Hbf'), findsOneWidget);
+    expect(find.text('Stay at least'), findsOneWidget);
+    await setStay(tester, 0, '2 h');
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(
+      search.calls.last.via,
+      const ViaStops([ViaStop(id: 'V1', minimumStayMinutes: 120)]),
+    );
+  });
+
+  testWidgets('a via stop asked for with no minimum stay says so', (
+    tester,
+  ) async {
+    suggestions = const [_place, _viaPlace];
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+    await addVia(tester, 'Hannover Hbf');
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    // Zero is a real answer — it lets the traveller stay on the same vehicle
+    // through the via — so the stop still travels, with no floor on it.
+    expect(search.calls.last.via, const ViaStops([ViaStop(id: 'V1')]));
+  });
+
+  testWidgets('two via stops travel in the order they were added', (
+    tester,
+  ) async {
+    suggestions = const [_place, _viaPlace, _viaPlace2];
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+    await addVia(tester, 'Hannover Hbf');
+    await addVia(tester, 'Nürnberg Hbf');
+
+    // Two is the service's limit, so nothing offers a third.
+    expect(find.text('Add via stop'), findsNothing);
+    expect(find.text('Stay at least'), findsNWidgets(2));
+
+    // A stay on the second stop only; the first keeps its "no minimum".
+    await setStay(tester, 1, '2 h');
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(
+      search.calls.last.via,
+      const ViaStops([
+        ViaStop(id: 'V1'),
+        ViaStop(id: 'V2', minimumStayMinutes: 120),
+      ]),
+    );
+  });
+
+  testWidgets('removing a via stop takes its stay with it', (tester) async {
+    suggestions = const [_place, _viaPlace, _viaPlace2];
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+    await addVia(tester, 'Hannover Hbf');
+    await addVia(tester, 'Nürnberg Hbf');
+    await setStay(tester, 0, '2 h');
+
+    // Remove the first; the second stays, and so does *its* stay.
+    await tester.tap(find.byIcon(Icons.close).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Hannover Hbf'), findsNothing);
+    expect(find.text('Nürnberg Hbf'), findsOneWidget);
+    expect(find.text('Add via stop'), findsOneWidget);
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    expect(search.calls.last.via, const ViaStops([ViaStop(id: 'V2')]));
+
+    // The next via starts from no minimum rather than inheriting the "2 h"
+    // that was set for a stop no longer on the form.
+    await addVia(tester, 'Hannover Hbf');
+    expect(find.text('No minimum'), findsNWidgets(2));
+  });
+
+  testWidgets('only a station may be a via stop', (tester) async {
+    suggestions = const [_place, _address];
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add via stop'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Ham');
+    await tester.pumpAndSettle();
+
+    // The service takes a stop id here and no coordinates at all, so an address
+    // offered in this list could only be picked and then fail. Said in words,
+    // too — a list that silently drops what was typed into it is a puzzle.
+    expect(find.text('Rathausmarkt 1'), findsNothing);
+    expect(find.text('Hamburg Hbf'), findsOneWidget);
+    expect(find.text('Only stations can be a via stop.'), findsOneWidget);
+    await tester.tap(find.text('Hamburg Hbf'));
+    await tester.pumpAndSettle();
+
+    // The ends are unaffected: an address is a perfectly good origin, routed
+    // by coordinate.
+    await tester.tap(find.text('From'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Rat');
+    await tester.pumpAndSettle();
+    expect(find.text('Rathausmarkt 1'), findsOneWidget);
   });
 
   testWidgets('search is disabled until both endpoints are set', (

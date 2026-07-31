@@ -8,6 +8,7 @@ import '../domain/journey.dart';
 import '../domain/journey_options.dart';
 import '../domain/transit_filter.dart';
 import '../domain/transport_place.dart';
+import '../domain/via_stop.dart';
 import 'motis_parser.dart';
 
 /// The default MOTIS server: the community-run Transitous instance. MOTIS is the
@@ -84,6 +85,7 @@ class MotisTransportSearch implements TransportSearch {
     required DateTime time,
     bool arriveBy = false,
     JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
     String? pageCursor,
   }) async {
     // `transitModes` is sent only as a *restriction*: omitted, the server
@@ -108,12 +110,44 @@ class MotisTransportSearch implements TransportSearch {
         'maxTransfers': '${options.maxTransfers}',
       ..._walkingParams(options),
       ..._bikeParams(options),
+      ..._viaParams(via),
       // The cursor carries the window; the rest of the query must be repeated
       // unchanged beside it, which is why it is a parameter here and not a
       // separate call.
       'pageCursor': ?pageCursor,
     });
     return parsePlanResponse(body);
+  }
+
+  /// The stops the journey is asked to pass through, as the query writes them:
+  /// one comma-joined list, in the order they are visited (the spec's
+  /// `explode: false`).
+  ///
+  /// `via` takes **stop ids only** — the spec allows no coordinates here at all,
+  /// which is what confines the picker behind it to stations; sending a
+  /// `lat,lon` the way [TransportPlace.queryId] does for an address would be
+  /// rejected rather than routed.
+  ///
+  /// `viaMinimumStay` is a **parallel array**, so it is all or nothing: a stay
+  /// for the second stop can only be sent alongside one for the first, and
+  /// naming just the stops that have a stay would silently attach them to the
+  /// wrong ones. Sent, then, only when some stop asks for one, and then for
+  /// every stop. Omitting it entirely is the service's own `0` for each, which
+  /// does not merely mean "no wait": it says the traveller need not get off, so
+  /// the via may be passed through on the same vehicle — often a connection
+  /// with one change fewer.
+  static Map<String, String> _viaParams(ViaStops via) {
+    assert(
+      via.length <= kMaxViaStops,
+      'the service accepts at most $kMaxViaStops via stops',
+    );
+    if (via.isEmpty) return const {};
+    final stays = [for (final stop in via.stops) stop.minimumStayMinutes];
+    return {
+      'via': [for (final stop in via.stops) stop.id].join(','),
+      if (stays.any((minutes) => minutes > 0))
+        'viaMinimumStay': stays.join(','),
+    };
   }
 
   /// Everything travelling with a bike turns into.
