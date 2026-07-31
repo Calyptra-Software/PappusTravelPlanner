@@ -25,13 +25,18 @@ class TransportSearchController {
 
   final Ref _ref;
 
-  /// [trackLabel]/[directionLabel] localize the auto-notes (platform/direction)
-  /// composed for each leg; the UI supplies them from its localizations.
+  /// The track/direction labels localize the auto-notes composed for each leg;
+  /// the UI supplies them from its localizations. [trackLabel] writes a platform
+  /// the arrow already places ("Pl. 5 → Pl. 20"), while
+  /// [fromTrackLabel]/[toTrackLabel] name the end themselves, for a leg where
+  /// the service gave only one of the two.
   Future<List<int>> importJourney(
     int tripId,
     JourneyOption journey, {
     bool group = true,
     TrackLabel? trackLabel,
+    TrackLabel? fromTrackLabel,
+    TrackLabel? toTrackLabel,
     DirectionLabel? directionLabel,
   }) async {
     final modes = await _ref.read(transportModesProvider.future);
@@ -39,6 +44,8 @@ class TransportSearchController {
       journey,
       resolveMode: modeResolver(modes),
       trackLabel: trackLabel,
+      fromTrackLabel: fromTrackLabel,
+      toTrackLabel: toTrackLabel,
       directionLabel: directionLabel,
     );
     final companions = [

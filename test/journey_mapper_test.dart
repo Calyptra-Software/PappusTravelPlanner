@@ -178,6 +178,41 @@ void main() {
       expect(mapped.notes, '→ München Hbf · Pl. 5 → Pl. 20');
     });
 
+    test('names the end when only one platform is known', () {
+      // A walking transfer between two platforms of one station: with no arrow
+      // to place it, a bare "Pl. 5" would read the same whichever end it is.
+      JourneyLeg walk({String? fromTrack, String? toTrack}) => JourneyLeg(
+        mode: TransitMode.walk,
+        from: LegPoint(
+          name: 'A',
+          scheduled: DateTime.utc(2026, 7, 27, 8),
+          timeZone: 'Europe/Berlin',
+          track: fromTrack,
+        ),
+        to: LegPoint(
+          name: 'A',
+          scheduled: DateTime.utc(2026, 7, 27, 8, 6),
+          timeZone: 'Europe/Berlin',
+          track: toTrack,
+        ),
+        realTime: false,
+      );
+
+      String? notes(JourneyLeg leg) =>
+          journeyToLegs(_oneLeg(leg), resolveMode: _stubResolve).single.notes;
+
+      // From/to, not departure/arrival: on a transfer, "departure" is the word
+      // for the *next* train's platform, so it would send a reader back to the
+      // platform this walk leads away from.
+      expect(notes(walk(fromTrack: '5')), 'from Pl. 5');
+      expect(notes(walk(toTrack: '20')), 'to Pl. 20');
+      // Both known: the arrow says which is which, so the labels stay bare.
+      expect(notes(walk(fromTrack: '5', toTrack: '20')), 'Pl. 5 → Pl. 20');
+      // An empty track is no track, not a nameless end.
+      expect(notes(walk(fromTrack: '', toTrack: '20')), 'to Pl. 20');
+      expect(notes(walk(fromTrack: '', toTrack: '')), isNull);
+    });
+
     test('drops the direction when it just repeats the arrival stop', () {
       final leg = JourneyLeg(
         mode: TransitMode.bus,

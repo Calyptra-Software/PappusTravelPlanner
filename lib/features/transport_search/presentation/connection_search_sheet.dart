@@ -176,6 +176,8 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
             widget.tripId,
             option,
             trackLabel: l10n.platformShort,
+            fromTrackLabel: l10n.platformFromShort,
+            toTrackLabel: l10n.platformToShort,
             directionLabel: l10n.directionTo,
           );
       messenger.showSnackBar(SnackBar(content: Text(l10n.connectionAdded)));

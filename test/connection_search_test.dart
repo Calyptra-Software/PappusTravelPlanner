@@ -33,6 +33,8 @@ class _FakeController extends TransportSearchController {
     JourneyOption journey, {
     bool group = true,
     TrackLabel? trackLabel,
+    TrackLabel? fromTrackLabel,
+    TrackLabel? toTrackLabel,
     DirectionLabel? directionLabel,
   }) async {
     imports++;

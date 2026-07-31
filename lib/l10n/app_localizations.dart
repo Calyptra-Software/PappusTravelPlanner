@@ -2762,6 +2762,18 @@ abstract class AppLocalizations {
   /// **'Pl. {track}'**
   String platformShort(String track);
 
+  /// The platform a leg starts at, named as such because the service gave no platform at the other end to pair it with an arrow. Worded from/to rather than departure/arrival: on a walking transfer, 'departure' reads as the next train's platform rather than this leg's.
+  ///
+  /// In en, this message translates to:
+  /// **'from Pl. {track}'**
+  String platformFromShort(String track);
+
+  /// The platform a leg ends at, named as such because the service gave no platform at the other end to pair it with an arrow. See platformFromShort on the wording.
+  ///
+  /// In en, this message translates to:
+  /// **'to Pl. {track}'**
+  String platformToShort(String track);
+
   /// No description provided for @directionTo.
   ///
   /// In en, this message translates to:

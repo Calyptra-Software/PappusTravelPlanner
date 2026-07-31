@@ -601,6 +601,8 @@
   "connectionAttribution": "Daten © OpenStreetMap-Mitwirkende, über Transitous",
   "transportModeRestoreBuiltin": "Standard wiederherstellen",
   "platformShort": "Gl. {track}",
+  "platformFromShort": "von Gl. {track}",
+  "platformToShort": "nach Gl. {track}",
   "directionTo": "Richtung {destination}",
   "connectionStops": "{count, plural, =1{1 Halt} other{{count} Halte}}",
   "connectionStopsCancelled": "{count, plural, =1{1 Halt entfällt} other{{count} Halte entfallen}}",

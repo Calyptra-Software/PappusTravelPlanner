@@ -1567,6 +1567,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String platformFromShort(String track) {
+    return 'from Pl. $track';
+  }
+
+  @override
+  String platformToShort(String track) {
+    return 'to Pl. $track';
+  }
+
+  @override
   String directionTo(String destination) {
     return 'to $destination';
   }

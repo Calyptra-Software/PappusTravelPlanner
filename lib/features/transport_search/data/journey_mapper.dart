@@ -37,19 +37,43 @@ typedef TrackLabel = String Function(String track);
 typedef DirectionLabel = String Function(String destination);
 
 String _neutralTrackLabel(String track) => 'Pl. $track';
+String _neutralFromTrackLabel(String track) => 'from Pl. $track';
+String _neutralToTrackLabel(String track) => 'to Pl. $track';
 String _neutralDirectionLabel(String destination) => '→ $destination';
 
 List<MappedLeg> journeyToLegs(
   JourneyOption journey, {
   required int? Function(TransitMode mode) resolveMode,
   TrackLabel? trackLabel,
+  TrackLabel? fromTrackLabel,
+  TrackLabel? toTrackLabel,
   DirectionLabel? directionLabel,
 }) {
-  final track = trackLabel ?? _neutralTrackLabel;
-  final direction = directionLabel ?? _neutralDirectionLabel;
+  final labels = _NoteLabels(
+    track: trackLabel ?? _neutralTrackLabel,
+    fromTrack: fromTrackLabel ?? _neutralFromTrackLabel,
+    toTrack: toTrackLabel ?? _neutralToTrackLabel,
+    direction: directionLabel ?? _neutralDirectionLabel,
+  );
   return journey.legs
-      .map((leg) => _mapLeg(leg, resolveMode, track, direction))
+      .map((leg) => _mapLeg(leg, resolveMode, labels))
       .toList(growable: false);
+}
+
+/// The four label formatters `_composeNotes` writes with, travelling together
+/// because they only ever appear together.
+class _NoteLabels {
+  const _NoteLabels({
+    required this.track,
+    required this.fromTrack,
+    required this.toTrack,
+    required this.direction,
+  });
+
+  final TrackLabel track;
+  final TrackLabel fromTrack;
+  final TrackLabel toTrack;
+  final DirectionLabel direction;
 }
 
 /// Builds the transport [ItineraryItems] companion for a [MappedLeg] on
@@ -81,8 +105,7 @@ ItineraryItemsCompanion mappedLegToCompanion(int tripId, MappedLeg leg) =>
 MappedLeg _mapLeg(
   JourneyLeg leg,
   int? Function(TransitMode) resolveMode,
-  TrackLabel trackLabel,
-  DirectionLabel directionLabel,
+  _NoteLabels labels,
 ) {
   final from = localParts(leg.from.scheduled, leg.from.timeZone);
   final to = localParts(leg.to.scheduled, leg.to.timeZone);
@@ -105,7 +128,7 @@ MappedLeg _mapLeg(
     spansNextDay: to.date.isAfter(from.date),
     modeId: resolveMode(leg.mode),
     title: leg.line,
-    notes: _composeNotes(leg, trackLabel, directionLabel),
+    notes: _composeNotes(leg, labels),
     sourceTripId: leg.tripId,
     fromLocation: leg.from.name,
     toLocation: leg.to.name,
@@ -147,25 +170,38 @@ Stopover _mapStop(LegStop stop, DateTime legDate) {
 /// than dedicated columns, so the user can adjust or clear it. Null when the
 /// service gave neither. The direction is dropped when it merely repeats the
 /// arrival stop.
-String? _composeNotes(
-  JourneyLeg leg,
-  TrackLabel trackLabel,
-  DirectionLabel directionLabel,
-) {
+///
+/// Which end a platform belongs to is said by the arrow — "Pl. 5 → Pl. 20" —
+/// but only a service that named *both* has an arrow to say it with. Where just
+/// one end is known the label names the end instead ("from Pl. 5"), since a bare
+/// "Pl. 5" reads identically whether it is where the leg starts or where it
+/// ends: on a walking transfer between two platforms of the same station, the
+/// difference is the whole content of the note.
+///
+/// The wording is *from/to*, not departure/arrival, because the note describes
+/// the leg it sits on. On a transfer "departure" is the word for the next
+/// train's platform, so "dep. Pl. 5" on the walk that leads away from platform
+/// 5 would send a reader to the platform they just left.
+String? _composeNotes(JourneyLeg leg, _NoteLabels labels) {
   final parts = <String>[];
   final headsign = leg.headsign;
   if (headsign != null && headsign.isNotEmpty && headsign != leg.to.name) {
-    parts.add(directionLabel(headsign));
+    parts.add(labels.direction(headsign));
   }
-  final platforms = [
-    if (leg.from.track != null && leg.from.track!.isNotEmpty)
-      trackLabel(leg.from.track!),
-    if (leg.to.track != null && leg.to.track!.isNotEmpty)
-      trackLabel(leg.to.track!),
-  ];
-  if (platforms.isNotEmpty) parts.add(platforms.join(' → '));
+  final from = _trackOrNull(leg.from.track);
+  final to = _trackOrNull(leg.to.track);
+  if (from != null && to != null) {
+    parts.add('${labels.track(from)} → ${labels.track(to)}');
+  } else if (from != null) {
+    parts.add(labels.fromTrack(from));
+  } else if (to != null) {
+    parts.add(labels.toTrack(to));
+  }
   return parts.isEmpty ? null : parts.join(' · ');
 }
+
+String? _trackOrNull(String? track) =>
+    track == null || track.isEmpty ? null : track;
 
 /// Projects a UTC instant into [tzName]'s local wall-clock, returning the
 /// calendar day and minutes-since-midnight. Shared by the mapper and the results

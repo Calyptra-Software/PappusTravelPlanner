@@ -689,6 +689,20 @@
       "track": { "type": "String" }
     }
   },
+  "platformFromShort": "from Pl. {track}",
+  "@platformFromShort": {
+    "description": "The platform a leg starts at, named as such because the service gave no platform at the other end to pair it with an arrow. Worded from/to rather than departure/arrival: on a walking transfer, 'departure' reads as the next train's platform rather than this leg's.",
+    "placeholders": {
+      "track": { "type": "String" }
+    }
+  },
+  "platformToShort": "to Pl. {track}",
+  "@platformToShort": {
+    "description": "The platform a leg ends at, named as such because the service gave no platform at the other end to pair it with an arrow. See platformFromShort on the wording.",
+    "placeholders": {
+      "track": { "type": "String" }
+    }
+  },
   "directionTo": "to {destination}",
   "@directionTo": {
     "placeholders": {

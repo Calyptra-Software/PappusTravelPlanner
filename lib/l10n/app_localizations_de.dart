@@ -1576,6 +1576,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String platformFromShort(String track) {
+    return 'von Gl. $track';
+  }
+
+  @override
+  String platformToShort(String track) {
+    return 'nach Gl. $track';
+  }
+
+  @override
   String directionTo(String destination) {
     return 'Richtung $destination';
   }
