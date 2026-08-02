@@ -440,8 +440,11 @@ in-memory database.
 
 ## Platform build constraints
 
-Android Gradle Plugin is pinned to **8.x** (AGP 8.11.1 / Gradle 8.13). The Flutter scaffold's
-default AGP 9 breaks `file_picker` — do not bump it.
+Android Gradle Plugin is pinned to **8.x** (currently AGP 8.13.2). The Flutter scaffold's
+default AGP 9 breaks `file_picker` — do not bump it. That pin caps Gradle in turn: **9.6.0
+removed `InternalProblems`**, an internal API AGP 8.x still calls, so the wrapper must stay
+on **9.5.x** (currently 9.5.1). CI does not build Android, so neither ceiling is caught
+there — both are guarded by `ignore` rules in `.github/dependabot.yml` instead.
 
 ### Web
 

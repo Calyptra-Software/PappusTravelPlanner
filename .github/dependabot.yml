@@ -52,3 +52,10 @@ updates:
       # file_picker (see AGENTS.md, "Platform build constraints").
       - dependency-name: com.android.application
         update-types: [version-update:semver-major]
+      # Gradle 9.6.0 removed `InternalProblems`, an internal API AGP 8.x
+      # still calls, so the wrapper cannot go past 9.5.x while AGP is
+      # pinned to 8.x. CI does not build Android, so nothing else catches
+      # this — the bump merges green and only fails on a local `flutter
+      # build apk`.
+      - dependency-name: gradle-wrapper
+        versions: ['>= 9.6']

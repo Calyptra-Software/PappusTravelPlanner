@@ -55,3 +55,40 @@ jobs:
           files: coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  # The Android toolchain has ceilings that nothing else checks: AGP is pinned
+  # to 8.x because the scaffold's AGP 9 breaks plugins that apply the Kotlin
+  # Gradle Plugin, and that in turn caps Gradle at 9.5.x because 9.6.0 removed
+  # an internal API AGP 8.x still calls (see AGENTS.md, "Platform build
+  # constraints"). Both failures happen while Gradle applies the plugins, so
+  # they are invisible to `analyze` and `test` — a dependency bump crossing
+  # either ceiling merged green until this job existed.
+  android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Not just for Gradle: `cache: gradle` is what keeps the wrapper from
+      # re-downloading the ~200 MB distribution on every run.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
+          flutter-version: '3.44.x'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # The exact command used to cut a release. `release` signs with the debug
+      # keys (android/app/build.gradle.kts), so this needs no keystore secret
+      # and works on pull requests from forks.
+      - name: Build APK
+        run: flutter build apk --split-per-abi
