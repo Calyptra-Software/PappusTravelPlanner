@@ -787,6 +787,8 @@
   "connectionsUseThis": "Use this",
   "connectionsSearching": "Looking up connections…",
   "connectionsFindForLeg": "Find connection",
+  "filterRoutineLabel": "From routine",
+  "filterRoutineAny": "Any routine",
   "tagsLabel": "Tags",
   "tagsManage": "Manage tags",
   "tagsNone": "No tags yet",

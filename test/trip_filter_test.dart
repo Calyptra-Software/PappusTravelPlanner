@@ -15,6 +15,7 @@ void main() {
     DateTime? end,
     DateTime? createdAt,
     TripKind kind = TripKind.trip,
+    int? fromRoutineId,
   }) {
     return Trip(
       id: id,
@@ -24,6 +25,7 @@ void main() {
       endDate: end,
       notes: notes,
       kind: kind,
+      fromRoutineId: fromRoutineId,
       colorValue: 0xFF00695C,
       createdAt: createdAt ?? DateTime(2026, 1, 1),
     );
@@ -293,6 +295,70 @@ void main() {
     test('not even a search finds one', () {
       final routine = trip(id: 1, title: 'To work', kind: TripKind.routine);
       expect(run([routine], const TripQuery(text: 'work')), isEmpty);
+    });
+  });
+
+  group('from a routine', () {
+    const commute = 10;
+    const ride = 11;
+    final monday = trip(id: 1, title: 'Monday commute', fromRoutineId: commute);
+    final tuesday = trip(
+      id: 2,
+      title: 'Tuesday commute',
+      fromRoutineId: commute,
+    );
+    final saturday = trip(id: 3, title: 'Saturday ride', fromRoutineId: ride);
+    final rome = trip(id: 4, title: 'Rome');
+    final all = [monday, tuesday, saturday, rome];
+
+    test('no routine filter shows everything', () {
+      expect(run(all, const TripQuery()).map((t) => t.id), [1, 2, 3, 4]);
+    });
+
+    test('one routine shows only what was stamped out of it', () {
+      expect(
+        run(all, const TripQuery(routineIds: {commute})).map((t) => t.id),
+        [1, 2],
+      );
+    });
+
+    test('several routines match any of them', () {
+      expect(
+        run(all, const TripQuery(routineIds: {commute, ride})).map((t) => t.id),
+        [1, 2, 3],
+      );
+    });
+
+    test('a trip made by hand is never from a routine', () {
+      // Selecting every routine is how "only what I made from a routine" is
+      // asked, so an ordinary trip must fall out of it.
+      expect(
+        run(all, const TripQuery(routineIds: {commute, ride})).map((t) => t.id),
+        isNot(contains(4)),
+      );
+    });
+
+    test('it narrows within the other facets, not past them', () {
+      expect(
+        run(
+          all,
+          const TripQuery(routineIds: {commute, ride}, text: 'saturday'),
+        ).map((t) => t.id),
+        [3],
+      );
+    });
+
+    test('the routine filter counts as one facet', () {
+      expect(const TripQuery(routineIds: {commute, ride}).activeFilterCount, 1);
+      expect(
+        const TripQuery(routineIds: {commute}, tagIds: {1}).activeFilterCount,
+        2,
+      );
+    });
+
+    test('clearing the filters clears it too', () {
+      const query = TripQuery(routineIds: {commute});
+      expect(query.clearedFilters().routineIds, isEmpty);
     });
   });
 }

@@ -111,8 +111,12 @@ UI (features/*/presentation, *widgets)
   and so do the routine's **tags** — a tag the user must re-add every morning is missing by
   Thursday, and auto-filing the trips stamped out of routines is what makes tags carry the
   crowding they were introduced for. `Trips.fromRoutineId` records where a trip came from,
-  enough to *ask* before recording the same routine twice on one day (`setNull` on delete:
-  a trip that happened does not un-happen because its template was thrown away).
+  enough to *ask* before recording the same routine twice on one day, and to filter the
+  overview down to what a routine has produced (`TripQuery.routineIds`, any-of like the
+  tags; selecting every routine *is* the question "only trips I made from a routine",
+  since a trip points at its routine only while that routine exists). `setNull` on delete:
+  a trip that happened does not un-happen because its template was thrown away — it simply
+  stops being findable that way, because what it came from is then genuinely unknown.
 - **An imported leg keeps how the router addresses its ends** — `ItineraryItems.fromPlaceId`
   / `toPlaceId`, the `queryId` the search was issued against (a stop id, or `"lat,lon"` for
   an address). Unlike `sourceTripId`, which names *one dated run of one service* and so is

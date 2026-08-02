@@ -80,6 +80,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
         query: ref.read(tripQueryProvider),
         people: people,
         tags: tags,
+        routines: _routines,
       ),
     );
     if (updated != null) ref.read(tripQueryProvider.notifier).setQuery(updated);
@@ -400,11 +401,13 @@ class _TripFilterSheet extends StatefulWidget {
     required this.query,
     required this.people,
     required this.tags,
+    required this.routines,
   });
 
   final TripQuery query;
   final List<Person> people;
   final List<Tag> tags;
+  final List<Trip> routines;
 
   @override
   State<_TripFilterSheet> createState() => _TripFilterSheetState();
@@ -447,6 +450,27 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
     final next = {..._draft.statuses};
     selected ? next.add(status) : next.remove(status);
     setState(() => _draft = _draft.copyWith(statuses: next));
+  }
+
+  void _toggleRoutine(int id, bool selected) {
+    final next = {..._draft.routineIds};
+    selected ? next.add(id) : next.remove(id);
+    setState(() => _draft = _draft.copyWith(routineIds: next));
+  }
+
+  /// Selects every routine at once, or clears the facet.
+  ///
+  /// Selecting them all *is* the question "only trips I made from a routine":
+  /// a trip points at its routine only while that routine exists, so there is
+  /// no trip from a routine that is not from one of these.
+  void _toggleAllRoutines(bool selected) {
+    setState(() {
+      _draft = _draft.copyWith(
+        routineIds: selected
+            ? {for (final routine in widget.routines) routine.id}
+            : const {},
+      );
+    });
   }
 
   void _toggleTag(int id, bool selected) {
@@ -571,6 +595,28 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
                         label: Text(tag.name),
                         selected: _draft.tagIds.contains(tag.id),
                         onSelected: (v) => _toggleTag(tag.id, v),
+                      ),
+                  ],
+                ),
+              ],
+              if (widget.routines.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _SectionLabel(l10n.filterRoutineLabel),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilterChip(
+                      label: Text(l10n.filterRoutineAny),
+                      selected:
+                          widget.routines.isNotEmpty &&
+                          _draft.routineIds.length == widget.routines.length,
+                      onSelected: _toggleAllRoutines,
+                    ),
+                    for (final routine in widget.routines)
+                      FilterChip(
+                        label: Text(routine.title),
+                        selected: _draft.routineIds.contains(routine.id),
+                        onSelected: (v) => _toggleRoutine(routine.id, v),
                       ),
                   ],
                 ),

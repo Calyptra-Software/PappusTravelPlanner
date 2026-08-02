@@ -3026,6 +3026,18 @@ abstract class AppLocalizations {
   /// **'Find connection'**
   String get connectionsFindForLeg;
 
+  /// No description provided for @filterRoutineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'From routine'**
+  String get filterRoutineLabel;
+
+  /// No description provided for @filterRoutineAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any routine'**
+  String get filterRoutineAny;
+
   /// No description provided for @tagsLabel.
   ///
   /// In en, this message translates to:

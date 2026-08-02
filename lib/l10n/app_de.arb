@@ -661,6 +661,8 @@
   "connectionsUseThis": "Diese übernehmen",
   "connectionsSearching": "Verbindungen werden gesucht…",
   "connectionsFindForLeg": "Verbindung suchen",
+  "filterRoutineLabel": "Aus Routine",
+  "filterRoutineAny": "Beliebige Routine",
   "tagsLabel": "Tags",
   "tagsManage": "Tags verwalten",
   "tagsNone": "Noch keine Tags",

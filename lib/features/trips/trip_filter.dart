@@ -49,6 +49,7 @@ class TripQuery {
     this.statuses = const {},
     this.participantIds = const {},
     this.tagIds = const {},
+    this.routineIds = const {},
     this.from,
     this.to,
     this.sort = TripSort.dateAsc,
@@ -64,6 +65,15 @@ class TripQuery {
   /// facets themselves still compose with AND, so tags narrow within a status
   /// rather than widening past it.
   final Set<int> tagIds;
+
+  /// The routines to narrow to, matched **any-of** like [tagIds]: a trip
+  /// qualifies if it was stamped out of one of them.
+  ///
+  /// Selecting every routine is the same question as "only trips I made from a
+  /// routine", because a trip carries [Trips.fromRoutineId] only while that
+  /// routine exists — deleting one sets its trips' pointer to null, and what
+  /// they came from is then genuinely not known any more.
+  final Set<int> routineIds;
   final DateTime? from;
   final DateTime? to;
   final TripSort sort;
@@ -75,6 +85,7 @@ class TripQuery {
     if (statuses.isNotEmpty) count++;
     if (participantIds.isNotEmpty) count++;
     if (tagIds.isNotEmpty) count++;
+    if (routineIds.isNotEmpty) count++;
     if (from != null || to != null) count++;
     return count;
   }
@@ -86,6 +97,7 @@ class TripQuery {
     Set<TripStatus>? statuses,
     Set<int>? participantIds,
     Set<int>? tagIds,
+    Set<int>? routineIds,
     DateTime? from,
     DateTime? to,
     TripSort? sort,
@@ -97,6 +109,7 @@ class TripQuery {
       statuses: statuses ?? this.statuses,
       participantIds: participantIds ?? this.participantIds,
       tagIds: tagIds ?? this.tagIds,
+      routineIds: routineIds ?? this.routineIds,
       from: clearFrom ? null : (from ?? this.from),
       to: clearTo ? null : (to ?? this.to),
       sort: sort ?? this.sort,
@@ -173,7 +186,8 @@ int _compare(
 ///
 /// [participantsByTrip] and [tagsByTrip] map a trip id to its participants'
 /// person ids and its tag ids; a trip matches either filter if it holds **any**
-/// of the selected ids. [today] anchors status classification.
+/// of the selected ids, as it does for [TripQuery.routineIds] against the
+/// routine it was stamped out of. [today] anchors status classification.
 List<Trip> applyTripQuery(
   List<Trip> trips, {
   required TripQuery query,
@@ -197,6 +211,10 @@ List<Trip> applyTripQuery(
     if (query.tagIds.isNotEmpty) {
       final ids = tagsByTrip[trip.id] ?? const <int>{};
       if (query.tagIds.intersection(ids).isEmpty) return false;
+    }
+    if (query.routineIds.isNotEmpty &&
+        !query.routineIds.contains(trip.fromRoutineId)) {
+      return false;
     }
     if (!_matchesDateRange(trip, query.from, query.to)) return false;
     return true;

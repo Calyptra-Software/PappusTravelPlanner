@@ -1738,6 +1738,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionsFindForLeg => 'Find connection';
 
   @override
+  String get filterRoutineLabel => 'From routine';
+
+  @override
+  String get filterRoutineAny => 'Any routine';
+
+  @override
   String get tagsLabel => 'Tags';
 
   @override

@@ -34,6 +34,7 @@ class TripQueryController extends Notifier<TripQuery> {
   static const _statusesKey = 'trips_filter_statuses';
   static const _tagsKey = 'trips_filter_tag_ids';
   static const _participantsKey = 'trips_filter_participant_ids';
+  static const _routinesKey = 'trips_filter_routine_ids';
   static const _fromKey = 'trips_filter_from';
   static const _toKey = 'trips_filter_to';
   static const _sortKey = 'trips_sort';
@@ -45,6 +46,7 @@ class TripQueryController extends Notifier<TripQuery> {
       statuses: _statuses(prefs.getInt(_statusesKey)),
       participantIds: _ids(prefs.getStringList(_participantsKey)),
       tagIds: _ids(prefs.getStringList(_tagsKey)),
+      routineIds: _ids(prefs.getStringList(_routinesKey)),
       from: _day(prefs.getString(_fromKey)),
       to: _day(prefs.getString(_toKey)),
       sort: _sort(prefs.getInt(_sortKey)),
@@ -69,6 +71,7 @@ class TripQueryController extends Notifier<TripQuery> {
       _idStrings(query.participantIds),
     );
     await prefs.setStringList(_tagsKey, _idStrings(query.tagIds));
+    await prefs.setStringList(_routinesKey, _idStrings(query.routineIds));
     await _setOrRemoveDay(prefs, _fromKey, query.from);
     await _setOrRemoveDay(prefs, _toKey, query.to);
     await prefs.setInt(_sortKey, query.sort.index);
