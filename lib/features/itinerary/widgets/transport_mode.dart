@@ -29,12 +29,17 @@ const List<TransportMode> kTransportModeOrder = [
 /// `TransportModes.iconId`; values are `const IconData` so Flutter's icon
 /// tree-shaking keeps working (a dynamically built `IconData` would force
 /// `--no-tree-shake-icons`). A few come from the bundled `TransportGlyphs` font
-/// (`core/icons/`) rather than Material Icons. Only append new entries — never reuse or
-/// reorder a key, since it is persisted in the database.
+/// (`core/icons/`) rather than Material Icons. Only ever hand a new icon a fresh
+/// key — a key is persisted in the database, so it must never be reused or point
+/// at a different icon. Where an entry sits in the literal is only the order the
+/// picker lays it out in, so a later addition may join the group it belongs to.
 const Map<int, IconData> kTransportModeIcons = {
   // on foot
   0: Icons.directions_walk,
   1: Icons.hiking,
+  // wheels underfoot
+  37: Icons.skateboarding,
+  38: Icons.roller_skating,
   // cycles & small motors
   2: Icons.directions_bike,
   3: Icons.pedal_bike,
@@ -65,9 +70,11 @@ const Map<int, IconData> kTransportModeIcons = {
   24: Icons.flight_takeoff,
   25: Icons.flight_land,
   26: Icons.paragliding,
-  // snow & ski lifts (the last three from the bundled TransportGlyphs font)
+  // snow, ice & ski lifts (the last three from the bundled TransportGlyphs font)
   27: Icons.downhill_skiing,
+  39: Icons.snowboarding,
   28: Icons.snowshoeing,
+  40: Icons.ice_skating,
   29: Icons.snowmobile,
   30: kGondolaGlyph,
   31: kChairliftGlyph,

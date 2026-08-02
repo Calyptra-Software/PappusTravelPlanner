@@ -20,6 +20,7 @@ const Map<int, IconData> kCostReasonIcons = {
   4: Icons.apple, // fruit / groceries
   // lodging, sights & activities
   5: Icons.hotel,
+  29: Icons.house, // house / holiday flat
   6: Icons.attractions,
   7: Icons.museum,
   8: Icons.beach_access,
@@ -46,6 +47,7 @@ const Map<int, IconData> kCostReasonIcons = {
   24: Icons.local_hospital,
   25: Icons.local_pharmacy,
   26: Icons.pets,
+  30: Icons.handyman, // tools / repairs
 };
 
 /// The icon shown when a reason has no icon assigned (or an unknown id).
