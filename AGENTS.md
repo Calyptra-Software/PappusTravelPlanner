@@ -65,6 +65,17 @@ UI (features/*/presentation, *widgets)
   two taps deep stops being used, and then the filing that feeds it stops too. Nothing
   may *behave* differently because of a tag — one is renameable and deletable, so logic
   hung off it would break on rename; what the app branches on lives in `Trips.kind`.
+- **How the overview is read is a setting; what is being looked for is not.** The whole
+  `TripQuery` lives in `tripQueryProvider` (`features/trips/application/trip_query_provider.dart`)
+  and every facet of it — statuses, tags, participants, date range, sort — is persisted, so
+  "only my walks, newest first" survives a launch; re-picking it each time is the friction
+  that stops a filter being used, and then the filing that feeds it. The exception is
+  `TripQuery.text`: a search *is* one act, which is why the app bar's close button already
+  throws it away — and so the one control that writes nothing per keystroke. Statuses ride
+  as a bitmask and the sort as an index, append-only like every persisted enum here. The
+  tag/participant ids name rows in *this* database: point the app at another file and a
+  stored filter may match nothing, which the filter badge and "clear filters" are the way
+  back out of.
 - **A routine is a template, and its occurrences are virtual.** Nothing is written for a
   day that simply went as the routine says. `RoutineDao.materializeRoutine` copies the
   plan onto real dates as an ordinary trip, on **any** start date — tomorrow's commute

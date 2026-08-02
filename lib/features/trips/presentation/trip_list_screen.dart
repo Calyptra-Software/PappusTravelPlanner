@@ -9,6 +9,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../sharing/presentation/trip_import.dart';
 import '../application/trip_providers.dart';
+import '../application/trip_query_provider.dart';
 import 'create_trip_from_routine.dart';
 import '../trip_filter.dart';
 import '../widgets/trip_calendar.dart';
@@ -39,11 +40,22 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   final _searchController = TextEditingController();
   bool _searching = false;
   bool _calendarView = false;
-  TripQuery _query = const TripQuery();
 
   /// The routines, kept from the last build so the "+" menu can offer to stamp
   /// one out without re-reading a provider that may have been disposed.
   List<Trip> _routines = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    // The search text outlives this screen (it lives in the query, which is a
+    // root provider) but the bar showing it does not, so a text left behind by
+    // an earlier visit would filter the list with nothing on screen saying so.
+    // Opening the bar on it is the honest reading: the search is still running.
+    final text = ref.read(tripQueryProvider).text;
+    _searchController.text = text;
+    _searching = text.isNotEmpty;
+  }
 
   @override
   void dispose() {
@@ -54,11 +66,9 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   void _startSearch() => setState(() => _searching = true);
 
   void _stopSearch() {
-    setState(() {
-      _searching = false;
-      _query = _query.copyWith(text: '');
-      _searchController.clear();
-    });
+    setState(() => _searching = false);
+    ref.read(tripQueryProvider.notifier).setText('');
+    _searchController.clear();
   }
 
   Future<void> _openFilters(List<Person> people, List<Tag> tags) async {
@@ -66,10 +76,13 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) =>
-          _TripFilterSheet(query: _query, people: people, tags: tags),
+      builder: (_) => _TripFilterSheet(
+        query: ref.read(tripQueryProvider),
+        people: people,
+        tags: tags,
+      ),
     );
-    if (updated != null) setState(() => _query = updated);
+    if (updated != null) ref.read(tripQueryProvider.notifier).setQuery(updated);
   }
 
   /// Asks what is being made before opening anything.
@@ -160,6 +173,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   /// The overview list proper — everything below the tag bar.
   Widget _buildList({
     required List<Trip> visible,
+    required TripQuery query,
     required Map<int, Map<String, int>> totalsByTrip,
     required Map<int, List<Tag>> tagsByTrip,
     required CurrencyBook book,
@@ -168,9 +182,8 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
       // "Nothing matches your search" and "you have not made one of these yet"
       // are different messages: only the first is a dead end the user should
       // back out of.
-      final searching =
-          _query.text.trim().isNotEmpty || _query.hasActiveFilters;
-      if (searching) return _NoResults(query: _query.text.trim());
+      final searching = query.text.trim().isNotEmpty || query.hasActiveFilters;
+      if (searching) return _NoResults(query: query.text.trim());
       return const _EmptyState();
     }
     if (_calendarView) {
@@ -213,6 +226,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final query = ref.watch(tripQueryProvider);
     final tripsAsync = ref.watch(tripListProvider);
     final participantsAsync = ref.watch(allParticipantsProvider);
     final totalsByTrip = ref.watch(tripTotalsProvider).value ?? const {};
@@ -238,7 +252,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     final peopleList = people.values.toList()
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
-    final filterCount = _query.activeFilterCount;
+    final filterCount = query.activeFilterCount;
 
     // The three navigation actions, defined once so the wide and compact app
     // bars stay in sync: shown as icons when there is room, folded into an
@@ -264,8 +278,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                   border: InputBorder.none,
                   hintText: l10n.searchTripsHint,
                 ),
-                onChanged: (value) =>
-                    setState(() => _query = _query.copyWith(text: value)),
+                onChanged: ref.read(tripQueryProvider.notifier).setText,
               )
             : Text(l10n.tripsTitle),
         actions: _searching
@@ -341,7 +354,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
           };
           final visible = applyTripQuery(
             trips,
-            query: _query,
+            query: query,
             participantsByTrip: idsByTrip,
             tagsByTrip: {
               for (final entry in tagsByTrip.entries)
@@ -356,14 +369,16 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
               // only worth doing if reading it back is one tap, and this is the
               // control that keeps a hundred commutes off the holidays.
               TagFilterBar(
-                selected: _query.tagIds,
-                onChanged: (ids) =>
-                    setState(() => _query = _query.copyWith(tagIds: ids)),
+                selected: query.tagIds,
+                onChanged: (ids) => ref
+                    .read(tripQueryProvider.notifier)
+                    .setQuery(query.copyWith(tagIds: ids)),
                 onManage: () => context.push('/tags'),
               ),
               Expanded(
                 child: _buildList(
                   visible: visible,
+                  query: query,
                   totalsByTrip: totalsByTrip,
                   tagsByTrip: tagsByTrip,
                   book: book,

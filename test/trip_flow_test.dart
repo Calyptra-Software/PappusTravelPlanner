@@ -2,25 +2,37 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/trips/presentation/trip_list_screen.dart';
+import 'package:travelplanner/features/trips/trip_filter.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
 
 /// Pumps the overview screen with [tripListProvider] overridden to emit [trips],
 /// avoiding the real drift stream (which doesn't resolve under fake-async).
+///
+/// The overview reads its filters and sort from SharedPreferences (they are
+/// remembered across launches), so a mock store stands in; pass [prefs] to start
+/// a test from a stored query.
 Future<void> pumpOverview(
   WidgetTester tester,
   List<Trip> trips, {
   Locale? locale,
+  Map<String, Object> prefs = const {},
 }) async {
+  SharedPreferences.setMockInitialValues(prefs);
+  final preferences = await SharedPreferences.getInstance();
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         ...currencyOverrides,
+        sharedPreferencesProvider.overrideWithValue(preferences),
         tripListProvider.overrideWith((ref) => Stream.value(trips)),
       ],
       child: MaterialApp(
@@ -79,6 +91,38 @@ void main() {
     expect(find.text('Meine Reisen'), findsOneWidget);
     expect(find.text('Noch keine Reisen'), findsOneWidget);
     expect(find.text('Neue Reise'), findsOneWidget);
+  });
+
+  testWidgets('opens on the sort remembered from the last launch', (
+    tester,
+  ) async {
+    await pumpOverview(
+      tester,
+      [_trip(id: 1, title: 'Zermatt'), _trip(id: 2, title: 'Aachen')],
+      prefs: {'trips_sort': TripSort.nameAsc.index},
+    );
+
+    // Stored order (createdAt) would put Zermatt first; by name it is second.
+    expect(
+      tester.getTopLeft(find.text('Aachen')).dy,
+      lessThan(tester.getTopLeft(find.text('Zermatt')).dy),
+    );
+  });
+
+  testWidgets('opens on the filters remembered from the last launch', (
+    tester,
+  ) async {
+    await pumpOverview(
+      tester,
+      [_trip(id: 1, title: 'Zermatt')],
+      // An undated trip, so a "past" filter hides it.
+      prefs: {'trips_filter_statuses': 1 << TripStatus.past.index},
+    );
+
+    expect(find.text('Zermatt'), findsNothing);
+    expect(find.text('No matching trips'), findsOneWidget);
+    // The badge on the filter button is what says why the list is empty.
+    expect(find.text('1'), findsOneWidget);
   });
 
   group('app bar actions adapt to the window width', () {
