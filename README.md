@@ -7,23 +7,33 @@
 Travel Planner is a modern, **offline-first** Flutter app for planning trips. Create
 trips, build a day-by-day itinerary from places and transport legs, track what each
 part of the trip costs, and keep everything in a local SQLite database that you fully
-control. The primary target is **Android**, but the same code base also runs on Web,
-Linux, Windows, macOS, and iOS.
+control. The primary target is **Android**, but the same code base also runs on Web, Linux, Windows, macOS, and iOS.
 
 ## Features
 
 - **Trips overview** — create, edit, and delete trips with a destination, date range,
-  notes, participants, and an accent colour. Search by text, filter by status
-  (upcoming / ongoing / past / undated), participant, or date range, and sort by date,
-  name, creation, or total expenses. Switch the overview to a **month calendar** where
-  each trip is a bar in its accent colour spanning its days.
+  notes, participants, tags, and an accent colour. Search by text, filter by status
+  (upcoming / ongoing / past / undated), tag, participant, originating routine, or date
+  range, and sort by date, name, creation, or total expenses. Switch the overview to a **month calendar** where each trip is a bar in its
+  accent colour spanning its days.
+- **Tags — your filing, not the app's** — the app doesn't decide that a bike ride is a
+  lesser kind of trip than a holiday; you invent the labels ("walks", "commute",
+  "vacation", "work") and hang them on trips. Tags sit as a chip row directly above the
+  overview list rather than two taps deep in a filter sheet, and nothing ever *behaves*
+  differently because of a tag — they are renameable and deletable throughout.
+- **Routines — a plan you make again** — keep a commute, a training ride, or a regular
+  visit as a template with no dates, and stamp it out onto any day.
 - **Structured itinerary** — a vertical, day-by-day timeline of **places** and
   **transport legs** (walk, bike, ski, car, taxi, bus, train, tram, subway, ferry,
   flight, …) with times and notes. Reorder and group items within a day; collapse/expand days.
+  The transport modes are not a fixed list: add, rename, re-icon, reorder, or remove them
+  under **Settings → Transport modes**, and the built-ins are just the starting set.
 - **Planned vs. actual times** — every entry carries the times it was *planned* for and,
   once you record them, the times it *actually* started and ended (departed and arrived).
   The timeline keeps showing the plan, with a green or red **+/−** on each end saying how
   early or late it ran, and "you are here" follows what really happened rather than the plan.
+- **"You are here"** — on today's plan, the entry currently under way is marked and tinted,
+  and between two entries a red line sits where the day has got to.
 - **Online connection search & live times** — look up real train and transit journeys from
   an open routing service ([Transitous](https://transitous.org) / MOTIS, built on
   OpenStreetMap and public-transport open data — no account, no API key) and drop a chosen
@@ -31,19 +41,31 @@ Linux, Windows, macOS, and iOS.
   departure or arrival time, and compare the options by time, duration, and number of
   changes — with **live delays** shown where the service has them. Search options (all
   remembered for next time) say which **means of transport** may be used, the **shortest
-  change** you want to be planned for, **how fast you walk**, whether you have a **bike**
-  with you (and whether it comes on board), how long you'll spend **getting to and from
-  stops**, and the **most changes** to accept — so a search never books you a three-minute
-  sprint across a terminus.
+  change** you want to be planned for, **how fast you walk** (or cycle), whether you have a
+  **bike** with you (and whether it comes on board), whether the whole journey must be
+  **step-free**, how long you'll spend **getting to and from stops**, and the **most
+  changes** to accept — down to *direct connections only* — so a search never books you a
+  three-minute sprint across a terminus. A **via stop** can be required as well, with a
+  minimum time to stay there.
   Results come back as a time window around what you asked for, with **earlier** and **later**
-  loading the departures either side onto the same list. Importing writes the
-  journey as that day's transport legs — a multi-leg trip bundled under one shared ticket —
-  carrying each leg's line/train number, direction, and platform, and handling overnight
-  legs that arrive the next morning. Each imported leg then gets its own **refresh** button
-  that pulls its current real-time departure and arrival, which surface through the
-  planned-vs-actual marks above — and says so plainly when the service has been
+  loading the departures either side onto the same list. Tapping one **opens** it in full —
+  leg by leg, with platforms, the length of each change, and every stop the service calls
+  at on the way (a stop the train is *skipping* is struck through rather than given a
+  reassuring time) — and a button there commits it.
+  Importing writes the journey as that day's transport legs — a multi-leg trip bundled under
+  one shared ticket — carrying each leg's line/train number, direction, platform, and stop
+  list, and handling overnight legs that arrive the next morning. An imported journey reads
+  back exactly the way it did in the search, so the walking transfer between two trains stays
+  *the change*. Each imported leg then gets its own **refresh** button that pulls its current
+  real-time departure and arrival, updating its stops along with its ends, which surface
+  through the planned-vs-actual marks above — and says so plainly when the service has been
   **cancelled**. This is the app's one online feature; everything it imports lives in your
   local database like anything else.
+- **A routine's plan can become a real connection** — stamping out a routine that contains
+  a searched journey copies the plan first (instant, correct offline on its own) and then
+  looks the connection up for the day it now sits on, offering the day's actual departure to
+  swap in. Declining it, finding nothing, or having no signal all leave the copied plan
+  standing — and "no train" is never reported when it was "no network".
 - **Alternatives** — plan competing options for one stretch of a day ("museum or boat
   trip?"). The decision sits in the timeline as a card you **swipe** between options; each option holds its own places, legs, and costs.
   Every option's price stays visible side by side so they can be compared, but only the
@@ -52,10 +74,11 @@ Linux, Windows, macOS, and iOS.
   actually took, or clear the decision away with *keep only this option*.
 - **Checklists** — any number of named checklists per trip (packing list, to-dos, …),
   with reorderable, tickable items and collapsible cards.
-- **Costs & expense splitting** — attach costs to any place, transport, or the trip as a
-  whole, each with an amount, a currency, a category, who paid, and who it was for.
-  Per-item subtotals and a per-trip total (grouped by currency) are
-  shown automatically, and the overview can be scoped to *my* expenses.
+- **Costs & expense splitting** — attach costs to any place, transport, a whole shared
+  ticket, or the trip as a whole, each with an amount, a currency, a category, who paid,
+  and who it was for. Categories are your own reusable labels with an icon
+  (**Settings → Expense categories**). Per-item subtotals and a per-trip total (grouped by
+  currency) are shown automatically, and the overview can be scoped to *my* expenses.
 - **Your own currencies, with exchange rates** — the four built-ins (€ / US-$ / £ / CHF)
   are just a starting list: add, rename, re-symbol, reorder, or remove currencies in
   **Settings → Currencies**, mark one as the **base**, and give the others a rate against
@@ -67,16 +90,27 @@ Linux, Windows, macOS, and iOS.
   category and by person (paid vs. fair share) and suggests a minimal set of payments to
   settle up. This is always computed **per currency**, with no conversion: what you owe is
   what was actually spent, not a figure derived from a rate you typed in.
+- **Record the money handed back** — a suggested payment can be booked as a **settlement**
+  (from → to, no category, no split), straight from the settle-up list or from the trip's
+  general expenses. It moves the two balances and nothing else: the trip's total, its
+  expense count and its category breakdown stay untouched, so "paid" still means "spent on
+  the trip" while the settle-up list shrinks by what has already been repaid.
 - **Share a single trip** — export a trip as a self-contained `.tpt` bundle and send it
   to another user of the app (Android share sheet; desktop saves the file). Opening or
   importing a bundle recreates the trip with its itinerary, alternatives, groups, costs,
-  and checklists. The format is independent of the local database's IDs, so sender and
-  recipient don't need matching data — a currency the recipient doesn't have is created
-  from the bundle, and one they already have keeps their own symbol and rate.
+  checklists, and tags — a **routine** shares just as well as a dated trip. The format is
+  independent of the local database's IDs, so sender and recipient don't need matching
+  data — a currency or a transport mode the recipient doesn't have is created from the
+  bundle, and one they already have keeps their own symbol and rate. A bundle only stamps
+  the format version the trip actually needs, so an older copy of the app keeps reading
+  what it can.
 - **Export as PDF** — turn a trip into a printable PDF for sharing with people who don't
-  use the app or for a paper copy: a cover with the trip's dates, notes, and participants,
-  the day-by-day itinerary, an expense summary (per-currency total and a breakdown), and
-  the checklists. Shared via the Android share sheet or saved to a file on desktop.
+  use the app or for a paper copy: a header with the trip's dates, notes, and participants,
+  then whichever of the **itinerary**, the **expense summary** (per-currency total, a
+  breakdown, and the settlements) and the **checklists** you tick — each row saying what it
+  would print ("5 days · 18 entries"), sections this trip has nothing for greyed out, and
+  the choice remembered for next time. Shared via the Android share sheet or saved to a file
+  on desktop.
 - **Export to calendar** — put a trip into whatever calendar you already use, as a standard
   `.ics` file: one event per place and transport leg, plus an all-day banner for the trip.
   Times are *floating*, so 09:30 stays 09:30 wherever you read it; untimed entries become
@@ -85,9 +119,11 @@ Linux, Windows, macOS, and iOS.
   open/create the database anywhere; on Android you can import/export it. Copy the
   file between devices and platforms and open it as-is.
 - **Localization & theme** — English and German, and a light/dark/system theme, both
-  switchable in-app. Dates and currencies use locale-correct formatting.
+  switchable in-app. Dates and currencies use locale-correct formatting, and the connection
+  search asks the routing service for its results in the app's language too.
 - **Android home-screen widget** — shows your current/next trip, a countdown, and
-  today's plan; tapping it opens the trip.
+  today's plan with the same planned-time-plus-delay marks as the timeline; tapping it
+  opens the trip.
 - **Offline-first** — no account and no server; the app works without a network. The one
   exception is the optional connection search above, which fetches journeys and live times
   from the routing service — and even that only enriches the plan, which then stays offline.
@@ -200,16 +236,18 @@ lib/
     database/               # Drift tables, database, DAOs (trips, itinerary, costs, checklists)
     repositories/           # thin repository over the DAOs
   features/
-    trips/                  # overview, create/edit, detail, participants
-    itinerary/              # timeline, day blocks, alternatives card, item form, transport modes
+    trips/                  # overview, calendar, create/edit, detail, participants, tags, routines
+    itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
-    costs/                  # cost form, splitting/stats, reasons, currencies & people settings
+    costs/                  # cost form, splitting/stats, settlements, reasons, currencies
     checklist/              # per-trip named checklists
     sharing/                # portable trip bundles (export/import a single trip) + PDF and .ics export
-    settings/               # language, cost reasons, currencies, people + database location screen
+    settings/               # language, theme, categories, currencies, modes, people, database
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
 android/ ios/ linux/ ...    # per-platform host projects
+web/                        # web host page + prebuilt sqlite3.wasm / drift_worker.js
+tool/                       # dev-only scripts (e.g. a live smoke test for the routing client)
 test/                       # unit and widget tests
 integration_test/           # flows driven against the real widgets and a real database
 ```
@@ -220,7 +258,8 @@ Data is stored in a single SQLite file (default: the app documents directory).
 Open the in-app **Settings → Database** section to:
 
 - **Desktop:** *Open* an existing `.sqlite` file or create a *New* one at any path;
-  the choice is remembered across launches.
+  the choice is remembered across launches, and *Reset to default* points the app back at
+  its own file.
 - **Android / Web:** *Import* a `.sqlite` file (replaces the current data) or *Export*
   the current database. On web the data lives in browser storage (OPFS, falling back to
   IndexedDB); import seeds that storage from the picked file and export downloads it.
@@ -236,6 +275,12 @@ opened with — Travel Planner goes straight into the import flow.
 The same button also offers **Export as PDF** (a printable, read-only copy) and **Export to
 calendar** (an `.ics` file for a calendar app). Both are one-way views of the plan; only the
 `.tpt` bundle can be imported back.
+
+## Data sources and the routing service
+
+The connection search talks to [Transitous](https://transitous.org), a community-run,
+donated MOTIS instance serving [public-transport open data](https://transitous.org/sources/)
+on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
 
 ## Localization
 
@@ -255,8 +300,20 @@ calendar** (an `.ics` file for a calendar app). Both are one-way views of the pl
   on live data live here): `flutter test -d linux integration_test/`
 - After changing Drift tables/DAOs or Riverpod-annotated code, re-run
   `dart run build_runner build --delete-conflicting-outputs`.
-- Any change to a Drift table or column needs a bumped `AppDatabase.schemaVersion` and an
-  `onUpgrade` branch: real databases are migrated in place, never recreated.
+- Any change to a Drift table or column needs a bumped `AppDatabase.schemaVersion` (27 at
+  the time of writing) and an `onUpgrade` branch: real databases are migrated in place,
+  never recreated. The same goes for the persisted enums (cost display, expense scope, PDF
+  sections, sort order): they are stored by index, so append only — never reorder.
+- Poke the routing client without the app:
+  `dart run tool/motis_smoke.dart "Hamburg Hbf" "Wien Hbf"` (plain Dart, needs network,
+  not part of the test suite).
+- Web needs two prebuilt assets in `web/`, regenerated whenever `drift`/`sqlite3` are
+  upgraded: `sqlite3.wasm` (from the matching
+  [sqlite3.dart release](https://github.com/simolus3/sqlite3.dart/releases)) and
+  `drift_worker.js` (`dart compile js -O2` of a one-line entrypoint calling
+  `WasmDatabase.workerMainForOpen()`, compiled from inside this project).
+- Android Gradle Plugin is pinned to **8.x** (AGP 8.11.1 / Gradle 8.13); the Flutter
+  scaffold's default AGP 9 breaks `file_picker`, so don't bump it.
 
 ## Disclaimer
 
