@@ -1,0 +1,54 @@
+# Dependabot configuration (see
+# https://docs.github.com/code-security/dependabot/dependabot-version-updates).
+version: 2
+
+updates:
+  # The actions used by .github/workflows/ci.yml.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'ci'
+    groups:
+      github-actions:
+        patterns: ['*']
+
+  # Dart/Flutter packages in pubspec.yaml.
+  - package-ecosystem: pub
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: 'deps'
+    # A dependency joins the first group it matches, so the specific ones
+    # come before the catch-all.
+    groups:
+      # Drift, its generator and the sqlite3 bindings move together: the
+      # prebuilt web/sqlite3.wasm and web/drift_worker.js are tied to the
+      # resolved versions and must be regenerated when these change (see
+      # AGENTS.md, "Web").
+      drift:
+        patterns: ['drift', 'drift_dev', 'drift_flutter', 'sqlite3', 'sqlite3_flutter_libs']
+      # Riverpod likewise ships library + generator + annotations in step.
+      riverpod:
+        patterns: ['*riverpod*']
+      # One PR for the remaining routine bumps; majors stay separate so a
+      # breaking change is reviewed on its own.
+      pub-minor-and-patch:
+        patterns: ['*']
+        update-types: [minor, patch]
+
+  # Gradle plugins declared in android/settings.gradle.kts.
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'android'
+    ignore:
+      # AGP is pinned to 8.x on purpose: the scaffold's AGP 9 breaks
+      # file_picker (see AGENTS.md, "Platform build constraints").
+      - dependency-name: com.android.application
+        update-types: [version-update:semver-major]

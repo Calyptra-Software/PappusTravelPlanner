@@ -1,0 +1,30 @@
+# Codecov configuration (see https://docs.codecov.com/docs/codecov-yaml).
+coverage:
+  status:
+    project:
+      default:
+        # Coverage is a signal, not a gate: don't fail a PR over noise.
+        threshold: 1%
+    patch:
+      default:
+        informational: true
+
+comment:
+  layout: reach, diff, flags, files
+  require_changes: true
+
+# Generated code and platform scaffolding are not what the tests are about.
+ignore:
+  - '**/*.g.dart'
+  - '**/*.freezed.dart'
+  - 'lib/l10n/**'
+  - 'lib/generated/**'
+  - 'test/**'
+  - 'integration_test/**'
+  - 'tool/**'
+  - 'android/**'
+  - 'ios/**'
+  - 'linux/**'
+  - 'macos/**'
+  - 'windows/**'
+  - 'web/**'
