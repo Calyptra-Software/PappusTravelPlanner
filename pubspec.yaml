@@ -27,8 +27,8 @@ dependencies:
   go_router: ^17.3.0
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
-  drift: ^2.34.0
-  drift_flutter: ^0.3.0
+  drift: ^2.34.3
+  drift_flutter: ^0.3.1
   sqlite3_flutter_libs: ^0.6.0+eol
   shared_preferences: ^2.5.5
 
