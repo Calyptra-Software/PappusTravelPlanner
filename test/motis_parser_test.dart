@@ -190,6 +190,19 @@ void main() {
       expect(leg.stops.map((s) => s.name), isNot(contains(leg.from.name)));
     });
 
+    test('a long-distance leg is labelled by its train, not its line', () {
+      // DELFI files a German long-distance leg's `routeShortName` as the ICE
+      // *line* — "11" is the corridor, shared with every other ICE down it —
+      // while the train number, the one thing that names this run, is the
+      // router's own `displayName`.
+      final option = parsePlanResponse(
+        _decode(_fixture('motis_plan_stops.json')),
+      ).options.single;
+      final leg = option.legs.firstWhere((l) => l.mode != TransitMode.walk);
+
+      expect(leg.line, 'ICE 2591');
+    });
+
     test('a stop carries its live departure, on the leg\'s realTime terms', () {
       Map<String, dynamic> plan(bool realTime) => {
         'itineraries': [

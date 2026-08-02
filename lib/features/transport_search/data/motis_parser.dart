@@ -126,6 +126,18 @@ JourneyOption _itinerary(Map<String, dynamic> j) => JourneyOption(
       .toList(growable: false),
 );
 
+/// One leg of an itinerary.
+///
+/// The label is taken from `displayName` — the router's own — rather than the
+/// feed's raw `routeShortName`, which for German long-distance rail is the
+/// *line* and not the train: DELFI files the 22:28 Hamburg–München as
+/// `routeShortName: "25"` (the Hamburg–Würzburg–München corridor, shared with
+/// every other ICE down it) and `displayName: "ICE 1081"` (the one run, and the
+/// number on the ticket, the platform display and any delay lookup). A bare
+/// "25" beside a train icon also reads like a bus line. Everywhere else the two
+/// agree (`S2`, `U1`, `114`, `FlixBus N60`) or `displayName` merely appends the
+/// trip number (`RE8 (11440)`), so the fallback only ever catches a feed that
+/// names a route without the router naming a service.
 JourneyLeg _leg(Map<String, dynamic> j) {
   final realTime = j['realTime'] as bool? ?? false;
   return JourneyLeg(
@@ -143,7 +155,7 @@ JourneyLeg _leg(Map<String, dynamic> j) {
       realTime: realTime,
     ),
     realTime: realTime,
-    line: (j['routeShortName'] ?? j['displayName']) as String?,
+    line: (j['displayName'] ?? j['routeShortName']) as String?,
     headsign: j['headsign'] as String?,
     tripId: j['tripId'] as String?,
     cancelled: j['cancelled'] as bool? ?? false,
