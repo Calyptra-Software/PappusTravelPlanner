@@ -41,7 +41,7 @@ dependencies:
 
   intl: ^0.20.2
   home_widget: ^0.9.3 # Android home-screen widget
-  pdf: ^3.12.0 # exporting a trip as a printable PDF
+  pdf: ^3.13.0 # exporting a trip as a printable PDF
   http: ^1.2.2 # connection search against the MOTIS API (Transitous)
   timezone: ^0.11.1 # UTC->wall-clock for imported connections (per-stop IANA tz)
   # Both are here for the Transitous usage policy: it asks every request to
