@@ -16,7 +16,7 @@ jobs:
     name: Format, analyze, test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: subosito/flutter-action@v2
         with:
@@ -50,7 +50,7 @@ jobs:
         # Secrets are unavailable to pull requests from forks; Codecov's
         # tokenless path is unreliable, so skip rather than fail the run.
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
