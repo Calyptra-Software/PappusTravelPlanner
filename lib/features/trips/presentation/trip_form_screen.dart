@@ -7,8 +7,9 @@ import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/color_picker_dialog.dart';
+import '../../../core/widgets/accent_picker.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/application/currency_providers.dart';
@@ -16,12 +17,23 @@ import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../costs/presentation/person_picker.dart';
 import '../application/trip_providers.dart';
+import '../widgets/tag_editor.dart';
 
-/// Create a new trip, or edit an existing one when [tripId] is provided.
+/// Create a trip or a routine, or edit an existing one when [tripId] is given.
+///
+/// One form serves both kinds — they are the same row underneath, so splitting
+/// it would mean maintaining two copies of the title, destination, notes,
+/// colour, tags and participants. The single difference is the dates: a trip
+/// has them (one day or many, which is not a difference in kind and so not a
+/// difference in the form), and a routine has none at all.
 class TripFormScreen extends ConsumerStatefulWidget {
-  const TripFormScreen({super.key, this.tripId});
+  const TripFormScreen({super.key, this.tripId, this.kind = TripKind.trip});
 
   final int? tripId;
+
+  /// What is being created. Ignored when editing: an existing trip's kind comes
+  /// from the row itself.
+  final TripKind kind;
 
   bool get isEditing => tripId != null;
 
@@ -37,11 +49,17 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
 
   DateTime? _startDate;
   DateTime? _endDate;
+  late TripKind _kind = widget.kind;
   late int _colorValue = AppTheme.tripAccents.first.toARGB32();
 
   /// Participants chosen while creating a new trip, before it has an id. Once
   /// the trip exists (edit mode) participants are managed live via the repo.
   final List<String> _participants = [];
+
+  /// The tags this trip is filed under. Held here for both create and edit —
+  /// unlike participants, the whole set is written at once on save, so there is
+  /// nothing to manage live.
+  Set<int> _tagIds = {};
 
   Trip? _editing;
   bool _loading = false;
@@ -66,10 +84,16 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
         _notesController.text = trip.notes ?? '';
         _startDate = trip.startDate;
         _endDate = trip.endDate;
+        _kind = trip.kind;
         _colorValue = trip.colorValue;
       }
       _loading = false;
     });
+    final tags = await ref
+        .read(repositoryProvider)
+        .watchTagsForTrip(widget.tripId!)
+        .first;
+    if (mounted) setState(() => _tagIds = {for (final tag in tags) tag.id});
   }
 
   @override
@@ -112,29 +136,57 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
           id: _editing!.id,
           title: title,
           destination: destination,
-          startDate: _startDate,
-          endDate: _endDate,
+          startDate: _routine ? null : _startDate,
+          endDate: _routine ? null : _endDate,
           notes: notes.isEmpty ? null : notes,
+          kind: _kind,
           colorValue: _colorValue,
           createdAt: _editing!.createdAt,
         ),
       );
+      await repo.setTagsForTrip(_editing!.id, _tagIds);
     } else {
       final tripId = await repo.createTrip(
         TripsCompanion.insert(
           title: title,
           destination: Value(destination),
-          startDate: Value(_startDate),
-          endDate: Value(_endDate),
+          startDate: Value(_routine ? null : _startDate),
+          endDate: Value(_routine ? null : _endDate),
           notes: Value(notes.isEmpty ? null : notes),
+          kind: Value(_kind),
           colorValue: Value(_colorValue),
         ),
       );
       for (final name in _participants) {
         await repo.addParticipant(tripId, name);
       }
+      await repo.setTagsForTrip(tripId, _tagIds);
     }
     if (mounted) context.pop();
+  }
+
+  /// Whether this form is editing a template rather than a trip.
+  bool get _routine => _kind == TripKind.routine;
+
+  String _screenTitle(AppLocalizations l10n) => switch (_kind) {
+    TripKind.trip => widget.isEditing ? l10n.editTrip : l10n.newTrip,
+    TripKind.routine => widget.isEditing ? l10n.editRoutine : l10n.newRoutine,
+  };
+
+  /// A trip's dates. A routine has none — that is what makes it reusable — so
+  /// it gets no date control at all rather than a disabled one.
+  Widget _whenField(AppLocalizations l10n, String localeName) {
+    return _DateRangeField(
+      label: l10n.fieldDates,
+      valueText: formatDateRange(l10n, localeName, _startDate, _endDate),
+      onTap: _pickDateRange,
+      onClear: (_startDate == null && _endDate == null)
+          ? null
+          : () => setState(() {
+              _startDate = null;
+              _endDate = null;
+            }),
+    );
   }
 
   @override
@@ -147,9 +199,7 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
     final localeName = Localizations.localeOf(context).languageCode;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditing ? l10n.editTrip : l10n.newTrip),
-      ),
+      appBar: AppBar(title: Text(_screenTitle(l10n))),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -177,23 +227,10 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
                 prefixIcon: const Icon(Icons.place_outlined),
               ),
             ),
-            const SizedBox(height: 16),
-            _DateRangeField(
-              label: l10n.fieldDates,
-              valueText: formatDateRange(
-                l10n,
-                localeName,
-                _startDate,
-                _endDate,
-              ),
-              onTap: _pickDateRange,
-              onClear: (_startDate == null && _endDate == null)
-                  ? null
-                  : () => setState(() {
-                      _startDate = null;
-                      _endDate = null;
-                    }),
-            ),
+            if (!_routine) ...[
+              const SizedBox(height: 16),
+              _whenField(l10n, localeName),
+            ],
             const SizedBox(height: 16),
             TextFormField(
               controller: _notesController,
@@ -211,21 +248,28 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
               style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 8),
-            _ColorPicker(
+            AccentPicker(
               selected: _colorValue,
               onSelected: (value) => setState(() => _colorValue = value),
             ),
             const SizedBox(height: 24),
-            if (widget.isEditing) ...[
-              _TripParticipantsEditor(tripId: widget.tripId!),
-              const SizedBox(height: 24),
-              _TripCostsEditor(tripId: widget.tripId!, localeName: localeName),
-            ] else
+            TagEditor(
+              selected: _tagIds,
+              onChanged: (ids) => setState(() => _tagIds = ids),
+            ),
+            const SizedBox(height: 24),
+            if (widget.isEditing)
+              _TripParticipantsEditor(tripId: widget.tripId!)
+            else
               _NewTripParticipantsEditor(
                 participants: _participants,
                 onAdd: (name) => setState(() => _participants.add(name)),
                 onRemove: (name) => setState(() => _participants.remove(name)),
               ),
+            if (widget.isEditing) ...[
+              const SizedBox(height: 24),
+              _TripCostsEditor(tripId: widget.tripId!, localeName: localeName),
+            ],
             const SizedBox(height: 32),
             FilledButton.icon(
               onPressed: _save,
@@ -471,100 +515,5 @@ class _DateRangeField extends StatelessWidget {
         child: Text(valueText, style: Theme.of(context).textTheme.bodyLarge),
       ),
     );
-  }
-}
-
-class _ColorPicker extends StatelessWidget {
-  const _ColorPicker({required this.selected, required this.onSelected});
-
-  final int selected;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final isPreset = AppTheme.tripAccents.any(
-      (color) => color.toARGB32() == selected,
-    );
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        for (final color in AppTheme.tripAccents)
-          _ColorDot(
-            color: color,
-            selected: color.toARGB32() == selected,
-            onTap: () => onSelected(color.toARGB32()),
-          ),
-        // Custom-colour swatch: shows the current custom colour when the
-        // selection is not one of the presets, otherwise a neutral "add" dot.
-        _ColorDot(
-          color: isPreset ? null : Color(selected),
-          selected: !isPreset,
-          icon: isPreset ? Icons.add : Icons.check,
-          tooltip: l10n.customColour,
-          onTap: () async {
-            final picked = await showColorPickerDialog(
-              context,
-              initial: Color(selected),
-            );
-            if (picked != null) onSelected(picked.toARGB32());
-          },
-        ),
-      ],
-    );
-  }
-}
-
-class _ColorDot extends StatelessWidget {
-  const _ColorDot({
-    required this.color,
-    required this.selected,
-    required this.onTap,
-    this.icon,
-    this.tooltip,
-  });
-
-  /// The swatch colour, or `null` to render a neutral outlined "add" dot.
-  final Color? color;
-  final bool selected;
-  final VoidCallback onTap;
-  final IconData? icon;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final fill = color;
-    // Contrasting icon colour so the check mark stays legible on any swatch.
-    final iconColor = fill == null
-        ? scheme.onSurfaceVariant
-        : (fill.computeLuminance() > 0.5 ? Colors.black : Colors.white);
-    final showIcon = icon ?? (selected ? Icons.check : null);
-    Widget dot = InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: fill ?? scheme.surfaceContainerHighest,
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: selected
-                ? scheme.onSurface
-                : (fill == null ? scheme.outline : Colors.transparent),
-            width: 3,
-          ),
-        ),
-        child: showIcon != null
-            ? Icon(showIcon, color: iconColor, size: 20)
-            : null,
-      ),
-    );
-    if (tooltip != null) {
-      dot = Tooltip(message: tooltip!, child: dot);
-    }
-    return dot;
   }
 }

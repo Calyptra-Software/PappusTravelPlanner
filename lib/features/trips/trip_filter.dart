@@ -1,5 +1,6 @@
 import '../../core/format/date_format.dart';
 import '../../data/database/app_database.dart';
+import '../../data/database/tables.dart';
 
 /// Where a trip sits relative to today, derived from its dates.
 enum TripStatus { upcoming, ongoing, past, undated }
@@ -39,13 +40,15 @@ TripStatus tripStatus(Trip trip, DateTime today) {
 
 /// The full set of overview list controls: free-text search, filters and sort.
 ///
-/// Empty [statuses] / [participantIds] mean "no restriction". Pure and
-/// value-equatable so it can drive `setState` and be unit-tested without a DB.
+/// Empty [statuses] / [participantIds] / [tagIds] mean "no restriction". Pure
+/// and value-equatable so it can drive `setState` and be unit-tested without a
+/// DB.
 class TripQuery {
   const TripQuery({
     this.text = '',
     this.statuses = const {},
     this.participantIds = const {},
+    this.tagIds = const {},
     this.from,
     this.to,
     this.sort = TripSort.dateAsc,
@@ -54,6 +57,13 @@ class TripQuery {
   final String text;
   final Set<TripStatus> statuses;
   final Set<int> participantIds;
+
+  /// The tags to narrow to, matched **any-of**: a trip qualifies if it carries
+  /// at least one of them. That is what the filter is for — "show me walks and
+  /// bike rides" — and it matches how [participantIds] already behaves. The
+  /// facets themselves still compose with AND, so tags narrow within a status
+  /// rather than widening past it.
+  final Set<int> tagIds;
   final DateTime? from;
   final DateTime? to;
   final TripSort sort;
@@ -64,6 +74,7 @@ class TripQuery {
     var count = 0;
     if (statuses.isNotEmpty) count++;
     if (participantIds.isNotEmpty) count++;
+    if (tagIds.isNotEmpty) count++;
     if (from != null || to != null) count++;
     return count;
   }
@@ -74,6 +85,7 @@ class TripQuery {
     String? text,
     Set<TripStatus>? statuses,
     Set<int>? participantIds,
+    Set<int>? tagIds,
     DateTime? from,
     DateTime? to,
     TripSort? sort,
@@ -84,6 +96,7 @@ class TripQuery {
       text: text ?? this.text,
       statuses: statuses ?? this.statuses,
       participantIds: participantIds ?? this.participantIds,
+      tagIds: tagIds ?? this.tagIds,
       from: clearFrom ? null : (from ?? this.from),
       to: clearTo ? null : (to ?? this.to),
       sort: sort ?? this.sort,
@@ -150,19 +163,28 @@ int _compare(
   }
 }
 
-/// Applies [query] to [trips]: filters by text/status/participants/date range,
-/// then sorts. [participantsByTrip] maps a trip id to its participants' person
-/// ids; a trip matches the participant filter if it includes any selected
-/// person. [today] anchors status classification.
+/// Applies [query] to [trips]: filters by text/status/participants/tags/date
+/// range, then sorts.
+///
+/// **Routines are never in the result.** They are templates, not trips: they
+/// have no dates to sort or classify by, and putting them among the trips would
+/// re-create the crowding the tags exist to solve. They are listed on their own
+/// screen instead (`RoutineListScreen`).
+///
+/// [participantsByTrip] and [tagsByTrip] map a trip id to its participants'
+/// person ids and its tag ids; a trip matches either filter if it holds **any**
+/// of the selected ids. [today] anchors status classification.
 List<Trip> applyTripQuery(
   List<Trip> trips, {
   required TripQuery query,
   required Map<int, Set<int>> participantsByTrip,
   required DateTime today,
+  Map<int, Set<int>> tagsByTrip = const {},
   Map<int, Map<String, int>> totalsByTrip = const {},
 }) {
   final needle = query.text.trim().toLowerCase();
   final result = trips.where((trip) {
+    if (trip.kind != TripKind.trip) return false;
     if (needle.isNotEmpty && !_matchesText(trip, needle)) return false;
     if (query.statuses.isNotEmpty &&
         !query.statuses.contains(tripStatus(trip, today))) {
@@ -171,6 +193,10 @@ List<Trip> applyTripQuery(
     if (query.participantIds.isNotEmpty) {
       final ids = participantsByTrip[trip.id] ?? const <int>{};
       if (query.participantIds.intersection(ids).isEmpty) return false;
+    }
+    if (query.tagIds.isNotEmpty) {
+      final ids = tagsByTrip[trip.id] ?? const <int>{};
+      if (query.tagIds.intersection(ids).isEmpty) return false;
     }
     if (!_matchesDateRange(trip, query.from, query.to)) return false;
     return true;

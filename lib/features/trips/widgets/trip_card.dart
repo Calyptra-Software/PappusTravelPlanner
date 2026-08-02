@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
+import 'tag_chip.dart';
+import 'trip_when_line.dart';
 
 /// Overview card summarising a single trip, with a colour accent stripe.
 class TripCard extends StatelessWidget {
@@ -13,10 +14,14 @@ class TripCard extends StatelessWidget {
     required this.onTap,
     required this.book,
     this.totals = const {},
+    this.tags = const [],
   });
 
   final Trip trip;
   final VoidCallback onTap;
+
+  /// The tags this trip is filed under, drawn as a quiet row under the title.
+  final List<Tag> tags;
 
   /// The currencies, for labelling and ordering [totals] — passed in rather
   /// than watched, since the list screen already holds one for every card.
@@ -32,7 +37,7 @@ class TripCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
     final accent = Color(trip.colorValue);
-    final days = tripDayCount(trip.startDate, trip.endDate);
+    final when = tripWhenLine(trip, l10n, localeName);
 
     return Card(
       child: InkWell(
@@ -81,27 +86,32 @@ class TripCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            Icons.calendar_today_outlined,
+                            when.icon,
                             size: 14,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              formatDateRange(
-                                l10n,
-                                localeName,
-                                trip.startDate,
-                                trip.endDate,
-                              ),
+                              when.text,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (days != null) _Pill(label: l10n.days(days)),
+                          if (when.pill != null) _Pill(label: when.pill!),
                         ],
                       ),
+                      if (tags.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [for (final tag in tags) TagChip(tag: tag)],
+                        ),
+                      ],
                       if (totals.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Row(

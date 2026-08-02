@@ -22,6 +22,8 @@ part 'sharing_dao.g.dart';
     CostReasons,
     Currencies,
     TransportModes,
+    Tags,
+    TripTags,
     People,
     TripParticipants,
     CostBeneficiaries,
@@ -74,6 +76,9 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       collapsedDays,
     )..where((d) => d.tripId.equals(tripId))).get();
     final participantNames = await _participantNames(tripId);
+    // Denormalized to names like the participants and the cost reasons: a tag's
+    // identity is its name, and the sender's row ids mean nothing here.
+    final tagNames = await _tagNames(tripId);
     final reasonIcons = await _reasonIconsFor({
       for (final c in costRows) c.reason,
     });
@@ -121,7 +126,14 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       // app would flatten every option into the day — and a currency the old
       // enum never had forces v3, since there is no name to write it under that
       // such an app would recognise.
-      formatVersion: bundleNeedsCurrencyFormat(usedCurrencyCodes)
+      // A routine forces v4, and so do tags: an older app reads the kind it
+      // cannot see as an ordinary trip, which is right for a trip but would
+      // land a routine as a dated one whose entries all sit on the 1970 anchor
+      // day. Tags it cannot see are only a filing it will not have, but a trip
+      // that arrives unfiled is not the trip that was sent.
+      formatVersion: (trip.kind != TripKind.trip || tagNames.isNotEmpty)
+          ? 4
+          : bundleNeedsCurrencyFormat(usedCurrencyCodes)
           ? 3
           : (setRows.isEmpty ? 1 : 2),
       schemaVersion: db.schemaVersion,
@@ -131,6 +143,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         startDate: trip.startDate,
         endDate: trip.endDate,
         notes: trip.notes,
+        kind: trip.kind,
         colorValue: trip.colorValue,
         createdAt: trip.createdAt,
       ),
@@ -177,6 +190,8 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             fromLocation: i.fromLocation,
             toLocation: i.toLocation,
             stopovers: i.stopovers,
+            fromPlaceId: i.fromPlaceId,
+            toPlaceId: i.toPlaceId,
           ),
       ],
       costs: [
@@ -217,6 +232,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       ],
       collapsedDays: [for (final d in collapsedRows) d.day],
       participants: participantNames,
+      tags: tagNames,
       reasonIcons: reasonIcons,
       modeIcons: modeIcons,
       currencies: bundleCurrencies,
@@ -271,6 +287,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
           startDate: Value(bundle.trip.startDate),
           endDate: Value(bundle.trip.endDate),
           notes: Value(bundle.trip.notes),
+          kind: Value(bundle.trip.kind),
           colorValue: Value(bundle.trip.colorValue),
           createdAt: Value(bundle.trip.createdAt),
         ),
@@ -342,6 +359,8 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             fromLocation: Value(i.fromLocation),
             toLocation: Value(i.toLocation),
             stopovers: Value(i.stopovers),
+            fromPlaceId: Value(i.fromPlaceId),
+            toPlaceId: Value(i.toPlaceId),
           ),
         );
       }
@@ -413,6 +432,17 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             tripId: tripId,
             personId: personIds[name]!,
           ),
+          mode: InsertMode.insertOrIgnore,
+        );
+      }
+
+      // A tag is matched by name and created only when missing. One the
+      // recipient already uses keeps *their* colour and ordering: the sender's
+      // filing scheme travels, their styling of it does not.
+      for (final name in bundle.tags) {
+        final tagId = await attachedDatabase.tagDao.ensureTag(name);
+        await into(tripTags).insert(
+          TripTagsCompanion.insert(tripId: tripId, tagId: tagId),
           mode: InsertMode.insertOrIgnore,
         );
       }
@@ -604,6 +634,17 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   }
 
   /// Names of the trip's participants, alphabetical.
+  Future<List<String>> _tagNames(int tripId) async {
+    final query =
+        select(
+            tags,
+          ).join([innerJoin(tripTags, tripTags.tagId.equalsExp(tags.id))])
+          ..where(tripTags.tripId.equals(tripId))
+          ..orderBy([OrderingTerm(expression: tags.name)]);
+    final rows = await query.get();
+    return [for (final row in rows) row.readTable(tags).name];
+  }
+
   Future<List<String>> _participantNames(int tripId) {
     final query =
         select(people).join([

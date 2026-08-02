@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/trips/presentation/trip_list_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -46,6 +47,7 @@ Trip _trip({required int id, required String title, String destination = ''}) {
     startDate: null,
     endDate: null,
     notes: null,
+    kind: TripKind.trip,
     colorValue: 0xFF00695C,
     createdAt: DateTime(2026, 1, 1),
   );

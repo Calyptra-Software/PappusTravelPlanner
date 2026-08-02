@@ -68,8 +68,46 @@ enum TransportMode {
   ski,
 }
 
+/// Whether a [Trips] row is a trip or the template for one.
+///
+/// Deliberately *not* a scale: a trip is a trip whether it runs for a fortnight
+/// or for the twenty minutes it takes to cycle to work, and the dates already
+/// say which — a walk is simply a trip whose start and end are the same day.
+/// What the app cannot derive from the dates is whether a plan is meant to be
+/// *used again*, and that is the whole of this column. How a trip is sorted,
+/// grouped or found is a matter for [Tags], which the user controls.
+///
+/// Persisted by integer index like every other stored enum here, so only ever
+/// append new values at the end.
+enum TripKind {
+  /// An actual trip, on the calendar: every row written before this column, and
+  /// everything the app shows in the overview, the widget and the exports.
+  trip,
+
+  /// A standing plan with no dates: the commute, the Saturday ride, the yearly
+  /// route to the cabin. A template, not a log — its occurrences are
+  /// **virtual**, and nothing is written for a day that simply went as the
+  /// routine says. Recording one is explicit (`RoutineDao.materializeRoutine`),
+  /// which copies the plan onto real dates as a [trip] of its own.
+  ///
+  /// Having no dates, a routine's items are laid out relative to
+  /// [kRoutineAnchorDay]: day *n* of the routine sits on the anchor plus *n*
+  /// days, so a multi-day routine needs no column of its own — the date it
+  /// already has carries the offset, and every query, day block and reorder
+  /// works on it unchanged.
+  routine,
+}
+
+/// Day one of a [TripKind.routine], the day its [ItineraryItems] are laid out
+/// from. A routine has no dates, but an item must have one
+/// ([ItineraryItems.date] is not nullable — making it nullable would push a
+/// null check into every query, every day block, the now-marker and the widget
+/// to serve one kind), so day *n* sits on this day plus *n*. The absolute value
+/// is never shown: a routine's days read as "Day 1", "Day 2".
+final DateTime kRoutineAnchorDay = DateTime(1970, 1, 1);
+
 /// A planned trip. Dates are optional so a trip can be sketched out before the
-/// exact days are known.
+/// exact days are known — and a [TripKind.routine] has none at all.
 class Trips extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text().withLength(min: 1, max: 120)();
@@ -77,6 +115,21 @@ class Trips extends Table {
   DateTimeColumn get startDate => dateTime().nullable()();
   DateTimeColumn get endDate => dateTime().nullable()();
   TextColumn get notes => text().nullable()();
+
+  /// Whether this is a trip or a template for one. Defaults to [TripKind.trip]
+  /// so every row written before the column existed keeps its behaviour.
+  IntColumn get kind => intEnum<TripKind>().withDefault(const Constant(0))();
+
+  /// The [TripKind.routine] this trip was created from, when it was. Records
+  /// where the plan came from — enough to warn before recording the same
+  /// routine twice on one day, and to list what a routine has produced.
+  /// `setNull` on delete: a trip that happened does not stop having happened
+  /// because the template it came from was thrown away.
+  IntColumn get fromRoutineId => integer().nullable().references(
+    Trips,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
 
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   IntColumn get colorValue =>
@@ -253,7 +306,25 @@ class ItineraryItems extends Table {
   /// The routing provider's trip identifier for an imported leg, kept so the
   /// live-times refresh can re-query this exact trip and fill in the actual
   /// departure/arrival. Null for a hand-entered leg (nothing to refresh).
+  ///
+  /// It names **one dated run of one service**, so it is the one imported field
+  /// that must never be copied onto another day — see [fromPlaceId] for what is
+  /// kept instead.
   TextColumn get sourceTripId => text().nullable()();
+
+  /// How the routing service addresses this leg's endpoints — the `queryId` of
+  /// the places the search was issued against: a stop id, or a `"lat,lon"` pair
+  /// for an address or point of interest.
+  ///
+  /// Unlike [sourceTripId] these say nothing about *when*, so they survive a
+  /// copy and are what lets a leg be searched again for another date — which is
+  /// how a routine's journey becomes a real, refreshable connection when it is
+  /// materialized. The coordinates alone would nearly do it, but a station
+  /// addressed by its stop id routes from the platform, whereas the same
+  /// station addressed by coordinate routes from a point outside it and picks
+  /// up a spurious walk. Null for a hand-entered leg.
+  TextColumn get fromPlaceId => text().nullable()();
+  TextColumn get toPlaceId => text().nullable()();
 
   /// The stops this leg passes through, encoded by `stopovers.dart` — written by
   /// the connection import, null for a hand-entered leg. Stored on the leg
@@ -473,6 +544,47 @@ class People extends Table {
   /// trip overview down to "my" expenses. At most one row is true; setting a new
   /// "me" clears the previous one. Travels with the database file.
   BoolColumn get isMe => boolean().withDefault(const Constant(false))();
+}
+
+/// A user-defined label a trip can be filed under: "walks", "bike rides",
+/// "vacation", "commute".
+///
+/// Tags are how the overview is kept navigable, and they are deliberately the
+/// *only* such axis: the app does not decide that a bike ride is a lesser kind
+/// of trip than a holiday, because that judgement is the user's and differs
+/// from person to person. Managed like [CostReasons] and [People] — a reusable
+/// roster kept independently of whether any trip currently uses a row.
+///
+/// Nothing may *behave* differently because of a tag. A tag is renameable and
+/// deletable, so hanging logic off one would break the moment it was renamed;
+/// what the app must branch on lives in [Trips.kind] instead.
+class Tags extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// The tag's identity, so the same label cannot exist twice.
+  TextColumn get name => text().unique()();
+
+  /// ARGB colour for the tag's chip, so a row of them is scannable at a glance.
+  IntColumn get colorValue =>
+      integer().withDefault(const Constant(0xFF546E7A))();
+
+  /// Manual ordering for the filter bar, so the tags used daily can be put
+  /// first.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+}
+
+/// Links a tag to a trip: a many-to-many between [Trips] and [Tags], exactly as
+/// [TripParticipants] links people. A trip can carry any number of tags and a
+/// tag any number of trips; the pair is unique and deleting either side removes
+/// the link.
+class TripTags extends Table {
+  IntColumn get tripId =>
+      integer().references(Trips, #id, onDelete: KeyAction.cascade)();
+  IntColumn get tagId =>
+      integer().references(Tags, #id, onDelete: KeyAction.cascade)();
+
+  @override
+  Set<Column> get primaryKey => {tripId, tagId};
 }
 
 /// Links a person to a trip as a participant: a many-to-many between [Trips]

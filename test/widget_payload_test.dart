@@ -17,6 +17,7 @@ void main() {
     DateTime? start,
     DateTime? end,
     String destination = '',
+    TripKind kind = TripKind.trip,
   }) {
     return Trip(
       id: id,
@@ -25,6 +26,7 @@ void main() {
       startDate: start,
       endDate: end,
       notes: null,
+      kind: kind,
       colorValue: 0xFF00695C,
       createdAt: DateTime(2026, 1, 1),
     );
@@ -105,6 +107,32 @@ void main() {
 
     test('returns null when there are no trips', () {
       expect(pickFeaturedTrip(const [], now), isNull);
+    });
+
+    test('a one-day trip is featured like any other', () {
+      // A walk is not a lesser kind of trip; its dates simply happen to be the
+      // same day, and every clause here already reads that correctly.
+      final walk = trip(
+        id: 1,
+        title: 'River walk',
+        start: DateTime(2026, 7, 5),
+        end: DateTime(2026, 7, 5),
+      );
+      expect(pickFeaturedTrip([walk], now)!.title, 'River walk');
+    });
+
+    test('a routine is never featured, even as the last resort', () {
+      // It has no dates, so it can only reach the "any trip" fallback — where
+      // it would put a template on the home screen under a date it hasn't, on
+      // an anchor day the widget's "today" would find nothing on.
+      final routine = trip(id: 1, title: 'To work', kind: TripKind.routine);
+      expect(pickFeaturedTrip([routine], now), isNull);
+    });
+
+    test('a routine never displaces a real trip', () {
+      final routine = trip(id: 1, title: 'To work', kind: TripKind.routine);
+      final undated = trip(id: 2, title: 'Someday');
+      expect(pickFeaturedTrip([routine, undated], now)!.title, 'Someday');
     });
   });
 

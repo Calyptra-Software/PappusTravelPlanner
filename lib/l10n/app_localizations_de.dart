@@ -1636,4 +1636,150 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get liveTimesError => 'Echtzeitdaten konnten nicht geladen werden';
+
+  @override
+  String get tripKindTrip => 'Reise';
+
+  @override
+  String get tripKindRoutine => 'Routine';
+
+  @override
+  String get tripKindTripBody => 'Eine Reise im Kalender — ein Tag oder viele.';
+
+  @override
+  String get tripKindRoutineBody =>
+      'Ein wiederverwendbarer Plan ohne Datum. Erzeuge daraus eine echte Reise, wann immer du sie machst.';
+
+  @override
+  String get newRoutine => 'Neue Routine';
+
+  @override
+  String get editRoutine => 'Routine bearbeiten';
+
+  @override
+  String get routinesTitle => 'Routinen';
+
+  @override
+  String get noRoutinesTitle => 'Noch keine Routinen';
+
+  @override
+  String get noRoutinesBody =>
+      'Eine Routine ist ein Plan, den du immer wieder nimmst — der Arbeitsweg, die Samstagsrunde. Lege eine an und erzeuge daraus eine Reise, wann immer du sie fährst.';
+
+  @override
+  String get routineNoDates => 'Kein Datum';
+
+  @override
+  String get routineFromRoutine => 'Aus Routine…';
+
+  @override
+  String get routineCreateTrip => 'Reise erzeugen';
+
+  @override
+  String get routineCreateTripFor => 'Reise erzeugen für';
+
+  @override
+  String get routineStartDate => 'Startdatum';
+
+  @override
+  String get routineLookUpConnections => 'Aktuelle Verbindungen suchen';
+
+  @override
+  String get routineLookUpConnectionsBody =>
+      'Sucht die Verbindungen dieses Plans für die gewählten Tage, damit ihre Echtzeitdaten aktualisiert werden können.';
+
+  @override
+  String get routineCreated => 'Reise erzeugt.';
+
+  @override
+  String get routineCreatedOpen => 'Öffnen';
+
+  @override
+  String get routineDuplicateReversed => 'Umgekehrt duplizieren';
+
+  @override
+  String routineReversedSuffix(String title) {
+    return '$title (Rückweg)';
+  }
+
+  @override
+  String get routineAlreadyRecordedTitle => 'Bereits erfasst';
+
+  @override
+  String routineAlreadyRecordedBody(String title, String date) {
+    return '„$title“ hat bereits eine Reise ab $date. Noch eine erzeugen?';
+  }
+
+  @override
+  String get routineCreateAnyway => 'Trotzdem erzeugen';
+
+  @override
+  String routineNewDay(int number) {
+    return 'Tag $number (neu)';
+  }
+
+  @override
+  String get routineAddDay => 'Tag hinzufügen';
+
+  @override
+  String routineDayNumber(int number) {
+    return 'Tag $number';
+  }
+
+  @override
+  String get connectionsNotFound =>
+      'Keine Verbindung gefunden — der Plan wurde unverändert übernommen.';
+
+  @override
+  String get connectionsOffline =>
+      'Der Routing-Dienst war nicht erreichbar. Der Plan wurde unverändert übernommen.';
+
+  @override
+  String get connectionsKeepPlan => 'Plan behalten';
+
+  @override
+  String get connectionsUseThis => 'Diese übernehmen';
+
+  @override
+  String get connectionsSearching => 'Verbindungen werden gesucht…';
+
+  @override
+  String get connectionsFindForLeg => 'Verbindung suchen';
+
+  @override
+  String get tagsLabel => 'Tags';
+
+  @override
+  String get tagsManage => 'Tags verwalten';
+
+  @override
+  String get tagsNone => 'Noch keine Tags';
+
+  @override
+  String get tagsAddHint => 'Neues Tag';
+
+  @override
+  String get tagsAdd => 'Tag hinzufügen';
+
+  @override
+  String get tagsFilterLabel => 'Getaggt';
+
+  @override
+  String get tagsAll => 'Alle';
+
+  @override
+  String get tagDeleteQuestion => 'Dieses Tag löschen?';
+
+  @override
+  String get tagDeleteBody =>
+      'Es wird von allen Reisen entfernt, die es tragen. Die Reisen selbst bleiben unverändert.';
+
+  @override
+  String get tagRename => 'Tag umbenennen';
+
+  @override
+  String get tagNameLabel => 'Name';
+
+  @override
+  String get tagDuplicate => 'Ein Tag mit diesem Namen existiert bereits.';
 }

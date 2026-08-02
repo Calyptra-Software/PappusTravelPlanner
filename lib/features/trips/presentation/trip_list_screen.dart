@@ -3,18 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format/date_format.dart';
+import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../sharing/presentation/trip_import.dart';
 import '../application/trip_providers.dart';
+import 'create_trip_from_routine.dart';
 import '../trip_filter.dart';
 import '../widgets/trip_calendar.dart';
+import '../widgets/tag_filter_bar.dart';
 import '../widgets/trip_card.dart';
 
 /// Actions folded into the overview app bar's overflow menu to keep the title
 /// from being crowded out on narrow screens.
-enum _OverflowAction { stats, import, settings }
+enum _OverflowAction { routines, stats, import, settings }
+
+/// What the overview's "+" offers: a trip, a routine, or a trip made from one.
+enum _NewAction { trip, routine, fromRoutine }
 
 /// Width from which the overview app bar has room for every action as its own
 /// icon. Below it the navigation actions collapse into an overflow menu; the
@@ -35,6 +41,10 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   bool _calendarView = false;
   TripQuery _query = const TripQuery();
 
+  /// The routines, kept from the last build so the "+" menu can offer to stamp
+  /// one out without re-reading a provider that may have been disposed.
+  List<Trip> _routines = const [];
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -51,18 +61,147 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     });
   }
 
-  Future<void> _openFilters(List<Person> people) async {
+  Future<void> _openFilters(List<Person> people, List<Tag> tags) async {
     final updated = await showModalBottomSheet<TripQuery>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => _TripFilterSheet(query: _query, people: people),
+      builder: (_) =>
+          _TripFilterSheet(query: _query, people: people, tags: tags),
     );
     if (updated != null) setState(() => _query = updated);
   }
 
+  /// Asks what is being made before opening anything.
+  ///
+  /// Three answers, not two: a trip, a routine, or a trip *out of* a routine —
+  /// which is the one used most often, since a routine exists to be stamped
+  /// out. It is offered here rather than only on the routine itself so that
+  /// recording this morning's commute is one tap from the overview.
+  Future<void> _pickNewTripKind() async {
+    final l10n = AppLocalizations.of(context);
+    final routines = _routines;
+    final action = await showModalBottomSheet<_NewAction>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.luggage_outlined),
+              title: Text(l10n.tripKindTrip),
+              subtitle: Text(l10n.tripKindTripBody),
+              onTap: () => Navigator.of(context).pop(_NewAction.trip),
+            ),
+            ListTile(
+              leading: const Icon(Icons.repeat),
+              title: Text(l10n.tripKindRoutine),
+              subtitle: Text(l10n.tripKindRoutineBody),
+              onTap: () => Navigator.of(context).pop(_NewAction.routine),
+            ),
+            // Offered only when there is something to stamp out: an entry that
+            // leads to an empty picker teaches nothing.
+            if (routines.isNotEmpty)
+              ListTile(
+                leading: const Icon(Icons.playlist_add_check),
+                title: Text(l10n.routineFromRoutine),
+                onTap: () => Navigator.of(context).pop(_NewAction.fromRoutine),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (action == null || !mounted) return;
+    switch (action) {
+      case _NewAction.trip:
+        context.push('/new');
+      case _NewAction.routine:
+        context.push('/new?kind=routine');
+      case _NewAction.fromRoutine:
+        await _runRoutine(routines);
+    }
+  }
+
+  /// Picks a routine, then hands off to the run sheet (which asks for the date
+  /// and whether to look the journeys up).
+  Future<void> _runRoutine(List<Trip> routines) async {
+    final routine = routines.length == 1
+        ? routines.single
+        : await showModalBottomSheet<Trip>(
+            context: context,
+            showDragHandle: true,
+            builder: (context) => SafeArea(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final routine in routines)
+                    ListTile(
+                      leading: CircleAvatar(
+                        radius: 12,
+                        backgroundColor: Color(routine.colorValue),
+                      ),
+                      title: Text(routine.title),
+                      subtitle: routine.destination.isEmpty
+                          ? null
+                          : Text(routine.destination),
+                      onTap: () => Navigator.of(context).pop(routine),
+                    ),
+                ],
+              ),
+            ),
+          );
+    if (routine == null || !mounted) return;
+    final tripId = await createTripFromRoutine(context, ref, routine);
+    if (tripId != null && mounted) context.push('/trip/$tripId');
+  }
+
+  /// The overview list proper — everything below the tag bar.
+  Widget _buildList({
+    required List<Trip> visible,
+    required Map<int, Map<String, int>> totalsByTrip,
+    required Map<int, List<Tag>> tagsByTrip,
+    required CurrencyBook book,
+  }) {
+    if (visible.isEmpty) {
+      // "Nothing matches your search" and "you have not made one of these yet"
+      // are different messages: only the first is a dead end the user should
+      // back out of.
+      final searching =
+          _query.text.trim().isNotEmpty || _query.hasActiveFilters;
+      if (searching) return _NoResults(query: _query.text.trim());
+      return const _EmptyState();
+    }
+    if (_calendarView) {
+      return TripCalendar(
+        trips: visible,
+        totals: totalsByTrip,
+        book: book,
+        onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      itemCount: visible.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final trip = visible[index];
+        return TripCard(
+          trip: trip,
+          book: book,
+          totals: totalsByTrip[trip.id] ?? const {},
+          tags: tagsByTrip[trip.id] ?? const [],
+          onTap: () => context.push('/trip/${trip.id}'),
+        );
+      },
+    );
+  }
+
   void _runOverflowAction(_OverflowAction action) {
     switch (action) {
+      case _OverflowAction.routines:
+        context.push('/routines');
       case _OverflowAction.stats:
         context.push('/stats');
       case _OverflowAction.import:
@@ -77,6 +216,13 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     final tripsAsync = ref.watch(tripListProvider);
     final participantsAsync = ref.watch(allParticipantsProvider);
     final totalsByTrip = ref.watch(tripTotalsProvider).value ?? const {};
+    final tagsByTrip = ref.watch(tagsByTripProvider).value ?? const {};
+    final tagList = ref.watch(tagListProvider).value ?? const <Tag>[];
+    // Watched, not read inside the button's callback: the provider is
+    // autoDispose, so nothing keeps it alive unless the screen holds it, and a
+    // read of a provider with no listener has no value yet — which quietly hid
+    // "from routine…" from the one menu it matters most in.
+    _routines = ref.watch(routineListProvider).value ?? const <Trip>[];
     final book = ref.watch(currencyBookProvider);
     final l10n = AppLocalizations.of(context);
 
@@ -98,6 +244,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     // bars stay in sync: shown as icons when there is room, folded into an
     // overflow menu when there is not.
     final overflowActions = <(_OverflowAction, IconData, String)>[
+      (_OverflowAction.routines, Icons.repeat, l10n.routinesTitle),
       (_OverflowAction.stats, Icons.bar_chart, l10n.statsAllTripsOpen),
       (_OverflowAction.import, Icons.file_download_outlined, l10n.importTrip),
       (_OverflowAction.settings, Icons.settings_outlined, l10n.settingsTitle),
@@ -152,7 +299,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                     isLabelVisible: filterCount > 0,
                     child: const Icon(Icons.tune),
                   ),
-                  onPressed: () => _openFilters(peopleList),
+                  onPressed: () => _openFilters(peopleList, tagList),
                 ),
                 if (wide)
                   for (final (action, icon, label) in overflowActions)
@@ -179,7 +326,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
               ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/new'),
+        onPressed: _pickNewTripKind,
         icon: const Icon(Icons.add),
         label: Text(l10n.newTrip),
       ),
@@ -196,31 +343,33 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
             trips,
             query: _query,
             participantsByTrip: idsByTrip,
+            tagsByTrip: {
+              for (final entry in tagsByTrip.entries)
+                entry.key: {for (final tag in entry.value) tag.id},
+            },
             today: DateTime.now(),
             totalsByTrip: totalsByTrip,
           );
-          if (visible.isEmpty) return _NoResults(query: _query.text.trim());
-          if (_calendarView) {
-            return TripCalendar(
-              trips: visible,
-              totals: totalsByTrip,
-              book: book,
-              onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
-            );
-          }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-            itemCount: visible.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final trip = visible[index];
-              return TripCard(
-                trip: trip,
-                book: book,
-                totals: totalsByTrip[trip.id] ?? const {},
-                onTap: () => context.push('/trip/${trip.id}'),
-              );
-            },
+          return Column(
+            children: [
+              // The tags in the open, not buried in the filter sheet: filing is
+              // only worth doing if reading it back is one tap, and this is the
+              // control that keeps a hundred commutes off the holidays.
+              TagFilterBar(
+                selected: _query.tagIds,
+                onChanged: (ids) =>
+                    setState(() => _query = _query.copyWith(tagIds: ids)),
+                onManage: () => context.push('/tags'),
+              ),
+              Expanded(
+                child: _buildList(
+                  visible: visible,
+                  totalsByTrip: totalsByTrip,
+                  tagsByTrip: tagsByTrip,
+                  book: book,
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -232,10 +381,15 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
 /// overview list. Edits a local copy of the [TripQuery] and returns it on close;
 /// the search [TripQuery.text] is preserved untouched.
 class _TripFilterSheet extends StatefulWidget {
-  const _TripFilterSheet({required this.query, required this.people});
+  const _TripFilterSheet({
+    required this.query,
+    required this.people,
+    required this.tags,
+  });
 
   final TripQuery query;
   final List<Person> people;
+  final List<Tag> tags;
 
   @override
   State<_TripFilterSheet> createState() => _TripFilterSheetState();
@@ -278,6 +432,12 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
     final next = {..._draft.statuses};
     selected ? next.add(status) : next.remove(status);
     setState(() => _draft = _draft.copyWith(statuses: next));
+  }
+
+  void _toggleTag(int id, bool selected) {
+    final next = {..._draft.tagIds};
+    selected ? next.add(id) : next.remove(id);
+    setState(() => _draft = _draft.copyWith(tagIds: next));
   }
 
   void _toggleParticipant(int id, bool selected) {
@@ -382,6 +542,24 @@ class _TripFilterSheetState extends State<_TripFilterSheet> {
                     ),
                 ],
               ),
+              // Tags are also in the bar above the list, and on purpose: the
+              // bar is for the one or two used daily, this for reaching the
+              // rest alongside the other facets.
+              if (widget.tags.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _SectionLabel(l10n.tagsFilterLabel),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final tag in widget.tags)
+                      FilterChip(
+                        label: Text(tag.name),
+                        selected: _draft.tagIds.contains(tag.id),
+                        onSelected: (v) => _toggleTag(tag.id, v),
+                      ),
+                  ],
+                ),
+              ],
               if (widget.people.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _SectionLabel(l10n.participants),
@@ -465,7 +643,11 @@ class _EmptyState extends StatelessWidget {
               color: theme.colorScheme.primary,
             ),
             const SizedBox(height: 16),
-            Text(l10n.noTripsTitle, style: theme.textTheme.titleLarge),
+            Text(
+              l10n.noTripsTitle,
+              style: theme.textTheme.titleLarge,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 8),
             Text(
               l10n.noTripsBody,

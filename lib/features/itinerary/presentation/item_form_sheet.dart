@@ -10,6 +10,7 @@ import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../trips/widgets/routine_day_field.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
@@ -29,6 +30,7 @@ Future<void> showItemFormSheet(
   ItineraryItem? existing,
   String? defaultFromLocation,
   int? alternativeId,
+  bool intoRoutine = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -42,6 +44,7 @@ Future<void> showItemFormSheet(
       existing: existing,
       defaultFromLocation: defaultFromLocation,
       alternativeId: alternativeId,
+      intoRoutine: intoRoutine,
     ),
   );
 }
@@ -55,11 +58,17 @@ class ItemFormSheet extends ConsumerStatefulWidget {
     this.existing,
     this.defaultFromLocation,
     this.alternativeId,
+    this.intoRoutine = false,
   });
 
   final int tripId;
   final ItemKind kind;
   final DateTime? day;
+
+  /// Whether this entry is being added to a routine. Only the connection search
+  /// cares: a timetable exists on real dates, and a routine's day is not one —
+  /// see `ConnectionSearchSheet.intoRoutine`.
+  final bool intoRoutine;
   final ItineraryItem? existing;
 
   /// When set, a new entry is planned inside this option of a decision rather
@@ -368,6 +377,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                         context,
                         tripId: widget.tripId,
                         day: _date,
+                        intoRoutine: widget.intoRoutine,
                       );
                       // The search imported and closed itself; close the manual
                       // form too so we don't leave an empty leg behind it.
@@ -430,17 +440,27 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                InkWell(
-                  onTap: _pickDate,
-                  borderRadius: BorderRadius.circular(4),
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: l10n.fieldDay,
-                      prefixIcon: const Icon(Icons.event),
+                // A routine has no dates: its days are positions in a plan, so
+                // they are chosen as such. Offering a calendar here is what made
+                // "day two" mean typing 2 January 1970.
+                if (widget.intoRoutine)
+                  RoutineDayField(
+                    tripId: widget.tripId,
+                    value: _date,
+                    onChanged: (day) => setState(() => _date = day),
+                  )
+                else
+                  InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(4),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: l10n.fieldDay,
+                        prefixIcon: const Icon(Icons.event),
+                      ),
+                      child: Text(formatDay(_date, localeName)),
                     ),
-                    child: Text(formatDay(_date, localeName)),
                   ),
-                ),
                 const SizedBox(height: 16),
                 Text(l10n.plannedTimes, style: theme.textTheme.labelLarge),
                 const SizedBox(height: 8),

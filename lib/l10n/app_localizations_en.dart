@@ -1627,4 +1627,150 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTimesError => 'Couldn\'t fetch live times';
+
+  @override
+  String get tripKindTrip => 'Trip';
+
+  @override
+  String get tripKindRoutine => 'Routine';
+
+  @override
+  String get tripKindTripBody => 'A trip on the calendar — one day or many.';
+
+  @override
+  String get tripKindRoutineBody =>
+      'A reusable plan with no dates. Stamp a real trip out of it whenever you take it.';
+
+  @override
+  String get newRoutine => 'New routine';
+
+  @override
+  String get editRoutine => 'Edit routine';
+
+  @override
+  String get routinesTitle => 'Routines';
+
+  @override
+  String get noRoutinesTitle => 'No routines yet';
+
+  @override
+  String get noRoutinesBody =>
+      'A routine is a plan you take again and again — the commute, the Saturday ride. Make one, then stamp a trip out of it whenever you travel it.';
+
+  @override
+  String get routineNoDates => 'No dates';
+
+  @override
+  String get routineFromRoutine => 'From routine…';
+
+  @override
+  String get routineCreateTrip => 'Create trip';
+
+  @override
+  String get routineCreateTripFor => 'Create trip for';
+
+  @override
+  String get routineStartDate => 'Start date';
+
+  @override
+  String get routineLookUpConnections => 'Look up current connections';
+
+  @override
+  String get routineLookUpConnectionsBody =>
+      'Search for the journeys in this plan on the chosen dates, so their live times can be refreshed.';
+
+  @override
+  String get routineCreated => 'Trip created.';
+
+  @override
+  String get routineCreatedOpen => 'Open';
+
+  @override
+  String get routineDuplicateReversed => 'Duplicate reversed';
+
+  @override
+  String routineReversedSuffix(String title) {
+    return '$title (return)';
+  }
+
+  @override
+  String get routineAlreadyRecordedTitle => 'Already recorded';
+
+  @override
+  String routineAlreadyRecordedBody(String title, String date) {
+    return '“$title” already has a trip starting on $date. Create another?';
+  }
+
+  @override
+  String get routineCreateAnyway => 'Create anyway';
+
+  @override
+  String routineNewDay(int number) {
+    return 'Day $number (new)';
+  }
+
+  @override
+  String get routineAddDay => 'Add day';
+
+  @override
+  String routineDayNumber(int number) {
+    return 'Day $number';
+  }
+
+  @override
+  String get connectionsNotFound =>
+      'No connection found — the plan was copied as it stands.';
+
+  @override
+  String get connectionsOffline =>
+      'Couldn\'t reach the routing service. The plan was copied as it stands.';
+
+  @override
+  String get connectionsKeepPlan => 'Keep the plan';
+
+  @override
+  String get connectionsUseThis => 'Use this';
+
+  @override
+  String get connectionsSearching => 'Looking up connections…';
+
+  @override
+  String get connectionsFindForLeg => 'Find connection';
+
+  @override
+  String get tagsLabel => 'Tags';
+
+  @override
+  String get tagsManage => 'Manage tags';
+
+  @override
+  String get tagsNone => 'No tags yet';
+
+  @override
+  String get tagsAddHint => 'New tag';
+
+  @override
+  String get tagsAdd => 'Add tag';
+
+  @override
+  String get tagsFilterLabel => 'Tagged';
+
+  @override
+  String get tagsAll => 'All';
+
+  @override
+  String get tagDeleteQuestion => 'Delete this tag?';
+
+  @override
+  String get tagDeleteBody =>
+      'It will be removed from every trip carrying it. The trips themselves are untouched.';
+
+  @override
+  String get tagRename => 'Rename tag';
+
+  @override
+  String get tagNameLabel => 'Name';
+
+  @override
+  String get tagDuplicate => 'A tag with that name already exists.';
 }

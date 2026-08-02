@@ -24,6 +24,7 @@ class JourneySheet extends StatelessWidget {
     this.modesById = const {},
     this.itemsById = const {},
     this.confirmLabel,
+    this.cancelLabel,
     this.onConfirm,
   });
 
@@ -43,6 +44,13 @@ class JourneySheet extends StatelessWidget {
   final Map<int, ItineraryItem> itemsById;
 
   final String? confirmLabel;
+
+  /// Names the way *out* of the sheet when declining is a real choice rather
+  /// than a dismissal — "keep the plan", when the alternative to taking this
+  /// connection is the one already in the trip. Absent, the sheet is simply
+  /// swiped away.
+  final String? cancelLabel;
+
   final VoidCallback? onConfirm;
 
   @override
@@ -148,13 +156,25 @@ class JourneySheet extends StatelessWidget {
                 16,
                 12 + media.padding.bottom,
               ),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: Text(confirmLabel ?? l10n.connectionAddToDay),
-                  onPressed: confirm,
-                ),
+              child: Row(
+                children: [
+                  if (cancelLabel != null) ...[
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: Text(cancelLabel!),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: Text(confirmLabel ?? l10n.connectionAddToDay),
+                      onPressed: confirm,
+                    ),
+                  ),
+                ],
               ),
             ),
           ] else

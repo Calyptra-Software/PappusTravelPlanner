@@ -2833,6 +2833,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t fetch live times'**
   String get liveTimesError;
+
+  /// No description provided for @tripKindTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip'**
+  String get tripKindTrip;
+
+  /// No description provided for @tripKindRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Routine'**
+  String get tripKindRoutine;
+
+  /// No description provided for @tripKindTripBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A trip on the calendar — one day or many.'**
+  String get tripKindTripBody;
+
+  /// No description provided for @tripKindRoutineBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A reusable plan with no dates. Stamp a real trip out of it whenever you take it.'**
+  String get tripKindRoutineBody;
+
+  /// No description provided for @newRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'New routine'**
+  String get newRoutine;
+
+  /// No description provided for @editRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit routine'**
+  String get editRoutine;
+
+  /// No description provided for @routinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Routines'**
+  String get routinesTitle;
+
+  /// No description provided for @noRoutinesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No routines yet'**
+  String get noRoutinesTitle;
+
+  /// No description provided for @noRoutinesBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A routine is a plan you take again and again — the commute, the Saturday ride. Make one, then stamp a trip out of it whenever you travel it.'**
+  String get noRoutinesBody;
+
+  /// No description provided for @routineNoDates.
+  ///
+  /// In en, this message translates to:
+  /// **'No dates'**
+  String get routineNoDates;
+
+  /// No description provided for @routineFromRoutine.
+  ///
+  /// In en, this message translates to:
+  /// **'From routine…'**
+  String get routineFromRoutine;
+
+  /// No description provided for @routineCreateTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Create trip'**
+  String get routineCreateTrip;
+
+  /// No description provided for @routineCreateTripFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Create trip for'**
+  String get routineCreateTripFor;
+
+  /// No description provided for @routineStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get routineStartDate;
+
+  /// No description provided for @routineLookUpConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up current connections'**
+  String get routineLookUpConnections;
+
+  /// No description provided for @routineLookUpConnectionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for the journeys in this plan on the chosen dates, so their live times can be refreshed.'**
+  String get routineLookUpConnectionsBody;
+
+  /// No description provided for @routineCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip created.'**
+  String get routineCreated;
+
+  /// No description provided for @routineCreatedOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get routineCreatedOpen;
+
+  /// No description provided for @routineDuplicateReversed.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate reversed'**
+  String get routineDuplicateReversed;
+
+  /// No description provided for @routineReversedSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (return)'**
+  String routineReversedSuffix(String title);
+
+  /// No description provided for @routineAlreadyRecordedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Already recorded'**
+  String get routineAlreadyRecordedTitle;
+
+  /// No description provided for @routineAlreadyRecordedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'“{title}” already has a trip starting on {date}. Create another?'**
+  String routineAlreadyRecordedBody(String title, String date);
+
+  /// No description provided for @routineCreateAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Create anyway'**
+  String get routineCreateAnyway;
+
+  /// No description provided for @routineNewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {number} (new)'**
+  String routineNewDay(int number);
+
+  /// No description provided for @routineAddDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Add day'**
+  String get routineAddDay;
+
+  /// No description provided for @routineDayNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Day {number}'**
+  String routineDayNumber(int number);
+
+  /// No description provided for @connectionsNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection found — the plan was copied as it stands.'**
+  String get connectionsNotFound;
+
+  /// No description provided for @connectionsOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the routing service. The plan was copied as it stands.'**
+  String get connectionsOffline;
+
+  /// No description provided for @connectionsKeepPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the plan'**
+  String get connectionsKeepPlan;
+
+  /// No description provided for @connectionsUseThis.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this'**
+  String get connectionsUseThis;
+
+  /// No description provided for @connectionsSearching.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking up connections…'**
+  String get connectionsSearching;
+
+  /// No description provided for @connectionsFindForLeg.
+  ///
+  /// In en, this message translates to:
+  /// **'Find connection'**
+  String get connectionsFindForLeg;
+
+  /// No description provided for @tagsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagsLabel;
+
+  /// No description provided for @tagsManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage tags'**
+  String get tagsManage;
+
+  /// No description provided for @tagsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags yet'**
+  String get tagsNone;
+
+  /// No description provided for @tagsAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New tag'**
+  String get tagsAddHint;
+
+  /// No description provided for @tagsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tag'**
+  String get tagsAdd;
+
+  /// No description provided for @tagsFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tagged'**
+  String get tagsFilterLabel;
+
+  /// No description provided for @tagsAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tagsAll;
+
+  /// No description provided for @tagDeleteQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this tag?'**
+  String get tagDeleteQuestion;
+
+  /// No description provided for @tagDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It will be removed from every trip carrying it. The trips themselves are untouched.'**
+  String get tagDeleteBody;
+
+  /// No description provided for @tagRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename tag'**
+  String get tagRename;
+
+  /// No description provided for @tagNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get tagNameLabel;
+
+  /// No description provided for @tagDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'A tag with that name already exists.'**
+  String get tagDuplicate;
 }
 
 class _AppLocalizationsDelegate

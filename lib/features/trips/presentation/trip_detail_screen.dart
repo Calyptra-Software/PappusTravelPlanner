@@ -34,6 +34,9 @@ import '../../sharing/trip_ics.dart';
 import '../../sharing/trip_pdf.dart';
 import '../../sharing/trip_pdf_sections.dart';
 import '../application/trip_providers.dart';
+import 'create_trip_from_routine.dart';
+import '../trip_kind.dart';
+import '../widgets/trip_when_line.dart';
 
 /// The two ways to export a trip from the detail screen's share menu: the app's
 /// own portable `.tpt` bundle (re-importable) or a printable PDF.
@@ -80,6 +83,57 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
         curve: Curves.easeOutCubic,
       );
     });
+  }
+
+  /// Stamps a real trip out of this routine, for whichever day the user picks.
+  ///
+  /// Any day, not just today: a work day is often planned the evening before,
+  /// and a day that was travelled but never recorded is worth adding after the
+  /// fact. The date and whether to look the journeys up are both asked in the
+  /// run sheet.
+  Future<void> _createTripFromRoutine(
+    BuildContext context,
+    WidgetRef ref,
+    Trip routine,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final tripId = await createTripFromRoutine(context, ref, routine);
+    if (tripId == null || !context.mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l10n.routineCreated),
+        // A snackbar carrying an action does **not** time out while the
+        // platform reports `accessibleNavigation` — Flutter withholds the timer
+        // so assistive technology has time to reach the action, and several
+        // Linux desktops report it on. Without a close button the only way out
+        // is to take the action, which is not what an offer means, so the
+        // message carries its own dismissal.
+        showCloseIcon: true,
+        action: SnackBarAction(
+          label: l10n.routineCreatedOpen,
+          onPressed: () => context.push('/trip/$tripId'),
+        ),
+      ),
+    );
+  }
+
+  /// Creates the way-back routine from the way-out one — see
+  /// [RoutineDao.duplicateReversed], which reverses the legs and swaps their
+  /// endpoints but keeps no times.
+  Future<void> _duplicateReversed(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final newTripId = await ref
+        .read(repositoryProvider)
+        .duplicateRoutineReversed(
+          tripId,
+          title: l10n.routineReversedSuffix(title),
+        );
+    if (context.mounted) context.push('/trip/$newTripId');
   }
 
   Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
@@ -443,10 +497,25 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final rawHeld = ref.watch(itemClipboardProvider);
     final held = rawHeld?.tripId == tripId ? rawHeld : null;
 
+    // A routine has no dates, so two of the three exports have nothing to say
+    // about it: a calendar event needs a day, and the PDF is a document about a
+    // trip that happened. The lossless `.tpt` bundle still applies.
+    final isRoutine = tripAsync.value?.kind == TripKind.routine;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.itineraryTitle),
         actions: [
+          if (isRoutine)
+            IconButton(
+              tooltip: l10n.routineDuplicateReversed,
+              icon: const Icon(Icons.swap_vert),
+              onPressed: () => _duplicateReversed(
+                context,
+                ref,
+                tripAsync.value?.title ?? '',
+              ),
+            ),
           IconButton(
             tooltip: l10n.statsOpen,
             icon: const Icon(Icons.bar_chart),
@@ -476,24 +545,26 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   title: Text(l10n.shareTrip),
                 ),
               ),
-              PopupMenuItem(
-                value: _ShareAction.pdf,
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.picture_as_pdf_outlined),
-                  title: Text(l10n.exportPdf),
+              if (!isRoutine) ...[
+                PopupMenuItem(
+                  value: _ShareAction.pdf,
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.picture_as_pdf_outlined),
+                    title: Text(l10n.exportPdf),
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: _ShareAction.ics,
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.event_outlined),
-                  title: Text(l10n.exportIcs),
+                PopupMenuItem(
+                  value: _ShareAction.ics,
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.event_outlined),
+                    title: Text(l10n.exportIcs),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           IconButton(
@@ -508,6 +579,17 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           ),
         ],
       ),
+      // "Create trip" is the one thing a routine screen is for beyond editing
+      // the template: it is the only moment anything is written for a day the
+      // routine was actually travelled.
+      floatingActionButton: isRoutine && tripAsync.value != null
+          ? FloatingActionButton.extended(
+              onPressed: () =>
+                  _createTripFromRoutine(context, ref, tripAsync.value!),
+              icon: const Icon(Icons.playlist_add_check),
+              label: Text(l10n.routineCreateTrip),
+            )
+          : null,
       bottomNavigationBar: held == null
           ? null
           : _HoldingBar(
@@ -556,6 +638,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     accent: accent,
                     tripStart: trip.startDate,
                     tripEnd: trip.endDate,
+                    relativeDays: trip.kind == TripKind.routine,
+                    canAddDay: trip.kind == TripKind.routine,
+                    // Where an entry added to an empty plan lands. A routine
+                    // must anchor on its own day one, never on today.
+                    anchorDay: planAnchorDay(trip),
                     now: now,
                     todayKey: _todayKey,
                     costsByItem: costsByItem,
@@ -573,6 +660,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                       tripId: tripId,
                       kind: item.kind,
                       existing: item,
+                      intoRoutine: trip.kind == TripKind.routine,
                     ),
                     onAddPlace: (day, {alternativeId}) => showItemFormSheet(
                       context,
@@ -580,6 +668,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                       kind: ItemKind.place,
                       day: day,
                       alternativeId: alternativeId,
+                      intoRoutine: trip.kind == TripKind.routine,
                     ),
                     onQuickAddPlace: (day, location, {alternativeId}) =>
                         _quickAddPlace(
@@ -596,6 +685,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                           day: day,
                           defaultFromLocation: fromDefault,
                           alternativeId: alternativeId,
+                          // A routine's day is not a date any timetable runs
+                          // on, so the connection search behind this form has
+                          // to search a real one and rebase what it finds — and
+                          // the day itself is picked as an ordinal.
+                          intoRoutine: trip.kind == TripKind.routine,
                         ),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
@@ -654,7 +748,12 @@ class _TripHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final days = tripDayCount(trip.startDate, trip.endDate);
+    // A routine has no dates, so what it can say about "when" is how long the
+    // plan runs — read from the plan itself, since nothing else records it.
+    final routineDays = trip.kind == TripKind.routine
+        ? ref.watch(routineDaySpanProvider(trip.id))
+        : 1;
+    final when = tripWhenLine(trip, l10n, localeName, routineDays: routineDays);
 
     // "My expenses" filter: only offered when a person is marked as "me"; the
     // toggle otherwise collapses to the plain all-expenses total.
@@ -703,24 +802,18 @@ class _TripHeader extends ConsumerWidget {
               Row(
                 children: [
                   Icon(
-                    Icons.calendar_today_outlined,
+                    when.icon,
                     size: 16,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    formatDateRange(
-                      l10n,
-                      localeName,
-                      trip.startDate,
-                      trip.endDate,
-                    ),
-                    style: theme.textTheme.bodyMedium,
+                  Flexible(
+                    child: Text(when.text, style: theme.textTheme.bodyMedium),
                   ),
-                  if (days != null) ...[
+                  if (when.pill != null) ...[
                     const SizedBox(width: 8),
                     Text(
-                      '· ${l10n.days(days)}',
+                      '· ${when.pill}',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

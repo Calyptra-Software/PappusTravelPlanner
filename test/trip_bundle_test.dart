@@ -208,4 +208,51 @@ void main() {
       expect(bundle.currencyBook.toBase(1000, 'GBP'), isNull);
     });
   });
+
+  group('trip kind', () {
+    test('a kind survives the round trip', () {
+      final routine = TripBundle(
+        schemaVersion: 27,
+        tags: const ['commute'],
+        trip: BundleTrip(
+          title: 'To work',
+          destination: 'Office',
+          kind: TripKind.routine,
+          colorValue: 0xFF00695C,
+          createdAt: DateTime(2026, 1, 2),
+        ),
+      );
+
+      final decoded = TripBundle.decode(routine.encode());
+      expect(decoded.trip.kind, TripKind.routine);
+      expect(decoded.tags, ['commute']);
+    });
+
+    test('a bundle written before v4 reads as an ordinary trip', () {
+      final json = {
+        'title': 'Rome',
+        'destination': 'Italy',
+        'startDate': null,
+        'endDate': null,
+        'notes': null,
+        'colorValue': 0xFF00695C,
+        'createdAt': '2026-01-02T00:00:00.000',
+      };
+      final trip = BundleTrip.fromJson(json);
+      expect(trip.kind, TripKind.trip);
+    });
+
+    test('an unknown kind from a newer sender reads as an ordinary trip', () {
+      // The plan is all there; a journey is the shape that shows every entry
+      // of it, so this degrades rather than throwing.
+      final json = {
+        'title': 'Rome',
+        'destination': '',
+        'kind': 'sabbatical',
+        'colorValue': 0xFF00695C,
+        'createdAt': '2026-01-02T00:00:00.000',
+      };
+      expect(BundleTrip.fromJson(json).kind, TripKind.trip);
+    });
+  });
 }

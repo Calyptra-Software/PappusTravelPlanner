@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/calendar_layout.dart';
 
 void main() {
@@ -9,6 +10,7 @@ void main() {
     destination: '',
     startDate: start,
     endDate: end,
+    kind: TripKind.trip,
     colorValue: 0xFF00695C,
     createdAt: DateTime(2026, 1, 1),
   );

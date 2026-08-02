@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
@@ -6,12 +7,24 @@ import '../../../data/database/stopovers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../data/journey_mapper.dart';
 import '../data/live_refresh.dart';
+import '../../trips/planned_journey.dart';
 import '../domain/journey.dart';
 import 'transport_search_providers.dart';
 
 final transportSearchControllerProvider = Provider<TransportSearchController>(
   (ref) => TransportSearchController(ref),
 );
+
+/// The localized labels an import needs to compose a leg's auto-notes. Bundled
+/// because they always travel together and are always the same four strings;
+/// passing them one at a time through every caller was four chances to forget
+/// one.
+typedef JourneyImportLabels = ({
+  TrackLabel track,
+  TrackLabel fromTrack,
+  TrackLabel toTrack,
+  DirectionLabel direction,
+});
 
 /// Turns a chosen [JourneyOption] into itinerary legs and writes them to a trip.
 ///
@@ -30,10 +43,29 @@ class TransportSearchController {
   /// the arrow already places ("Pl. 5 → Pl. 20"), while
   /// [fromTrackLabel]/[toTrackLabel] name the end themselves, for a leg where
   /// the service gave only one of the two.
+  ///
+  /// [rebaseFrom] / [rebaseTo] move the whole run off the dates it was found on
+  /// and onto a day of a dateless plan — what importing into a **routine** does.
+  /// A timetable only exists on real dates, so the search is made on one and the
+  /// answer is laid back onto the plan by the same number of days, which keeps
+  /// an overnight leg on the next day of the plan. What is left behind is
+  /// everything that belonged to that particular run: its `sourceTripId`, and
+  /// any live times already read off it. A template must not look refreshable,
+  /// and a delay measured on one Tuesday is not part of a plan.
+  ///
+  /// [fromPlaceId] / [toPlaceId] are the `queryId`s this search was issued
+  /// against. They are kept on the run's outer legs so the same journey can be
+  /// searched again for another date — which is how a routine's plan becomes a
+  /// real, refreshable connection when a trip is stamped out of it. Unlike
+  /// `sourceTripId` they say nothing about *when*, so they survive a copy.
   Future<List<int>> importJourney(
     int tripId,
     JourneyOption journey, {
     bool group = true,
+    String? fromPlaceId,
+    String? toPlaceId,
+    DateTime? rebaseFrom,
+    DateTime? rebaseTo,
     TrackLabel? trackLabel,
     TrackLabel? fromTrackLabel,
     TrackLabel? toTrackLabel,
@@ -48,12 +80,74 @@ class TransportSearchController {
       toTrackLabel: toTrackLabel,
       directionLabel: directionLabel,
     );
+    final rebase = rebaseFrom != null && rebaseTo != null;
     final companions = [
-      for (final leg in legs) mappedLegToCompanion(tripId, leg),
+      for (final (index, leg) in legs.indexed)
+        () {
+          final companion = mappedLegToCompanion(
+            tripId,
+            leg,
+            fromPlaceId: index == 0 ? fromPlaceId : null,
+            toPlaceId: index == legs.length - 1 ? toPlaceId : null,
+          );
+          if (!rebase) return companion;
+          return companion.copyWith(
+            date: Value(
+              rebasedLegDay(leg.date, foundOn: rebaseFrom, planDay: rebaseTo),
+            ),
+            sourceTripId: const Value(null),
+            actualStartMinutes: const Value(null),
+            actualEndMinutes: const Value(null),
+          );
+        }(),
     ];
     return _ref
         .read(repositoryProvider)
         .insertJourney(tripId, companions, group: group);
+  }
+
+  /// Replaces one run of legs in a trip with a freshly-searched connection,
+  /// keeping the bundle they travel in — see `RoutineDao.replaceJourneyLegs`,
+  /// which explains why the group survives rather than being remade.
+  ///
+  /// This is what turns a plan copied from a routine into a journey that really
+  /// runs on the day it was copied onto: same endpoints, same time of day, but
+  /// the service the timetable actually has — and so a `sourceTripId` that the
+  /// live-times refresh can use.
+  Future<void> replaceJourney(
+    int tripId, {
+    required PlannedJourney journey,
+    required JourneyOption option,
+    required JourneyImportLabels labels,
+  }) async {
+    final modes = await _ref.read(transportModesProvider.future);
+    final legs = journeyToLegs(
+      option,
+      resolveMode: modeResolver(modes),
+      trackLabel: labels.track,
+      fromTrackLabel: labels.fromTrack,
+      toTrackLabel: labels.toTrack,
+      directionLabel: labels.direction,
+    );
+    final companions = [
+      for (final (index, leg) in legs.indexed)
+        mappedLegToCompanion(
+          tripId,
+          leg,
+          // The endpoints are the ones this journey was searched by, so the
+          // result stays searchable in turn.
+          fromPlaceId: index == 0 ? journey.fromPlaceId : null,
+          toPlaceId: index == legs.length - 1 ? journey.toPlaceId : null,
+        ),
+    ];
+    await _ref
+        .read(repositoryProvider)
+        .replaceJourneyLegs(
+          tripId,
+          oldLegIds: journey.legIds,
+          legs: companions,
+          groupId: journey.groupId,
+        );
   }
 
   /// Refreshes one imported leg's live (real-time) times: re-queries its trip and

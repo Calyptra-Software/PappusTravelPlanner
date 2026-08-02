@@ -21,13 +21,18 @@ Future<bool> showConnectionSearchSheet(
   BuildContext context, {
   required int tripId,
   required DateTime day,
+  bool intoRoutine = false,
 }) async {
   final imported = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => ConnectionSearchSheet(tripId: tripId, day: day),
+    builder: (_) => ConnectionSearchSheet(
+      tripId: tripId,
+      day: day,
+      intoRoutine: intoRoutine,
+    ),
   );
   return imported ?? false;
 }
@@ -40,10 +45,25 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
     super.key,
     required this.tripId,
     required this.day,
+    this.intoRoutine = false,
   });
 
   final int tripId;
+
+  /// The day the imported legs belong to. For a routine this is a day of the
+  /// *plan* (day one is `kRoutineAnchorDay`), which no timetable can answer for
+  /// — see [intoRoutine].
   final DateTime day;
+
+  /// Whether the legs are being added to a routine.
+  ///
+  /// A routine has no dates, but a timetable only exists on real ones: you
+  /// cannot ask what runs on day one of a plan. So the search is made on a real
+  /// date — today by default, changeable, since a Sunday timetable is not a
+  /// Tuesday one — and the connection it finds is then laid back onto [day],
+  /// keeping the shape of the journey (an overnight leg still lands on the next
+  /// day of the plan) while carrying none of that date's own identity.
+  final bool intoRoutine;
 
   @override
   ConsumerState<ConnectionSearchSheet> createState() =>
@@ -65,7 +85,11 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   /// the query carries only their ids.
   final List<_Via> _vias = [];
 
-  late DateTime _date = DateUtils.dateOnly(widget.day);
+  // A routine's own day is an offset origin, not a date anything runs on, so
+  // the search starts from today and the result is rebased on import.
+  late DateTime _date = widget.intoRoutine
+      ? DateUtils.dateOnly(DateTime.now())
+      : DateUtils.dateOnly(widget.day);
   TimeOfDay _time = TimeOfDay.now();
   bool _arriveBy = false;
   JourneyQuery? _query;
@@ -175,6 +199,15 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
           .importJourney(
             widget.tripId,
             option,
+            // The ids this search was issued against, kept so the same journey
+            // can be looked up again for another date.
+            fromPlaceId: _from?.queryId,
+            toPlaceId: _to?.queryId,
+            // Into a routine, the connection is a *shape*: which legs, in which
+            // order, how far into the plan each falls. Rebasing keeps that and
+            // drops the rest.
+            rebaseFrom: widget.intoRoutine ? _date : null,
+            rebaseTo: widget.intoRoutine ? widget.day : null,
             trackLabel: l10n.platformShort,
             fromTrackLabel: l10n.platformFromShort,
             toTrackLabel: l10n.platformToShort,

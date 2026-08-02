@@ -26,18 +26,26 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 class _FakeController extends TransportSearchController {
   _FakeController(super.ref);
   int imports = 0;
+  DateTime? lastRebaseFrom;
+  DateTime? lastRebaseTo;
 
   @override
   Future<List<int>> importJourney(
     int tripId,
     JourneyOption journey, {
     bool group = true,
+    String? fromPlaceId,
+    String? toPlaceId,
+    DateTime? rebaseFrom,
+    DateTime? rebaseTo,
     TrackLabel? trackLabel,
     TrackLabel? fromTrackLabel,
     TrackLabel? toTrackLabel,
     DirectionLabel? directionLabel,
   }) async {
     imports++;
+    lastRebaseFrom = rebaseFrom;
+    lastRebaseTo = rebaseTo;
     return const [];
   }
 }
@@ -123,6 +131,10 @@ class _FakeSearch implements TransportSearch {
   final calls =
       <({JourneySearchOptions options, ViaStops via, String? pageCursor})>[];
 
+  /// The instant the last query asked about — a routine must never search its
+  /// own anchor day, which no timetable answers for.
+  DateTime? lastTime;
+
   /// When set, only *paging* requests fail — the first window still answers, so
   /// a test can check that results already found survive a failed "later".
   bool failPaging = false;
@@ -147,6 +159,7 @@ class _FakeSearch implements TransportSearch {
     String? pageCursor,
   }) async {
     calls.add((options: options, via: via, pageCursor: pageCursor));
+    lastTime = time;
     if (pageCursor != null && failPaging) {
       throw const TransportSearchException('offline');
     }
@@ -207,7 +220,7 @@ void main() {
     suggestions = const [_place];
   });
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool intoRoutine = false}) async {
     // A tall surface so the whole results list — both paging rows included —
     // is laid out; the default test window is shorter than the sheet.
     tester.view.physicalSize = const Size(1000, 2400);
@@ -237,7 +250,10 @@ void main() {
                 onPressed: () => showConnectionSearchSheet(
                   context,
                   tripId: 1,
-                  day: DateTime(2026, 7, 27),
+                  day: intoRoutine
+                      ? DateTime(1970, 1, 1)
+                      : DateTime(2026, 7, 27),
+                  intoRoutine: intoRoutine,
                 ),
                 child: const Text('open'),
               ),
@@ -466,8 +482,11 @@ void main() {
 
   /// Searches Hamburg -> Hamburg so the results (and their paging rows) are on
   /// screen.
-  Future<void> searchFrom(WidgetTester tester) async {
-    await pump(tester);
+  Future<void> searchFrom(
+    WidgetTester tester, {
+    bool intoRoutine = false,
+  }) async {
+    await pump(tester, intoRoutine: intoRoutine);
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await pickInto(tester, 'From');
@@ -888,5 +907,52 @@ void main() {
       find.widgetWithText(FilledButton, 'Search'),
     );
     expect(enabled.onPressed, isNotNull);
+  });
+
+  group('into a routine', () {
+    testWidgets('searches a real date, never the plan\'s anchor day', (
+      tester,
+    ) async {
+      // A routine's day one is 1 January 1970 — an offset origin, not a date
+      // any train runs on. Asking the timetable for it would answer nothing at
+      // all, so the search opens on today instead.
+      await searchFrom(tester, intoRoutine: true);
+
+      expect(search.lastTime, isNotNull);
+      expect(search.lastTime!.year, DateTime.now().year);
+    });
+
+    testWidgets('lays the connection it finds back onto the plan day', (
+      tester,
+    ) async {
+      search.outrunsTransit = true;
+      await searchFrom(tester, intoRoutine: true);
+
+      await tester.tap(find.text('12m'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to day'));
+      await tester.pumpAndSettle();
+
+      expect(fake.imports, 1);
+      // The search ran on a real date and the result is rebased onto day one of
+      // the plan — without which the routine reads as spanning the decades
+      // since its anchor.
+      expect(fake.lastRebaseTo, DateTime(1970, 1, 1));
+      expect(fake.lastRebaseFrom, isNotNull);
+      expect(fake.lastRebaseFrom!.year, DateTime.now().year);
+    });
+
+    testWidgets('an ordinary trip rebases nothing', (tester) async {
+      search.outrunsTransit = true;
+      await searchFrom(tester);
+
+      await tester.tap(find.text('12m'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add to day'));
+      await tester.pumpAndSettle();
+
+      expect(fake.lastRebaseFrom, isNull);
+      expect(fake.lastRebaseTo, isNull);
+    });
   });
 }

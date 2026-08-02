@@ -738,5 +738,65 @@
   "liveTimesRefresh": "Update live times",
   "liveTimesNone": "No live times to update",
   "liveTimesCancelled": "This service has been cancelled",
-  "liveTimesError": "Couldn't fetch live times"
+  "liveTimesError": "Couldn't fetch live times",
+
+  "tripKindTrip": "Trip",
+  "tripKindRoutine": "Routine",
+  "tripKindTripBody": "A trip on the calendar — one day or many.",
+  "tripKindRoutineBody": "A reusable plan with no dates. Stamp a real trip out of it whenever you take it.",
+  "newRoutine": "New routine",
+  "editRoutine": "Edit routine",
+  "routinesTitle": "Routines",
+  "noRoutinesTitle": "No routines yet",
+  "noRoutinesBody": "A routine is a plan you take again and again — the commute, the Saturday ride. Make one, then stamp a trip out of it whenever you travel it.",
+  "routineNoDates": "No dates",
+  "routineFromRoutine": "From routine…",
+  "routineCreateTrip": "Create trip",
+  "routineCreateTripFor": "Create trip for",
+  "routineStartDate": "Start date",
+  "routineLookUpConnections": "Look up current connections",
+  "routineLookUpConnectionsBody": "Search for the journeys in this plan on the chosen dates, so their live times can be refreshed.",
+  "routineCreated": "Trip created.",
+  "routineCreatedOpen": "Open",
+  "routineDuplicateReversed": "Duplicate reversed",
+  "routineReversedSuffix": "{title} (return)",
+  "@routineReversedSuffix": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "routineAlreadyRecordedTitle": "Already recorded",
+  "routineAlreadyRecordedBody": "“{title}” already has a trip starting on {date}. Create another?",
+  "@routineAlreadyRecordedBody": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "routineCreateAnyway": "Create anyway",
+  "routineNewDay": "Day {number} (new)",
+  "@routineNewDay": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "routineAddDay": "Add day",
+  "routineDayNumber": "Day {number}",
+  "@routineDayNumber": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "connectionsNotFound": "No connection found — the plan was copied as it stands.",
+  "connectionsOffline": "Couldn't reach the routing service. The plan was copied as it stands.",
+  "connectionsKeepPlan": "Keep the plan",
+  "connectionsUseThis": "Use this",
+  "connectionsSearching": "Looking up connections…",
+  "connectionsFindForLeg": "Find connection",
+  "tagsLabel": "Tags",
+  "tagsManage": "Manage tags",
+  "tagsNone": "No tags yet",
+  "tagsAddHint": "New tag",
+  "tagsAdd": "Add tag",
+  "tagsFilterLabel": "Tagged",
+  "tagsAll": "All",
+  "tagDeleteQuestion": "Delete this tag?",
+  "tagDeleteBody": "It will be removed from every trip carrying it. The trips themselves are untouched.",
+  "tagRename": "Rename tag",
+  "tagNameLabel": "Name",
+  "tagDuplicate": "A tag with that name already exists."
 }

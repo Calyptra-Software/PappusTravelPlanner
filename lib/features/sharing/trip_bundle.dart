@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../core/format/money_format.dart';
-import '../../data/database/tables.dart' show ItemKind;
+import '../../data/database/tables.dart' show ItemKind, TripKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
 /// share-sheet intent filter matches only Travel Planner trips, not every
@@ -47,6 +47,7 @@ class TripBundle {
     this.checklists = const [],
     this.collapsedDays = const [],
     this.participants = const [],
+    this.tags = const [],
     this.reasonIcons = const {},
     this.modeIcons = const {},
     this.currencies = kBuiltinBundleCurrencies,
@@ -66,7 +67,15 @@ class TripBundle {
   /// one of the four currencies the old enum knew is still written under that
   /// enum's name, so an ordinary trip stays readable by an older app and only a
   /// trip using a currency the user added goes out as v3.
-  static const int currentFormatVersion = 3;
+  ///
+  /// v4 added [BundleTrip.kind], [tags], and a leg's place ids — a trip may now
+  /// be a *routine*, a plan with no dates, and may be filed under tags. Same
+  /// rule again: an ordinary trip goes out unchanged, because the kind an older
+  /// app reads it as is exactly what it is, and tags it cannot see are only a
+  /// filing it will not have. A **routine**, though, forces v4 and must be
+  /// refused by an older app rather than silently imported as a dated trip
+  /// whose entries all sit on a 1970 anchor day.
+  static const int currentFormatVersion = 4;
 
   /// Magic string identifying the payload as a Travel Planner trip bundle.
   static const String kind = 'travelplanner.trip';
@@ -78,6 +87,13 @@ class TripBundle {
   final int schemaVersion;
 
   final BundleTrip trip;
+
+  /// The names of the tags this trip is filed under. Denormalized to strings
+  /// like the participants and the cost reasons, because a tag's identity is
+  /// its name and the recipient's row ids are their own. A tag the recipient
+  /// has never used is created on import; one they already have is reused,
+  /// keeping their own colour and ordering.
+  final List<String> tags;
   final List<BundleGroup> groups;
 
   /// The trip's decisions, each carrying its options. Items point back at an
@@ -126,6 +142,7 @@ class TripBundle {
   Map<String, dynamic> toJson() => {
     'kind': kind,
     'formatVersion': formatVersion,
+    'tags': tags,
     'schemaVersion': schemaVersion,
     'trip': trip.toJson(),
     'groups': [for (final g in groups) g.toJson()],
@@ -147,6 +164,7 @@ class TripBundle {
     }
     return TripBundle(
       formatVersion: json['formatVersion'] as int,
+      tags: [for (final t in (json['tags'] as List? ?? const [])) t as String],
       schemaVersion: json['schemaVersion'] as int,
       trip: BundleTrip.fromJson(json['trip'] as Map<String, dynamic>),
       groups: [
@@ -230,6 +248,7 @@ class BundleTrip {
     this.startDate,
     this.endDate,
     this.notes,
+    this.kind = TripKind.trip,
     required this.colorValue,
     required this.createdAt,
   });
@@ -239,6 +258,12 @@ class BundleTrip {
   final DateTime? startDate;
   final DateTime? endDate;
   final String? notes;
+
+  /// Whether this is a trip or a routine. Written by `name` like every other
+  /// enum here, and defaulted to [TripKind.trip] when absent — which is exactly
+  /// what a bundle written before v4 holds.
+  final TripKind kind;
+
   final int colorValue;
   final DateTime createdAt;
 
@@ -248,6 +273,7 @@ class BundleTrip {
     'startDate': _encodeDate(startDate),
     'endDate': _encodeDate(endDate),
     'notes': notes,
+    'kind': kind.name,
     'colorValue': colorValue,
     'createdAt': _encodeDate(createdAt),
   };
@@ -258,6 +284,13 @@ class BundleTrip {
     startDate: _decodeDate(json['startDate'] as String?),
     endDate: _decodeDate(json['endDate'] as String?),
     notes: json['notes'] as String?,
+    // An unknown kind from a newer sender reads as an ordinary trip rather
+    // than throwing: the plan is all there, and a trip is the shape that shows
+    // every entry of it.
+    kind: TripKind.values.firstWhere(
+      (k) => k.name == json['kind'],
+      orElse: () => TripKind.trip,
+    ),
     colorValue: json['colorValue'] as int,
     createdAt: _decodeDate(json['createdAt'] as String)!,
   );
@@ -388,6 +421,8 @@ class BundleItem {
     this.fromLocation,
     this.toLocation,
     this.stopovers,
+    this.fromPlaceId,
+    this.toPlaceId,
   });
 
   final int localId;
@@ -428,6 +463,13 @@ class BundleItem {
   /// travels while the routing trip id does not. Null for a leg with none.
   final String? stopovers;
 
+  /// How the routing service addresses this leg's ends, when it came from a
+  /// search. Part of the plan — they say *where*, never *when* — so they travel
+  /// with it and let the recipient look the journey up for their own dates.
+  /// `sourceTripId` deliberately does not travel: it names one dated run.
+  final String? fromPlaceId;
+  final String? toPlaceId;
+
   Map<String, dynamic> toJson() => {
     'localId': localId,
     'groupLocalId': groupLocalId,
@@ -447,6 +489,8 @@ class BundleItem {
     'fromLocation': fromLocation,
     'toLocation': toLocation,
     'stopovers': stopovers,
+    'fromPlaceId': fromPlaceId,
+    'toPlaceId': toPlaceId,
   };
 
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
@@ -468,6 +512,8 @@ class BundleItem {
     fromLocation: json['fromLocation'] as String?,
     toLocation: json['toLocation'] as String?,
     stopovers: json['stopovers'] as String?,
+    fromPlaceId: json['fromPlaceId'] as String?,
+    toPlaceId: json['toPlaceId'] as String?,
   );
 }
 

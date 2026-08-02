@@ -612,5 +612,65 @@
   "liveTimesRefresh": "Echtzeit aktualisieren",
   "liveTimesNone": "Keine Echtzeitdaten zu aktualisieren",
   "liveTimesCancelled": "Diese Verbindung fällt aus",
-  "liveTimesError": "Echtzeitdaten konnten nicht geladen werden"
+  "liveTimesError": "Echtzeitdaten konnten nicht geladen werden",
+
+  "tripKindTrip": "Reise",
+  "tripKindRoutine": "Routine",
+  "tripKindTripBody": "Eine Reise im Kalender — ein Tag oder viele.",
+  "tripKindRoutineBody": "Ein wiederverwendbarer Plan ohne Datum. Erzeuge daraus eine echte Reise, wann immer du sie machst.",
+  "newRoutine": "Neue Routine",
+  "editRoutine": "Routine bearbeiten",
+  "routinesTitle": "Routinen",
+  "noRoutinesTitle": "Noch keine Routinen",
+  "noRoutinesBody": "Eine Routine ist ein Plan, den du immer wieder nimmst — der Arbeitsweg, die Samstagsrunde. Lege eine an und erzeuge daraus eine Reise, wann immer du sie fährst.",
+  "routineNoDates": "Kein Datum",
+  "routineFromRoutine": "Aus Routine…",
+  "routineCreateTrip": "Reise erzeugen",
+  "routineCreateTripFor": "Reise erzeugen für",
+  "routineStartDate": "Startdatum",
+  "routineLookUpConnections": "Aktuelle Verbindungen suchen",
+  "routineLookUpConnectionsBody": "Sucht die Verbindungen dieses Plans für die gewählten Tage, damit ihre Echtzeitdaten aktualisiert werden können.",
+  "routineCreated": "Reise erzeugt.",
+  "routineCreatedOpen": "Öffnen",
+  "routineDuplicateReversed": "Umgekehrt duplizieren",
+  "routineReversedSuffix": "{title} (Rückweg)",
+  "@routineReversedSuffix": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "routineAlreadyRecordedTitle": "Bereits erfasst",
+  "routineAlreadyRecordedBody": "„{title}“ hat bereits eine Reise ab {date}. Noch eine erzeugen?",
+  "@routineAlreadyRecordedBody": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "routineCreateAnyway": "Trotzdem erzeugen",
+  "routineNewDay": "Tag {number} (neu)",
+  "@routineNewDay": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "routineAddDay": "Tag hinzufügen",
+  "routineDayNumber": "Tag {number}",
+  "@routineDayNumber": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "connectionsNotFound": "Keine Verbindung gefunden — der Plan wurde unverändert übernommen.",
+  "connectionsOffline": "Der Routing-Dienst war nicht erreichbar. Der Plan wurde unverändert übernommen.",
+  "connectionsKeepPlan": "Plan behalten",
+  "connectionsUseThis": "Diese übernehmen",
+  "connectionsSearching": "Verbindungen werden gesucht…",
+  "connectionsFindForLeg": "Verbindung suchen",
+  "tagsLabel": "Tags",
+  "tagsManage": "Tags verwalten",
+  "tagsNone": "Noch keine Tags",
+  "tagsAddHint": "Neues Tag",
+  "tagsAdd": "Tag hinzufügen",
+  "tagsFilterLabel": "Getaggt",
+  "tagsAll": "Alle",
+  "tagDeleteQuestion": "Dieses Tag löschen?",
+  "tagDeleteBody": "Es wird von allen Reisen entfernt, die es tragen. Die Reisen selbst bleiben unverändert.",
+  "tagRename": "Tag umbenennen",
+  "tagNameLabel": "Name",
+  "tagDuplicate": "Ein Tag mit diesem Namen existiert bereits."
 }

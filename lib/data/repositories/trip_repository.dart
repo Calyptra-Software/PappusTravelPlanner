@@ -20,6 +20,47 @@ class TripRepository {
   Future<bool> updateTrip(Trip trip) => _db.tripDao.updateTrip(trip);
   Future<int> deleteTrip(int id) => _db.tripDao.deleteTrip(id);
 
+  // --- routines ---
+  Stream<List<Trip>> watchRoutines() => _db.routineDao.watchRoutines();
+
+  /// Writes a routine's plan into a real trip starting on [startDate]. See
+  /// [RoutineDao.materializeRoutine]: occurrences are virtual until asked for.
+  Future<int> materializeRoutine(
+    int routineId, {
+    required DateTime startDate,
+  }) => _db.routineDao.materializeRoutine(routineId, startDate: startDate);
+  Future<int> duplicateRoutineReversed(
+    int routineId, {
+    required String title,
+  }) => _db.routineDao.duplicateReversed(routineId, title: title);
+  Future<List<int>> replaceJourneyLegs(
+    int tripId, {
+    required List<int> oldLegIds,
+    required List<ItineraryItemsCompanion> legs,
+    int? groupId,
+  }) => _db.routineDao.replaceJourneyLegs(
+    tripId,
+    oldLegIds: oldLegIds,
+    legs: legs,
+    groupId: groupId,
+  );
+  Future<int> routineDaySpan(int routineId) =>
+      _db.routineDao.routineDaySpan(routineId);
+  Future<List<Trip>> tripsFromRoutineOn(int routineId, DateTime day) =>
+      _db.routineDao.tripsFromRoutineOn(routineId, day);
+
+  // --- tags ---
+  Stream<List<Tag>> watchTags() => _db.tagDao.watchAllTags();
+  Stream<List<Tag>> watchTagsForTrip(int tripId) =>
+      _db.tagDao.watchTagsForTrip(tripId);
+  Stream<Map<int, List<Tag>>> watchTagsByTrip() => _db.tagDao.watchTagsByTrip();
+  Future<int> createTag(TagsCompanion tag) => _db.tagDao.createTag(tag);
+  Future<bool> updateTag(Tag tag) => _db.tagDao.updateTag(tag);
+  Future<int> deleteTag(int id) => _db.tagDao.deleteTag(id);
+  Future<int> ensureTag(String name) => _db.tagDao.ensureTag(name);
+  Future<void> setTagsForTrip(int tripId, Set<int> tagIds) =>
+      _db.tagDao.setTagsForTrip(tripId, tagIds);
+
   // --- participants ---
   Stream<List<Person>> watchParticipants(int tripId) =>
       _db.tripDao.watchParticipants(tripId);

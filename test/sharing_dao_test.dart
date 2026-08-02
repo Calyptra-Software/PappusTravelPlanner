@@ -433,6 +433,131 @@ void main() {
     final trainCost = b!.costs.firstWhere((c) => c.reason == 'Train');
     expect(trainCost.groupLocalId, groups.single.id);
   });
+
+  group('trip kind and tags', () {
+    test('a routine or a tag forces v4; a plain trip stays v1', () async {
+      // An older app reads a bundle with no kind as an ordinary trip — right
+      // for a trip, wrong for a routine, whose entries would land on a 1970
+      // anchor day.
+      final plain = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'Rome'),
+      );
+      expect((await db.sharingDao.exportTrip(plain))!.formatVersion, 1);
+
+      final routine = await db.tripDao.createTrip(
+        TripsCompanion.insert(
+          title: 'To work',
+          kind: const Value(TripKind.routine),
+        ),
+      );
+      expect((await db.sharingDao.exportTrip(routine))!.formatVersion, 4);
+
+      final tagged = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'River walk'),
+      );
+      await db.tagDao.setTagsForTrip(tagged, {
+        await db.tagDao.ensureTag('walks'),
+      });
+      expect((await db.sharingDao.exportTrip(tagged))!.formatVersion, 4);
+    });
+
+    test('a routine survives export and import as a routine', () async {
+      final routineId = await db.tripDao.createTrip(
+        TripsCompanion.insert(
+          title: 'To work',
+          kind: const Value(TripKind.routine),
+        ),
+      );
+      final bundle = (await db.sharingDao.exportTrip(routineId))!;
+
+      final target = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(target.close);
+      final importedId = await target.sharingDao.importTrip(bundle);
+
+      expect(
+        (await target.tripDao.findTrip(importedId))!.kind,
+        TripKind.routine,
+      );
+    });
+
+    test('tags travel by name, and are created on the recipient', () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'River walk'),
+      );
+      await db.tagDao.setTagsForTrip(tripId, {
+        await db.tagDao.ensureTag('walks'),
+        await db.tagDao.ensureTag('weekend'),
+      });
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+      expect(bundle.tags, containsAll(['walks', 'weekend']));
+
+      final target = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(target.close);
+      final importedId = await target.sharingDao.importTrip(bundle);
+
+      final tags = await target.tagDao.watchTagsForTrip(importedId).first;
+      expect(tags.map((t) => t.name), containsAll(['walks', 'weekend']));
+    });
+
+    test("an existing tag keeps the recipient's own colour", () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'River walk'),
+      );
+      await db.tagDao.setTagsForTrip(tripId, {
+        await db.tagDao.ensureTag('walks'),
+      });
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+
+      final target = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(target.close);
+      // The recipient already files walks, in their own colour. A tag is
+      // matched by name; the sender's styling is not theirs to impose.
+      final mine = await target.tagDao.createTag(
+        TagsCompanion.insert(
+          name: 'walks',
+          colorValue: const Value(0xFF123456),
+        ),
+      );
+      final importedId = await target.sharingDao.importTrip(bundle);
+
+      final tags = await target.tagDao.watchTagsForTrip(importedId).first;
+      expect(tags, hasLength(1));
+      expect(tags.single.id, mine);
+      expect(tags.single.colorValue, 0xFF123456);
+    });
+
+    test("a leg's place ids travel, its live trip id does not", () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'Rome'),
+      );
+      await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 5),
+          kind: ItemKind.transport,
+          fromPlaceId: const Value('stop:1'),
+          toPlaceId: const Value('52.5,13.4'),
+          sourceTripId: const Value('one-dated-run'),
+        ),
+      );
+
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+      final leg = bundle.items.single;
+      // Where, not when: the recipient can look this journey up for their own
+      // dates, but must not inherit a service that ran on the sender's.
+      expect(leg.fromPlaceId, 'stop:1');
+      expect(leg.toPlaceId, '52.5,13.4');
+
+      final target = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(target.close);
+      final importedId = await target.sharingDao.importTrip(bundle);
+      final items = await target.itineraryDao
+          .watchItemsForTrip(importedId)
+          .first;
+      expect(items.single.fromPlaceId, 'stop:1');
+      expect(items.single.sourceTripId, isNull);
+    });
+  });
 }
 
 /// Normalizes a bundle's JSON for comparison across databases: the local keys

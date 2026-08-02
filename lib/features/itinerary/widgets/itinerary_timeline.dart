@@ -23,7 +23,7 @@ import 'timeline_tile.dart';
 /// options swiped through in an [AlternativeCard] — each taking one slot.
 /// Non-scrolling on its own; intended to sit inside the detail screen's scroll
 /// view.
-class ItineraryTimeline extends StatelessWidget {
+class ItineraryTimeline extends StatefulWidget {
   const ItineraryTimeline({
     super.key,
     required this.items,
@@ -49,7 +49,25 @@ class ItineraryTimeline extends StatelessWidget {
     required this.held,
     required this.onPutDown,
     this.todayKey,
+    this.anchorDay,
+    this.relativeDays = false,
+    this.canAddDay = false,
   });
+
+  /// Where an entry added to an *empty* plan lands, when the trip's own dates
+  /// do not say. A routine must anchor on its day one rather than on today, or
+  /// its plan would scatter across whichever days it happened to be written on.
+  final DateTime? anchorDay;
+
+  /// Whether the plan can grow a day on demand — true for a routine, whose days
+  /// are ordinals it appends to rather than dates on a calendar.
+  final bool canAddDay;
+
+  /// Whether the days are numbered rather than dated — a routine has no dates,
+  /// so its days read "Day 1", "Day 2". Everything else about a day is
+  /// unchanged: it is the same list, ordered and grouped the same way, and the
+  /// numbers were already being computed for the header's badge.
+  final bool relativeDays;
 
   /// The entry currently picked up, or null. While one is held, every day and
   /// every option offers to put it down; the entry itself is drawn dimmed where
@@ -146,34 +164,59 @@ class ItineraryTimeline extends StatelessWidget {
   }
 
   @override
+  State<ItineraryTimeline> createState() => _ItineraryTimelineState();
+}
+
+class _ItineraryTimelineState extends State<ItineraryTimeline> {
+  /// A day the user has asked for but not yet planned anything on.
+  ///
+  /// A dateless plan's days *are* its entries, so an empty day cannot be
+  /// stored — there is nothing to store. It exists here, on screen, only until
+  /// something is put on it; leaving the trip forgets it, which is right, since
+  /// an empty day says nothing worth keeping.
+  DateTime? _pendingDay;
+
+  @override
   Widget build(BuildContext context) {
-    final days = _daysToShow();
-    final today = normalizeDay(now);
+    final days = widget._daysToShow();
+    final pending = _pendingDay;
+    // Only while it is still empty: once something lands on it the day comes
+    // from the plan like any other, and a second copy would draw it twice.
+    if (pending != null && !days.contains(pending)) days.add(pending);
+    days.sort();
+    final today = normalizeDay(widget.now);
 
     if (days.isEmpty) {
-      // No trip dates and no items yet: offer a single "today" section.
+      // Nothing dated and nothing in the plan yet: offer a single section. It
+      // is the plan's own anchor when it has one (a routine's day one), and
+      // today otherwise.
+      final blank = widget.anchorDay == null
+          ? today
+          : normalizeDay(widget.anchorDay!);
       return _DaySection(
-        day: today,
+        day: blank,
         dayNumber: 1,
         blocks: const [],
-        accent: accent,
-        collapsed: collapsedDays.contains(today),
-        onToggleCollapsed: onToggleDayCollapsed,
-        onTapItem: onTapItem,
-        onAddPlace: onAddPlace,
-        onQuickAddPlace: onQuickAddPlace,
-        onAddTransport: onAddTransport,
-        onReorder: onReorder,
-        onReorderBranch: onReorderBranch,
-        costsByItem: costsByItem,
-        groups: groups,
-        costsByGroup: costsByGroup,
-        localeName: localeName,
-        onTapCost: onTapCost,
-        now: now,
-        held: held,
-        onPutDown: onPutDown,
-        anchorKey: todayKey,
+        accent: widget.accent,
+        collapsed: widget.collapsedDays.contains(today),
+        onToggleCollapsed: widget.onToggleDayCollapsed,
+        onTapItem: widget.onTapItem,
+        onAddPlace: widget.onAddPlace,
+        onQuickAddPlace: widget.onQuickAddPlace,
+        onAddTransport: widget.onAddTransport,
+        onReorder: widget.onReorder,
+        onReorderBranch: widget.onReorderBranch,
+        costsByItem: widget.costsByItem,
+        groups: widget.groups,
+        costsByGroup: widget.costsByGroup,
+        localeName: widget.localeName,
+        onTapCost: widget.onTapCost,
+        now: widget.now,
+        held: widget.held,
+        onPutDown: widget.onPutDown,
+        anchorKey: widget.todayKey,
+        showHeader: false,
+        relativeDays: widget.relativeDays,
       );
     }
 
@@ -187,30 +230,66 @@ class ItineraryTimeline extends StatelessWidget {
             dayNumber: i + 1,
             blocks: buildDayBlocks(
               day: days[i],
-              items: items,
-              sets: sets,
-              branchesBySet: branches,
+              items: widget.items,
+              sets: widget.sets,
+              branchesBySet: widget.branches,
             ),
-            accent: accent,
-            collapsed: collapsedDays.contains(days[i]),
-            onToggleCollapsed: onToggleDayCollapsed,
-            onTapItem: onTapItem,
-            onAddPlace: onAddPlace,
-            onQuickAddPlace: onQuickAddPlace,
-            onAddTransport: onAddTransport,
-            onReorder: onReorder,
-            onReorderBranch: onReorderBranch,
-            costsByItem: costsByItem,
-            groups: groups,
-            costsByGroup: costsByGroup,
-            localeName: localeName,
-            onTapCost: onTapCost,
-            now: now,
-            held: held,
-            onPutDown: onPutDown,
-            anchorKey: days[i] == today ? todayKey : null,
+            accent: widget.accent,
+            collapsed: widget.collapsedDays.contains(days[i]),
+            onToggleCollapsed: widget.onToggleDayCollapsed,
+            onTapItem: widget.onTapItem,
+            onAddPlace: widget.onAddPlace,
+            onQuickAddPlace: widget.onQuickAddPlace,
+            onAddTransport: widget.onAddTransport,
+            onReorder: widget.onReorder,
+            onReorderBranch: widget.onReorderBranch,
+            costsByItem: widget.costsByItem,
+            groups: widget.groups,
+            costsByGroup: widget.costsByGroup,
+            localeName: widget.localeName,
+            onTapCost: widget.onTapCost,
+            now: widget.now,
+            held: widget.held,
+            onPutDown: widget.onPutDown,
+            anchorKey: days[i] == today ? widget.todayKey : null,
+            // One day needs no heading: it names nothing the trip's own header
+            // does not already say, and the collapse it carries would fold the
+            // whole trip away. This is derived, not declared — a trip that
+            // shrinks to a single day gets the compact reading for free.
+            showHeader: days.length > 1,
+            relativeDays: widget.relativeDays,
           ),
+        if (widget.canAddDay) _addDayButton(context, days),
       ],
+    );
+  }
+
+  /// Grows the plan by a day.
+  ///
+  /// A dated trip needs no such thing — its days come from its dates — but a
+  /// routine's days are ordinals, and without this the only way to reach day two
+  /// was to know it is stored as the day after the anchor and to type that date
+  /// into a calendar. Nothing is written: the day appears, and becomes real as
+  /// soon as something is planned on it.
+  Widget _addDayButton(BuildContext context, List<DateTime> days) {
+    final l10n = AppLocalizations.of(context);
+    // One empty day at a time. A second would be a row of blank days, and the
+    // first one is not real yet.
+    final pending = _pendingDay;
+    if (pending != null &&
+        !widget.items.any((i) => normalizeDay(i.date) == pending)) {
+      return const SizedBox.shrink();
+    }
+    final next = days.isEmpty
+        ? normalizeDay(widget.anchorDay ?? widget.now)
+        : addDays(days.last, 1);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 4),
+      child: TextButton.icon(
+        onPressed: () => setState(() => _pendingDay = next),
+        icon: const Icon(Icons.add),
+        label: Text(l10n.routineAddDay),
+      ),
     );
   }
 }
@@ -241,10 +320,21 @@ class _DaySection extends ConsumerWidget {
     required this.held,
     required this.onPutDown,
     this.anchorKey,
+    this.showHeader = true,
+    this.relativeDays = false,
   });
+
+  /// Whether this day is named by its number rather than its date — see
+  /// [ItineraryTimeline.relativeDays].
+  final bool relativeDays;
 
   final Held? held;
   final void Function(DateTime day, {int? alternativeId}) onPutDown;
+
+  /// Whether the day's own header — its number, date, total and collapse — is
+  /// drawn. False on a one-day trip, where there is no second day to tell this
+  /// one apart from and nothing above it worth folding away.
+  final bool showHeader;
 
   final DateTime day;
   final int dayNumber;
@@ -291,7 +381,10 @@ class _DaySection extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final localeName = Localizations.localeOf(context).languageCode;
     final book = ref.watch(currencyBookProvider);
-    final expanded = !collapsed;
+    // With no header there is nothing to collapse *with*, so a one-day trip is
+    // always expanded — otherwise a stored collapsed flag could hide the whole
+    // timeline behind a control that is not on screen.
+    final expanded = showHeader ? !collapsed : true;
     final live = _liveItems;
     final count = live.length;
     // The day's expenses: each live item's own costs, plus each group's shared
@@ -307,7 +400,9 @@ class _DaySection extends ConsumerWidget {
       for (final groupId in groupIdsToday) ...?costsByGroup[groupId],
     ];
     final dayTotals = sumByCurrency(dayCosts, book);
-    final isToday = normalizeDay(now) == day;
+    // A routine's days are numbers, not dates, so none of them is today — the
+    // anchor day is an offset origin, not a date the user is living through.
+    final isToday = !relativeDays && normalizeDay(now) == day;
     final nowMinutes = now.hour * 60 + now.minute;
     final today = nowColor(theme);
 
@@ -317,85 +412,93 @@ class _DaySection extends ConsumerWidget {
         // Tappable header that collapses/expands the whole day. On today it also
         // carries the clock: the day can be collapsed, and then this is the only
         // place left to say where in the trip we are.
-        InkWell(
-          key: anchorKey,
-          onTap: () => onToggleCollapsed(day, expanded),
-          borderRadius: BorderRadius.circular(12),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(4, 16, 8, 8),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: accent,
-                  child: Text(
-                    '$dayNumber',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              formatDay(day, localeName),
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: isToday
-                                    ? FontWeight.w700
-                                    : FontWeight.w400,
-                              ),
-                            ),
-                          ),
-                          if (isToday) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '${l10n.today} · ${formatMinutes(nowMinutes)}',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: today,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      if (dayTotals.isNotEmpty)
-                        Text(
-                          '${l10n.costsTotal}: '
-                          '${formatTotals(dayTotals, book, localeName)}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if (!expanded && count > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
+        if (showHeader)
+          InkWell(
+            key: anchorKey,
+            onTap: () => onToggleCollapsed(day, expanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(4, 16, 8, 8),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: accent,
                     child: Text(
-                      l10n.entries(count),
-                      style: theme.textTheme.labelMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      '$dayNumber',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
-                Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
-                  color: theme.colorScheme.onSurfaceVariant,
-                  semanticLabel: expanded ? l10n.hideEntries : l10n.showEntries,
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                // A routine has no dates: its days are the
+                                // positions in a plan, so they are numbered.
+                                // Printing the anchor would show 1 January 1970.
+                                relativeDays
+                                    ? l10n.routineDayNumber(dayNumber)
+                                    : formatDay(day, localeName),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: isToday
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                            if (isToday) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                '${l10n.today} · ${formatMinutes(nowMinutes)}',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  color: today,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (dayTotals.isNotEmpty)
+                          Text(
+                            '${l10n.costsTotal}: '
+                            '${formatTotals(dayTotals, book, localeName)}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (!expanded && count > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Text(
+                        l10n.entries(count),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  Icon(
+                    expanded ? Icons.expand_less : Icons.expand_more,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    semanticLabel: expanded
+                        ? l10n.hideEntries
+                        : l10n.showEntries,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         // Collapsible body: the entries and the add actions.
         AnimatedSize(
           duration: const Duration(milliseconds: 200),

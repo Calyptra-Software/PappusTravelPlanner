@@ -1,10 +1,10 @@
 import 'package:intl/intl.dart';
 
+import 'civil_date.dart';
+
 import '../../l10n/app_localizations.dart';
 
-/// Strips the time component so a [DateTime] can be used as a stable day key.
-DateTime normalizeDay(DateTime date) =>
-    DateTime(date.year, date.month, date.day);
+export 'civil_date.dart';
 
 /// Weekday + day + month, in the locale's own convention — used as itinerary
 /// day headers. e.g. "Sun, Jul 5" (en) / "So., 5. Juli" (de).
@@ -39,7 +39,7 @@ String formatDateRange(
 /// Inclusive number of days a trip spans, or null when it can't be computed.
 int? tripDayCount(DateTime? start, DateTime? end) {
   if (start == null || end == null) return null;
-  return normalizeDay(end).difference(normalizeDay(start)).inDays + 1;
+  return daysBetween(start, end) + 1;
 }
 
 /// Formats minutes-since-midnight as a 24h "HH:mm" label, or '' when null.

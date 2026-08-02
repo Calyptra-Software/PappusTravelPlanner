@@ -19,6 +19,9 @@ import 'journey_sheet.dart';
 Future<bool> showJourneyPreviewSheet(
   BuildContext context, {
   required JourneyOption option,
+  String? title,
+  String? confirmLabel,
+  String? cancelLabel,
 }) async {
   final confirmed = await showModalBottomSheet<bool>(
     context: context,
@@ -27,6 +30,9 @@ Future<bool> showJourneyPreviewSheet(
     showDragHandle: true,
     builder: (sheetContext) => JourneySheet(
       view: journeyViewFromOption(option),
+      title: title,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
       onConfirm: () => Navigator.of(sheetContext).pop(true),
     ),
   );

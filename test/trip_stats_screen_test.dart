@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/costs/presentation/trip_stats_screen.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
@@ -18,6 +19,7 @@ void main() {
     id: 1,
     title: 'Rome',
     destination: '',
+    kind: TripKind.trip,
     colorValue: 0xFF112233,
     createdAt: DateTime(2026),
   );

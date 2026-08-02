@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 import '../../trips/application/trip_providers.dart';
 import '../trip_stats.dart';
 import 'currency_providers.dart';
@@ -122,7 +123,12 @@ final tripStatsProvider = Provider.autoDispose.family<TripStats, int>((
 final allTripsStatsProvider = Provider.autoDispose<TripStats>((ref) {
   final trips = ref.watch(tripListProvider).value ?? const <Trip>[];
   return mergeTripStats([
-    for (final trip in trips) ref.watch(tripStatsProvider(trip.id)),
+    // Routines are left out: a routine's costs are a *fare*, the price this
+    // ride costs, not money that was spent. They are copied onto each trip
+    // stamped out of it, and counting the template as well would charge the
+    // user for a journey they had merely described.
+    for (final trip in trips)
+      if (trip.kind != TripKind.routine) ref.watch(tripStatsProvider(trip.id)),
   ], ref.watch(currencyBookProvider));
 });
 

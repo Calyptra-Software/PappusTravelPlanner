@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart';
+
+import '../../../core/format/civil_date.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../../data/database/app_database.dart';
@@ -76,31 +78,58 @@ class _NoteLabels {
   final DirectionLabel direction;
 }
 
+/// The day a leg found on [foundOn] takes when the journey is laid onto
+/// [planDay] — how a connection searched on a real date enters a **routine**,
+/// which has no dates of its own.
+///
+/// The shape is what survives: a leg on the search day lands on [planDay], and
+/// one that ran past midnight lands a day further into the plan, so an overnight
+/// journey stays overnight. Counted in whole calendar days, since the search day
+/// and the plan day are both civil dates and a [Duration] would be an hour short
+/// across a daylight-saving change.
+DateTime rebasedLegDay(
+  DateTime legDate, {
+  required DateTime foundOn,
+  required DateTime planDay,
+}) => addDays(planDay, daysBetween(foundOn, legDate));
+
 /// Builds the transport [ItineraryItems] companion for a [MappedLeg] on
 /// [tripId]. Sort order is left unset — the DAO appends each leg to the end of
 /// its day on insert.
-ItineraryItemsCompanion mappedLegToCompanion(int tripId, MappedLeg leg) =>
-    ItineraryItemsCompanion.insert(
-      tripId: tripId,
-      date: leg.date,
-      kind: ItemKind.transport,
-      title: Value(leg.title),
-      startMinutes: Value(leg.startMinutes),
-      endMinutes: Value(leg.endMinutes),
-      actualStartMinutes: Value(leg.actualStartMinutes),
-      actualEndMinutes: Value(leg.actualEndMinutes),
-      spansNextDay: Value(leg.spansNextDay),
-      mode: Value(leg.modeId),
-      notes: Value(leg.notes),
-      sourceTripId: Value(leg.sourceTripId),
-      fromLocation: Value(leg.fromLocation),
-      toLocation: Value(leg.toLocation),
-      fromLat: Value(leg.fromLat),
-      fromLon: Value(leg.fromLon),
-      toLat: Value(leg.toLat),
-      toLon: Value(leg.toLon),
-      stopovers: Value(encodeStopovers(leg.stopovers)),
-    );
+///
+/// [fromPlaceId] / [toPlaceId] are how the router addresses the *journey's* own
+/// endpoints — the ids the search was issued against — and so belong only to
+/// the first and last leg of the run. The stations in between are changes, not
+/// endpoints: a journey is searched again as a whole, from where it starts to
+/// where it ends, so nothing needs an id for the middle.
+ItineraryItemsCompanion mappedLegToCompanion(
+  int tripId,
+  MappedLeg leg, {
+  String? fromPlaceId,
+  String? toPlaceId,
+}) => ItineraryItemsCompanion.insert(
+  fromPlaceId: Value(fromPlaceId),
+  toPlaceId: Value(toPlaceId),
+  tripId: tripId,
+  date: leg.date,
+  kind: ItemKind.transport,
+  title: Value(leg.title),
+  startMinutes: Value(leg.startMinutes),
+  endMinutes: Value(leg.endMinutes),
+  actualStartMinutes: Value(leg.actualStartMinutes),
+  actualEndMinutes: Value(leg.actualEndMinutes),
+  spansNextDay: Value(leg.spansNextDay),
+  mode: Value(leg.modeId),
+  notes: Value(leg.notes),
+  sourceTripId: Value(leg.sourceTripId),
+  fromLocation: Value(leg.fromLocation),
+  toLocation: Value(leg.toLocation),
+  fromLat: Value(leg.fromLat),
+  fromLon: Value(leg.fromLon),
+  toLat: Value(leg.toLat),
+  toLon: Value(leg.toLon),
+  stopovers: Value(encodeStopovers(leg.stopovers)),
+);
 
 MappedLeg _mapLeg(
   JourneyLeg leg,

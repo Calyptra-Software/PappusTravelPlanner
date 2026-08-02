@@ -49,5 +49,10 @@ ItineraryItemsCompanion copyItemPlan(
   fromLon: Value(item.fromLon),
   toLat: Value(item.toLat),
   toLon: Value(item.toLon),
+  // How the router addresses the ends — not *when* the service ran, unlike
+  // `sourceTripId`, which is why these travel and it does not. They are what
+  // lets a copied journey be looked up again for the day it was copied onto.
+  fromPlaceId: Value(item.fromPlaceId),
+  toPlaceId: Value(item.toPlaceId),
   stopovers: Value(item.stopovers),
 );

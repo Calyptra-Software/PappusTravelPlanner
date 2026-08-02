@@ -88,7 +88,17 @@ bool isTripOngoing(Trip trip, DateTime day) {
 
 /// Picks the trip to feature: an ongoing trip first, then the nearest upcoming,
 /// then the most recently finished, then any trip; null when there are none.
-Trip? pickFeaturedTrip(List<Trip> trips, DateTime now) {
+///
+/// A [TripKind.routine] is never featured. It has no dates, so it can only ever
+/// reach the final "any trip" fallback — and there it would put a template on
+/// the home screen under a date it does not have, with an anchor day the
+/// widget's "today" would find nothing on. An outing needs no special case: it
+/// is a dated one-day trip, and every clause here already reads it correctly.
+Trip? pickFeaturedTrip(List<Trip> allTrips, DateTime now) {
+  final trips = [
+    for (final t in allTrips)
+      if (t.kind != TripKind.routine) t,
+  ];
   if (trips.isEmpty) return null;
   final today = normalizeDay(now);
 

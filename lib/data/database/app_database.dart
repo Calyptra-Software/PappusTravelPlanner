@@ -7,7 +7,9 @@ import 'daos/cost_dao.dart';
 import 'daos/currency_dao.dart';
 import 'daos/group_dao.dart';
 import 'daos/itinerary_dao.dart';
+import 'daos/routine_dao.dart';
 import 'daos/sharing_dao.dart';
+import 'daos/tag_dao.dart';
 import 'daos/transport_mode_dao.dart';
 import 'daos/trip_dao.dart';
 import 'tables.dart';
@@ -32,6 +34,8 @@ const int kApplicationId = 0x5452504C;
     CostReasons,
     Currencies,
     TransportModes,
+    Tags,
+    TripTags,
     People,
     TripParticipants,
     CostBeneficiaries,
@@ -46,6 +50,8 @@ const int kApplicationId = 0x5452504C;
     ChecklistDao,
     GroupDao,
     AlternativeDao,
+    RoutineDao,
+    TagDao,
     SharingDao,
     TransportModeDao,
     CurrencyDao,
@@ -60,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 26;
+  int get schemaVersion => 27;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -297,6 +303,25 @@ class AppDatabase extends _$AppDatabase {
       if (from < 26) {
         await _addItineraryColumnsIfMissing(m, [itineraryItems.stopovers]);
       }
+      // v27 brings the everyday trip: user-defined tags to file trips under,
+      // and routines — reusable plans a real trip is stamped out of. Nothing is
+      // backfilled and nothing changes meaning: kind 0 is TripKind.trip, which
+      // is what every existing row already is, and every new column is either
+      // nullable or defaulted. The tags start empty, since only the user can
+      // say what their trips should be filed under.
+      if (from < 27) {
+        await m.createTable(tags);
+        await m.createTable(tripTags);
+        await m.addColumn(trips, trips.kind);
+        await m.addColumn(trips, trips.fromRoutineId);
+        // How the router addresses a leg's endpoints, so a leg can be searched
+        // again for another date. Legs imported before this have none, and are
+        // copied as a plan rather than re-searched.
+        await _addItineraryColumnsIfMissing(m, [
+          itineraryItems.fromPlaceId,
+          itineraryItems.toPlaceId,
+        ]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -360,7 +385,8 @@ class AppDatabase extends _$AppDatabase {
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
         // otherwise the copy step selects a column the old table lacks. The v24,
-        // v25 and v26 additions; extend this list when a later version adds more.
+        // v25, v26 and v27 additions; extend this list when a later version
+        // adds more.
         newColumns: [
           itineraryItems.spansNextDay,
           itineraryItems.fromLat,
@@ -369,6 +395,8 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.toLon,
           itineraryItems.sourceTripId,
           itineraryItems.stopovers,
+          itineraryItems.fromPlaceId,
+          itineraryItems.toPlaceId,
         ],
       ),
     );

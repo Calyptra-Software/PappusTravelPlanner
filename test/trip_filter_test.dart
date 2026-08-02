@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/trip_filter.dart';
 
 void main() {
@@ -13,6 +14,7 @@ void main() {
     DateTime? start,
     DateTime? end,
     DateTime? createdAt,
+    TripKind kind = TripKind.trip,
   }) {
     return Trip(
       id: id,
@@ -21,6 +23,7 @@ void main() {
       startDate: start,
       endDate: end,
       notes: notes,
+      kind: kind,
       colorValue: 0xFF00695C,
       createdAt: createdAt ?? DateTime(2026, 1, 1),
     );
@@ -30,11 +33,13 @@ void main() {
     List<Trip> trips,
     TripQuery query, {
     Map<int, Set<int>> participants = const {},
+    Map<int, Set<int>> tags = const {},
     Map<int, Map<String, int>> totals = const {},
   }) => applyTripQuery(
     trips,
     query: query,
     participantsByTrip: participants,
+    tagsByTrip: tags,
     today: today,
     totalsByTrip: totals,
   );
@@ -220,5 +225,74 @@ void main() {
       ).activeFilterCount,
       3,
     );
+  });
+
+  group('tags', () {
+    final rome = trip(id: 1, title: 'Rome');
+    final walk = trip(id: 2, title: 'River walk');
+    final ride = trip(id: 3, title: 'Bike ride');
+    final all = [rome, walk, ride];
+    const walksTag = 1;
+    const ridesTag = 2;
+    const tags = {
+      2: {walksTag},
+      3: {ridesTag},
+    };
+
+    List<Trip> byTag(Set<int> tagIds) =>
+        run(all, TripQuery(tagIds: tagIds), tags: tags);
+
+    test('no tag filter shows everything', () {
+      expect(byTag(const {}).map((t) => t.id), [1, 2, 3]);
+    });
+
+    test('one tag narrows to the trips carrying it', () {
+      expect(byTag(const {walksTag}).map((t) => t.id), [2]);
+    });
+
+    test('two tags match any of them, not all', () {
+      // "Show me walks and bike rides" is a widening, which is what makes a row
+      // of chips usable — an all-of pair would almost always show nothing.
+      expect(byTag(const {walksTag, ridesTag}).map((t) => t.id), [2, 3]);
+    });
+
+    test(
+      'an untagged trip is only ever hidden by a tag filter, never matched',
+      () {
+        expect(byTag(const {walksTag}).map((t) => t.id), isNot(contains(1)));
+      },
+    );
+
+    test('tags narrow within the other facets, not past them', () {
+      // Tags any-of, but tags AND text: the facets still compose.
+      expect(
+        run(
+          all,
+          const TripQuery(tagIds: {walksTag, ridesTag}, text: 'bike'),
+          tags: tags,
+        ).map((t) => t.id),
+        [3],
+      );
+    });
+
+    test('the tag filter counts as one facet', () {
+      expect(const TripQuery(tagIds: {1, 2}).activeFilterCount, 1);
+      expect(const TripQuery().activeFilterCount, 0);
+    });
+  });
+
+  group('routines', () {
+    test('a routine is never in the trip list', () {
+      // It is a template, not something that happened: no dates to sort or
+      // classify by, and it lives on its own screen.
+      final routine = trip(id: 1, title: 'To work', kind: TripKind.routine);
+      final rome = trip(id: 2, title: 'Rome');
+      expect(run([routine, rome], const TripQuery()).map((t) => t.id), [2]);
+    });
+
+    test('not even a search finds one', () {
+      final routine = trip(id: 1, title: 'To work', kind: TripKind.routine);
+      expect(run([routine], const TripQuery(text: 'work')), isEmpty);
+    });
   });
 }

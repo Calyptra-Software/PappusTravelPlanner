@@ -50,6 +50,84 @@ UI (features/*/presentation, *widgets)
 - **`TripRepository`** (`lib/data/repositories/`) is a deliberately thin wrapper over the DAOs
   so a different backend could be swapped in without touching feature code. Prefer adding a
   repository method over reaching into DAOs from features.
+- **A trip is a trip, however long it lasts.** A walk, a commute and a fortnight in
+  Rome are the same row with different dates — a one-day trip is simply one whose start
+  and end are the same day, so nothing declares "scale" and the timeline drops its day
+  headers whenever it draws a single day (derived from the dates, not a flag). The one
+  thing dates cannot say is whether a plan is meant to be *used again*, and that is the
+  whole of `TripKind`: `trip` or `routine`.
+- **Tags are the only axis the overview is organised by** (`Tags` / `TripTags`, modelled
+  on `People` / `TripParticipants`). The app does not decide that a bike ride is a lesser
+  kind of trip than a holiday — that judgement is the user's, so "walks", "commute",
+  "vacation" are theirs to invent. `TripQuery.tagIds` matches **any-of** (like
+  `participantIds`), while the facets still compose with AND, and the roster sits in the
+  open as a `TagFilterBar` above the list rather than inside the filter sheet: a filter
+  two taps deep stops being used, and then the filing that feeds it stops too. Nothing
+  may *behave* differently because of a tag — one is renameable and deletable, so logic
+  hung off it would break on rename; what the app branches on lives in `Trips.kind`.
+- **A routine is a template, and its occurrences are virtual.** Nothing is written for a
+  day that simply went as the routine says. `RoutineDao.materializeRoutine` copies the
+  plan onto real dates as an ordinary trip, on **any** start date — tomorrow's commute
+  planned tonight, yesterday's added after the fact. Routines are never in the trip list
+  (`applyTripQuery` drops them) and live on `RoutineListScreen`; the overview's "+" still
+  offers *From routine…*, since stamping one out is the common act.
+- Having no dates, a routine's items are laid out from `kRoutineAnchorDay`, and its days are
+  read as **ranks, not offsets** (`RoutineDao.routineDays`): day one is the earliest day any
+  entry sits on, day two the next. The absolute dates are only a sort origin, because a plan
+  can legitimately pick up real ones — a connection is searched on a real date — and reading
+  the distance from 1970 instead once turned a one-day commute into a trip ending in 2083.
+  A day with no entries is not a day of the plan: nothing shows it, so gaps close up, which
+  is exactly what the timeline already draws. Days read "Day 1", "Day 2"
+  (`ItineraryTimeline.relativeDays`) and a routine has no "today". All day arithmetic goes
+  through `core/format/civil_date.dart` (`addDays` / `daysBetween`), never `Duration`: a
+  local day is 23 or 25 hours across a daylight-saving change, which is exactly enough to
+  pull day two onto day one.
+- **A timetable only exists on real dates, so importing a connection into a routine searches
+  one and rebases the answer.** `ConnectionSearchSheet.intoRoutine` opens the search on today
+  rather than on the plan's anchor (no train runs on 1 January 1970), and the import maps each
+  leg back onto the plan with `rebasedLegDay` — keeping the shape, so an overnight leg still
+  lands a day further in. What is left behind is everything belonging to that one run: its
+  `sourceTripId` and any live times already read off it. A template must not look refreshable,
+  and a delay measured on one Tuesday is not part of a plan.
+- The copy takes the plan **and, for a routine only, the fare**. Everywhere else a copy
+  takes no money — a cost records a payment that happened once — but a routine's cost is a
+  *price*, "what this ride costs", which is the only reason to put one on a template. So it
+  travels, **unpaid** (paying is what an occurrence does, as a copied checklist arrives
+  unticked), with its split; a settlement never travels, since a template cannot be owed.
+  The corollary is that a routine's own costs count toward **no** total: `allTripsStatsProvider`
+  drops routines, or the same fare would be charged both to the plan and to every trip made
+  from it. Groups and decisions are cloned into fresh ones. Participants travel,
+  and so do the routine's **tags** — a tag the user must re-add every morning is missing by
+  Thursday, and auto-filing the trips stamped out of routines is what makes tags carry the
+  crowding they were introduced for. `Trips.fromRoutineId` records where a trip came from,
+  enough to *ask* before recording the same routine twice on one day (`setNull` on delete:
+  a trip that happened does not un-happen because its template was thrown away).
+- **An imported leg keeps how the router addresses its ends** — `ItineraryItems.fromPlaceId`
+  / `toPlaceId`, the `queryId` the search was issued against (a stop id, or `"lat,lon"` for
+  an address). Unlike `sourceTripId`, which names *one dated run of one service* and so is
+  never copied, these say only *where*, so they survive a copy and travel in the `.tpt`
+  bundle. They sit on the run's **outer** legs, since a journey is searched again as a whole.
+  This is what lets a routine's plan become a real connection: `RoutineController` copies the
+  plan first (offline-safe, instant, correct on its own), then looks each `PlannedJourney`
+  up for the day it now sits on and offers the result in the ordinary `journey_sheet.dart`.
+  Accepting it swaps the legs via `RoutineDao.replaceJourneyLegs`, which **keeps the group**
+  so the shared ticket hanging off it survives — and rescues a cost sitting on a *leg* onto
+  the group (or the replacement's first leg) rather than letting the cascade take it, since a
+  single-leg commute has no group to hang its fare on — and puts the replacement back in the *slot*
+  the old run occupied rather than on the end of the day — appending once put a stop added
+  after the journey in front of it. A wider replacement pushes what followed it down,
+  decisions included, since a day's items and its sets share one ordering space.
+  The lookup **says nothing when it works**: the connection it took is in the trip the user
+  is one tap from opening, so announcing it only queues a message in front of that tap. Declining, finding nothing, or losing the
+  network all leave the copied plan standing — and "no train" is never reported when it was
+  "no signal". A run whose id has been lost — a leading walk deleted, an end leg replaced — falls
+  back to the **coordinates** the leg still carries, since the router takes a coordinate
+  anywhere it takes a stop id; the id is preferred only because it starts on the platform
+  rather than outside the station. Without that fallback the ids' living on the outer legs
+  alone meant any edit to an end silently and permanently un-offered the journey. A leg
+  with neither ids nor coordinates (hand-entered) is simply copied as a plan: there is
+  nothing to re-issue a query with, and guessing one from a station's name would be a
+  different journey wearing the same label.
 - **Single `ItineraryItems` table** holds both places and transport legs, discriminated by
   `ItemKind`; kind-specific columns are nullable. This lets a day read as one ordered timeline
   (place → transport → place). Items are ordered by `date` → `sortOrder` → `startMinutes`.
@@ -220,6 +298,8 @@ UI (features/*/presentation, *widgets)
   `TripBundle.modeIcons`.
 - Tables (all in `lib/data/database/tables.dart`): `Trips`, `ItemGroups`, `AlternativeSets`,
   `Alternatives`, `ItineraryItems`, `Costs`,
+  `Trips` carries `kind`/`fromRoutineId` (above), `Tags` / `TripTags` (the user's filing,
+  above),
   `CostReasons` (reusable reason labels with an optional icon id), `Currencies` (the
   built-in-plus-custom currencies with their base flag and exchange rates, above),
   `TransportModes` (the built-in-plus-custom transport modes, above), `People` (reusable payer/
@@ -300,7 +380,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 26) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 27) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

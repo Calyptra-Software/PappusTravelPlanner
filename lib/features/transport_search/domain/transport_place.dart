@@ -1,6 +1,14 @@
 /// What kind of location a geocoder match refers to.
 enum PlaceKind { stop, address, place, other }
 
+/// How a bare point is addressed in a journey query.
+///
+/// The routing service takes a coordinate anywhere it takes a stop id, so this
+/// is the fallback for anything that has no id of its own — and, since an
+/// imported leg stores its ends' coordinates, the way a journey can still be
+/// searched again when the id it was found by has been lost.
+String coordinateQueryId(double lat, double lon) => '$lat,$lon';
+
 /// A location returned by the geocoder — a station, an address, or a point of
 /// interest — that the user can pick as the origin or destination of a search.
 ///
@@ -49,7 +57,7 @@ class TransportPlace {
     if (kind == PlaceKind.stop) return id;
     final lat = this.lat;
     final lon = this.lon;
-    return lat == null || lon == null ? id : '$lat,$lon';
+    return lat == null || lon == null ? id : coordinateQueryId(lat, lon);
   }
 
   @override

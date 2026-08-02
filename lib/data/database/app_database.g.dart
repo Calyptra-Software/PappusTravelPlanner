@@ -77,6 +77,30 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<TripKind, int> kind =
+      GeneratedColumn<int>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<TripKind>($TripsTable.$converterkind);
+  static const VerificationMeta _fromRoutineIdMeta = const VerificationMeta(
+    'fromRoutineId',
+  );
+  @override
+  late final GeneratedColumn<int> fromRoutineId = GeneratedColumn<int>(
+    'from_routine_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE SET NULL',
+    ),
+  );
   static const VerificationMeta _colorValueMeta = const VerificationMeta(
     'colorValue',
   );
@@ -109,6 +133,8 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     startDate,
     endDate,
     notes,
+    kind,
+    fromRoutineId,
     colorValue,
     createdAt,
   ];
@@ -162,6 +188,15 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
       );
     }
+    if (data.containsKey('from_routine_id')) {
+      context.handle(
+        _fromRoutineIdMeta,
+        fromRoutineId.isAcceptableOrUnknown(
+          data['from_routine_id']!,
+          _fromRoutineIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('color_value')) {
       context.handle(
         _colorValueMeta,
@@ -207,6 +242,16 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         DriftSqlType.string,
         data['${effectivePrefix}notes'],
       ),
+      kind: $TripsTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
+      fromRoutineId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}from_routine_id'],
+      ),
       colorValue: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}color_value'],
@@ -222,6 +267,9 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
   $TripsTable createAlias(String alias) {
     return $TripsTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<TripKind, int, int> $converterkind =
+      const EnumIndexConverter<TripKind>(TripKind.values);
 }
 
 class Trip extends DataClass implements Insertable<Trip> {
@@ -231,6 +279,17 @@ class Trip extends DataClass implements Insertable<Trip> {
   final DateTime? startDate;
   final DateTime? endDate;
   final String? notes;
+
+  /// Whether this is a trip or a template for one. Defaults to [TripKind.trip]
+  /// so every row written before the column existed keeps its behaviour.
+  final TripKind kind;
+
+  /// The [TripKind.routine] this trip was created from, when it was. Records
+  /// where the plan came from — enough to warn before recording the same
+  /// routine twice on one day, and to list what a routine has produced.
+  /// `setNull` on delete: a trip that happened does not stop having happened
+  /// because the template it came from was thrown away.
+  final int? fromRoutineId;
 
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   final int colorValue;
@@ -242,6 +301,8 @@ class Trip extends DataClass implements Insertable<Trip> {
     this.startDate,
     this.endDate,
     this.notes,
+    required this.kind,
+    this.fromRoutineId,
     required this.colorValue,
     required this.createdAt,
   });
@@ -259,6 +320,12 @@ class Trip extends DataClass implements Insertable<Trip> {
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
+    }
+    {
+      map['kind'] = Variable<int>($TripsTable.$converterkind.toSql(kind));
+    }
+    if (!nullToAbsent || fromRoutineId != null) {
+      map['from_routine_id'] = Variable<int>(fromRoutineId);
     }
     map['color_value'] = Variable<int>(colorValue);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -279,6 +346,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
+      kind: Value(kind),
+      fromRoutineId: fromRoutineId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromRoutineId),
       colorValue: Value(colorValue),
       createdAt: Value(createdAt),
     );
@@ -296,6 +367,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: serializer.fromJson<DateTime?>(json['startDate']),
       endDate: serializer.fromJson<DateTime?>(json['endDate']),
       notes: serializer.fromJson<String?>(json['notes']),
+      kind: $TripsTable.$converterkind.fromJson(
+        serializer.fromJson<int>(json['kind']),
+      ),
+      fromRoutineId: serializer.fromJson<int?>(json['fromRoutineId']),
       colorValue: serializer.fromJson<int>(json['colorValue']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -310,6 +385,8 @@ class Trip extends DataClass implements Insertable<Trip> {
       'startDate': serializer.toJson<DateTime?>(startDate),
       'endDate': serializer.toJson<DateTime?>(endDate),
       'notes': serializer.toJson<String?>(notes),
+      'kind': serializer.toJson<int>($TripsTable.$converterkind.toJson(kind)),
+      'fromRoutineId': serializer.toJson<int?>(fromRoutineId),
       'colorValue': serializer.toJson<int>(colorValue),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -322,6 +399,8 @@ class Trip extends DataClass implements Insertable<Trip> {
     Value<DateTime?> startDate = const Value.absent(),
     Value<DateTime?> endDate = const Value.absent(),
     Value<String?> notes = const Value.absent(),
+    TripKind? kind,
+    Value<int?> fromRoutineId = const Value.absent(),
     int? colorValue,
     DateTime? createdAt,
   }) => Trip(
@@ -331,6 +410,10 @@ class Trip extends DataClass implements Insertable<Trip> {
     startDate: startDate.present ? startDate.value : this.startDate,
     endDate: endDate.present ? endDate.value : this.endDate,
     notes: notes.present ? notes.value : this.notes,
+    kind: kind ?? this.kind,
+    fromRoutineId: fromRoutineId.present
+        ? fromRoutineId.value
+        : this.fromRoutineId,
     colorValue: colorValue ?? this.colorValue,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -344,6 +427,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       notes: data.notes.present ? data.notes.value : this.notes,
+      kind: data.kind.present ? data.kind.value : this.kind,
+      fromRoutineId: data.fromRoutineId.present
+          ? data.fromRoutineId.value
+          : this.fromRoutineId,
       colorValue: data.colorValue.present
           ? data.colorValue.value
           : this.colorValue,
@@ -360,6 +447,8 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
+          ..write('kind: $kind, ')
+          ..write('fromRoutineId: $fromRoutineId, ')
           ..write('colorValue: $colorValue, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -374,6 +463,8 @@ class Trip extends DataClass implements Insertable<Trip> {
     startDate,
     endDate,
     notes,
+    kind,
+    fromRoutineId,
     colorValue,
     createdAt,
   );
@@ -387,6 +478,8 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.notes == this.notes &&
+          other.kind == this.kind &&
+          other.fromRoutineId == this.fromRoutineId &&
           other.colorValue == this.colorValue &&
           other.createdAt == this.createdAt);
 }
@@ -398,6 +491,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<DateTime?> startDate;
   final Value<DateTime?> endDate;
   final Value<String?> notes;
+  final Value<TripKind> kind;
+  final Value<int?> fromRoutineId;
   final Value<int> colorValue;
   final Value<DateTime> createdAt;
   const TripsCompanion({
@@ -407,6 +502,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.fromRoutineId = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -417,6 +514,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.notes = const Value.absent(),
+    this.kind = const Value.absent(),
+    this.fromRoutineId = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title);
@@ -427,6 +526,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<String>? notes,
+    Expression<int>? kind,
+    Expression<int>? fromRoutineId,
     Expression<int>? colorValue,
     Expression<DateTime>? createdAt,
   }) {
@@ -437,6 +538,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (notes != null) 'notes': notes,
+      if (kind != null) 'kind': kind,
+      if (fromRoutineId != null) 'from_routine_id': fromRoutineId,
       if (colorValue != null) 'color_value': colorValue,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -449,6 +552,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Value<DateTime?>? startDate,
     Value<DateTime?>? endDate,
     Value<String?>? notes,
+    Value<TripKind>? kind,
+    Value<int?>? fromRoutineId,
     Value<int>? colorValue,
     Value<DateTime>? createdAt,
   }) {
@@ -459,6 +564,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       notes: notes ?? this.notes,
+      kind: kind ?? this.kind,
+      fromRoutineId: fromRoutineId ?? this.fromRoutineId,
       colorValue: colorValue ?? this.colorValue,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -485,6 +592,12 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
     }
+    if (kind.present) {
+      map['kind'] = Variable<int>($TripsTable.$converterkind.toSql(kind.value));
+    }
+    if (fromRoutineId.present) {
+      map['from_routine_id'] = Variable<int>(fromRoutineId.value);
+    }
     if (colorValue.present) {
       map['color_value'] = Variable<int>(colorValue.value);
     }
@@ -503,6 +616,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('notes: $notes, ')
+          ..write('kind: $kind, ')
+          ..write('fromRoutineId: $fromRoutineId, ')
           ..write('colorValue: $colorValue, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -2145,6 +2260,28 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _fromPlaceIdMeta = const VerificationMeta(
+    'fromPlaceId',
+  );
+  @override
+  late final GeneratedColumn<String> fromPlaceId = GeneratedColumn<String>(
+    'from_place_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _toPlaceIdMeta = const VerificationMeta(
+    'toPlaceId',
+  );
+  @override
+  late final GeneratedColumn<String> toPlaceId = GeneratedColumn<String>(
+    'to_place_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _stopoversMeta = const VerificationMeta(
     'stopovers',
   );
@@ -2181,6 +2318,8 @@ class $ItineraryItemsTable extends ItineraryItems
     toLat,
     toLon,
     sourceTripId,
+    fromPlaceId,
+    toPlaceId,
     stopovers,
   ];
   @override
@@ -2349,6 +2488,21 @@ class $ItineraryItemsTable extends ItineraryItems
         ),
       );
     }
+    if (data.containsKey('from_place_id')) {
+      context.handle(
+        _fromPlaceIdMeta,
+        fromPlaceId.isAcceptableOrUnknown(
+          data['from_place_id']!,
+          _fromPlaceIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('to_place_id')) {
+      context.handle(
+        _toPlaceIdMeta,
+        toPlaceId.isAcceptableOrUnknown(data['to_place_id']!, _toPlaceIdMeta),
+      );
+    }
     if (data.containsKey('stopovers')) {
       context.handle(
         _stopoversMeta,
@@ -2458,6 +2612,14 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.string,
         data['${effectivePrefix}source_trip_id'],
       ),
+      fromPlaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_place_id'],
+      ),
+      toPlaceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_place_id'],
+      ),
       stopovers: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}stopovers'],
@@ -2544,7 +2706,25 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   /// The routing provider's trip identifier for an imported leg, kept so the
   /// live-times refresh can re-query this exact trip and fill in the actual
   /// departure/arrival. Null for a hand-entered leg (nothing to refresh).
+  ///
+  /// It names **one dated run of one service**, so it is the one imported field
+  /// that must never be copied onto another day — see [fromPlaceId] for what is
+  /// kept instead.
   final String? sourceTripId;
+
+  /// How the routing service addresses this leg's endpoints — the `queryId` of
+  /// the places the search was issued against: a stop id, or a `"lat,lon"` pair
+  /// for an address or point of interest.
+  ///
+  /// Unlike [sourceTripId] these say nothing about *when*, so they survive a
+  /// copy and are what lets a leg be searched again for another date — which is
+  /// how a routine's journey becomes a real, refreshable connection when it is
+  /// materialized. The coordinates alone would nearly do it, but a station
+  /// addressed by its stop id routes from the platform, whereas the same
+  /// station addressed by coordinate routes from a point outside it and picks
+  /// up a spurious walk. Null for a hand-entered leg.
+  final String? fromPlaceId;
+  final String? toPlaceId;
 
   /// The stops this leg passes through, encoded by `stopovers.dart` — written by
   /// the connection import, null for a hand-entered leg. Stored on the leg
@@ -2575,6 +2755,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     this.toLat,
     this.toLon,
     this.sourceTripId,
+    this.fromPlaceId,
+    this.toPlaceId,
     this.stopovers,
   });
   @override
@@ -2641,6 +2823,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     if (!nullToAbsent || sourceTripId != null) {
       map['source_trip_id'] = Variable<String>(sourceTripId);
     }
+    if (!nullToAbsent || fromPlaceId != null) {
+      map['from_place_id'] = Variable<String>(fromPlaceId);
+    }
+    if (!nullToAbsent || toPlaceId != null) {
+      map['to_place_id'] = Variable<String>(toPlaceId);
+    }
     if (!nullToAbsent || stopovers != null) {
       map['stopovers'] = Variable<String>(stopovers);
     }
@@ -2704,6 +2892,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       sourceTripId: sourceTripId == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceTripId),
+      fromPlaceId: fromPlaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fromPlaceId),
+      toPlaceId: toPlaceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(toPlaceId),
       stopovers: stopovers == null && nullToAbsent
           ? const Value.absent()
           : Value(stopovers),
@@ -2741,6 +2935,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       toLat: serializer.fromJson<double?>(json['toLat']),
       toLon: serializer.fromJson<double?>(json['toLon']),
       sourceTripId: serializer.fromJson<String?>(json['sourceTripId']),
+      fromPlaceId: serializer.fromJson<String?>(json['fromPlaceId']),
+      toPlaceId: serializer.fromJson<String?>(json['toPlaceId']),
       stopovers: serializer.fromJson<String?>(json['stopovers']),
     );
   }
@@ -2773,6 +2969,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'toLat': serializer.toJson<double?>(toLat),
       'toLon': serializer.toJson<double?>(toLon),
       'sourceTripId': serializer.toJson<String?>(sourceTripId),
+      'fromPlaceId': serializer.toJson<String?>(fromPlaceId),
+      'toPlaceId': serializer.toJson<String?>(toPlaceId),
       'stopovers': serializer.toJson<String?>(stopovers),
     };
   }
@@ -2801,6 +2999,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<double?> toLat = const Value.absent(),
     Value<double?> toLon = const Value.absent(),
     Value<String?> sourceTripId = const Value.absent(),
+    Value<String?> fromPlaceId = const Value.absent(),
+    Value<String?> toPlaceId = const Value.absent(),
     Value<String?> stopovers = const Value.absent(),
   }) => ItineraryItem(
     id: id ?? this.id,
@@ -2832,6 +3032,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     toLat: toLat.present ? toLat.value : this.toLat,
     toLon: toLon.present ? toLon.value : this.toLon,
     sourceTripId: sourceTripId.present ? sourceTripId.value : this.sourceTripId,
+    fromPlaceId: fromPlaceId.present ? fromPlaceId.value : this.fromPlaceId,
+    toPlaceId: toPlaceId.present ? toPlaceId.value : this.toPlaceId,
     stopovers: stopovers.present ? stopovers.value : this.stopovers,
   );
   ItineraryItem copyWithCompanion(ItineraryItemsCompanion data) {
@@ -2877,6 +3079,10 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       sourceTripId: data.sourceTripId.present
           ? data.sourceTripId.value
           : this.sourceTripId,
+      fromPlaceId: data.fromPlaceId.present
+          ? data.fromPlaceId.value
+          : this.fromPlaceId,
+      toPlaceId: data.toPlaceId.present ? data.toPlaceId.value : this.toPlaceId,
       stopovers: data.stopovers.present ? data.stopovers.value : this.stopovers,
     );
   }
@@ -2907,6 +3113,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('toLat: $toLat, ')
           ..write('toLon: $toLon, ')
           ..write('sourceTripId: $sourceTripId, ')
+          ..write('fromPlaceId: $fromPlaceId, ')
+          ..write('toPlaceId: $toPlaceId, ')
           ..write('stopovers: $stopovers')
           ..write(')'))
         .toString();
@@ -2937,6 +3145,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     toLat,
     toLon,
     sourceTripId,
+    fromPlaceId,
+    toPlaceId,
     stopovers,
   ]);
   @override
@@ -2966,6 +3176,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.toLat == this.toLat &&
           other.toLon == this.toLon &&
           other.sourceTripId == this.sourceTripId &&
+          other.fromPlaceId == this.fromPlaceId &&
+          other.toPlaceId == this.toPlaceId &&
           other.stopovers == this.stopovers);
 }
 
@@ -2993,6 +3205,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<double?> toLat;
   final Value<double?> toLon;
   final Value<String?> sourceTripId;
+  final Value<String?> fromPlaceId;
+  final Value<String?> toPlaceId;
   final Value<String?> stopovers;
   const ItineraryItemsCompanion({
     this.id = const Value.absent(),
@@ -3018,6 +3232,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.toLat = const Value.absent(),
     this.toLon = const Value.absent(),
     this.sourceTripId = const Value.absent(),
+    this.fromPlaceId = const Value.absent(),
+    this.toPlaceId = const Value.absent(),
     this.stopovers = const Value.absent(),
   });
   ItineraryItemsCompanion.insert({
@@ -3044,6 +3260,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.toLat = const Value.absent(),
     this.toLon = const Value.absent(),
     this.sourceTripId = const Value.absent(),
+    this.fromPlaceId = const Value.absent(),
+    this.toPlaceId = const Value.absent(),
     this.stopovers = const Value.absent(),
   }) : tripId = Value(tripId),
        date = Value(date),
@@ -3072,6 +3290,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<double>? toLat,
     Expression<double>? toLon,
     Expression<String>? sourceTripId,
+    Expression<String>? fromPlaceId,
+    Expression<String>? toPlaceId,
     Expression<String>? stopovers,
   }) {
     return RawValuesInsertable({
@@ -3099,6 +3319,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (toLat != null) 'to_lat': toLat,
       if (toLon != null) 'to_lon': toLon,
       if (sourceTripId != null) 'source_trip_id': sourceTripId,
+      if (fromPlaceId != null) 'from_place_id': fromPlaceId,
+      if (toPlaceId != null) 'to_place_id': toPlaceId,
       if (stopovers != null) 'stopovers': stopovers,
     });
   }
@@ -3127,6 +3349,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<double?>? toLat,
     Value<double?>? toLon,
     Value<String?>? sourceTripId,
+    Value<String?>? fromPlaceId,
+    Value<String?>? toPlaceId,
     Value<String?>? stopovers,
   }) {
     return ItineraryItemsCompanion(
@@ -3153,6 +3377,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       toLat: toLat ?? this.toLat,
       toLon: toLon ?? this.toLon,
       sourceTripId: sourceTripId ?? this.sourceTripId,
+      fromPlaceId: fromPlaceId ?? this.fromPlaceId,
+      toPlaceId: toPlaceId ?? this.toPlaceId,
       stopovers: stopovers ?? this.stopovers,
     );
   }
@@ -3231,6 +3457,12 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (sourceTripId.present) {
       map['source_trip_id'] = Variable<String>(sourceTripId.value);
     }
+    if (fromPlaceId.present) {
+      map['from_place_id'] = Variable<String>(fromPlaceId.value);
+    }
+    if (toPlaceId.present) {
+      map['to_place_id'] = Variable<String>(toPlaceId.value);
+    }
     if (stopovers.present) {
       map['stopovers'] = Variable<String>(stopovers.value);
     }
@@ -3263,6 +3495,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('toLat: $toLat, ')
           ..write('toLon: $toLon, ')
           ..write('sourceTripId: $sourceTripId, ')
+          ..write('fromPlaceId: $fromPlaceId, ')
+          ..write('toPlaceId: $toPlaceId, ')
           ..write('stopovers: $stopovers')
           ..write(')'))
         .toString();
@@ -4612,6 +4846,517 @@ class CostReasonsCompanion extends UpdateCompanion<CostReason> {
           ..write('id: $id, ')
           ..write('label: $label, ')
           ..write('iconId: $iconId')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+  );
+  static const VerificationMeta _colorValueMeta = const VerificationMeta(
+    'colorValue',
+  );
+  @override
+  late final GeneratedColumn<int> colorValue = GeneratedColumn<int>(
+    'color_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0xFF546E7A),
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name, colorValue, sortOrder];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Tag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('color_value')) {
+      context.handle(
+        _colorValueMeta,
+        colorValue.isAcceptableOrUnknown(data['color_value']!, _colorValueMeta),
+      );
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Tag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Tag(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      colorValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}color_value'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $TagsTable createAlias(String alias) {
+    return $TagsTable(attachedDatabase, alias);
+  }
+}
+
+class Tag extends DataClass implements Insertable<Tag> {
+  final int id;
+
+  /// The tag's identity, so the same label cannot exist twice.
+  final String name;
+
+  /// ARGB colour for the tag's chip, so a row of them is scannable at a glance.
+  final int colorValue;
+
+  /// Manual ordering for the filter bar, so the tags used daily can be put
+  /// first.
+  final int sortOrder;
+  const Tag({
+    required this.id,
+    required this.name,
+    required this.colorValue,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['color_value'] = Variable<int>(colorValue);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  TagsCompanion toCompanion(bool nullToAbsent) {
+    return TagsCompanion(
+      id: Value(id),
+      name: Value(name),
+      colorValue: Value(colorValue),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory Tag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Tag(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      colorValue: serializer.fromJson<int>(json['colorValue']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'colorValue': serializer.toJson<int>(colorValue),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  Tag copyWith({int? id, String? name, int? colorValue, int? sortOrder}) => Tag(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    colorValue: colorValue ?? this.colorValue,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  Tag copyWithCompanion(TagsCompanion data) {
+    return Tag(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      colorValue: data.colorValue.present
+          ? data.colorValue.value
+          : this.colorValue,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Tag(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('colorValue: $colorValue, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, colorValue, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Tag &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.colorValue == this.colorValue &&
+          other.sortOrder == this.sortOrder);
+}
+
+class TagsCompanion extends UpdateCompanion<Tag> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<int> colorValue;
+  final Value<int> sortOrder;
+  const TagsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.colorValue = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  TagsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.colorValue = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<Tag> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<int>? colorValue,
+    Expression<int>? sortOrder,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (colorValue != null) 'color_value': colorValue,
+      if (sortOrder != null) 'sort_order': sortOrder,
+    });
+  }
+
+  TagsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? name,
+    Value<int>? colorValue,
+    Value<int>? sortOrder,
+  }) {
+    return TagsCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      colorValue: colorValue ?? this.colorValue,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (colorValue.present) {
+      map['color_value'] = Variable<int>(colorValue.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TagsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('colorValue: $colorValue, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $TripTagsTable extends TripTags with TableInfo<$TripTagsTable, TripTag> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TripTagsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _tagIdMeta = const VerificationMeta('tagId');
+  @override
+  late final GeneratedColumn<int> tagId = GeneratedColumn<int>(
+    'tag_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tags (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [tripId, tagId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trip_tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TripTag> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tripIdMeta);
+    }
+    if (data.containsKey('tag_id')) {
+      context.handle(
+        _tagIdMeta,
+        tagId.isAcceptableOrUnknown(data['tag_id']!, _tagIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {tripId, tagId};
+  @override
+  TripTag map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TripTag(
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      )!,
+      tagId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tag_id'],
+      )!,
+    );
+  }
+
+  @override
+  $TripTagsTable createAlias(String alias) {
+    return $TripTagsTable(attachedDatabase, alias);
+  }
+}
+
+class TripTag extends DataClass implements Insertable<TripTag> {
+  final int tripId;
+  final int tagId;
+  const TripTag({required this.tripId, required this.tagId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['trip_id'] = Variable<int>(tripId);
+    map['tag_id'] = Variable<int>(tagId);
+    return map;
+  }
+
+  TripTagsCompanion toCompanion(bool nullToAbsent) {
+    return TripTagsCompanion(tripId: Value(tripId), tagId: Value(tagId));
+  }
+
+  factory TripTag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TripTag(
+      tripId: serializer.fromJson<int>(json['tripId']),
+      tagId: serializer.fromJson<int>(json['tagId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'tripId': serializer.toJson<int>(tripId),
+      'tagId': serializer.toJson<int>(tagId),
+    };
+  }
+
+  TripTag copyWith({int? tripId, int? tagId}) =>
+      TripTag(tripId: tripId ?? this.tripId, tagId: tagId ?? this.tagId);
+  TripTag copyWithCompanion(TripTagsCompanion data) {
+    return TripTag(
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      tagId: data.tagId.present ? data.tagId.value : this.tagId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TripTag(')
+          ..write('tripId: $tripId, ')
+          ..write('tagId: $tagId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(tripId, tagId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TripTag &&
+          other.tripId == this.tripId &&
+          other.tagId == this.tagId);
+}
+
+class TripTagsCompanion extends UpdateCompanion<TripTag> {
+  final Value<int> tripId;
+  final Value<int> tagId;
+  final Value<int> rowid;
+  const TripTagsCompanion({
+    this.tripId = const Value.absent(),
+    this.tagId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TripTagsCompanion.insert({
+    required int tripId,
+    required int tagId,
+    this.rowid = const Value.absent(),
+  }) : tripId = Value(tripId),
+       tagId = Value(tagId);
+  static Insertable<TripTag> custom({
+    Expression<int>? tripId,
+    Expression<int>? tagId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (tripId != null) 'trip_id': tripId,
+      if (tagId != null) 'tag_id': tagId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TripTagsCompanion copyWith({
+    Value<int>? tripId,
+    Value<int>? tagId,
+    Value<int>? rowid,
+  }) {
+    return TripTagsCompanion(
+      tripId: tripId ?? this.tripId,
+      tagId: tagId ?? this.tagId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (tagId.present) {
+      map['tag_id'] = Variable<int>(tagId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TripTagsCompanion(')
+          ..write('tripId: $tripId, ')
+          ..write('tagId: $tagId, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -6331,6 +7076,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $CurrenciesTable currencies = $CurrenciesTable(this);
   late final $CostsTable costs = $CostsTable(this);
   late final $CostReasonsTable costReasons = $CostReasonsTable(this);
+  late final $TagsTable tags = $TagsTable(this);
+  late final $TripTagsTable tripTags = $TripTagsTable(this);
   late final $PeopleTable people = $PeopleTable(this);
   late final $TripParticipantsTable tripParticipants = $TripParticipantsTable(
     this,
@@ -6348,6 +7095,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final AlternativeDao alternativeDao = AlternativeDao(
     this as AppDatabase,
   );
+  late final RoutineDao routineDao = RoutineDao(this as AppDatabase);
+  late final TagDao tagDao = TagDao(this as AppDatabase);
   late final SharingDao sharingDao = SharingDao(this as AppDatabase);
   late final TransportModeDao transportModeDao = TransportModeDao(
     this as AppDatabase,
@@ -6367,6 +7116,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     currencies,
     costs,
     costReasons,
+    tags,
+    tripTags,
     people,
     tripParticipants,
     costBeneficiaries,
@@ -6376,6 +7127,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('trips', kind: UpdateKind.update)],
+    ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
         'trips',
@@ -6451,6 +7209,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         'trips',
         limitUpdateKind: UpdateKind.delete,
       ),
+      result: [TableUpdate('trip_tags', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tags',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('trip_tags', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
       result: [TableUpdate('trip_participants', kind: UpdateKind.delete)],
     ),
     WritePropagation(
@@ -6506,6 +7278,8 @@ typedef $$TripsTableCreateCompanionBuilder =
       Value<DateTime?> startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
+      Value<TripKind> kind,
+      Value<int?> fromRoutineId,
       Value<int> colorValue,
       Value<DateTime> createdAt,
     });
@@ -6517,6 +7291,8 @@ typedef $$TripsTableUpdateCompanionBuilder =
       Value<DateTime?> startDate,
       Value<DateTime?> endDate,
       Value<String?> notes,
+      Value<TripKind> kind,
+      Value<int?> fromRoutineId,
       Value<int> colorValue,
       Value<DateTime> createdAt,
     });
@@ -6524,6 +7300,23 @@ typedef $$TripsTableUpdateCompanionBuilder =
 final class $$TripsTableReferences
     extends BaseReferences<_$AppDatabase, $TripsTable, Trip> {
   $$TripsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _fromRoutineIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('trips__from_routine_id__trips__id');
+
+  $$TripsTableProcessedTableManager? get fromRoutineId {
+    final $_column = $_itemColumn<int>('from_routine_id');
+    if ($_column == null) return null;
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_fromRoutineIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
 
   static MultiTypedResultKey<$ItemGroupsTable, List<ItemGroup>>
   _itemGroupsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
@@ -6595,6 +7388,25 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_costsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TripTagsTable, List<TripTag>> _tripTagsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.tripTags,
+    aliasName: 'trips__id__trip_tags__trip_id',
+  );
+
+  $$TripTagsTableProcessedTableManager get tripTagsRefs {
+    final manager = $$TripTagsTableTableManager(
+      $_db,
+      $_db.tripTags,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_tripTagsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -6695,6 +7507,12 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnWithTypeConverterFilters<TripKind, TripKind, int> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
   ColumnFilters<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
     builder: (column) => ColumnFilters(column),
@@ -6704,6 +7522,29 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
     column: $table.createdAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  $$TripsTableFilterComposer get fromRoutineId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromRoutineId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<bool> itemGroupsRefs(
     Expression<bool> Function($$ItemGroupsTableFilterComposer f) f,
@@ -6796,6 +7637,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$CostsTableFilterComposer(
             $db: $db,
             $table: $db.costs,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> tripTagsRefs(
+    Expression<bool> Function($$TripTagsTableFilterComposer f) f,
+  ) {
+    final $$TripTagsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripTags,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripTagsTableFilterComposer(
+            $db: $db,
+            $table: $db.tripTags,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -6920,6 +7786,11 @@ class $$TripsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
     builder: (column) => ColumnOrderings(column),
@@ -6929,6 +7800,29 @@ class $$TripsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  $$TripsTableOrderingComposer get fromRoutineId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromRoutineId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$TripsTableAnnotationComposer
@@ -6960,6 +7854,9 @@ class $$TripsTableAnnotationComposer
   GeneratedColumn<String> get notes =>
       $composableBuilder(column: $table.notes, builder: (column) => column);
 
+  GeneratedColumnWithTypeConverter<TripKind, int> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
   GeneratedColumn<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
     builder: (column) => column,
@@ -6967,6 +7864,29 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get fromRoutineId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.fromRoutineId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 
   Expression<T> itemGroupsRefs<T extends Object>(
     Expression<T> Function($$ItemGroupsTableAnnotationComposer a) f,
@@ -7068,6 +7988,31 @@ class $$TripsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> tripTagsRefs<T extends Object>(
+    Expression<T> Function($$TripTagsTableAnnotationComposer a) f,
+  ) {
+    final $$TripTagsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripTags,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripTagsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tripTags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
   Expression<T> tripParticipantsRefs<T extends Object>(
     Expression<T> Function($$TripParticipantsTableAnnotationComposer a) f,
   ) {
@@ -7158,10 +8103,12 @@ class $$TripsTableTableManager
           (Trip, $$TripsTableReferences),
           Trip,
           PrefetchHooks Function({
+            bool fromRoutineId,
             bool itemGroupsRefs,
             bool alternativeSetsRefs,
             bool itineraryItemsRefs,
             bool costsRefs,
+            bool tripTagsRefs,
             bool tripParticipantsRefs,
             bool checklistsRefs,
             bool collapsedDaysRefs,
@@ -7186,6 +8133,8 @@ class $$TripsTableTableManager
                 Value<DateTime?> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<TripKind> kind = const Value.absent(),
+                Value<int?> fromRoutineId = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion(
@@ -7195,6 +8144,8 @@ class $$TripsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
+                kind: kind,
+                fromRoutineId: fromRoutineId,
                 colorValue: colorValue,
                 createdAt: createdAt,
               ),
@@ -7206,6 +8157,8 @@ class $$TripsTableTableManager
                 Value<DateTime?> startDate = const Value.absent(),
                 Value<DateTime?> endDate = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
+                Value<TripKind> kind = const Value.absent(),
+                Value<int?> fromRoutineId = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion.insert(
@@ -7215,6 +8168,8 @@ class $$TripsTableTableManager
                 startDate: startDate,
                 endDate: endDate,
                 notes: notes,
+                kind: kind,
+                fromRoutineId: fromRoutineId,
                 colorValue: colorValue,
                 createdAt: createdAt,
               ),
@@ -7226,10 +8181,12 @@ class $$TripsTableTableManager
               .toList(),
           prefetchHooksCallback:
               ({
+                fromRoutineId = false,
                 itemGroupsRefs = false,
                 alternativeSetsRefs = false,
                 itineraryItemsRefs = false,
                 costsRefs = false,
+                tripTagsRefs = false,
                 tripParticipantsRefs = false,
                 checklistsRefs = false,
                 collapsedDaysRefs = false,
@@ -7241,11 +8198,43 @@ class $$TripsTableTableManager
                     if (alternativeSetsRefs) db.alternativeSets,
                     if (itineraryItemsRefs) db.itineraryItems,
                     if (costsRefs) db.costs,
+                    if (tripTagsRefs) db.tripTags,
                     if (tripParticipantsRefs) db.tripParticipants,
                     if (checklistsRefs) db.checklists,
                     if (collapsedDaysRefs) db.collapsedDays,
                   ],
-                  addJoins: null,
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (fromRoutineId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.fromRoutineId,
+                                    referencedTable: $$TripsTableReferences
+                                        ._fromRoutineIdTable(db),
+                                    referencedColumn: $$TripsTableReferences
+                                        ._fromRoutineIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (itemGroupsRefs)
@@ -7314,6 +8303,23 @@ class $$TripsTableTableManager
                               ._costsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TripsTableReferences(db, table, p0).costsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (tripTagsRefs)
+                        await $_getPrefetchedData<Trip, $TripsTable, TripTag>(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._tripTagsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tripTagsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.tripId == item.id,
@@ -7400,10 +8406,12 @@ typedef $$TripsTableProcessedTableManager =
       (Trip, $$TripsTableReferences),
       Trip,
       PrefetchHooks Function({
+        bool fromRoutineId,
         bool itemGroupsRefs,
         bool alternativeSetsRefs,
         bool itineraryItemsRefs,
         bool costsRefs,
+        bool tripTagsRefs,
         bool tripParticipantsRefs,
         bool checklistsRefs,
         bool collapsedDaysRefs,
@@ -9041,6 +10049,8 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<double?> toLat,
       Value<double?> toLon,
       Value<String?> sourceTripId,
+      Value<String?> fromPlaceId,
+      Value<String?> toPlaceId,
       Value<String?> stopovers,
     });
 typedef $$ItineraryItemsTableUpdateCompanionBuilder =
@@ -9068,6 +10078,8 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<double?> toLat,
       Value<double?> toLon,
       Value<String?> sourceTripId,
+      Value<String?> fromPlaceId,
+      Value<String?> toPlaceId,
       Value<String?> stopovers,
     });
 
@@ -9270,6 +10282,16 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<String> get sourceTripId => $composableBuilder(
     column: $table.sourceTripId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fromPlaceId => $composableBuilder(
+    column: $table.fromPlaceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get toPlaceId => $composableBuilder(
+    column: $table.toPlaceId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9500,6 +10522,16 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get fromPlaceId => $composableBuilder(
+    column: $table.fromPlaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get toPlaceId => $composableBuilder(
+    column: $table.toPlaceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get stopovers => $composableBuilder(
     column: $table.stopovers,
     builder: (column) => ColumnOrderings(column),
@@ -9679,6 +10711,14 @@ class $$ItineraryItemsTableAnnotationComposer
     column: $table.sourceTripId,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get fromPlaceId => $composableBuilder(
+    column: $table.fromPlaceId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get toPlaceId =>
+      $composableBuilder(column: $table.toPlaceId, builder: (column) => column);
 
   GeneratedColumn<String> get stopovers =>
       $composableBuilder(column: $table.stopovers, builder: (column) => column);
@@ -9860,6 +10900,8 @@ class $$ItineraryItemsTableTableManager
                 Value<double?> toLat = const Value.absent(),
                 Value<double?> toLon = const Value.absent(),
                 Value<String?> sourceTripId = const Value.absent(),
+                Value<String?> fromPlaceId = const Value.absent(),
+                Value<String?> toPlaceId = const Value.absent(),
                 Value<String?> stopovers = const Value.absent(),
               }) => ItineraryItemsCompanion(
                 id: id,
@@ -9885,6 +10927,8 @@ class $$ItineraryItemsTableTableManager
                 toLat: toLat,
                 toLon: toLon,
                 sourceTripId: sourceTripId,
+                fromPlaceId: fromPlaceId,
+                toPlaceId: toPlaceId,
                 stopovers: stopovers,
               ),
           createCompanionCallback:
@@ -9912,6 +10956,8 @@ class $$ItineraryItemsTableTableManager
                 Value<double?> toLat = const Value.absent(),
                 Value<double?> toLon = const Value.absent(),
                 Value<String?> sourceTripId = const Value.absent(),
+                Value<String?> fromPlaceId = const Value.absent(),
+                Value<String?> toPlaceId = const Value.absent(),
                 Value<String?> stopovers = const Value.absent(),
               }) => ItineraryItemsCompanion.insert(
                 id: id,
@@ -9937,6 +10983,8 @@ class $$ItineraryItemsTableTableManager
                 toLat: toLat,
                 toLon: toLon,
                 sourceTripId: sourceTripId,
+                fromPlaceId: fromPlaceId,
+                toPlaceId: toPlaceId,
                 stopovers: stopovers,
               ),
           withReferenceMapper: (p0) => p0
@@ -11351,6 +12399,617 @@ typedef $$CostReasonsTableProcessedTableManager =
       ),
       CostReason,
       PrefetchHooks Function()
+    >;
+typedef $$TagsTableCreateCompanionBuilder =
+    TagsCompanion Function({
+      Value<int> id,
+      required String name,
+      Value<int> colorValue,
+      Value<int> sortOrder,
+    });
+typedef $$TagsTableUpdateCompanionBuilder =
+    TagsCompanion Function({
+      Value<int> id,
+      Value<String> name,
+      Value<int> colorValue,
+      Value<int> sortOrder,
+    });
+
+final class $$TagsTableReferences
+    extends BaseReferences<_$AppDatabase, $TagsTable, Tag> {
+  $$TagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$TripTagsTable, List<TripTag>> _tripTagsRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.tripTags,
+    aliasName: 'tags__id__trip_tags__tag_id',
+  );
+
+  $$TripTagsTableProcessedTableManager get tripTagsRefs {
+    final manager = $$TripTagsTableTableManager(
+      $_db,
+      $_db.tripTags,
+    ).filter((f) => f.tagId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_tripTagsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
+  $$TagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get colorValue => $composableBuilder(
+    column: $table.colorValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> tripTagsRefs(
+    Expression<bool> Function($$TripTagsTableFilterComposer f) f,
+  ) {
+    final $$TripTagsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripTags,
+      getReferencedColumn: (t) => t.tagId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripTagsTableFilterComposer(
+            $db: $db,
+            $table: $db.tripTags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
+  $$TagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get colorValue => $composableBuilder(
+    column: $table.colorValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TagsTable> {
+  $$TagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<int> get colorValue => $composableBuilder(
+    column: $table.colorValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  Expression<T> tripTagsRefs<T extends Object>(
+    Expression<T> Function($$TripTagsTableAnnotationComposer a) f,
+  ) {
+    final $$TripTagsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripTags,
+      getReferencedColumn: (t) => t.tagId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripTagsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tripTags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TagsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TagsTable,
+          Tag,
+          $$TagsTableFilterComposer,
+          $$TagsTableOrderingComposer,
+          $$TagsTableAnnotationComposer,
+          $$TagsTableCreateCompanionBuilder,
+          $$TagsTableUpdateCompanionBuilder,
+          (Tag, $$TagsTableReferences),
+          Tag,
+          PrefetchHooks Function({bool tripTagsRefs})
+        > {
+  $$TagsTableTableManager(_$AppDatabase db, $TagsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<int> colorValue = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => TagsCompanion(
+                id: id,
+                name: name,
+                colorValue: colorValue,
+                sortOrder: sortOrder,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String name,
+                Value<int> colorValue = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => TagsCompanion.insert(
+                id: id,
+                name: name,
+                colorValue: colorValue,
+                sortOrder: sortOrder,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$TagsTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripTagsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (tripTagsRefs) db.tripTags],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (tripTagsRefs)
+                    await $_getPrefetchedData<Tag, $TagsTable, TripTag>(
+                      currentTable: table,
+                      referencedTable: $$TagsTableReferences._tripTagsRefsTable(
+                        db,
+                      ),
+                      managerFromTypedResult: (p0) =>
+                          $$TagsTableReferences(db, table, p0).tripTagsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.tagId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TagsTable,
+      Tag,
+      $$TagsTableFilterComposer,
+      $$TagsTableOrderingComposer,
+      $$TagsTableAnnotationComposer,
+      $$TagsTableCreateCompanionBuilder,
+      $$TagsTableUpdateCompanionBuilder,
+      (Tag, $$TagsTableReferences),
+      Tag,
+      PrefetchHooks Function({bool tripTagsRefs})
+    >;
+typedef $$TripTagsTableCreateCompanionBuilder =
+    TripTagsCompanion Function({
+      required int tripId,
+      required int tagId,
+      Value<int> rowid,
+    });
+typedef $$TripTagsTableUpdateCompanionBuilder =
+    TripTagsCompanion Function({
+      Value<int> tripId,
+      Value<int> tagId,
+      Value<int> rowid,
+    });
+
+final class $$TripTagsTableReferences
+    extends BaseReferences<_$AppDatabase, $TripTagsTable, TripTag> {
+  $$TripTagsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('trip_tags__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager get tripId {
+    final $_column = $_itemColumn<int>('trip_id')!;
+
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TagsTable _tagIdTable(_$AppDatabase db) =>
+      db.tags.createAlias('trip_tags__tag_id__tags__id');
+
+  $$TagsTableProcessedTableManager get tagId {
+    final $_column = $_itemColumn<int>('tag_id')!;
+
+    final manager = $$TagsTableTableManager(
+      $_db,
+      $_db.tags,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tagIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TripTagsTableFilterComposer
+    extends Composer<_$AppDatabase, $TripTagsTable> {
+  $$TripTagsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TagsTableFilterComposer get tagId {
+    final $$TagsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tagId,
+      referencedTable: $db.tags,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TagsTableFilterComposer(
+            $db: $db,
+            $table: $db.tags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripTagsTableOrderingComposer
+    extends Composer<_$AppDatabase, $TripTagsTable> {
+  $$TripTagsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TagsTableOrderingComposer get tagId {
+    final $$TagsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tagId,
+      referencedTable: $db.tags,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TagsTableOrderingComposer(
+            $db: $db,
+            $table: $db.tags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripTagsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TripTagsTable> {
+  $$TripTagsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TagsTableAnnotationComposer get tagId {
+    final $$TagsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tagId,
+      referencedTable: $db.tags,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TagsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tags,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripTagsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TripTagsTable,
+          TripTag,
+          $$TripTagsTableFilterComposer,
+          $$TripTagsTableOrderingComposer,
+          $$TripTagsTableAnnotationComposer,
+          $$TripTagsTableCreateCompanionBuilder,
+          $$TripTagsTableUpdateCompanionBuilder,
+          (TripTag, $$TripTagsTableReferences),
+          TripTag,
+          PrefetchHooks Function({bool tripId, bool tagId})
+        > {
+  $$TripTagsTableTableManager(_$AppDatabase db, $TripTagsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TripTagsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TripTagsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TripTagsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> tripId = const Value.absent(),
+                Value<int> tagId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) =>
+                  TripTagsCompanion(tripId: tripId, tagId: tagId, rowid: rowid),
+          createCompanionCallback:
+              ({
+                required int tripId,
+                required int tagId,
+                Value<int> rowid = const Value.absent(),
+              }) => TripTagsCompanion.insert(
+                tripId: tripId,
+                tagId: tagId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TripTagsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({tripId = false, tagId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (tripId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tripId,
+                                referencedTable: $$TripTagsTableReferences
+                                    ._tripIdTable(db),
+                                referencedColumn: $$TripTagsTableReferences
+                                    ._tripIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+                    if (tagId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.tagId,
+                                referencedTable: $$TripTagsTableReferences
+                                    ._tagIdTable(db),
+                                referencedColumn: $$TripTagsTableReferences
+                                    ._tagIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TripTagsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TripTagsTable,
+      TripTag,
+      $$TripTagsTableFilterComposer,
+      $$TripTagsTableOrderingComposer,
+      $$TripTagsTableAnnotationComposer,
+      $$TripTagsTableCreateCompanionBuilder,
+      $$TripTagsTableUpdateCompanionBuilder,
+      (TripTag, $$TripTagsTableReferences),
+      TripTag,
+      PrefetchHooks Function({bool tripId, bool tagId})
     >;
 typedef $$PeopleTableCreateCompanionBuilder =
     PeopleCompanion Function({
@@ -13474,6 +15133,9 @@ class $AppDatabaseManager {
       $$CostsTableTableManager(_db, _db.costs);
   $$CostReasonsTableTableManager get costReasons =>
       $$CostReasonsTableTableManager(_db, _db.costReasons);
+  $$TagsTableTableManager get tags => $$TagsTableTableManager(_db, _db.tags);
+  $$TripTagsTableTableManager get tripTags =>
+      $$TripTagsTableTableManager(_db, _db.tripTags);
   $$PeopleTableTableManager get people =>
       $$PeopleTableTableManager(_db, _db.people);
   $$TripParticipantsTableTableManager get tripParticipants =>
