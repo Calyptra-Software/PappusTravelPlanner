@@ -888,6 +888,28 @@ void main() {
     expect(find.text('Rathausmarkt 1'), findsOneWidget);
   });
 
+  // Transitous' usage policy asks that its sources page be linked, not merely
+  // named, somewhere visible — so the footer's two labels must be *tappable*,
+  // which is what would be lost if they ever went back to plain text.
+  testWidgets('the search credits its data sources, with links', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    for (final label in const [
+      '© OpenStreetMap contributors',
+      'Timetable data via Transitous',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+      expect(
+        find.ancestor(of: find.text(label), matching: find.byType(InkWell)),
+        findsOneWidget,
+      );
+    }
+  });
+
   testWidgets('search is disabled until both endpoints are set', (
     tester,
   ) async {

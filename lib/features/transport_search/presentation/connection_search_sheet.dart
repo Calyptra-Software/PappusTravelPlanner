@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/attribution.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/journey_search_options_provider.dart';
 import '../application/transport_search_controller.dart';
@@ -365,12 +366,7 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
             Flexible(child: _results(l10n)),
             Padding(
               padding: EdgeInsets.fromLTRB(20, 4, 20, 8 + media.padding.bottom),
-              child: Text(
-                l10n.connectionAttribution,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
+              child: const AttributionFooter(),
             ),
           ],
         ),

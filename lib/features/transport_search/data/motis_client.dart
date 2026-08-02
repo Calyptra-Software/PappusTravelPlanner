@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../../core/app_info.dart';
 import '../application/transport_search.dart';
 import '../domain/journey.dart';
 import '../domain/journey_options.dart';
@@ -21,18 +22,23 @@ final Uri kTransitousBaseUrl = Uri.parse('https://api.transitous.org');
 ///
 /// The [baseUrl] is injected so it can point at Transitous (the default) or a
 /// self-hosted MOTIS, and the [http.Client] is injected so tests can drive it
-/// with recorded responses. A descriptive `User-Agent` identifies the app to
-/// the (donated) service, as such services expect.
+/// with recorded responses. The [userAgent] identifies the app to the (donated)
+/// service, which its usage policy requires — see [buildUserAgent].
 class MotisTransportSearch implements TransportSearch {
   MotisTransportSearch({
     http.Client? httpClient,
     Uri? baseUrl,
-    this.userAgent = _defaultUserAgent,
+    String? userAgent,
     this.language = _defaultLanguage,
   }) : _http = httpClient ?? http.Client(),
-       _baseUrl = baseUrl ?? kTransitousBaseUrl;
+       _baseUrl = baseUrl ?? kTransitousBaseUrl,
+       userAgent = userAgent ?? _defaultUserAgent;
 
-  static const String _defaultUserAgent = 'TravelPlanner (connection search)';
+  /// Only a fallback for a client built without one (the smoke tool, tests) —
+  /// the app always passes its real version, via `transportSearchProvider`.
+  /// It still carries a name and a contact, so an unversioned request coming
+  /// off a developer machine is not an anonymous one.
+  static final String _defaultUserAgent = buildUserAgent('dev');
 
   /// Asks for legs *without* their route shape and turn-by-turn instructions,
   /// on every endpoint that offers the choice.
@@ -58,6 +64,17 @@ class MotisTransportSearch implements TransportSearch {
 
   final http.Client _http;
   final Uri _baseUrl;
+
+  /// How this client names itself to the service: application, version, and a
+  /// way of contact, which is exactly what the Transitous usage policy asks
+  /// every request to carry.
+  ///
+  /// Sent on every call — except in a browser, where it cannot be: `User-Agent`
+  /// is a forbidden header name, so the runtime drops it and the request goes
+  /// out with the browser's own. The policy anticipates this and accepts the
+  /// `Referer` instead, on condition that the page serving the app carries
+  /// contact information; that is a duty of the web *deployment*, not of this
+  /// class, and nothing here can discharge it.
   final String userAgent;
 
   /// The language names come back in, sent on **every** endpoint.

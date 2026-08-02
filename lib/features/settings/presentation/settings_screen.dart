@@ -8,6 +8,7 @@ import '../../../core/database/database_location.dart';
 import '../../../core/providers.dart';
 import '../../../core/settings/language_dialog.dart';
 import '../../../core/settings/theme_mode_dialog.dart';
+import '../../../core/widgets/attribution.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/presentation/cost_reasons_settings.dart';
 import '../../costs/presentation/currencies_settings.dart';
@@ -118,6 +119,11 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _export(context, ref),
             ),
           ],
+          const Divider(),
+          // Attribution belongs where it outlives the search sheet: an imported
+          // connection stays in the trip long after the search that found it.
+          _SectionHeader(title: l10n.dataSourcesSection),
+          const DataSourcesSettings(),
         ],
       ),
     );

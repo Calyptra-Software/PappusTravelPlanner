@@ -681,7 +681,18 @@
   "connectionModeOther": "Cable car & other",
   "connectionAddToDay": "Add to day",
   "connectionAdded": "Connection added",
-  "connectionAttribution": "Data © OpenStreetMap contributors, via Transitous",
+  "attributionOsm": "© OpenStreetMap contributors",
+  "attributionTransitous": "Timetable data via Transitous",
+  "dataSourcesSection": "Data sources",
+  "dataSourcesNote": "Connection search uses openly licensed timetable and map data:",
+  "linkOpenFailed": "Could not open {url}",
+  "@linkOpenFailed": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
   "transportModeRestoreBuiltin": "Restore built-in",
   "platformShort": "Pl. {track}",
   "@platformShort": {

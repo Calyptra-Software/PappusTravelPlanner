@@ -44,6 +44,11 @@ dependencies:
   pdf: ^3.12.0 # exporting a trip as a printable PDF
   http: ^1.2.2 # connection search against the MOTIS API (Transitous)
   timezone: ^0.11.1 # UTC->wall-clock for imported connections (per-stop IANA tz)
+  # Both are here for the Transitous usage policy: it asks every request to
+  # carry the client's version, and the data sources to be linked (not merely
+  # named) somewhere visible. See core/app_info.dart and core/widgets/attribution.dart.
+  package_info_plus: ^9.0.1 # the app's own version, for the API User-Agent
+  url_launcher: ^6.3.2 # opening the data-source attribution links
 
 dev_dependencies:
   flutter_test:

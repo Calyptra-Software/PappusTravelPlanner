@@ -1555,8 +1555,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionAdded => 'Connection added';
 
   @override
-  String get connectionAttribution =>
-      'Data © OpenStreetMap contributors, via Transitous';
+  String get attributionOsm => '© OpenStreetMap contributors';
+
+  @override
+  String get attributionTransitous => 'Timetable data via Transitous';
+
+  @override
+  String get dataSourcesSection => 'Data sources';
+
+  @override
+  String get dataSourcesNote =>
+      'Connection search uses openly licensed timetable and map data:';
+
+  @override
+  String linkOpenFailed(String url) {
+    return 'Could not open $url';
+  }
 
   @override
   String get transportModeRestoreBuiltin => 'Restore built-in';

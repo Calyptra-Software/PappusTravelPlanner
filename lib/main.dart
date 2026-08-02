@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 
@@ -18,12 +19,19 @@ Future<void> main() async {
   // default app location.
   final activePath =
       prefs.getString(kDbPathPrefKey) ?? await defaultDatabaseFile();
+  // This build's version, sent to the connection-search service as its usage
+  // policy requires. Read here, once, so the request that needs it can read it
+  // synchronously (see [appVersionProvider]).
+  final packageInfo = await PackageInfo.fromPlatform();
 
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         bootstrapDbPathProvider.overrideWithValue(activePath),
+        appVersionProvider.overrideWithValue(
+          '${packageInfo.version}+${packageInfo.buildNumber}',
+        ),
       ],
       child: const TravelPlannerApp(),
     ),

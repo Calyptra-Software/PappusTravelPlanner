@@ -1564,8 +1564,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionAdded => 'Verbindung hinzugefügt';
 
   @override
-  String get connectionAttribution =>
-      'Daten © OpenStreetMap-Mitwirkende, über Transitous';
+  String get attributionOsm => '© OpenStreetMap-Mitwirkende';
+
+  @override
+  String get attributionTransitous => 'Fahrplandaten über Transitous';
+
+  @override
+  String get dataSourcesSection => 'Datenquellen';
+
+  @override
+  String get dataSourcesNote =>
+      'Die Verbindungssuche nutzt frei lizenzierte Fahrplan- und Kartendaten:';
+
+  @override
+  String linkOpenFailed(String url) {
+    return '$url konnte nicht geöffnet werden';
+  }
 
   @override
   String get transportModeRestoreBuiltin => 'Standard wiederherstellen';

@@ -243,6 +243,22 @@ UI (features/*/presentation, *widgets)
   `widgets/item_times.dart` (coloured spans) and the home widget (see below). An actual time
   outranks its planned one in `now_marker.dart`, though: "you are here" is a claim about the
   day as it is going.
+- **The router is somebody else's donated server, and its usage policy is part of the
+  feature.** Transitous asks each request to carry a `User-Agent` naming the application,
+  the client's **version** and a way of contact; all three live in `core/app_info.dart`
+  (`buildUserAgent`, no Flutter import — the smoke tool is plain Dart), fed the real version
+  by `appVersionProvider`, which `main` resolves from `PackageInfo` and overrides into the
+  scope beside the database path. A browser drops that header (`User-Agent` is forbidden
+  there), which the policy answers with the `Referer` — so any public web deployment must
+  carry contact information on the page itself; no Dart change can supply it. It also asks
+  that the data sources be **linked**, not merely credited: `core/widgets/attribution.dart`
+  holds both links, under the search where the data is used and in settings, where they
+  outlive the sheet — an imported connection stays in the trip, the PDF and the `.ics` long
+  after the search that found it. The rest of the policy is why the client looks the way it
+  does: `detailedLegs=false`, a debounced and cached geocode, journeys only on an explicit
+  button, live refresh one leg at a time and never on a timer. `staging.api.transitous.org`
+  and the `*.motis-project.*` hosts are off limits outright. Being an open-source,
+  non-commercial app is a *condition* of using the API, not a coincidence.
 - **A journey is read the same way before and after it is imported.** A connection found by
   the search and a run of legs the trip already holds are both mapped onto one
   `JourneyView` (`features/transport_search/journey_view.dart`, pure — plus the DB-side

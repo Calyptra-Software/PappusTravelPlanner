@@ -10,6 +10,18 @@ final bootstrapDbPathProvider = Provider<String>((ref) {
   throw UnimplementedError('bootstrapDbPathProvider must be overridden');
 });
 
+/// The running app's version (`1.0.0+1`), read from the platform's own package
+/// metadata at startup and overridden in `main` beside the database path, so
+/// that — like it — it can be read synchronously.
+///
+/// It exists for one caller: the connection search sends it in its `User-Agent`
+/// (see `core/app_info.dart`), which the donated Transitous instance asks for.
+/// Deliberately unimplemented rather than defaulted to a literal, which would
+/// go stale at the first release and misname the build making the requests.
+final appVersionProvider = Provider<String>((ref) {
+  throw UnimplementedError('appVersionProvider must be overridden');
+});
+
 /// SharedPreferences key holding the user-chosen database path (desktop).
 const String kDbPathPrefKey = 'db_path';
 

@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_info.dart';
+import '../../../core/providers.dart';
 import '../data/motis_client.dart';
 import '../domain/journey.dart';
 import '../domain/journey_options.dart';
@@ -16,9 +18,14 @@ import 'transport_search.dart';
 /// Watching [searchLanguageProvider] rebuilds it when the app's language
 /// changes, so every endpoint keeps answering in one language (see
 /// [MotisTransportSearch.language]).
+///
+/// This is where the app's real version reaches the wire: the service's usage
+/// policy asks each request to name the client and its version, and only the
+/// running app knows the latter.
 final transportSearchProvider = Provider<TransportSearch>((ref) {
   final client = MotisTransportSearch(
     language: ref.watch(searchLanguageProvider),
+    userAgent: buildUserAgent(ref.watch(appVersionProvider)),
   );
   ref.onDispose(client.close);
   return client;

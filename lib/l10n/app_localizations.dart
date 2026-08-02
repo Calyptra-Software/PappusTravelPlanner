@@ -2744,11 +2744,35 @@ abstract class AppLocalizations {
   /// **'Connection added'**
   String get connectionAdded;
 
-  /// No description provided for @connectionAttribution.
+  /// No description provided for @attributionOsm.
   ///
   /// In en, this message translates to:
-  /// **'Data © OpenStreetMap contributors, via Transitous'**
-  String get connectionAttribution;
+  /// **'© OpenStreetMap contributors'**
+  String get attributionOsm;
+
+  /// No description provided for @attributionTransitous.
+  ///
+  /// In en, this message translates to:
+  /// **'Timetable data via Transitous'**
+  String get attributionTransitous;
+
+  /// No description provided for @dataSourcesSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Data sources'**
+  String get dataSourcesSection;
+
+  /// No description provided for @dataSourcesNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection search uses openly licensed timetable and map data:'**
+  String get dataSourcesNote;
+
+  /// No description provided for @linkOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open {url}'**
+  String linkOpenFailed(String url);
 
   /// No description provided for @transportModeRestoreBuiltin.
   ///

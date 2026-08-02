@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:travelplanner/core/app_info.dart';
 import 'package:travelplanner/features/transport_search/data/motis_client.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
 import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
@@ -335,6 +336,52 @@ void main() {
       expect(seen.url.path, '/api/v1/geocode');
       expect(seen.url.queryParameters['text'], 'Hamburg Hbf');
       expect(seen.headers['User-Agent'], isNotEmpty);
+    });
+
+    // The service's usage policy asks each request to name the application,
+    // the version of the client and a way of contact. All three, or the header
+    // does not do the job it is sent for.
+    test('the User-Agent names the app, its version and a contact', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        userAgent: buildUserAgent('9.9.9+42'),
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_geocode_hamburg.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.searchPlaces('Hamburg Hbf');
+
+      expect(
+        seen.headers['User-Agent'],
+        'TravelPlanner/9.9.9+42 ($kAppContact)',
+      );
+      expect(kAppContact, contains('@'));
+    });
+
+    test('a client built without one still identifies itself', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_geocode_hamburg.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.searchPlaces('Hamburg Hbf');
+
+      final userAgent = seen.headers['User-Agent'];
+      expect(userAgent, startsWith('$kAppName/'));
+      expect(userAgent, contains(kAppContact));
     });
 
     test('every endpoint asks for the same language', () async {
