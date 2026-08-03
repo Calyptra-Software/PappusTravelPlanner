@@ -249,6 +249,8 @@ class TripRepository {
   // --- transport modes ---
   Stream<List<TransportModeRow>> watchTransportModes() =>
       _db.transportModeDao.watchModes();
+  Future<List<TransportModeRow>> transportModes() =>
+      _db.transportModeDao.modes();
   Future<int> addTransportMode(String name, {int? iconId}) =>
       _db.transportModeDao.addMode(name, iconId: iconId);
   Future<void> renameTransportMode(int id, String name) =>

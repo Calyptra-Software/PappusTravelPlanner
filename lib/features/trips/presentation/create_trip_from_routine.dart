@@ -107,13 +107,16 @@ Future<void> _lookUpConnections(
   if (candidates.isEmpty || !context.mounted) return;
 
   var missing = 0;
+  var failed = 0;
   for (final journey in candidates) {
     List<JourneyOption> options;
     try {
       options = await controller.lookUp(journey);
     } catch (_) {
       // A network failure is not "nothing runs", and must not be reported as
-      // it: the plan stands and the user can try again from the trip.
+      // it. The plan stands, so nothing is lost — but the service being out of
+      // reach for this journey says the same about the rest, so the round ends
+      // here rather than asking again per journey.
       if (context.mounted) {
         messenger.showSnackBar(
           SnackBar(content: Text(l10n.connectionsOffline)),
@@ -136,18 +139,29 @@ Future<void> _lookUpConnections(
       cancelLabel: l10n.connectionsKeepPlan,
     );
     if (accepted && context.mounted) {
-      await controller.useConnection(
-        tripId,
-        journey,
-        options.first,
-        labels: labels,
-      );
+      try {
+        await controller.useConnection(
+          tripId,
+          journey,
+          options.first,
+          labels: labels,
+        );
+      } catch (_) {
+        // Writing this one connection failed. The journey keeps its copied
+        // plan, and the *next* journey is still asked about: one failure is not
+        // evidence about the others, and letting it out of the loop meant the
+        // rest were silently never offered.
+        failed++;
+      }
     }
   }
 
   if (!context.mounted) return;
   if (missing > 0) {
     messenger.showSnackBar(SnackBar(content: Text(l10n.connectionsNotFound)));
+  }
+  if (failed > 0) {
+    messenger.showSnackBar(SnackBar(content: Text(l10n.connectionsNotTaken)));
   }
 }
 

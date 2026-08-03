@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/stopovers.dart';
-import '../../itinerary/application/transport_mode_providers.dart';
 import '../data/journey_mapper.dart';
 import '../data/live_refresh.dart';
 import '../../trips/planned_journey.dart';
@@ -37,6 +36,20 @@ class TransportSearchController {
   TransportSearchController(this._ref);
 
   final Ref _ref;
+
+  /// The modes an import maps the router's vocabulary onto, read **once from the
+  /// repository** rather than from `transportModesProvider`.
+  ///
+  /// That provider is `autoDispose`: read from here, where nothing listens to
+  /// it, it is disposed while its query is still in flight and its future throws
+  /// ("disposed during loading state") — so an import worked only on a screen
+  /// that happened to be watching the modes already. Stamping a trip out of a
+  /// routine from the overview, where nothing does, threw on the first accepted
+  /// connection: the legs stayed a copied plan with no `sourceTripId` to refresh,
+  /// and the journeys after it were never offered. Whether the modes finish
+  /// loading cannot depend on what is on screen.
+  Future<List<TransportModeRow>> _modes() =>
+      _ref.read(repositoryProvider).transportModes();
 
   /// The track/direction labels localize the auto-notes composed for each leg;
   /// the UI supplies them from its localizations. [trackLabel] writes a platform
@@ -71,7 +84,7 @@ class TransportSearchController {
     TrackLabel? toTrackLabel,
     DirectionLabel? directionLabel,
   }) async {
-    final modes = await _ref.read(transportModesProvider.future);
+    final modes = await _modes();
     final legs = journeyToLegs(
       journey,
       resolveMode: modeResolver(modes),
@@ -120,7 +133,7 @@ class TransportSearchController {
     required JourneyOption option,
     required JourneyImportLabels labels,
   }) async {
-    final modes = await _ref.read(transportModesProvider.future);
+    final modes = await _modes();
     final legs = journeyToLegs(
       option,
       resolveMode: modeResolver(modes),

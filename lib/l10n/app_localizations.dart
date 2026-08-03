@@ -3020,6 +3020,12 @@ abstract class AppLocalizations {
   /// **'No connection found — the plan was copied as it stands.'**
   String get connectionsNotFound;
 
+  /// No description provided for @connectionsNotTaken.
+  ///
+  /// In en, this message translates to:
+  /// **'A connection couldn\'t be taken over — the plan was kept.'**
+  String get connectionsNotTaken;
+
   /// No description provided for @connectionsOffline.
   ///
   /// In en, this message translates to:

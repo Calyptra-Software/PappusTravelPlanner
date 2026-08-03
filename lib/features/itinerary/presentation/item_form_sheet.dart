@@ -193,54 +193,54 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     String? nullIfEmpty(String v) => v.isEmpty ? null : v;
 
     if (_isEditing) {
+      // Saving is a **full-row** replace (`ItineraryDao.updateItem`), so every
+      // column the form does not show still has to be written back. The row is
+      // therefore edited with `copyWith` from the row as it stands rather than
+      // listed field by field: a column nobody remembers to name is then kept,
+      // where naming them all wrote null for the one that was forgotten — which
+      // is how editing an imported leg used to silently drop the stops it calls
+      // at and the ids its journey was searched by.
+      //
+      // The base is the item as it is *now*, not `widget.existing` — that is a
+      // snapshot from when the sheet opened, and the item may since have been
+      // grouped, turned into a decision, reordered, or had its live times (and
+      // with them its stopovers) refreshed. Only when it is no longer in the
+      // trip's items at all does the snapshot stand in.
       final existing = widget.existing!;
-      // Preserve the item's current group and option membership. `widget.existing`
-      // is a snapshot from when the sheet opened, so if the item was grouped, or
-      // turned into a decision, while the sheet was open, that membership lives
-      // only in live data — reading it back here keeps this full-row update from
-      // clobbering it.
       final live = ref.read(itineraryProvider(widget.tripId)).value;
-      var currentGroupId = existing.groupId;
-      var currentAlternativeId = existing.alternativeId;
-      if (live != null) {
-        for (final it in live) {
-          if (it.id == existing.id) {
-            currentGroupId = it.groupId;
-            currentAlternativeId = it.alternativeId;
-            break;
-          }
-        }
-      }
+      final base = live == null
+          ? existing
+          : live.firstWhere(
+              (it) => it.id == existing.id,
+              orElse: () => existing,
+            );
       await repo.updateItem(
-        ItineraryItem(
-          id: existing.id,
-          tripId: existing.tripId,
-          groupId: currentGroupId,
-          alternativeId: currentAlternativeId,
+        base.copyWith(
           date: _date,
-          sortOrder: existing.sortOrder,
           kind: widget.kind,
-          title: nullIfEmpty(title),
-          startMinutes: _times[_TimeSlot.plannedStart],
-          endMinutes: _times[_TimeSlot.plannedEnd],
-          actualStartMinutes: _times[_TimeSlot.actualStart],
-          actualEndMinutes: _times[_TimeSlot.actualEnd],
-          // The form doesn't expose these yet; carry them through unchanged so
-          // editing a leg doesn't wipe an imported connection's overnight flag,
-          // endpoint coordinates or its source trip id (which the live-times
-          // refresh needs). Direction/platform ride along in notes, which the
-          // form does edit.
-          spansNextDay: existing.spansNextDay,
-          notes: nullIfEmpty(notes),
-          location: _isTransport ? null : nullIfEmpty(location),
-          mode: _isTransport ? _mode : null,
-          fromLocation: _isTransport ? nullIfEmpty(from) : null,
-          toLocation: _isTransport ? nullIfEmpty(to) : null,
-          fromLat: _isTransport ? existing.fromLat : null,
-          fromLon: _isTransport ? existing.fromLon : null,
-          toLat: _isTransport ? existing.toLat : null,
-          toLon: _isTransport ? existing.toLon : null,
-          sourceTripId: _isTransport ? existing.sourceTripId : null,
+          title: Value(nullIfEmpty(title)),
+          startMinutes: Value(_times[_TimeSlot.plannedStart]),
+          endMinutes: Value(_times[_TimeSlot.plannedEnd]),
+          actualStartMinutes: Value(_times[_TimeSlot.actualStart]),
+          actualEndMinutes: Value(_times[_TimeSlot.actualEnd]),
+          notes: Value(nullIfEmpty(notes)),
+          location: Value(_isTransport ? null : nullIfEmpty(location)),
+          mode: Value(_isTransport ? _mode : null),
+          fromLocation: Value(_isTransport ? nullIfEmpty(from) : null),
+          toLocation: Value(_isTransport ? nullIfEmpty(to) : null),
+          // Everything a leg carries but the form does not edit — the overnight
+          // flag, the endpoint coordinates and ids, the source trip id the
+          // live-times refresh needs, the stops in between — rides along
+          // untouched, and is cleared only on an entry that is no longer a leg.
+          // Direction/platform live in notes, which the form does edit.
+          fromLat: Value(_isTransport ? base.fromLat : null),
+          fromLon: Value(_isTransport ? base.fromLon : null),
+          toLat: Value(_isTransport ? base.toLat : null),
+          toLon: Value(_isTransport ? base.toLon : null),
+          sourceTripId: Value(_isTransport ? base.sourceTripId : null),
+          fromPlaceId: Value(_isTransport ? base.fromPlaceId : null),
+          toPlaceId: Value(_isTransport ? base.toPlaceId : null),
+          stopovers: Value(_isTransport ? base.stopovers : null),
         ),
       );
     } else {

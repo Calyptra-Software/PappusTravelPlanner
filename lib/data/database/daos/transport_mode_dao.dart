@@ -35,13 +35,21 @@ class TransportModeDao extends DatabaseAccessor<AppDatabase>
 
   /// All modes in display order (then by id, so ties are stable). Feeds the
   /// item form's dropdown and the settings list.
-  Stream<List<TransportModeRow>> watchModes() {
-    return (select(transportModes)..orderBy([
-          (m) => OrderingTerm(expression: m.sortOrder),
-          (m) => OrderingTerm(expression: m.id),
-        ]))
-        .watch();
-  }
+  Stream<List<TransportModeRow>> watchModes() => _ordered().watch();
+
+  /// The same list, read once — for a caller that needs the modes to *finish* a
+  /// piece of work rather than to keep a screen up to date.
+  ///
+  /// The connection import is that caller: it maps the router's vocabulary onto
+  /// these rows and must not depend on whether some widget happens to be
+  /// watching them at the time (see `TransportSearchController`).
+  Future<List<TransportModeRow>> modes() => _ordered().get();
+
+  SimpleSelectStatement<$TransportModesTable, TransportModeRow> _ordered() =>
+      select(transportModes)..orderBy([
+        (m) => OrderingTerm(expression: m.sortOrder),
+        (m) => OrderingTerm(expression: m.id),
+      ]);
 
   /// Adds a user-defined mode with [name] (optionally an icon), appended after
   /// the current modes. Returns its new id.

@@ -793,6 +793,7 @@
     "placeholders": { "number": { "type": "int" } }
   },
   "connectionsNotFound": "No connection found — the plan was copied as it stands.",
+  "connectionsNotTaken": "A connection couldn't be taken over — the plan was kept.",
   "connectionsOffline": "Couldn't reach the routing service. The plan was copied as it stands.",
   "connectionsKeepPlan": "Keep the plan",
   "connectionsUseThis": "Use this",

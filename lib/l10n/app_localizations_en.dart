@@ -1736,6 +1736,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'No connection found — the plan was copied as it stands.';
 
   @override
+  String get connectionsNotTaken =>
+      'A connection couldn\'t be taken over — the plan was kept.';
+
+  @override
   String get connectionsOffline =>
       'Couldn\'t reach the routing service. The plan was copied as it stands.';
 

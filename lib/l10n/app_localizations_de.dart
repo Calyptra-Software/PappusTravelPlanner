@@ -1745,6 +1745,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Keine Verbindung gefunden — der Plan wurde unverändert übernommen.';
 
   @override
+  String get connectionsNotTaken =>
+      'Eine Verbindung konnte nicht übernommen werden — der Plan bleibt bestehen.';
+
+  @override
   String get connectionsOffline =>
       'Der Routing-Dienst war nicht erreichbar. Der Plan wurde unverändert übernommen.';
 
