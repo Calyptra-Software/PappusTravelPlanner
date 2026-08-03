@@ -6,6 +6,7 @@ import 'package:timezone/data/latest.dart' as tzdata;
 
 import 'app.dart';
 import 'core/database/database_location.dart';
+import 'core/licenses.dart';
 import 'core/providers.dart';
 import 'core/settings/locale_provider.dart';
 
@@ -14,6 +15,8 @@ Future<void> main() async {
   // Loads the IANA timezone database so an imported connection's UTC times can
   // be turned into each stop's local wall-clock (see journey_mapper).
   tzdata.initializeTimeZones();
+  // The bundled fonts' terms, for the license page reachable from About.
+  registerBundledFontLicenses();
   final prefs = await SharedPreferences.getInstance();
   // Resolve the database path once at startup: the user's saved choice, or the
   // default app location.

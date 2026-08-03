@@ -812,5 +812,12 @@
   "tagDeleteBody": "It will be removed from every trip carrying it. The trips themselves are untouched.",
   "tagRename": "Rename tag",
   "tagNameLabel": "Name",
-  "tagDuplicate": "A tag with that name already exists."
+  "tagDuplicate": "A tag with that name already exists.",
+  "aboutSection": "About",
+  "aboutVersion": "Version",
+  "aboutVersionCopied": "Version copied",
+  "aboutSourceCode": "Source code",
+  "aboutReportIssue": "Report a problem",
+  "aboutLicenses": "Open-source licenses",
+  "aboutLicensesSubtitle": "The libraries and fonts this app is built from"
 }

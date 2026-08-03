@@ -10,9 +10,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'external_link.dart';
 
 /// OpenStreetMap's own copyright and attribution page.
 const String kOsmCopyrightUrl = 'https://www.openstreetmap.org/copyright';
@@ -20,27 +20,6 @@ const String kOsmCopyrightUrl = 'https://www.openstreetmap.org/copyright';
 /// Transitous' list of the timetable feeds it serves, which its usage policy
 /// asks applications to link.
 const String kTransitousSourcesUrl = 'https://transitous.org/sources/';
-
-/// Opens [url] in the platform's browser, telling the user when that fails
-/// rather than leaving a tap that does nothing.
-///
-/// A link that silently refuses is worse than none here: the attribution is
-/// only discharged if the source page can actually be reached.
-Future<void> openAttributionLink(BuildContext context, String url) async {
-  final l10n = AppLocalizations.of(context);
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  var opened = false;
-  try {
-    opened = await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
-    );
-  } catch (_) {
-    opened = false;
-  }
-  if (opened) return;
-  messenger?.showSnackBar(SnackBar(content: Text(l10n.linkOpenFailed(url))));
-}
 
 /// The one-line attribution shown under the connection search: both sources,
 /// both tappable.
@@ -89,7 +68,7 @@ class _AttributionLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => openAttributionLink(context, url),
+      onTap: () => openExternalLink(context, url),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Text(
@@ -130,7 +109,7 @@ class DataSourcesSettings extends StatelessWidget {
           title: Text(l10n.attributionOsm),
           subtitle: Text(kOsmCopyrightUrl, style: theme.textTheme.bodySmall),
           trailing: const Icon(Icons.open_in_new, size: 18),
-          onTap: () => openAttributionLink(context, kOsmCopyrightUrl),
+          onTap: () => openExternalLink(context, kOsmCopyrightUrl),
         ),
         ListTile(
           leading: const Icon(Icons.directions_transit_outlined),
@@ -140,7 +119,7 @@ class DataSourcesSettings extends StatelessWidget {
             style: theme.textTheme.bodySmall,
           ),
           trailing: const Icon(Icons.open_in_new, size: 18),
-          onTap: () => openAttributionLink(context, kTransitousSourcesUrl),
+          onTap: () => openExternalLink(context, kTransitousSourcesUrl),
         ),
       ],
     );

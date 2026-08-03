@@ -1797,4 +1797,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagDuplicate => 'A tag with that name already exists.';
+
+  @override
+  String get aboutSection => 'About';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutVersionCopied => 'Version copied';
+
+  @override
+  String get aboutSourceCode => 'Source code';
+
+  @override
+  String get aboutReportIssue => 'Report a problem';
+
+  @override
+  String get aboutLicenses => 'Open-source licenses';
+
+  @override
+  String get aboutLicensesSubtitle =>
+      'The libraries and fonts this app is built from';
 }

@@ -1806,4 +1806,26 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tagDuplicate => 'Ein Tag mit diesem Namen existiert bereits.';
+
+  @override
+  String get aboutSection => 'Über die App';
+
+  @override
+  String get aboutVersion => 'Version';
+
+  @override
+  String get aboutVersionCopied => 'Version kopiert';
+
+  @override
+  String get aboutSourceCode => 'Quellcode';
+
+  @override
+  String get aboutReportIssue => 'Problem melden';
+
+  @override
+  String get aboutLicenses => 'Open-Source-Lizenzen';
+
+  @override
+  String get aboutLicensesSubtitle =>
+      'Die Bibliotheken und Schriften, aus denen diese App besteht';
 }

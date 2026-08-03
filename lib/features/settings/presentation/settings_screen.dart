@@ -15,6 +15,7 @@ import '../../costs/presentation/currencies_settings.dart';
 import '../../costs/presentation/people_settings.dart';
 import '../../itinerary/presentation/transport_modes_settings.dart';
 import '../application/database_providers.dart';
+import 'about_settings.dart';
 
 /// Settings: language and database location/portability.
 class SettingsScreen extends ConsumerWidget {
@@ -124,6 +125,9 @@ class SettingsScreen extends ConsumerWidget {
           // connection stays in the trip long after the search that found it.
           _SectionHeader(title: l10n.dataSourcesSection),
           const DataSourcesSettings(),
+          const Divider(),
+          _SectionHeader(title: l10n.aboutSection),
+          const AboutSettings(),
         ],
       ),
     );

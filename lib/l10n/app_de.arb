@@ -679,5 +679,12 @@
   "tagDeleteBody": "Es wird von allen Reisen entfernt, die es tragen. Die Reisen selbst bleiben unverändert.",
   "tagRename": "Tag umbenennen",
   "tagNameLabel": "Name",
-  "tagDuplicate": "Ein Tag mit diesem Namen existiert bereits."
+  "tagDuplicate": "Ein Tag mit diesem Namen existiert bereits.",
+  "aboutSection": "Über die App",
+  "aboutVersion": "Version",
+  "aboutVersionCopied": "Version kopiert",
+  "aboutSourceCode": "Quellcode",
+  "aboutReportIssue": "Problem melden",
+  "aboutLicenses": "Open-Source-Lizenzen",
+  "aboutLicensesSubtitle": "Die Bibliotheken und Schriften, aus denen diese App besteht"
 }

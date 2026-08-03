@@ -25,6 +25,25 @@ const String kAppName = 'TravelPlanner';
 /// that is costing them too much.
 const String kAppContact = 'lampert.joshua@protonmail.com';
 
+/// Where this app's own source lives.
+///
+/// Not decoration: being an open-source, non-commercial client is a *condition*
+/// of using the Transitous API, so the link that proves it belongs in the app
+/// and not only in the README.
+const String kAppRepositoryUrl =
+    'https://github.com/JoshuaLampert/TravelPlanner';
+
+/// Where a user reports something that went wrong. The same repository, one
+/// level in — kept beside it so the two cannot drift apart.
+const String kAppIssuesUrl = '$kAppRepositoryUrl/issues';
+
+/// The copyright line shown above the bundled licenses.
+///
+/// Deliberately untranslated: a copyright notice and a license name are the
+/// legal text they are, in the language they were granted in.
+const String kAppLegalese =
+    'MIT License · © 2026-present Joshua Lampert and contributors';
+
 /// The `User-Agent` sent with every connection-search request, e.g.
 /// `TravelPlanner/1.0.0+1 (lampert.joshua@protonmail.com)`.
 ///

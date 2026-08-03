@@ -78,6 +78,11 @@ flutter:
   assets:
     - assets/fonts/Roboto-Regular.ttf
     - assets/fonts/Roboto-Bold.ttf
+    # The bundled fonts' terms, shown on the About screen's licence page
+    # (core/licenses.dart) — a font ships inside the binary, so its licence has
+    # to ship with it.
+    - assets/fonts/Roboto-LICENSE.txt
+    - assets/fonts/TransportGlyphs-ATTRIBUTION.txt
 
   # assets/icon/travelplanner.png is only a source image for flutter_launcher_icons,
   # so it is deliberately not bundled here.

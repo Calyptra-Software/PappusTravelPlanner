@@ -3139,6 +3139,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A tag with that name already exists.'**
   String get tagDuplicate;
+
+  /// No description provided for @aboutSection.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get aboutSection;
+
+  /// No description provided for @aboutVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get aboutVersion;
+
+  /// No description provided for @aboutVersionCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Version copied'**
+  String get aboutVersionCopied;
+
+  /// No description provided for @aboutSourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get aboutSourceCode;
+
+  /// No description provided for @aboutReportIssue.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem'**
+  String get aboutReportIssue;
+
+  /// No description provided for @aboutLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get aboutLicenses;
+
+  /// No description provided for @aboutLicensesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The libraries and fonts this app is built from'**
+  String get aboutLicensesSubtitle;
 }
 
 class _AppLocalizationsDelegate
