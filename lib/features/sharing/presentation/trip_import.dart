@@ -30,10 +30,10 @@ Future<void> pickAndImportTrip(BuildContext context, WidgetRef ref) async {
     final file = await openFile(acceptedTypeGroups: [typeGroup]);
     bytes = file == null ? null : await file.readAsBytes();
   } else {
-    // Bytes loaded directly (`withData`) so the one path works on web and
-    // native alike.
-    final result = await FilePicker.pickFiles(withData: true);
-    bytes = result?.files.single.bytes;
+    // Read through the picked file rather than off a path, so the one branch
+    // works on web and native alike.
+    final result = await FilePicker.pickFiles();
+    bytes = await result?.files.single.readAsBytes();
   }
   if (bytes == null || !context.mounted) return;
   await importTripBytes(context, ref, bytes);

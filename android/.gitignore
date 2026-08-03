@@ -1,5 +1,9 @@
 gradle-wrapper.jar
 /.gradle
+# Flutter points the modules' build dirs at the repo-root `build/`, which the
+# root .gitignore covers, but Gradle still writes its own problems report into
+# the root Gradle project — that is this directory.
+/build/
 /captures/
 /gradlew
 /gradlew.bat

@@ -184,8 +184,7 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    // The web has no file paths, so load the picked file's bytes there instead.
-    final result = await FilePicker.pickFiles(withData: kIsWeb);
+    final result = await FilePicker.pickFiles();
     final file = result?.files.single;
     if (file == null || !context.mounted) return;
 
@@ -200,9 +199,8 @@ class SettingsScreen extends ConsumerWidget {
     final controller = ref.read(databaseControllerProvider);
     await _run(context, ref, () async {
       if (kIsWeb) {
-        final bytes = file.bytes;
-        if (bytes == null) throw StateError('Could not read the file.');
-        await controller.importFromBytes(bytes);
+        // The web has no file paths, so hand over the bytes instead.
+        await controller.importFromBytes(await file.readAsBytes());
       } else {
         await controller.importFrom(file.path!);
       }

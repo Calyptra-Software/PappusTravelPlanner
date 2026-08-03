@@ -440,11 +440,45 @@ in-memory database.
 
 ## Platform build constraints
 
-Android Gradle Plugin is pinned to **8.x** (currently AGP 8.13.2). The Flutter scaffold's
-default AGP 9 breaks `file_picker` — do not bump it. That pin caps Gradle in turn: **9.6.0
-removed `InternalProblems`**, an internal API AGP 8.x still calls, so the wrapper must stay
-on **9.5.x** (currently 9.5.1). CI does not build Android, so neither ceiling is caught
-there — both are guarded by `ignore` rules in `.github/dependabot.yml` instead.
+The Android toolchain is **AGP 9.3.1 on Gradle 9.6.1**, and nothing about that combination
+is pinned any more — the version ceilings that used to live in `.github/dependabot.yml` are
+gone, because the `Build Android APK` job in CI now exercises the real
+`flutter build apk --split-per-abi`. That job is the whole guard: every failure in this area
+happens while Gradle *applies its plugins*, long before a line of Dart or Kotlin is
+compiled, so `analyze` and `test` are blind to it and a breaking bump used to merge green.
+
+What is deliberate is `android.builtInKotlin=false` in `android/gradle.properties`. AGP 9
+compiles Kotlin itself by default; the Flutter scaffold writes `false` to keep the old
+arrangement where the **Kotlin Gradle Plugin** does it, and that is the only mode that
+builds. `flutter build apk` prints a `[!] Flutter Fix` box recommending the migration —
+**taking that advice breaks the build**, and no plugin upgrade will change that, because
+the blocker is Flutter itself. `FlutterPluginUtils.kt` walks the subprojects, and for
+every one that applies AGP but does *not* itself apply KGP it calls
+`pluginManager.apply("kotlin-android")` — without consulting `android.builtInKotlin`. AGP 9
+with built-in Kotlin then aborts on exactly those projects, because KGP is present after
+all. The irony is that this hits the plugins that have *already* migrated:
+`file_selector_android` correctly applies AGP and no KGP, so Flutter re-applies it and the
+build dies there. Its companion `android.newDsl=true` is no escape either — Flutter's Gradle
+plugin throws a `NullPointerException` before it gets as far as Kotlin.
+
+None of this is a defect to chase: Flutter's own documentation states that **enabling
+built-in Kotlin requires Flutter 3.47 or later**, and the pinned toolchain here is 3.44.
+The flag simply is not supported yet, and the call site above is the shape that takes.
+Flutter deliberately ships both properties as `false` for the duration of the ecosystem's
+migration (flutter/flutter#183910); the escape hatch is documented as going away before
+AGP 10.
+
+So the warning that survives a good build — "Your app uses the following plugins that apply
+Kotlin Gradle Plugin (KGP): home_widget" — is expected, and should be neither chased nor
+silenced. `home_widget` is **already migrated**: 0.9.3 carries "Apply kotlin plugin when
+not built in" (ABausG/home_widget#425, closing #421), which is the two-condition check that
+consults `android.builtInKotlin` — so it applies KGP here precisely because we asked for
+legacy mode, and it cannot drop the line without breaking AGP 8 users. It is named only
+because Flutter matches a **textual** regex against the build script, which cannot see the
+`if` guarding it; the other plugins receive KGP just as surely, from Flutter, and go
+unmentioned. There is no plugin upgrade to wait for. The warning clears when Flutter 3.47
+lands and `android.builtInKotlin=true` becomes possible — that upgrade, not a dependency
+bump, is the thing to revisit.
 
 ### Web
 
@@ -469,4 +503,6 @@ there, but import/export **are** supported: `DatabaseController.exportBytes` /
 exclusive single-handle access, so nothing else may be open). Export reads the stored bytes
 via `probe.exportDatabase`; import deletes the store, queues the picked file's bytes via
 `webSetPendingImport`, and reopens — drift's `initializeDatabase` hook seeds the fresh store.
-`file_picker` yields bytes (not a path) on web, so `_import` passes `withData: kIsWeb`.
+`file_picker` yields no path on web, so `_import` reads the picked file through
+`PlatformFile.readAsBytes()` rather than off `path` (the older `withData:` flag that used to
+pre-load them is deprecated).
