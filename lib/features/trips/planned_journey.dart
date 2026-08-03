@@ -45,6 +45,43 @@ class PlannedJourney {
   static String? _coordinate(double? lat, double? lon) =>
       lat == null || lon == null ? null : coordinateQueryId(lat, lon);
 
+  /// The two ends as the **search form** holds them, so a run can be looked up
+  /// again with its endpoints already filled in and the query then adjusted —
+  /// another day, a via stop, an hour later.
+  ///
+  /// Null on an end that cannot be addressed at all, exactly as [canLookUp]
+  /// says. The kind is [PlaceKind.stop] whatever the end really is, because that
+  /// is what makes [TransportPlace.queryId] hand [fromPlaceId] back verbatim:
+  /// this is the very string the journey was searched by — a stop id, or a
+  /// coordinate for an address — and re-deriving it from the coordinates could
+  /// quietly search from somewhere else.
+  TransportPlace? get fromPlace => _place(
+    fromPlaceId,
+    legs.first.fromLocation,
+    legs.first.fromLat,
+    legs.first.fromLon,
+  );
+
+  TransportPlace? get toPlace =>
+      _place(toPlaceId, legs.last.toLocation, legs.last.toLat, legs.last.toLon);
+
+  static TransportPlace? _place(
+    String? queryId,
+    String? name,
+    double? lat,
+    double? lon,
+  ) => queryId == null
+      ? null
+      : TransportPlace(
+          id: queryId,
+          // The station's name as the trip has it: what the tile shows, so the
+          // form reads as the journey it came from rather than as an id.
+          name: name ?? queryId,
+          kind: PlaceKind.stop,
+          lat: lat,
+          lon: lon,
+        );
+
   /// When the run is planned to depart, as minutes since midnight.
   int? get departMinutes => legs.first.startMinutes;
 

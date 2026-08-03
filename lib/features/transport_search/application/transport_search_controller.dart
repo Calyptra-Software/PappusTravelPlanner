@@ -8,6 +8,7 @@ import '../data/journey_mapper.dart';
 import '../data/live_refresh.dart';
 import '../../trips/planned_journey.dart';
 import '../domain/journey.dart';
+import 'journey_search_options_provider.dart';
 import 'transport_search_providers.dart';
 
 final transportSearchControllerProvider = Provider<TransportSearchController>(
@@ -117,6 +118,46 @@ class TransportSearchController {
     return _ref
         .read(repositoryProvider)
         .insertJourney(tripId, companions, group: group);
+  }
+
+  /// Asks the timetable about a run the trip already holds: the same endpoints
+  /// it was searched by, on the day it now sits on, around its planned
+  /// departure.
+  ///
+  /// Returns the options the router offers, best first, or an empty list when
+  /// nothing runs. Throws on a network failure, which the caller reports — there
+  /// is a real difference between "no train" and "no signal", and the user must
+  /// not be told the first when it was the second.
+  ///
+  /// Two callers ask the same question of the same shape: the routine flow, for
+  /// every journey of a trip it has just stamped out, and the journey sheet, for
+  /// the one run being read. Only [PlannedJourney.canLookUp] runs may be passed
+  /// — the ids and the departure are asserted here rather than guessed.
+  Future<List<JourneyOption>> searchPlannedJourney(
+    PlannedJourney journey,
+  ) async {
+    final minutes = journey.departMinutes!;
+    // Built as a wall clock, not by adding a Duration to midnight: on the day a
+    // clock goes forward, adding 7h42m to 00:00 lands at 08:42, and the search
+    // would be for an hour after the one the plan asks for.
+    final when = DateTime(
+      journey.date.year,
+      journey.date.month,
+      journey.date.day,
+      minutes ~/ 60,
+      minutes % 60,
+    );
+    final results = await _ref
+        .read(transportSearchProvider)
+        .journeys(
+          fromId: journey.fromPlaceId!,
+          toId: journey.toPlaceId!,
+          time: when,
+          options: _ref.read(journeySearchOptionsProvider),
+        );
+    // The direct options (walking or cycling the whole way) are part of the
+    // answer for a short hop, which a commute often is.
+    return [...results.options, ...results.direct];
   }
 
   /// Replaces one run of legs in a trip with a freshly-searched connection,

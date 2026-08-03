@@ -227,4 +227,51 @@ void main() {
       );
     });
   });
+  group('as the search form holds it', () {
+    test('each end carries the string it was searched by, and its name', () {
+      final journey = plannedJourneys([
+        leg(
+          groupId: 3,
+          sortOrder: 0,
+          start: 452,
+          from: 'Rahlstedt',
+          to: 'Hamburg Hbf',
+          fromPlaceId: 'stop:rahlstedt',
+          fromLat: 53.60486,
+          fromLon: 10.154396,
+        ),
+        leg(
+          groupId: 3,
+          sortOrder: 1,
+          start: 488,
+          from: 'Hauptbahnhof Nord',
+          to: 'Schlump',
+          toPlaceId: 'stop:schlump',
+        ),
+      ]).single;
+
+      // The form shows the names; the query goes out on the ids — the very
+      // strings this run was found by, not re-derived from the coordinates.
+      expect(journey.fromPlace?.name, 'Rahlstedt');
+      expect(journey.fromPlace?.queryId, 'stop:rahlstedt');
+      expect(journey.toPlace?.name, 'Schlump');
+      expect(journey.toPlace?.queryId, 'stop:schlump');
+    });
+
+    test('an end left with only coordinates is addressed by them', () {
+      final journey = plannedJourneys([
+        leg(
+          start: 542,
+          from: 'Home',
+          fromLat: 53.60486,
+          fromLon: 10.154396,
+          toPlaceId: 'stop:office',
+        ),
+      ]).single;
+
+      expect(journey.fromPlace?.queryId, '53.60486,10.154396');
+      // Still named for the traveller, coordinates or not.
+      expect(journey.fromPlace?.name, 'Home');
+    });
+  });
 }

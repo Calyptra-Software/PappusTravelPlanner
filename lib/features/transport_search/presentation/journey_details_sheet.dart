@@ -5,7 +5,10 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
+import '../../trips/application/trip_providers.dart';
+import '../../trips/planned_journey.dart';
 import '../data/journey_view_items.dart';
+import 'connection_search_sheet.dart';
 import 'journey_sheet.dart';
 
 /// Reads a journey the trip already holds — the sheet the connection was
@@ -20,6 +23,15 @@ import 'journey_sheet.dart';
 /// It watches the trip's items rather than taking a snapshot, so a leg refreshed
 /// from inside the sheet redraws in place — the refresh writes to the database
 /// and the sheet is reading it.
+///
+/// Beside reading it, the sheet is where a run is **looked up again**: one
+/// button searches the timetable for these same endpoints on this same day and
+/// offers to swap the legs for what actually runs. That is the way back for a
+/// plan copied from a routine whose journeys were never looked up — the lookup
+/// used to happen once, at the moment the trip was stamped out, and never
+/// again — and equally for a connection that has since been cancelled or
+/// missed. Per journey rather than per trip, because that is the unit the
+/// question arises in.
 Future<void> showJourneyDetailsSheet(
   BuildContext context, {
   required int tripId,
@@ -61,12 +73,50 @@ class JourneyDetailsSheet extends ConsumerWidget {
       for (final item in items)
         if (groupId != null ? item.groupId == groupId : item.id == itemId) item,
     ];
+    // A routine's plan has no dates to search on — its days are ordinals
+    // anchored in 1970 — so looking one up here would ask the timetable about a
+    // day no train has ever run on. Importing *into* a routine goes the other
+    // way round (search a real date, rebase the answer); that is
+    // `ConnectionSearchSheet.intoRoutine`'s job, not this button's.
+    final isRoutine =
+        ref.watch(tripProvider(tripId)).value?.kind == TripKind.routine;
+    // The run as something searchable: one journey, since these items are one
+    // group (or one lone leg), and none at all when its ends can no longer be
+    // addressed to the router — a hand-entered leg is offered nothing.
+    final planned = isRoutine ? null : plannedJourneys(journey).firstOrNull;
     return JourneySheet(
       view: journeyViewFromItems(journey, modesById),
       title: title,
       modesById: modesById,
       itemsById: {for (final item in journey) item.id: item},
+      onFindConnection: planned == null
+          ? null
+          : () => _findConnection(context, planned),
     );
+  }
+
+  /// Opens the connection search **for this run**: the same form the journey was
+  /// imported through, starting on its ends, its day and its departure.
+  ///
+  /// The search sheet rather than one silent request, because the question is
+  /// usually not quite the old one — the 07:32 was cancelled, or the afternoon
+  /// will do instead — and because a list of departures is what a traveller
+  /// chooses from. It owns everything from there: the query, the results, the
+  /// preview, and the swap. This sheet only closes behind it, onto the timeline
+  /// where the new legs now are: the ones it was reading have been deleted, a
+  /// lone leg's id along with them.
+  Future<void> _findConnection(
+    BuildContext context,
+    PlannedJourney journey,
+  ) async {
+    final navigator = Navigator.of(context);
+    final replaced = await showConnectionSearchSheet(
+      context,
+      tripId: tripId,
+      day: journey.date,
+      replacing: journey,
+    );
+    if (replaced && navigator.canPop()) navigator.pop();
   }
 }
 

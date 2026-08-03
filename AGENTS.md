@@ -143,6 +143,27 @@ UI (features/*/presentation, *widgets)
   with neither ids nor coordinates (hand-entered) is simply copied as a plan: there is
   nothing to re-issue a query with, and guessing one from a station's name would be a
   different journey wearing the same label.
+- **A journey is looked up again from the sheet that reads it**, one run at a time
+  (`JourneyDetailsSheet`, on the group's label or a lone imported leg). The trip-wide lookup
+  above happens once, in the seconds after a routine is stamped out; every way of not
+  finishing it — the switch left off, no signal on the platform, "keep the plan" tapped by
+  mistake, nothing running at that hour — used to leave the plan un-refreshable for good,
+  since a copied leg carries no `sourceTripId` and nothing else asked the timetable again.
+  The button opens the **ordinary search sheet**, pre-filled from the run
+  (`ConnectionSearchSheet.replacing`, seeded by `PlannedJourney.fromPlace`/`toPlace` — which
+  keep the exact `queryId` the run was found by rather than re-deriving one from the
+  coordinates), and taking a result there goes through the same `replaceJourney`, so the
+  group, the ticket and the slot behave identically. The form and not a single silent request,
+  because the question is rarely quite the old one: the 07:32 was cancelled, the afternoon
+  will do instead, today there is a bike to carry — so the day, the time, arrive-by, the vias
+  and the search options are all still the user's, and a list of departures is what a
+  traveller picks from. Per journey rather than per trip, because that is the unit the
+  question arises in, and on any trip, not only one stamped out of a routine. Two runs are
+  offered nothing: one whose ends can no longer be addressed to the router, and a **routine's**
+  own plan, whose days are ordinals anchored on `kRoutineAnchorDay` — searching those would ask
+  the timetable about 1970. A routine imports the other way round, searching a real date and
+  rebasing the answer (`ConnectionSearchSheet.intoRoutine`), which is why the two flags are
+  mutually exclusive.
 - **Single `ItineraryItems` table** holds both places and transport legs, discriminated by
   `ItemKind`; kind-specific columns are nullable. This lets a day read as one ordered timeline
   (place → transport → place). Items are ordered by `date` → `sortOrder` → `startMinutes`.

@@ -2,8 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../transport_search/application/transport_search_controller.dart';
-import '../../transport_search/application/journey_search_options_provider.dart';
-import '../../transport_search/application/transport_search_providers.dart';
 import '../../transport_search/domain/journey.dart';
 import '../../itinerary/live_items.dart';
 import '../planned_journey.dart';
@@ -54,30 +52,13 @@ class RoutineController {
   /// nothing runs. Throws on a network failure, which the caller reports —
   /// there is a real difference between "no train" and "no signal", and the
   /// user should not be told the first when it was the second.
-  Future<List<JourneyOption>> lookUp(PlannedJourney journey) async {
-    final minutes = journey.departMinutes!;
-    // Built as a wall clock, not by adding a Duration to midnight: on the day a
-    // clock goes forward, adding 7h42m to 00:00 lands at 08:42, and the search
-    // would be for an hour after the one the routine asks for.
-    final when = DateTime(
-      journey.date.year,
-      journey.date.month,
-      journey.date.day,
-      minutes ~/ 60,
-      minutes % 60,
-    );
-    final results = await _ref
-        .read(transportSearchProvider)
-        .journeys(
-          fromId: journey.fromPlaceId!,
-          toId: journey.toPlaceId!,
-          time: when,
-          options: _ref.read(journeySearchOptionsProvider),
-        );
-    // The direct options (walking or cycling the whole way) are part of the
-    // answer for a short hop, which a commute often is.
-    return [...results.options, ...results.direct];
-  }
+  ///
+  /// The search itself lives on `TransportSearchController`, since asking the
+  /// timetable about a planned run has nothing to do with routines: the same
+  /// question is asked of a single journey from the sheet that reads it.
+  Future<List<JourneyOption>> lookUp(PlannedJourney journey) => _ref
+      .read(transportSearchControllerProvider)
+      .searchPlannedJourney(journey);
 
   /// Puts [option] into the plan in [journey]'s place, keeping its bundle — and
   /// so its ticket — intact. See `RoutineDao.replaceJourneyLegs`.

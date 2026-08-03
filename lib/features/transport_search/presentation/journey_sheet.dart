@@ -26,6 +26,7 @@ class JourneySheet extends StatelessWidget {
     this.confirmLabel,
     this.cancelLabel,
     this.onConfirm,
+    this.onFindConnection,
   });
 
   final JourneyView view;
@@ -53,6 +54,14 @@ class JourneySheet extends StatelessWidget {
 
   final VoidCallback? onConfirm;
 
+  /// Asks the timetable about **this** run again, offered only on a journey the
+  /// trip already holds: what it finds replaces these legs, so a plan copied
+  /// from a routine, or a service that has since been cancelled, can be brought
+  /// up to date from the sheet that shows it is out of date. Null on a preview
+  /// (there is nothing to replace yet), and on a run whose ends can no longer be
+  /// addressed to the router.
+  final VoidCallback? onFindConnection;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -69,6 +78,7 @@ class JourneySheet extends StatelessWidget {
     final cancelled = legs.any((leg) => leg.cancelled);
     final duration = view.duration;
     final confirm = onConfirm;
+    final find = onFindConnection;
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: media.size.height * 0.85),
@@ -147,7 +157,7 @@ class JourneySheet extends StatelessWidget {
               ],
             ),
           ),
-          if (confirm != null) ...[
+          if (confirm != null || find != null) ...[
             const Divider(height: 1),
             Padding(
               padding: EdgeInsets.fromLTRB(
@@ -158,22 +168,34 @@ class JourneySheet extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  if (cancelLabel != null) ...[
+                  // Never beside the confirm pair: one sheet previews a
+                  // connection, the other reads the one that was taken.
+                  if (find != null)
                     Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: Text(cancelLabel!),
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.travel_explore),
+                        label: Text(l10n.connectionsFindForLeg),
+                        onPressed: find,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.add),
-                      label: Text(confirmLabel ?? l10n.connectionAddToDay),
-                      onPressed: confirm,
+                  if (confirm != null) ...[
+                    if (cancelLabel != null) ...[
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text(cancelLabel!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Expanded(
+                      child: FilledButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: Text(confirmLabel ?? l10n.connectionAddToDay),
+                        onPressed: confirm,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
