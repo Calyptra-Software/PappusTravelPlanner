@@ -109,16 +109,23 @@ class TripRepository {
   );
 
   /// Imports a planned journey as a run of transport legs. Each leg is appended
-  /// to the end of its day; then, unless [group] is false, each maximal run of
-  /// legs sharing a day is bundled into one group (a shared ticket) — a journey
-  /// crossing midnight becomes one group per day, since a group lives within a
-  /// single day. Returns the new item ids in order.
+  /// to the end of its day — or, with [alternativeId], to the end of that option
+  /// of a decision, which is where the search opened from an option's *Add
+  /// transport* puts what it finds. Then, unless [group] is false, each maximal
+  /// run of legs sharing a day is bundled into one group (a shared ticket) — a
+  /// journey crossing midnight becomes one group per day, since a group lives
+  /// within a single day. Returns the new item ids in order.
   Future<List<int>> insertJourney(
     int tripId,
     List<ItineraryItemsCompanion> legs, {
     bool group = true,
+    int? alternativeId,
   }) async {
-    final ids = await _db.itineraryDao.insertJourneyLegs(tripId, legs);
+    final ids = await _db.itineraryDao.insertJourneyLegs(
+      tripId,
+      legs,
+      alternativeId: alternativeId,
+    );
     if (group) {
       var i = 0;
       while (i < legs.length) {
@@ -165,6 +172,7 @@ class TripRepository {
   }) => _db.groupDao.copyGroup(groupId, day: day, alternativeId: alternativeId);
   Future<void> dissolveGroup(int groupId) =>
       _db.groupDao.dissolveGroup(groupId);
+  Future<void> deleteGroup(int groupId) => _db.groupDao.deleteGroup(groupId);
   Future<void> setGroupLabel(int groupId, String? label) =>
       _db.groupDao.setGroupLabel(groupId, label);
   Future<void> setGroupCollapsed(int groupId, bool collapsed) =>

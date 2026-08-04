@@ -2192,6 +2192,12 @@ abstract class AppLocalizations {
   /// **'Grouping'**
   String get grouping;
 
+  /// No description provided for @groupActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Group actions'**
+  String get groupActions;
+
   /// No description provided for @groupWithNext.
   ///
   /// In en, this message translates to:
@@ -2221,6 +2227,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ungroup'**
   String get groupUngroup;
+
+  /// No description provided for @groupDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete group'**
+  String get groupDelete;
+
+  /// No description provided for @groupDeleteQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this group?'**
+  String get groupDeleteQuestion;
+
+  /// No description provided for @groupDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its entries and all their expenses are deleted with it, including the shared ones. To keep the entries, ungroup instead.'**
+  String get groupDeleteBody;
 
   /// No description provided for @groupNameLabel.
   ///

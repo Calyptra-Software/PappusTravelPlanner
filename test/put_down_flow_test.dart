@@ -28,7 +28,9 @@ import 'currency_fixture.dart';
 /// what is being carried, and what the screen says about where it landed.
 ///
 /// The picking-up half is one call into [ItemClipboard] from the item sheet, so
-/// these tests hold the entry directly and drive what happens next.
+/// these tests hold the entry directly and drive what happens next. A whole
+/// *group* is the exception: it is picked up on this screen too, from the menu
+/// on the run's own label, which the last tests here drive end to end.
 ///
 /// The repository is a real in-memory database — the writes under test are the
 /// DAO's — but every stream the screen watches is overridden with a plain
@@ -374,5 +376,78 @@ void main() {
     expect((await readItem(leg2)).date, day2);
     expect((await readItem(leg1)).groupId, groupId);
     expect(find.textContaining('Moving:'), findsNothing);
+  });
+
+  testWidgets('the run label picks the whole run up, without opening an entry', (
+    tester,
+  ) async {
+    final leg1 = await addItem('Leg 1', date: day1, sortOrder: 0);
+    final leg2 = await addItem('Leg 2', date: day1, sortOrder: 1);
+    await addItem('Market', date: day2, sortOrder: 0);
+    final groupId = await db.groupDao.groupItems(leg1, leg2);
+    await db.groupDao.setGroupLabel(groupId, 'Rail pass');
+
+    await pumpDetail(tester);
+    await tester.tap(find.byTooltip('Group actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move group to…'));
+    await tester.pumpAndSettle();
+
+    // The run is in hand — named as the group, not as the leg it was tapped on
+    // — and every day now offers to take it.
+    expect(find.text('Moving: Rail pass'), findsOneWidget);
+    expect(putDownChips(), findsNWidgets(2));
+  });
+
+  testWidgets('deleting a run from its label takes its entries and its fare', (
+    tester,
+  ) async {
+    final leg1 = await addItem('Leg 1', date: day1, sortOrder: 0);
+    final leg2 = await addItem('Leg 2', date: day1, sortOrder: 1);
+    final market = await addItem('Market', date: day2, sortOrder: 0);
+    final groupId = await db.groupDao.groupItems(leg1, leg2);
+    await db.costDao.addCost(
+      CostsCompanion.insert(
+        groupId: Value(groupId),
+        amountMinor: 5000,
+        currency: eurId,
+        reason: 'Ticket',
+      ),
+    );
+
+    await pumpDetail(tester);
+    await tester.tap(find.byTooltip('Group actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete group'));
+    await tester.pumpAndSettle();
+    // Destructive, so it asks first — and says what goes with it.
+    expect(find.text('Delete this group?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    final left = await readItems();
+    expect(left.map((i) => i.id), [market]);
+    // The shared ticket went with the run rather than being rescued onto a leg
+    // that no longer exists.
+    final costs = await (db.select(
+      db.costs,
+    )..where((c) => c.groupId.equals(groupId))).get();
+    expect(costs, isEmpty);
+  });
+
+  testWidgets('a run can be left standing at the confirmation', (tester) async {
+    final leg1 = await addItem('Leg 1', date: day1, sortOrder: 0);
+    final leg2 = await addItem('Leg 2', date: day1, sortOrder: 1);
+    await db.groupDao.groupItems(leg1, leg2);
+
+    await pumpDetail(tester);
+    await tester.tap(find.byTooltip('Group actions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete group'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect((await readItems()).length, 2);
   });
 }

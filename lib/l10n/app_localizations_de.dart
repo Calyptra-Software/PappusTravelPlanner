@@ -1233,6 +1233,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get grouping => 'Gruppierung';
 
   @override
+  String get groupActions => 'Aktionen für die Gruppe';
+
+  @override
   String get groupWithNext => 'Mit nächstem Element gruppieren';
 
   @override
@@ -1246,6 +1249,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get groupUngroup => 'Gruppierung aufheben';
+
+  @override
+  String get groupDelete => 'Gruppe löschen';
+
+  @override
+  String get groupDeleteQuestion => 'Diese Gruppe löschen?';
+
+  @override
+  String get groupDeleteBody =>
+      'Ihre Einträge und alle zugehörigen Ausgaben werden mitgelöscht, auch die gemeinsamen. Um die Einträge zu behalten, hebe stattdessen die Gruppierung auf.';
 
   @override
   String get groupNameLabel => 'Gruppenname (optional)';

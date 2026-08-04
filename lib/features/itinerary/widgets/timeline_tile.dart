@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/money_format.dart';
+import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
+import '../application/item_clipboard.dart';
 import '../application/transport_mode_providers.dart';
 import 'item_times.dart';
 import 'live_refresh_button.dart';
@@ -123,7 +125,7 @@ class TimelineTile extends StatelessWidget {
             accent: accent,
             isFirst: isFirstInGroup,
             isLast: isLastInGroup,
-            label: group!.label,
+            group: group!,
             groupCosts: groupCosts,
             onShowJourney: onShowJourney,
             localeName: localeName,
@@ -154,7 +156,7 @@ class _GroupBand extends StatelessWidget {
     required this.accent,
     required this.isFirst,
     required this.isLast,
-    required this.label,
+    required this.group,
     required this.groupCosts,
     required this.onShowJourney,
     required this.localeName,
@@ -165,7 +167,7 @@ class _GroupBand extends StatelessWidget {
   final Color accent;
   final bool isFirst;
   final bool isLast;
-  final String? label;
+  final ItemGroup group;
   final List<Cost> groupCosts;
   final VoidCallback? onShowJourney;
   final String localeName;
@@ -200,8 +202,8 @@ class _GroupBand extends StatelessWidget {
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      (label != null && label!.isNotEmpty)
-                          ? label!
+                      (group.label != null && group.label!.isNotEmpty)
+                          ? group.label!
                           : l10n.groupDefaultLabel,
                       style: theme.textTheme.labelLarge?.copyWith(
                         color: accent,
@@ -221,6 +223,11 @@ class _GroupBand extends StatelessWidget {
                       color: accent,
                       onPressed: show,
                     ),
+                  // What is done to the run as a whole belongs on the run's own
+                  // label, not inside one member's edit form: a shared-ticket
+                  // journey is moved and deleted as one thing, and the label is
+                  // the only place that names that thing.
+                  _GroupMenu(group: group, accent: accent),
                 ],
               ),
             ),
@@ -239,6 +246,94 @@ class _GroupBand extends StatelessWidget {
     );
   }
 }
+
+/// What can be done to a whole group, on the group's own label.
+///
+/// Moving and copying were reachable before, but only from the *grouping*
+/// section of one member's edit form — a place you go to change that entry,
+/// and which says nothing about the run standing above it. Deleting a run had
+/// no path at all: an entry deleted one at a time takes the group with it only
+/// once it is down to its last member, and the shared ticket is rescued onto
+/// whichever leg happened to be left, so a journey removed leg by leg left its
+/// fare behind, attached to nothing anyone had meant to keep.
+///
+/// The three acts share one shape with the rest of the app: move and copy pick
+/// the run up into [itemClipboardProvider] and let the destination name itself
+/// (the run stays where it is, dimmed, until it is put down), while the
+/// destructive one asks first.
+class _GroupMenu extends ConsumerWidget {
+  const _GroupMenu({required this.group, required this.accent});
+
+  final ItemGroup group;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return PopupMenuButton<_GroupAction>(
+      tooltip: l10n.groupActions,
+      icon: const Icon(Icons.more_vert, size: 20),
+      iconColor: accent,
+      onSelected: (action) async {
+        final repo = ref.read(repositoryProvider);
+        switch (action) {
+          case _GroupAction.move:
+          case _GroupAction.copy:
+            ref
+                .read(itemClipboardProvider.notifier)
+                .hold(
+                  HeldGroup(
+                    tripId: group.tripId,
+                    groupId: group.id,
+                    mode: action == _GroupAction.move
+                        ? HoldMode.move
+                        : HoldMode.copy,
+                  ),
+                );
+          case _GroupAction.delete:
+            if (await _confirmDelete(context, l10n)) {
+              await repo.deleteGroup(group.id);
+            }
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(value: _GroupAction.move, child: Text(l10n.groupMoveTo)),
+        PopupMenuItem(value: _GroupAction.copy, child: Text(l10n.groupCopyTo)),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: _GroupAction.delete,
+          child: Text(l10n.groupDelete),
+        ),
+      ],
+    );
+  }
+
+  Future<bool> _confirmDelete(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.groupDeleteQuestion),
+        content: Text(l10n.groupDeleteBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+}
+
+enum _GroupAction { move, copy, delete }
 
 /// Left gutter with a continuous rail line and a node marker.
 class _Gutter extends StatelessWidget {

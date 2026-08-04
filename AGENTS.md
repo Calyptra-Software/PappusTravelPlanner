@@ -245,11 +245,27 @@ UI (features/*/presentation, *widgets)
   **copy takes the plan, not the money** — a cost records a payment that happened once, and
   duplicating it would silently invent money inside the settle-up. The clipboard's `Held` is a
   sealed type: a `HeldItem` *or* a `HeldGroup`, so a whole shared-ticket run rides along too —
-  picked up from a grouped entry's sheet, dimmed member-by-member (`isHeldItem`), landing via
+  dimmed member-by-member (`isHeldItem`), landing via
   `GroupDao.moveGroup` (members travel together, still grouped, the shared cost riding along
   since it hangs off the surviving group) / `copyGroup` (a fresh bundle, no costs). The copy
   fields live once, in `copyItemPlan` (`data/database/item_copy.dart`), shared by every
   duplicate so a new column reaches them all at once.
+- **What is done to a whole run is done on the run's label** — the ⋮ menu on the group band
+  (`_GroupMenu` in `widgets/timeline_tile.dart`): *Move group to…*, *Copy group to…*,
+  *Delete group*. The unit an act applies to is the unit it is offered on, the way a decision's
+  acts sit on the decision card; a member's edit form is where that *entry* is changed, and it
+  cannot name the run standing above it. So move and copy live here **only**: the grouping
+  section of a member's sheet keeps just what is about that entry's own membership — group with
+  next, remove from group, ungroup, and the group's name — and no longer carries a second,
+  buried way to relocate the run. Delete could not have lived there in any case, since it
+  deletes the entry the form is editing. It is also the act that had no path
+  at all: deleting a run entry by entry dissolves the group only once one member is left, and
+  `_dissolveIfDegenerate` then *rescues* the shared ticket onto that survivor, so a journey
+  removed leg by leg left its fare behind on the last leg standing. `GroupDao.deleteGroup` is
+  therefore the mirror image of `dissolveGroup`: the entries go, and with them the money —
+  each member's own costs by cascade, the shared one with the group — since a ticket is not
+  still paid for once every leg it covered is gone. Destructive, so it asks first, and the
+  question says that ungrouping is the way to keep the entries.
 - **Duplicating an *option* is in-place, not clipboard** (`AlternativeDao.duplicateAlternative`,
   the decision card's ⋮ menu): the "same as B, but…" third option. It adds an **unchosen** copy
   of the option on screen (the set already has its one chosen), cloning the option's internal
@@ -327,6 +343,17 @@ UI (features/*/presentation, *widgets)
   legs into one, so a group already *is* a journey and the button sits on the run's label
   (`TimelineTile.onShowJourney`); an imported leg standing alone carries its own. Each leg
   card hosts the leg's own `LiveRefreshButton` — still one tap, one leg.
+- **A connection is planned where the button that searched for it plans everything else.**
+  The search is reached from the item form, which is reached from a day's *Add transport* or
+  from one **option's**, so the option rides along — `ItemFormSheet` → `showConnectionSearchSheet`
+  → `importJourney` → `insertJourney(alternativeId:)`. Without it the run was written loose on
+  the day *behind* the decision, which is not merely the wrong slot: an option's entries count
+  toward the trip only while it is chosen, so a connection searched into an option nobody picks
+  was quietly charging the trip for it. Inside an option the legs take **one** sequence of sort
+  orders rather than one per day, because a branch item's date does not place it in a day (it
+  follows its decision, see `buildDayBlocks`) — an overnight run stays one ordered run in the
+  option. Only an *added* run is told where it goes: replacing one keeps the place the old legs
+  held, in an option or on the day, which is why the two are asserted mutually exclusive.
 - **An imported leg keeps the stops it calls at**, encoded in `ItineraryItems.stopovers` by
   `data/database/stopovers.dart` (a JSON list of name + departure minutes + a day offset for
   a night train's small hours). A column, not a table: they belong to exactly one leg, are

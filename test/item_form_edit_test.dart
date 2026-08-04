@@ -15,6 +15,7 @@ import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
+import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
@@ -300,6 +301,46 @@ void main() {
       await tester.pump();
 
       expect(find.text('Search online'), findsNothing);
+    });
+  });
+
+  group('where the search plans what it finds', () {
+    /// The add-transport form as one of the two buttons opens it: the day's, or
+    /// an option's.
+    Future<void> openNewLeg(WidgetTester tester, {int? alternativeId}) async {
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(
+            tripId: 1,
+            kind: ItemKind.transport,
+            day: day,
+            alternativeId: alternativeId,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Search online'));
+      await tester.pumpAndSettle();
+    }
+
+    int? searchSheetAlternativeId(WidgetTester tester) => tester
+        .widget<ConnectionSearchSheet>(find.byType(ConnectionSearchSheet))
+        .alternativeId;
+
+    testWidgets('opened from an option, into that option', (tester) async {
+      // The option this form was reached from, carried through to the import —
+      // a connection is not a different kind of entry from a hand-written leg,
+      // so it lands where the same button plans one. Without this the run was
+      // appended to the day *behind* the decision.
+      await openNewLeg(tester, alternativeId: 5);
+
+      expect(searchSheetAlternativeId(tester), 5);
+    });
+
+    testWidgets('opened from a day, onto the day', (tester) async {
+      await openNewLeg(tester);
+
+      expect(searchSheetAlternativeId(tester), isNull);
     });
   });
 }

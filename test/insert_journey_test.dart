@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
@@ -147,4 +148,48 @@ void main() {
     );
     expect((await read(ids.single)).sourceTripId, 'trip-42');
   });
+
+  test(
+    'into an option the legs land in it, after what it already holds',
+    () async {
+      final tripId = await makeTrip();
+      // An option with one entry already planned in it.
+      final walk = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: dayA,
+          kind: ItemKind.place,
+        ),
+      );
+      final setId = await db.alternativeDao.createSetFromItem(walk);
+      final branchId =
+          (await db.alternativeDao.watchBranchesForTrip(tripId).first)[setId]!
+              .first
+              .id;
+      // A loose entry on the same day, whose ordering space the option's does not
+      // share — appending to the day would have put the run after this instead.
+      await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: dayA,
+          kind: ItemKind.place,
+          sortOrder: const Value(9),
+        ),
+      );
+
+      final ids = await repo.insertJourney(
+        tripId,
+        companions(tripId, [leg(dayA), leg(dayB)]),
+        alternativeId: branchId,
+      );
+
+      final items = [for (final id in ids) await read(id)];
+      expect(items.every((i) => i.alternativeId == branchId), isTrue);
+      // One sequence, not one per day: inside an option a leg's date does not
+      // place it in a day, so an overnight run stays a single ordered run after
+      // the entry the option already held.
+      expect(items.map((i) => i.sortOrder), [1, 2]);
+      expect(items.map((i) => i.date), [dayA, dayB]);
+    },
+  );
 }

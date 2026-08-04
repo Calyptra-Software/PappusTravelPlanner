@@ -72,10 +72,15 @@ class TransportSearchController {
   /// searched again for another date — which is how a routine's plan becomes a
   /// real, refreshable connection when a trip is stamped out of it. Unlike
   /// `sourceTripId` they say nothing about *when*, so they survive a copy.
+  ///
+  /// [alternativeId] plans the run inside one option of a decision instead of on
+  /// the day: the search is reached from the *same* add-transport button the
+  /// option offers for a hand-written leg, so it has to land in the same place.
   Future<List<int>> importJourney(
     int tripId,
     JourneyOption journey, {
     bool group = true,
+    int? alternativeId,
     String? fromPlaceId,
     String? toPlaceId,
     DateTime? rebaseFrom,
@@ -117,7 +122,12 @@ class TransportSearchController {
     ];
     return _ref
         .read(repositoryProvider)
-        .insertJourney(tripId, companions, group: group);
+        .insertJourney(
+          tripId,
+          companions,
+          group: group,
+          alternativeId: alternativeId,
+        );
   }
 
   /// Asks the timetable about a run the trip already holds: the same endpoints

@@ -62,18 +62,41 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
   /// crossing midnight lands its later legs on the following day. Returns the new
   /// row ids in input order. One transaction, so an import never lands half its
   /// legs. Grouping the legs (a shared ticket) is the caller's next step.
+  ///
+  /// With [alternativeId] the run is planned inside that option of a decision
+  /// instead of on the day — the search reached from an option's *Add transport*.
+  /// The legs then order themselves in **one** sequence rather than one per day:
+  /// a branch item's date never places it in a day (it follows the decision it
+  /// belongs to, see `buildDayBlocks`), and its `sortOrder` orders it within its
+  /// branch, so an overnight journey stays a single run of legs in the option.
   Future<List<int>> insertJourneyLegs(
     int tripId,
-    List<ItineraryItemsCompanion> legs,
-  ) {
+    List<ItineraryItemsCompanion> legs, {
+    int? alternativeId,
+  }) {
     return transaction(() async {
       final ids = <int>[];
       final nextByDate = <DateTime, int>{};
+      var nextInBranch = alternativeId == null
+          ? 0
+          : await nextSortOrderInAlternative(alternativeId);
       for (final leg in legs) {
         final date = leg.date.value;
-        final sortOrder = nextByDate[date] ?? await nextSortOrder(tripId, date);
-        nextByDate[date] = sortOrder + 1;
-        ids.add(await addItem(leg.copyWith(sortOrder: Value(sortOrder))));
+        final int sortOrder;
+        if (alternativeId != null) {
+          sortOrder = nextInBranch++;
+        } else {
+          sortOrder = nextByDate[date] ?? await nextSortOrder(tripId, date);
+          nextByDate[date] = sortOrder + 1;
+        }
+        ids.add(
+          await addItem(
+            leg.copyWith(
+              sortOrder: Value(sortOrder),
+              alternativeId: Value(alternativeId),
+            ),
+          ),
+        );
       }
       return ids;
     });

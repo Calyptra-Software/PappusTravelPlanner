@@ -28,12 +28,14 @@ class _FakeController extends TransportSearchController {
   int imports = 0;
   DateTime? lastRebaseFrom;
   DateTime? lastRebaseTo;
+  int? lastAlternativeId;
 
   @override
   Future<List<int>> importJourney(
     int tripId,
     JourneyOption journey, {
     bool group = true,
+    int? alternativeId,
     String? fromPlaceId,
     String? toPlaceId,
     DateTime? rebaseFrom,
@@ -46,6 +48,7 @@ class _FakeController extends TransportSearchController {
     imports++;
     lastRebaseFrom = rebaseFrom;
     lastRebaseTo = rebaseTo;
+    lastAlternativeId = alternativeId;
     return const [];
   }
 }
@@ -220,7 +223,11 @@ void main() {
     suggestions = const [_place];
   });
 
-  Future<void> pump(WidgetTester tester, {bool intoRoutine = false}) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    bool intoRoutine = false,
+    int? alternativeId,
+  }) async {
     // A tall surface so the whole results list — both paging rows included —
     // is laid out; the default test window is shorter than the sheet.
     tester.view.physicalSize = const Size(1000, 2400);
@@ -254,6 +261,7 @@ void main() {
                       ? DateTime(1970, 1, 1)
                       : DateTime(2026, 7, 27),
                   intoRoutine: intoRoutine,
+                  alternativeId: alternativeId,
                 ),
                 child: const Text('open'),
               ),
@@ -485,8 +493,9 @@ void main() {
   Future<void> searchFrom(
     WidgetTester tester, {
     bool intoRoutine = false,
+    int? alternativeId,
   }) async {
-    await pump(tester, intoRoutine: intoRoutine);
+    await pump(tester, intoRoutine: intoRoutine, alternativeId: alternativeId);
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await pickInto(tester, 'From');
@@ -976,5 +985,35 @@ void main() {
       expect(fake.lastRebaseFrom, isNull);
       expect(fake.lastRebaseTo, isNull);
     });
+  });
+
+  testWidgets('a connection searched from an option is planned in it', (
+    tester,
+  ) async {
+    search.outrunsTransit = true;
+    await searchFrom(tester, alternativeId: 7);
+
+    await tester.tap(find.text('12m'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add to day'));
+    await tester.pumpAndSettle();
+
+    // The option the search was opened from, not the day behind it: an imported
+    // connection is planned where the same button plans a hand-written leg.
+    expect(fake.lastAlternativeId, 7);
+  });
+
+  testWidgets('a connection searched from a day is planned on the day', (
+    tester,
+  ) async {
+    search.outrunsTransit = true;
+    await searchFrom(tester);
+
+    await tester.tap(find.text('12m'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add to day'));
+    await tester.pumpAndSettle();
+
+    expect(fake.lastAlternativeId, isNull);
   });
 }

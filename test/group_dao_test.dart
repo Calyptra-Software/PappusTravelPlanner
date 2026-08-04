@@ -211,6 +211,50 @@ void main() {
     expect(await db.costDao.watchCostsForTrip(tripId).first, isEmpty);
   });
 
+  test('deleteGroup removes the run, its members and all their costs', () async {
+    final tripId = await makeTrip();
+    final a = await makeItem(tripId, sortOrder: 0);
+    final b = await makeItem(tripId, sortOrder: 1);
+    final loose = await makeItem(tripId, sortOrder: 2);
+    final groupId = await db.groupDao.groupItems(a, b);
+    await db.costDao.addCost(
+      CostsCompanion.insert(
+        groupId: Value(groupId),
+        amountMinor: 5000,
+        currency: eurId,
+        reason: 'Ticket',
+      ),
+    );
+    await db.costDao.addCost(
+      CostsCompanion.insert(
+        itemId: Value(a),
+        amountMinor: 300,
+        currency: eurId,
+        reason: 'Seat',
+      ),
+    );
+    await db.costDao.addCost(
+      CostsCompanion.insert(
+        itemId: Value(loose),
+        amountMinor: 900,
+        currency: eurId,
+        reason: 'Bus',
+      ),
+    );
+
+    await db.groupDao.deleteGroup(groupId);
+
+    // The whole run is gone — and, unlike dissolving it, so is its money: the
+    // shared ticket cascades with the group, a member's own cost with the member.
+    expect(await readItem(a), isNull);
+    expect(await readItem(b), isNull);
+    expect(await db.groupDao.watchGroupsForTrip(tripId).first, isEmpty);
+    final costs = await db.costDao.watchCostsForTrip(tripId).first;
+    expect(costs.single.itemId, loose);
+    // Nothing outside the group is touched.
+    expect((await readItem(loose))?.id, loose);
+  });
+
   test('setGroupLabel stores a trimmed label and clears on empty', () async {
     final tripId = await makeTrip();
     final a = await makeItem(tripId, sortOrder: 0);

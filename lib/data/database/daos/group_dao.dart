@@ -94,6 +94,24 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     });
   }
 
+  /// Deletes a whole group **and its members**: the run goes, not just the
+  /// bundle around it.
+  ///
+  /// The opposite of [dissolveGroup], which keeps the entries and only drops the
+  /// bundling — so the money is treated the opposite way too. There it is
+  /// rescued onto the first surviving member; here nothing survives to carry it,
+  /// so each member's own costs cascade with it and the shared cost cascades
+  /// with the group. That is the honest reading: a ticket is not still paid for
+  /// once every leg it covered has been deleted.
+  Future<void> deleteGroup(int groupId) {
+    return transaction(() async {
+      await (delete(
+        itineraryItems,
+      )..where((i) => i.groupId.equals(groupId))).go();
+      await (delete(itemGroups)..where((g) => g.id.equals(groupId))).go();
+    });
+  }
+
   /// Deletes an itinerary item, then tidies its former group the same way
   /// [removeFromGroup] does: a group left with fewer than two members is
   /// dissolved, its shared costs preserved on the remaining member (or dropped

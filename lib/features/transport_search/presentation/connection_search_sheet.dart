@@ -23,6 +23,9 @@ import 'search_options_sheet.dart';
 /// [replacing] turns it into the search *for a run the trip already holds*: the
 /// form opens on that run's endpoints, day and departure, and what is taken
 /// replaces those legs instead of being added beside them.
+///
+/// [alternativeId] plans what is found inside one option of a decision rather
+/// than on the day itself.
 Future<bool> showConnectionSearchSheet(
   BuildContext context, {
   required int tripId,
@@ -30,6 +33,7 @@ Future<bool> showConnectionSearchSheet(
   bool intoRoutine = false,
   PlannedJourney? replacing,
   int? departFromMinutes,
+  int? alternativeId,
 }) async {
   final imported = await showModalBottomSheet<bool>(
     context: context,
@@ -42,6 +46,7 @@ Future<bool> showConnectionSearchSheet(
       intoRoutine: intoRoutine,
       replacing: replacing,
       departFromMinutes: departFromMinutes,
+      alternativeId: alternativeId,
     ),
   );
   return imported ?? false;
@@ -58,9 +63,14 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
     this.intoRoutine = false,
     this.replacing,
     this.departFromMinutes,
+    this.alternativeId,
     // A routine's plan is searched on a real date and laid back onto the plan;
     // a run being replaced already sits on a real date. Nothing does both.
-  }) : assert(replacing == null || !intoRoutine);
+  }) : assert(replacing == null || !intoRoutine),
+       // Replacing swaps the legs of a run that already sits somewhere — in an
+       // option or on the day — and keeps that place; only an *added* run needs
+       // to be told where it goes.
+       assert(replacing == null || alternativeId == null);
 
   final int tripId;
 
@@ -96,6 +106,12 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
   /// arrived rather than the one the plan hoped for
   /// (`departureSeedMinutes`).
   final int? departFromMinutes;
+
+  /// The option of a decision the found run is planned in, or null for the day
+  /// itself. A search reached from an option's *Add transport* has to land where
+  /// that button plans everything else it offers — an imported connection is not
+  /// a different kind of entry from a hand-written leg.
+  final int? alternativeId;
 
   @override
   ConsumerState<ConnectionSearchSheet> createState() =>
@@ -294,6 +310,9 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
         await controller.importJourney(
           widget.tripId,
           option,
+          // Into the option the search was opened from, when it was — not onto
+          // the day behind it.
+          alternativeId: widget.alternativeId,
           // The ids this search was issued against, kept so the same journey
           // can be looked up again for another date.
           fromPlaceId: _from?.queryId,

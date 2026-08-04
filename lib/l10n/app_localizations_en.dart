@@ -1227,6 +1227,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get grouping => 'Grouping';
 
   @override
+  String get groupActions => 'Group actions';
+
+  @override
   String get groupWithNext => 'Group with next item';
 
   @override
@@ -1240,6 +1243,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupUngroup => 'Ungroup';
+
+  @override
+  String get groupDelete => 'Delete group';
+
+  @override
+  String get groupDeleteQuestion => 'Delete this group?';
+
+  @override
+  String get groupDeleteBody =>
+      'Its entries and all their expenses are deleted with it, including the shared ones. To keep the entries, ungroup instead.';
 
   @override
   String get groupNameLabel => 'Group name (optional)';
