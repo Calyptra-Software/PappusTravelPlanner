@@ -80,10 +80,12 @@ class JourneyDetailsSheet extends ConsumerWidget {
     // `ConnectionSearchSheet.intoRoutine`'s job, not this button's.
     final isRoutine =
         ref.watch(tripProvider(tripId)).value?.kind == TripKind.routine;
-    // The run as something searchable: one journey, since these items are one
-    // group (or one lone leg), and none at all when its ends can no longer be
-    // addressed to the router — a hand-entered leg is offered nothing.
-    final planned = isRoutine ? null : plannedJourneys(journey).firstOrNull;
+    // The run as the search form takes it: one journey, since these items are
+    // one group (or one lone leg). Not `plannedJourneys`, which would drop a run
+    // whose ends carry no id — hand-entered, or an import that lost one. Here
+    // that is not a dead end but the form's first question, answered by picking
+    // the station from the geocoder.
+    final planned = isRoutine ? null : plannedJourneyOf(journey);
     return JourneySheet(
       view: journeyViewFromItems(journey, modesById),
       title: title,
@@ -92,6 +94,11 @@ class JourneyDetailsSheet extends ConsumerWidget {
       onFindConnection: planned == null
           ? null
           : () => _findConnection(context, planned),
+      // A run of one leg has nothing to offer per leg that the journey's own
+      // button does not already do to the same row.
+      onFindLegConnection: planned == null || planned.legs.length < 2
+          ? null
+          : (leg) => _findLegConnection(context, journey, leg),
     );
   }
 
@@ -107,16 +114,46 @@ class JourneyDetailsSheet extends ConsumerWidget {
   /// lone leg's id along with them.
   Future<void> _findConnection(
     BuildContext context,
-    PlannedJourney journey,
-  ) async {
+    PlannedJourney journey, {
+    int? departFromMinutes,
+  }) async {
     final navigator = Navigator.of(context);
     final replaced = await showConnectionSearchSheet(
       context,
       tripId: tripId,
       day: journey.date,
       replacing: journey,
+      departFromMinutes: departFromMinutes,
     );
     if (replaced && navigator.canPop()) navigator.pop();
+  }
+
+  /// The same search for **one leg** of the run, from that leg's own card.
+  ///
+  /// The unit is the leg because that is what a journey already under way asks
+  /// about: the first train came in twenty late, or the change turns out to be
+  /// six minutes and not sixteen, and it is the *rest* of the journey that has to
+  /// move — not the part already travelled. Only this leg's row is replaced (its
+  /// slot, its group, the run's ticket all survive), and what is found may itself
+  /// be several legs: a missed connection is often a different route.
+  ///
+  /// The time it starts from is where the traveller really is, not where the plan
+  /// says: `departureSeedMinutes` prefers the previous leg's *actual* arrival, so
+  /// a delay already recorded on the leg before does not have to be typed in again
+  /// here. It is a seed on a form, not a decision — the field says so and can be
+  /// changed.
+  Future<void> _findLegConnection(
+    BuildContext context,
+    List<ItineraryItem> run,
+    ItineraryItem leg,
+  ) async {
+    final journey = plannedJourneyOf([leg]);
+    if (journey == null) return;
+    await _findConnection(
+      context,
+      journey,
+      departFromMinutes: departureSeedMinutes(run, leg),
+    );
   }
 }
 

@@ -228,4 +228,78 @@ void main() {
     expect(saved.groupId, 1);
     expect(saved.stopovers, refreshed);
   });
+  group('replacing a leg with a searched connection', () {
+    /// A leg typed in by hand: station names, no ids, nothing imported.
+    Future<ItineraryItem> manualLeg({int? groupId}) async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          groupId: Value(groupId),
+          startMinutes: const Value(452),
+          endMinutes: const Value(468),
+          mode: const Value(6),
+          fromLocation: const Value('Rahlstedt'),
+          toLocation: const Value('Hamburg Hbf'),
+        ),
+      );
+      return reread(id);
+    }
+
+    Future<void> open(WidgetTester tester, ItineraryItem leg) async {
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: leg),
+          items: [leg],
+        ),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('a leg on its own offers the search', (tester) async {
+      // How a hand-entered leg becomes a real connection: the search opens on
+      // the names it carries, and what is taken replaces it.
+      await open(tester, await manualLeg());
+
+      expect(find.text('Search online'), findsOneWidget);
+    });
+
+    testWidgets('a leg inside a run does not', (tester) async {
+      // A grouped leg is one leg of a journey, and a journey is looked up whole
+      // from the sheet on its label.
+      await db
+          .into(db.itemGroups)
+          .insert(
+            ItemGroupsCompanion.insert(
+              tripId: 1,
+              label: const Value('Hinfahrt'),
+            ),
+          );
+      await open(tester, await manualLeg(groupId: 1));
+
+      expect(find.text('Search online'), findsNothing);
+    });
+
+    testWidgets('a place is offered no timetable at all', (tester) async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.place,
+          title: const Value('Museum'),
+        ),
+      );
+      final place = await reread(id);
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.place, existing: place),
+          items: [place],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Search online'), findsNothing);
+    });
+  });
 }

@@ -158,12 +158,46 @@ UI (features/*/presentation, *widgets)
   will do instead, today there is a bike to carry — so the day, the time, arrive-by, the vias
   and the search options are all still the user's, and a list of departures is what a
   traveller picks from. Per journey rather than per trip, because that is the unit the
-  question arises in, and on any trip, not only one stamped out of a routine. Two runs are
-  offered nothing: one whose ends can no longer be addressed to the router, and a **routine's**
-  own plan, whose days are ordinals anchored on `kRoutineAnchorDay` — searching those would ask
-  the timetable about 1970. A routine imports the other way round, searching a real date and
+  question arises in, and on any trip, not only one stamped out of a routine.
+- **A run with no addressable ends is a question for the form, not a dead end.** What the
+  routine flow may not do — invent an endpoint for a query nobody is watching — the user may
+  do deliberately, so a **hand-entered** run is offered the search too: the form shows the
+  names the legs carry ("Rahlstedt") as hints on the empty From/To fields, hands each to the
+  place picker as its opening query, and keeps *Search* disabled until both are named. The app
+  still never turns a name into an address by itself; it just puts the geocoder's answers one
+  tap away, and which Rahlstedt it is stays the user's call. Hence two readings of one run:
+  `plannedJourneys` (filtered by `canLookUp`) is what the unattended flow may search, while
+  `plannedJourneyOf` is the run the user is looking at. The replacement's outer legs then keep
+  the ids **this** search used, not the ones the old run carried, since either end may have
+  been repicked outright (`replaceJourney`'s `fromPlaceId`/`toPlaceId`, defaulting to the
+  journey's own for the routine flow). The one run offered nothing is a **routine's** own plan,
+  whose days are ordinals anchored on `kRoutineAnchorDay` — searching those would ask the
+  timetable about 1970. A routine imports the other way round, searching a real date and
   rebasing the answer (`ConnectionSearchSheet.intoRoutine`), which is why the two flags are
   mutually exclusive.
+- **One leg of a run is searched from its own card**, beside its live-times button
+  (`JourneySheet.onFindLegConnection`). The label above answers "is there a better way to make
+  this journey"; a leg answers the question a journey already under way raises — the train in
+  came twenty late and the connection is gone, or the change turns out to be six minutes and
+  not sixteen — where what has to move is the *rest* of the journey and not the part already
+  travelled. Only that leg's row is replaced: its slot, its group and the run's shared ticket
+  survive, and what comes back may itself be several legs, since a missed connection is often a
+  different route (`replaceJourneyLegs` widens the day for it). An inner leg carries no
+  endpoint id — those live on a run's outer legs — so it goes out on the **coordinates** every
+  imported leg keeps. The time it starts from is where the traveller really is:
+  `departureSeedMinutes` prefers the **previous leg's actual arrival** when one has been
+  recorded (late or early — standing there sooner means an earlier connection is catchable), so
+  a delay already entered on the leg before does not have to be typed again. Not across a date
+  boundary or an overnight leg, where minutes-since-midnight would seed the wrong day. It seeds
+  a form the user reads and can change; nothing here decides anything. Offered only on a run of
+  two or more legs, since on one leg it would be the journey's own button twice.
+- **A lone leg is looked up from its own sheet**, not the journey sheet: the item form's
+  "search online" button, which for a *new* leg adds a run and on an **existing** one replaces
+  it (`ItemFormSheet._canReplaceLeg`). That is the entry point a hand-entered leg has, since
+  `hasStandaloneJourney` deliberately keeps the journey sheet off a leg the import never
+  touched. It is offered only on a leg standing **on its own**: a grouped leg is one leg of a
+  run, and a run is replaced whole from the label above it, so replacing one leg of a shared
+  ticket from inside an edit form is not a thing the app does.
 - **Single `ItineraryItems` table** holds both places and transport legs, discriminated by
   `ItemKind`; kind-specific columns are nullable. This lets a day read as one ordered timeline
   (place → transport → place). Items are ordered by `date` → `sortOrder` → `startMinutes`.

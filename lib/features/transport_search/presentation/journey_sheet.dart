@@ -27,6 +27,7 @@ class JourneySheet extends StatelessWidget {
     this.cancelLabel,
     this.onConfirm,
     this.onFindConnection,
+    this.onFindLegConnection,
   });
 
   final JourneyView view;
@@ -61,6 +62,17 @@ class JourneySheet extends StatelessWidget {
   /// (there is nothing to replace yet), and on a run whose ends can no longer be
   /// addressed to the router.
   final VoidCallback? onFindConnection;
+
+  /// Asks the timetable about **one leg** of the run, offered on the leg's own
+  /// card. The whole-journey button above answers "is there a better way to make
+  /// this trip"; this one answers the question a journey in progress actually
+  /// raises — the train in was late and the connection is gone, or the change is
+  /// twenty minutes when it needed to be forty. Only that leg is replaced; the
+  /// rest of the run, its bundle and its ticket stay as they are.
+  ///
+  /// Null on a preview, on a routine, and on a run of one leg — where the
+  /// journey's own button already is the leg's.
+  final ValueChanged<ItineraryItem>? onFindLegConnection;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +160,7 @@ class JourneySheet extends StatelessWidget {
                       leg: leg,
                       modesById: modesById,
                       item: itemsById[leg.itemId],
+                      onFindConnection: onFindLegConnection,
                     ),
                     ChangeRow() => _ChangeTile(
                       change: row,
@@ -214,13 +227,22 @@ class JourneySheet extends StatelessWidget {
 /// the line of the stop it belongs to, which is the only place it means
 /// anything.
 class _LegCard extends StatelessWidget {
-  const _LegCard({required this.leg, required this.modesById, this.item});
+  const _LegCard({
+    required this.leg,
+    required this.modesById,
+    this.item,
+    this.onFindConnection,
+  });
 
   final ViewLeg leg;
   final Map<int, TransportModeRow> modesById;
 
   /// The itinerary row this leg is, when the trip holds it.
   final ItineraryItem? item;
+
+  /// Searches the timetable for this leg alone — see
+  /// [JourneySheet.onFindLegConnection].
+  final ValueChanged<ItineraryItem>? onFindConnection;
 
   @override
   Widget build(BuildContext context) {
@@ -281,6 +303,14 @@ class _LegCard extends StatelessWidget {
                   // The leg's own live times, asked for from the leg they belong
                   // to. Only a stored leg has anything to refresh into.
                   if (refreshable) LiveRefreshButton(item: item!),
+                  // …and its own search, for when it is this leg that has to
+                  // change rather than the whole journey.
+                  if (item != null && onFindConnection != null)
+                    IconButton(
+                      icon: const Icon(Icons.travel_explore),
+                      tooltip: l10n.connectionsFindForLeg,
+                      onPressed: () => onFindConnection!(item!),
+                    ),
                 ],
               ),
             ),

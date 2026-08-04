@@ -10,6 +10,7 @@ import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../trips/planned_journey.dart';
 import '../../trips/widgets/routine_day_field.dart';
 import '../../costs/application/cost_providers.dart';
 import '../../costs/application/currency_providers.dart';
@@ -102,6 +103,21 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   bool get _isTransport => widget.kind == ItemKind.transport;
   bool get _isEditing => widget.existing != null;
 
+  /// Whether the leg being edited can be **replaced** by a searched connection —
+  /// which is how a hand-entered leg, carrying only station names, becomes a real
+  /// one: the form's search opens on those names and the user picks the stations.
+  ///
+  /// Only a leg standing on its own. A grouped leg is one leg of a run, and a run
+  /// is looked up whole, from the journey sheet on its label — replacing one leg
+  /// of a shared-ticket journey from inside an edit form would be a different
+  /// (and unasked-for) operation. A routine is excluded because its days are
+  /// ordinals, not dates: nothing runs on day one of a plan.
+  bool get _canReplaceLeg =>
+      _isEditing &&
+      _isTransport &&
+      !widget.intoRoutine &&
+      widget.existing!.groupId == null;
+
   @override
   void initState() {
     super.initState();
@@ -179,6 +195,26 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
         field(end, _isTransport ? l10n.timeArrives : l10n.timeEnd),
       ],
     );
+  }
+
+  /// Opens the connection search: to *add* a run when a new leg is being planned,
+  /// and to **replace** this one when an existing leg is open.
+  ///
+  /// Either way the form behind it has nothing left to do afterwards — a new leg
+  /// would be an empty duplicate of what the search wrote, and an edited one no
+  /// longer exists — so it closes with the search.
+  Future<void> _searchOnline() async {
+    final navigator = Navigator.of(context);
+    final existing = widget.existing;
+    final replacing = _canReplaceLeg ? plannedJourneyOf([existing!]) : null;
+    final done = await showConnectionSearchSheet(
+      context,
+      tripId: widget.tripId,
+      day: _date,
+      intoRoutine: widget.intoRoutine,
+      replacing: replacing,
+    );
+    if (done && mounted) navigator.pop();
   }
 
   Future<void> _save() async {
@@ -366,23 +402,12 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(heading, style: theme.textTheme.titleLarge),
-                if (_isTransport && !_isEditing) ...[
+                if (_isTransport && (!_isEditing || _canReplaceLeg)) ...[
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.travel_explore),
                     label: Text(l10n.connectionSearchOnline),
-                    onPressed: () async {
-                      final navigator = Navigator.of(context);
-                      final imported = await showConnectionSearchSheet(
-                        context,
-                        tripId: widget.tripId,
-                        day: _date,
-                        intoRoutine: widget.intoRoutine,
-                      );
-                      // The search imported and closed itself; close the manual
-                      // form too so we don't leave an empty leg behind it.
-                      if (imported && mounted) navigator.pop();
-                    },
+                    onPressed: _searchOnline,
                   ),
                 ],
                 const SizedBox(height: 16),

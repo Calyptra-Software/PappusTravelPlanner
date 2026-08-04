@@ -29,6 +29,7 @@ Future<bool> showConnectionSearchSheet(
   required DateTime day,
   bool intoRoutine = false,
   PlannedJourney? replacing,
+  int? departFromMinutes,
 }) async {
   final imported = await showModalBottomSheet<bool>(
     context: context,
@@ -40,6 +41,7 @@ Future<bool> showConnectionSearchSheet(
       day: day,
       intoRoutine: intoRoutine,
       replacing: replacing,
+      departFromMinutes: departFromMinutes,
     ),
   );
   return imported ?? false;
@@ -55,6 +57,7 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
     required this.day,
     this.intoRoutine = false,
     this.replacing,
+    this.departFromMinutes,
     // A routine's plan is searched on a real date and laid back onto the plan;
     // a run being replaced already sits on a real date. Nothing does both.
   }) : assert(replacing == null || !intoRoutine);
@@ -86,6 +89,13 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
   /// and not a single silent request: "the 07:32 was cancelled" and "I'll go in
   /// after lunch instead" are the same act.
   final PlannedJourney? replacing;
+
+  /// The minute to open the time field on, when the run being replaced is not the
+  /// best answer to "from when?" — one leg of a journey whose previous leg came in
+  /// late, where the traveller is standing on the platform at the time they really
+  /// arrived rather than the one the plan hoped for
+  /// (`departureSeedMinutes`).
+  final int? departFromMinutes;
 
   @override
   ConsumerState<ConnectionSearchSheet> createState() =>
@@ -123,6 +133,18 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
 
   bool get _canSearch => _from != null && _to != null;
 
+  /// What the run being replaced called its ends, for an end that has no
+  /// [TransportPlace] to fill the field with — a hand-entered leg knows
+  /// "Rahlstedt" and nothing more.
+  ///
+  /// A name is not an address: the router takes stop ids and coordinates, and
+  /// turning one into the other is the geocoder's job, with the user choosing
+  /// between the answers. So the name is shown on the field and handed to the
+  /// picker as its opening query — the station is a tap away, and which
+  /// Rahlstedt it is stays the user's call.
+  String? _fromHint;
+  String? _toHint;
+
   @override
   void initState() {
     super.initState();
@@ -133,7 +155,9 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     if (replacing == null) return;
     _from = replacing.fromPlace;
     _to = replacing.toPlace;
-    final minutes = replacing.departMinutes;
+    if (_from == null) _fromHint = replacing.fromLocation;
+    if (_to == null) _toHint = replacing.toLocation;
+    final minutes = widget.departFromMinutes ?? replacing.departMinutes;
     if (minutes != null) {
       _time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     }
@@ -147,13 +171,15 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   Future<void> _pick({
     required ValueSetter<TransportPlace> onPicked,
     bool stopsOnly = false,
+    String? initialQuery,
   }) async {
     final place = await showModalBottomSheet<TransportPlace>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => _PlacePickerSheet(stopsOnly: stopsOnly),
+      builder: (_) =>
+          _PlacePickerSheet(stopsOnly: stopsOnly, initialQuery: initialQuery),
     );
     if (place != null && mounted) setState(() => onPicked(place));
   }
@@ -258,6 +284,11 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
           journey: replacing,
           option: option,
           labels: labels,
+          // The ends *this* search used, not the ones the old run carried: they
+          // may well be different — a hand-entered run had none at all, and the
+          // form lets either end be changed outright.
+          fromPlaceId: _from?.queryId,
+          toPlaceId: _to?.queryId,
         );
       } else {
         await controller.importJourney(
@@ -329,7 +360,14 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
               icon: Icons.trip_origin,
               label: l10n.connectionFrom,
               place: _from,
-              onTap: () => _pick(onPicked: (place) => _from = place),
+              hint: _fromHint,
+              onTap: () => _pick(
+                initialQuery: _fromHint,
+                onPicked: (place) {
+                  _from = place;
+                  _fromHint = null;
+                },
+              ),
             ),
             for (var i = 0; i < _vias.length; i++) ...[
               _EndpointTile(
@@ -365,7 +403,14 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
               icon: Icons.place_outlined,
               label: l10n.connectionTo,
               place: _to,
-              onTap: () => _pick(onPicked: (place) => _to = place),
+              hint: _toHint,
+              onTap: () => _pick(
+                initialQuery: _toHint,
+                onPicked: (place) {
+                  _to = place;
+                  _toHint = null;
+                },
+              ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -644,6 +689,7 @@ class _EndpointTile extends StatelessWidget {
     required this.label,
     required this.place,
     required this.onTap,
+    this.hint,
     this.onClear,
     this.clearTooltip,
   });
@@ -651,6 +697,11 @@ class _EndpointTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final TransportPlace? place;
+
+  /// What the journey being replaced calls this end, when no [place] has been
+  /// picked for it yet. Shown greyed under the field's own label, so the form
+  /// says which station is being asked about without pretending it is settled.
+  final String? hint;
   final VoidCallback onTap;
 
   /// Offered only where the place is optional — a journey always has two ends,
@@ -661,10 +712,22 @@ class _EndpointTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final place = this.place;
+    final theme = Theme.of(context);
+    final hint = this.hint;
     return ListTile(
       leading: Icon(icon),
       title: Text(place?.name ?? label),
-      subtitle: place?.area == null ? null : Text(place!.area!),
+      subtitle: switch ((place, hint)) {
+        (final p?, _) when p.area != null => Text(p.area!),
+        (null, final h?) when h.trim().isNotEmpty => Text(
+          h,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        _ => null,
+      },
       trailing: onClear == null
           ? null
           : IconButton(
@@ -780,7 +843,7 @@ class _ErrorRow extends StatelessWidget {
 
 /// A place picker: a search field over live geocode suggestions.
 class _PlacePickerSheet extends ConsumerStatefulWidget {
-  const _PlacePickerSheet({this.stopsOnly = false});
+  const _PlacePickerSheet({this.stopsOnly = false, this.initialQuery});
 
   /// Whether addresses and points of interest are dropped from the suggestions,
   /// leaving stations alone. Set for a via stop, which the routing service
@@ -788,13 +851,19 @@ class _PlacePickerSheet extends ConsumerStatefulWidget {
   /// only be picked and then fail.
   final bool stopsOnly;
 
+  /// What to search for on opening — the name a leg being replaced gives this
+  /// end. The field is editable as ever: it is a starting point, not an answer.
+  final String? initialQuery;
+
   @override
   ConsumerState<_PlacePickerSheet> createState() => _PlacePickerSheetState();
 }
 
 class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
-  final _controller = TextEditingController();
-  String _query = '';
+  late final _controller = TextEditingController(
+    text: widget.initialQuery ?? '',
+  );
+  late String _query = widget.initialQuery ?? '';
 
   @override
   void dispose() {

@@ -168,11 +168,20 @@ class TransportSearchController {
   /// runs on the day it was copied onto: same endpoints, same time of day, but
   /// the service the timetable actually has — and so a `sourceTripId` that the
   /// live-times refresh can use.
+  ///
+  /// [fromPlaceId] / [toPlaceId] are the ids this particular search was issued
+  /// against, kept on the replacement's outer legs so it can be searched again in
+  /// turn. They default to the ones [journey] carried, which is right when it was
+  /// searched by its own ends — the routine flow, which issues the query itself.
+  /// The search *form* passes its own: an end there can be repicked outright, and
+  /// a hand-entered run had no id to inherit in the first place.
   Future<void> replaceJourney(
     int tripId, {
     required PlannedJourney journey,
     required JourneyOption option,
     required JourneyImportLabels labels,
+    String? fromPlaceId,
+    String? toPlaceId,
   }) async {
     final modes = await _modes();
     final legs = journeyToLegs(
@@ -190,8 +199,10 @@ class TransportSearchController {
           leg,
           // The endpoints are the ones this journey was searched by, so the
           // result stays searchable in turn.
-          fromPlaceId: index == 0 ? journey.fromPlaceId : null,
-          toPlaceId: index == legs.length - 1 ? journey.toPlaceId : null,
+          fromPlaceId: index == 0 ? (fromPlaceId ?? journey.fromPlaceId) : null,
+          toPlaceId: index == legs.length - 1
+              ? (toPlaceId ?? journey.toPlaceId)
+              : null,
         ),
     ];
     await _ref

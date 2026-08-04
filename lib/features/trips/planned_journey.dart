@@ -90,15 +90,63 @@ class PlannedJourney {
 
   List<int> get legIds => [for (final leg in legs) leg.id];
 
-  /// Whether this run holds enough to be searched again: both endpoints as the
-  /// router addresses them, and a departure time to search around.
+  /// Whether this run holds enough to be searched **unattended**: both endpoints
+  /// as the router addresses them, and a departure time to search around.
   ///
-  /// A hand-entered leg has neither ids nor coordinates, so it is left exactly
-  /// as it is — copied as a plan. That is the honest outcome: there is nothing
-  /// to re-issue a query with, and guessing one from the station's name would
-  /// be a different journey wearing the same label.
+  /// A hand-entered leg has neither ids nor coordinates, so the routine flow
+  /// leaves it exactly as it is — copied as a plan. That is the honest outcome
+  /// for a query nobody is watching: there is nothing to re-issue it with, and
+  /// guessing one from the station's name would be a different journey wearing
+  /// the same label. With the user present it is not the end of the matter —
+  /// see [plannedJourneyOf], which hands the same run to the search *form*, where
+  /// naming the station is a question the user answers.
   bool get canLookUp =>
       fromPlaceId != null && toPlaceId != null && departMinutes != null;
+}
+
+/// When the traveller will really be standing at [leg]'s departure stop, in
+/// minutes since midnight — the minute a search for *that leg alone* should start
+/// from, or null when the plan is the best answer there is.
+///
+/// It is the **actual arrival of the leg before it**, when one has been recorded:
+/// that is the case this exists for. The train in was twenty late, the connection
+/// is gone, and the question is what runs from here now — asking that from the
+/// planned departure would offer a train that has already left. An early arrival
+/// counts the same way round: standing there sooner means an earlier connection is
+/// catchable.
+///
+/// Null unless [run] holds the leg directly before it on the **same day**, ending
+/// without crossing midnight: comparing minutes across a date boundary is how a
+/// 23:58 arrival becomes an early morning, and a seed is not worth a wrong day.
+/// It only seeds a form the user can see and change — nothing here decides
+/// anything.
+int? departureSeedMinutes(List<ItineraryItem> run, ItineraryItem leg) {
+  final legs = _runLegs(run);
+  final index = legs.indexWhere((item) => item.id == leg.id);
+  if (index <= 0) return null;
+  final before = legs[index - 1];
+  if (before.spansNextDay || !_sameDay(before.date, leg.date)) return null;
+  return before.actualEndMinutes;
+}
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+/// The run [items] form as one journey, addressable or not — null when there is
+/// no transport leg among them to make a journey of.
+///
+/// The difference from [plannedJourneys] is who is asking. That one answers "what
+/// can be searched **without** anyone present", and so drops a run whose ends
+/// cannot be handed to the router: the routine flow fires those queries by
+/// itself, and a query it had to invent an endpoint for would silently be a
+/// different journey. This one answers "what run is the user looking at", for
+/// the search *form*, where an end with no id is simply an end the user is about
+/// to pick — from the geocoder, seeing the candidates. A hand-entered leg has
+/// only station names, and a name is not an address; the fix for that is a human
+/// choosing, not the app guessing.
+PlannedJourney? plannedJourneyOf(List<ItineraryItem> items) {
+  final journeys = _runs(items);
+  return journeys.length == 1 ? journeys.single : null;
 }
 
 /// The journeys in [items] that could be looked up again, in day order.
@@ -107,18 +155,29 @@ class PlannedJourney {
 /// id the search used, or failing that by the coordinates the leg carries —
 /// and it is grouped exactly as the import grouped it. Items in an option that was not chosen are skipped by the
 /// caller, not here: this only answers what the plan *holds*.
-List<PlannedJourney> plannedJourneys(List<ItineraryItem> items) {
-  final transport =
-      [
-        for (final item in items)
-          if (item.kind == ItemKind.transport) item,
-      ]..sort((a, b) {
-        final byDate = a.date.compareTo(b.date);
-        if (byDate != 0) return byDate;
-        final byOrder = a.sortOrder.compareTo(b.sortOrder);
-        if (byOrder != 0) return byOrder;
-        return (a.startMinutes ?? 0).compareTo(b.startMinutes ?? 0);
-      });
+List<PlannedJourney> plannedJourneys(List<ItineraryItem> items) => [
+  for (final journey in _runs(items))
+    if (journey.canLookUp) journey,
+];
+
+/// The transport legs among [items], in the order a day is read: by date, then
+/// the manual ordering, then the clock. The one place that order is written down.
+List<ItineraryItem> _runLegs(List<ItineraryItem> items) =>
+    [
+      for (final item in items)
+        if (item.kind == ItemKind.transport) item,
+    ]..sort((a, b) {
+      final byDate = a.date.compareTo(b.date);
+      if (byDate != 0) return byDate;
+      final byOrder = a.sortOrder.compareTo(b.sortOrder);
+      if (byOrder != 0) return byOrder;
+      return (a.startMinutes ?? 0).compareTo(b.startMinutes ?? 0);
+    });
+
+/// Every run in [items], in day order then by departure, whether or not it can be
+/// looked up: a group is one run, a loose transport leg is one of its own.
+List<PlannedJourney> _runs(List<ItineraryItem> items) {
+  final transport = _runLegs(items);
 
   final grouped = <int, List<ItineraryItem>>{};
   final standalone = <PlannedJourney>[];
@@ -131,18 +190,13 @@ List<PlannedJourney> plannedJourneys(List<ItineraryItem> items) {
     }
   }
 
-  final journeys =
-      [
-        ...standalone,
-        for (final entry in grouped.entries)
-          PlannedJourney(groupId: entry.key, legs: entry.value),
-      ]..sort((a, b) {
-        final byDate = a.date.compareTo(b.date);
-        if (byDate != 0) return byDate;
-        return (a.departMinutes ?? 0).compareTo(b.departMinutes ?? 0);
-      });
   return [
-    for (final journey in journeys)
-      if (journey.canLookUp) journey,
-  ];
+    ...standalone,
+    for (final entry in grouped.entries)
+      PlannedJourney(groupId: entry.key, legs: entry.value),
+  ]..sort((a, b) {
+    final byDate = a.date.compareTo(b.date);
+    if (byDate != 0) return byDate;
+    return (a.departMinutes ?? 0).compareTo(b.departMinutes ?? 0);
+  });
 }

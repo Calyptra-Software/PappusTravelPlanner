@@ -274,4 +274,107 @@ void main() {
       expect(journey.fromPlace?.name, 'Home');
     });
   });
+  group('the run the user is looking at', () {
+    test('a hand-entered run is one, though it cannot be searched alone', () {
+      final items = [leg(start: 452, from: 'Rahlstedt', to: 'Hamburg Hbf')];
+
+      // Nothing to issue a query with, so the unattended flow passes it over…
+      expect(plannedJourneys(items), isEmpty);
+      // …while the form takes it: naming the ends is what the form is for.
+      final journey = plannedJourneyOf(items);
+      expect(journey, isNotNull);
+      expect(journey!.fromLocation, 'Rahlstedt');
+      expect(journey.fromPlace, isNull);
+      expect(journey.canLookUp, isFalse);
+    });
+
+    test('two runs are not one journey', () {
+      // The sheet asks about the items of one group or one lone leg; anything
+      // else has no single answer, and guessing which would replace the wrong
+      // legs.
+      expect(
+        plannedJourneyOf([
+          leg(start: 452, groupId: 1),
+          leg(start: 1080, groupId: 2),
+        ]),
+        isNull,
+      );
+    });
+
+    test('a day of places is no journey', () {
+      expect(plannedJourneyOf([leg(kind: ItemKind.place, start: 540)]), isNull);
+    });
+  });
+  group('when the traveller is really standing there', () {
+    /// A leg of one run, with the arrival that was actually recorded on it.
+    ItineraryItem inRun({
+      required int sortOrder,
+      required int start,
+      int? actualEnd,
+      bool spansNextDay = false,
+      DateTime? date,
+    }) => ItineraryItem(
+      id: nextId++,
+      tripId: 1,
+      date: date ?? DateTime(2026, 8, 3),
+      sortOrder: sortOrder,
+      kind: ItemKind.transport,
+      groupId: 4,
+      startMinutes: start,
+      actualEndMinutes: actualEnd,
+      spansNextDay: spansNextDay,
+    );
+
+    test('the leg before it arriving late is what the next leg asks from', () {
+      final first = inRun(sortOrder: 0, start: 452, actualEnd: 484);
+      final second = inRun(sortOrder: 1, start: 488);
+
+      // 08:04, not the 08:08 the plan hoped for.
+      expect(departureSeedMinutes([first, second], second), 484);
+    });
+
+    test('an early arrival counts the same way round', () {
+      final first = inRun(sortOrder: 0, start: 452, actualEnd: 462);
+      final second = inRun(sortOrder: 1, start: 488);
+
+      // Standing there sooner means an earlier connection is catchable.
+      expect(departureSeedMinutes([first, second], second), 462);
+    });
+
+    test('the first leg of a run has nothing before it', () {
+      final first = inRun(sortOrder: 0, start: 452, actualEnd: 484);
+      final second = inRun(sortOrder: 1, start: 488);
+      expect(departureSeedMinutes([first, second], first), isNull);
+    });
+
+    test('nothing recorded, nothing to prefer over the plan', () {
+      final first = inRun(sortOrder: 0, start: 452);
+      final second = inRun(sortOrder: 1, start: 488);
+      expect(departureSeedMinutes([first, second], second), isNull);
+    });
+
+    test('an overnight leg before it is not compared across midnight', () {
+      // 23:58 running five late is 00:03 the *next* day; read as minutes on this
+      // one it would seed a search for the small hours of the wrong day.
+      final first = inRun(
+        sortOrder: 0,
+        start: 1430,
+        actualEnd: 8,
+        spansNextDay: true,
+      );
+      final second = inRun(sortOrder: 1, start: 30);
+      expect(departureSeedMinutes([first, second], second), isNull);
+    });
+
+    test('a leg on another day is not the leg before it either', () {
+      final first = inRun(
+        sortOrder: 0,
+        start: 452,
+        actualEnd: 484,
+        date: DateTime(2026, 8, 2),
+      );
+      final second = inRun(sortOrder: 1, start: 488);
+      expect(departureSeedMinutes([first, second], second), isNull);
+    });
+  });
 }

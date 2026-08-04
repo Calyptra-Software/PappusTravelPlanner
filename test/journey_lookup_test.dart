@@ -14,7 +14,8 @@ import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
-import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
+import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart'
+    show geocodeProvider, transportSearchProvider;
 import 'package:travelplanner/features/transport_search/data/motis_client.dart'
     show TransportSearchException;
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
@@ -41,6 +42,7 @@ void main() {
   late TripRepository repo;
   late SharedPreferences prefs;
   late _FakeSearch search;
+  late List<TransportPlace> suggestions;
 
   final day = DateTime(2026, 8, 3);
 
@@ -50,6 +52,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     search = _FakeSearch();
+    suggestions = const [
+      TransportPlace(
+        id: 'stop:picked',
+        name: 'Rahlstedt',
+        kind: PlaceKind.stop,
+        area: 'Hamburg',
+      ),
+    ];
     await db.tripDao.createTrip(
       TripsCompanion.insert(
         title: 'Büro',
@@ -86,6 +96,12 @@ void main() {
         fromPlaceId: addressable
             ? const Value('de-DELFI_rahlstedt')
             : const Value.absent(),
+        // An import gives every leg its ends' coordinates, inner ones included —
+        // which is what lets a middle leg be searched on its own.
+        fromLat: addressable ? const Value(53.60486) : const Value.absent(),
+        fromLon: addressable ? const Value(10.154396) : const Value.absent(),
+        toLat: addressable ? const Value(53.552734) : const Value.absent(),
+        toLon: addressable ? const Value(10.006909) : const Value.absent(),
       ),
     );
     await db.itineraryDao.addItem(
@@ -102,6 +118,10 @@ void main() {
         toPlaceId: addressable
             ? const Value('de-DELFI_schlump')
             : const Value.absent(),
+        fromLat: addressable ? const Value(53.554108) : const Value.absent(),
+        fromLon: addressable ? const Value(10.005139) : const Value.absent(),
+        toLat: addressable ? const Value(53.56785) : const Value.absent(),
+        toLon: addressable ? const Value(9.969647) : const Value.absent(),
       ),
     );
     return (db.select(
@@ -126,6 +146,7 @@ void main() {
           repositoryProvider.overrideWithValue(repo),
           sharedPreferencesProvider.overrideWithValue(prefs),
           transportSearchProvider.overrideWithValue(search),
+          geocodeProvider.overrideWith((ref, query) async => suggestions),
           // Drift's `.watch()` never resolves under fake-async, so what the
           // sheet reads arrives as a plain stream; what it *writes* goes to the
           // real database, which is what the assertions read back.
@@ -170,12 +191,69 @@ void main() {
     expect(findButton(), findsOneWidget);
   });
 
-  testWidgets('a hand-entered run is offered nothing', (tester) async {
+  testWidgets('a hand-entered run is offered the search too', (tester) async {
     await pump(tester, await plan(addressable: false));
 
-    // No ids, no coordinates: there is nothing to re-issue a query with, and
-    // guessing one from a station's name would be a different journey.
-    expect(findButton(), findsNothing);
+    // It has no ids and no coordinates, so nothing can be *searched* for it
+    // unattended — but with the user here, naming the station is a question the
+    // form can ask.
+    expect(findButton(), findsOneWidget);
+  });
+
+  testWidgets('a hand-entered run opens the form on its station names', (
+    tester,
+  ) async {
+    await pump(tester, await plan(addressable: false));
+    await tester.tap(findButton());
+    await tester.pumpAndSettle();
+
+    // The names the legs carry, shown as hints under the empty fields — the app
+    // has not turned either into an address behind the user's back.
+    expect(inForm(find.text('Rahlstedt')), findsOneWidget);
+    expect(inForm(find.text('Schlump')), findsOneWidget);
+    expect(inForm(find.text('From')), findsOneWidget);
+    expect(inForm(find.text('To')), findsOneWidget);
+    // And nothing is searchable until they are named.
+    final searchButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Search'),
+    );
+    expect(searchButton.onPressed, isNull);
+  });
+
+  testWidgets('naming both ends makes a hand-entered run searchable', (
+    tester,
+  ) async {
+    await pump(tester, await plan(addressable: false));
+    await tester.tap(findButton());
+    await tester.pumpAndSettle();
+
+    // The picker opens already searching for what the leg called the stop, so
+    // the station is one tap away rather than typed again.
+    await tester.tap(inForm(find.text('From')));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(TextField, 'Rahlstedt'), findsOneWidget);
+    await tester.tap(find.text('Rahlstedt').last);
+    await tester.pumpAndSettle();
+    await tester.tap(inForm(find.text('To')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Rahlstedt').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+    expect(search.lastFrom, 'stop:picked');
+
+    await tester.tap(inForm(find.textContaining('RB81')).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Use this'));
+    await tester.pumpAndSettle();
+
+    final after = await legs();
+    expect(after, hasLength(1));
+    expect(after.single.sourceTripId, 'run-1');
+    // The ids **this** search used, not the run's (which had none at all).
+    expect(after.single.fromPlaceId, 'stop:picked');
+    expect(after.single.toPlaceId, 'stop:picked');
   });
 
   testWidgets('a routine is not looked up here', (tester) async {
@@ -184,6 +262,93 @@ void main() {
     // A routine's days are ordinals anchored in 1970; no timetable answers for
     // them. Importing into a routine searches a real date and rebases instead.
     expect(findButton(), findsNothing);
+  });
+
+  group('one leg of a run', () {
+    /// The search button on a leg card, keyed by the leg's own row. There is one
+    /// per leg, plus the journey's own at the foot of the sheet.
+    Finder legButtons() => find.descendant(
+      of: find.byType(Card),
+      matching: find.byIcon(Icons.travel_explore),
+    );
+
+    testWidgets('every leg of a run carries its own search', (tester) async {
+      await pump(tester, await plan());
+
+      expect(legButtons(), findsNWidgets(2));
+    });
+
+    testWidgets('a run of one leg does not: its journey is the leg', (
+      tester,
+    ) async {
+      final items = await plan();
+      await pump(tester, [items.first]);
+
+      expect(findButton(), findsOneWidget);
+      expect(legButtons(), findsNothing);
+    });
+
+    testWidgets('searching one leg leaves the rest of the run alone', (
+      tester,
+    ) async {
+      final items = await plan();
+      await pump(tester, items);
+
+      // The second leg — the connection after the change.
+      await tester.tap(legButtons().last);
+      await tester.pumpAndSettle();
+
+      // Opened on that leg's own ends and its own departure (08:08), not the
+      // journey's.
+      expect(inForm(find.text('Hauptbahnhof Nord')), findsOneWidget);
+      expect(inForm(find.text('8:08 AM')), findsOneWidget);
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      // The inner end has no id of its own — ids live on a run's outer legs —
+      // so it goes out as the coordinates the leg carries.
+      expect(search.lastFrom, '53.554108,10.005139');
+      expect(search.lastTo, 'de-DELFI_schlump');
+
+      await tester.tap(inForm(find.textContaining('RB81')).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Use this'));
+      await tester.pumpAndSettle();
+
+      final after = await legs();
+      // Two legs still: the first one untouched, the second one replaced.
+      expect(after, hasLength(2));
+      final kept = after.firstWhere((l) => l.id == items.first.id);
+      expect(kept.title, 'RB81', reason: 'the leg already travelled is intact');
+      expect(kept.sourceTripId, isNull);
+      final swapped = after.firstWhere((l) => l.id != items.first.id);
+      expect(swapped.sourceTripId, 'run-1');
+      expect(swapped.groupId, 1, reason: 'still one journey, one ticket');
+      expect(swapped.sortOrder, items.last.sortOrder, reason: 'same slot');
+    });
+
+    testWidgets('a delay recorded on the leg before seeds the departure', (
+      tester,
+    ) async {
+      final items = await plan();
+      // The RB81 came in at 08:04 instead of 07:48: the 08:08 was missed, and
+      // the question is what runs from here now.
+      await db.itineraryDao.setLiveTimes(
+        items.first.id,
+        actualStart: 466,
+        actualEnd: 484,
+        stopovers: null,
+      );
+      final current = await legs();
+      await pump(tester, current);
+
+      await tester.tap(legButtons().last);
+      await tester.pumpAndSettle();
+
+      // 08:04, where the traveller really is — not the 08:08 the plan hoped for.
+      expect(inForm(find.text('8:04 AM')), findsOneWidget);
+      expect(inForm(find.text('8:08 AM')), findsNothing);
+    });
   });
 
   /// Opens the search for this run and runs it, which is now two taps: the
