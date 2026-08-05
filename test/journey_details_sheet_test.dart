@@ -264,15 +264,18 @@ void main() {
           home: Scaffold(
             body: SizedBox(
               width: 400,
-              child: TimelineTile(
-                item: _journey.first,
+              child: GroupRunTile(
+                groupId: 1,
+                label: null,
+                items: _journey,
                 accent: Colors.teal,
-                onTap: () {},
-                costs: const [],
+                costsByItem: const {},
+                groupCosts: const [],
                 localeName: 'en',
+                onTapItem: (_) {},
                 onTapCost: (_) {},
-                group: const ItemGroup(id: 1, tripId: 7, collapsed: false),
-                isFirstInGroup: true,
+                onReorder: (_, _, _) {},
+                held: null,
                 onShowJourney: () => opened++,
               ),
             ),

@@ -58,6 +58,7 @@ class AlternativeCard extends ConsumerStatefulWidget {
     required this.onAddTransport,
     required this.onQuickAddPlace,
     required this.onReorderBranch,
+    required this.onReorderRun,
     required this.held,
     required this.onPutDown,
     this.dragHandle,
@@ -88,9 +89,14 @@ class AlternativeCard extends ConsumerStatefulWidget {
   /// form step — the "you just arrived here" chip, as on the day itself.
   final void Function(int alternativeId, String location) onQuickAddPlace;
 
-  /// Reorders the items *within* one branch.
-  final void Function(List<ItineraryItem> items, int oldIndex, int newIndex)
+  /// Reorders the blocks *within* one branch — its loose entries and its runs,
+  /// each taking one slot, exactly as a day is ordered.
+  final void Function(List<DayBlock> blocks, int oldIndex, int newIndex)
   onReorderBranch;
+
+  /// Reorders the members of one run, inside the band that draws it.
+  final void Function(List<ItineraryItem> runItems, int oldIndex, int newIndex)
+  onReorderRun;
 
   /// Handle for dragging the whole decision to another slot in its day.
   final Widget? dragHandle;
@@ -193,28 +199,6 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
 
   String _branchLabel(AppLocalizations l10n, int index) =>
       optionLabel(l10n, _branches[index], index);
-
-  /// The journey an entry inside an option belongs to, read within that option:
-  /// a group never straddles two options, so its whole run is on this page.
-  VoidCallback? _showJourney(
-    BuildContext context,
-    List<ItineraryItem> items,
-    ItineraryItem item,
-    int? groupId,
-  ) {
-    if (groupId != null) {
-      if (!groupHasJourney(items, groupId)) return null;
-      return () => showJourneyDetailsSheet(
-        context,
-        tripId: item.tripId,
-        groupId: groupId,
-        title: widget.groups[groupId]?.label,
-      );
-    }
-    if (!hasStandaloneJourney(item)) return null;
-    return () =>
-        showJourneyDetailsSheet(context, tripId: item.tripId, itemId: item.id);
-  }
 
   /// Interpolates between the two pages the swipe is between, so the card's
   /// height follows the finger rather than jumping when the page settles.
@@ -460,6 +444,9 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
   Widget _branchPage(ThemeData theme, AppLocalizations l10n, int index) {
     final branch = _branches[index];
     final items = widget.block.itemsByBranch[branch.id] ?? const [];
+    // The option is a list of blocks, like a day: a loose entry is one slot, a
+    // whole run is one — so a shared-ticket journey drags as one thing here too.
+    final blocks = buildItemBlocks(items);
     final isChosen = branch.chosen;
     final book = ref.watch(currencyBookProvider);
     final totals = sumByCurrency(_branchCosts(items), book);
@@ -474,7 +461,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     // option may draw a line).
     final nowMinutes = widget.nowMinutes;
     final marker = (isChosen && nowMinutes != null)
-        ? nowMarkerForItems(items, nowMinutes)
+        ? nowMarker(blocks, nowMinutes)
         : null;
     final nowIndex = (marker != null && marker.happening) ? marker.index : -1;
     final lineIndex = (widget.isNow && marker != null && !marker.happening)
@@ -539,53 +526,79 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             buildDefaultDragHandles: false,
-            itemCount: items.length,
+            itemCount: blocks.length,
             onReorderItem: (oldIndex, newIndex) =>
-                widget.onReorderBranch(items, oldIndex, newIndex),
+                widget.onReorderBranch(blocks, oldIndex, newIndex),
             itemBuilder: (context, i) {
-              final item = items[i];
-              final groupId = item.groupId;
-              return TimelineTile(
-                key: ValueKey(item.id),
-                onShowJourney: _showJourney(context, items, item, groupId),
-                item: item,
-                accent: widget.accent,
-                onTap: () => widget.onTapItem(item),
-                costs: widget.costsByItem[item.id] ?? const [],
-                group: groupId == null ? null : widget.groups[groupId],
-                isFirstInGroup: startsGroupRun(
-                  item,
-                  i == 0 ? null : items[i - 1],
-                ),
-                isLastInGroup: endsGroupRun(
-                  item,
-                  i == items.length - 1 ? null : items[i + 1],
-                ),
-                groupCosts: groupId == null
-                    ? const []
-                    : (widget.costsByGroup[groupId] ?? const []),
-                localeName: widget.localeName,
-                onTapCost: widget.onTapCost,
-                isNow: i == nowIndex,
-                nowLineMinutes: i == lineIndex ? nowMinutes : null,
-                held: isHeldItem(widget.held, item),
-                dragHandle: ReorderableDragStartListener(
-                  index: i,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.drag_indicator,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+              final dragHandle = ReorderableDragStartListener(
+                index: i,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               );
+              return switch (blocks[i]) {
+                ItemBlock(:final item) => TimelineTile(
+                  key: ValueKey('item-${item.id}'),
+                  onShowJourney: hasStandaloneJourney(item)
+                      ? () => showJourneyDetailsSheet(
+                          context,
+                          tripId: item.tripId,
+                          itemId: item.id,
+                        )
+                      : null,
+                  item: item,
+                  accent: widget.accent,
+                  onTap: () => widget.onTapItem(item),
+                  costs: widget.costsByItem[item.id] ?? const [],
+                  localeName: widget.localeName,
+                  onTapCost: widget.onTapCost,
+                  isNow: i == nowIndex,
+                  nowLineMinutes: i == lineIndex ? nowMinutes : null,
+                  held: isHeldItem(widget.held, item),
+                  dragHandle: dragHandle,
+                ),
+                GroupBlock(:final groupId, :final items) => GroupRunTile(
+                  key: ValueKey('group-$groupId'),
+                  groupId: groupId,
+                  label: widget.groups[groupId]?.label,
+                  items: items,
+                  accent: widget.accent,
+                  costsByItem: widget.costsByItem,
+                  groupCosts: widget.costsByGroup[groupId] ?? const [],
+                  localeName: widget.localeName,
+                  onTapItem: widget.onTapItem,
+                  onTapCost: widget.onTapCost,
+                  onReorder: widget.onReorderRun,
+                  held: widget.held,
+                  onShowJourney: groupHasJourney(items, groupId)
+                      ? () => showJourneyDetailsSheet(
+                          context,
+                          tripId: items.first.tripId,
+                          groupId: groupId,
+                          title: widget.groups[groupId]?.label,
+                        )
+                      : null,
+                  dragHandle: dragHandle,
+                  isNow: i == nowIndex,
+                  // Only the chosen option can be under way, which [marker] has
+                  // already decided — an option not taken must not mark a leg as
+                  // happening inside its own band either.
+                  nowMinutes: marker == null ? null : nowMinutes,
+                  nowLineMinutes: i == lineIndex ? nowMinutes : null,
+                ),
+                // An option holds entries, never a decision of its own.
+                DecisionBlock() => const SizedBox.shrink(),
+              };
             },
           ),
         // Everything the option has left to say is behind us — which reads as the
         // decision still being under way only when something untimed is left in
         // it, so the line closes the option off rather than being dropped.
-        if (lineIndex == items.length && items.isNotEmpty)
+        if (lineIndex == blocks.length && blocks.isNotEmpty)
           NowLine(minutes: nowMinutes!),
         Padding(
           padding: const EdgeInsets.only(left: 40, top: 4, bottom: 4),

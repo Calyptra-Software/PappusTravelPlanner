@@ -14,6 +14,7 @@ void main() {
     required String title,
     required int sortOrder,
     int? alternativeId,
+    int? groupId,
     DateTime? date,
   }) => ItineraryItem(
     id: id,
@@ -24,6 +25,7 @@ void main() {
     spansNextDay: false,
     title: title,
     alternativeId: alternativeId,
+    groupId: groupId,
   );
 
   AlternativeSet set(int id, {required int sortOrder, DateTime? date}) =>
@@ -200,5 +202,97 @@ void main() {
     );
 
     expect(itemsInDayOrder(blocks).map((i) => i.title), ['Beach']);
+  });
+
+  test('a whole run is one block, in the slot its first member holds', () {
+    final blocks = buildDayBlocks(
+      day: day,
+      items: [
+        item(1, title: 'Breakfast', sortOrder: 0),
+        item(2, title: 'Leg 1', sortOrder: 1, groupId: 7),
+        item(3, title: 'Leg 2', sortOrder: 2, groupId: 7),
+        item(4, title: 'Dinner', sortOrder: 3),
+      ],
+      sets: const {},
+      branchesBySet: const {},
+    );
+
+    // Three slots, not four: the run is one thing to the day, so it drags as
+    // one and nothing can be dropped into the middle of it.
+    expect(blocks, hasLength(3));
+    final run = blocks[1] as GroupBlock;
+    expect(run.groupId, 7);
+    expect(run.items.map((i) => i.title), ['Leg 1', 'Leg 2']);
+    expect(run.sortOrder, 1);
+    expect((blocks[2] as ItemBlock).item.title, 'Dinner');
+  });
+
+  test('a run and a decision share the day\'s ordering space', () {
+    final blocks = buildDayBlocks(
+      day: day,
+      items: [
+        item(1, title: 'Leg 1', sortOrder: 0, groupId: 7),
+        item(2, title: 'Leg 2', sortOrder: 1, groupId: 7),
+        item(3, title: 'Museum', sortOrder: 0, alternativeId: 10),
+      ],
+      sets: {5: set(5, sortOrder: 2)},
+      branchesBySet: {
+        5: [branch(10, setId: 5, sortOrder: 0, chosen: true)],
+      },
+    );
+
+    expect(blocks[0], isA<GroupBlock>());
+    expect(blocks[1], isA<DecisionBlock>());
+  });
+
+  test('a run split apart is still read as one block', () {
+    // Not reachable any more — a run is one slot, so no drag can land between
+    // its members — but a database written before that could hold one. Two
+    // bands claiming to be one group, each printing the shared ticket, is worse
+    // than closing the gap.
+    final blocks = buildDayBlocks(
+      day: day,
+      items: [
+        item(1, title: 'Leg 1', sortOrder: 0, groupId: 7),
+        item(2, title: 'Museum', sortOrder: 1),
+        item(3, title: 'Leg 2', sortOrder: 2, groupId: 7),
+      ],
+      sets: const {},
+      branchesBySet: const {},
+    );
+
+    expect(blocks, hasLength(2));
+    final run = blocks[0] as GroupBlock;
+    expect(run.items.map((i) => i.title), ['Leg 1', 'Leg 2']);
+  });
+
+  test('flattening a day reads a run in its slot, in order', () {
+    final blocks = buildDayBlocks(
+      day: day,
+      items: [
+        item(1, title: 'Leg 1', sortOrder: 1, groupId: 7),
+        item(2, title: 'Leg 2', sortOrder: 2, groupId: 7),
+        item(3, title: 'Breakfast', sortOrder: 0),
+      ],
+      sets: const {},
+      branchesBySet: const {},
+    );
+
+    expect(itemsInDayOrder(blocks).map((i) => i.title), [
+      'Breakfast',
+      'Leg 1',
+      'Leg 2',
+    ]);
+  });
+
+  test('an option reads as blocks too, runs included', () {
+    final blocks = buildItemBlocks([
+      item(1, title: 'Walk', sortOrder: 0, alternativeId: 10),
+      item(2, title: 'Leg 1', sortOrder: 1, alternativeId: 10, groupId: 7),
+      item(3, title: 'Leg 2', sortOrder: 2, alternativeId: 10, groupId: 7),
+    ]);
+
+    expect(blocks, hasLength(2));
+    expect((blocks[1] as GroupBlock).items, hasLength(2));
   });
 }

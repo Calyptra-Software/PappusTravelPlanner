@@ -314,10 +314,14 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
-  /// Reorders a day's blocks. A day's ordering space is shared by its loose items
-  /// and its decisions, so the renumbering writes to both tables — the items
-  /// inside a decision's options are untouched, they are ordered within their
-  /// option (see [_onReorderItems]).
+  /// Reorders a list of blocks — a day, or one option of a decision. A day's
+  /// ordering space is shared by its loose items and its decisions, so the
+  /// renumbering writes to both tables; an option holds only entries.
+  ///
+  /// A block is one *slot* but not one sort order: a run of three legs is a
+  /// single block holding three ordinary items, so the numbering walks a running
+  /// counter rather than writing the block's index. Anything else would give the
+  /// run's members the same number and leave their order to the tie-break.
   Future<void> _onReorder(
     WidgetRef ref,
     List<DayBlock> dayBlocks,
@@ -329,14 +333,49 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final moved = reordered.removeAt(oldIndex);
     reordered.insert(newIndex, moved);
     final repo = ref.read(repositoryProvider);
-    for (var i = 0; i < reordered.length; i++) {
-      final block = reordered[i];
-      if (block.sortOrder == i) continue;
+    var next = 0;
+    for (final block in reordered) {
       switch (block) {
         case ItemBlock(:final item):
-          await repo.updateItem(item.copyWith(sortOrder: i));
+          if (item.sortOrder != next) {
+            await repo.updateItem(item.copyWith(sortOrder: next));
+          }
+          next++;
+        case GroupBlock(:final items):
+          for (final item in items) {
+            if (item.sortOrder != next) {
+              await repo.updateItem(item.copyWith(sortOrder: next));
+            }
+            next++;
+          }
         case DecisionBlock(:final set):
-          await repo.setAlternativeSetSortOrder(set.id, i);
+          if (set.sortOrder != next) {
+            await repo.setAlternativeSetSortOrder(set.id, next);
+          }
+          next++;
+      }
+    }
+  }
+
+  /// Reorders the members of one run, inside the band that draws it.
+  ///
+  /// The run keeps the slots it already holds: its members' own sort orders are
+  /// handed back out in the new order, so nothing outside the run is renumbered
+  /// and the run cannot walk out of its place in the day by being rearranged.
+  Future<void> _onReorderRun(
+    WidgetRef ref,
+    List<ItineraryItem> runItems,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final reordered = List<ItineraryItem>.of(runItems);
+    final moved = reordered.removeAt(oldIndex);
+    reordered.insert(newIndex, moved);
+    final slots = [for (final item in runItems) item.sortOrder]..sort();
+    final repo = ref.read(repositoryProvider);
+    for (var i = 0; i < reordered.length; i++) {
+      if (reordered[i].sortOrder != slots[i]) {
+        await repo.updateItem(reordered[i].copyWith(sortOrder: slots[i]));
       }
     }
   }
@@ -414,24 +453,6 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       if (index >= 0) return (branches[index], index);
     }
     return null;
-  }
-
-  /// Renumbers a plain list of items — one option's contents.
-  Future<void> _onReorderItems(
-    WidgetRef ref,
-    List<ItineraryItem> items,
-    int oldIndex,
-    int newIndex,
-  ) async {
-    final reordered = List<ItineraryItem>.of(items);
-    final moved = reordered.removeAt(oldIndex);
-    reordered.insert(newIndex, moved);
-    final repo = ref.read(repositoryProvider);
-    for (var i = 0; i < reordered.length; i++) {
-      if (reordered[i].sortOrder != i) {
-        await repo.updateItem(reordered[i].copyWith(sortOrder: i));
-      }
-    }
   }
 
   /// Adds a place to [day] — or to one option of a decision on it — named
@@ -700,8 +721,12 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     ),
                     onReorder: (dayBlocks, oldIndex, newIndex) =>
                         _onReorder(ref, dayBlocks, oldIndex, newIndex),
-                    onReorderBranch: (branchItems, oldIndex, newIndex) =>
-                        _onReorderItems(ref, branchItems, oldIndex, newIndex),
+                    // An option is ordered exactly as a day is — the same
+                    // blocks, minus the decisions an option cannot hold.
+                    onReorderBranch: (branchBlocks, oldIndex, newIndex) =>
+                        _onReorder(ref, branchBlocks, oldIndex, newIndex),
+                    onReorderRun: (runItems, oldIndex, newIndex) =>
+                        _onReorderRun(ref, runItems, oldIndex, newIndex),
                     held: held,
                     onPutDown: (day, {alternativeId}) {
                       if (held == null) return;

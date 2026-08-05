@@ -245,12 +245,29 @@ UI (features/*/presentation, *widgets)
   frees them), and a set left with one branch is flattened back into the day. Ops live in
   `AlternativeDao`.
 - The timeline renders a day as a list of **blocks** (`features/itinerary/day_blocks.dart`,
-  pure): an `ItemBlock` (a loose item) or a `DecisionBlock` (a whole set). A decision draws as
+  pure): an `ItemBlock` (a loose item), a `GroupBlock` (a whole run) or a `DecisionBlock` (a
+  whole set). A decision draws as
   an `AlternativeCard` — a `PageView` **swiped** between options, which only *browses*;
   choosing is the explicit button, so looking at an option never moves the trip's money. The
   indicator row under it carries every option's price (the comparison a pager otherwise hides).
   Dragging in a day reorders blocks (writing `ItineraryItems.sortOrder` *and*
-  `AlternativeSets.sortOrder`); dragging inside a card reorders that option's items.
+  `AlternativeSets.sortOrder`); dragging inside a card reorders that option's blocks, and
+  dragging inside a run reorders that run's members. An option is built from the same
+  `buildItemBlocks` a day's loose entries are, so a run reads and drags the same way in either.
+- **A run is one slot, and a slot is not one sort order.** A group of entries sharing a ticket
+  is a single thing to the plan, so it is a single block: it drags as one, and no drag can put
+  something in the middle of it or pull a leg out — the two acts that cross a boundary stay the
+  explicit move/copy. Its members are a `ReorderableListView` of their own inside the band
+  (`GroupRunTile`), the same arrangement a decision has: a card that moves as a unit in the day,
+  holding a list that reorders within itself. Before this each member was its own slot, so a run
+  could be dragged apart, and the halves went on claiming to be one group — each drawing the
+  band and printing the shared ticket. The renumbering therefore walks a **running counter**
+  rather than writing each block's index (`_onReorder`), since a run of three legs is one block
+  holding three ordinary items; and reordering *within* a run hands the run's own sort orders
+  back out in the new order, so rearranging it can never walk it out of its place in the day.
+  `buildItemBlocks` collects a run by `groupId` rather than by adjacency: nothing can split one
+  any more, but a database written before this could hold one that a drag had split, and closing
+  the gap is better than drawing it as two.
 - **Drag reorders *within* a list; move/copy crosses between them.** A day and an option are
   two separate `ReorderableListView`s, and a decision is one index in its day, so no drag can
   express "into that option" — nor should one, since landing in an unchosen option takes an

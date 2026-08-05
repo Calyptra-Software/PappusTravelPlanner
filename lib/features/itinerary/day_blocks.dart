@@ -26,6 +26,31 @@ final class ItemBlock extends DayBlock {
   int get sortOrder => item.sortOrder;
 }
 
+/// A whole group — a run of entries sharing one ticket — occupying **one** slot.
+///
+/// A group is a single thing to the plan ("the train to Rome"), so it is a
+/// single thing to the list: it drags as one, and no drag can take a leg out of
+/// the middle of it. Its members are still reorderable among themselves, in the
+/// run's own list, exactly as a decision's options are reordered inside their
+/// card. That is the same rule as everywhere here — a drag reorders *within* a
+/// list, and crossing between lists is the explicit move/copy.
+///
+/// The run takes as many sort orders as it has members (they are ordinary items
+/// in the day's ordering space); [sortOrder] is the first one, which is the slot
+/// the run occupies.
+final class GroupBlock extends DayBlock {
+  const GroupBlock({required this.groupId, required this.items});
+
+  final int groupId;
+
+  /// The run's members, in order. Never empty — a block is built only from
+  /// entries that are there.
+  final List<ItineraryItem> items;
+
+  @override
+  int get sortOrder => items.first.sortOrder;
+}
+
 /// A decision on the day: its branches in swipe order, each with its items.
 final class DecisionBlock extends DayBlock {
   const DecisionBlock({
@@ -52,6 +77,40 @@ final class DecisionBlock extends DayBlock {
   int get sortOrder => set.sortOrder;
 }
 
+/// [items] (one list, already in order) as blocks: a loose entry is one block,
+/// and each group is one block holding its whole run.
+///
+/// Used for both lists a run can sit in — a day's loose entries, and one option
+/// of a decision — so a group reads and drags the same way in either.
+///
+/// A group's members are collected by their `groupId` rather than by being
+/// neighbours in the list. They *are* neighbours (a group is one contiguous run,
+/// which is what `GroupDao.groupItems` builds and what this model then keeps
+/// true), but a database written by an older version could hold a run some drag
+/// had split; drawing that as two bands with one id — and the shared ticket
+/// printed under each of them — is worse than closing the gap.
+List<DayBlock> buildItemBlocks(List<ItineraryItem> items) {
+  final blocks = <DayBlock>[];
+  final runs = <int, List<ItineraryItem>>{};
+  for (final item in items) {
+    final groupId = item.groupId;
+    if (groupId == null) {
+      blocks.add(ItemBlock(item));
+      continue;
+    }
+    final run = runs[groupId];
+    if (run != null) {
+      run.add(item);
+      continue;
+    }
+    final members = [item];
+    runs[groupId] = members;
+    blocks.add(GroupBlock(groupId: groupId, items: members));
+  }
+  blocks.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  return blocks;
+}
+
 /// Assembles [day]'s blocks, in the order they are shown.
 ///
 /// [items] is a trip's whole itinerary (loose items *and* branch items, as
@@ -66,16 +125,18 @@ List<DayBlock> buildDayBlocks({
   required Map<int, List<Alternative>> branchesBySet,
 }) {
   final itemsByBranch = <int, List<ItineraryItem>>{};
-  final blocks = <DayBlock>[];
+  final loose = <ItineraryItem>[];
 
   for (final item in items) {
     final branchId = item.alternativeId;
     if (branchId != null) {
       itemsByBranch.putIfAbsent(branchId, () => []).add(item);
     } else if (normalizeDay(item.date) == day) {
-      blocks.add(ItemBlock(item));
+      loose.add(item);
     }
   }
+
+  final blocks = buildItemBlocks(loose);
 
   for (final set in sets.values) {
     if (normalizeDay(set.date) != day) continue;
@@ -100,8 +161,8 @@ List<DayBlock> buildDayBlocks({
 }
 
 /// [blocks]' items as one flat list, in the order the day reads them: a loose
-/// item in its slot, and a decision's *chosen* option's items in the slot the
-/// decision occupies.
+/// item in its slot, a whole run in the slot its group occupies, and a
+/// decision's *chosen* option's items in the slot the decision occupies.
 ///
 /// This is the only correct way to walk a day's live items in order. Filtering
 /// the trip's items with `liveItems` keeps them sorted by `sortOrder`, but a
@@ -112,6 +173,7 @@ List<ItineraryItem> itemsInDayOrder(List<DayBlock> blocks) => [
   for (final block in blocks)
     ...switch (block) {
       ItemBlock(:final item) => [item],
+      GroupBlock(:final items) => items,
       DecisionBlock(:final chosen, :final itemsByBranch) =>
         itemsByBranch[chosen.id] ?? const <ItineraryItem>[],
     },

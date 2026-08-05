@@ -227,4 +227,24 @@ void main() {
       const NowMarker(index: 1, happening: true),
     );
   });
+
+  test('a run is under way from its first departure to its last arrival', () {
+    final run = GroupBlock(
+      groupId: 7,
+      items: [
+        item(1, start: 540, end: 600, sortOrder: 0),
+        // The change in between is part of the journey, and so is the wait: the
+        // run spans it whole.
+        item(2, start: 640, end: 700, sortOrder: 1),
+      ],
+    );
+    final blocks = [ItemBlock(item(3, start: 480, end: 500)), run];
+
+    // In the gap between the two legs: the journey is still what is happening.
+    expect(nowMarker(blocks, 620), const NowMarker(index: 1, happening: true));
+    // Before it departs, the line sits above the run rather than inside it.
+    expect(nowMarker(blocks, 510), const NowMarker(index: 1, happening: false));
+    // Landed: the whole day is behind us.
+    expect(nowMarker(blocks, 800), const NowMarker(index: 2, happening: false));
+  });
 }

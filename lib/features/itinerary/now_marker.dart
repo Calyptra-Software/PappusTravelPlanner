@@ -56,12 +56,15 @@ TimeSpan? itemSpan(ItineraryItem item) {
   return (start: start, end: end < start ? start : end);
 }
 
-/// The span a whole block covers: for a decision, the span of its **chosen**
+/// The span a whole block covers: for a run, its members' hull — a journey of
+/// several legs is under way from the first departure to the last arrival, the
+/// changes in between included; for a decision, the span of its **chosen**
 /// option — the plan as it stands is what the trip is actually doing, so an
 /// option not taken can never be what is happening now.
 TimeSpan? blockSpan(DayBlock block) {
   final items = switch (block) {
     ItemBlock(:final item) => [item],
+    GroupBlock(:final items) => items,
     DecisionBlock(:final chosen, :final itemsByBranch) =>
       itemsByBranch[chosen.id] ?? const <ItineraryItem>[],
   };

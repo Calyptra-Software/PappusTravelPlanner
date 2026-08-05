@@ -10,27 +10,18 @@ import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../application/item_clipboard.dart';
 import '../application/transport_mode_providers.dart';
+import '../now_marker.dart';
 import 'item_times.dart';
 import 'live_refresh_button.dart';
 import 'now_line.dart';
 import 'transport_mode.dart';
 
-/// Whether [item] opens a group's contiguous run — i.e. the row before it (its
-/// [previous] neighbour in the list being rendered, or null at the top) is not in
-/// the same group. The run's label is drawn on its first member.
-///
-/// A group lies entirely inside one alternative branch or entirely outside one,
-/// so this reads the same whether the list is a day or a single branch.
-bool startsGroupRun(ItineraryItem item, ItineraryItem? previous) =>
-    item.groupId != null && previous?.groupId != item.groupId;
-
-/// Whether [item] closes a group's run — the shared costs are drawn on its last
-/// member. See [startsGroupRun].
-bool endsGroupRun(ItineraryItem item, ItineraryItem? next) =>
-    item.groupId != null && next?.groupId != item.groupId;
-
 /// A single row in the itinerary timeline. Renders as a place stop or, for
 /// transport items, as a lighter connector between stops.
+///
+/// A row is one *entry*. The run an entry belongs to is drawn by
+/// [GroupRunTile], which owns the band and hands each member its row — so
+/// nothing here has to work out where a group begins or ends.
 class TimelineTile extends StatelessWidget {
   const TimelineTile({
     super.key,
@@ -40,10 +31,6 @@ class TimelineTile extends StatelessWidget {
     required this.costs,
     required this.localeName,
     required this.onTapCost,
-    this.group,
-    this.isFirstInGroup = false,
-    this.isLastInGroup = false,
-    this.groupCosts = const [],
     this.onShowJourney,
     this.dragHandle,
     this.isNow = false,
@@ -58,22 +45,9 @@ class TimelineTile extends StatelessWidget {
   final String localeName;
   final ValueChanged<Cost> onTapCost;
 
-  /// The item's group, or null when it stands alone. When set, the tile is part
-  /// of a contiguous group run: [isFirstInGroup] / [isLastInGroup] mark its ends.
-  final ItemGroup? group;
-  final bool isFirstInGroup;
-  final bool isLastInGroup;
-
-  /// The group's shared costs, rendered once under the run's last member.
-  final List<Cost> groupCosts;
-
-  /// Opens this entry's journey — the whole group's when it is in one, the leg's
-  /// own when it stands alone. Null when there is no journey to read: the caller
-  /// decides that, since it is the one holding the group's other members.
-  ///
-  /// It is drawn where the unit it opens lives: on the group's header, which
-  /// names the run, or on the leg's own row. Never on both — a grouped leg's
-  /// journey is its group's.
+  /// Opens this entry's journey, for an imported leg standing on its own. Null
+  /// when there is no journey to read — and always null for a leg inside a run,
+  /// whose journey is the run's and opens from the band above it.
   final VoidCallback? onShowJourney;
   final Widget? dragHandle;
 
@@ -108,7 +82,7 @@ class TimelineTile extends StatelessWidget {
             dragHandle: dragHandle,
             costsSection: costsSection,
             isNow: isNow,
-            onShowJourney: group == null ? onShowJourney : null,
+            onShowJourney: onShowJourney,
           )
         : _PlaceRow(
             item: item,
@@ -119,21 +93,7 @@ class TimelineTile extends StatelessWidget {
             isNow: isNow,
           );
 
-    final banded = group == null
-        ? row
-        : _GroupBand(
-            accent: accent,
-            isFirst: isFirstInGroup,
-            isLast: isLastInGroup,
-            group: group!,
-            groupCosts: groupCosts,
-            onShowJourney: onShowJourney,
-            localeName: localeName,
-            onTapCost: onTapCost,
-            child: row,
-          );
-
-    final content = held ? Opacity(opacity: 0.4, child: banded) : banded;
+    final content = held ? Opacity(opacity: 0.4, child: row) : row;
 
     final nowLine = nowLineMinutes;
     if (nowLine == null) return content;
@@ -147,92 +107,186 @@ class TimelineTile extends StatelessWidget {
   }
 }
 
-/// Wraps a grouped item's row, bracketing a contiguous run with the group's
-/// label above its first member and its shared costs below its last. A tinted
-/// left rail and background make the run read as one unit (e.g. a train journey
-/// on a single ticket).
-class _GroupBand extends StatelessWidget {
-  const _GroupBand({
+/// A whole group — a run of entries sharing one ticket — drawn as one unit: a
+/// tinted band with the group's label above its members and the shared expense
+/// below them.
+///
+/// The run is **one block** of the list it sits in (`GroupBlock`), so it drags
+/// as one and no drag can pull a leg out of the middle of it. Its members are a
+/// reorderable list of their own inside the band, which is the same arrangement
+/// a decision has: a card that moves as a unit in the day, holding a list that
+/// reorders within itself. Before this, each member was its own slot in the day
+/// — a run could be dragged apart, and the two halves went on claiming to be one
+/// group, printing the shared ticket under each of them.
+class GroupRunTile extends StatelessWidget {
+  const GroupRunTile({
+    super.key,
+    required this.groupId,
+    required this.label,
+    required this.items,
     required this.accent,
-    required this.isFirst,
-    required this.isLast,
-    required this.group,
+    required this.costsByItem,
     required this.groupCosts,
-    required this.onShowJourney,
     required this.localeName,
+    required this.onTapItem,
     required this.onTapCost,
-    required this.child,
+    required this.onReorder,
+    required this.held,
+    this.onShowJourney,
+    this.dragHandle,
+    this.isNow = false,
+    this.nowMinutes,
+    this.nowLineMinutes,
   });
 
+  final int groupId;
+
+  /// The group's name, or null/empty for the default label.
+  final String? label;
+
+  /// The run's members, in order. Never empty.
+  final List<ItineraryItem> items;
   final Color accent;
-  final bool isFirst;
-  final bool isLast;
-  final ItemGroup group;
+  final Map<int, List<Cost>> costsByItem;
+
+  /// The run's shared expenses, drawn once under it.
   final List<Cost> groupCosts;
-  final VoidCallback? onShowJourney;
   final String localeName;
+  final ValueChanged<ItineraryItem> onTapItem;
   final ValueChanged<Cost> onTapCost;
-  final Widget child;
+
+  /// Reorders the run's own members, by their index within it.
+  final void Function(List<ItineraryItem> runItems, int oldIndex, int newIndex)
+  onReorder;
+
+  /// What is currently picked up, so a held member (or this whole run) is drawn
+  /// dimmed where it still sits.
+  final Held? held;
+
+  /// Opens the run's journey, when it has one. It belongs on the label, which is
+  /// what names the run.
+  final VoidCallback? onShowJourney;
+
+  /// The run's handle in the list *it* is a block of.
+  final Widget? dragHandle;
+
+  /// Whether the run as a whole is under way right now.
+  final bool isNow;
+
+  /// The current minute, on today only. The run marks which of its members is
+  /// under way, and — exactly as a decision does inside its card — draws the
+  /// now-line *between* two of them only while the run itself is under way: the
+  /// boundary is inside the band, so the line is too, and the list outside sees
+  /// one block that is happening.
+  final int? nowMinutes;
+
+  /// The now-line drawn above the whole run, when the line falls on its slot.
+  final int? nowLineMinutes;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final radius = const Radius.circular(12);
-    return Container(
+    final now = nowMinutes;
+    final marker = now == null ? null : nowMarkerForItems(items, now);
+    final happeningIndex = (marker != null && marker.happening)
+        ? marker.index
+        : -1;
+    final lineIndex = (isNow && marker != null && !marker.happening)
+        ? marker.index
+        : -1;
+
+    final band = Container(
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.06),
-        border: Border(left: BorderSide(color: accent, width: 3)),
-        borderRadius: BorderRadius.only(
-          topLeft: isFirst ? radius : Radius.zero,
-          topRight: isFirst ? radius : Radius.zero,
-          bottomLeft: isLast ? radius : Radius.zero,
-          bottomRight: isLast ? radius : Radius.zero,
+        color: accent.withValues(alpha: isNow ? 0.10 : 0.06),
+        border: Border(
+          left: BorderSide(color: isNow ? nowColor(theme) : accent, width: 3),
         ),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isFirst)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
-              child: Row(
-                children: [
-                  Icon(Icons.link, size: 16, color: accent),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      (group.label != null && group.label!.isNotEmpty)
-                          ? group.label!
-                          : l10n.groupDefaultLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: accent,
-                        fontWeight: FontWeight.w700,
-                      ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
+            child: Row(
+              children: [
+                Icon(Icons.link, size: 16, color: accent),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    (label != null && label!.isNotEmpty)
+                        ? label!
+                        : l10n.groupDefaultLabel,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: accent,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  // A group of legs is a journey — the run added by one import,
-                  // sharing one ticket — so the way to read it back sits on the
-                  // label that says as much.
-                  if (onShowJourney case final show?)
-                    IconButton(
-                      tooltip: l10n.journeyDetails,
-                      visualDensity: VisualDensity.compact,
-                      iconSize: 18,
-                      icon: const Icon(Icons.route),
-                      color: accent,
-                      onPressed: show,
-                    ),
-                  // What is done to the run as a whole belongs on the run's own
-                  // label, not inside one member's edit form: a shared-ticket
-                  // journey is moved and deleted as one thing, and the label is
-                  // the only place that names that thing.
-                  _GroupMenu(group: group, accent: accent),
-                ],
-              ),
+                ),
+                if (isNow) ...[const NowBadge(), const SizedBox(width: 4)],
+                // A group of legs is a journey — the run added by one import,
+                // sharing one ticket — so the way to read it back sits on the
+                // label that says as much.
+                if (onShowJourney case final show?)
+                  IconButton(
+                    tooltip: l10n.journeyDetails,
+                    visualDensity: VisualDensity.compact,
+                    iconSize: 18,
+                    icon: const Icon(Icons.route),
+                    color: accent,
+                    onPressed: show,
+                  ),
+                // What is done to the run as a whole belongs on the run's own
+                // label, not inside one member's edit form: a shared-ticket
+                // journey is moved and deleted as one thing, and the label is
+                // the only place that names that thing.
+                _GroupMenu(
+                  groupId: groupId,
+                  tripId: items.first.tripId,
+                  accent: accent,
+                ),
+                ?dragHandle,
+              ],
             ),
-          child,
-          if (isLast && groupCosts.isNotEmpty)
+          ),
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            itemCount: items.length,
+            onReorderItem: (oldIndex, newIndex) =>
+                onReorder(items, oldIndex, newIndex),
+            itemBuilder: (context, i) {
+              final item = items[i];
+              return TimelineTile(
+                key: ValueKey('item-${item.id}'),
+                item: item,
+                accent: accent,
+                onTap: () => onTapItem(item),
+                costs: costsByItem[item.id] ?? const [],
+                localeName: localeName,
+                onTapCost: onTapCost,
+                isNow: i == happeningIndex,
+                nowLineMinutes: i == lineIndex ? now : null,
+                held: isHeldItem(held, item),
+                dragHandle: ReorderableDragStartListener(
+                  index: i,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(
+                      Icons.drag_indicator,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Everything in the run is behind us: the line closes it off rather
+          // than being dropped, the same way an option's does.
+          if (lineIndex == items.length) NowLine(minutes: now!),
+          if (groupCosts.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(48, 0, 8, 10),
               child: _CostsSection(
@@ -243,6 +297,16 @@ class _GroupBand extends StatelessWidget {
             ),
         ],
       ),
+    );
+
+    final line = nowLineMinutes;
+    if (line == null) return band;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        NowLine(minutes: line),
+        band,
+      ],
     );
   }
 }
@@ -262,9 +326,17 @@ class _GroupBand extends StatelessWidget {
 /// (the run stays where it is, dimmed, until it is put down), while the
 /// destructive one asks first.
 class _GroupMenu extends ConsumerWidget {
-  const _GroupMenu({required this.group, required this.accent});
+  const _GroupMenu({
+    required this.groupId,
+    required this.tripId,
+    required this.accent,
+  });
 
-  final ItemGroup group;
+  final int groupId;
+
+  /// Read off a member rather than the group row: the run is on screen, so its
+  /// trip is not in doubt even if the groups stream has yet to arrive.
+  final int tripId;
   final Color accent;
 
   @override
@@ -283,8 +355,8 @@ class _GroupMenu extends ConsumerWidget {
                 .read(itemClipboardProvider.notifier)
                 .hold(
                   HeldGroup(
-                    tripId: group.tripId,
-                    groupId: group.id,
+                    tripId: tripId,
+                    groupId: groupId,
                     mode: action == _GroupAction.move
                         ? HoldMode.move
                         : HoldMode.copy,
@@ -292,7 +364,7 @@ class _GroupMenu extends ConsumerWidget {
                 );
           case _GroupAction.delete:
             if (await _confirmDelete(context, l10n)) {
-              await repo.deleteGroup(group.id);
+              await repo.deleteGroup(groupId);
             }
         }
       },

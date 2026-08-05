@@ -36,6 +36,7 @@ class ItineraryTimeline extends StatefulWidget {
     required this.onAddTransport,
     required this.onReorder,
     required this.onReorderBranch,
+    required this.onReorderRun,
     required this.costsByItem,
     required this.groups,
     required this.costsByGroup,
@@ -134,13 +135,16 @@ class ItineraryTimeline extends StatefulWidget {
   final void Function(List<DayBlock> dayBlocks, int oldIndex, int newIndex)
   onReorder;
 
-  /// Called when a tile is dragged within one option of a decision.
-  final void Function(
-    List<ItineraryItem> branchItems,
-    int oldIndex,
-    int newIndex,
-  )
+  /// Called when a block is dragged within one option of a decision — its
+  /// entries and its runs, ordered exactly as a day's blocks are.
+  final void Function(List<DayBlock> branchBlocks, int oldIndex, int newIndex)
   onReorderBranch;
+
+  /// Called when a tile is dragged within a run — a group's own list, inside the
+  /// band that draws it. The run keeps the slots it already occupies; only its
+  /// members' order among themselves changes.
+  final void Function(List<ItineraryItem> runItems, int oldIndex, int newIndex)
+  onReorderRun;
 
   List<DateTime> _daysToShow() {
     final days = SplayTreeSet<DateTime>();
@@ -206,6 +210,7 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
         onAddTransport: widget.onAddTransport,
         onReorder: widget.onReorder,
         onReorderBranch: widget.onReorderBranch,
+        onReorderRun: widget.onReorderRun,
         costsByItem: widget.costsByItem,
         groups: widget.groups,
         costsByGroup: widget.costsByGroup,
@@ -243,6 +248,7 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
             onAddTransport: widget.onAddTransport,
             onReorder: widget.onReorder,
             onReorderBranch: widget.onReorderBranch,
+            onReorderRun: widget.onReorderRun,
             costsByItem: widget.costsByItem,
             groups: widget.groups,
             costsByGroup: widget.costsByGroup,
@@ -311,6 +317,7 @@ class _DaySection extends ConsumerWidget {
     required this.onAddTransport,
     required this.onReorder,
     required this.onReorderBranch,
+    required this.onReorderRun,
     required this.costsByItem,
     required this.groups,
     required this.costsByGroup,
@@ -365,7 +372,8 @@ class _DaySection extends ConsumerWidget {
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
   final void Function(List<DayBlock>, int, int) onReorder;
-  final void Function(List<ItineraryItem>, int, int) onReorderBranch;
+  final void Function(List<DayBlock>, int, int) onReorderBranch;
+  final void Function(List<ItineraryItem>, int, int) onReorderRun;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -579,10 +587,35 @@ class _DaySection extends ConsumerWidget {
               return switch (block) {
                 ItemBlock(:final item) => _itemTile(
                   context: context,
-                  index: index,
                   item: item,
                   dragHandle: dragHandle,
                   isNow: index == happeningIndex,
+                  nowLineMinutes: index == lineIndex ? nowMinutes : null,
+                ),
+                GroupBlock(:final groupId, :final items) => GroupRunTile(
+                  key: ValueKey('group-$groupId'),
+                  groupId: groupId,
+                  label: groups[groupId]?.label,
+                  items: items,
+                  accent: accent,
+                  costsByItem: costsByItem,
+                  groupCosts: costsByGroup[groupId] ?? const [],
+                  localeName: localeName,
+                  onTapItem: onTapItem,
+                  onTapCost: onTapCost,
+                  onReorder: onReorderRun,
+                  held: held,
+                  onShowJourney: groupHasJourney(items, groupId)
+                      ? () => showJourneyDetailsSheet(
+                          context,
+                          tripId: items.first.tripId,
+                          groupId: groupId,
+                          title: groups[groupId]?.label,
+                        )
+                      : null,
+                  dragHandle: dragHandle,
+                  isNow: index == happeningIndex,
+                  nowMinutes: isToday ? nowMinutes : null,
                   nowLineMinutes: index == lineIndex ? nowMinutes : null,
                 ),
                 DecisionBlock() => AlternativeCard(
@@ -608,6 +641,7 @@ class _DaySection extends ConsumerWidget {
                   onQuickAddPlace: (branchId, location) =>
                       onQuickAddPlace(day, location, alternativeId: branchId),
                   onReorderBranch: onReorderBranch,
+                  onReorderRun: onReorderRun,
                   dragHandle: dragHandle,
                   held: held,
                   onPutDown: (branchId) =>
@@ -657,36 +691,30 @@ class _DaySection extends ConsumerWidget {
     );
   }
 
-  /// A loose item's tile. Its group run is read against its neighbouring blocks:
-  /// a group never spans a decision, so a decision in between simply ends the run.
+  /// A loose item's tile. A grouped one is never drawn here — its run is one
+  /// block, and [GroupRunTile] hands it its row.
   Widget _itemTile({
     required BuildContext context,
-    required int index,
     required ItineraryItem item,
     required Widget dragHandle,
     required bool isNow,
     required int? nowLineMinutes,
   }) {
-    ItineraryItem? neighbour(int at) {
-      if (at < 0 || at >= blocks.length) return null;
-      final block = blocks[at];
-      return block is ItemBlock ? block.item : null;
-    }
-
-    final groupId = item.groupId;
     return TimelineTile(
       key: ValueKey('item-${item.id}'),
-      onShowJourney: _showJourney(context, item, groupId),
+      // An imported leg standing outside a group carries its own way into the
+      // journey sheet; inside one the run's label carries it.
+      onShowJourney: hasStandaloneJourney(item)
+          ? () => showJourneyDetailsSheet(
+              context,
+              tripId: item.tripId,
+              itemId: item.id,
+            )
+          : null,
       item: item,
       accent: accent,
       onTap: () => onTapItem(item),
       costs: costsByItem[item.id] ?? const [],
-      group: groupId == null ? null : groups[groupId],
-      isFirstInGroup: startsGroupRun(item, neighbour(index - 1)),
-      isLastInGroup: endsGroupRun(item, neighbour(index + 1)),
-      groupCosts: groupId == null
-          ? const []
-          : (costsByGroup[groupId] ?? const []),
       localeName: localeName,
       onTapCost: onTapCost,
       dragHandle: dragHandle,
@@ -694,32 +722,6 @@ class _DaySection extends ConsumerWidget {
       nowLineMinutes: nowLineMinutes,
       held: isHeldItem(held, item),
     );
-  }
-
-  /// Opens the journey this entry is part of, or null when it is not part of
-  /// one. A grouped entry opens its whole group — the run one import added,
-  /// under the label the group carries; an imported leg on its own opens itself.
-  VoidCallback? _showJourney(
-    BuildContext context,
-    ItineraryItem item,
-    int? groupId,
-  ) {
-    if (groupId != null) {
-      final members = [
-        for (final block in blocks)
-          if (block is ItemBlock) block.item,
-      ];
-      if (!groupHasJourney(members, groupId)) return null;
-      return () => showJourneyDetailsSheet(
-        context,
-        tripId: item.tripId,
-        groupId: groupId,
-        title: groups[groupId]?.label,
-      );
-    }
-    if (!hasStandaloneJourney(item)) return null;
-    return () =>
-        showJourneyDetailsSheet(context, tripId: item.tripId, itemId: item.id);
   }
 
   /// Where an option's last entry leaves you, to pre-fill the "from" field of a
