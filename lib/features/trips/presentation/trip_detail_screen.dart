@@ -617,6 +617,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                       tripId: tripId,
                       itemId: initialItemId!,
                       items: items,
+                      intoRoutine: trip.kind == TripKind.routine,
                     ),
                   _TripHeader(
                     trip: trip,
@@ -938,11 +939,16 @@ class _OpenItemOnce extends StatefulWidget {
     required this.tripId,
     required this.itemId,
     required this.items,
+    required this.intoRoutine,
   });
 
   final int tripId;
   final int itemId;
   final List<ItineraryItem> items;
+
+  /// Whether the form is opening on a routine's entry — which its connection
+  /// search has to know, since a routine's day is not a date any train runs on.
+  final bool intoRoutine;
 
   @override
   State<_OpenItemOnce> createState() => _OpenItemOnceState();
@@ -967,6 +973,7 @@ class _OpenItemOnceState extends State<_OpenItemOnce> {
           tripId: widget.tripId,
           kind: item.kind,
           existing: item,
+          intoRoutine: widget.intoRoutine,
         );
       }
     });

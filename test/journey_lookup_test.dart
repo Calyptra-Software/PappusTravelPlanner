@@ -256,12 +256,54 @@ void main() {
     expect(after.single.toPlaceId, 'stop:picked');
   });
 
-  testWidgets('a routine is not looked up here', (tester) async {
-    await pump(tester, await plan(), kind: TripKind.routine);
+  group('a routine', () {
+    testWidgets('is looked up on a real date, not on its own anchor', (
+      tester,
+    ) async {
+      await pump(tester, await plan(), kind: TripKind.routine);
 
-    // A routine's days are ordinals anchored in 1970; no timetable answers for
-    // them. Importing into a routine searches a real date and rebases instead.
-    expect(findButton(), findsNothing);
+      // A template is as worth re-routing as an outing: a retired 07:32 changes
+      // every morning from now on.
+      expect(findButton(), findsOneWidget);
+
+      await tester.tap(findButton());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+
+      // Today, because no timetable answers for a day of a plan — while the time
+      // still comes from the run: the commute leaves at 07:32 whichever day it is
+      // asked about.
+      final asked = search.lastTime!;
+      expect(DateUtils.dateOnly(asked), DateUtils.dateOnly(DateTime.now()));
+      expect((asked.hour, asked.minute), (7, 32));
+    });
+
+    testWidgets('lays what it finds back onto the plan day', (tester) async {
+      await pump(tester, await plan(), kind: TripKind.routine);
+
+      await tester.tap(findButton());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      await tester.tap(inForm(find.textContaining('RB81')).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Use this'));
+      await tester.pumpAndSettle();
+
+      final after = await legs();
+      expect(after, hasLength(1));
+      // Back on the plan's own day, whatever date it was searched on.
+      expect(after.single.date, day);
+      // And carrying nothing that belongs to that one dated run: a template must
+      // not look refreshable.
+      expect(after.single.sourceTripId, isNull);
+      expect(after.single.actualStartMinutes, isNull);
+      expect(after.single.actualEndMinutes, isNull);
+      // The shape does travel — the ends it was searched by, and its stops.
+      expect(after.single.fromPlaceId, 'de-DELFI_rahlstedt');
+      expect(after.single.stopovers, isNotNull);
+    });
   });
 
   group('one leg of a run', () {
@@ -466,7 +508,8 @@ void main() {
 }
 
 /// A router that answers with one RB81, 08:00 – 08:20 Berlin time on the day it
-/// was asked about.
+/// was asked about — the date matters, since a routine's re-route is measured by
+/// how far the answer has to move back onto the plan.
 class _FakeSearch implements TransportSearch {
   bool findsNothing = false;
   bool fails = false;
@@ -491,6 +534,7 @@ class _FakeSearch implements TransportSearch {
     lastArriveBy = arriveBy;
     if (fails) throw const TransportSearchException('offline');
     if (findsNothing) return const JourneyResults(options: []);
+    final asked = DateTime.utc(time.year, time.month, time.day);
     final leg = JourneyLeg(
       mode: TransitMode.regionalRail,
       line: 'RB81',
@@ -498,18 +542,18 @@ class _FakeSearch implements TransportSearch {
       realTime: false,
       from: LegPoint(
         name: 'Rahlstedt',
-        scheduled: DateTime.utc(2026, 8, 3, 6),
+        scheduled: asked.add(const Duration(hours: 6)),
         timeZone: 'Europe/Berlin',
       ),
       to: LegPoint(
         name: 'Schlump',
-        scheduled: DateTime.utc(2026, 8, 3, 6, 20),
+        scheduled: asked.add(const Duration(hours: 6, minutes: 20)),
         timeZone: 'Europe/Berlin',
       ),
       stops: [
         LegStop(
           name: 'Tonndorf',
-          scheduledDeparture: DateTime.utc(2026, 8, 3, 6, 6),
+          scheduledDeparture: asked.add(const Duration(hours: 6, minutes: 6)),
           timeZone: 'Europe/Berlin',
         ),
       ],

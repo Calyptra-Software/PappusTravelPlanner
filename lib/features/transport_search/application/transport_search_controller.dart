@@ -185,6 +185,16 @@ class TransportSearchController {
   /// searched by its own ends — the routine flow, which issues the query itself.
   /// The search *form* passes its own: an end there can be repicked outright, and
   /// a hand-entered run had no id to inherit in the first place.
+  ///
+  /// [rebaseFrom] / [rebaseTo] lay the answer back onto a **routine's** plan day,
+  /// exactly as [importJourney] does and for the same reason: a routine's days are
+  /// ordinals, no timetable answers for them, so the search is made on a real date
+  /// and what it finds is moved back by the same number of days — an overnight leg
+  /// still landing a day further into the plan. What is left behind is what belongs
+  /// to that one dated run: its `sourceTripId` and any live times read off it,
+  /// since a template must not look refreshable and a delay measured on one Tuesday
+  /// is not part of a plan. Re-routing a routine is the only caller: an ordinary
+  /// trip's run already sits on the day it runs on.
   Future<void> replaceJourney(
     int tripId, {
     required PlannedJourney journey,
@@ -192,6 +202,8 @@ class TransportSearchController {
     required JourneyImportLabels labels,
     String? fromPlaceId,
     String? toPlaceId,
+    DateTime? rebaseFrom,
+    DateTime? rebaseTo,
   }) async {
     final modes = await _modes();
     final legs = journeyToLegs(
@@ -202,18 +214,32 @@ class TransportSearchController {
       toTrackLabel: labels.toTrack,
       directionLabel: labels.direction,
     );
+    final rebase = rebaseFrom != null && rebaseTo != null;
     final companions = [
       for (final (index, leg) in legs.indexed)
-        mappedLegToCompanion(
-          tripId,
-          leg,
-          // The endpoints are the ones this journey was searched by, so the
-          // result stays searchable in turn.
-          fromPlaceId: index == 0 ? (fromPlaceId ?? journey.fromPlaceId) : null,
-          toPlaceId: index == legs.length - 1
-              ? (toPlaceId ?? journey.toPlaceId)
-              : null,
-        ),
+        () {
+          final companion = mappedLegToCompanion(
+            tripId,
+            leg,
+            // The endpoints are the ones this journey was searched by, so the
+            // result stays searchable in turn.
+            fromPlaceId: index == 0
+                ? (fromPlaceId ?? journey.fromPlaceId)
+                : null,
+            toPlaceId: index == legs.length - 1
+                ? (toPlaceId ?? journey.toPlaceId)
+                : null,
+          );
+          if (!rebase) return companion;
+          return companion.copyWith(
+            date: Value(
+              rebasedLegDay(leg.date, foundOn: rebaseFrom, planDay: rebaseTo),
+            ),
+            sourceTripId: const Value(null),
+            actualStartMinutes: const Value(null),
+            actualEndMinutes: const Value(null),
+          );
+        }(),
     ];
     await _ref
         .read(repositoryProvider)

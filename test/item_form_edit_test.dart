@@ -90,36 +90,41 @@ void main() {
   Future<ItineraryItem> reread(int id) =>
       (db.select(db.itineraryItems)..where((i) => i.id.equals(id))).getSingle();
 
-  Widget wrap(Widget sheet, {List<ItineraryItem> items = const []}) =>
-      ProviderScope(
-        overrides: [
-          ...currencyOverrides,
-          repositoryProvider.overrideWithValue(repo),
-          sharedPreferencesProvider.overrideWithValue(prefs),
-          // Every drift-backed stream the sheet touches is stubbed: the real
-          // `.watch()` never resolves under fake-async, which hangs the test.
-          transportModesProvider.overrideWith((ref) => Stream.value(modes)),
-          itineraryProvider(1).overrideWith((ref) => Stream.value(items)),
-          groupsProvider(1).overrideWith((ref) => Stream.value(const {})),
-          costsForTripProvider(1).overrideWith(
-            (ref) => Stream.value((
-              byItem: const <int, List<Cost>>{},
-              byGroup: const <int, List<Cost>>{},
-              tripLevel: const <Cost>[],
-            )),
-          ),
-        ],
-        child: MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: SingleChildScrollView(child: sheet)),
-        ),
-      );
+  Widget wrap(
+    Widget sheet, {
+    List<ItineraryItem> items = const [],
+  }) => ProviderScope(
+    overrides: [
+      ...currencyOverrides,
+      repositoryProvider.overrideWithValue(repo),
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      // Every drift-backed stream the sheet touches is stubbed: the real
+      // `.watch()` never resolves under fake-async, which hangs the test.
+      transportModesProvider.overrideWith((ref) => Stream.value(modes)),
+      itineraryProvider(1).overrideWith((ref) => Stream.value(items)),
+      groupsProvider(1).overrideWith((ref) => Stream.value(const {})),
+      // A routine's form draws a day *field* instead of a date picker, and
+      // that reads the plan's days — another drift stream to stub out.
+      alternativeSetsProvider(1).overrideWith((ref) => Stream.value(const {})),
+      costsForTripProvider(1).overrideWith(
+        (ref) => Stream.value((
+          byItem: const <int, List<Cost>>{},
+          byGroup: const <int, List<Cost>>{},
+          tripLevel: const <Cost>[],
+        )),
+      ),
+    ],
+    child: MaterialApp(
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(body: SingleChildScrollView(child: sheet)),
+    ),
+  );
 
   Future<void> save(WidgetTester tester) async {
     final l10n = await AppLocalizations.delegate.load(const Locale('en'));
@@ -280,6 +285,26 @@ void main() {
       await open(tester, await manualLeg(groupId: 1));
 
       expect(find.text('Search online'), findsNothing);
+    });
+
+    testWidgets('a routine\'s leg is offered it too', (tester) async {
+      // A routine's leg is re-routed the way one is added to a routine: the
+      // search asks a real date and lays the answer back onto the plan day.
+      await open(tester, await manualLeg());
+      expect(find.text('Search online'), findsOneWidget);
+
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(
+            tripId: 1,
+            kind: ItemKind.transport,
+            existing: await manualLeg(),
+            intoRoutine: true,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Search online'), findsOneWidget);
     });
 
     testWidgets('a place is offered no timetable at all', (tester) async {

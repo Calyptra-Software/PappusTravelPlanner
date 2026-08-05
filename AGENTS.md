@@ -158,7 +158,13 @@ UI (features/*/presentation, *widgets)
   will do instead, today there is a bike to carry — so the day, the time, arrive-by, the vias
   and the search options are all still the user's, and a list of departures is what a
   traveller picks from. Per journey rather than per trip, because that is the unit the
-  question arises in, and on any trip, not only one stamped out of a routine.
+  question arises in, and on any trip, not only one stamped out of a routine — a **routine**
+  included, where the search is made on a real date and the answer laid back onto the plan day
+  (`replaceJourney`'s `rebaseFrom`/`rebaseTo`, the same trade `intoRoutine` makes for an import,
+  leaving the run's `sourceTripId` and live times behind since a template must not look
+  refreshable). A template is as worth re-routing as an outing: a line withdrawn or a 07:32
+  retired changes every morning from now on, and the alternative was deleting the leg and
+  importing a new one.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the
@@ -170,11 +176,11 @@ UI (features/*/presentation, *widgets)
   `plannedJourneyOf` is the run the user is looking at. The replacement's outer legs then keep
   the ids **this** search used, not the ones the old run carried, since either end may have
   been repicked outright (`replaceJourney`'s `fromPlaceId`/`toPlaceId`, defaulting to the
-  journey's own for the routine flow). The one run offered nothing is a **routine's** own plan,
-  whose days are ordinals anchored on `kRoutineAnchorDay` — searching those would ask the
-  timetable about 1970. A routine imports the other way round, searching a real date and
-  rebasing the answer (`ConnectionSearchSheet.intoRoutine`), which is why the two flags are
-  mutually exclusive.
+  journey's own for the routine flow). Nothing is turned away for want of an addressable end;
+  `intoRoutine` and `replacing` compose rather than exclude, and the flag has to reach the form
+  from wherever it was opened — including the deep-link opener, which is why `_OpenItemOnce`
+  carries it too. A leg of a routine dated by a *search* instead of the plan is the 2083 bug
+  waiting to happen again.
 - **One leg of a run is searched from its own card**, beside its live-times button
   (`JourneySheet.onFindLegConnection`). The label above answers "is there a better way to make
   this journey"; a leg answers the question a journey already under way raises — the train in

@@ -110,13 +110,13 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// Only a leg standing on its own. A grouped leg is one leg of a run, and a run
   /// is looked up whole, from the journey sheet on its label — replacing one leg
   /// of a shared-ticket journey from inside an edit form would be a different
-  /// (and unasked-for) operation. A routine is excluded because its days are
-  /// ordinals, not dates: nothing runs on day one of a plan.
+  /// (and unasked-for) operation.
+  ///
+  /// A routine's leg included: `intoRoutine` rides along to the search, which then
+  /// asks a real date and lays the answer back onto the plan day, exactly as
+  /// adding a connection to a routine does.
   bool get _canReplaceLeg =>
-      _isEditing &&
-      _isTransport &&
-      !widget.intoRoutine &&
-      widget.existing!.groupId == null;
+      _isEditing && _isTransport && widget.existing!.groupId == null;
 
   @override
   void initState() {

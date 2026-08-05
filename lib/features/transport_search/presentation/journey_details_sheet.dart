@@ -73,11 +73,11 @@ class JourneyDetailsSheet extends ConsumerWidget {
       for (final item in items)
         if (groupId != null ? item.groupId == groupId : item.id == itemId) item,
     ];
-    // A routine's plan has no dates to search on — its days are ordinals
-    // anchored in 1970 — so looking one up here would ask the timetable about a
-    // day no train has ever run on. Importing *into* a routine goes the other
-    // way round (search a real date, rebase the answer); that is
-    // `ConnectionSearchSheet.intoRoutine`'s job, not this button's.
+    // A routine's own days are ordinals anchored in 1970, which no timetable
+    // answers for — so its run is re-routed the way one is imported into it: the
+    // search is made on a real date and the answer laid back onto the plan day
+    // (`ConnectionSearchSheet.intoRoutine`). A template is as worth re-routing as
+    // an outing: the 07:32 being retired changes every morning from now on.
     final isRoutine =
         ref.watch(tripProvider(tripId)).value?.kind == TripKind.routine;
     // The run as the search form takes it: one journey, since these items are
@@ -85,7 +85,7 @@ class JourneyDetailsSheet extends ConsumerWidget {
     // whose ends carry no id — hand-entered, or an import that lost one. Here
     // that is not a dead end but the form's first question, answered by picking
     // the station from the geocoder.
-    final planned = isRoutine ? null : plannedJourneyOf(journey);
+    final planned = plannedJourneyOf(journey);
     return JourneySheet(
       view: journeyViewFromItems(journey, modesById),
       title: title,
@@ -93,12 +93,17 @@ class JourneyDetailsSheet extends ConsumerWidget {
       itemsById: {for (final item in journey) item.id: item},
       onFindConnection: planned == null
           ? null
-          : () => _findConnection(context, planned),
+          : () => _findConnection(context, planned, intoRoutine: isRoutine),
       // A run of one leg has nothing to offer per leg that the journey's own
       // button does not already do to the same row.
       onFindLegConnection: planned == null || planned.legs.length < 2
           ? null
-          : (leg) => _findLegConnection(context, journey, leg),
+          : (leg) => _findLegConnection(
+              context,
+              journey,
+              leg,
+              intoRoutine: isRoutine,
+            ),
     );
   }
 
@@ -112,10 +117,14 @@ class JourneyDetailsSheet extends ConsumerWidget {
   /// preview, and the swap. This sheet only closes behind it, onto the timeline
   /// where the new legs now are: the ones it was reading have been deleted, a
   /// lone leg's id along with them.
+  /// On a **routine**, [intoRoutine] sends the form to a real date and rebases
+  /// what it finds back onto [PlannedJourney.date] — the plan day these legs sit
+  /// on, which is the rebase target rather than a day anything runs on.
   Future<void> _findConnection(
     BuildContext context,
     PlannedJourney journey, {
     int? departFromMinutes,
+    bool intoRoutine = false,
   }) async {
     final navigator = Navigator.of(context);
     final replaced = await showConnectionSearchSheet(
@@ -124,6 +133,7 @@ class JourneyDetailsSheet extends ConsumerWidget {
       day: journey.date,
       replacing: journey,
       departFromMinutes: departFromMinutes,
+      intoRoutine: intoRoutine,
     );
     if (replaced && navigator.canPop()) navigator.pop();
   }
@@ -145,13 +155,15 @@ class JourneyDetailsSheet extends ConsumerWidget {
   Future<void> _findLegConnection(
     BuildContext context,
     List<ItineraryItem> run,
-    ItineraryItem leg,
-  ) async {
+    ItineraryItem leg, {
+    bool intoRoutine = false,
+  }) async {
     final journey = plannedJourneyOf([leg]);
     if (journey == null) return;
     await _findConnection(
       context,
       journey,
+      intoRoutine: intoRoutine,
       departFromMinutes: departureSeedMinutes(run, leg),
     );
   }

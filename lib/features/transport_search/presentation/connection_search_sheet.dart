@@ -64,13 +64,11 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
     this.replacing,
     this.departFromMinutes,
     this.alternativeId,
-    // A routine's plan is searched on a real date and laid back onto the plan;
-    // a run being replaced already sits on a real date. Nothing does both.
-  }) : assert(replacing == null || !intoRoutine),
-       // Replacing swaps the legs of a run that already sits somewhere — in an
-       // option or on the day — and keeps that place; only an *added* run needs
-       // to be told where it goes.
-       assert(replacing == null || alternativeId == null);
+    // Replacing swaps the legs of a run that already sits somewhere — in an
+    // option or on the day — and keeps that place; only an *added* run needs to
+    // be told where it goes. (Replacing *into a routine* is a different matter
+    // and allowed: see [replacing].)
+  }) : assert(replacing == null || alternativeId == null);
 
   final int tripId;
 
@@ -98,6 +96,12 @@ class ConnectionSearchSheet extends ConsumerStatefulWidget {
   /// stop, different modes — which is the whole reason this is the search sheet
   /// and not a single silent request: "the 07:32 was cancelled" and "I'll go in
   /// after lunch instead" are the same act.
+  ///
+  /// Composes with [intoRoutine]: re-routing a *routine's* run searches a real
+  /// date and lays the answer back onto the plan day, which is the same trade the
+  /// import makes there. The form then opens on today, as it does for an import,
+  /// while the time still comes from the run — a commute leaves at the minute the
+  /// plan says whichever day it is asked about.
   final PlannedJourney? replacing;
 
   /// The minute to open the time field on, when the run being replaced is not the
@@ -305,6 +309,10 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
           // form lets either end be changed outright.
           fromPlaceId: _from?.queryId,
           toPlaceId: _to?.queryId,
+          // Into a routine, what is kept is the *shape*: which legs, in which
+          // order, how far into the plan each falls.
+          rebaseFrom: widget.intoRoutine ? _date : null,
+          rebaseTo: widget.intoRoutine ? widget.day : null,
         );
       } else {
         await controller.importJourney(
