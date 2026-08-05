@@ -19,6 +19,7 @@ mixin _$RoutineDaoMixin on DatabaseAccessor<AppDatabase> {
   $CostsTable get costs => attachedDatabase.costs;
   $CostBeneficiariesTable get costBeneficiaries =>
       attachedDatabase.costBeneficiaries;
+  $ChecklistsTable get checklists => attachedDatabase.checklists;
   RoutineDaoManager get managers => RoutineDaoManager(this);
 }
 
@@ -66,4 +67,6 @@ class RoutineDaoManager {
         _db.attachedDatabase,
         _db.costBeneficiaries,
       );
+  $$ChecklistsTableTableManager get checklists =>
+      $$ChecklistsTableTableManager(_db.attachedDatabase, _db.checklists);
 }

@@ -445,6 +445,148 @@ void main() {
       final costs = await db.costDao.watchCostsForTrip(tripId).first;
       expect(costs.map((c) => c.reason), ['Ticket']);
     });
+
+    /// A leg standing on its own, with a fare of its own — a hand-entered ride,
+    /// or one the import left ungrouped because it was a single leg.
+    Future<({int tripId, int legId})> looseLeg({int? costMinor}) async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(
+          title: 'Trip',
+          startDate: Value(DateTime(2026, 8)),
+          endDate: Value(DateTime(2026, 8)),
+        ),
+      );
+      final legId = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 8),
+          kind: ItemKind.transport,
+          fromLocation: const Value('Home'),
+          toLocation: const Value('Office'),
+          startMinutes: const Value(452),
+        ),
+      );
+      if (costMinor != null) {
+        await db.costDao.addCost(
+          CostsCompanion.insert(
+            itemId: Value(legId),
+            amountMinor: costMinor,
+            currency: eurId,
+            reason: 'Ticket',
+          ),
+        );
+      }
+      return (tripId: tripId, legId: legId);
+    }
+
+    ItineraryItemsCompanion newLeg(
+      int tripId, {
+      required String from,
+      required String to,
+      int dayOffset = 0,
+      int? start,
+    }) => ItineraryItemsCompanion.insert(
+      tripId: tripId,
+      date: DateTime(2026, 8, 1 + dayOffset),
+      kind: ItemKind.transport,
+      fromLocation: Value(from),
+      toLocation: Value(to),
+      startMinutes: Value(start),
+      sourceTripId: const Value('live'),
+    );
+
+    test('a run that arrives where there was no group is given one', () async {
+      // The timetable answers a one-leg plan with a change: two legs sharing one
+      // ticket, which is exactly what a group is for.
+      final loose = await looseLeg(costMinor: 480);
+
+      await db.routineDao.replaceJourneyLegs(
+        loose.tripId,
+        oldLegIds: [loose.legId],
+        legs: [
+          newLeg(loose.tripId, from: 'Home', to: 'Change', start: 452),
+          newLeg(loose.tripId, from: 'Change', to: 'Office', start: 470),
+        ],
+      );
+
+      final items = await db.itineraryDao.watchItemsForTrip(loose.tripId).first;
+      expect(items, hasLength(2));
+      final groupId = items.first.groupId;
+      expect(groupId, isNotNull, reason: 'the run is one bundle');
+      expect(items.every((i) => i.groupId == groupId), isTrue);
+      // And the fare rescued off the old leg hangs on that bundle, covering the
+      // whole run rather than clinging to its first leg.
+      final costs = await db.costDao.watchCostsForTrip(loose.tripId).first;
+      expect(costs.single.groupId, groupId);
+      expect(costs.single.itemId, isNull);
+    });
+
+    test('a single leg is left loose: one leg is no bundle', () async {
+      final loose = await looseLeg(costMinor: 480);
+
+      await db.routineDao.replaceJourneyLegs(
+        loose.tripId,
+        oldLegIds: [loose.legId],
+        legs: [newLeg(loose.tripId, from: 'Home', to: 'Office', start: 452)],
+      );
+
+      final items = await db.itineraryDao.watchItemsForTrip(loose.tripId).first;
+      expect(items.single.groupId, isNull);
+      expect(await db.select(db.itemGroups).get(), isEmpty);
+      // With no bundle to hold it, the fare rides on the leg itself.
+      final costs = await db.costDao.watchCostsForTrip(loose.tripId).first;
+      expect(costs.single.itemId, items.single.id);
+    });
+
+    test('a replacement that crosses midnight bundles each day', () async {
+      final loose = await looseLeg();
+      final groupId = await db
+          .into(db.itemGroups)
+          .insert(
+            ItemGroupsCompanion.insert(
+              tripId: loose.tripId,
+              label: const Value('Heimweg'),
+            ),
+          );
+      await (db.update(db.itineraryItems)
+            ..where((i) => i.id.equals(loose.legId)))
+          .write(ItineraryItemsCompanion(groupId: Value(groupId)));
+
+      await db.routineDao.replaceJourneyLegs(
+        loose.tripId,
+        oldLegIds: [loose.legId],
+        groupId: groupId,
+        legs: [
+          newLeg(loose.tripId, from: 'Home', to: 'Change', start: 1380),
+          newLeg(
+            loose.tripId,
+            from: 'Change',
+            to: 'Office',
+            dayOffset: 1,
+            start: 30,
+          ),
+        ],
+      );
+
+      final items = await db.itineraryDao.watchItemsForTrip(loose.tripId).first;
+      expect(items, hasLength(2));
+      final first = items.firstWhere((i) => i.date == DateTime(2026, 8));
+      final second = items.firstWhere((i) => i.date == DateTime(2026, 8, 2));
+      // The surviving group keeps the evening — with the ticket that hangs on it
+      // — and the small hours are not dragged into it: a group may not straddle
+      // two days. A single leg on the far side of midnight is left loose, exactly
+      // as importing an overnight journey leaves one.
+      expect(first.groupId, groupId);
+      expect(second.groupId, isNull);
+      // And the trip now admits to the day its journey lands on.
+      final trip = await db.tripDao.findTrip(loose.tripId);
+      expect(trip!.endDate, DateTime(2026, 8, 2));
+      expect(
+        trip.startDate,
+        DateTime(2026, 8),
+        reason: 'the near end is unmoved',
+      );
+    });
   });
 
   group('a routine whose entries carry real dates', () {
@@ -798,6 +940,84 @@ void main() {
       final fresh =
           (await db.itineraryDao.watchItemsForTrip(tripId).first).single;
       expect(after.single.itemId, fresh.id);
+    });
+  });
+  group('a routine carries its checklists', () {
+    Future<int> makeList(int tripId, String title, List<String> entries) async {
+      final id = await db.checklistDao.addChecklist(
+        ChecklistsCompanion.insert(tripId: tripId, title: Value(title)),
+      );
+      for (final entry in entries) {
+        await db.checklistDao.addItem(
+          ChecklistItemsCompanion.insert(checklistId: id, label: entry),
+        );
+      }
+      return id;
+    }
+
+    test('the list travels, and arrives unticked', () async {
+      final routineId = await makeRoutine();
+      final listId = await makeList(routineId, 'Take with', [
+        'Badge',
+        'Laptop',
+      ]);
+      // Ticked on the template — which says nothing about this morning.
+      final entries = await db.checklistDao.watchItems(listId).first;
+      await db.checklistDao.updateItem(entries.first.copyWith(done: true));
+
+      final tripId = await db.routineDao.materializeRoutine(
+        routineId,
+        startDate: DateTime(2026, 8, 3),
+      );
+
+      final lists = await db.checklistDao.watchChecklists(tripId).first;
+      expect(lists, hasLength(1));
+      expect(lists.single.title, 'Take with');
+      expect(
+        lists.single.id,
+        isNot(listId),
+        reason: 'a copy, not the template',
+      );
+      final copied = await db.checklistDao.watchItems(lists.single.id).first;
+      expect(copied.map((i) => i.label), ['Badge', 'Laptop']);
+      expect(
+        copied.every((i) => !i.done),
+        isTrue,
+        reason: 'packing is the trip\'s',
+      );
+
+      // And the routine keeps its own, ticks included.
+      final template = await db.checklistDao.watchChecklists(routineId).first;
+      expect(template, hasLength(1));
+      expect(template.single.id, listId);
+      expect(
+        (await db.checklistDao.watchItems(listId).first).first.done,
+        isTrue,
+      );
+    });
+
+    test('several lists keep the order the routine keeps them in', () async {
+      final routineId = await makeRoutine();
+      await makeList(routineId, 'Morning', ['Badge']);
+      await makeList(routineId, 'Evening', ['Bottle']);
+
+      final tripId = await db.routineDao.materializeRoutine(
+        routineId,
+        startDate: DateTime(2026, 8, 3),
+      );
+
+      final lists = await db.checklistDao.watchChecklists(tripId).first;
+      expect(lists.map((c) => c.title), ['Morning', 'Evening']);
+    });
+
+    test('a routine with no lists gives a trip with none', () async {
+      final routineId = await makeRoutine();
+      final tripId = await db.routineDao.materializeRoutine(
+        routineId,
+        startDate: DateTime(2026, 8, 3),
+      );
+
+      expect(await db.checklistDao.watchChecklists(tripId).first, isEmpty);
     });
   });
 }

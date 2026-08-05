@@ -98,6 +98,16 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
           ),
         );
       }
+      // A journey searched for the last evening of a trip can arrive after
+      // midnight, which would leave its final leg on a day the trip does not
+      // cover: the timeline draws it, every reading of the *range* — the overview
+      // card, the calendar, the header — does not. An entry inside an option is no
+      // such case: it follows its decision's day, whatever date it carries.
+      if (alternativeId == null) {
+        await attachedDatabase.tripDao.widenToCover(tripId, [
+          for (final leg in legs) leg.date.value,
+        ]);
+      }
       return ids;
     });
   }

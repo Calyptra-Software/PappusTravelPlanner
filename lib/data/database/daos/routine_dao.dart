@@ -29,6 +29,7 @@ part 'routine_dao.g.dart';
     Alternatives,
     Costs,
     CostBeneficiaries,
+    Checklists,
   ],
 )
 class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
@@ -49,6 +50,22 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// take it would mean the price of the ride disappeared the moment its
   /// connection was looked up. It lands on the group, or on the first leg of the
   /// replacement when there is none.
+  ///
+  /// **Each day of the replacement is one bundle**, exactly as importing a
+  /// connection bundles one (`TripRepository.insertJourney`): a group means "these
+  /// legs share a ticket", and a ticket is not shared across a night. So a run of
+  /// two or more legs that arrives where there was no group — a lone leg the
+  /// timetable now routes with a change, or a hand-entered one made real — is
+  /// given one rather than left as loose legs with nothing to hang a fare on; and
+  /// a replacement that crosses midnight where the old run did not keeps
+  /// [groupId] for its first day and opens a fresh bundle for the next, rather
+  /// than stretching one group across two days (which `GroupDao.groupItems`
+  /// refuses to build in the first place).
+  ///
+  /// The trip's own dates are widened to cover what was written, for the same
+  /// reason: a leg on a day the trip does not admit to shows in the timeline (its
+  /// days are the union of the range and the entries) while the overview card goes
+  /// on calling it a one-day trip.
   ///
   /// [oldLegIds] are removed and [legs] inserted in their place, into
   /// [groupId] when there is one. Returns the new leg ids.
@@ -110,6 +127,11 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       }
 
       final ids = <int>[];
+      // The bundle each day's legs end up in: the surviving [groupId] for the
+      // first day written, a fresh one for any further day, and — where there was
+      // no group at all — one opened for a day that now holds a run rather than a
+      // single leg. Null stays null for a day of one leg with no group to join.
+      final groupByDay = <DateTime, int?>{};
       for (final entry in byDay.entries) {
         final day = entry.key;
         final slot = slots[day];
@@ -133,8 +155,9 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
           );
         }
 
+        final dayIds = <int>[];
         for (var i = 0; i < entry.value.length; i++) {
-          ids.add(
+          dayIds.add(
             await into(itineraryItems).insert(
               entry.value[i].copyWith(
                 sortOrder: Value(base + i),
@@ -143,26 +166,47 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             ),
           );
         }
-      }
+        ids.addAll(dayIds);
 
-      if (groupId != null) {
-        for (final id in ids) {
-          await (update(itineraryItems)..where((i) => i.id.equals(id))).write(
-            ItineraryItemsCompanion(groupId: Value(groupId)),
+        // This day's bundle. The surviving group takes the first day written and
+        // no other: a ticket does not span a night. A day that came without one
+        // gets its own as soon as it holds more than a single leg — the run needs
+        // something to hang its fare on, and the journey sheet reads a group.
+        final reuseSurvivor = groupId != null && groupByDay.isEmpty;
+        final dayGroup = reuseSurvivor
+            ? groupId
+            : dayIds.length > 1
+            ? await into(
+                itemGroups,
+              ).insert(ItemGroupsCompanion.insert(tripId: tripId))
+            : null;
+        groupByDay[day] = dayGroup;
+        if (dayGroup != null) {
+          await (update(itineraryItems)..where((i) => i.id.isIn(dayIds))).write(
+            ItineraryItemsCompanion(groupId: Value(dayGroup)),
           );
         }
       }
 
-      // The rescued fares find their home on the replacement: its bundle when
-      // it has one, its first leg otherwise. A replacement with no legs at all
-      // leaves them on the trip, where they are at least still counted.
-      if (rescued.isNotEmpty && (groupId != null || ids.isNotEmpty)) {
+      // A leg written onto a day the trip does not cover — a replacement that
+      // crosses midnight where the old run did not — widens the trip rather than
+      // sitting outside it.
+      await attachedDatabase.tripDao.widenToCover(tripId, byDay.keys);
+
+      // The rescued fares find their home on the replacement: its bundle when it
+      // has one, its first leg otherwise. A replacement with no legs at all leaves
+      // them on the trip, where they are at least still counted.
+      final home = groupByDay.values.firstWhere(
+        (id) => id != null,
+        orElse: () => null,
+      );
+      if (rescued.isNotEmpty && (home != null || ids.isNotEmpty)) {
         for (final cost in rescued) {
           await (update(costs)..where((c) => c.id.equals(cost.id))).write(
             CostsCompanion(
               tripId: const Value(null),
-              groupId: Value(groupId),
-              itemId: Value(groupId == null ? ids.first : null),
+              groupId: Value(home),
+              itemId: Value(home == null ? ids.first : null),
             ),
           );
         }
@@ -356,6 +400,13 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// recorded twice a day, and a tag the user would have to add by hand every
   /// morning is a tag that will be missing by Thursday.
   ///
+  /// And so do its **checklists**, for that same reason and by that same rule as
+  /// everywhere else: a copy arrives **unticked** (`ChecklistDao.copyChecklist`).
+  /// A routine's list is what to take *every time* — the badge, the laptop, the
+  /// season ticket — which is a template exactly as its legs are; one the user had
+  /// to copy across by hand each morning would be a list they stopped keeping. The
+  /// ticks belong to the occurrence, like the fare's being paid.
+  ///
   /// What this does *not* do is make the journeys live: an imported leg's
   /// `sourceTripId` names one dated run of one service, so it is deliberately
   /// left behind (see `copyItemPlan`) and the copy is a plan. Turning that plan
@@ -504,6 +555,20 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
         itemMap: itemMap,
         groupMap: groupMap,
       );
+
+      // In the order the routine keeps them, so the trip reads the same way. The
+      // copy arrives unticked; `copyChecklist` is where that rule lives.
+      final lists =
+          await (select(checklists)
+                ..where((c) => c.tripId.equals(routineId))
+                ..orderBy([
+                  (c) => OrderingTerm(expression: c.sortOrder),
+                  (c) => OrderingTerm(expression: c.createdAt),
+                ]))
+              .get();
+      for (final list in lists) {
+        await attachedDatabase.checklistDao.copyChecklist(list.id, newTripId);
+      }
       return newTripId;
     });
   }

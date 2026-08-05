@@ -192,4 +192,72 @@ void main() {
       expect(items.map((i) => i.date), [dayA, dayB]);
     },
   );
+  group('a journey that arrives after midnight', () {
+    Future<int> datedTrip() => db.tripDao.createTrip(
+      TripsCompanion.insert(
+        title: 'T',
+        startDate: Value(dayA),
+        endDate: Value(dayA),
+      ),
+    );
+
+    test('widens the trip to the day it lands on', () async {
+      final tripId = await datedTrip();
+
+      await repo.insertJourney(
+        tripId,
+        companions(tripId, [
+          leg(dayA, startMinutes: 1380, endMinutes: 1439),
+          leg(dayB, startMinutes: 30, endMinutes: 90),
+        ]),
+      );
+
+      // The last leg is on the following day; every reading of the trip's own
+      // range — the overview card, the calendar, the header — would otherwise go
+      // on calling this a one-day trip.
+      final trip = await db.tripDao.findTrip(tripId);
+      expect(trip!.startDate, dayA, reason: 'the near end is unmoved');
+      expect(trip.endDate, dayB);
+    });
+
+    test('a journey inside the range moves nothing', () async {
+      final tripId = await datedTrip();
+
+      await repo.insertJourney(tripId, companions(tripId, [leg(dayA)]));
+
+      final trip = await db.tripDao.findTrip(tripId);
+      expect(trip!.startDate, dayA);
+      expect(trip.endDate, dayA);
+    });
+
+    test('a routine has no dates to widen', () async {
+      final routineId = await db.tripDao.createTrip(
+        TripsCompanion.insert(
+          title: 'Commute',
+          kind: const Value(TripKind.routine),
+        ),
+      );
+
+      await repo.insertJourney(routineId, companions(routineId, [leg(dayA)]));
+
+      // Its days are ordinals read off the entries; a range would mean nothing.
+      final routine = await db.tripDao.findTrip(routineId);
+      expect(routine!.startDate, isNull);
+      expect(routine.endDate, isNull);
+    });
+
+    test('a trip that carries no dates is given none', () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'Someday'),
+      );
+
+      await repo.insertJourney(tripId, companions(tripId, [leg(dayA)]));
+
+      // No range is "not decided yet", not a range of zero length; inventing one
+      // from an import would answer a question nobody asked.
+      final trip = await db.tripDao.findTrip(tripId);
+      expect(trip!.startDate, isNull);
+      expect(trip.endDate, isNull);
+    });
+  });
 }

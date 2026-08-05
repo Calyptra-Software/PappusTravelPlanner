@@ -35,6 +35,42 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
   Future<int> deleteTrip(int id) =>
       (delete(trips)..where((t) => t.id.equals(id))).go();
 
+  /// Widens [tripId]'s dates to cover [days] — the days entries have just been
+  /// written onto, when they fall outside what the trip admits to.
+  ///
+  /// A connection is what puts an entry outside the range without anyone choosing
+  /// to: a journey searched for the last evening of a trip can arrive after
+  /// midnight, and one looked up again can cross a midnight the old run did not.
+  /// The entry is not lost either way — the timeline's days are the union of the
+  /// trip's range and its entries' own dates — but the overview card, the calendar
+  /// and the trip header all read the range, so the trip would go on calling itself
+  /// a day shorter than it is.
+  ///
+  /// Nothing to widen for a **routine** (its days are ordinals, and its plan is
+  /// read off the entries) or for a trip that carries no dates at all: an absent
+  /// range is a deliberate "not decided yet", not a range of zero length, and
+  /// inventing one from an import would be answering a question nobody asked.
+  Future<void> widenToCover(int tripId, Iterable<DateTime> days) async {
+    if (days.isEmpty) return;
+    final trip = await findTrip(tripId);
+    if (trip == null || trip.kind == TripKind.routine) return;
+    final start = trip.startDate;
+    final end = trip.endDate;
+    if (start == null || end == null) return;
+
+    var earliest = start;
+    var latest = end;
+    for (final day in days) {
+      final date = DateTime(day.year, day.month, day.day);
+      if (date.isBefore(earliest)) earliest = date;
+      if (date.isAfter(latest)) latest = date;
+    }
+    if (earliest == start && latest == end) return;
+    await (update(trips)..where((t) => t.id.equals(tripId))).write(
+      TripsCompanion(startDate: Value(earliest), endDate: Value(latest)),
+    );
+  }
+
   // --- participants ---
 
   /// The people taking part in a trip, alphabetical by name.

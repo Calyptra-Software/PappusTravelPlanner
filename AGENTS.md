@@ -110,7 +110,10 @@ UI (features/*/presentation, *widgets)
   from it. Groups and decisions are cloned into fresh ones. Participants travel,
   and so do the routine's **tags** — a tag the user must re-add every morning is missing by
   Thursday, and auto-filing the trips stamped out of routines is what makes tags carry the
-  crowding they were introduced for. `Trips.fromRoutineId` records where a trip came from,
+  crowding they were introduced for. Its **checklists** travel for the same reason and by the
+  same rule as every other copy: the list is what to take *every* time (badge, laptop, season
+  ticket), so it is a template like the legs are, and it arrives **unticked**
+  (`ChecklistDao.copyChecklist`) — packing is something an occurrence does, as paying is. `Trips.fromRoutineId` records where a trip came from,
   enough to *ask* before recording the same routine twice on one day, and to filter the
   overview down to what a routine has produced (`TripQuery.routineIds`, any-of like the
   tags; selecting every routine *is* the question "only trips I made from a routine",
@@ -132,6 +135,19 @@ UI (features/*/presentation, *widgets)
   the old run occupied rather than on the end of the day — appending once put a stop added
   after the journey in front of it. A wider replacement pushes what followed it down,
   decisions included, since a day's items and its sets share one ordering space.
+  **Each day of the replacement is one bundle**, the same rule the import follows: a run of two
+  or more legs arriving where there was no group is *given* one (a lone leg the timetable now
+  routes with a change has a ticket to hang somewhere, and the journey sheet reads a group),
+  while a replacement that crosses a midnight the old run did not keeps the surviving group for
+  its first day and leaves the far side of the night out of it — a group may not straddle two
+  days, which `GroupDao.groupItems` refuses to build in the first place, and a single leg over
+  there is left loose exactly as an imported overnight journey leaves one. A leg written onto a
+  day outside the trip's own range widens it (`TripDao.widenToCover`, called by the import too):
+  the timeline draws such a day regardless — its days are the union of the range and the
+  entries — but the overview card, the calendar and the header all read the *range*, so the trip
+  would go on calling itself a day shorter than it is. Nothing to widen on a routine (ordinals,
+  not dates) or on a trip with no dates at all, where an absent range is a deliberate "not
+  decided yet" rather than a range to be guessed from a timetable.
   The lookup **says nothing when it works**: the connection it took is in the trip the user
   is one tap from opening, so announcing it only queues a message in front of that tap. Declining, finding nothing, or losing the
   network all leave the copied plan standing — and "no train" is never reported when it was
