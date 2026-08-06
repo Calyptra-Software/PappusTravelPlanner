@@ -1,0 +1,106 @@
+# Contributing
+
+Thanks for wanting to help. Bug reports, translations and patches are all welcome —
+open an [issue](https://github.com/JoshuaLampert/TravelPlanner/issues) first if the change
+is larger than a fix, so nobody writes a feature twice.
+
+## Licensing your contribution
+
+Travel Planner is free software under the **GNU General Public License, version 3 or
+later** (see [LICENSE](LICENSE)), and contributions are taken under those same terms: what
+you send becomes part of the app and is distributed under the GPL along with it. Opening a
+pull request means you confirm that you wrote the patch, or are otherwise entitled to
+submit it under that license.
+
+**If a patch contains code you did not write, say so in the pull request and name its
+license.** That is the one thing worth a sentence of your time, because it is the only part
+nobody else can check for you — a snippet lifted from a blog post, another app, or an AI
+assistant that reproduced someone's code verbatim. Anything incompatible with the GPL
+cannot be merged, however small.
+
+A `Signed-off-by` line (`git commit -s`, certifying the
+[Developer Certificate of Origin](https://developercertificate.org/)) is welcome but not
+required, and nothing here enforces one. If you use it, note that it is a statement about
+provenance, not a transfer of copyright.
+
+There is no CLA either, and the consequence is worth knowing: because the copyright stays
+spread across everyone who has contributed, the license can only ever be changed with
+everybody's agreement. That is deliberate — the GPL is meant to be the end state here, not
+a stage on the way to something else.
+
+## Working with AI assistants
+
+Using an LLM to help write a patch is allowed and needs no apology — large parts of this
+app were written that way. What follows is therefore not a
+rule against the tool, but a reminder of the responsibility that comes with using it.
+
+**You are the author of the pull request.** You should understand the code you are sending, and be able to explain it to a reviewer. Don't stop thinking just because the assistant has a good answer — it is not a substitute for your own judgement.
+
+**Run it before you send it.** Generated code compiles far more often than it is correct.
+At a minimum, the commands in the next section must pass; beyond that, actually exercise
+the change in the running app (e.g., `flutter run -d linux` is the quickest). "The tests still
+pass" is not the same claim as "I saw this work".
+
+**Say so in the pull request.** One line is enough — which assistant, and roughly what it
+did ("wrote the first draft of the DAO method", "translated the ARB strings"). This is not
+a judgement and it will not count against a patch. It tells the review where to look
+closely, exactly the way "I copied this approach from the Flutter samples" would.
+
+## Before you open a pull request
+
+```bash
+flutter pub get
+dart format .            # the repository is formatted in tall style
+flutter analyze          # must be clean
+flutter test
+```
+
+CI runs the same three, plus a real `flutter build apk --split-per-abi` — that Android job
+is the only thing guarding the Gradle toolchain, since plugin failures happen long before
+any Dart is compiled.
+
+Three things generate code or data, and the generated files are committed alongside their
+sources:
+
+- **`dart run build_runner build --delete-conflicting-outputs`** after touching any Drift
+  table or DAO (`lib/data/database/`) or any `@riverpod`-annotated provider. Never edit a
+  `*.g.dart` by hand.
+- **`flutter gen-l10n`** after editing `lib/l10n/app_en.arb` (the template) — and every key
+  added there must be added to `app_de.arb` too.
+- Any change to a Drift table or column needs a bumped `AppDatabase.schemaVersion` **and**
+  an `onUpgrade` branch. Real databases are migrated in place, never recreated. The same
+  care applies to the persisted enums (cost display, expense scope, PDF sections, sort
+  order, trip statuses): they are stored by index, so append only — never reorder.
+
+## How the code is arranged
+
+[AGENTS.md](AGENTS.md) is the long version — the layering, why a trip and a routine are one
+table, why money is stored in minor units, what a group and a decision each mean. It is
+written for coding agents but reads perfectly well for people, and it is the fastest way to
+find out whether the thing you are about to add already has a place.
+
+Two conventions worth stating here:
+
+- **Tests and documentation are part of the change.** New behaviour comes with a test; pure
+  logic (`trip_stats.dart`, `day_blocks.dart`, `now_marker.dart`, `time_marks.dart`, the
+  sharing bundle) is deliberately free of Flutter and database imports so it can be tested
+  directly. Note that drift's `.watch()` streams do not resolve under `flutter_test`'s fake
+  clock — override the feature provider with a plain `Stream.value(...)`, or put the test in
+  `integration_test/`.
+- **Match the surrounding code** rather than importing your own style: the naming, the
+  comment density, and the habit of writing down *why* a rule exists where it is enforced.
+
+## The routing service
+
+The connection search runs against [Transitous](https://transitous.org), a community-run
+instance donated for free and open-source, non-commercial use. Its
+[usage policy](https://transitous.org/api/) is a functional requirement of this app, not a
+footnote: requests carry a `User-Agent` naming the app, its version and a contact
+(`lib/core/app_info.dart`); the data sources are linked wherever the data is shown
+(`lib/core/widgets/attribution.dart`); journeys are searched on an explicit button and
+never on a timer; and the staging and `motis-project` hosts are off limits.
+
+Please do not add anything that increases request volume — polling, prefetching, a search
+that fires while typing — without discussing it in an issue first. The policy asks that
+they be contacted before a client starts making many requests, and a patch that quietly
+crosses that line is a problem for the whole project, not just for the feature.

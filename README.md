@@ -2,7 +2,7 @@
 
 [![Flutter 3.44+](https://img.shields.io/badge/Flutter-3.44%2B-blue)](https://flutter.dev)
 [![Dart 3.12+](https://img.shields.io/badge/Dart-3.12%2B-blue)](https://dart.dev)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![CI](https://github.com/JoshuaLampert/TravelPlanner/actions/workflows/ci.yml/badge.svg)](https://github.com/JoshuaLampert/TravelPlanner/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/JoshuaLampert/TravelPlanner/branch/main/graph/badge.svg)](https://codecov.io/gh/JoshuaLampert/TravelPlanner)
 
@@ -314,10 +314,32 @@ on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
   [sqlite3.dart release](https://github.com/simolus3/sqlite3.dart/releases)) and
   `drift_worker.js` (`dart compile js -O2` of a one-line entrypoint calling
   `WasmDatabase.workerMainForOpen()`, compiled from inside this project).
-- Android Gradle Plugin is pinned to **8.x** (AGP 8.11.1 / Gradle 8.13); the Flutter
-  scaffold's default AGP 9 breaks `file_picker`, so don't bump it.
+- The Android toolchain is **AGP 9.3.1 on Gradle 9.6.1**
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is arranged
+and what to consider before opening a pull request. Contributions are taken under the project's
+own license (GPL-3.0-or-later); if a patch carries code you did not write, please name it
+and its license in the pull request.
+
+## License
+
+Copyright © 2026-present Joshua Lampert and contributors.
+
+Travel Planner is free software: you can redistribute it and/or modify it under the terms
+of the **GNU General Public License** as published by the Free Software Foundation, either
+version 3 of the License, or (at your option) any later version. It is distributed in the
+hope that it will be useful, but **without any warranty**; without even the implied
+warranty of merchantability or fitness for a particular purpose. See the
+[LICENSE](LICENSE) file, or <https://www.gnu.org/licenses/>, for the full terms.
+
+The bundled fonts carry their own terms, which travel with them and are shown on the app's
+license page: Roboto is under Apache-2.0 (`assets/fonts/Roboto-LICENSE.txt`), and the four
+transport glyphs come from Apache-2.0 and CC0 sources
+(`assets/fonts/TransportGlyphs-ATTRIBUTION.txt`).
 
 ## Disclaimer
 
 Large parts of this app were written with the help of AI assistants. The
-implementation has been tested but comes with no warranty — use at your own risk.
+implementation has been tested and verified manually but comes with no warranty.

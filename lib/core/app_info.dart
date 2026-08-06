@@ -41,8 +41,15 @@ const String kAppIssuesUrl = '$kAppRepositoryUrl/issues';
 ///
 /// Deliberately untranslated: a copyright notice and a license name are the
 /// legal text they are, in the language they were granted in.
+///
+/// This is also the app's "Appropriate Legal Notices" in the sense of GPLv3 §5:
+/// an interactive program has to state the license and the absence of warranty
+/// where the user can see it, and point at the terms. The About screen shows
+/// this line above the license page and beside [kAppRepositoryUrl], which is
+/// where the corresponding source is.
 const String kAppLegalese =
-    'MIT License · © 2026-present Joshua Lampert and contributors';
+    'GNU General Public License v3 or later · no warranty\n'
+    '© 2026-present Joshua Lampert and contributors';
 
 /// The `User-Agent` sent with every connection-search request, e.g.
 /// `TravelPlanner/1.0.0+1 (lampert.joshua@protonmail.com)`.
