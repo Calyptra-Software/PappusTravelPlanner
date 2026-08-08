@@ -57,7 +57,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
-  sqlite3: ^3.3.4 # used by tests to build an old-schema DB for migration checks
+  sqlite3: ^3.5.1 # used by tests to build an old-schema DB for migration checks
 
   # Code generation: `dart run build_runner build --delete-conflicting-outputs`.
   build_runner: ^2.15.1
