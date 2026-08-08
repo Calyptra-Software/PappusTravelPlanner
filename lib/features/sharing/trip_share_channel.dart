@@ -10,9 +10,7 @@ import 'presentation/trip_import.dart';
 
 /// Method channel matching the native `MainActivity` bridge, over which a
 /// received `.tpt` file's bytes arrive as Base64.
-const MethodChannel _channel = MethodChannel(
-  'dev.calyptra.pappus/trip_import',
-);
+const MethodChannel _channel = MethodChannel('dev.calyptra.pappus/trip_import');
 
 /// Receiving shared files is wired only on Android; a no-op elsewhere.
 bool get _supported =>
