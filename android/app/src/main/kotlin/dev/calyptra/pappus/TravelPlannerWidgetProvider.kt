@@ -1,4 +1,4 @@
-package com.travelplanner.travelplanner
+package dev.calyptra.pappus
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager

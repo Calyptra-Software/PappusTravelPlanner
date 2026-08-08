@@ -1,4 +1,4 @@
-package com.travelplanner.travelplanner
+package dev.calyptra.pappus
 
 import android.content.Context
 import android.content.Intent
