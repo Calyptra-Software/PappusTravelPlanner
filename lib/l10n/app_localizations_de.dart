@@ -9,7 +9,7 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
-  String get appTitle => 'Reiseplaner';
+  String get appTitle => 'Pappus Travel Planner';
 
   @override
   String get tripsTitle => 'Meine Reisen';
@@ -1842,6 +1842,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aboutReportIssue => 'Problem melden';
+
+  @override
+  String get aboutContact => 'Kontakt';
 
   @override
   String get aboutLicenses => 'Open-Source-Lizenzen';

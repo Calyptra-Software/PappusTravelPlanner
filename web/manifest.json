@@ -1,6 +1,6 @@
 {
-    "name": "travelplanner",
-    "short_name": "travelplanner",
+    "name": "Pappus Travel Planner",
+    "short_name": "Pappus",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",

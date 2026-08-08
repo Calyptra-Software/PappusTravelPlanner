@@ -14,16 +14,15 @@
 library;
 
 /// The application's name, as the service sees it.
-const String kAppName = 'TravelPlanner';
-
-/// How to reach the maintainer about this client's traffic.
 ///
-/// The policy accepts an e-mail address *or* a website URL; this is the former
-/// while the repository is still private. When it goes public the URL is the
-/// friendlier of the two — but one of them must always be here, since it is
-/// how Transitous would tell us about a breaking change or a request pattern
-/// that is costing them too much.
-const String kAppContact = 'lampert.joshua@protonmail.com';
+/// A `User-Agent` product token, so it carries no space — the displayed name
+/// is the localized `appTitle`, which is what the About screen shows.
+const String kAppName = 'PappusTravelPlanner';
+
+/// How to reach the maintainer, for anything that is not about this client's
+/// traffic — the traffic itself is answered by [kAppRepositoryUrl], see
+/// [buildUserAgent].
+const String kAppContact = 'calyptra-software@proton.me';
 
 /// Where this app's own source lives.
 ///
@@ -31,7 +30,7 @@ const String kAppContact = 'lampert.joshua@protonmail.com';
 /// of using the Transitous API, so the link that proves it belongs in the app
 /// and not only in the README.
 const String kAppRepositoryUrl =
-    'https://github.com/JoshuaLampert/TravelPlanner';
+    'https://github.com/Calyptra-Software/PappusTravelPlanner';
 
 /// Where a user reports something that went wrong. The same repository, one
 /// level in — kept beside it so the two cannot drift apart.
@@ -52,7 +51,15 @@ const String kAppLegalese =
     '© 2026-present Joshua Lampert and contributors';
 
 /// The `User-Agent` sent with every connection-search request, e.g.
-/// `TravelPlanner/1.0.0+1 (lampert.joshua@protonmail.com)`.
+/// `PappusTravelPlanner/1.0.0+1 (+https://github.com/Calyptra-Software/PappusTravelPlanner)`.
+///
+/// The policy accepts an e-mail address *or* a website URL as the way to get in
+/// touch. Now that the repository is public the URL is the better of the two: it
+/// leads to the issue tracker, the README and the source that being an
+/// open-source client is conditioned on — and it keeps an address out of every
+/// line of somebody else's request log. The `+` prefix is the convention a
+/// crawler uses for exactly this field.
 ///
 /// Pure, so the format is testable without a platform channel.
-String buildUserAgent(String version) => '$kAppName/$version ($kAppContact)';
+String buildUserAgent(String version) =>
+    '$kAppName/$version (+$kAppRepositoryUrl)';

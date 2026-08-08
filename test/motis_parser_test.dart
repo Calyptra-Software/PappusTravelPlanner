@@ -359,9 +359,9 @@ void main() {
 
       expect(
         seen.headers['User-Agent'],
-        'TravelPlanner/9.9.9+42 ($kAppContact)',
+        '$kAppName/9.9.9+42 (+$kAppRepositoryUrl)',
       );
-      expect(kAppContact, contains('@'));
+      expect(kAppRepositoryUrl, startsWith('https://'));
     });
 
     test('a client built without one still identifies itself', () async {
@@ -381,7 +381,7 @@ void main() {
 
       final userAgent = seen.headers['User-Agent'];
       expect(userAgent, startsWith('$kAppName/'));
-      expect(userAgent, contains(kAppContact));
+      expect(userAgent, contains(kAppRepositoryUrl));
     });
 
     test('every endpoint asks for the same language', () async {
