@@ -52,6 +52,15 @@ void main() {
     expect(find.text(kAppIssuesUrl), findsOneWidget);
   });
 
+  testWidgets('shows the address the User-Agent no longer carries', (
+    tester,
+  ) async {
+    await pumpAbout(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text(kAppContact), findsOneWidget);
+  });
+
   testWidgets('tapping the version copies it', (tester) async {
     String? copied;
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(

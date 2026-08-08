@@ -56,13 +56,15 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
 
-  # The Android toolchain has ceilings that nothing else checks: AGP is pinned
-  # to 8.x because the scaffold's AGP 9 breaks plugins that apply the Kotlin
-  # Gradle Plugin, and that in turn caps Gradle at 9.5.x because 9.6.0 removed
-  # an internal API AGP 8.x still calls (see AGENTS.md, "Platform build
-  # constraints"). Both failures happen while Gradle applies the plugins, so
-  # they are invisible to `analyze` and `test` — a dependency bump crossing
-  # either ceiling merged green until this job existed.
+  # The Android toolchain is the part nothing else checks. No version is pinned
+  # any more — AGP is on 9.x, the wrapper on 9.6.x — so what this job guards is
+  # not a ceiling but a mode: `android.builtInKotlin=false` in
+  # android/gradle.properties leaves Kotlin to the Kotlin Gradle Plugin, and
+  # that is the only arrangement that builds under Flutter 3.44 (see AGENTS.md,
+  # "Platform build constraints"). Every failure here happens while Gradle
+  # applies its plugins, long before a line of Dart or Kotlin is compiled, so
+  # they are invisible to `analyze` and `test` — a breaking bump merged green
+  # until this job existed.
   android:
     name: Build Android APK
     runs-on: ubuntu-latest

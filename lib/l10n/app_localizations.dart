@@ -101,7 +101,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Travel Planner'**
+  /// **'Pappus Travel Planner'**
   String get appTitle;
 
   /// No description provided for @tripsTitle.
@@ -3205,6 +3205,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Report a problem'**
   String get aboutReportIssue;
+
+  /// No description provided for @aboutContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get aboutContact;
 
   /// No description provided for @aboutLicenses.
   ///

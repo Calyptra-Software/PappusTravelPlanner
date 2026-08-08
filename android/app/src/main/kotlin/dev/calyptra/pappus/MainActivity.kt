@@ -1,4 +1,4 @@
-package com.travelplanner.travelplanner
+package dev.calyptra.pappus
 
 import android.content.Intent
 import android.net.Uri
@@ -17,7 +17,7 @@ import io.flutter.plugin.common.MethodChannel
  * `onTripReceived`.
  */
 class MainActivity : FlutterActivity() {
-    private val channelName = "com.travelplanner.travelplanner/trip_import"
+    private val channelName = "dev.calyptra.pappus/trip_import"
     private var channel: MethodChannel? = null
 
     /** Bytes from a launch intent, waiting for Dart to request them. */
