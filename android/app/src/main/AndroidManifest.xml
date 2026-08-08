@@ -61,14 +61,14 @@
 
         <!-- Home-screen widget -->
         <receiver
-            android:name=".TravelPlannerWidgetProvider"
+            android:name=".PappusWidgetProvider"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/travelplanner_widget_info" />
+                android:resource="@xml/pappus_widget_info" />
         </receiver>
 
         <!-- Serves the scrollable "today's plan" list inside the widget. -->

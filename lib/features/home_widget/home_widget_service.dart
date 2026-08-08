@@ -18,7 +18,7 @@ import '../trips/application/trip_providers.dart';
 import 'widget_payload.dart';
 
 /// Native provider class name (matches the Kotlin `AppWidgetProvider`).
-const String _androidWidgetName = 'TravelPlannerWidgetProvider';
+const String _androidWidgetName = 'PappusWidgetProvider';
 
 /// Whether the home widget feature is available on this platform.
 bool get _widgetSupported =>

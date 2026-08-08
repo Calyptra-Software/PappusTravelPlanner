@@ -19,7 +19,7 @@ import es.antonborri.home_widget.HomeWidgetProvider
  * The scrollable list of today's items is served by
  * [TodayItemsRemoteViewsService].
  */
-class TravelPlannerWidgetProvider : HomeWidgetProvider() {
+class PappusWidgetProvider : HomeWidgetProvider() {
 
     override fun onUpdate(
         context: Context,
@@ -38,7 +38,7 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         widgetId: Int,
         data: SharedPreferences,
     ) {
-        val views = RemoteViews(context.packageName, R.layout.travelplanner_widget)
+        val views = RemoteViews(context.packageName, R.layout.pappus_widget)
 
         val listShown = if (data.getBoolean("has_trip", false)) {
             showTrip(context, widgetId, views, data)
