@@ -45,12 +45,12 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:mimeType="application/octet-stream"/>
             </intent-filter>
-            <!-- Receive a trip shared from Travel Planner via the share sheet.
+            <!-- Receive a trip shared from Pappus via the share sheet.
                  Uses the app's own vendor MIME type so only its trips match. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
-                <data android:mimeType="application/x-travelplanner-trip"/>
+                <data android:mimeType="application/x-pappus-trip"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
