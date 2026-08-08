@@ -9,7 +9,7 @@ import '../../data/database/tables.dart' show ItemKind, TripKind;
 /// binary file. Tapped `.tpt` files arrive as `application/octet-stream`
 /// instead (the OS can't infer a type from the unknown extension), which the
 /// `ACTION_VIEW` filter handles separately.
-const String tripBundleMimeType = 'application/x-travelplanner-trip';
+const String tripBundleMimeType = 'application/x-pappus-trip';
 
 /// File extension for a shared trip bundle.
 const String tripBundleExtension = 'tpt';

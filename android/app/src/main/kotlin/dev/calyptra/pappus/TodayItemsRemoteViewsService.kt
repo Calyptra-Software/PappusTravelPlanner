@@ -1,4 +1,4 @@
-package com.travelplanner.travelplanner
+package dev.calyptra.pappus
 
 import android.content.Context
 import android.content.Intent
@@ -75,7 +75,7 @@ private class TodayItemsFactory(
         val tripId = data.getInt("trip_id", -1)
         val itemId = data.getInt("item${position}_id", -1)
         val fillIn = Intent().apply {
-            this.data = Uri.parse("travelplanner://trip?id=$tripId&item=$itemId")
+            this.data = Uri.parse("pappus://trip?id=$tripId&item=$itemId")
         }
         row.setOnClickFillInIntent(R.id.item_row, fillIn)
 

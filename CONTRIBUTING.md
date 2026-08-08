@@ -1,12 +1,12 @@
 # Contributing
 
 Thanks for wanting to help. Bug reports, translations and patches are all welcome —
-open an [issue](https://github.com/JoshuaLampert/TravelPlanner/issues) first if the change
+open an [issue](https://github.com/Calyptra-Software/PappusTravelPlanner/issues) first if the change
 is larger than a fix, so nobody writes a feature twice.
 
 ## Licensing your contribution
 
-Travel Planner is free software under the **GNU General Public License, version 3 or
+Pappus Travel Planner is free software under the **GNU General Public License, version 3 or
 later** (see [LICENSE](LICENSE)), and contributions are taken under those same terms: what
 you send becomes part of the app and is distributed under the GPL along with it. Opening a
 pull request means you confirm that you wrote the patch, or are otherwise entitled to

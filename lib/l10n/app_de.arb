@@ -1,6 +1,6 @@
 {
   "@@locale": "de",
-  "appTitle": "Reiseplaner",
+  "appTitle": "Pappus Travel Planner",
   "tripsTitle": "Meine Reisen",
   "newTrip": "Neue Reise",
   "noTripsTitle": "Noch keine Reisen",
@@ -691,6 +691,7 @@
   "aboutVersionCopied": "Version kopiert",
   "aboutSourceCode": "Quellcode",
   "aboutReportIssue": "Problem melden",
+  "aboutContact": "Kontakt",
   "aboutLicenses": "Open-Source-Lizenzen",
   "aboutLicensesSubtitle": "Die Bibliotheken und Schriften, aus denen diese App besteht"
 }

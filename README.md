@@ -1,12 +1,12 @@
-# Travel Planner
+# Pappus Travel Planner
 
 [![Flutter 3.44+](https://img.shields.io/badge/Flutter-3.44%2B-blue)](https://flutter.dev)
 [![Dart 3.12+](https://img.shields.io/badge/Dart-3.12%2B-blue)](https://dart.dev)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![CI](https://github.com/JoshuaLampert/TravelPlanner/actions/workflows/ci.yml/badge.svg)](https://github.com/JoshuaLampert/TravelPlanner/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/JoshuaLampert/TravelPlanner/branch/main/graph/badge.svg)](https://codecov.io/gh/JoshuaLampert/TravelPlanner)
+[![CI](https://github.com/Calyptra-Software/PappusTravelPlanner/actions/workflows/ci.yml/badge.svg)](https://github.com/Calyptra-Software/PappusTravelPlanner/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Calyptra-Software/PappusTravelPlanner/branch/main/graph/badge.svg)](https://codecov.io/gh/Calyptra-Software/PappusTravelPlanner)
 
-Travel Planner is a modern, **offline-first** Flutter app for planning trips. Create
+Pappus Travel Planner is a modern, **offline-first** Flutter app for planning trips. Create
 trips, build a day-by-day itinerary from places and transport legs, track what each
 part of the trip costs, and keep everything in a local SQLite database that you fully
 control. The primary target is **Android**, but the same code base also runs on Web, Linux, Windows, macOS, and iOS.
@@ -212,7 +212,7 @@ Pick a device with `-d`. List what's available with `flutter devices`.
 | Android (APK) | `flutter build apk` | `build/app/outputs/flutter-apk/app-release.apk` |
 | Android (Play) | `flutter build appbundle` | `build/app/outputs/bundle/release/app-release.aab` |
 | Web | `flutter build web` | `build/web/` |
-| Linux | `flutter build linux` | `build/linux/x64/release/bundle/travelplanner` |
+| Linux | `flutter build linux` | `build/linux/x64/release/bundle/pappus` |
 | Windows | `flutter build windows` | `build/windows/x64/runner/Release/` |
 | macOS | `flutter build macos` | `build/macos/Build/Products/Release/` |
 | iOS | `flutter build ios` | open `Runner.xcworkspace` in Xcode to sign/deploy |
@@ -272,7 +272,7 @@ and open it directly. Deleting a trip cascades to its itinerary items and their 
 To move **one trip** rather than the whole database, use the share button on the trip
 screen: it writes a `.tpt` bundle (a portable snapshot of that trip alone) which the
 recipient imports from the trips overview. On Android a `.tpt` file shared to — or
-opened with — Travel Planner goes straight into the import flow.
+opened with — Pappus goes straight into the import flow.
 
 The same button also offers **Export as PDF** (a printable, read-only copy) and **Export to
 calendar** (an `.ics` file for a calendar app). Both are one-way views of the plan; only the
@@ -327,7 +327,7 @@ and its license in the pull request.
 
 Copyright © 2026-present Joshua Lampert and contributors.
 
-Travel Planner is free software: you can redistribute it and/or modify it under the terms
+Pappus Travel Planner is free software: you can redistribute it and/or modify it under the terms
 of the **GNU General Public License** as published by the Free Software Foundation, either
 version 3 of the License, or (at your option) any later version. It is distributed in the
 hope that it will be useful, but **without any warranty**; without even the implied
