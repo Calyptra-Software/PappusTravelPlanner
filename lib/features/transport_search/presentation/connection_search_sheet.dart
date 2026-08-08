@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/widgets/attribution.dart';
+import '../../../data/database/app_database.dart' show Trip;
+import '../../../data/database/tables.dart' show TripKind;
 import '../../../l10n/app_localizations.dart';
-import '../../trips/planned_journey.dart';
+import '../../trips/application/trip_providers.dart';
+import '../../trips/widgets/trip_picker.dart';
 import '../application/journey_search_options_provider.dart';
 import '../application/transport_search_controller.dart';
 import '../application/transport_search_providers.dart';
@@ -12,42 +15,26 @@ import '../domain/journey.dart';
 import '../domain/transit_mode.dart';
 import '../domain/transport_place.dart';
 import '../domain/via_stop.dart';
+import 'journey_destination.dart';
 import 'journey_formats.dart';
 import 'journey_preview_sheet.dart';
 import 'search_options_sheet.dart';
 
-/// Opens the connection search for [tripId] on [day]. Resolves to true when a
-/// journey was imported (so the caller can close its own sheet), false/null
-/// otherwise.
-///
-/// [replacing] turns it into the search *for a run the trip already holds*: the
-/// form opens on that run's endpoints, day and departure, and what is taken
-/// replaces those legs instead of being added beside them.
-///
-/// [alternativeId] plans what is found inside one option of a decision rather
-/// than on the day itself.
+/// Opens the connection search, writing what is taken to [destination] — a day
+/// of a trip, one option of a decision, the run being replaced, or nowhere at
+/// all ([JourneyLookup]). Resolves to true when a journey was written (so the
+/// caller can close its own sheet), false/null otherwise — and so always false
+/// for a lookup, which writes nothing.
 Future<bool> showConnectionSearchSheet(
   BuildContext context, {
-  required int tripId,
-  required DateTime day,
-  bool intoRoutine = false,
-  PlannedJourney? replacing,
-  int? departFromMinutes,
-  int? alternativeId,
+  required JourneyDestination destination,
 }) async {
   final imported = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
     showDragHandle: true,
-    builder: (_) => ConnectionSearchSheet(
-      tripId: tripId,
-      day: day,
-      intoRoutine: intoRoutine,
-      replacing: replacing,
-      departFromMinutes: departFromMinutes,
-      alternativeId: alternativeId,
-    ),
+    builder: (_) => ConnectionSearchSheet(destination: destination),
   );
   return imported ?? false;
 }
@@ -56,66 +43,13 @@ Future<bool> showConnectionSearchSheet(
 typedef _Via = ({TransportPlace place, int stayMinutes});
 
 class ConnectionSearchSheet extends ConsumerStatefulWidget {
-  const ConnectionSearchSheet({
-    super.key,
-    required this.tripId,
-    required this.day,
-    this.intoRoutine = false,
-    this.replacing,
-    this.departFromMinutes,
-    this.alternativeId,
-    // Replacing swaps the legs of a run that already sits somewhere — in an
-    // option or on the day — and keeps that place; only an *added* run needs to
-    // be told where it goes. (Replacing *into a routine* is a different matter
-    // and allowed: see [replacing].)
-  }) : assert(replacing == null || alternativeId == null);
+  const ConnectionSearchSheet({super.key, required this.destination});
 
-  final int tripId;
-
-  /// The day the imported legs belong to. For a routine this is a day of the
-  /// *plan* (day one is `kRoutineAnchorDay`), which no timetable can answer for
-  /// — see [intoRoutine].
-  final DateTime day;
-
-  /// Whether the legs are being added to a routine.
-  ///
-  /// A routine has no dates, but a timetable only exists on real ones: you
-  /// cannot ask what runs on day one of a plan. So the search is made on a real
-  /// date — today by default, changeable, since a Sunday timetable is not a
-  /// Tuesday one — and the connection it finds is then laid back onto [day],
-  /// keeping the shape of the journey (an overnight leg still lands on the next
-  /// day of the plan) while carrying none of that date's own identity.
-  final bool intoRoutine;
-
-  /// The run this search is being made *for*, when it is being looked up again:
-  /// the form starts on its ends, its day and its departure, and taking a result
-  /// swaps its legs (`replaceJourney`) rather than adding a second run beside
-  /// the first.
-  ///
-  /// The query is still the user's to change — another day, an hour later, a via
-  /// stop, different modes — which is the whole reason this is the search sheet
-  /// and not a single silent request: "the 07:32 was cancelled" and "I'll go in
-  /// after lunch instead" are the same act.
-  ///
-  /// Composes with [intoRoutine]: re-routing a *routine's* run searches a real
-  /// date and lays the answer back onto the plan day, which is the same trade the
-  /// import makes there. The form then opens on today, as it does for an import,
-  /// while the time still comes from the run — a commute leaves at the minute the
-  /// plan says whichever day it is asked about.
-  final PlannedJourney? replacing;
-
-  /// The minute to open the time field on, when the run being replaced is not the
-  /// best answer to "from when?" — one leg of a journey whose previous leg came in
-  /// late, where the traveller is standing on the platform at the time they really
-  /// arrived rather than the one the plan hoped for
-  /// (`departureSeedMinutes`).
-  final int? departFromMinutes;
-
-  /// The option of a decision the found run is planned in, or null for the day
-  /// itself. A search reached from an option's *Add transport* has to land where
-  /// that button plans everything else it offers — an imported connection is not
-  /// a different kind of entry from a hand-written leg.
-  final int? alternativeId;
+  /// What becomes of a connection taken here: added to a day or an option,
+  /// swapped in for a run the trip already holds, or — for a [JourneyLookup] —
+  /// nothing, the search having been made from the overview with no plan behind
+  /// it.
+  final JourneyDestination destination;
 
   @override
   ConsumerState<ConnectionSearchSheet> createState() =>
@@ -138,10 +72,15 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   final List<_Via> _vias = [];
 
   // A routine's own day is an offset origin, not a date anything runs on, so
-  // the search starts from today and the result is rebased on import.
-  late DateTime _date = widget.intoRoutine
-      ? DateUtils.dateOnly(DateTime.now())
-      : DateUtils.dateOnly(widget.day);
+  // the search starts from today and the result is rebased on import. A lookup
+  // has no day of its own at all, and today is the day a question asked from the
+  // overview is nearly always about.
+  late DateTime _date = switch (widget.destination) {
+    final TripJourneyDestination d when !d.intoRoutine => DateUtils.dateOnly(
+      d.day,
+    ),
+    _ => DateUtils.dateOnly(DateTime.now()),
+  };
   TimeOfDay _time = TimeOfDay.now();
   bool _arriveBy = false;
   JourneyQuery? _query;
@@ -152,6 +91,33 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   bool? _pagingEarlier;
 
   bool get _canSearch => _from != null && _to != null;
+
+  /// The trip this search writes into, or null when it writes nowhere — the one
+  /// question the sheet keeps asking, since it decides whether a result can be
+  /// committed at all.
+  TripJourneyDestination? get _destinationTrip {
+    final destination = widget.destination;
+    return destination is TripJourneyDestination ? destination : null;
+  }
+
+  /// Whether the answer has to be laid back onto a dateless plan. False for a
+  /// lookup, which lands nowhere and so rebases nothing.
+  bool get _intoRoutine => _destinationTrip?.intoRoutine ?? false;
+
+  /// The trips a looked-up journey could be filed into: everything but the
+  /// routines, which have no dates for a real connection to sit on — laying one
+  /// onto a plan needs a *plan day*, which a flat list of trips cannot ask for
+  /// (importing into a routine goes through the routine's own timeline, where
+  /// the day is known).
+  ///
+  /// Kept from the last build, and **watched** there rather than read off
+  /// whoever else happens to be listening: the provider is autoDispose, so a
+  /// read from a callback can find it disposed mid-flight (the trap
+  /// `TransportSearchController._modes` documents). The button is offered only
+  /// when there is somewhere for it to lead, so the answer is needed a build
+  /// before the tap in any case. Always empty for a trip-bound search, which has
+  /// its destination already and never asks.
+  List<Trip> _saveTargets = const [];
 
   /// What the run being replaced called its ends, for an end that has no
   /// [TransportPlace] to fill the field with — a hand-entered leg knows
@@ -171,13 +137,14 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     // Looking a run up again starts from the run: its ends, and the minute it
     // was planned to leave. Everything stays editable — the point of arriving
     // here rather than firing one query is that the question can be changed.
-    final replacing = widget.replacing;
-    if (replacing == null) return;
+    final destination = widget.destination;
+    if (destination is! ReplaceRun) return;
+    final replacing = destination.journey;
     _from = replacing.fromPlace;
     _to = replacing.toPlace;
     if (_from == null) _fromHint = replacing.fromLocation;
     if (_to == null) _toHint = replacing.toLocation;
-    final minutes = widget.departFromMinutes ?? replacing.departMinutes;
+    final minutes = destination.departFromMinutes ?? replacing.departMinutes;
     if (minutes != null) {
       _time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     }
@@ -267,21 +234,92 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   /// so tapping one *shows* the journey and the preview's own button commits
   /// it. That keeps the rule the rest of the app runs on: a tap browses, a
   /// button spends. It also means the results list is safe to poke at.
+  ///
+  /// A lookup has no destination *yet*, so its button asks for one — and when
+  /// there is no trip to ask about, there is no button: the sheet is then the
+  /// whole answer, read and dismissed.
   Future<void> _preview(JourneyOption option) async {
     final l10n = AppLocalizations.of(context);
     // Replacing, the choice is between two journeys rather than between adding
     // one and adding none, so both ways out of the preview are named.
-    final replacing = widget.replacing != null;
+    final replacing = widget.destination is ReplaceRun;
+    final targets = _saveTargets;
+    final lookup = _destinationTrip == null;
     final confirmed = await showJourneyPreviewSheet(
       context,
       option: option,
-      confirmLabel: replacing ? l10n.connectionsUseThis : null,
+      confirmable: !lookup || targets.isNotEmpty,
+      confirmLabel: switch (widget.destination) {
+        ReplaceRun() => l10n.connectionsUseThis,
+        // The ellipsis is the promise that a question follows: nothing is
+        // written until a trip has been named.
+        JourneyLookup() => l10n.connectionSaveToTrip,
+        AddToDay() => null,
+      },
       cancelLabel: replacing ? l10n.connectionsKeepPlan : null,
     );
-    if (confirmed && mounted) await _import(option);
+    if (!confirmed || !mounted) return;
+    if (lookup) {
+      await _saveToTrip(option, targets);
+    } else {
+      await _import(option);
+    }
   }
 
+  /// Files a looked-up journey into a trip the user names.
+  ///
+  /// No day is asked for: the connection was searched on a real date and its
+  /// legs carry it, so the day it belongs on is the one it runs on. A *dated*
+  /// trip whose range does not reach that far is widened to cover it
+  /// (`insertJourney` → `TripDao.widenToCover`), exactly as importing into the
+  /// trip's own timeline would — a journey booked for the day after a trip was
+  /// meant to end has extended the trip, and the overview card should say so.
+  /// A trip with no dates keeps none: an absent range there is a deliberate "not
+  /// decided yet", not a range to be guessed from a timetable.
+  ///
+  /// The sheet stays open afterwards, unlike every trip-bound import: those
+  /// close onto a timeline that has just changed underneath them, while this one
+  /// leaves the screen behind it as it was. Keeping the form standing is also
+  /// what makes the return journey one search away rather than a re-opened sheet
+  /// with both ends to pick again.
+  Future<void> _saveToTrip(JourneyOption option, List<Trip> targets) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final target = await showTripPicker(context, targets);
+    if (target == null || !mounted) return;
+    setState(() => _importing = true);
+    try {
+      await ref
+          .read(transportSearchControllerProvider)
+          .importJourney(
+            target.id,
+            option,
+            // The ids this search was issued against, kept so the same journey
+            // can be looked up again for another date.
+            fromPlaceId: _from?.queryId,
+            toPlaceId: _to?.queryId,
+            trackLabel: l10n.platformShort,
+            fromTrackLabel: l10n.platformFromShort,
+            toTrackLabel: l10n.platformToShort,
+            directionLabel: l10n.directionTo,
+          );
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.connectionSavedTo(target.title))),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(l10n.connectionSearchError)),
+      );
+    }
+    if (mounted) setState(() => _importing = false);
+  }
+
+  /// Writes [option] where the destination says. Never reached for a
+  /// [JourneyLookup]: nothing there offers to confirm a result in the first
+  /// place, which is why this can take the trip destination as given.
   Future<void> _import(JourneyOption option) async {
+    final destination = _destinationTrip;
+    if (destination == null) return;
     setState(() => _importing = true);
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -292,50 +330,49 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
       toTrack: l10n.platformToShort,
       direction: l10n.directionTo,
     );
-    final replacing = widget.replacing;
+    // Into a routine, what is kept is the *shape*: which legs, in which order,
+    // how far into the plan each falls. Rebasing keeps that and drops the rest.
+    final rebaseFrom = _intoRoutine ? _date : null;
+    final rebaseTo = _intoRoutine ? destination.day : null;
     try {
       final controller = ref.read(transportSearchControllerProvider);
-      if (replacing != null) {
+      switch (destination) {
         // The run's own legs make way for it, keeping the bundle and so the
         // ticket. Nothing is announced: the legs it replaced are in the timeline
         // this sheet closes onto.
-        await controller.replaceJourney(
-          widget.tripId,
-          journey: replacing,
-          option: option,
-          labels: labels,
-          // The ends *this* search used, not the ones the old run carried: they
-          // may well be different — a hand-entered run had none at all, and the
-          // form lets either end be changed outright.
-          fromPlaceId: _from?.queryId,
-          toPlaceId: _to?.queryId,
-          // Into a routine, what is kept is the *shape*: which legs, in which
-          // order, how far into the plan each falls.
-          rebaseFrom: widget.intoRoutine ? _date : null,
-          rebaseTo: widget.intoRoutine ? widget.day : null,
-        );
-      } else {
-        await controller.importJourney(
-          widget.tripId,
-          option,
-          // Into the option the search was opened from, when it was — not onto
-          // the day behind it.
-          alternativeId: widget.alternativeId,
-          // The ids this search was issued against, kept so the same journey
-          // can be looked up again for another date.
-          fromPlaceId: _from?.queryId,
-          toPlaceId: _to?.queryId,
-          // Into a routine, the connection is a *shape*: which legs, in which
-          // order, how far into the plan each falls. Rebasing keeps that and
-          // drops the rest.
-          rebaseFrom: widget.intoRoutine ? _date : null,
-          rebaseTo: widget.intoRoutine ? widget.day : null,
-          trackLabel: labels.track,
-          fromTrackLabel: labels.fromTrack,
-          toTrackLabel: labels.toTrack,
-          directionLabel: labels.direction,
-        );
-        messenger.showSnackBar(SnackBar(content: Text(l10n.connectionAdded)));
+        case ReplaceRun(:final journey):
+          await controller.replaceJourney(
+            destination.tripId,
+            journey: journey,
+            option: option,
+            labels: labels,
+            // The ends *this* search used, not the ones the old run carried:
+            // they may well be different — a hand-entered run had none at all,
+            // and the form lets either end be changed outright.
+            fromPlaceId: _from?.queryId,
+            toPlaceId: _to?.queryId,
+            rebaseFrom: rebaseFrom,
+            rebaseTo: rebaseTo,
+          );
+        case AddToDay(:final alternativeId):
+          await controller.importJourney(
+            destination.tripId,
+            option,
+            // Into the option the search was opened from, when it was — not
+            // onto the day behind it.
+            alternativeId: alternativeId,
+            // The ids this search was issued against, kept so the same journey
+            // can be looked up again for another date.
+            fromPlaceId: _from?.queryId,
+            toPlaceId: _to?.queryId,
+            rebaseFrom: rebaseFrom,
+            rebaseTo: rebaseTo,
+            trackLabel: labels.track,
+            fromTrackLabel: labels.fromTrack,
+            toTrackLabel: labels.toTrack,
+            directionLabel: labels.direction,
+          );
+          messenger.showSnackBar(SnackBar(content: Text(l10n.connectionAdded)));
       }
       navigator.pop(true);
     } catch (_) {
@@ -367,6 +404,16 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     final l10n = AppLocalizations.of(context);
     final media = MediaQuery.of(context);
     final materialL10n = MaterialLocalizations.of(context);
+    // Only a lookup ever asks where to file a journey, so only a lookup pays for
+    // the trip list — a trip-bound search must not start a stream it has no
+    // question for.
+    _saveTargets = _destinationTrip != null
+        ? const []
+        : [
+            for (final trip
+                in ref.watch(tripListProvider).value ?? const <Trip>[])
+              if (trip.kind != TripKind.routine) trip,
+          ];
 
     return Padding(
       padding: EdgeInsets.only(bottom: media.viewInsets.bottom),

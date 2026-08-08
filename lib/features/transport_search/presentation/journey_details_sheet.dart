@@ -9,6 +9,7 @@ import '../../trips/application/trip_providers.dart';
 import '../../trips/planned_journey.dart';
 import '../data/journey_view_items.dart';
 import 'connection_search_sheet.dart';
+import 'journey_destination.dart';
 import 'journey_sheet.dart';
 
 /// Reads a journey the trip already holds — the sheet the connection was
@@ -129,11 +130,13 @@ class JourneyDetailsSheet extends ConsumerWidget {
     final navigator = Navigator.of(context);
     final replaced = await showConnectionSearchSheet(
       context,
-      tripId: tripId,
-      day: journey.date,
-      replacing: journey,
-      departFromMinutes: departFromMinutes,
-      intoRoutine: intoRoutine,
+      destination: ReplaceRun(
+        tripId: tripId,
+        day: journey.date,
+        journey: journey,
+        departFromMinutes: departFromMinutes,
+        intoRoutine: intoRoutine,
+      ),
     );
     if (replaced && navigator.canPop()) navigator.pop();
   }

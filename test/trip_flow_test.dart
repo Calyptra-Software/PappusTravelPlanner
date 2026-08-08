@@ -7,6 +7,8 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/trips/presentation/trip_list_screen.dart';
 import 'package:travelplanner/features/trips/trip_filter.dart';
@@ -136,6 +138,7 @@ void main() {
 
     // The navigation actions, by the icon each shows when it has its own slot.
     const navigationIcons = [
+      Icons.directions_transit_outlined,
       Icons.bar_chart,
       Icons.file_download_outlined,
       Icons.settings_outlined,
@@ -182,9 +185,28 @@ void main() {
       await tester.tap(overflowMenu);
       await tester.pumpAndSettle();
 
+      expect(find.text('Search connection'), findsOneWidget);
       expect(find.text('Overall statistics'), findsOneWidget);
       expect(find.text('Import trip'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
+    });
+
+    testWidgets('the connection search opens with no trip behind it', (
+      tester,
+    ) async {
+      // The overview is the one place the question is asked about no trip at
+      // all, so what opens here writes nowhere: a `JourneyLookup`, and with it a
+      // preview that offers no way to add anything.
+      sizeSurface(tester, 900);
+      await pumpOverview(tester, const []);
+
+      await tester.tap(find.byIcon(Icons.directions_transit_outlined));
+      await tester.pumpAndSettle();
+
+      final sheet = tester.widget<ConnectionSearchSheet>(
+        find.byType(ConnectionSearchSheet),
+      );
+      expect(sheet.destination, isA<JourneyLookup>());
     });
   });
 }

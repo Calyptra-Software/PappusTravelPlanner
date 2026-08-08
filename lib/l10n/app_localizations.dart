@@ -1910,11 +1910,11 @@ abstract class AppLocalizations {
   /// **'Move to trip…'**
   String get checklistMoveToTrip;
 
-  /// No description provided for @checklistPickTrip.
+  /// No description provided for @tripPickerTitle.
   ///
   /// In en, this message translates to:
   /// **'Which trip?'**
-  String get checklistPickTrip;
+  String get tripPickerTitle;
 
   /// No description provided for @checklistNoOtherTrips.
   ///
@@ -2767,6 +2767,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection added'**
   String get connectionAdded;
+
+  /// No description provided for @connectionSaveToTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to trip…'**
+  String get connectionSaveToTrip;
+
+  /// Confirmation after saving a looked-up connection into a trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to “{trip}”'**
+  String connectionSavedTo(String trip);
 
   /// No description provided for @attributionOsm.
   ///

@@ -392,7 +392,46 @@ UI (features/*/presentation, *widgets)
   orders rather than one per day, because a branch item's date does not place it in a day (it
   follows its decision, see `buildDayBlocks`) — an overnight run stays one ordered run in the
   option. Only an *added* run is told where it goes: replacing one keeps the place the old legs
-  held, in an option or on the day, which is why the two are asserted mutually exclusive.
+  held, in an option or on the day, which is why the two are separate cases of the destination
+  type below rather than parameters that could be passed together.
+- **Where a found connection goes is a type, and one of its cases is "nowhere".**
+  `presentation/journey_destination.dart` holds a sealed `JourneyDestination`: `AddToDay`
+  (a day, or one option of a decision on it), `ReplaceRun` (the run whose legs make way for
+  it), both under a `TripJourneyDestination` carrying the trip, the day and `intoRoutine` —
+  and `JourneyLookup`, which names **no trip at all**. The search form is the same question
+  in every case; only what becomes of the answer differs, so `ConnectionSearchSheet` takes
+  one `destination` and switches on it. That is what makes the impossible combinations
+  unsayable — a run cannot both be added to an option and replace an existing one — where
+  before the rule was an `assert` that only fired at runtime, and the destination-less case
+  could not be expressed at all.
+- **A connection is worth looking up with no plan behind it.** "When is the next train?" is
+  asked before there is a trip to hang the answer on, and often when there never will be
+  one, so the overview's app bar opens the ordinary search sheet on a `JourneyLookup`: same
+  form, same results, same preview. Having no day of its own it opens on **today**, which is
+  what a question asked from the overview is nearly always about. Nothing is stored: not the
+  query, and not the journey — a lookup that remembered yesterday's from/to would be
+  claiming to ask about a journey nobody asked about, which is the same reason
+  `TripQuery.text` is the one facet the overview does not persist.
+- **What a lookup found is filed by naming a trip, and the trip is named *after* the
+  journey.** The preview's button reads *Save to trip…* and opens `showTripPicker`
+  (`features/trips/widgets/trip_picker.dart`, shared with the checklist's move/copy) — the
+  ellipsis being the promise that a question follows, since nothing is written until a trip
+  has been named. This is deliberately **not** a fourth `JourneyDestination`: that type
+  answers "where does a result go?" at the moment the sheet *opens*, and here the answer does
+  not exist yet. No day is asked for either — the connection was searched on a real date and
+  its legs carry it, so the day it belongs on is the day it runs on, and a trip whose range
+  falls short is widened to cover it exactly as an import from inside the trip is
+  (`TripDao.widenToCover`). Routines are not offered: a real-dated journey laid onto a
+  dateless plan needs a *plan day*, which a flat list of trips cannot ask for. With **no**
+  trip in the database there is no button at all rather than one leading to an empty picker —
+  the same rule that governs the preview's confirm button generally
+  (`showJourneyPreviewSheet`'s `confirmable`): a button that wrote nothing would be worse
+  than none. The trip list is therefore `ref.watch`ed in `build` — the answer is needed a
+  build before the tap, and reading an autoDispose provider from a callback is the trap
+  `TransportSearchController._modes` documents. Saving leaves the search **standing**, unlike
+  every trip-bound import, which closes onto a timeline that has just changed underneath it:
+  here the screen behind is as it was, and the return journey is the next thing anyone asks.
+  *New trip from this connection* is deliberately not built yet.
 - **An imported leg keeps the stops it calls at**, encoded in `ItineraryItems.stopovers` by
   `data/database/stopovers.dart` (a JSON list of name + departure minutes + a day offset for
   a night train's small hours). A column, not a table: they belong to exactly one leg, are

@@ -1065,7 +1065,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checklistMoveToTrip => 'Move to trip…';
 
   @override
-  String get checklistPickTrip => 'Which trip?';
+  String get tripPickerTitle => 'Which trip?';
 
   @override
   String get checklistNoOtherTrips =>
@@ -1566,6 +1566,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionAdded => 'Connection added';
+
+  @override
+  String get connectionSaveToTrip => 'Save to trip…';
+
+  @override
+  String connectionSavedTo(String trip) {
+    return 'Added to “$trip”';
+  }
 
   @override
   String get attributionOsm => '© OpenStreetMap contributors';

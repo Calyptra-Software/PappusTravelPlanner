@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/format/date_format.dart';
 import '../../../data/database/app_database.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../trips/application/trip_providers.dart';
+import '../../trips/widgets/trip_picker.dart';
 import '../application/checklist_providers.dart';
 
 /// Shows a single-field text dialog, returning the entered value, or null if
@@ -79,42 +79,6 @@ class TripChecklistsSection extends ConsumerWidget {
 
 /// What the checklist card's overflow menu offers.
 enum _ChecklistAction { rename, duplicate, copyToTrip, moveToTrip, delete }
-
-/// Asks which trip a checklist should go to, and returns it (null if
-/// dismissed). The trip it is already in is left out: copying a list to where it
-/// already is is [_ChecklistAction.duplicate], which needs no dialog.
-///
-/// A picker, where an itinerary entry gets picked up and carried: a checklist's
-/// possible destinations are just *the trips*, a short flat list that names
-/// itself. It is only when the destinations are many and structured — every day
-/// times every option — that a picker stops working and the entry has to travel
-/// to a place you can see.
-Future<Trip?> _pickTrip(
-  BuildContext context,
-  List<Trip> trips,
-  String localeName,
-) {
-  final l10n = AppLocalizations.of(context);
-  return showDialog<Trip>(
-    context: context,
-    builder: (context) => SimpleDialog(
-      title: Text(l10n.checklistPickTrip),
-      children: [
-        for (final trip in trips)
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(context, trip),
-            child: ListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(trip.title),
-              subtitle: Text(
-                formatDateRange(l10n, localeName, trip.startDate, trip.endDate),
-              ),
-            ),
-          ),
-      ],
-    ),
-  );
-}
 
 /// One collapsible checklist card: tickable, reorderable items with an inline
 /// add field, plus rename/delete of the checklist itself.
@@ -243,10 +207,11 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
   /// discovered.
   Future<void> _toAnotherTrip({required bool copy}) async {
     final l10n = AppLocalizations.of(context);
-    final localeName = Localizations.localeOf(context).languageCode;
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(checklistControllerProvider);
 
+    // The trip it is already in is left out: copying a list to where it already
+    // is is [_ChecklistAction.duplicate], which needs no dialog.
     final others = [
       for (final trip in ref.read(tripListProvider).value ?? const <Trip>[])
         if (trip.id != widget.checklist.tripId) trip,
@@ -257,7 +222,7 @@ class _ChecklistCardState extends ConsumerState<_ChecklistCard> {
       );
       return;
     }
-    final target = await _pickTrip(context, others, localeName);
+    final target = await showTripPicker(context, others);
     if (target == null) return;
 
     if (copy) {

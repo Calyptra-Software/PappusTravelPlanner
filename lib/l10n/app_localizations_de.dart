@@ -1072,7 +1072,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get checklistMoveToTrip => 'In Reise verschieben…';
 
   @override
-  String get checklistPickTrip => 'In welche Reise?';
+  String get tripPickerTitle => 'In welche Reise?';
 
   @override
   String get checklistNoOtherTrips => 'Es gibt noch keine andere Reise dafür.';
@@ -1575,6 +1575,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get connectionAdded => 'Verbindung hinzugefügt';
+
+  @override
+  String get connectionSaveToTrip => 'In Reise speichern…';
+
+  @override
+  String connectionSavedTo(String trip) {
+    return 'Zu „$trip“ hinzugefügt';
+  }
 
   @override
   String get attributionOsm => '© OpenStreetMap-Mitwirkende';

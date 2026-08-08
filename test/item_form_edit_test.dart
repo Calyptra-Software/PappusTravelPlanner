@@ -16,6 +16,7 @@ import 'package:travelplanner/features/itinerary/application/itinerary_providers
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
@@ -348,9 +349,14 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    int? searchSheetAlternativeId(WidgetTester tester) => tester
-        .widget<ConnectionSearchSheet>(find.byType(ConnectionSearchSheet))
-        .alternativeId;
+    int? searchSheetAlternativeId(WidgetTester tester) =>
+        (tester
+                    .widget<ConnectionSearchSheet>(
+                      find.byType(ConnectionSearchSheet),
+                    )
+                    .destination
+                as AddToDay)
+            .alternativeId;
 
     testWidgets('opened from an option, into that option', (tester) async {
       // The option this form was reached from, carried through to the import —

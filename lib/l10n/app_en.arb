@@ -451,7 +451,7 @@
   },
   "checklistCopyToTrip": "Copy to trip…",
   "checklistMoveToTrip": "Move to trip…",
-  "checklistPickTrip": "Which trip?",
+  "tripPickerTitle": "Which trip?",
   "checklistNoOtherTrips": "There is no other trip to put it in yet.",
   "checklistCopiedTo": "Copied to “{trip}”. Ticks aren't copied — a list is only reusable empty.",
   "@checklistCopiedTo": {
@@ -685,6 +685,12 @@
   "connectionModeOther": "Cable car & other",
   "connectionAddToDay": "Add to day",
   "connectionAdded": "Connection added",
+  "connectionSaveToTrip": "Save to trip…",
+  "connectionSavedTo": "Added to “{trip}”",
+  "@connectionSavedTo": {
+    "description": "Confirmation after saving a looked-up connection into a trip.",
+    "placeholders": { "trip": { "type": "String" } }
+  },
   "attributionOsm": "© OpenStreetMap contributors",
   "attributionTransitous": "Timetable data via Transitous",
   "dataSourcesSection": "Data sources",

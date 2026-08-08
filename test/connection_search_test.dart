@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
+import 'package:travelplanner/data/database/app_database.dart' show Trip;
+import 'package:travelplanner/data/database/tables.dart' show TripKind;
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_controller.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
@@ -20,6 +22,8 @@ import 'package:travelplanner/features/transport_search/domain/transit_mode.dart
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
+import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 /// Records import calls without touching the database.
@@ -29,6 +33,7 @@ class _FakeController extends TransportSearchController {
   DateTime? lastRebaseFrom;
   DateTime? lastRebaseTo;
   int? lastAlternativeId;
+  int? lastTripId;
 
   @override
   Future<List<int>> importJourney(
@@ -46,6 +51,7 @@ class _FakeController extends TransportSearchController {
     DirectionLabel? directionLabel,
   }) async {
     imports++;
+    lastTripId = tripId;
     lastRebaseFrom = rebaseFrom;
     lastRebaseTo = rebaseTo;
     lastAlternativeId = alternativeId;
@@ -223,10 +229,31 @@ void main() {
     suggestions = const [_place];
   });
 
+  /// A trip the lookup could file a journey into. Dateless, which is the
+  /// ordinary case for one that has not been planned yet — and the case a
+  /// searched connection has to be able to widen.
+  Trip trip({
+    required int id,
+    required String title,
+    TripKind kind = TripKind.trip,
+  }) => Trip(
+    id: id,
+    title: title,
+    destination: '',
+    startDate: null,
+    endDate: null,
+    notes: null,
+    kind: kind,
+    colorValue: 0xFF00695C,
+    createdAt: DateTime(2026, 1, 1),
+  );
+
   Future<void> pump(
     WidgetTester tester, {
     bool intoRoutine = false,
     int? alternativeId,
+    JourneyDestination? destination,
+    List<Trip> trips = const [],
   }) async {
     // A tall surface so the whole results list — both paging rows included —
     // is laid out; the default test window is shorter than the sheet.
@@ -237,6 +264,9 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          // The real one is a drift stream, which never resolves under
+          // fake-async; only the lookup reads it at all.
+          tripListProvider.overrideWith((ref) => Stream.value(trips)),
           geocodeProvider.overrideWith((ref, query) async => suggestions),
           transportSearchProvider.overrideWithValue(search),
           transportSearchControllerProvider.overrideWith(
@@ -256,12 +286,16 @@ void main() {
               builder: (context) => ElevatedButton(
                 onPressed: () => showConnectionSearchSheet(
                   context,
-                  tripId: 1,
-                  day: intoRoutine
-                      ? DateTime(1970, 1, 1)
-                      : DateTime(2026, 7, 27),
-                  intoRoutine: intoRoutine,
-                  alternativeId: alternativeId,
+                  destination:
+                      destination ??
+                      AddToDay(
+                        tripId: 1,
+                        day: intoRoutine
+                            ? DateTime(1970, 1, 1)
+                            : DateTime(2026, 7, 27),
+                        intoRoutine: intoRoutine,
+                        alternativeId: alternativeId,
+                      ),
                 ),
                 child: const Text('open'),
               ),
@@ -494,8 +528,16 @@ void main() {
     WidgetTester tester, {
     bool intoRoutine = false,
     int? alternativeId,
+    JourneyDestination? destination,
+    List<Trip> trips = const [],
   }) async {
-    await pump(tester, intoRoutine: intoRoutine, alternativeId: alternativeId);
+    await pump(
+      tester,
+      intoRoutine: intoRoutine,
+      alternativeId: alternativeId,
+      destination: destination,
+      trips: trips,
+    );
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     await pickInto(tester, 'From');
@@ -1015,5 +1057,153 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(fake.lastAlternativeId, isNull);
+  });
+
+  group('with no trip behind it', () {
+    Future<void> lookup(WidgetTester tester, {List<Trip> trips = const []}) =>
+        searchFrom(tester, destination: const JourneyLookup(), trips: trips);
+
+    testWidgets('opens on today, having no day of its own', (tester) async {
+      // The trip-bound searches take their date from the day being planned.
+      // Asked from the overview there is no such day — and "when is the next
+      // train?" is nearly always about now.
+      await lookup(tester);
+
+      expect(search.lastTime, isNotNull);
+      expect(
+        DateUtils.dateOnly(search.lastTime!),
+        DateUtils.dateOnly(DateTime.now()),
+      );
+    });
+
+    testWidgets('a journey is read, and with no trip to file it in, only read', (
+      tester,
+    ) async {
+      await lookup(tester);
+
+      // The result opens exactly as it does inside a trip: this is the same
+      // sheet, and what a traveller judges a connection by — the platforms, the
+      // changes — is the whole point of the lookup.
+      await tester.tap(find.textContaining('ICE 1'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Hamburg Hbf'), findsWidgets);
+
+      // With no trip in the database there is nowhere for it to go, so nothing
+      // offers to send it there. A button that wrote nothing would be worse than
+      // no button at all.
+      //
+      // That nothing was imported is exactly what the missing button says: the
+      // import controller is never even built here, so its call count cannot be
+      // asked (`fake` stays uninitialized) — which is itself the proof.
+      expect(find.text('Save to trip…'), findsNothing);
+      expect(find.text('Add to day'), findsNothing);
+    });
+
+    testWidgets('a direct connection is read the same way', (tester) async {
+      // The walk-the-whole-way answer reaches the preview through its own chip
+      // rather than a result card, so it is the second way in and has to behave
+      // the same as the first.
+      search.outrunsTransit = true;
+      await lookup(tester);
+
+      await tester.tap(find.text('12m'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save to trip…'), findsNothing);
+    });
+
+    testWidgets('a journey found here can be filed into a trip', (
+      tester,
+    ) async {
+      await lookup(
+        tester,
+        trips: [
+          trip(id: 4, title: 'Rome'),
+          trip(id: 7, title: 'Oslo'),
+        ],
+      );
+
+      await tester.tap(find.textContaining('ICE 1'));
+      await tester.pumpAndSettle();
+
+      // The button asks rather than writes — the ellipsis is the promise that a
+      // question follows.
+      await tester.tap(find.text('Save to trip…'));
+      await tester.pumpAndSettle();
+      expect(find.text('Which trip?'), findsOneWidget);
+      expect(find.textContaining('Added to'), findsNothing);
+
+      await tester.tap(find.text('Oslo'));
+      await tester.pumpAndSettle();
+
+      expect(fake.imports, 1);
+      expect(fake.lastTripId, 7);
+      // No day was asked for: the connection runs on a real date, and its legs
+      // carry it. Nor is it rebased — only a routine's dateless plan needs that.
+      expect(fake.lastRebaseFrom, isNull);
+      expect(fake.lastRebaseTo, isNull);
+      expect(find.text('Added to “Oslo”'), findsOneWidget);
+    });
+
+    testWidgets('backing out of the picker files nothing', (tester) async {
+      await lookup(tester, trips: [trip(id: 4, title: 'Rome')]);
+
+      await tester.tap(find.textContaining('ICE 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save to trip…'));
+      await tester.pumpAndSettle();
+
+      // Dismissing the dialog is a way out, not a choice of the first trip.
+      // (That nothing was written is read off the screen rather than off the
+      // fake controller, which is never built when nothing imports — and so
+      // still holds whatever the previous test left in it.)
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Which trip?'), findsNothing);
+      expect(find.textContaining('Added to'), findsNothing);
+    });
+
+    testWidgets('a routine is not somewhere a connection can be filed', (
+      tester,
+    ) async {
+      // A routine's days are ordinals no timetable answers for, so a real-dated
+      // journey laid onto one needs a *plan day* — which a flat list of trips
+      // has no way to ask for. Importing into a routine stays the routine's own
+      // timeline, where that day is known.
+      await lookup(
+        tester,
+        trips: [
+          trip(id: 4, title: 'Rome'),
+          trip(id: 9, title: 'Commute', kind: TripKind.routine),
+        ],
+      );
+
+      await tester.tap(find.textContaining('ICE 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save to trip…'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rome'), findsOneWidget);
+      expect(find.text('Commute'), findsNothing);
+    });
+
+    testWidgets('the search stays open, so the return can be looked up', (
+      tester,
+    ) async {
+      // Unlike every trip-bound import, this one closes onto nothing that has
+      // changed — and the journey back is the next thing anyone asks.
+      await lookup(tester, trips: [trip(id: 4, title: 'Rome')]);
+
+      await tester.tap(find.textContaining('ICE 1'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save to trip…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rome'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(ConnectionSearchSheet), findsOneWidget);
+      expect(find.textContaining('ICE 1'), findsOneWidget);
+    });
   });
 }

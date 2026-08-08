@@ -17,6 +17,7 @@ import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../transport_search/presentation/connection_search_sheet.dart';
+import '../../transport_search/presentation/journey_destination.dart';
 import '../application/item_clipboard.dart';
 import '../application/itinerary_providers.dart';
 import '../application/transport_mode_providers.dart';
@@ -209,14 +210,26 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     final replacing = _canReplaceLeg ? plannedJourneyOf([existing!]) : null;
     final done = await showConnectionSearchSheet(
       context,
-      tripId: widget.tripId,
-      day: _date,
-      intoRoutine: widget.intoRoutine,
-      replacing: replacing,
-      // A new leg goes where this form would have put it, which is the option
-      // the add button belongs to when it has one. Editing carries none: the
-      // leg being replaced keeps its own place, in an option or on the day.
-      alternativeId: _isEditing ? null : widget.alternativeId,
+      destination: replacing == null
+          ? AddToDay(
+              tripId: widget.tripId,
+              day: _date,
+              intoRoutine: widget.intoRoutine,
+              // A new leg goes where this form would have put it, which is the
+              // option the add button belongs to when it has one. Editing
+              // carries none: the leg being replaced keeps its own place, in an
+              // option or on the day.
+              alternativeId: _isEditing ? null : widget.alternativeId,
+            )
+          : ReplaceRun(
+              tripId: widget.tripId,
+              // The day as the *form* holds it, which is where this leg is
+              // headed — the field may have been edited since it was opened, and
+              // the search should answer for the day the user is now planning.
+              day: _date,
+              journey: replacing,
+              intoRoutine: widget.intoRoutine,
+            ),
     );
     if (done && mounted) navigator.pop();
   }

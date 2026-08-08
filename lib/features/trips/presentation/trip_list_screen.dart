@@ -8,6 +8,8 @@ import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../sharing/presentation/trip_import.dart';
+import '../../transport_search/presentation/connection_search_sheet.dart';
+import '../../transport_search/presentation/journey_destination.dart';
 import '../application/trip_providers.dart';
 import '../application/trip_query_provider.dart';
 import 'create_trip_from_routine.dart';
@@ -18,7 +20,7 @@ import '../widgets/trip_card.dart';
 
 /// Actions folded into the overview app bar's overflow menu to keep the title
 /// from being crowded out on narrow screens.
-enum _OverflowAction { routines, stats, import, settings }
+enum _OverflowAction { connections, routines, stats, import, settings }
 
 /// What the overview's "+" offers: a trip, a routine, or a trip made from one.
 enum _NewAction { trip, routine, fromRoutine }
@@ -214,6 +216,12 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
 
   void _runOverflowAction(_OverflowAction action) {
     switch (action) {
+      // The one question that is about no trip at all: "when is the next train?"
+      // — asked before there is a plan to hang the answer on, and usually when
+      // there never will be one. So it opens the ordinary search form with
+      // nowhere to write to, and the journey is simply read.
+      case _OverflowAction.connections:
+        showConnectionSearchSheet(context, destination: const JourneyLookup());
       case _OverflowAction.routines:
         context.push('/routines');
       case _OverflowAction.stats:
@@ -259,13 +267,18 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     // bars stay in sync: shown as icons when there is room, folded into an
     // overflow menu when there is not.
     final overflowActions = <(_OverflowAction, IconData, String)>[
+      (
+        _OverflowAction.connections,
+        Icons.directions_transit_outlined,
+        l10n.connectionSearch,
+      ),
       (_OverflowAction.routines, Icons.repeat, l10n.routinesTitle),
       (_OverflowAction.stats, Icons.bar_chart, l10n.statsAllTripsOpen),
       (_OverflowAction.import, Icons.file_download_outlined, l10n.importTrip),
       (_OverflowAction.settings, Icons.settings_outlined, l10n.settingsTitle),
     ];
-    // Six icons crowd the title off a phone's app bar but fit comfortably on a
-    // tablet or desktop window.
+    // Seven icons crowd the title off a phone's app bar but fit comfortably on
+    // a tablet or desktop window.
     final wide = MediaQuery.sizeOf(context).width >= _wideAppBarBreakpoint;
 
     return Scaffold(
