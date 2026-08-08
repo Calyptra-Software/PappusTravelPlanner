@@ -9,7 +9,7 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
-  String get appTitle => 'Reiseplaner';
+  String get appTitle => 'Pappus Travel Planner';
 
   @override
   String get tripsTitle => 'Meine Reisen';
