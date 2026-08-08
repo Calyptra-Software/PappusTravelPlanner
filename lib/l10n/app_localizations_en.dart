@@ -1835,6 +1835,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutReportIssue => 'Report a problem';
 
   @override
+  String get aboutContact => 'Contact';
+
+  @override
   String get aboutLicenses => 'Open-source licenses';
 
   @override

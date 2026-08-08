@@ -3206,6 +3206,12 @@ abstract class AppLocalizations {
   /// **'Report a problem'**
   String get aboutReportIssue;
 
+  /// No description provided for @aboutContact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get aboutContact;
+
   /// No description provided for @aboutLicenses.
   ///
   /// In en, this message translates to:

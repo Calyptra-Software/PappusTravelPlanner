@@ -828,6 +828,7 @@
   "aboutVersionCopied": "Version copied",
   "aboutSourceCode": "Source code",
   "aboutReportIssue": "Report a problem",
+  "aboutContact": "Contact",
   "aboutLicenses": "Open-source licenses",
   "aboutLicensesSubtitle": "The libraries and fonts this app is built from"
 }
