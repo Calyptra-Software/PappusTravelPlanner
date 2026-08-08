@@ -62,7 +62,7 @@ class AboutSettings extends ConsumerWidget {
           ),
           onTap: () => showLicensePage(
             context: context,
-            applicationName: kAppName,
+            applicationName: l10n.appTitle,
             applicationVersion: version,
             applicationLegalese: kAppLegalese,
           ),
