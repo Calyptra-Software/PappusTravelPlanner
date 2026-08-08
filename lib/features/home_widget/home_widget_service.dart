@@ -117,7 +117,7 @@ Future<void> _save(WidgetPayload p) async {
 // --- deep-link click handling ---
 
 /// Routes a widget-launch [uri] into the app. The whole widget links to the
-/// trip (`travelplanner://trip?id=N`); a tapped item row adds `&item=M` to open
+/// trip (`pappus://trip?id=N`); a tapped item row adds `&item=M` to open
 /// that item's editor.
 void _navigate(GoRouter router, Uri? uri) {
   if (uri == null) return;

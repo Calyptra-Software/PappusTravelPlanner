@@ -580,7 +580,7 @@ UI (features/*/presentation, *widgets)
 to the native Kotlin `TravelPlannerWidgetProvider` (`android/app/src/main/kotlin/.../`) as
 flat key/value pairs via `home_widget`. `HomeWidgetSync` (wrapping the app in `app.dart`)
 watches trips/itinerary and re-pushes on change; widget taps deep-link via
-`travelplanner://trip?id=N`. `pickFeaturedTrip` decides which trip to show (ongoing → next
+`pappus://trip?id=N`. `pickFeaturedTrip` decides which trip to show (ongoing → next
 upcoming → most recent past). Widget code is Android-only and no-ops elsewhere.
 
 A row's time (`widgetTime`) is the one place the payload is not plain text: it carries the

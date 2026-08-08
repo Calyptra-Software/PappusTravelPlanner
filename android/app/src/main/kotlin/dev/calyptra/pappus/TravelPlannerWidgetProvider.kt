@@ -51,7 +51,7 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
         // scrollable list intercepts its own touches, so this currently only
         // covers the header area; per-row taps are a separate step.
         val tripId = data.getInt("trip_id", -1)
-        val uri = Uri.parse("travelplanner://trip?id=$tripId")
+        val uri = Uri.parse("pappus://trip?id=$tripId")
         val pendingIntent = HomeWidgetLaunchIntent.getActivity(
             context,
             MainActivity::class.java,
@@ -108,7 +108,7 @@ class TravelPlannerWidgetProvider : HomeWidgetProvider() {
 
     /**
      * Mutable [PendingIntent] template for list-item taps. Each row supplies a
-     * fill-in intent with its own `travelplanner://trip?id=..&item=..` data,
+     * fill-in intent with its own `pappus://trip?id=..&item=..` data,
      * which merges into this template's home_widget launch action so the app
      * routes to that item.
      */
