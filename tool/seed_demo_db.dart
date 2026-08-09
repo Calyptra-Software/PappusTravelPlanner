@@ -86,18 +86,20 @@ void main() {
       int color = 0xFF00695C,
       TripKind kind = TripKind.trip,
       int? fromRoutine,
-    }) => db.into(db.trips).insert(
-      TripsCompanion.insert(
-        title: title,
-        destination: Value(destination),
-        startDate: Value(start),
-        endDate: Value(end),
-        notes: Value(notes),
-        colorValue: Value(color),
-        kind: Value(kind),
-        fromRoutineId: Value(fromRoutine),
-      ),
-    );
+    }) => db
+        .into(db.trips)
+        .insert(
+          TripsCompanion.insert(
+            title: title,
+            destination: Value(destination),
+            startDate: Value(start),
+            endDate: Value(end),
+            notes: Value(notes),
+            colorValue: Value(color),
+            kind: Value(kind),
+            fromRoutineId: Value(fromRoutine),
+          ),
+        );
 
     Future<int> place(
       int tripId,
@@ -195,9 +197,7 @@ void main() {
       for (final p in forPeople) {
         await db
             .into(db.costBeneficiaries)
-            .insert(
-              CostBeneficiariesCompanion.insert(costId: id, personId: p),
-            );
+            .insert(CostBeneficiariesCompanion.insert(costId: id, personId: p));
       }
       return id;
     }
@@ -278,12 +278,7 @@ void main() {
       sort: 2,
       groupId: ticket,
     );
-    await cost(
-      13980,
-      'Transport',
-      groupId: ticket,
-      forPeople: [alex, sam, jo],
-    );
+    await cost(13980, 'Transport', groupId: ticket, forPeople: [alex, sam, jo]);
     final guesthouse = await place(
       alps,
       day(-2),
