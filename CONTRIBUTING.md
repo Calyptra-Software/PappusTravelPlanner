@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for wanting to help. Bug reports, translations and patches are all welcome —
+Thanks for wanting to help. Bug reports, translations, and patches are all welcome —
 open an [issue](https://github.com/Calyptra-Software/PappusTravelPlanner/issues) first if the change
 is larger than a fix, so nobody writes a feature twice.
 
@@ -34,7 +34,7 @@ Using an LLM to help write a patch is allowed and needs no apology — large par
 app were written that way. What follows is therefore not a
 rule against the tool, but a reminder of the responsibility that comes with using it.
 
-**You are the author of the pull request.** You should understand the code you are sending, and be able to explain it to a reviewer. Don't stop thinking just because the assistant has a good answer — it is not a substitute for your own judgement.
+**You are the author of the pull request.** You should understand the code you are sending, and be able to explain it to a reviewer. Don't stop thinking just because the assistant has a good answer — it is not a substitute for your own judgment.
 
 **Run it before you send it.** Generated code compiles far more often than it is correct.
 At a minimum, the commands in the next section must pass; beyond that, actually exercise
@@ -43,7 +43,7 @@ pass" is not the same claim as "I saw this work".
 
 **Say so in the pull request.** One line is enough — which assistant, and roughly what it
 did ("wrote the first draft of the DAO method", "translated the ARB strings"). This is not
-a judgement and it will not count against a patch. It tells the review where to look
+a judgment and it will not count against a patch. It tells the review where to look
 closely, exactly the way "I copied this approach from the Flutter samples" would.
 
 ## Before you open a pull request
@@ -81,7 +81,7 @@ find out whether the thing you are about to add already has a place.
 
 Two conventions worth stating here:
 
-- **Tests and documentation are part of the change.** New behaviour comes with a test; pure
+- **Tests and documentation are part of the change.** New behavior comes with a test; pure
   logic (`trip_stats.dart`, `day_blocks.dart`, `now_marker.dart`, `time_marks.dart`, the
   sharing bundle) is deliberately free of Flutter and database imports so it can be tested
   directly. Note that drift's `.watch()` streams do not resolve under `flutter_test`'s fake
@@ -95,7 +95,7 @@ Two conventions worth stating here:
 The connection search runs against [Transitous](https://transitous.org), a community-run
 instance donated for free and open-source, non-commercial use. Its
 [usage policy](https://transitous.org/api/) is a functional requirement of this app, not a
-footnote: requests carry a `User-Agent` naming the app, its version and a contact
+footnote: requests carry a `User-Agent` naming the app, its version, and a contact
 (`lib/core/app_info.dart`); the data sources are linked wherever the data is shown
 (`lib/core/widgets/attribution.dart`); journeys are searched on an explicit button and
 never on a timer; and the staging and `motis-project` hosts are off limits.
@@ -104,3 +104,12 @@ Please do not add anything that increases request volume — polling, prefetchin
 that fires while typing — without discussing it in an issue first. The policy asks that
 they be contacted before a client starts making many requests, and a patch that quietly
 crosses that line is a problem for the whole project, not just for the feature.
+
+To exercise the client against the live service without starting the app:
+
+```bash
+dart run tool/motis_smoke.dart "Hamburg Hbf" "Wien Hbf"
+```
+
+Plain Dart, needs a network, and deliberately not part of the test suite — the suite must
+not depend on somebody else's server being up, and must not add to its load on every run.

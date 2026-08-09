@@ -59,15 +59,15 @@ UI (features/*/presentation, *widgets)
 - **`TripRepository`** (`lib/data/repositories/`) is a deliberately thin wrapper over the DAOs
   so a different backend could be swapped in without touching feature code. Prefer adding a
   repository method over reaching into DAOs from features.
-- **A trip is a trip, however long it lasts.** A walk, a commute and a fortnight in
+- **A trip is a trip, however long it lasts.** A walk, a commute, and a fortnight in
   Rome are the same row with different dates — a one-day trip is simply one whose start
   and end are the same day, so nothing declares "scale" and the timeline drops its day
   headers whenever it draws a single day (derived from the dates, not a flag). The one
   thing dates cannot say is whether a plan is meant to be *used again*, and that is the
   whole of `TripKind`: `trip` or `routine`.
-- **Tags are the only axis the overview is organised by** (`Tags` / `TripTags`, modelled
+- **Tags are the only axis the overview is organized by** (`Tags` / `TripTags`, modeled
   on `People` / `TripParticipants`). The app does not decide that a bike ride is a lesser
-  kind of trip than a holiday — that judgement is the user's, so "walks", "commute",
+  kind of trip than a holiday — that judgment is the user's, so "walks", "commute",
   "vacation" are theirs to invent. `TripQuery.tagIds` matches **any-of** (like
   `participantIds`), while the facets still compose with AND, and the roster sits in the
   open as a `TagFilterBar` above the list rather than inside the filter sheet: a filter
@@ -153,7 +153,7 @@ UI (features/*/presentation, *widgets)
   there is left loose exactly as an imported overnight journey leaves one. A leg written onto a
   day outside the trip's own range widens it (`TripDao.widenToCover`, called by the import too):
   the timeline draws such a day regardless — its days are the union of the range and the
-  entries — but the overview card, the calendar and the header all read the *range*, so the trip
+  entries — but the overview card, the calendar, and the header all read the *range*, so the trip
   would go on calling itself a day shorter than it is. Nothing to widen on a routine (ordinals,
   not dates) or on a trip with no dates at all, where an absent range is a deliberate "not
   decided yet" rather than a range to be guessed from a timetable.
@@ -178,11 +178,11 @@ UI (features/*/presentation, *widgets)
   (`ConnectionSearchSheet.replacing`, seeded by `PlannedJourney.fromPlace`/`toPlace` — which
   keep the exact `queryId` the run was found by rather than re-deriving one from the
   coordinates), and taking a result there goes through the same `replaceJourney`, so the
-  group, the ticket and the slot behave identically. The form and not a single silent request,
-  because the question is rarely quite the old one: the 07:32 was cancelled, the afternoon
-  will do instead, today there is a bike to carry — so the day, the time, arrive-by, the vias
+  group, the ticket, and the slot behave identically. The form and not a single silent request,
+  because the question is rarely quite the old one: the 07:32 was canceled, the afternoon
+  will do instead, today there is a bike to carry — so the day, the time, arrive-by, the vias,
   and the search options are all still the user's, and a list of departures is what a
-  traveller picks from. Per journey rather than per trip, because that is the unit the
+  traveler picks from. Per journey rather than per trip, because that is the unit the
   question arises in, and on any trip, not only one stamped out of a routine — a **routine**
   included, where the search is made on a real date and the answer laid back onto the plan day
   (`replaceJourney`'s `rebaseFrom`/`rebaseTo`, the same trade `intoRoutine` makes for an import,
@@ -211,11 +211,11 @@ UI (features/*/presentation, *widgets)
   this journey"; a leg answers the question a journey already under way raises — the train in
   came twenty late and the connection is gone, or the change turns out to be six minutes and
   not sixteen — where what has to move is the *rest* of the journey and not the part already
-  travelled. Only that leg's row is replaced: its slot, its group and the run's shared ticket
+  traveled. Only that leg's row is replaced: its slot, its group and the run's shared ticket
   survive, and what comes back may itself be several legs, since a missed connection is often a
   different route (`replaceJourneyLegs` widens the day for it). An inner leg carries no
   endpoint id — those live on a run's outer legs — so it goes out on the **coordinates** every
-  imported leg keeps. The time it starts from is where the traveller really is:
+  imported leg keeps. The time it starts from is where the traveler really is:
   `departureSeedMinutes` prefers the **previous leg's actual arrival** when one has been
   recorded (late or early — standing there sooner means an earlier connection is catchable), so
   a delay already entered on the leg before does not have to be typed again. Not across a date
@@ -254,7 +254,7 @@ UI (features/*/presentation, *widgets)
   frees them), and a set left with one branch is flattened back into the day. Ops live in
   `AlternativeDao`.
 - The timeline renders a day as a list of **blocks** (`features/itinerary/day_blocks.dart`,
-  pure): an `ItemBlock` (a loose item), a `GroupBlock` (a whole run) or a `DecisionBlock` (a
+  pure): an `ItemBlock` (a loose item), a `GroupBlock` (a whole run), or a `DecisionBlock` (a
   whole set). A decision draws as
   an `AlternativeCard` — a `PageView` **swiped** between options, which only *browses*;
   choosing is the explicit button, so looking at an option never moves the trip's money. The
@@ -330,7 +330,7 @@ UI (features/*/presentation, *widgets)
 - **"You are here"**: a day is an ordered *list*, not a time-scaled axis (times are optional),
   so there is no offset to place a now-line at — only a slot. `features/itinerary/now_marker.dart`
   (pure) answers, for today's blocks and the current minute, either *this block is under way*
-  (marked with a `NowBadge`, a red rail node and a tinted tile) or *the line goes here* (a
+  (marked with a `NowBadge`, a red rail node, and a tinted tile) or *the line goes here* (a
   `NowLine` between two blocks, after the last block that is behind us). The same rule runs a
   second time *inside* a decision that is under way (`nowMarkerForItems` over its chosen
   option): a decision spans its option whole, so when now falls between two of that option's
@@ -359,12 +359,12 @@ UI (features/*/presentation, *widgets)
   carrying its miss as a signed `(+15)` / `(−5)` (`formatSignedMinutes`; red late, green
   early or on time). The actual time itself is never printed — plan plus delta already says
   it, and the plan is what the day is judged against. Two renderers paint that one rule:
-  `widgets/item_times.dart` (coloured spans) and the home widget (see below). An actual time
+  `widgets/item_times.dart` (colored spans) and the home widget (see below). An actual time
   outranks its planned one in `now_marker.dart`, though: "you are here" is a claim about the
   day as it is going.
 - **The router is somebody else's donated server, and its usage policy is part of the
   feature.** Transitous asks each request to carry a `User-Agent` naming the application,
-  the client's **version** and a way of contact; all three live in `core/app_info.dart`
+  the client's **version**, and a way of contact; all three live in `core/app_info.dart`
   (`buildUserAgent`, no Flutter import — the smoke tool is plain Dart), fed the real version
   by `appVersionProvider`, which `main` resolves from `PackageInfo` and overrides into the
   scope beside the database path. A browser drops that header (`User-Agent` is forbidden
@@ -372,7 +372,7 @@ UI (features/*/presentation, *widgets)
   carry contact information on the page itself; no Dart change can supply it. It also asks
   that the data sources be **linked**, not merely credited: `core/widgets/attribution.dart`
   holds both links, under the search where the data is used and in settings, where they
-  outlive the sheet — an imported connection stays in the trip, the PDF and the `.ics` long
+  outlive the sheet — an imported connection stays in the trip, the PDF, and the `.ics` long
   after the search that found it. The rest of the policy is why the client looks the way it
   does: `detailedLegs=false`, a debounced and cached geocode, journeys only on an explicit
   button, live refresh one leg at a time and never on a timer. `staging.api.transitous.org`
@@ -447,8 +447,8 @@ UI (features/*/presentation, *widgets)
   written once by the import and read only when that leg is looked at, so they ride in the
   row they describe and are there offline. Departure only, plus how late the service leaves
   it — or that it **skips** it, which is the one thing a stop list must not get wrong: a
-  partially cancelled train goes on reporting the planned departure for the stops it is
-  dropping, so reading that as a time tells a traveller their station is served, punctually,
+  partially canceled train goes on reporting the planned departure for the stops it is
+  dropping, so reading that as a time tells a traveler their station is served, punctually,
   by a train that will pass straight through. A skipped stop is therefore struck through and
   never timed, and stays in the list rather than vanishing — the timetable still says the
   train comes past at that minute. The live-times refresh rewrites a leg's stops along with
@@ -468,7 +468,7 @@ UI (features/*/presentation, *widgets)
   **integer index** — only ever append new values at the end, never reorder.
 - **Currencies are a user-managed table too**, on the same pattern as the transport modes: a
   cost's `Costs.currency` is a foreign key into `Currencies`, and the `Currency` enum is only
-  the *catalogue of built-ins* (EUR/USD/GBP/CHF) the DB is seeded with, in enum order, so a
+  the *catalog of built-ins* (EUR/USD/GBP/CHF) the DB is seeded with, in enum order, so a
   fresh row's id is its enum index + 1 — what the v23 migration repoints legacy costs by. A
   row's identity is its unique `code`; unlike a mode, a currency in use **cannot be deleted**
   (`restrict`, plus a check in `CurrencyDao`) — a leg without a mode is still a leg, an amount
@@ -488,7 +488,7 @@ UI (features/*/presentation, *widgets)
   would read as a total while leaving money out. `computeTripStats` still converts nothing.
 - **Transport modes are a user-managed table**, not a fixed enum: a leg's `ItineraryItems.mode`
   is a foreign key into `TransportModes` (setNull on delete). The `TransportMode` enum (in
-  `tables.dart`) is only the *catalogue of built-ins* the DB is seeded with — each value's
+  `tables.dart`) is only the *catalog of built-ins* the DB is seeded with — each value's
   `name` is the `builtinKey` stored on its seed row, giving it a localized label and a default
   icon (`transport_mode.dart`). A row's label is its `name` when set, else its `builtinKey`'s
   localized label; icons come from the curated `kTransportModeIcons` set. Built-ins seed in
@@ -503,7 +503,7 @@ UI (features/*/presentation, *widgets)
   `CostReasons` (reusable reason labels with an optional icon id), `Currencies` (the
   built-in-plus-custom currencies with their base flag and exchange rates, above),
   `TransportModes` (the built-in-plus-custom transport modes, above), `People` (reusable payer/
-  beneficiary names; one flagged `isMe`), `TripParticipants` and `CostBeneficiaries`
+  beneficiary names; one flagged `isMe`), `TripParticipants`, and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
   per trip), and `CollapsedDays` (persists which itinerary days are collapsed).
 - **Expense splitting** lives in `lib/features/costs/trip_stats.dart` as pure functions
@@ -515,7 +515,7 @@ UI (features/*/presentation, *widgets)
   from one person to another to square up: always trip-level, `paidBy` the sender, its single
   beneficiary the receiver, and no `reason` (a repayment is not a category). It moves the two
   balances and nothing else — `computeTripStats` keeps it out of `totalMinor`, the paid/open
-  split, the expense `count` and the categories, folding it instead into
+  split, the expense `count`, and the categories, folding it instead into
   `PersonStat.settledMinor` (sent − received), which `netMinor` adds to `paid − share`. So
   "paid" still means "spent on the trip" and still sums to the trip's total, while the
   settle-up list — unchanged, it just reads `netMinor` — shrinks by what has been paid back.
@@ -540,7 +540,7 @@ UI (features/*/presentation, *widgets)
   `Z` nor a `TZID`), so nothing is converted and nothing can be converted wrongly. What a calendar
   cannot hold is dropped rather than faked: an untimed entry becomes an all-day event and thereby
   loses its `sortOrder` (a calendar orders by time or not at all), and groups, checklists,
-  participants and actual times have no mapping (costs ride along as description text, readable
+  participants, and actual times have no mapping (costs ride along as description text, readable
   but not counted). Import of `.ics` is deliberately **not** built — a calendar event routinely
   spans days, which an item (one day, strictly) cannot represent.
 - **A bundle stamps only the format version the trip actually needs**, so an older app keeps
@@ -562,7 +562,7 @@ UI (features/*/presentation, *widgets)
   balances it settles — and the header (title, dates, participants) is not one either: it is the
   document's identity, so it is always printed and "nothing ticked" is simply not an export.
   The trip bundle is read *before* the sheet opens so every row can say what it would print
-  ("5 days · 18 entries") and a section this trip has nothing for is greyed out rather than
+  ("5 days · 18 entries") and a section this trip has nothing for is grayed out rather than
   offered as a switch that yields no pages. `summarizePdfSections` counts through the same
   helpers the builder lays out with (`countedBundleCosts`, `bundleItemIsLive`,
   `printableChecklists`), so the picker's numbers cannot drift from the document's contents.
@@ -594,8 +594,8 @@ upcoming → most recent past). Widget code is Android-only and no-ops elsewhere
 
 A row's time (`widgetTime`) is the one place the payload is not plain text: it carries the
 same planned-time-plus-miss line as the timeline, and a `RemoteViews` text can only be
-coloured in part through HTML, so the `(+15)` is wrapped in a `<font color>` that
-`TodayItemsRemoteViewsService` parses back into spans with `Html.fromHtml`. The colours are
+colored in part through HTML, so the `(+15)` is wrapped in a `<font color>` that
+`TodayItemsRemoteViewsService` parses back into spans with `Html.fromHtml`. The colors are
 the widget's own (a lighter red/green — it paints on its own dark background, not the app's
 theme), and a row with nothing recorded still sends plain "09:00 – 10:30".
 

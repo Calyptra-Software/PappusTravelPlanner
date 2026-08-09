@@ -86,11 +86,11 @@
   "destinationHint": "e.g. Rome, Florence",
   "fieldDates": "Dates",
   "fieldNotes": "Notes",
-  "accentColour": "Accent colour",
-  "customColour": "Custom colour",
-  "pickColour": "Pick a colour",
+  "accentColour": "Accent color",
+  "customColour": "Custom color",
+  "pickColour": "Pick a color",
   "hexColour": "Hex",
-  "invalidHexColour": "Enter a valid hex colour, e.g. 1565C0",
+  "invalidHexColour": "Enter a valid hex color, e.g. 1565C0",
   "createTrip": "Create trip",
   "saveChanges": "Save changes",
   "itineraryTitle": "Itinerary",
@@ -577,14 +577,14 @@
   "connectionWheelchair": "Wheelchair accessible",
   "connectionWheelchairHint": "Step-free walking and changes, and only services marked as accessible. Many networks publish nothing about this, and then little or nothing is found.",
   "connectionNoAccessibleConnections": "No step-free connections found",
-  "connectionByBike": "Travelling by bike",
+  "connectionByBike": "Traveling by bike",
   "connectionByBikeHint": "Cycle the whole way, or to the first stop.",
   "connectionBikeOnBoard": "Bike comes along",
   "connectionBikeOnBoardHint": "Only services that carry bikes. Many networks publish nothing about this, and then nothing is found.",
   "connectionCyclingSpeed": "Cycling speed",
   "connectionCyclingSpeedHint": "Used for the parts of the journey you ride.",
   "connectionNoBikeConnections": "No connections that take bikes",
-  "connectionCancelled": "Cancelled",
+  "connectionCancelled": "Canceled",
   "connectionWithoutTransit": "Without public transport",
   "connectionSearchNoResults": "No connections found",
   "connectionEarlier": "Earlier",
@@ -736,7 +736,7 @@
       "count": { "type": "int" }
     }
   },
-  "connectionStopsCancelled": "{count, plural, =1{1 stop cancelled} other{{count} stops cancelled}}",
+  "connectionStopsCancelled": "{count, plural, =1{1 stop canceled} other{{count} stops canceled}}",
   "@connectionStopsCancelled": {
     "placeholders": {
       "count": { "type": "int" }
@@ -758,7 +758,7 @@
   "journeyDetails": "Show journey",
   "liveTimesRefresh": "Update live times",
   "liveTimesNone": "No live times to update",
-  "liveTimesCancelled": "This service has been cancelled",
+  "liveTimesCancelled": "This service has been canceled",
   "liveTimesError": "Couldn't fetch live times",
 
   "tripKindTrip": "Trip",

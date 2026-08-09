@@ -608,7 +608,7 @@ void main() {
     // The cycling controls only exist once there is a bike to ride.
     expect(find.text('Cycling speed'), findsNothing);
     expect(find.text('Bike comes along'), findsNothing);
-    await tester.tap(find.text('Travelling by bike'));
+    await tester.tap(find.text('Traveling by bike'));
     await tester.pumpAndSettle();
     expect(find.text('Cycling speed'), findsOneWidget);
 
@@ -732,7 +732,7 @@ void main() {
     await pickInto(tester, 'To');
 
     await openOptions(tester);
-    await tester.tap(find.text('Travelling by bike'));
+    await tester.tap(find.text('Traveling by bike'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Bike comes along'));
     await tester.pumpAndSettle();

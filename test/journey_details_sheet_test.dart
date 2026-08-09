@@ -160,12 +160,12 @@ void main() {
     await _pumpSheet(tester, _journey);
 
     // Folded away is where a cancellation would hide, so the count says it.
-    expect(find.text('1 stop cancelled'), findsOneWidget);
+    expect(find.text('1 stop canceled'), findsOneWidget);
 
     await tester.tap(find.text('3 stops'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Cancelled'), findsOneWidget);
+    expect(find.text('Canceled'), findsOneWidget);
     final name = tester.widget<Text>(find.text('Kassel-Wilhelmshöhe'));
     expect(name.style?.decoration, TextDecoration.lineThrough);
     // 09:25 with no figure beside it: the feed repeats the plan for a stop it

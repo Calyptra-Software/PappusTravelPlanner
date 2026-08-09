@@ -11,7 +11,7 @@ before there is a fix. Two private routes:
 
 Either is fine; the first keeps the discussion attached to the repository. Say
 what you did, what happened, and what you expected instead — a crafted file, a
-link or a request that triggers it is worth more than a description of it.
+link, or a request that triggers it is worth more than a description of it.
 
 This is a spare-time project, not a company with an on-call rotation. You should
 have an acknowledgement within a week. If you don't, assume the mail went astray
@@ -54,7 +54,7 @@ widget to open a trip.
 ## What is deliberately not a vulnerability
 
 **The database is not encrypted.** It is an ordinary SQLite file, and being able
-to copy it, open it, back it up and carry it to another machine is the whole
+to copy it, open it, back it up, and carry it to another machine is the whole
 premise of the app. Anyone who has the file has the trips in it. If that matters
 for your threat model, the answer is disk encryption underneath, not something
 this app can add on top without giving up what it is for.
@@ -65,14 +65,14 @@ be handed to other people and other programs.
 **There are no accounts and no server of ours.** Nothing to authenticate to,
 nothing held anywhere but on your device.
 
-**The connection search tells Transitous what it must.** A place query, a date
+**The connection search tells Transitous what it must.** A place query, a date,
 and a time go to the routing service, along with a `User-Agent` naming the app
 and linking this repository — its
 [usage policy](https://transitous.org/api/) asks for exactly that. Searching a
 connection without telling anyone where and when you want to go is not a thing
 that can be built.
 
-**Nothing else leaves the device.** There is no analytics, no crash reporting
+**Nothing else leaves the device.** There is no analytics, no crash reporting,
 and no telemetry of any kind, and the Android build asks for one permission,
 `INTERNET`.
 

@@ -455,19 +455,19 @@ abstract class AppLocalizations {
   /// No description provided for @accentColour.
   ///
   /// In en, this message translates to:
-  /// **'Accent colour'**
+  /// **'Accent color'**
   String get accentColour;
 
   /// No description provided for @customColour.
   ///
   /// In en, this message translates to:
-  /// **'Custom colour'**
+  /// **'Custom color'**
   String get customColour;
 
   /// No description provided for @pickColour.
   ///
   /// In en, this message translates to:
-  /// **'Pick a colour'**
+  /// **'Pick a color'**
   String get pickColour;
 
   /// No description provided for @hexColour.
@@ -479,7 +479,7 @@ abstract class AppLocalizations {
   /// No description provided for @invalidHexColour.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid hex colour, e.g. 1565C0'**
+  /// **'Enter a valid hex color, e.g. 1565C0'**
   String get invalidHexColour;
 
   /// No description provided for @createTrip.
@@ -2477,7 +2477,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectionByBike.
   ///
   /// In en, this message translates to:
-  /// **'Travelling by bike'**
+  /// **'Traveling by bike'**
   String get connectionByBike;
 
   /// No description provided for @connectionByBikeHint.
@@ -2519,7 +2519,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectionCancelled.
   ///
   /// In en, this message translates to:
-  /// **'Cancelled'**
+  /// **'Canceled'**
   String get connectionCancelled;
 
   /// No description provided for @connectionWithoutTransit.
@@ -2849,7 +2849,7 @@ abstract class AppLocalizations {
   /// No description provided for @connectionStopsCancelled.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 stop cancelled} other{{count} stops cancelled}}'**
+  /// **'{count, plural, =1{1 stop canceled} other{{count} stops canceled}}'**
   String connectionStopsCancelled(int count);
 
   /// No description provided for @connectionChangePlace.
@@ -2885,7 +2885,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveTimesCancelled.
   ///
   /// In en, this message translates to:
-  /// **'This service has been cancelled'**
+  /// **'This service has been canceled'**
   String get liveTimesCancelled;
 
   /// No description provided for @liveTimesError.

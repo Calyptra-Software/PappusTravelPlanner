@@ -230,19 +230,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fieldNotes => 'Notes';
 
   @override
-  String get accentColour => 'Accent colour';
+  String get accentColour => 'Accent color';
 
   @override
-  String get customColour => 'Custom colour';
+  String get customColour => 'Custom color';
 
   @override
-  String get pickColour => 'Pick a colour';
+  String get pickColour => 'Pick a color';
 
   @override
   String get hexColour => 'Hex';
 
   @override
-  String get invalidHexColour => 'Enter a valid hex colour, e.g. 1565C0';
+  String get invalidHexColour => 'Enter a valid hex color, e.g. 1565C0';
 
   @override
   String get createTrip => 'Create trip';
@@ -1379,7 +1379,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'No step-free connections found';
 
   @override
-  String get connectionByBike => 'Travelling by bike';
+  String get connectionByBike => 'Traveling by bike';
 
   @override
   String get connectionByBikeHint =>
@@ -1403,7 +1403,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionNoBikeConnections => 'No connections that take bikes';
 
   @override
-  String get connectionCancelled => 'Cancelled';
+  String get connectionCancelled => 'Canceled';
 
   @override
   String get connectionWithoutTransit => 'Without public transport';
@@ -1632,8 +1632,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count stops cancelled',
-      one: '1 stop cancelled',
+      other: '$count stops canceled',
+      one: '1 stop canceled',
     );
     return '$_temp0';
   }
@@ -1658,7 +1658,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveTimesNone => 'No live times to update';
 
   @override
-  String get liveTimesCancelled => 'This service has been cancelled';
+  String get liveTimesCancelled => 'This service has been canceled';
 
   @override
   String get liveTimesError => 'Couldn\'t fetch live times';
