@@ -154,9 +154,7 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _createNew(BuildContext context, WidgetRef ref) async {
     // file_selector parents the save dialog to the app window on Linux; see
     // _openExisting.
-    final location = await getSaveLocation(
-      suggestedName: 'travelplanner.sqlite',
-    );
+    final location = await getSaveLocation(suggestedName: kDatabaseFileName);
     final path = location?.path;
     if (path == null || !context.mounted) return;
     await _run(

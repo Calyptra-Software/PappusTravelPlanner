@@ -4,8 +4,8 @@
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFFFF",
-    "theme_color": "#1565C0",
-    "description": "A new Flutter project.",
+    "theme_color": "#3A543F",
+    "description": "Offline-first trip planner: itineraries, costs and checklists in one portable file.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -6,10 +6,15 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 /// The file name used for the default (app-managed) database.
-const String kDatabaseFileName = 'travelplanner.sqlite';
+///
+/// Renamed with the app. A database written under the old name is not migrated
+/// and not looked for: on a desktop it is still openable through the settings
+/// screen's *open database*, and everywhere else the way across is the export
+/// the app already has. Guessing at a predecessor's file name is how an app
+/// silently adopts a file that is not its own.
+const String kDatabaseFileName = 'pappus.sqlite';
 
-/// Resolves the default database path in the app's documents directory — the
-/// same location the app has always used, so existing data is preserved.
+/// Resolves the default database path in the app's documents directory.
 Future<String> defaultDatabaseFile() async {
   final dir = await getApplicationDocumentsDirectory();
   return p.join(dir.path, kDatabaseFileName);

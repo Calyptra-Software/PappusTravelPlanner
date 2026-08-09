@@ -3,7 +3,7 @@
 This file provides guidance to coding agents (e.g. Claude Code, which reads it via the
 `@AGENTS.md` import in `CLAUDE.md`) when working with code in this repository.
 
-Travel Planner is an offline-first Flutter app for planning trips (trips → day-by-day
+Pappus Travel Planner is an offline-first Flutter app for planning trips (trips → day-by-day
 itinerary of places and transport legs → costs, plus per-trip checklists and shared-expense
 splitting among participants), storing everything in a single portable SQLite file. Primary
 target is Android; also runs on Web, Linux, Windows, macOS, iOS.

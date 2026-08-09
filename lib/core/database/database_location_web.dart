@@ -5,7 +5,7 @@ import 'package:drift_flutter/drift_flutter.dart';
 /// Storage key for the browser-backed database. The web has no filesystem, so
 /// this doubles as the "path" shown in settings. It maps to an OPFS/IndexedDB
 /// store managed by drift's WebAssembly backend.
-const String kDatabaseFileName = 'travelplanner';
+const String kDatabaseFileName = 'pappus';
 
 final Uri _sqlite3Wasm = Uri.parse('sqlite3.wasm');
 final Uri _driftWorker = Uri.parse('drift_worker.js');

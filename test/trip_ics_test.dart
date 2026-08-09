@@ -116,8 +116,8 @@ void main() {
       final uid = lines.firstWhere((l) => l.startsWith('UID:item-7'));
 
       // The row id alone would collide across copies of the portable database.
-      expect(uid, isNot('UID:item-7@travelplanner'));
-      expect(uid, endsWith('@travelplanner'));
+      expect(uid, isNot('UID:item-7@pappus'));
+      expect(uid, endsWith('@pappus'));
     });
   });
 

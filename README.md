@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Pappus Travel Planner" width="420">
+</p>
+
 # Pappus Travel Planner
 
 [![Flutter 3.44+](https://img.shields.io/badge/Flutter-3.44%2B-blue)](https://flutter.dev)

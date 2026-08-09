@@ -83,9 +83,13 @@ flutter:
     # to ship with it.
     - assets/fonts/Roboto-LICENSE.txt
     - assets/fonts/TransportGlyphs-ATTRIBUTION.txt
+    # The mark, shown above the licence page's title. 256 px because it is drawn
+    # at 72 dp — big enough for a 3x screen, and small enough that the binary
+    # does not carry a launcher-sized bitmap for one icon.
+    - assets/logo/pappus_mark.png
 
-  # assets/icon/travelplanner.png is only a source image for flutter_launcher_icons,
-  # so it is deliberately not bundled here.
+  # assets/icon/pappus.png and pappus_adaptive.png are only source images for
+  # flutter_launcher_icons, so they are deliberately not bundled here.
 
   fonts:
     # A tiny custom icon font (4 glyphs) for transport modes Material Icons has

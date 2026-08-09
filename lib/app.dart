@@ -12,14 +12,14 @@ import 'features/home_widget/home_widget_service.dart';
 import 'features/sharing/trip_share_channel.dart';
 import 'l10n/app_localizations.dart';
 
-class TravelPlannerApp extends ConsumerStatefulWidget {
-  const TravelPlannerApp({super.key});
+class PappusApp extends ConsumerStatefulWidget {
+  const PappusApp({super.key});
 
   @override
-  ConsumerState<TravelPlannerApp> createState() => _TravelPlannerAppState();
+  ConsumerState<PappusApp> createState() => _PappusAppState();
 }
 
-class _TravelPlannerAppState extends ConsumerState<TravelPlannerApp> {
+class _PappusAppState extends ConsumerState<PappusApp> {
   StreamSubscription<Uri?>? _widgetClicks;
 
   @override

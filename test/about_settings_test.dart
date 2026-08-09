@@ -113,5 +113,14 @@ void main() {
 
     expect(find.byType(LicensePage), findsOneWidget);
     expect(find.text(kAppLegalese), findsOneWidget);
+    // The mark sits above the title; the lockup would repeat the name that the
+    // page already prints from `applicationName`.
+    final icon = tester.widget<Image>(
+      find.descendant(
+        of: find.byType(LicensePage),
+        matching: find.byType(Image),
+      ),
+    );
+    expect((icon.image as AssetImage).assetName, 'assets/logo/pappus_mark.png');
   });
 }

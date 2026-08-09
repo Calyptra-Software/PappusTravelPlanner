@@ -24,6 +24,10 @@ import '../../../core/providers.dart';
 import '../../../core/widgets/external_link.dart';
 import '../../../l10n/app_localizations.dart';
 
+/// The square mark, not the lockup: the licence page prints the application's
+/// name directly beneath the icon, and the lockup carries that name itself.
+const String _markAsset = 'assets/logo/pappus_mark.png';
+
 class AboutSettings extends ConsumerWidget {
   const AboutSettings({super.key});
 
@@ -74,6 +78,14 @@ class AboutSettings extends ConsumerWidget {
             context: context,
             applicationName: l10n.appTitle,
             applicationVersion: version,
+            applicationIcon: const Padding(
+              padding: EdgeInsets.only(top: 8),
+              child: Image(
+                image: AssetImage(_markAsset),
+                width: 72,
+                height: 72,
+              ),
+            ),
             applicationLegalese: kAppLegalese,
           ),
         ),

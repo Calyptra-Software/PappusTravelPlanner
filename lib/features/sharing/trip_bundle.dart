@@ -5,10 +5,10 @@ import '../../core/format/money_format.dart';
 import '../../data/database/tables.dart' show ItemKind, TripKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
-/// share-sheet intent filter matches only Travel Planner trips, not every
-/// binary file. Tapped `.tpt` files arrive as `application/octet-stream`
-/// instead (the OS can't infer a type from the unknown extension), which the
-/// `ACTION_VIEW` filter handles separately.
+/// share-sheet intent filter matches only Pappus trips, not every binary file.
+/// Tapped `.tpt` files arrive as `application/octet-stream` instead (the OS
+/// can't infer a type from the unknown extension), which the `ACTION_VIEW`
+/// filter handles separately.
 const String tripBundleMimeType = 'application/x-pappus-trip';
 
 /// File extension for a shared trip bundle.
@@ -77,8 +77,14 @@ class TripBundle {
   /// whose entries all sit on a 1970 anchor day.
   static const int currentFormatVersion = 4;
 
-  /// Magic string identifying the payload as a Travel Planner trip bundle.
-  static const String kind = 'travelplanner.trip';
+  /// Magic string identifying the payload as a Pappus trip bundle.
+  ///
+  /// Renamed with the app, which nothing had shipped under yet — a bundle
+  /// written before that is refused by [TripBundle.fromJson] rather than
+  /// misread. From here on the token is frozen: it is the one field an importer
+  /// reads before it knows anything else about the file, so it must not follow
+  /// a later rename the way a label may.
+  static const String kind = 'pappus.trip';
 
   final int formatVersion;
 
@@ -160,7 +166,7 @@ class TripBundle {
   factory TripBundle.fromJson(Map<String, dynamic> json) {
     final k = json['kind'];
     if (k != kind) {
-      throw const FormatException('Not a Travel Planner trip bundle.');
+      throw const FormatException('Not a Pappus trip bundle.');
     }
     return TripBundle(
       formatVersion: json['formatVersion'] as int,
