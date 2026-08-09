@@ -24,7 +24,7 @@ dependencies:
   # State management and routing.
   flutter_riverpod: ^3.3.2
   riverpod_annotation: ^4.0.3
-  go_router: ^17.3.0
+  go_router: ^17.4.0
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
   drift: ^2.34.3
