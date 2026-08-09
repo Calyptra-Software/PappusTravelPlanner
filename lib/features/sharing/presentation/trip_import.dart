@@ -24,7 +24,7 @@ Future<void> pickAndImportTrip(BuildContext context, WidgetRef ref) async {
   Uint8List? bytes;
   if (_isDesktop) {
     const typeGroup = XTypeGroup(
-      label: 'Travel Planner trip',
+      label: 'Pappus trip',
       extensions: [tripBundleExtension],
     );
     final file = await openFile(acceptedTypeGroups: [typeGroup]);

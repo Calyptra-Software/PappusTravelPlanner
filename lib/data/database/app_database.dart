@@ -16,11 +16,16 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
-/// Marks a file as a Travel Planner database. SQLite keeps this 32-bit value in
-/// the file header (bytes 68-71), so the file says what it is without anything
+/// Marks a file as a Pappus database. SQLite keeps this 32-bit value in the
+/// file header (bytes 68-71), so the file says what it is without anything
 /// having to open a table — `file(1)`, a backup tool, or a later validation
 /// check can tell one of our databases from any other `.sqlite` a picker
-/// happened to hand back. The value is ASCII `TRPL`.
+/// happened to hand back.
+///
+/// The value is ASCII `TRPL` and stays that way through the rename: it is
+/// stamped into every database already written, and changing it would make the
+/// app disown its own files. What the four bytes spell is not the point — that
+/// they are the same four everywhere is.
 const int kApplicationId = 0x5452504C;
 
 @DriftDatabase(

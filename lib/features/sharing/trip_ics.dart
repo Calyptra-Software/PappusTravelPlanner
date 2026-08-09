@@ -88,7 +88,7 @@ class _TripIcsBuilder {
   String get _namespace =>
       bundle.trip.createdAt.microsecondsSinceEpoch.toRadixString(36);
 
-  String _uid(String suffix) => '$suffix-$_namespace@travelplanner';
+  String _uid(String suffix) => '$suffix-$_namespace@pappus';
 
   bool _itemIsLive(BundleItem i) =>
       i.alternativeLocalId == null ||
@@ -97,7 +97,7 @@ class _TripIcsBuilder {
   String build() {
     _line('BEGIN', 'VCALENDAR');
     _line('VERSION', '2.0');
-    _line('PRODID', '-//Travel Planner//Trip Export//EN');
+    _line('PRODID', '-//Calyptra Software//Pappus Travel Planner//EN');
     _line('CALSCALE', 'GREGORIAN');
     // Non-standard but very widely honoured: names the imported calendar.
     _line('X-WR-CALNAME', bundle.trip.title);

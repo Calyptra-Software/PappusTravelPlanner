@@ -36,7 +36,7 @@ Future<void> main() async {
           '${packageInfo.version}+${packageInfo.buildNumber}',
         ),
       ],
-      child: const TravelPlannerApp(),
+      child: const PappusApp(),
     ),
   );
 }
