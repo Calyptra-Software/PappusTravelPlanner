@@ -30,6 +30,15 @@ Regenerate code after editing anything under generation:
 - **`flutter gen-l10n`** after editing `lib/l10n/app_en.arb` / `app_de.arb`. `app_en.arb` is
   the template; every key added there must also be added to `app_de.arb`.
 
+**`SECURITY.md` states facts, not intentions**, and a change can make one of them false
+without touching it: that exactly one host is contacted (`api.transitous.org`), that the
+Android build asks for one permission (`INTERNET`), that there is no telemetry of any kind,
+and the list of foreign files the app parses. A second host — a map's tile server is the
+obvious one — a new permission, an analytics or crash-reporting dependency, or another
+format read from outside all turn a sentence there into a false claim about what the app
+does with someone's data. Correct it in the same commit; a security policy that has drifted
+is worse than none, because people rely on it.
+
 ## Architecture
 
 Layering is **feature-first** with a shared data core. Data flows upward through Riverpod
