@@ -13,15 +13,16 @@
 Pappus Travel Planner is a modern, **offline-first** Flutter app for planning trips. Create
 trips, build a day-by-day itinerary from places and transport legs, track what each
 part of the trip costs, and keep everything in a local SQLite database that you fully
-control. The primary target is **Android**, but the same code base also runs on Web, Linux, Windows, macOS, and iOS.
+control. The primary target is **Android**, but the same code base also runs on Web,
+Linux, Windows, macOS, and iOS.
 
 ## Features
 
 - **Trips overview** — create, edit, and delete trips with a destination, date range,
   notes, participants, tags, and an accent colour. Search by text, filter by status
   (upcoming / ongoing / past / undated), tag, participant, originating routine, or date
-  range, and sort by date, name, creation, or total expenses. Switch the overview to a **month calendar** where each trip is a bar in its
-  accent colour spanning its days.
+  range, and sort by date, name, creation, or total expenses. Switch the overview to a
+  **month calendar** where each trip is a bar in its accent colour spanning its days.
 - **Tags — your filing, not the app's** — the app doesn't decide that a bike ride is a
   lesser kind of trip than a holiday; you invent the labels ("walks", "commute",
   "vacation", "work") and hang them on trips. Tags sit as a chip row directly above the
@@ -73,7 +74,8 @@ control. The primary target is **Android**, but the same code base also runs on 
   swap in. Declining it, finding nothing, or having no signal all leave the copied plan
   standing — and "no train" is never reported when it was "no network".
 - **Alternatives** — plan competing options for one stretch of a day ("museum or boat
-  trip?"). The decision sits in the timeline as a card you **swipe** between options; each option holds its own places, legs, and costs.
+  trip?"). The decision sits in the timeline as a card you **swipe** between options;
+  each option holds its own places, legs, and costs.
   Every option's price stays visible side by side so they can be compared, but only the
   **chosen** option counts toward the trip's totals and its expense split — an option you
   considered and dropped never inflates the budget. Afterwards, simply choose the option you
@@ -247,7 +249,7 @@ lib/
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies
     checklist/              # per-trip named checklists
-    sharing/                # portable trip bundles (export/import a single trip) + PDF and .ics export
+    sharing/                # portable trip bundles (.tpt), plus PDF and .ics export
     settings/               # language, theme, categories, currencies, modes, people, database
     home_widget/            # Android widget payload + sync
   l10n/                     # app_en.arb, app_de.arb + generated classes
@@ -306,10 +308,10 @@ on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
   on live data live here): `flutter test -d linux integration_test/`
 - After changing Drift tables/DAOs or Riverpod-annotated code, re-run
   `dart run build_runner build --delete-conflicting-outputs`.
-- Any change to a Drift table or column needs a bumped `AppDatabase.schemaVersion` (27 at
-  the time of writing) and an `onUpgrade` branch: real databases are migrated in place,
-  never recreated. The same goes for the persisted enums (cost display, expense scope, PDF
-  sections, sort order): they are stored by index, so append only — never reorder.
+- Any change to a Drift table or column needs a bumped `AppDatabase.schemaVersion` and
+  an `onUpgrade` branch: real databases are migrated in place, never recreated. The same
+  goes for the persisted enums (cost display, expense scope, PDF sections, sort order):
+  they are stored by index, so append only — never reorder.
 - Poke the routing client without the app:
   `dart run tool/motis_smoke.dart "Hamburg Hbf" "Wien Hbf"` (plain Dart, needs network,
   not part of the test suite).
@@ -318,7 +320,12 @@ on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
   [sqlite3.dart release](https://github.com/simolus3/sqlite3.dart/releases)) and
   `drift_worker.js` (`dart compile js -O2` of a one-line entrypoint calling
   `WasmDatabase.workerMainForOpen()`, compiled from inside this project).
-- The Android toolchain is **AGP 9.3.1 on Gradle 9.6.1**
+- The Android toolchain carries one deliberate setting, `android.builtInKotlin=false`, which
+  cannot change until Flutter 3.47. It is documented under *Platform build constraints* in
+  [AGENTS.md](AGENTS.md), together with the warning that survives a good build and should
+  not be chased. The CI job that builds a real APK is the only thing guarding any of it:
+  these failures happen while Gradle applies its plugins, where `analyze` and `test` cannot
+  see them.
 
 ## Contributing
 
