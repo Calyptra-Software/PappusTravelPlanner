@@ -20,6 +20,15 @@ A trip is a trip however long it lasts: a walk to the shops, a multi-day hike, a
 fortnight in Rome are the same kind of thing with different dates. The primary target is
 **Android**, but the same code base runs on Web, Linux, Windows, macOS, and iOS.
 
+## Screenshots
+
+|  |  |  |
+|:--:|:--:|:--:|
+| <img src="docs/screenshots/01-overview.png" alt="Trips overview with tag chips" width="250"> | <img src="docs/screenshots/02-trip-header.png" alt="A trip with participants, expenses and a packing list" width="250"> | <img src="docs/screenshots/03-timeline.png" alt="Day-by-day timeline with planned and actual times" width="250"> |
+| **Every trip in one list** — your own tags and colors, and a total per currency | **A trip and all that hangs off it** — who is coming, what it costs, what to pack | **The day itself** — places and legs, planned against actual, and two ways the afternoon could go |
+| <img src="docs/screenshots/06-journey-search.png" alt="Connection search results from a live timetable" width="250"> | <img src="docs/screenshots/04-stats.png" alt="Expenses by category and person, with settle-up" width="250"> | <img src="docs/screenshots/05-stats-transport.png" alt="Legs and time per transport mode" width="250"> |
+| **Real departures** from an open timetable, ready to drop straight into the day | **Where the money went** — by category, by person, and the shortest way to settle up | **How you actually traveled** — legs and time per mode, planned against recorded |
+
 ## Get the app
 
 Android builds are on the
