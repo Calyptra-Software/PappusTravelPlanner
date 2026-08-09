@@ -84,8 +84,8 @@ flutter:
     - assets/fonts/Roboto-LICENSE.txt
     - assets/fonts/TransportGlyphs-ATTRIBUTION.txt
 
-  # assets/icon/travelplanner.png is only a source image for flutter_launcher_icons,
-  # so it is deliberately not bundled here.
+  # assets/icon/pappus.png and pappus_adaptive.png are only source images for
+  # flutter_launcher_icons, so they are deliberately not bundled here.
 
   fonts:
     # A tiny custom icon font (4 glyphs) for transport modes Material Icons has

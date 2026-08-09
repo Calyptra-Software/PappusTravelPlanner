@@ -1,32 +1,65 @@
-# App launcher icons, generated from a single source with flutter_launcher_icons.
-# Regenerate after changing the source image with:
+# App launcher icons, generated with flutter_launcher_icons. Regenerate after
+# changing a source image with:
 #   dart run flutter_launcher_icons
+#
+# Two sources, because exactly one surface applies a mask that crops. Measured
+# against the drawn pixels of assets/icon/pappus.png:
+#
+#   Android adaptive (circle, 66.7 %)  cuts 45.2 %  → needs the padded source
+#   Web maskable     (circle, 80 %)    cuts 33.0 %  → see the note below
+#   iOS squircle     (corner, 22.4 %)  cuts  0.6 %  → the plain source is fine
+#
+# So everything reads the plain mark and only the Android foreground gets the
+# padded one, which keeps the arrowhead, the flying seed and the stem's tip
+# instead of amputating them.
 flutter_launcher_icons:
-  image_path: "assets/icon/travelplanner.png"
+  image_path: "assets/icon/pappus.png"
 
   android: true
   min_sdk_android: 21
-  # Android 8+ adaptive icon: the artwork already fills a rounded square on a
-  # white margin, so a white background keeps it looking like the source.
+  # The mark is drawn in dark green and ochre with no ground of its own, so the
+  # background layer supplies one.
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/icon/travelplanner.png"
+  # The padded master: the same mark, centred on the circle that encloses it,
+  # on a canvas large enough that the launcher's mask reaches nothing.
+  # `adaptive_icon_foreground_inset` cannot replace this — the mark sits 8 % of
+  # the canvas off-centre, so a uniform inset would need 30 % where a centred
+  # canvas needs 23 %, and the mark would come out a third smaller.
+  adaptive_icon_foreground: "assets/icon/pappus_adaptive.png"
+  # The padding is already in the file, so the tool must not add its own: this
+  # setting defaults to 16, which would inset an already-inset image and leave
+  # the mark a third smaller than it needs to be.
+  adaptive_icon_foreground_inset: 0
 
   ios: true
-  # iOS icons must be opaque; flatten any transparency onto white.
+  # iOS icons must be opaque; flatten the transparency onto white.
   remove_alpha_ios: true
   background_color_ios: "#FFFFFF"
 
   web:
     generate: true
-    image_path: "assets/icon/travelplanner.png"
+    image_path: "assets/icon/pappus.png"
     background_color: "#FFFFFF"
-    theme_color: "#1565C0"
+    theme_color: "#3A543F"
 
   windows:
     generate: true
-    image_path: "assets/icon/travelplanner.png"
+    image_path: "assets/icon/pappus.png"
     icon_size: 256
 
   macos:
     generate: true
-    image_path: "assets/icon/travelplanner.png"
+    image_path: "assets/icon/pappus.png"
+# NOTE — web/icons/Icon-maskable-192.png and -512.png are masked the same way
+# Android's foreground is, but the web section takes no separate source, so the
+# generator builds them from the plain mark and loses a third of it. They are
+# therefore overwritten afterwards from the padded master:
+#
+#   dart run flutter_launcher_icons
+#   for s in 192 512; do
+#     convert assets/icon/pappus_adaptive.png -resize ${s}x${s} \
+#       -background white -alpha remove -alpha off web/icons/Icon-maskable-$s.png
+#   done
+#
+# The generator rewrites manifest.json's whole `icons` array on every run, so
+# dropping the maskable entries there instead would not survive.
