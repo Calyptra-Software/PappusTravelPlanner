@@ -7,7 +7,7 @@ publish_to: 'none'
 
 # In Android, build-name is used as versionName while build-number is used as
 # versionCode; both can be overridden with `flutter build --build-name/--build-number`.
-version: 1.4.0+5
+version: 1.5.0+6
 
 environment:
   sdk: ^3.12.0
