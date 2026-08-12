@@ -71,7 +71,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 27;
+  int get schemaVersion => 28;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -327,6 +327,17 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.toPlaceId,
         ]);
       }
+      // v28 gives a *place* the coordinates a transport leg's ends have carried
+      // since v24, so a map can draw a whole day rather than only its journeys.
+      // Nullable, and nothing is backfilled: a place recorded before this was
+      // only ever named, and the app does not turn a name into a position by
+      // itself. Added only when a recreation above hasn't already, as v24 does.
+      if (from < 28) {
+        await _addItineraryColumnsIfMissing(m, [
+          itineraryItems.lat,
+          itineraryItems.lon,
+        ]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -389,9 +400,8 @@ class AppDatabase extends _$AppDatabase {
         },
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
-        // otherwise the copy step selects a column the old table lacks. The v24,
-        // v25, v26 and v27 additions; extend this list when a later version
-        // adds more.
+        // otherwise the copy step selects a column the old table lacks. The v24
+        // through v28 additions; extend this list when a later version adds more.
         newColumns: [
           itineraryItems.spansNextDay,
           itineraryItems.fromLat,
@@ -402,6 +412,8 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.stopovers,
           itineraryItems.fromPlaceId,
           itineraryItems.toPlaceId,
+          itineraryItems.lat,
+          itineraryItems.lon,
         ],
       ),
     );

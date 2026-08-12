@@ -2175,6 +2175,24 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lonMeta = const VerificationMeta('lon');
+  @override
+  late final GeneratedColumn<double> lon = GeneratedColumn<double>(
+    'lon',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
   late final GeneratedColumn<int> mode = GeneratedColumn<int>(
@@ -2310,6 +2328,8 @@ class $ItineraryItemsTable extends ItineraryItems
     spansNextDay,
     notes,
     location,
+    lat,
+    lon,
     mode,
     fromLocation,
     toLocation,
@@ -2432,6 +2452,18 @@ class $ItineraryItemsTable extends ItineraryItems
       context.handle(
         _locationMeta,
         location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    }
+    if (data.containsKey('lon')) {
+      context.handle(
+        _lonMeta,
+        lon.isAcceptableOrUnknown(data['lon']!, _lonMeta),
       );
     }
     if (data.containsKey('mode')) {
@@ -2580,6 +2612,14 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.string,
         data['${effectivePrefix}location'],
       ),
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      ),
+      lon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lon'],
+      ),
       mode: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}mode'],
@@ -2687,6 +2727,16 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final String? notes;
   final String? location;
 
+  /// Coordinates (WGS84) of this place, when known — what the user pointed at on
+  /// the map, null for a place that was only named.
+  ///
+  /// Deliberately independent of [location]: that is what the user *wrote*, and
+  /// the app never turns a name into a position by itself. A place keeps its name
+  /// when the coordinates are cleared, and keeps the coordinates when it is
+  /// renamed, because the two answer different questions.
+  final double? lat;
+  final double? lon;
+
   /// The transport mode of this leg — a row in [TransportModes], or null when
   /// unassigned. On mode deletion this is set to null (the leg keeps its route,
   /// it just loses its mode), like an item losing its group.
@@ -2747,6 +2797,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     required this.spansNextDay,
     this.notes,
     this.location,
+    this.lat,
+    this.lon,
     this.mode,
     this.fromLocation,
     this.toLocation,
@@ -2798,6 +2850,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     }
     if (!nullToAbsent || location != null) {
       map['location'] = Variable<String>(location);
+    }
+    if (!nullToAbsent || lat != null) {
+      map['lat'] = Variable<double>(lat);
+    }
+    if (!nullToAbsent || lon != null) {
+      map['lon'] = Variable<double>(lon);
     }
     if (!nullToAbsent || mode != null) {
       map['mode'] = Variable<int>(mode);
@@ -2870,6 +2928,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       location: location == null && nullToAbsent
           ? const Value.absent()
           : Value(location),
+      lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
+      lon: lon == null && nullToAbsent ? const Value.absent() : Value(lon),
       mode: mode == null && nullToAbsent ? const Value.absent() : Value(mode),
       fromLocation: fromLocation == null && nullToAbsent
           ? const Value.absent()
@@ -2927,6 +2987,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       spansNextDay: serializer.fromJson<bool>(json['spansNextDay']),
       notes: serializer.fromJson<String?>(json['notes']),
       location: serializer.fromJson<String?>(json['location']),
+      lat: serializer.fromJson<double?>(json['lat']),
+      lon: serializer.fromJson<double?>(json['lon']),
       mode: serializer.fromJson<int?>(json['mode']),
       fromLocation: serializer.fromJson<String?>(json['fromLocation']),
       toLocation: serializer.fromJson<String?>(json['toLocation']),
@@ -2961,6 +3023,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'spansNextDay': serializer.toJson<bool>(spansNextDay),
       'notes': serializer.toJson<String?>(notes),
       'location': serializer.toJson<String?>(location),
+      'lat': serializer.toJson<double?>(lat),
+      'lon': serializer.toJson<double?>(lon),
       'mode': serializer.toJson<int?>(mode),
       'fromLocation': serializer.toJson<String?>(fromLocation),
       'toLocation': serializer.toJson<String?>(toLocation),
@@ -2991,6 +3055,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     bool? spansNextDay,
     Value<String?> notes = const Value.absent(),
     Value<String?> location = const Value.absent(),
+    Value<double?> lat = const Value.absent(),
+    Value<double?> lon = const Value.absent(),
     Value<int?> mode = const Value.absent(),
     Value<String?> fromLocation = const Value.absent(),
     Value<String?> toLocation = const Value.absent(),
@@ -3024,6 +3090,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     spansNextDay: spansNextDay ?? this.spansNextDay,
     notes: notes.present ? notes.value : this.notes,
     location: location.present ? location.value : this.location,
+    lat: lat.present ? lat.value : this.lat,
+    lon: lon.present ? lon.value : this.lon,
     mode: mode.present ? mode.value : this.mode,
     fromLocation: fromLocation.present ? fromLocation.value : this.fromLocation,
     toLocation: toLocation.present ? toLocation.value : this.toLocation,
@@ -3065,6 +3133,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           : this.spansNextDay,
       notes: data.notes.present ? data.notes.value : this.notes,
       location: data.location.present ? data.location.value : this.location,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lon: data.lon.present ? data.lon.value : this.lon,
       mode: data.mode.present ? data.mode.value : this.mode,
       fromLocation: data.fromLocation.present
           ? data.fromLocation.value
@@ -3105,6 +3175,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
           ..write('mode: $mode, ')
           ..write('fromLocation: $fromLocation, ')
           ..write('toLocation: $toLocation, ')
@@ -3137,6 +3209,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     spansNextDay,
     notes,
     location,
+    lat,
+    lon,
     mode,
     fromLocation,
     toLocation,
@@ -3168,6 +3242,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.spansNextDay == this.spansNextDay &&
           other.notes == this.notes &&
           other.location == this.location &&
+          other.lat == this.lat &&
+          other.lon == this.lon &&
           other.mode == this.mode &&
           other.fromLocation == this.fromLocation &&
           other.toLocation == this.toLocation &&
@@ -3197,6 +3273,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<bool> spansNextDay;
   final Value<String?> notes;
   final Value<String?> location;
+  final Value<double?> lat;
+  final Value<double?> lon;
   final Value<int?> mode;
   final Value<String?> fromLocation;
   final Value<String?> toLocation;
@@ -3224,6 +3302,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
     this.mode = const Value.absent(),
     this.fromLocation = const Value.absent(),
     this.toLocation = const Value.absent(),
@@ -3252,6 +3332,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
     this.mode = const Value.absent(),
     this.fromLocation = const Value.absent(),
     this.toLocation = const Value.absent(),
@@ -3282,6 +3364,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<bool>? spansNextDay,
     Expression<String>? notes,
     Expression<String>? location,
+    Expression<double>? lat,
+    Expression<double>? lon,
     Expression<int>? mode,
     Expression<String>? fromLocation,
     Expression<String>? toLocation,
@@ -3311,6 +3395,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (spansNextDay != null) 'spans_next_day': spansNextDay,
       if (notes != null) 'notes': notes,
       if (location != null) 'location': location,
+      if (lat != null) 'lat': lat,
+      if (lon != null) 'lon': lon,
       if (mode != null) 'mode': mode,
       if (fromLocation != null) 'from_location': fromLocation,
       if (toLocation != null) 'to_location': toLocation,
@@ -3341,6 +3427,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<bool>? spansNextDay,
     Value<String?>? notes,
     Value<String?>? location,
+    Value<double?>? lat,
+    Value<double?>? lon,
     Value<int?>? mode,
     Value<String?>? fromLocation,
     Value<String?>? toLocation,
@@ -3369,6 +3457,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       spansNextDay: spansNextDay ?? this.spansNextDay,
       notes: notes ?? this.notes,
       location: location ?? this.location,
+      lat: lat ?? this.lat,
+      lon: lon ?? this.lon,
       mode: mode ?? this.mode,
       fromLocation: fromLocation ?? this.fromLocation,
       toLocation: toLocation ?? this.toLocation,
@@ -3433,6 +3523,12 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (location.present) {
       map['location'] = Variable<String>(location.value);
     }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lon.present) {
+      map['lon'] = Variable<double>(lon.value);
+    }
     if (mode.present) {
       map['mode'] = Variable<int>(mode.value);
     }
@@ -3487,6 +3583,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
           ..write('mode: $mode, ')
           ..write('fromLocation: $fromLocation, ')
           ..write('toLocation: $toLocation, ')
@@ -10041,6 +10139,8 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<bool> spansNextDay,
       Value<String?> notes,
       Value<String?> location,
+      Value<double?> lat,
+      Value<double?> lon,
       Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
@@ -10070,6 +10170,8 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<bool> spansNextDay,
       Value<String?> notes,
       Value<String?> location,
+      Value<double?> lat,
+      Value<double?> lon,
       Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
@@ -10247,6 +10349,16 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<String> get location => $composableBuilder(
     column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lon => $composableBuilder(
+    column: $table.lon,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10487,6 +10599,16 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get fromLocation => $composableBuilder(
     column: $table.fromLocation,
     builder: (column) => ColumnOrderings(column),
@@ -10684,6 +10806,12 @@ class $$ItineraryItemsTableAnnotationComposer
 
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
+
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lon =>
+      $composableBuilder(column: $table.lon, builder: (column) => column);
 
   GeneratedColumn<String> get fromLocation => $composableBuilder(
     column: $table.fromLocation,
@@ -10892,6 +11020,8 @@ class $$ItineraryItemsTableTableManager
                 Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lon = const Value.absent(),
                 Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
@@ -10919,6 +11049,8 @@ class $$ItineraryItemsTableTableManager
                 spansNextDay: spansNextDay,
                 notes: notes,
                 location: location,
+                lat: lat,
+                lon: lon,
                 mode: mode,
                 fromLocation: fromLocation,
                 toLocation: toLocation,
@@ -10948,6 +11080,8 @@ class $$ItineraryItemsTableTableManager
                 Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lon = const Value.absent(),
                 Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
@@ -10975,6 +11109,8 @@ class $$ItineraryItemsTableTableManager
                 spansNextDay: spansNextDay,
                 notes: notes,
                 location: location,
+                lat: lat,
+                lon: lon,
                 mode: mode,
                 fromLocation: fromLocation,
                 toLocation: toLocation,

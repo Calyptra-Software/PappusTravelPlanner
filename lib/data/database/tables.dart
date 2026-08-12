@@ -282,6 +282,16 @@ class ItineraryItems extends Table {
   // --- place-only ---
   TextColumn get location => text().nullable()();
 
+  /// Coordinates (WGS84) of this place, when known — what the user pointed at on
+  /// the map, null for a place that was only named.
+  ///
+  /// Deliberately independent of [location]: that is what the user *wrote*, and
+  /// the app never turns a name into a position by itself. A place keeps its name
+  /// when the coordinates are cleared, and keeps the coordinates when it is
+  /// renamed, because the two answer different questions.
+  RealColumn get lat => real().nullable()();
+  RealColumn get lon => real().nullable()();
+
   // --- transport-only ---
   /// The transport mode of this leg — a row in [TransportModes], or null when
   /// unassigned. On mode deletion this is set to null (the leg keeps its route,

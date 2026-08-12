@@ -42,6 +42,10 @@ ItineraryItemsCompanion copyItemPlan(
   spansNextDay: Value(item.spansNextDay),
   notes: Value(item.notes),
   location: Value(item.location),
+  // Where the place is, beside what it is called. A copy lands on another day,
+  // never in another town, so the position travels exactly as the name does.
+  lat: Value(item.lat),
+  lon: Value(item.lon),
   mode: Value(item.mode),
   fromLocation: Value(item.fromLocation),
   toLocation: Value(item.toLocation),
