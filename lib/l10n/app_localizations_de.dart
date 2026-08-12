@@ -908,6 +908,61 @@ class AppLocalizationsDe extends AppLocalizations {
   String get statsAllTripsTitle => 'Gesamtstatistik';
 
   @override
+  String get mapTitle => 'Karte';
+
+  @override
+  String get mapOpen => 'Auf Karte zeigen';
+
+  @override
+  String get mapNothingToShow => 'Noch nichts zu verorten';
+
+  @override
+  String get mapNothingToShowHint =>
+      'Orte und Abschnitte erscheinen hier, sobald sie Koordinaten haben — importierte Verbindungen bringen ihre mit.';
+
+  @override
+  String get mapZoomIn => 'Vergrößern';
+
+  @override
+  String get mapZoomOut => 'Verkleinern';
+
+  @override
+  String get mapPickConfirm => 'Punkt übernehmen';
+
+  @override
+  String get mapPickTitlePlace => 'Ort wählen';
+
+  @override
+  String get mapPickTitleFrom => 'Startpunkt wählen';
+
+  @override
+  String get mapPickTitleTo => 'Zielpunkt wählen';
+
+  @override
+  String get coordinatesLabel => 'Koordinaten';
+
+  @override
+  String get coordinatesFrom => 'Koordinaten des Startpunkts';
+
+  @override
+  String get coordinatesTo => 'Koordinaten des Ziels';
+
+  @override
+  String get coordinatesNone => 'Nicht gesetzt';
+
+  @override
+  String get coordinatesPick => 'Auf Karte wählen';
+
+  @override
+  String get coordinatesClear => 'Position entfernen';
+
+  @override
+  String get mapPickHint => 'Auf die Karte tippen, um einen Punkt zu setzen';
+
+  @override
+  String get connectionPickOnMap => 'Auf Karte wählen';
+
+  @override
   String get statsOpen => 'Statistik';
 
   @override

@@ -337,7 +337,11 @@ UI (features/*/presentation, *widgets)
   entries the day draws no line — the boundary is inside the card, and so is the line.
   Untimed entries stay
   *ahead* of the line unless something timed after them is already past — we cannot know when
-  they happen, and claiming they are done is the guess that would make the mark lie. A decision
+  they happen, and claiming they are done is the guess that would make the mark lie. An
+  **overnight** entry's end is minutes into the *next* day, so `itemSpan` carries it past
+  midnight (`+ kMinutesPerDay`) rather than letting `end < start` collapse the span to a
+  moment: without that, a night train reads as finished the minute it departs, and the
+  traveller sitting on it is told the journey is behind them. A decision
   is timed by its **chosen** option only. The mark is drawn *inside* the tile/card, never as an
   extra list child: the day is a `ReorderableListView` indexed by its blocks. `core/clock.dart`'s
   `nowProvider` ticks it on the minute; today's day header carries `Today · HH:mm` so a collapsed
@@ -568,6 +572,73 @@ UI (features/*/presentation, *widgets)
   `printableChecklists`), so the picker's numbers cannot drift from the document's contents.
   A section unavailable on this trip keeps its stored setting for the next one.
 
+- **The map draws the plan, and the ground it draws on is swappable.** `features/map/` holds
+  the pure `map_features.dart` (items → pins and lines, testable without a tile server),
+  `basemap.dart`, and the screen. It reads the trip through the providers the timeline
+  already uses and shows only **live** entries, the same rule the PDF and `.ics` follow, so
+  an option nobody chose is never on the map. Two rules decide what appears: a leg is drawn
+  only when **both** ends carry coordinates — one end alone would be a point, and on a map a
+  point is a place — and **nothing connects one place to the next**, because the plan says a
+  museum follows a hotel, not that anyone walked between them in a straight line. Long legs
+  are interpolated along a **great circle** (a straight line in Web Mercator is not the route
+  anything takes) and split where they cross the **antimeridian**, since a Tokyo-to-Los
+  Angeles flight is one journey but cannot be one polyline. "You are here" is
+  `now_marker.dart` again, asked about today's entries and used only for its *happening*
+  answer — a map has slots but no gaps between them to draw a line in — and never on a
+  routine, which has no today. **A marker answers when tapped**
+  (`map_item_sheet.dart`): a map can only say *where*, while the name, the times, how late
+  the leg ran and the note someone left on it all live in the row it was drawn from — a pin
+  with no way to ask about it is a dot on a picture. The sheet is a *reading*, not a second
+  editor: times come from the same `ItemTimes` the timeline uses, so a delay reads
+  identically in both, and the one button hands the job to the form that already owns it.
+  Lines and markers take the **trip's own accent**
+  (`Trips.colorValue`), the color its card, header, calendar bar and PDF already use, not a
+  color from the theme, which says nothing about *which* trip is on screen — and that is the
+  rule the all-trips map inherits, so every line there identifies itself. Each line carries a
+  casing (`borderStrokeWidth`) in the surface color: a user-chosen accent will land on tiles
+  it disappears against otherwise, which is why paper maps do the same.
+- **A position is pointed at, never derived.** `map_picker_screen.dart` opens the map on a
+  full-screen route — a sheet answers a vertical drag by closing, which is the same gesture
+  as panning. A **tap** drops the marker, the readout says where it landed, and *Use this
+  point* stays disabled until there is one, so the screen can never return a position nobody
+  chose; an edit opens holding the position it is editing. (A fixed crosshair with the map
+  moving under it was tried first — a fingertip does cover the point it is placing — but
+  tapping won on being the more obvious of the two: the mark appears where you pointed.) The
+  marker is drawn ink-on-halo in **map** colours, not theme colours: raster tiles are pale in
+  both themes and full of thin red lines, so a mark tinted by the theme is a road.
+- **The search can be pointed at the map too.** The place picker in `connection_search_sheet.dart`
+  offers *Choose on map* above the geocoder's answers, for an address it does not know, a
+  trailhead with no name, or simply "from here". What comes back is a `TransportPlace` of
+  kind `place` — which is what makes `queryId` send `lat,lon`, since there is no id to send
+  and a coordinate is what the router wants for a door anyway — named by its own numbers,
+  because asking the geocoder what is there would put a name on a choice the user did not
+  make. Not offered for a **via** stop: only stop ids are allowed there, so a coordinate
+  would be a choice that could only fail, which is the same reason that list is filtered to
+  stations.
+- **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
+  mean "the id the search was issued against", and a tap on a map is not a search. The
+  coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
+  silently makes a hand-entered leg `canLookUp`-able once both its ends are placed. The one
+  write in the other direction is a **clearing**: moving (or removing) an end drops *that
+  end's* id, because the id no longer describes where the end is — and it would win over the
+  coordinates, sending a re-search off from the old station. `sourceTripId` stays: it names
+  the service, not the end. Reverse geocoding is deliberately absent — the app never turns a
+  name into a position or a position into a name; which Rahlstedt was meant is the user's
+  answer. A position is therefore its own field in the item sheet, beside the name and
+  clearable on its own, and the two are kept as a **pair**: a latitude without a longitude
+  is not half a place, so the form normalises the fragment away rather than writing it back.
+- **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
+  raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
+  hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.
+  Each entry carries its own **attribution** (a condition of use, so it travels with the
+  source rather than living on the screen) and an `OfflineDownload` flag: the OpenStreetMap
+  tile policy permits interactive viewing and forbids downloading regions ahead of time, so
+  a future download feature must **ask the source** instead of applying to whichever one is
+  selected. The `User-Agent` goes out as a real header via `NetworkTileProvider`, not through
+  `userAgentPackageName`, whose generic format the policy names as a reason for blocking;
+  caching stays on flutter_map's default, which honors the server's own headers and is the
+  conforming caching the policy requires. `appVersionProvider` now has two callers, not one.
+
 ### Database portability & schema changes
 
 - Data is one SQLite file. Desktop can open/create a DB at any path; Android imports/exports.
@@ -580,7 +651,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 27) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 28) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

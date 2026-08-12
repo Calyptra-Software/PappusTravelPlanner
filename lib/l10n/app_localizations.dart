@@ -1646,6 +1646,114 @@ abstract class AppLocalizations {
   /// **'Overall statistics'**
   String get statsAllTripsTitle;
 
+  /// Title of the screen showing a trip's places and legs on a map.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get mapTitle;
+
+  /// Tooltip of the action opening a trip's map.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on map'**
+  String get mapOpen;
+
+  /// Shown when no entry of the trip carries coordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to place yet'**
+  String get mapNothingToShow;
+
+  /// Explains how an entry comes to have coordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'Places and legs appear here once they have coordinates — imported connections bring their own.'**
+  String get mapNothingToShowHint;
+
+  /// Tooltip of the map's zoom-in button.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get mapZoomIn;
+
+  /// Tooltip of the map's zoom-out button.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get mapZoomOut;
+
+  /// Confirms the position under the crosshair in the map picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this point'**
+  String get mapPickConfirm;
+
+  /// Title of the map picker when choosing where a place is.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the place'**
+  String get mapPickTitlePlace;
+
+  /// Title of the map picker when choosing where a leg starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the starting point'**
+  String get mapPickTitleFrom;
+
+  /// Title of the map picker when choosing where a leg ends.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the destination'**
+  String get mapPickTitleTo;
+
+  /// Label of the field holding an entry's position.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates'**
+  String get coordinatesLabel;
+
+  /// Label of the field holding a leg's departure position.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates of the starting point'**
+  String get coordinatesFrom;
+
+  /// Label of the field holding a leg's arrival position.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinates of the destination'**
+  String get coordinatesTo;
+
+  /// Shown in place of a position that has not been chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get coordinatesNone;
+
+  /// Opens the map picker for this position.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose on map'**
+  String get coordinatesPick;
+
+  /// Clears a position that was chosen earlier.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove position'**
+  String get coordinatesClear;
+
+  /// Shown in the map picker until a position has been chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to place a point'**
+  String get mapPickHint;
+
+  /// Opens the map to pick a coordinate as a search endpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose on map'**
+  String get connectionPickOnMap;
+
   /// No description provided for @statsOpen.
   ///
   /// In en, this message translates to:

@@ -6,8 +6,10 @@ piece does, and, where the behavior is a decision rather than an obvious default
 works that way. The [README](../README.md) has the same list in a sentence each.
 
 Everything described here happens on your device, against a single SQLite file that
-belongs to you. The one exception is the connection search, which asks a routing service
-about real timetables — and even that only writes its answer into your local plan.
+belongs to you. Two things reach outside it: the connection search, which asks a routing
+service about real timetables and writes the answer into your local plan, and the map,
+which fetches its background tiles while you look at them. Neither sends anything about
+your trip anywhere.
 
 ---
 
@@ -176,6 +178,11 @@ Untimed entries stay ahead of the line unless something timed after them is alre
 we cannot know when they happened, and claiming they are done is the guess that would make
 the mark lie.
 
+A night train counts as under way for as long as it runs. Its arrival is a time on the
+*next* day, and reading that naively would put the end of the journey before its own
+beginning — so the entry would look finished the moment it pulled out, while you were still
+on it.
+
 ### Moving entries around
 
 Dragging reorders within one list. Crossing a boundary — to another day, or into one
@@ -268,6 +275,85 @@ on, offering the day's actual departure to swap in.
 
 Declining it, finding nothing, or having no signal all leave the copied plan standing. And
 "no train" is never reported when it was "no network".
+
+---
+
+## The map
+
+### A trip, drawn
+
+Every trip has a map, reached from the map button on the trip screen. Places appear as
+pins and transport legs as lines between their ends, and — like the PDF and the calendar
+export — it draws only the plan as it stands: the entries of an option nobody chose are
+part of the trip's history, not of where you went.
+
+Two things it deliberately does not do. A leg is drawn **only when both of its ends have a
+position**, because one end alone would have to be a point, and a point on a map is a
+place — a journey half-drawn is a journey misread. And **nothing is drawn between one
+place and the next**: the plan says the museum follows the hotel, not that anyone walked
+between them in a straight line. The legs are what say how the day was traveled, and
+inventing the connecting line would put journeys on the map the trip never claimed.
+
+### Long legs bend
+
+A straight line on a web map is not the route anything takes. Hamburg to New York really
+does pass north of Newfoundland, so legs beyond a couple of hundred kilometers are drawn
+along the great circle instead of as a chord across the Atlantic. A leg crossing the
+antimeridian — Tokyo to Los Angeles — is drawn as two pieces meeting the edges, since one
+line would streak backwards across the whole map to get there.
+
+### Where the positions come from
+
+An imported connection brings the coordinates of its stations with it, so a trip planned
+through the connection search appears on the map without you doing anything.
+
+Everything else you place yourself. Any place, and either end of any transport leg, has a
+**Coordinates** field beside its name with a map button: the map opens, you tap the spot,
+and *Use this point* writes it down. Tapping again moves the marker; until you have tapped
+once, there is nothing to confirm and the button stays greyed out. The field then shows
+what was written and can be cleared again on its own.
+
+The connection search offers the same thing: its **From** and **To** pickers list *Choose on
+map* above the search results, for an address the geocoder does not know or a spot with no
+name at all. (A via stop is the exception — the routing service only accepts stations
+there.)
+
+What the app will not do is guess. A name is not a position — which Rahlstedt you meant is
+your call — so nothing is derived from what you typed, in either direction: placing a point
+does not rename the entry either. Trips planned before the app stored coordinates simply
+have none until you give them some, and nothing backfills them.
+
+Placing both ends of a leg has a side effect worth knowing: a leg you entered by hand can
+then be looked up in the timetable, because the app finally knows where it starts and ends.
+And moving an end that *came* from a search makes the app forget which station the search
+used — it now goes by the point you chose, which is the only honest reading of having moved
+it.
+
+### Asking a marker what it is
+
+Tap a pin or a transport badge and the entry behind it opens: its name, where the leg runs
+from and to, its times with the same green and red `+/−` the timeline shows, any note on it,
+and the coordinates themselves. A map can only draw *where* something is; everything else
+about it lives in the entry, one tap away. Editing is a further tap, in the same form the
+timeline opens.
+
+### "You are here", again
+
+On today, the entry that is under way is marked on the map exactly as it is marked on the
+timeline — same rule, same reading, one definition. What the timeline can also show, and
+the map cannot, is the gap *between* two entries: a map has places but no space between
+them to draw a line in. A routine has no today at all, so nothing there is ever marked.
+
+### Where the background comes from
+
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles, credited and
+linked on the map itself. Their servers are donated and their
+[usage policy](https://operations.osmfoundation.org/policies/tiles/) is a condition of use
+rather than a suggestion: requests identify this app and its version, tiles already fetched
+are cached so panning back over ground you have seen costs nobody anything, and **areas are
+never downloaded in advance** — the policy names "download a region for offline use" as the
+thing not to do, which is why there is no button for it. What you have looked at is
+therefore available offline for a while, and nothing beyond it.
 
 ---
 

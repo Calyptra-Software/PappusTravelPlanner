@@ -364,6 +364,78 @@
   "addParticipant": "Add participant",
   "statsTitle": "Statistics",
   "statsAllTripsTitle": "Overall statistics",
+  "mapTitle": "Map",
+  "@mapTitle": {
+    "description": "Title of the screen showing a trip's places and legs on a map."
+  },
+  "mapOpen": "Show on map",
+  "@mapOpen": {
+    "description": "Tooltip of the action opening a trip's map."
+  },
+  "mapNothingToShow": "Nothing to place yet",
+  "@mapNothingToShow": {
+    "description": "Shown when no entry of the trip carries coordinates."
+  },
+  "mapNothingToShowHint": "Places and legs appear here once they have coordinates \u2014 imported connections bring their own.",
+  "@mapNothingToShowHint": {
+    "description": "Explains how an entry comes to have coordinates."
+  },
+  "mapZoomIn": "Zoom in",
+  "@mapZoomIn": {
+    "description": "Tooltip of the map's zoom-in button."
+  },
+  "mapZoomOut": "Zoom out",
+  "@mapZoomOut": {
+    "description": "Tooltip of the map's zoom-out button."
+  },
+  "mapPickConfirm": "Use this point",
+  "@mapPickConfirm": {
+    "description": "Confirms the position under the crosshair in the map picker."
+  },
+  "mapPickTitlePlace": "Pick the place",
+  "@mapPickTitlePlace": {
+    "description": "Title of the map picker when choosing where a place is."
+  },
+  "mapPickTitleFrom": "Pick the starting point",
+  "@mapPickTitleFrom": {
+    "description": "Title of the map picker when choosing where a leg starts."
+  },
+  "mapPickTitleTo": "Pick the destination",
+  "@mapPickTitleTo": {
+    "description": "Title of the map picker when choosing where a leg ends."
+  },
+  "coordinatesLabel": "Coordinates",
+  "@coordinatesLabel": {
+    "description": "Label of the field holding an entry's position."
+  },
+  "coordinatesFrom": "Coordinates of the starting point",
+  "@coordinatesFrom": {
+    "description": "Label of the field holding a leg's departure position."
+  },
+  "coordinatesTo": "Coordinates of the destination",
+  "@coordinatesTo": {
+    "description": "Label of the field holding a leg's arrival position."
+  },
+  "coordinatesNone": "Not set",
+  "@coordinatesNone": {
+    "description": "Shown in place of a position that has not been chosen."
+  },
+  "coordinatesPick": "Choose on map",
+  "@coordinatesPick": {
+    "description": "Opens the map picker for this position."
+  },
+  "coordinatesClear": "Remove position",
+  "@coordinatesClear": {
+    "description": "Clears a position that was chosen earlier."
+  },
+  "mapPickHint": "Tap the map to place a point",
+  "@mapPickHint": {
+    "description": "Shown in the map picker until a position has been chosen."
+  },
+  "connectionPickOnMap": "Choose on map",
+  "@connectionPickOnMap": {
+    "description": "Opens the map to pick a coordinate as a search endpoint."
+  },
   "statsOpen": "Statistics",
   "statsAllTripsOpen": "Overall statistics",
   "statsTabExpenses": "Expenses",

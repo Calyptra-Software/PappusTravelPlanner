@@ -38,9 +38,28 @@ import 'create_trip_from_routine.dart';
 import '../trip_kind.dart';
 import '../widgets/trip_when_line.dart';
 
-/// The two ways to export a trip from the detail screen's share menu: the app's
-/// own portable `.tpt` bundle (re-importable) or a printable PDF.
-enum _ShareAction { tripFile, pdf, ics }
+/// What the detail screen's overflow menu offers — everything a trip is *done
+/// to*, as opposed to the views of it that stay out front as icons: shared as
+/// the app's own re-importable `.tpt` bundle, exported as a printable PDF or an
+/// `.ics` for a calendar, reversed into a return journey (routines only), or
+/// deleted.
+enum _TripAction { duplicateReversed, share, pdf, ics, delete }
+
+/// One entry of that menu. Written once so the five cannot drift apart in
+/// padding or density, which is the usual way a menu ends up looking assembled.
+PopupMenuItem<_TripAction> _menuItem(
+  _TripAction action,
+  IconData icon,
+  String label,
+) => PopupMenuItem(
+  value: action,
+  child: ListTile(
+    dense: true,
+    contentPadding: EdgeInsets.zero,
+    leading: Icon(icon),
+    title: Text(label),
+  ),
+);
 
 /// Trip detail: header summary plus the day-by-day itinerary.
 class TripDetailScreen extends ConsumerStatefulWidget {
@@ -526,77 +545,76 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.itineraryTitle),
+        // Three icons and an overflow, the same shape the overview uses. The
+        // map made this bar six actions wide on a routine, and six icons leave
+        // no room for the title to be read at all on a phone.
+        //
+        // What stays out front is what you reach for *while looking at a trip*;
+        // what a trip is done *to* — shared, exported, thrown away — goes in the
+        // menu. Delete is better off there anyway: a bare icon beside the ones
+        // you use constantly is a poor place for the one act that cannot be
+        // undone.
         actions: [
-          if (isRoutine)
-            IconButton(
-              tooltip: l10n.routineDuplicateReversed,
-              icon: const Icon(Icons.swap_vert),
-              onPressed: () => _duplicateReversed(
-                context,
-                ref,
-                tripAsync.value?.title ?? '',
-              ),
-            ),
+          IconButton(
+            tooltip: l10n.mapOpen,
+            icon: const Icon(Icons.map_outlined),
+            onPressed: () => context.push('/trip/$tripId/map'),
+          ),
           IconButton(
             tooltip: l10n.statsOpen,
             icon: const Icon(Icons.bar_chart),
             onPressed: () => context.push('/trip/$tripId/stats'),
-          ),
-          PopupMenuButton<_ShareAction>(
-            tooltip: l10n.shareTrip,
-            icon: const Icon(Icons.ios_share),
-            onSelected: (action) {
-              final title = tripAsync.value?.title ?? '';
-              switch (action) {
-                case _ShareAction.tripFile:
-                  _shareTrip(context, ref, title);
-                case _ShareAction.pdf:
-                  _exportPdf(context, ref, title);
-                case _ShareAction.ics:
-                  _exportIcs(context, ref, title);
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: _ShareAction.tripFile,
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.ios_share),
-                  title: Text(l10n.shareTrip),
-                ),
-              ),
-              if (!isRoutine) ...[
-                PopupMenuItem(
-                  value: _ShareAction.pdf,
-                  child: ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.picture_as_pdf_outlined),
-                    title: Text(l10n.exportPdf),
-                  ),
-                ),
-                PopupMenuItem(
-                  value: _ShareAction.ics,
-                  child: ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event_outlined),
-                    title: Text(l10n.exportIcs),
-                  ),
-                ),
-              ],
-            ],
           ),
           IconButton(
             tooltip: l10n.editTrip,
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => context.push('/trip/$tripId/edit'),
           ),
-          IconButton(
-            tooltip: l10n.deleteTrip,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _confirmDelete(context, ref),
+          PopupMenuButton<_TripAction>(
+            tooltip: MaterialLocalizations.of(context).showMenuTooltip,
+            onSelected: (action) {
+              final title = tripAsync.value?.title ?? '';
+              switch (action) {
+                case _TripAction.duplicateReversed:
+                  _duplicateReversed(context, ref, title);
+                case _TripAction.share:
+                  _shareTrip(context, ref, title);
+                case _TripAction.pdf:
+                  _exportPdf(context, ref, title);
+                case _TripAction.ics:
+                  _exportIcs(context, ref, title);
+                case _TripAction.delete:
+                  _confirmDelete(context, ref);
+              }
+            },
+            itemBuilder: (context) => [
+              if (isRoutine)
+                _menuItem(
+                  _TripAction.duplicateReversed,
+                  Icons.swap_vert,
+                  l10n.routineDuplicateReversed,
+                ),
+              _menuItem(_TripAction.share, Icons.ios_share, l10n.shareTrip),
+              // A routine has no dates, so neither paper nor a calendar can
+              // hold it.
+              if (!isRoutine) ...[
+                _menuItem(
+                  _TripAction.pdf,
+                  Icons.picture_as_pdf_outlined,
+                  l10n.exportPdf,
+                ),
+                _menuItem(
+                  _TripAction.ics,
+                  Icons.event_outlined,
+                  l10n.exportIcs,
+                ),
+              ],
+              _menuItem(
+                _TripAction.delete,
+                Icons.delete_outline,
+                l10n.deleteTrip,
+              ),
+            ],
           ),
         ],
       ),
