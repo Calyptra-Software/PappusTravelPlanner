@@ -17,13 +17,14 @@ void main() {
     int? actualEnd,
     int sortOrder = 0,
     int? alternativeId,
+    bool spansNextDay = false,
   }) => ItineraryItem(
     id: id,
     tripId: 1,
     date: day,
     sortOrder: sortOrder,
     kind: ItemKind.place,
-    spansNextDay: false,
+    spansNextDay: spansNextDay,
     title: 'Item $id',
     startMinutes: start,
     endMinutes: end,
@@ -246,5 +247,69 @@ void main() {
     expect(nowMarker(blocks, 510), const NowMarker(index: 1, happening: false));
     // Landed: the whole day is behind us.
     expect(nowMarker(blocks, 800), const NowMarker(index: 2, happening: false));
+  });
+
+  group('an overnight entry', () {
+    // A night train: 21:38 today to 02:25 tomorrow. Its end is minutes into the
+    // *next* day, so read naively it sits before its own start.
+    ItineraryItem nightTrain() => item(
+      1,
+      actualStart: 21 * 60 + 38,
+      actualEnd: 2 * 60 + 25,
+      spansNextDay: true,
+    );
+
+    test('is under way while it runs, not finished at its departure', () {
+      expect(
+        nowMarkerForItems([nightTrain()], 21 * 60 + 46),
+        const NowMarker(index: 0, happening: true),
+      );
+    });
+
+    test(
+      'is still under way after midnight, in the departure day\'s minutes',
+      () {
+        expect(
+          nowMarkerForItems([nightTrain()], 25 * 60),
+          const NowMarker(index: 0, happening: true),
+        );
+      },
+    );
+
+    test('is behind us once it has arrived', () {
+      expect(
+        nowMarkerForItems([nightTrain()], 26 * 60 + 30),
+        const NowMarker(index: 1, happening: false),
+      );
+    });
+
+    test('is not yet under way before it departs', () {
+      expect(
+        nowMarkerForItems([nightTrain()], 20 * 60),
+        const NowMarker(index: 0, happening: false),
+      );
+    });
+
+    test('carries the whole run with it when it is grouped', () {
+      // The hull of a group must reach past midnight too, or a journey whose
+      // last leg is the night train reads as over the moment it departs.
+      final block = GroupBlock(
+        groupId: 1,
+        items: [
+          item(2, start: 20 * 60 + 32, end: 20 * 60 + 48),
+          nightTrain(),
+        ],
+      );
+      expect(blockSpan(block), (start: 20 * 60 + 32, end: 26 * 60 + 25));
+      expect(
+        nowMarker([block], 21 * 60 + 46),
+        const NowMarker(index: 0, happening: true),
+      );
+    });
+
+    test('an end before its start on the same day is still just a moment', () {
+      // Bad data, not a journey running backwards.
+      expect(itemSpan(item(3, start: 600, end: 300)), (start: 600, end: 600));
+    });
   });
 }

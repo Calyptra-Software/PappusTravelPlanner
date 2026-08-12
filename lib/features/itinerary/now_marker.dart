@@ -47,14 +47,29 @@ final class NowMarker {
 /// it was meant to go. Each end is taken on its own — a leg that left late but
 /// has not arrived yet is running from its actual departure to its planned
 /// arrival.
+///
+/// An **overnight** entry ends in the next calendar day, and its `end` is read
+/// as minutes into that day (see [ItineraryItems.spansNextDay]) — so it is
+/// carried past midnight here, giving a span that runs beyond 1439 rather than
+/// backwards. Without that, a night train departing 21:38 and arriving 02:25 had
+/// `end` below `start`, the guard below flattened it to a *moment* at 21:38, and
+/// the traveller sitting on that train was told the journey was behind them. The
+/// span stays in the departure day's minute space, which is the space the day
+/// this entry is drawn in — and the day being asked about — counts in.
 TimeSpan? itemSpan(ItineraryItem item) {
   final from = item.actualStartMinutes ?? item.startMinutes;
   final to = item.actualEndMinutes ?? item.endMinutes;
   final start = from ?? to;
   if (start == null) return null;
-  final end = to ?? start;
+  final overnight = item.spansNextDay && to != null ? kMinutesPerDay : 0;
+  final end = to == null ? start : to + overnight;
+  // A degenerate pair (an end before its start on the *same* day) is still read
+  // as a moment: that is bad data, not a journey running backwards.
   return (start: start, end: end < start ? start : end);
 }
+
+/// Minutes in a day, the offset an overnight entry's end is read at.
+const int kMinutesPerDay = 24 * 60;
 
 /// The span a whole block covers: for a run, its members' hull — a journey of
 /// several legs is under way from the first departure to the last arrival, the
