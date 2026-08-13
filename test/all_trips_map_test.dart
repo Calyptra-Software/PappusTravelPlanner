@@ -10,6 +10,7 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
+import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/map/presentation/all_trips_map.dart';
 import 'package:travelplanner/features/trips/application/trip_view_provider.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -201,7 +202,7 @@ void main() {
       items: [place(12, 2, 50.1)],
     );
 
-    await tester.tap(find.byIcon(Icons.place));
+    await tester.tap(find.byType(MapPlacePin));
     await tester.pumpAndSettle();
     expect(find.text('Trip 2'), findsOneWidget);
     expect(opened, isNull, reason: 'looking is not opening');

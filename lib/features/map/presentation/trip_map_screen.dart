@@ -244,8 +244,10 @@ class _MapViewState extends ConsumerState<_MapView> {
                 for (final pin in features.pins)
                   Marker(
                     point: pin.position,
-                    width: 32,
-                    height: 32,
+                    // Aligned above the point so the pin's tip — its whole
+                    // claim — lands on it.
+                    width: 34,
+                    height: 34,
                     alignment: Alignment.topCenter,
                     child: _Tappable(
                       onTap: () => _showItem(pin.itemId),
@@ -316,12 +318,7 @@ class _PlacePin extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Icon(
-      Icons.place,
-      size: 32,
-      color: happening ? scheme.error : accent,
-      shadows: const [Shadow(blurRadius: 3, color: Colors.black45)],
-    );
+    return MapPlacePin(color: happening ? scheme.error : accent);
   }
 }
 

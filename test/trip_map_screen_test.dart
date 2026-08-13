@@ -11,6 +11,7 @@ import 'package:travelplanner/features/itinerary/application/itinerary_providers
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
+import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/map/presentation/trip_map_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -185,7 +186,7 @@ void main() {
       ],
     );
 
-    await tester.tap(find.byIcon(Icons.place).first);
+    await tester.tap(find.byType(MapPlacePin).first);
     await tester.pumpAndSettle();
 
     // The name the map cannot draw, the times it has no axis for, and the

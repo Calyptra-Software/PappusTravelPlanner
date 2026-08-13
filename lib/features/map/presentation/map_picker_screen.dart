@@ -164,7 +164,14 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                       width: 40,
                       height: 40,
                       alignment: Alignment.topCenter,
-                      child: const _PickedPin(),
+                      // The one being chosen, in the same red the app uses for
+                      // "this is the thing" elsewhere — and in map colours, not
+                      // theme colours: raster tiles are pale in both themes, so
+                      // a mark tinted by the theme is a road.
+                      child: const MapPlacePin(
+                        color: Color(0xFFD32F2F),
+                        size: 32,
+                      ),
                     ),
                   ],
                 ),
@@ -197,25 +204,6 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
       ),
     );
   }
-}
-
-/// The mark showing what has been picked.
-///
-/// Ink on halo, in map colours rather than theme colours: raster tiles are pale
-/// in both light and dark mode and full of thin red lines, so a mark tinted by
-/// the theme is a road. Its tip is the position — the widget is aligned above
-/// the point, so the pin hangs from it.
-class _PickedPin extends StatelessWidget {
-  const _PickedPin();
-
-  @override
-  Widget build(BuildContext context) => const Stack(
-    alignment: Alignment.center,
-    children: [
-      Icon(Icons.place, size: 40, color: Color(0xFFFFFFFF)),
-      Icon(Icons.place, size: 32, color: Color(0xFFD32F2F)),
-    ],
-  );
 }
 
 class _PickedReadout extends StatelessWidget {

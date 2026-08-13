@@ -230,19 +230,15 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
                   for (final pin in features.pins)
                     Marker(
                       point: pin.position,
-                      width: 32,
-                      height: 32,
+                      width: 30,
+                      height: 30,
                       alignment: Alignment.topCenter,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () => _showTrip(trip),
-                        child: Icon(
-                          Icons.place,
-                          size: 28,
+                        child: MapPlacePin(
                           color: Color(trip.colorValue),
-                          shadows: const [
-                            Shadow(blurRadius: 3, color: Colors.black45),
-                          ],
+                          size: 28,
                         ),
                       ),
                     ),

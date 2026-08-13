@@ -147,3 +147,59 @@ class MapAttributionBar extends StatelessWidget {
     );
   }
 }
+
+/// A place, as a pin whose tip is the position.
+///
+/// Drawn as the pin's glyph twice: once **stroked** in white, once filled in the
+/// entry's colour. Raster tiles are busy, so anything on them needs a
+/// contrasting edge — the same reason the routes carry a casing and the picker's
+/// mark is ink on halo.
+///
+/// A *keyline* rather than a bigger shape behind, which was the first attempt:
+/// laying a larger white pin underneath fills the glyph's own hole and grows a
+/// white wedge past the tip, so the mark reads as a white blob with a coloured
+/// rim. Stroking the outline leaves the hole open — the map shows through it,
+/// which is what a map pin has always looked like — and cannot shift the tip,
+/// since both layers are the same glyph at the same size.
+///
+/// It also replaced a blurred `Shadow`, which is the kind of layer a GPU backend
+/// caches and then fails to invalidate under a moving transform, leaving a grey
+/// pin-shaped smudge behind while the real pin pans away. A hard edge cannot
+/// smear.
+class MapPlacePin extends StatelessWidget {
+  const MapPlacePin({super.key, required this.color, this.size = 32});
+
+  final Color color;
+  final double size;
+
+  Widget _glyph({Color? fill, Paint? outline}) => Text(
+    String.fromCharCode(Icons.place.codePoint),
+    style: TextStyle(
+      fontFamily: Icons.place.fontFamily,
+      package: Icons.place.fontPackage,
+      fontSize: size,
+      height: 1,
+      color: fill,
+      foreground: outline,
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    // The glyph is a private-use code point: read aloud it is noise, and unlike
+    // an `Icon` a `Text` does not hide itself from the semantics tree.
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        _glyph(
+          outline: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2.5
+            ..strokeJoin = StrokeJoin.round
+            ..color = const Color(0xFFFFFFFF),
+        ),
+        _glyph(fill: color),
+      ],
+    ),
+  );
+}
