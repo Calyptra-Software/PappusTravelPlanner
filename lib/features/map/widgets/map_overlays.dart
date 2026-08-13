@@ -10,6 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
+import '../../../core/app_info.dart';
 import '../../../core/widgets/external_link.dart';
 import '../basemap.dart';
 
@@ -20,6 +21,48 @@ const double kMinMapZoom = 2;
 double maxZoomOf(Basemap basemap) => switch (basemap) {
   RasterBasemap(:final maxZoom) => maxZoom,
 };
+
+/// How long tile loading waits before reacting to a moved camera.
+///
+/// A pinch can cross a dozen zoom levels in half a second, and without this each
+/// level in passing asks for a full screen of tiles that is discarded before it
+/// arrives. Two reasons that is worth avoiding, and the first is not ours: those
+/// requests go to donated servers, and a burst of screenfuls nobody will ever
+/// look at is exactly the "heavy use" their policy asks clients not to make.
+/// The second is the phone — every request is a connection, a cache write and a
+/// decode, and enough of them at once starve the thread that is drawing.
+///
+/// Short enough that a deliberate zoom still feels immediate.
+const Duration kTileUpdateThrottle = Duration(milliseconds: 150);
+
+/// The basemap's tiles, built the same way wherever a map is drawn.
+///
+/// One place rather than three, because every line of it is a condition rather
+/// than a preference: who we say we are, how often we ask, and that the answers
+/// are cached.
+TileLayer basemapTileLayer(Basemap basemap, String appVersion) =>
+    switch (basemap) {
+      RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
+        urlTemplate: urlTemplate,
+        maxZoom: maxZoom,
+        // Who we are, as the OpenStreetMap policy requires of an app: this
+        // application's name, its version, and a way to get in touch. Sent as a
+        // real header rather than through `userAgentPackageName`, whose generic
+        // format the policy names as a reason for blocking. The browser forbids
+        // setting it at all, which is why a web deployment answers with its
+        // Referer.
+        tileProvider: NetworkTileProvider(
+          headers: {'User-Agent': buildUserAgent(appVersion)},
+        ),
+        tileUpdateTransformer: TileUpdateTransformers.throttle(
+          kTileUpdateThrottle,
+        ),
+        // Caching is left at flutter_map's default, which stores tiles for as
+        // long as the server's own headers say — the conforming caching the
+        // policy asks for, and the reason panning back over ground already seen
+        // costs nobody anything.
+      ),
+    };
 
 /// The `+` / `−` pair. Positioned by the caller: the trip map floats it over the
 /// map, and a picker may want it somewhere else entirely.

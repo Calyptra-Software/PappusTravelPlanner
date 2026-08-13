@@ -110,6 +110,12 @@ void main() {
       const Color(tealTrip),
       const Color(orangeTrip),
     });
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('a trip the overview filtered out is not drawn', (tester) async {
@@ -125,6 +131,12 @@ void main() {
     final layer = tester.widget<PolylineLayer>(polylineLayer);
     expect(layer.polylines, hasLength(1));
     expect(layer.polylines.single.color, const Color(tealTrip));
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('narrowing the selection re-frames the map', (tester) async {
@@ -180,6 +192,12 @@ void main() {
       greaterThan(wide),
       reason: 'the remaining trip should fill the view',
     );
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('trips without a position say so instead of drawing a map', (
@@ -189,6 +207,12 @@ void main() {
 
     expect(find.text('Nothing to place yet'), findsOneWidget);
     expect(find.byType(FlutterMap), findsNothing);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('tapping a trip shows the trip, and opens it from there', (
@@ -210,6 +234,12 @@ void main() {
     await tester.tap(find.text('Trip 2'));
     await tester.pumpAndSettle();
     expect(opened?.id, 2);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   group('the view is a setting', () {

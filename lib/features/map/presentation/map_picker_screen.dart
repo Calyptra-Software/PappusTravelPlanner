@@ -3,7 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../core/app_info.dart';
 import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
@@ -122,19 +121,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               onTap: (_, point) => setState(() => _picked = point),
             ),
             children: [
-              switch (basemap) {
-                RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
-                  urlTemplate: urlTemplate,
-                  maxZoom: maxZoom,
-                  tileProvider: NetworkTileProvider(
-                    headers: {
-                      'User-Agent': buildUserAgent(
-                        ref.watch(appVersionProvider),
-                      ),
-                    },
-                  ),
-                ),
-              },
+              basemapTileLayer(basemap, ref.watch(appVersionProvider)),
               // The trip's other points, so the user can see what they are
               // placing this one relative to. Deliberately faint: they are
               // context, not the thing being chosen.

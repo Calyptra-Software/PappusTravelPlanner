@@ -3,7 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../core/app_info.dart';
 import '../../../core/clock.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
@@ -178,27 +177,7 @@ class _MapViewState extends ConsumerState<_MapView> {
             ),
           ),
           children: [
-            switch (basemap) {
-              RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
-                urlTemplate: urlTemplate,
-                maxZoom: maxZoom,
-                // Who we are, as the OpenStreetMap policy requires of an app:
-                // this application's name, its version, and a way to get in
-                // touch. Sent as a real header rather than through
-                // `userAgentPackageName`, whose generic format the policy names
-                // as a reason for blocking. The browser forbids setting it at
-                // all, which is why a web deployment answers with its Referer.
-                tileProvider: NetworkTileProvider(
-                  headers: {
-                    'User-Agent': buildUserAgent(ref.watch(appVersionProvider)),
-                  },
-                ),
-                // Caching is left at flutter_map's default, which stores tiles
-                // for as long as the server's own headers say — exactly the
-                // conforming caching the policy asks for, and the reason panning
-                // back over ground already seen costs nobody anything.
-              ),
-            },
+            basemapTileLayer(basemap, ref.watch(appVersionProvider)),
             PolylineLayer(
               polylines: [
                 for (final path in features.paths)

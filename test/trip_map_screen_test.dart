@@ -103,6 +103,12 @@ void main() {
 
     expect(find.text('Nothing to place yet'), findsOneWidget);
     expect(find.byType(FlutterMap), findsNothing);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('a trip with positions draws them', (tester) async {
@@ -119,6 +125,12 @@ void main() {
     // Attribution is a condition of use, so it is on screen without being asked
     // for.
     expect(find.textContaining('OpenStreetMap'), findsOneWidget);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('a leg is drawn in the trip\'s own accent, not the theme\'s', (
@@ -148,6 +160,12 @@ void main() {
     // And a casing under it, so a user-chosen color stays legible over whatever
     // the tiles happen to show there.
     expect(polyline.borderStrokeWidth, greaterThan(0));
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('the attribution clears the system navigation bar', (
@@ -169,6 +187,12 @@ void main() {
     final bottom = tester.getBottomLeft(attribution).dy;
     final screenBottom = tester.getSize(find.byType(MaterialApp)).height;
     expect(bottom, lessThanOrEqualTo(screenBottom - navBar));
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('tapping a place marker says what it stands for', (tester) async {
@@ -194,6 +218,12 @@ void main() {
     expect(find.text('Place 1'), findsOneWidget);
     expect(find.textContaining('50.11090'), findsOneWidget);
     expect(find.text('Edit place'), findsOneWidget);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets('tapping a leg badge names the leg, not a place', (tester) async {
@@ -232,5 +262,11 @@ void main() {
     expect(find.textContaining('53.55110'), findsOneWidget);
     expect(find.textContaining('50.11090'), findsOneWidget);
     expect(find.text('Edit transport'), findsOneWidget);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 }

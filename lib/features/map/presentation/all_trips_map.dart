@@ -4,7 +4,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../../../core/app_info.dart';
 import '../../../core/providers.dart';
 import '../../../core/format/money_format.dart';
 import '../../../data/database/app_database.dart';
@@ -182,17 +181,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
             ),
           ),
           children: [
-            switch (basemap) {
-              RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
-                urlTemplate: urlTemplate,
-                maxZoom: maxZoom,
-                tileProvider: NetworkTileProvider(
-                  headers: {
-                    'User-Agent': buildUserAgent(ref.watch(appVersionProvider)),
-                  },
-                ),
-              ),
-            },
+            basemapTileLayer(basemap, ref.watch(appVersionProvider)),
             // Every trip's lines in one layer rather than one layer per trip:
             // flutter_map culls and simplifies per layer, and a hundred layers
             // of one line each would do that work a hundred times.
