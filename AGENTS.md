@@ -627,6 +627,25 @@ UI (features/*/presentation, *widgets)
   answer. A position is therefore its own field in the item sheet, beside the name and
   clearable on its own, and the two are kept as a **pair**: a latitude without a longitude
   is not half a place, so the form normalises the fragment away rather than writing it back.
+- **The overview draws the same trips three ways, and which one is a setting.**
+  `TripView` (list / calendar / map) lives in `tripViewProvider`, persisted by index and
+  append-only like every other stored enum here — the list/calendar switch used to be a
+  `bool` in the screen's `State`, which sat oddly beside the rule that *how the overview is
+  read* is remembered. It matters more with three: the map fetches tiles, so being dropped
+  onto it unasked spends somebody's data. One control, a **menu and not a cycle** — the icon
+  shows the view that is on screen, and a cycle past three states makes the map a stop on
+  the way somewhere else.
+- **The all-trips map is handed its trips, so the filter is inherited rather than rebuilt.**
+  `AllTripsMap` draws exactly the list `applyTripQuery` left visible, which is why "only my
+  walks, this year" needs no second filter UI; routines are excluded because that function
+  already excludes them. Each trip keeps its **own accent**, the color its card is drawn in,
+  which is what makes a tangle of lines readable. The camera re-frames when the *selection*
+  changes but not when the stream merely ticks: tapping a tag chip is an explicit act with
+  an expectation attached, while a rebuild is not. Its entries come from
+  `ItineraryDao.watchPositionedItems` — the one query here that is not about a single trip,
+  with the live rule expressed in **SQL** (the precedent is `CostDao._countsTowardTotals`)
+  and no trip filter at all, since a family keyed by a list compares by identity and would
+  rebuild every frame.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.

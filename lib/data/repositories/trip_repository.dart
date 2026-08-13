@@ -74,6 +74,11 @@ class TripRepository {
   // --- itinerary items ---
   Stream<List<ItineraryItem>> watchItems(int tripId) =>
       _db.itineraryDao.watchItemsForTrip(tripId);
+
+  /// Every *live* entry carrying a position, across all trips — what the
+  /// overview's map draws, before the overview's own filter narrows it.
+  Stream<List<ItineraryItem>> watchPositionedItems() =>
+      _db.itineraryDao.watchPositionedItems();
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>

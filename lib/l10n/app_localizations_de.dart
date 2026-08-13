@@ -963,6 +963,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionPickOnMap => 'Auf Karte wählen';
 
   @override
+  String get mapView => 'Karte';
+
+  @override
   String get statsOpen => 'Statistik';
 
   @override

@@ -436,6 +436,10 @@
   "@connectionPickOnMap": {
     "description": "Opens the map to pick a coordinate as a search endpoint."
   },
+  "mapView": "Map",
+  "@mapView": {
+    "description": "Name of the overview's map view, beside list and calendar."
+  },
   "statsOpen": "Statistics",
   "statsAllTripsOpen": "Overall statistics",
   "statsTabExpenses": "Expenses",

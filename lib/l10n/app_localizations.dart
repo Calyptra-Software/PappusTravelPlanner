@@ -1754,6 +1754,12 @@ abstract class AppLocalizations {
   /// **'Choose on map'**
   String get connectionPickOnMap;
 
+  /// Name of the overview's map view, beside list and calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Map'**
+  String get mapView;
+
   /// No description provided for @statsOpen.
   ///
   /// In en, this message translates to:

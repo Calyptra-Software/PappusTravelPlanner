@@ -346,6 +346,7 @@
   "coordinatesClear": "Position entfernen",
   "mapPickHint": "Auf die Karte tippen, um einen Punkt zu setzen",
   "connectionPickOnMap": "Auf Karte wählen",
+  "mapView": "Karte",
   "statsOpen": "Statistik",
   "statsNoData": "Noch keine Ausgaben zum Auswerten",
   "statsByCategory": "Nach Kategorie",

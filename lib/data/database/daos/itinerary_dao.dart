@@ -6,7 +6,9 @@ import '../tables.dart';
 
 part 'itinerary_dao.g.dart';
 
-@DriftAccessor(tables: [ItineraryItems, CollapsedDays, AlternativeSets])
+@DriftAccessor(
+  tables: [ItineraryItems, CollapsedDays, AlternativeSets, Alternatives],
+)
 class ItineraryDao extends DatabaseAccessor<AppDatabase>
     with _$ItineraryDaoMixin {
   ItineraryDao(super.db);
@@ -27,6 +29,57 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
             ),
           ]))
         .watch();
+  }
+
+  /// Every entry in the database that carries a position, across **all** trips,
+  /// and only the ones that are *live*.
+  ///
+  /// The first query here that is not about one trip. It answers the overview's
+  /// map, which draws whatever the overview's own filter left visible — so the
+  /// filtering stays where it already lives (`applyTripQuery`) and this asks the
+  /// simpler question: what is there to draw at all. There are only ever as many
+  /// rows as have been imported or pointed at on a map, which is a small
+  /// fraction of an itinerary.
+  ///
+  /// **Live is decided in SQL**, the way `CostDao` decides which costs count: an
+  /// entry is live when it sits loose on its day or in the *chosen* branch of its
+  /// decision. Filtering that in Dart afterwards would mean carrying every road
+  /// not taken across the join first, and — worse — a second definition of a rule
+  /// that already exists.
+  ///
+  /// Ordered by trip and then as a day reads, because the caller groups by trip
+  /// and hands each group to `tripMapFeatures`, which needs a plan in order.
+  Stream<List<ItineraryItem>> watchPositionedItems() {
+    final query =
+        select(itineraryItems).join([
+          leftOuterJoin(
+            alternatives,
+            alternatives.id.equalsExp(itineraryItems.alternativeId),
+          ),
+        ])..where(
+          (itineraryItems.alternativeId.isNull() |
+                  alternatives.chosen.equals(true)) &
+              // A place needs its own pair; a leg needs both of its ends, since
+              // one end alone cannot be drawn as anything but a place.
+              ((itineraryItems.lat.isNotNull() &
+                      itineraryItems.lon.isNotNull()) |
+                  (itineraryItems.fromLat.isNotNull() &
+                      itineraryItems.fromLon.isNotNull() &
+                      itineraryItems.toLat.isNotNull() &
+                      itineraryItems.toLon.isNotNull())),
+        );
+    query.orderBy([
+      OrderingTerm(expression: itineraryItems.tripId),
+      OrderingTerm(expression: itineraryItems.date),
+      OrderingTerm(expression: itineraryItems.sortOrder),
+      OrderingTerm(
+        expression: itineraryItems.startMinutes,
+        nulls: NullsOrder.last,
+      ),
+    ]);
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(itineraryItems)).toList(),
+    );
   }
 
   Future<int> addItem(ItineraryItemsCompanion item) =>

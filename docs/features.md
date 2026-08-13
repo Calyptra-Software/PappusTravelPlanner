@@ -106,8 +106,19 @@ Every part of that except the text search is remembered across launches, so "onl
 walks, newest first" survives closing the app. The text search deliberately is not: a
 search is one act, which is why the app bar's close button throws it away.
 
-The overview **list** can also switch to a **month calendar**, where each trip is a bar in
-its accent color spanning its days.
+The overview draws the same trips three ways, chosen from one menu in the app bar: the
+**list**, a **month calendar** where each trip is a bar in its accent color spanning its
+days, and a **map** of everywhere the visible trips go. Whichever you pick is remembered.
+
+The map inherits the filter rather than having one of its own — narrow the list to "only my
+walks" and the map shows those walks. Each trip is drawn in its own accent, the same color
+as its card, so a tangle of routes still says which trip is which. Changing the filter
+re-frames the map on what is left.
+
+Tap a route or a place and the **trip** it belongs to comes up — its card, exactly as the
+list draws it — and tapping that opens the trip. The unit here is the trip: with many of
+them on one map, "which trip is that line" is the question, where a single trip's own map
+answers the other one, about a single entry.
 
 ---
 

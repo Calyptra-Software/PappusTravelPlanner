@@ -15,6 +15,17 @@ final itineraryProvider = StreamProvider.autoDispose
       return ref.watch(repositoryProvider).watchItems(tripId);
     });
 
+/// Every *live* entry that carries a position, across all trips — the one query
+/// here that is not about a single trip.
+///
+/// Deliberately unfiltered: the overview's map draws whatever `applyTripQuery`
+/// left visible, and asking this stream per visible trip would need a family
+/// keyed by a list, which compares by identity and would rebuild on every frame.
+/// One stream, grouped by trip id where it is drawn.
+final positionedItemsProvider = StreamProvider.autoDispose<List<ItineraryItem>>(
+  (ref) => ref.watch(repositoryProvider).watchPositionedItems(),
+);
+
 /// The set of a trip's days (normalized to midnight) currently collapsed in the
 /// overview. Days not in the set are expanded (the default).
 final collapsedDaysProvider = StreamProvider.autoDispose

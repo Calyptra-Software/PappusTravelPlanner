@@ -956,6 +956,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionPickOnMap => 'Choose on map';
 
   @override
+  String get mapView => 'Map';
+
+  @override
   String get statsOpen => 'Statistics';
 
   @override
