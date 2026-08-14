@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
+import '../finite_camera.dart';
 import '../widgets/map_overlays.dart';
 
 /// Opens the map so the user can point at a place, and returns what they chose —
@@ -98,6 +99,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             mapController: _controller,
             options: MapOptions(
               minZoom: kMinMapZoom,
+              // A pinch can hand flutter_map a camera with a NaN in it, which
+              // makes every marker read as visible in every neighbouring world
+              // and hangs the frame. See finite_camera.dart.
+              cameraConstraint: const FiniteCamera(),
               maxZoom: maxZoomOf(basemap),
               initialCenter:
                   widget.initial ??

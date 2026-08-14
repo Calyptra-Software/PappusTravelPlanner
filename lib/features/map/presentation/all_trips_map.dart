@@ -10,6 +10,7 @@ import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../basemap.dart';
+import '../finite_camera.dart';
 import '../map_features.dart';
 import '../widgets/map_overlays.dart';
 import '../../trips/widgets/trip_card.dart';
@@ -171,6 +172,10 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
           mapController: _controller,
           options: MapOptions(
             minZoom: kMinMapZoom,
+            // A pinch can hand flutter_map a camera with a NaN in it, which makes
+            // every marker read as visible in every neighbouring world and hangs
+            // the frame. See finite_camera.dart.
+            cameraConstraint: const FiniteCamera(),
             maxZoom: maxZoomOf(basemap),
             initialCenter: points.first,
             initialZoom: 4,

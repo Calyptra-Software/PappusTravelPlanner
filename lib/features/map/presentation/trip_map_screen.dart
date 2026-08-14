@@ -15,6 +15,7 @@ import '../../itinerary/now_marker.dart';
 import '../../itinerary/widgets/transport_mode.dart';
 import '../../trips/application/trip_providers.dart';
 import '../basemap.dart';
+import '../finite_camera.dart';
 import '../map_features.dart';
 import '../widgets/map_overlays.dart';
 import 'map_item_sheet.dart';
@@ -167,6 +168,10 @@ class _MapViewState extends ConsumerState<_MapView> {
           mapController: _controller,
           options: MapOptions(
             minZoom: kMinMapZoom,
+            // A pinch can hand flutter_map a camera with a NaN in it, which makes
+            // every marker read as visible in every neighbouring world and hangs
+            // the frame. See finite_camera.dart.
+            cameraConstraint: const FiniteCamera(),
             // Framed to hold everything the trip touches. A single point has no
             // extent to fit, so it is centred at a street-level zoom instead.
             initialCameraFit: points.length > 1
