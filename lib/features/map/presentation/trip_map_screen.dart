@@ -154,6 +154,14 @@ class _MapViewState extends ConsumerState<_MapView> {
     final casing = theme.colorScheme.surface;
 
     return Stack(
+      // The map *fills* the stack; it does not size it. A stack measures its
+      // non-positioned children to find its own size, so a loosely constrained
+      // map has to be laid out for that — and every layout of a `FlutterMap`
+      // re-runs its layout callback, which rebuilds every layer inside it,
+      // markers included. Expanding hands the map tight constraints instead, so
+      // the rebuild happens when the size actually changes rather than whenever
+      // something above asks how big the map would like to be.
+      fit: StackFit.expand,
       children: [
         FlutterMap(
           mapController: _controller,

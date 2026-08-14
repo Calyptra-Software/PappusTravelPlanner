@@ -162,6 +162,10 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
     }
 
     return Stack(
+      // The map *fills* the stack; it does not size it — see the note in
+      // `trip_map_screen.dart`: a loosely constrained map is laid out just to
+      // measure the stack, and every layout rebuilds every layer inside it.
+      fit: StackFit.expand,
       children: [
         FlutterMap(
           mapController: _controller,
