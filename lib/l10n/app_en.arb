@@ -380,6 +380,11 @@
   "@mapNothingToShowHint": {
     "description": "Explains how an entry comes to have coordinates."
   },
+  "mapTripsHere": "{count, plural, =1{1 trip here} other{{count} trips here}}",
+  "@mapTripsHere": {
+    "description": "Title of the sheet listing the trips a tapped line belongs to, when more than one runs under the finger.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "mapZoomIn": "Zoom in",
   "@mapZoomIn": {
     "description": "Tooltip of the map's zoom-in button."

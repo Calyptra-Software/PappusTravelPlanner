@@ -100,7 +100,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             options: MapOptions(
               minZoom: kMinMapZoom,
               // A pinch can hand flutter_map a camera with a NaN in it, which
-              // makes every marker read as visible in every neighbouring world
+              // makes every marker read as visible in every neighboring world
               // and hangs the frame. See finite_camera.dart.
               cameraConstraint: const FiniteCamera(),
               maxZoom: maxZoomOf(basemap),

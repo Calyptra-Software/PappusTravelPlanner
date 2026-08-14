@@ -242,6 +242,61 @@ void main() {
     await tester.pump(kTileUpdateThrottle);
   });
 
+  testWidgets('a tap where several trips run together lists them all', (
+    tester,
+  ) async {
+    // Two trips over the same ground — the ordinary case on this map, not the
+    // awkward one, since a commute is drawn once per day it was made. Answering
+    // with whichever line was drawn last would be a coin toss, and re-tapping
+    // does not reshuffle it.
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip), trip(2, orangeTrip)],
+      items: [leg(10, 1, 53.5), leg(11, 2, 53.5)],
+    );
+
+    await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 trips here'), findsOneWidget);
+    expect(find.text('Trip 1'), findsOneWidget);
+    expect(find.text('Trip 2'), findsOneWidget);
+    expect(opened, isNull, reason: 'looking is not opening');
+
+    // And the tap is finished from there, as it is from a card in the list.
+    await tester.tap(find.text('Trip 2'));
+    await tester.pumpAndSettle();
+    expect(opened?.id, 2);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('a lone line still answers with just its trip', (tester) async {
+    // Nothing to choose between, so nothing to count: a heading reading "1 trip
+    // here" over the single card on screen would be noise.
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip)],
+      items: [leg(10, 1, 53.5)],
+    );
+
+    await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Trip 1'), findsOneWidget);
+    expect(find.textContaining('trip here'), findsNothing);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
   group('the view is a setting', () {
     test('an unknown stored value falls back to the list', () async {
       SharedPreferences.setMockInitialValues({'flutter.trips_view': 99});

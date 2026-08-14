@@ -921,6 +921,17 @@ class AppLocalizationsDe extends AppLocalizations {
       'Orte und Abschnitte erscheinen hier, sobald sie Koordinaten haben — importierte Verbindungen bringen ihre mit.';
 
   @override
+  String mapTripsHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Reisen hier',
+      one: '1 Reise hier',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get mapZoomIn => 'Vergrößern';
 
   @override

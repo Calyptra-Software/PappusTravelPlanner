@@ -10,7 +10,7 @@ import 'package:travelplanner/features/map/finite_camera.dart';
 /// The failure it exists for is worth restating, because nothing about it is
 /// obvious from the symptom: a camera carrying a NaN makes `Rect.overlaps`
 /// answer *true*, `MarkerLayer` therefore culls none of the copies it draws of
-/// each marker in the neighbouring worlds, and its loop — which steps by the
+/// each marker in the neighboring worlds, and its loop — which steps by the
 /// world's width, a step NaN swallows — runs until the heap is gone. The first
 /// test below is that fact, kept here so the reasoning cannot quietly rot.
 void main() {

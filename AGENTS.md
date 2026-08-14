@@ -645,7 +645,16 @@ UI (features/*/presentation, *widgets)
   `ItineraryDao.watchPositionedItems` — the one query here that is not about a single trip,
   with the live rule expressed in **SQL** (the precedent is `CostDao._countsTowardTotals`)
   and no trip filter at all, since a family keyed by a list compares by identity and would
-  rebuild every frame.
+  rebuild every frame. **A tap answers with every trip under it, not the topmost**, because
+  overlap is this map's normal state: a commute is drawn once per day it was made, so twenty
+  lines lie exactly on each other, and at any zoom showing a country neighboring routes
+  share their stretch of highway. Picking the last-drawn line would be a coin toss the user
+  cannot see and cannot re-roll — the trip they meant may be unreachable at that spot. So
+  `hitValues` is folded to one entry per trip, in the **overview's** order rather than the
+  drawing order (the map is a view of that list, and a stable order is one you can learn);
+  one trip opens its card as before, several are listed to choose from. `kLineHitbox` widens
+  the hit test past the 3px stroke for the same reason — what "on this line" means has to be
+  a fingertip, and a shared stretch that reads as one line should be one tap.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.

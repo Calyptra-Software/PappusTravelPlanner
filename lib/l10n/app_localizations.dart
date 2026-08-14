@@ -1670,6 +1670,12 @@ abstract class AppLocalizations {
   /// **'Places and legs appear here once they have coordinates — imported connections bring their own.'**
   String get mapNothingToShowHint;
 
+  /// Title of the sheet listing the trips a tapped line belongs to, when more than one runs under the finger.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 trip here} other{{count} trips here}}'**
+  String mapTripsHere(int count);
+
   /// Tooltip of the map's zoom-in button.
   ///
   /// In en, this message translates to:

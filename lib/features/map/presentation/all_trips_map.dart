@@ -105,22 +105,60 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
   /// total the list shows — and tapping it opens the trip, exactly as tapping
   /// the card does. (The single-trip map answers the other question, about one
   /// entry, with `MapItemSheet`.)
-  void _showTrip(Trip trip) {
+  ///
+  /// It takes *every* trip under the finger, because the tangle is the normal
+  /// case rather than the awkward one: the same commute drawn twenty times lies
+  /// exactly on itself, and a route shared for part of its length runs alongside
+  /// its neighbours at any zoom that shows a country. Answering with whichever
+  /// line happened to be drawn last is then a coin toss the user cannot see,
+  /// and re-tapping does not reshuffle it — the trip they meant may be
+  /// unreachable at that spot. So one trip opens its card directly, and several
+  /// name themselves and let the tap be finished deliberately.
+  void _showTrips(List<Trip> trips) {
+    if (trips.isEmpty) return;
+    final l10n = AppLocalizations.of(context);
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      // A tangle can hold more trips than fit on screen, so the sheet is allowed
+      // to grow and the list inside it scrolls.
+      isScrollControlled: true,
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-          child: TripCard(
-            trip: trip,
-            tags: widget.tagsByTrip[trip.id] ?? const [],
-            totals: widget.totalsByTrip[trip.id] ?? const {},
-            book: widget.book,
-            onTap: () {
-              Navigator.of(context).pop();
-              widget.onOpenTrip(trip);
-            },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Only when there is a choice to make: above a single card the
+              // count would be a label reading "1 trip here" over the one thing
+              // on screen.
+              if (trips.length > 1)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                  child: Text(
+                    l10n.mapTripsHere(trips.length),
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: trips.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
+                  itemBuilder: (context, i) => TripCard(
+                    trip: trips[i],
+                    tags: widget.tagsByTrip[trips[i].id] ?? const [],
+                    totals: widget.totalsByTrip[trips[i].id] ?? const {},
+                    book: widget.book,
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      widget.onOpenTrip(trips[i]);
+                    },
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -154,7 +192,6 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
     if (drawn.isEmpty) return _NothingToPlace(l10n: l10n);
 
     final points = [for (final (_, features) in drawn) ...features.allPoints];
-    final tripsById = {for (final trip in widget.trips) trip.id: trip};
     final casing = theme.colorScheme.surface;
 
     final tripIds = {for (final (trip, _) in drawn) trip.id};
@@ -173,7 +210,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
           options: MapOptions(
             minZoom: kMinMapZoom,
             // A pinch can hand flutter_map a camera with a NaN in it, which makes
-            // every marker read as visible in every neighbouring world and hangs
+            // every marker read as visible in every neighboring world and hangs
             // the frame. See finite_camera.dart.
             cameraConstraint: const FiniteCamera(),
             maxZoom: maxZoomOf(basemap),
@@ -197,13 +234,28 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
             GestureDetector(
               onTap: () {
                 final hit = _lineHits.value;
-                if (hit == null || hit.hitValues.isEmpty) return;
-                final tripId = hit.hitValues.first;
-                final trip = tripsById[tripId];
-                if (trip != null) _showTrip(trip);
+                if (hit == null) return;
+                // A trip is drawn as many polylines — one per leg, more where a
+                // leg is an arc or crosses the antimeridian — so the same id
+                // comes back once per line under the finger. What the sheet
+                // lists is trips, so they are folded down to one each, in the
+                // overview's own order rather than in the order they were
+                // drawn: the map is a view of that list, and a stable order is
+                // one the user can learn.
+                final ids = hit.hitValues.toSet();
+                _showTrips([
+                  for (final trip in widget.trips)
+                    if (ids.contains(trip.id)) trip,
+                ]);
               },
               child: PolylineLayer(
                 hitNotifier: _lineHits,
+                // Wider than the line is drawn, because the question this
+                // answers is "which of these", and the lines that raise it are
+                // the ones running alongside each other. flutter_map's default
+                // hitbox is the stroke itself, which on a 3px line asks for a
+                // precision no finger has.
+                minimumHitbox: kLineHitbox,
                 polylines: [
                   for (final (trip, features) in drawn)
                     for (final path in features.paths)
@@ -233,7 +285,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
                       alignment: Alignment.topCenter,
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        onTap: () => _showTrip(trip),
+                        onTap: () => _showTrips([trip]),
                         child: MapPlacePin(
                           color: Color(trip.colorValue),
                           size: 28,

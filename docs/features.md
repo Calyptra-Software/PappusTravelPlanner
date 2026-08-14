@@ -120,6 +120,11 @@ list draws it — and tapping that opens the trip. The unit here is the trip: wi
 them on one map, "which trip is that line" is the question, where a single trip's own map
 answers the other one, about a single entry.
 
+Where several routes lie on top of each other or run side by side — the same commute drawn
+once per day you made it, or two trips sharing a stretch of road — the tap lists **all** of
+them and you pick. Guessing which one you meant would be a coin toss you cannot see, and
+tapping again would not change the answer.
+
 ---
 
 ## The itinerary

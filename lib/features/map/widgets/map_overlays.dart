@@ -18,6 +18,16 @@ import '../basemap.dart';
 /// of the earth is not a smaller map, just a confusing one.
 const double kMinMapZoom = 2;
 
+/// How near a tap has to land to count as hitting a line.
+///
+/// flutter_map measures a hit against the stroke itself, and a route is drawn
+/// three pixels wide because that is what reads well under a dozen others — not
+/// because anyone can put a fingertip within three pixels of it. This is the
+/// usual touch slop instead, which also decides what "on this line" means when
+/// several run alongside each other: a shared stretch of highway is one line to
+/// the eye and should be one tap to the hand.
+const double kLineHitbox = 20;
+
 double maxZoomOf(Basemap basemap) => switch (basemap) {
   RasterBasemap(:final maxZoom) => maxZoom,
 };

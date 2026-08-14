@@ -914,6 +914,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Places and legs appear here once they have coordinates — imported connections bring their own.';
 
   @override
+  String mapTripsHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count trips here',
+      one: '1 trip here',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get mapZoomIn => 'Zoom in';
 
   @override

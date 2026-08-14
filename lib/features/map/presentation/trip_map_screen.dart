@@ -169,7 +169,7 @@ class _MapViewState extends ConsumerState<_MapView> {
           options: MapOptions(
             minZoom: kMinMapZoom,
             // A pinch can hand flutter_map a camera with a NaN in it, which makes
-            // every marker read as visible in every neighbouring world and hangs
+            // every marker read as visible in every neighboring world and hangs
             // the frame. See finite_camera.dart.
             cameraConstraint: const FiniteCamera(),
             // Framed to hold everything the trip touches. A single point has no

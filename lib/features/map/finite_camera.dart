@@ -8,7 +8,7 @@ import 'package:flutter_map/flutter_map.dart';
 /// answers catastrophically — `Rect.overlaps` returns **true** against a NaN
 /// rectangle, because each of its four rejection tests is a comparison and
 /// every comparison with NaN is false. `MarkerLayer` culls the copies it draws
-/// of each marker in the neighbouring worlds with exactly that call, in a loop
+/// of each marker in the neighboring worlds with exactly that call, in a loop
 /// that steps by the world's width and stops at the first copy culled. Against
 /// a NaN camera no copy is ever culled, and the step never moves either
 /// (`NaN - 7406 == NaN`), so the loop runs until the heap is gone.
