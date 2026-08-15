@@ -53,6 +53,9 @@ void main() {
       // `.watch()` never resolves under fake-async, which hangs the test.
       transportModesProvider.overrideWith((ref) => Stream.value(modes)),
       itineraryProvider(1).overrideWith((ref) => Stream.value(const [])),
+      // The line an entry followed is another drift stream, and the form now
+      // reads one for the leg it is editing.
+      itemTracksProvider.overrideWith((ref, itemId) => Stream.value(const [])),
       groupsProvider(1).overrideWith((ref) => Stream.value(const {})),
       costsForTripProvider(1).overrideWith(
         (ref) => Stream.value((

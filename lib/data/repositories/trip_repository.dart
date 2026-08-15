@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:latlong2/latlong.dart';
 
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
@@ -79,6 +80,28 @@ class TripRepository {
   /// overview's map draws, before the overview's own filter narrows it.
   Stream<List<ItineraryItem>> watchPositionedItems() =>
       _db.itineraryDao.watchPositionedItems();
+
+  /// The lines a trip's entries actually followed — live ones only, the same
+  /// rule the items above follow.
+  Stream<List<Track>> watchTracksForTrip(int tripId) =>
+      _db.trackDao.watchTracksForTrip(tripId);
+
+  /// Every trip's, for the all-trips map. Unfiltered for the reason
+  /// [watchPositionedItems] is.
+  Stream<List<Track>> watchAllTracks() => _db.trackDao.watchAllTracks();
+
+  /// What one entry carries, whatever its trip is doing — the item form's
+  /// reading.
+  Stream<List<Track>> watchTracksForItem(int itemId) =>
+      _db.trackDao.watchTracksForItem(itemId);
+
+  Future<void> addTracks(
+    int itemId,
+    List<({List<LatLng> points, String? name})> lines,
+  ) => _db.trackDao.addTracks(itemId, lines);
+
+  Future<void> deleteTracksForItem(int itemId) =>
+      _db.trackDao.deleteTracksForItem(itemId);
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>

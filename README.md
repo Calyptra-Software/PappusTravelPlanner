@@ -58,7 +58,8 @@ Every other platform, and Android if you would rather not run a stranger's binar
   long-distance trains, buses, and more from operators around the world, compare the results,
   import one as that day's legs, and refresh its live times later.
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
-  is under way marked as the timeline marks it.
+  is under way marked as the timeline marks it. Import a **GPX** track onto a leg and the
+  map draws the line you actually followed instead of the straight one.
 - **Costs in as many currencies as you like** — attached to a place, a leg, a whole shared
   ticket, or the trip, with your own categories and your own exchange rates.
 - **Statistics** — spending by category and by person, and how you actually traveled:

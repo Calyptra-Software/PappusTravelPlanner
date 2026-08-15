@@ -180,10 +180,13 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
     for (final item in items) {
       byTrip.putIfAbsent(item.tripId, () => []).add(item);
     }
+    // One stream for every trip's lines, keyed by entry — the same reason the
+    // entries themselves come in one query rather than one per trip.
+    final tracks = ref.watch(allTracksProvider(null)).value ?? const {};
     final drawn = <(Trip, TripMapFeatures)>[
       for (final trip in widget.trips)
         if (byTrip[trip.id] case final tripItems?)
-          (trip, tripMapFeatures(tripItems)),
+          (trip, tripMapFeatures(tripItems, tracks: tracks)),
     ];
 
     if (itemsAsync.isLoading && drawn.isEmpty) {

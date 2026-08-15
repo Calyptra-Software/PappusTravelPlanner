@@ -655,6 +655,47 @@ UI (features/*/presentation, *widgets)
   one trip opens its card as before, several are listed to choose from. `kLineHitbox` widens
   the hit test past the 3px stroke for the same reason — what "on this line" means has to be
   a fingertip, and a shared stretch that reads as one line should be one tap.
+- **A track is a line with a provenance, not "the GPX file".** `Tracks` (v29) holds the
+  line an entry *actually* followed — packed by `track_points.dart` into the encoded-polyline
+  format every mapping tool reads, so a dense recording costs a fraction of its point count
+  and can leave the app without a decoder being written first. A recorded walk, an imported
+  route and a path a router computes later are the same row wearing different `TrackSource`
+  values, which is why the enum names all three though only the first can be made today: a
+  table that could not say "this one was actually walked" would have to be migrated to say
+  it. Elevation, timestamps and the file's markup are dropped on the way in (`parseGpx`),
+  each for a stated reason — the app has no reading for a profile, and the file remains where
+  those live. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
+  arrive as separate rows under one name, which is the same rule the map already follows
+  between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
+  dozen untimed entries from a route file is an import of a different kind.
+- **A track hangs off an item and travels with every copy of it.** `copyItemTracks` is
+  called from `duplicateItem`, `copyGroup`, `duplicateAlternative`, `materializeRoutine` and
+  the reversed routine, plus the bundle import — deliberately **not** from `copyItemPlan`,
+  which builds a companion out of columns and cannot reach a second table. That is exactly
+  where this rule rots if nobody writes it down. The reversed routine passes `reversed: true`:
+  a path from A to B *is* the path from B to A, unlike the times and stops beside it, which
+  that copy drops rather than reverse into a plausible-looking fiction. It is **not** called
+  from `replaceJourneyLegs`: there the legs are being swapped for a *different* journey the
+  timetable just returned, and carrying the old line onto it would draw the old route under
+  the new one and claim it was followed.
+- **A leg with a track draws the track instead of its straight segment**
+  (`tripMapFeatures`'s `tracks:`). The chord between the ends and the path between them are
+  two answers to the same question, and drawing both puts a line across the bay beside the
+  line around it. The points are decoded once in `tripTracksProvider` / `allTracksProvider`
+  rather than in `build` — unpacking is the only expensive thing a track does, and doing it
+  per camera tick is the shape of the pinch freeze this map has already been through. A row
+  whose string does not decode is **dropped rather than thrown on**: it may have come from a
+  shared bundle, and one unreadable line must not blank the map for a whole trip.
+- **The bundle carries tracks and stays lossless**, as `BundleTrack` on the item, with the
+  points as the packed string rather than a JSON array of coordinates — the string is the
+  storage format on both sides, so a round trip through pairs of doubles would quadruple the
+  file and round every point a second time. `TrackSource` travels by **name**: an index is a
+  promise about the order of a Dart declaration. No format-version bump, by the rule already
+  stated for coordinates — a version marks a shape an importer must *branch* on, and an older
+  app ignoring `tracks` imports exactly the trip it would have imported anyway. The bundle is
+  **not** gzipped, unlike the earlier plan: the packed encoding already answers the size
+  question that plan raised, and compressing the container would break every older app's
+  reading of *every* bundle for a further third.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.
@@ -679,7 +720,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 28) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 29) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

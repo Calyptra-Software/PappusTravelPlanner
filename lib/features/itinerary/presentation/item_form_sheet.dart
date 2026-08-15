@@ -11,6 +11,7 @@ import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../map/widgets/track_field.dart';
 import '../../map/presentation/map_picker_screen.dart';
 import '../../trips/planned_journey.dart';
 import '../../trips/widgets/routine_day_field.dart';
@@ -602,6 +603,14 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     value: _toPosition,
                     onChanged: (v) => _toPosition = v,
                   ),
+                  // The line the leg actually followed, beside the two ends
+                  // that only ever approximated it. On an existing leg only:
+                  // a track hangs off a row, and a form being filled in for a
+                  // new entry has none yet.
+                  if (_isEditing) ...[
+                    const SizedBox(height: 12),
+                    TrackField(itemId: widget.existing!.id),
+                  ],
                 ] else ...[
                   TextFormField(
                     controller: _locationController,

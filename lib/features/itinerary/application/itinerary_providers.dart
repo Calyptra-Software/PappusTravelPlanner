@@ -1,6 +1,8 @@
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../data/database/track_points.dart';
 import '../../../data/database/app_database.dart';
 import '../../trips/application/trip_providers.dart';
 import '../live_items.dart';
@@ -25,6 +27,59 @@ final itineraryProvider = StreamProvider.autoDispose
 final positionedItemsProvider = StreamProvider.autoDispose<List<ItineraryItem>>(
   (ref) => ref.watch(repositoryProvider).watchPositionedItems(),
 );
+
+/// The lines one trip's entries actually followed, decoded and keyed by entry.
+///
+/// Decoded **here**, once per change, rather than in the widget that draws them:
+/// unpacking is the only expensive thing a track does, and doing it inside
+/// `build` would repeat it on every camera tick — which is the shape of the
+/// pinch freeze this map has already been through once.
+final tripTracksProvider = StreamProvider.autoDispose
+    .family<Map<int, List<List<LatLng>>>, int>((ref, tripId) {
+      return ref
+          .watch(repositoryProvider)
+          .watchTracksForTrip(tripId)
+          .map(groupTrackPoints);
+    });
+
+/// The same for every trip at once — the all-trips map's reading, unfiltered for
+/// the reason [positionedItemsProvider] is.
+final allTracksProvider = StreamProvider.autoDispose
+    .family<Map<int, List<List<LatLng>>>, void>((ref, _) {
+      return ref
+          .watch(repositoryProvider)
+          .watchAllTracks()
+          .map(groupTrackPoints);
+    });
+
+/// What one entry carries, for the form that edits it.
+final itemTracksProvider = StreamProvider.autoDispose.family<List<Track>, int>((
+  ref,
+  itemId,
+) {
+  return ref.watch(repositoryProvider).watchTracksForItem(itemId);
+});
+
+/// Rows to points, grouped by the entry they belong to.
+///
+/// A row whose string is not one of ours is **dropped**, not thrown on: it
+/// reached the database from a shared bundle, which is a file from outside, and
+/// one unreadable line must not blank the map for the whole trip. What is lost
+/// is exactly that line, which is what an unreadable line means.
+Map<int, List<List<LatLng>>> groupTrackPoints(List<Track> rows) {
+  final byItem = <int, List<List<LatLng>>>{};
+  for (final row in rows) {
+    final List<LatLng> points;
+    try {
+      points = decodeTrackPoints(row.points);
+    } on FormatException {
+      continue;
+    }
+    if (points.length < 2) continue;
+    byItem.putIfAbsent(row.itemId, () => []).add(points);
+  }
+  return byItem;
+}
 
 /// The set of a trip's days (normalized to midnight) currently collapsed in the
 /// overview. Days not in the set are expanded (the default).

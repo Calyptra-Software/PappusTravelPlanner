@@ -30,13 +30,21 @@ first thing worth putting in a report, because it names the build exactly
 Worth stating plainly, because the attack surface of an offline app is small but
 not empty:
 
-**It reads files it did not write.** A `.tpt` trip bundle arrives through the
-share sheet or a file picker, and `TripBundle.fromJson`
-(`lib/features/sharing/trip_bundle.dart`) parses whatever is in it. A malformed
-bundle should produce a clean refusal and nothing else. Anything beyond that —
-a crash that leaves the database inconsistent, an import that writes outside the
-trip it was told to create, a value that ends up somewhere it is not escaped —
-is worth reporting.
+**It reads files it did not write.** Two formats, both through a file picker or
+the share sheet:
+
+* A `.tpt` trip bundle, parsed by `TripBundle.fromJson`
+  (`lib/features/sharing/trip_bundle.dart`).
+* A `.gpx` track, parsed by `parseGpx` (`lib/features/map/gpx.dart`) using the
+  `xml` package, and stored as packed coordinates — the file's markup is never
+  kept and never re-read. A bundle may also carry an already-packed line, which
+  `decodeTrackPoints` (`lib/data/database/track_points.dart`) reads back and
+  which is therefore held to the same standard as the file it came from.
+
+A malformed file of either kind should produce a clean refusal and nothing else.
+Anything beyond that — a crash that leaves the database inconsistent, an import
+that writes outside the trip it was told to create, a value that ends up
+somewhere it is not escaped — is worth reporting.
 
 **It opens databases it did not create.** On desktop the settings screen will
 point the app at any `.sqlite` a file picker hands back, and the app writes to

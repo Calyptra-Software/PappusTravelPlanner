@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../core/format/money_format.dart';
-import '../../data/database/tables.dart' show ItemKind, TripKind;
+import '../../data/database/tables.dart' show ItemKind, TrackSource, TripKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
 /// share-sheet intent filter matches only Pappus trips, not every binary file.
@@ -442,6 +442,7 @@ class BundleItem {
     this.stopovers,
     this.fromPlaceId,
     this.toPlaceId,
+    this.tracks = const [],
   });
 
   final int localId;
@@ -505,6 +506,12 @@ class BundleItem {
   final String? fromPlaceId;
   final String? toPlaceId;
 
+  /// The lines this entry actually followed. Plan, not provenance — the ground
+  /// covered is the same wherever the trip is read — so they travel, and `.tpt`
+  /// stays the one lossless way out of the app. Empty in bundles written before
+  /// tracks existed, which is what such a trip had.
+  final List<BundleTrack> tracks;
+
   Map<String, dynamic> toJson() => {
     'localId': localId,
     'groupLocalId': groupLocalId,
@@ -532,6 +539,10 @@ class BundleItem {
     'stopovers': stopovers,
     'fromPlaceId': fromPlaceId,
     'toPlaceId': toPlaceId,
+    // Omitted entirely when there are none, so an ordinary trip's bundle is
+    // byte-for-byte what it was before tracks existed.
+    if (tracks.isNotEmpty)
+      'tracks': [for (final track in tracks) track.toJson()],
   };
 
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
@@ -564,6 +575,51 @@ class BundleItem {
     stopovers: json['stopovers'] as String?,
     fromPlaceId: json['fromPlaceId'] as String?,
     toPlaceId: json['toPlaceId'] as String?,
+    tracks: [
+      for (final track in (json['tracks'] as List<dynamic>? ?? const []))
+        BundleTrack.fromJson(track as Map<String, dynamic>),
+    ],
+  );
+}
+
+/// A [Tracks] row: the line an entry followed, with where the line came from.
+///
+/// The points ride as the packed string the column holds — it is already
+/// compact, printable and the format every mapping tool reads, so unpacking it
+/// into a JSON array would quadruple the bundle to say the same thing. The
+/// source travels by **name**, not index, for the reason every portable enum
+/// here does: an index is a promise about the order of a Dart declaration, and
+/// a name survives one being inserted.
+class BundleTrack {
+  const BundleTrack({
+    required this.points,
+    required this.source,
+    this.name,
+    this.sortOrder = 0,
+  });
+
+  final String points;
+  final TrackSource source;
+  final String? name;
+  final int sortOrder;
+
+  Map<String, dynamic> toJson() => {
+    'points': points,
+    'source': source.name,
+    'name': name,
+    'sortOrder': sortOrder,
+  };
+
+  factory BundleTrack.fromJson(Map<String, dynamic> json) => BundleTrack(
+    points: json['points'] as String,
+    // A source this app does not know is read as an import: the line is still a
+    // line, and refusing the whole trip over a label would be the wrong trade.
+    source: TrackSource.values.firstWhere(
+      (s) => s.name == json['source'],
+      orElse: () => TrackSource.imported,
+    ),
+    name: json['name'] as String?,
+    sortOrder: json['sortOrder'] as int? ?? 0,
   );
 }
 

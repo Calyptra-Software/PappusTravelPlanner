@@ -55,6 +55,11 @@ class TripMapScreen extends ConsumerWidget {
           final features = tripMapFeatures(
             live,
             happeningItemId: _happeningItemId(live, now),
+            // A leg that was actually recorded draws what was recorded; the
+            // straight segment between its ends was only ever the best the plan
+            // could say. Empty while the stream is still opening, so the map
+            // draws the plan first and sharpens rather than waiting.
+            tracks: ref.watch(tripTracksProvider(tripId)).value ?? const {},
           );
           if (features.isEmpty) return _EmptyMap(l10n: l10n);
           return _MapView(

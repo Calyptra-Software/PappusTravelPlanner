@@ -10,6 +10,7 @@ import 'daos/itinerary_dao.dart';
 import 'daos/routine_dao.dart';
 import 'daos/sharing_dao.dart';
 import 'daos/tag_dao.dart';
+import 'daos/track_dao.dart';
 import 'daos/transport_mode_dao.dart';
 import 'daos/trip_dao.dart';
 import 'tables.dart';
@@ -47,6 +48,7 @@ const int kApplicationId = 0x5452504C;
     Checklists,
     ChecklistItems,
     CollapsedDays,
+    Tracks,
   ],
   daos: [
     TripDao,
@@ -57,6 +59,7 @@ const int kApplicationId = 0x5452504C;
     AlternativeDao,
     RoutineDao,
     TagDao,
+    TrackDao,
     SharingDao,
     TransportModeDao,
     CurrencyDao,
@@ -71,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 28;
+  int get schemaVersion => 29;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -337,6 +340,14 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.lat,
           itineraryItems.lon,
         ]);
+      }
+      // v29 gives an entry the line it actually followed, beside the straight
+      // segment the map draws between its ends. A new table and nothing else:
+      // no existing row changes meaning, and a trip recorded before this simply
+      // has no tracks — the app has never had a line to store, so there is
+      // nothing to backfill from.
+      if (from < 29) {
+        await m.createTable(tracks);
       }
     },
     beforeOpen: (details) async {

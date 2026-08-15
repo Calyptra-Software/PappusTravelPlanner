@@ -14,6 +14,7 @@ part 'sharing_dao.g.dart';
 @DriftAccessor(
   tables: [
     Trips,
+    Tracks,
     ItemGroups,
     AlternativeSets,
     Alternatives,
@@ -60,6 +61,18 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
     final itemRows = await (select(
       itineraryItems,
     )..where((i) => i.tripId.equals(tripId))).get();
+    // One query for every line in the trip, joined to its entry — an itinerary
+    // is mostly entries with no track, so a query per item would be mostly
+    // empty answers.
+    final trackRows =
+        await (select(tracks).join([
+              innerJoin(
+                itineraryItems,
+                itineraryItems.id.equalsExp(tracks.itemId),
+              ),
+            ])..where(itineraryItems.tripId.equals(tripId)))
+            .map((row) => row.readTable(tracks))
+            .get();
     final costRows = await _costsForTrip(tripId);
     final beneficiariesByCost = await _beneficiaryNamesByCost(tripId);
     final checklistRows = await (select(
@@ -198,6 +211,17 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             stopovers: i.stopovers,
             fromPlaceId: i.fromPlaceId,
             toPlaceId: i.toPlaceId,
+            // The line the entry followed. Read in one query above rather than
+            // one per item, since an itinerary is mostly entries with none.
+            tracks: [
+              for (final t in trackRows.where((t) => t.itemId == i.id))
+                BundleTrack(
+                  points: t.points,
+                  source: t.source,
+                  name: t.name,
+                  sortOrder: t.sortOrder,
+                ),
+            ],
           ),
       ],
       costs: [
@@ -375,6 +399,22 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             toPlaceId: Value(i.toPlaceId),
           ),
         );
+        for (final t in i.tracks) {
+          await into(tracks).insert(
+            TracksCompanion.insert(
+              itemId: itemIds[i.localId]!,
+              source: Value(t.source),
+              name: Value(t.name),
+              // Not decoded and re-encoded: the string is the storage format on
+              // both sides, and a round trip through coordinates would round
+              // every point a second time. A string that is *not* one of ours
+              // fails when the map first reads it, which is where the error
+              // belongs — an unreadable line must not cost the whole import.
+              points: t.points,
+              sortOrder: Value(t.sortOrder),
+            ),
+          );
+        }
       }
 
       for (final c in bundle.costs) {

@@ -360,6 +360,26 @@ timeline — same rule, same reading, one definition. What the timeline can also
 the map cannot, is the gap *between* two entries: a map has places but no space between
 them to draw a line in. A routine has no today at all, so nothing there is ever marked.
 
+### The line you actually followed
+
+An entry draws as a straight segment between its ends, which is the best a plan
+can say. If you have a **GPX** file of what really happened — a watch, a phone,
+a route somebody sent you — open the leg and *Import GPX…*: the map then draws
+that line instead of the straight one. The two are answers to the same question,
+so showing both would put a line across the bay beside the line around it.
+
+What is read is every track and route in the file. What is left is deliberate:
+waypoints are not turned into places (a mark in a file is not an entry in a
+plan), elevation and timestamps are dropped (the app has no reading for a
+profile, and the file remains where those live), and a recording that stopped
+and started again stays in pieces rather than being joined across the gap.
+
+A line is part of the plan, so it **travels with a copy** — duplicate the leg,
+stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
+carries it, which is what keeps that export lossless. It does *not* survive
+replacing the leg with a different connection from the timetable: that line
+described the journey you just swapped out.
+
 ### Where the background comes from
 
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles, credited and

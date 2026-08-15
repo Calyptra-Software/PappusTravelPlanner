@@ -264,4 +264,57 @@ void main() {
         .reduce((a, b) => a > b ? a : b);
     expect(northernmost, greaterThan(53.5511));
   });
+
+  group('a recorded line replaces the straight one', () {
+    ItineraryItem leg(int id) => ItineraryItem(
+      id: id,
+      tripId: 1,
+      date: DateTime(2026, 5, 1),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      spansNextDay: false,
+      fromLat: 53.5511,
+      fromLon: 9.9937,
+      toLat: 53.5600,
+      toLon: 10.0100,
+    );
+
+    test('the track is drawn and the chord is not', () {
+      // Two answers to the same question; drawing both would put a line across
+      // the bay beside the line around it.
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [
+            const [
+              LatLng(53.5511, 9.9937),
+              LatLng(53.5540, 9.9990),
+              LatLng(53.5600, 10.0100),
+            ],
+          ],
+        },
+      );
+
+      expect(features.paths.single.segments.single, hasLength(3));
+    });
+
+    test('a gap in the recording stays a gap', () {
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [
+            const [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)],
+            const [LatLng(53.5570, 10.0050), LatLng(53.5600, 10.0100)],
+          ],
+        },
+      );
+
+      expect(features.paths.single.segments, hasLength(2));
+    });
+
+    test('an entry with no track still gets the great circle', () {
+      final features = tripMapFeatures([leg(1)], tracks: const {2: []});
+      expect(features.paths.single.segments.single, hasLength(2));
+    });
+  });
 }

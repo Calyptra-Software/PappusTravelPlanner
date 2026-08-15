@@ -925,6 +925,39 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get trackSection => 'Recorded line';
+
+  @override
+  String get trackImport => 'Import GPX…';
+
+  @override
+  String get trackRemove => 'Remove';
+
+  @override
+  String get trackNone =>
+      'None — the map draws the straight line between the ends.';
+
+  @override
+  String trackCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lines',
+      one: '1 line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trackImported => 'Line imported';
+
+  @override
+  String get trackNothingInFile => 'No line in that file';
+
+  @override
+  String get trackInvalidFile => 'That file is not readable GPX';
+
+  @override
   String get mapZoomIn => 'Zoom in';
 
   @override

@@ -179,7 +179,7 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
             groupMap[sourceGroup] = newGroup;
           }
         }
-        await into(itineraryItems).insert(
+        final copy = await into(itineraryItems).insert(
           copyItemPlan(
             item,
             date: item.date,
@@ -188,6 +188,9 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
             sortOrder: i,
           ),
         );
+        // Part of what the option *is*, like its grouping — and unlike its
+        // costs.
+        await attachedDatabase.trackDao.copyItemTracks(item.id, copy);
       }
       return newBranchId;
     });

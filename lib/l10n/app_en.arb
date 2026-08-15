@@ -385,6 +385,39 @@
     "description": "Title of the sheet listing the trips a tapped line belongs to, when more than one runs under the finger.",
     "placeholders": { "count": { "type": "int" } }
   },
+  "trackSection": "Recorded line",
+  "@trackSection": {
+    "description": "Heading of the item form's section for the GPX line an entry followed."
+  },
+  "trackImport": "Import GPX\u2026",
+  "@trackImport": {
+    "description": "Button that picks a GPX file and stores its lines on this entry."
+  },
+  "trackRemove": "Remove",
+  "@trackRemove": {
+    "description": "Button that deletes every line stored on this entry."
+  },
+  "trackNone": "None \u2014 the map draws the straight line between the ends.",
+  "@trackNone": {
+    "description": "Shown when an entry has no recorded line."
+  },
+  "trackCount": "{count, plural, =1{1 line} other{{count} lines}}",
+  "@trackCount": {
+    "description": "How many lines an entry carries; a recording that stopped and resumed arrives as several.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "trackImported": "Line imported",
+  "@trackImported": {
+    "description": "Confirmation after a GPX import."
+  },
+  "trackNothingInFile": "No line in that file",
+  "@trackNothingInFile": {
+    "description": "Shown when a GPX file held no track or route with at least two points."
+  },
+  "trackInvalidFile": "That file is not readable GPX",
+  "@trackInvalidFile": {
+    "description": "Shown when the picked file could not be parsed as GPX."
+  },
   "mapZoomIn": "Zoom in",
   "@mapZoomIn": {
     "description": "Tooltip of the map's zoom-in button."

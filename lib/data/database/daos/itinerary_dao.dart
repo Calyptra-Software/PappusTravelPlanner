@@ -253,7 +253,7 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
       // No groupId passed: a lone copy does not join the original's group (that
       // would put a third leg on a two-leg ticket, and break the run's
       // adjacency). Copying a *whole* group is `GroupDao.copyGroup`.
-      return into(itineraryItems).insert(
+      final copy = await into(itineraryItems).insert(
         copyItemPlan(
           item,
           date: day,
@@ -261,6 +261,12 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
           sortOrder: sortOrder,
         ),
       );
+      // The line it actually followed is part of the plan, not of the money:
+      // it travels exactly as the times and the route do. `copyItemPlan` builds
+      // a companion out of columns and cannot reach a second table, so every
+      // path that duplicates an item says this for itself.
+      await attachedDatabase.trackDao.copyItemTracks(itemId, copy);
+      return copy;
     });
   }
 

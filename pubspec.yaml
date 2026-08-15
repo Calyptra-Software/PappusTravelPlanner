@@ -54,6 +54,10 @@ dependencies:
   # Leaflet-in-a-WebView has none either. See features/map/basemap.dart for the
   # tile source and the conditions attached to it.
   flutter_map: ^8.3.1
+  # Reading a GPX track. Already resolved as a transitive dependency (via
+  # `pdf`), but this app parses foreign files with it, which is a direct and
+  # deliberate use rather than a coincidence of the tree — see SECURITY.md.
+  xml: ^7.0.1
   latlong2: ^0.10.1 # its coordinate type, shared by the pure map_features.dart
 
 dev_dependencies:

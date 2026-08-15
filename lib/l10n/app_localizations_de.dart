@@ -932,6 +932,39 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get trackSection => 'Aufgezeichnete Linie';
+
+  @override
+  String get trackImport => 'GPX importieren…';
+
+  @override
+  String get trackRemove => 'Entfernen';
+
+  @override
+  String get trackNone =>
+      'Keine — die Karte zeichnet die Luftlinie zwischen den Enden.';
+
+  @override
+  String trackCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Linien',
+      one: '1 Linie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trackImported => 'Linie importiert';
+
+  @override
+  String get trackNothingInFile => 'Keine Linie in dieser Datei';
+
+  @override
+  String get trackInvalidFile => 'Diese Datei ist kein lesbares GPX';
+
+  @override
   String get mapZoomIn => 'Vergrößern';
 
   @override

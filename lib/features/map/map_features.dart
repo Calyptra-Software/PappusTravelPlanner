@@ -109,9 +109,16 @@ final class TripMapFeatures {
 ///
 /// [happeningItemId] is the entry `now_marker.dart` reports as under way, or
 /// null when nothing is.
+/// [tracks] are the lines entries were *actually* recorded following, keyed by
+/// item id and each already decoded into its points. An entry that has one draws
+/// it **instead of** the straight segment between its ends: the chord and the
+/// path are two answers to the same question, and drawing both would put a line
+/// across the bay beside the line around it. Without one, nothing changes — the
+/// great circle between the ends is still the best the plan can say.
 TripMapFeatures tripMapFeatures(
   List<ItineraryItem> items, {
   int? happeningItemId,
+  Map<int, List<List<LatLng>>> tracks = const {},
 }) {
   final pins = <MapPin>[];
   final paths = <MapPath>[];
@@ -131,6 +138,26 @@ TripMapFeatures tripMapFeatures(
           ),
         );
       case ItemKind.transport:
+        // A recorded line answers where the leg went; the ends only ever
+        // approximated it. Each of its own segments is a separate piece —
+        // a recording that stopped and started again leaves a gap that must
+        // stay a gap — and each is still split at the antimeridian, since a
+        // track may cross it exactly as a flight may.
+        final recorded = tracks[item.id];
+        if (recorded != null && recorded.isNotEmpty) {
+          paths.add(
+            MapPath(
+              itemId: item.id,
+              segments: [
+                for (final line in recorded) ...splitAtAntimeridian(line),
+              ],
+              modeId: item.mode,
+              label: item.title,
+              happening: happening,
+            ),
+          );
+          continue;
+        }
         final from = _point(item.fromLat, item.fromLon);
         final to = _point(item.toLat, item.toLon);
         if (from == null || to == null) continue;

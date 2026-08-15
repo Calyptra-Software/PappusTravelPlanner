@@ -199,7 +199,7 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
         ),
       );
       for (var i = 0; i < members.length; i++) {
-        await into(itineraryItems).insert(
+        final copy = await into(itineraryItems).insert(
           copyItemPlan(
             members[i],
             date: day,
@@ -208,6 +208,8 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
             sortOrder: base + i,
           ),
         );
+        // Each member brings the line it followed, as it brings its route.
+        await attachedDatabase.trackDao.copyItemTracks(members[i].id, copy);
       }
       return newGroupId;
     });

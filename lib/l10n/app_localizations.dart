@@ -1676,6 +1676,54 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 trip here} other{{count} trips here}}'**
   String mapTripsHere(int count);
 
+  /// Heading of the item form's section for the GPX line an entry followed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded line'**
+  String get trackSection;
+
+  /// Button that picks a GPX file and stores its lines on this entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Import GPX…'**
+  String get trackImport;
+
+  /// Button that deletes every line stored on this entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get trackRemove;
+
+  /// Shown when an entry has no recorded line.
+  ///
+  /// In en, this message translates to:
+  /// **'None — the map draws the straight line between the ends.'**
+  String get trackNone;
+
+  /// How many lines an entry carries; a recording that stopped and resumed arrives as several.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 line} other{{count} lines}}'**
+  String trackCount(int count);
+
+  /// Confirmation after a GPX import.
+  ///
+  /// In en, this message translates to:
+  /// **'Line imported'**
+  String get trackImported;
+
+  /// Shown when a GPX file held no track or route with at least two points.
+  ///
+  /// In en, this message translates to:
+  /// **'No line in that file'**
+  String get trackNothingInFile;
+
+  /// Shown when the picked file could not be parsed as GPX.
+  ///
+  /// In en, this message translates to:
+  /// **'That file is not readable GPX'**
+  String get trackInvalidFile;
+
   /// Tooltip of the map's zoom-in button.
   ///
   /// In en, this message translates to:
