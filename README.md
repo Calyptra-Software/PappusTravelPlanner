@@ -74,7 +74,8 @@ Every other platform, and Android if you would rather not run a stranger's binar
 - **English and German**, and a light / dark / system theme.
 
 **[The long version, with the reasoning behind each of these, is in
-`docs/features.md`.](docs/features.md)**
+`docs/features.md`.](docs/features.md)** What changed per release is in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Your data
 
