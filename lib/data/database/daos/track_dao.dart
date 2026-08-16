@@ -104,6 +104,52 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
     });
   }
 
+  /// Writes one recording across the entries it covered.
+  ///
+  /// [pieces] is what `splitTrack` divided the line into, one per entry, and
+  /// [ends] are the coordinates the import learned along the way: an entry's
+  /// start or finish that had none, taken from the recording's own ends or
+  /// pointed at on the map. Both in one transaction, because they are one act —
+  /// a line landing on entries that did not get the positions it was cut by
+  /// would be a plan the map cannot draw and the user did not ask for.
+  ///
+  /// An end being placed loses its `fromPlaceId` / `toPlaceId`, by the rule that
+  /// governs moving one: that column means "the id the search was issued
+  /// against", and it cannot go on describing an end whose position now comes
+  /// from somewhere else.
+  Future<void> importTrackAcross({
+    required String? name,
+    required List<({int itemId, List<LatLng> points})> pieces,
+    required List<({int itemId, bool isStart, LatLng at})> ends,
+    TrackSource source = TrackSource.imported,
+  }) {
+    return transaction(() async {
+      for (final end in ends) {
+        await (update(
+          itineraryItems,
+        )..where((i) => i.id.equals(end.itemId))).write(
+          end.isStart
+              ? ItineraryItemsCompanion(
+                  fromLat: Value(end.at.latitude),
+                  fromLon: Value(end.at.longitude),
+                  fromPlaceId: const Value(null),
+                )
+              : ItineraryItemsCompanion(
+                  toLat: Value(end.at.latitude),
+                  toLon: Value(end.at.longitude),
+                  toPlaceId: const Value(null),
+                ),
+        );
+      }
+      for (final piece in pieces) {
+        if (piece.points.length < 2) continue;
+        await addTracks(piece.itemId, [
+          (points: piece.points, name: name),
+        ], source: source);
+      }
+    });
+  }
+
   Future<void> deleteTrack(int id) =>
       (delete(tracks)..where((t) => t.id.equals(id))).go();
 
