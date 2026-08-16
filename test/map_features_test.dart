@@ -286,11 +286,14 @@ void main() {
         [leg(1)],
         tracks: {
           1: [
-            const [
-              LatLng(53.5511, 9.9937),
-              LatLng(53.5540, 9.9990),
-              LatLng(53.5600, 10.0100),
-            ],
+            const TrackLine(
+              points: [
+                LatLng(53.5511, 9.9937),
+                LatLng(53.5540, 9.9990),
+                LatLng(53.5600, 10.0100),
+              ],
+              source: TrackSource.imported,
+            ),
           ],
         },
       );
@@ -303,8 +306,14 @@ void main() {
         [leg(1)],
         tracks: {
           1: [
-            const [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)],
-            const [LatLng(53.5570, 10.0050), LatLng(53.5600, 10.0100)],
+            const TrackLine(
+              points: [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)],
+              source: TrackSource.imported,
+            ),
+            const TrackLine(
+              points: [LatLng(53.5570, 10.0050), LatLng(53.5600, 10.0100)],
+              source: TrackSource.imported,
+            ),
           ],
         },
       );
@@ -315,6 +324,61 @@ void main() {
     test('an entry with no track still gets the great circle', () {
       final features = tripMapFeatures([leg(1)], tracks: const {2: []});
       expect(features.paths.single.segments.single, hasLength(2));
+    });
+  });
+
+  group('what a line claims decides how it is drawn', () {
+    ItineraryItem leg(int id) => ItineraryItem(
+      id: id,
+      tripId: 1,
+      date: DateTime(2026, 5, 1),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      spansNextDay: false,
+      fromLat: 53.5511,
+      fromLon: 9.9937,
+      toLat: 53.5600,
+      toLon: 10.0100,
+    );
+
+    const walked = [LatLng(53.5511, 9.9937), LatLng(53.5600, 10.0100)];
+    const computed = [LatLng(53.5511, 9.9937), LatLng(53.5550, 10.0000)];
+
+    test('a computed route is drawn broken', () {
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [const TrackLine(points: computed, source: TrackSource.routed)],
+        },
+      );
+      expect(features.paths.single.dashed, isTrue);
+    });
+
+    test('a recorded one is drawn solid', () {
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [const TrackLine(points: walked, source: TrackSource.recorded)],
+        },
+      );
+      expect(features.paths.single.dashed, isFalse);
+    });
+
+    test('what was followed supersedes what was proposed', () {
+      // Both stay stored — the entry's form lists them — but the map draws the
+      // record, not the router's guess beside it.
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [
+            const TrackLine(points: computed, source: TrackSource.routed),
+            const TrackLine(points: walked, source: TrackSource.imported),
+          ],
+        },
+      );
+      expect(features.paths.single.segments, hasLength(1));
+      expect(features.paths.single.segments.single, walked);
+      expect(features.paths.single.dashed, isFalse);
     });
   });
 }

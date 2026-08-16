@@ -266,6 +266,12 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
                         Polyline(
                           points: segment,
                           strokeWidth: 3,
+                          // Broken for a line the router computed rather than one
+                          // anybody followed — see `MapPath.dashed`.
+                          pattern: path.dashed
+                              ? StrokePattern.dashed(segments: const [7, 5])
+                              : const StrokePattern.solid(),
+
                           color: Color(trip.colorValue),
                           borderStrokeWidth: 2,
                           borderColor: casing,

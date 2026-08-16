@@ -40,21 +40,24 @@ class MotisTransportSearch implements TransportSearch {
   /// off a developer machine is not an anonymous one.
   static final String _defaultUserAgent = buildUserAgent('dev');
 
-  /// Asks for legs *without* their route shape and turn-by-turn instructions,
-  /// on every endpoint that offers the choice.
+  /// Whether to ask for a leg's route shape and turn-by-turn instructions.
   ///
-  /// The app draws no map and prints no walking directions, so `legGeometry`
-  /// and `steps` are pure weight on a connection that is often mobile data —
-  /// and on a service that is donated. Measured against Transitous: a five-
-  /// itinerary plan drops 103 KB → 57 KB, and a long-distance trip query — the
-  /// one behind the refresh button, tapped repeatedly while a train runs late —
-  /// drops 62 KB → 8 KB, most of it a polyline of the track we never draw.
+  /// Sent **per call**, because the two endpoints want opposite answers — the
+  /// split this comment anticipated before there was a map to want it.
   ///
-  /// Nothing read here changes: every parsed field, both paging cursors, the
-  /// direct connections and a trip's `intermediateStops` come back identical.
-  /// `legGeometry` is still present, just empty, so the day a map arrives this
-  /// is one parameter to flip — or to send per call, if a map view wants the
-  /// shape while the refresh button still does not.
+  /// The **search** asks for it (`true`): its answer is what an import writes
+  /// into the plan, and the shape is what makes the map draw a train along its
+  /// line instead of a chord across the country. Measured against Transitous, a
+  /// five-itinerary plan costs 57 KB → 103 KB for that.
+  ///
+  /// The **live refresh** does not (`false`), and this is the one that matters:
+  /// it is the button pressed again and again on a platform while a train runs
+  /// late, and it costs 8 KB → 62 KB — eight times the data for a shape that a
+  /// delay does not change. The geocoder has no legs at all.
+  ///
+  /// Nothing else read here changes either way: every parsed field, both paging
+  /// cursors, the direct connections and a trip's `intermediateStops` come back
+  /// identical.
   static const String _detailedLegs = 'detailedLegs';
 
   /// Only a fallback for a client built without one (the smoke tool, tests) —
@@ -116,7 +119,7 @@ class MotisTransportSearch implements TransportSearch {
       'time': _rfc3339Seconds(time),
       'arriveBy': arriveBy.toString(),
       'language': language,
-      _detailedLegs: 'false',
+      _detailedLegs: 'true',
       if (modes.isNotEmpty) 'transitModes': modes.join(','),
       if (options.minTransferMinutes > 0)
         'minTransferTime': '${options.minTransferMinutes}',

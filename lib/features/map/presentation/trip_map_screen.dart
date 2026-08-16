@@ -203,6 +203,12 @@ class _MapViewState extends ConsumerState<_MapView> {
                     Polyline(
                       points: segment,
                       strokeWidth: path.happening ? 5 : 3.5,
+                      // Broken for a line the router computed rather than one
+                      // anybody followed — see `MapPath.dashed`.
+                      pattern: path.dashed
+                          ? StrokePattern.dashed(segments: const [7, 5])
+                          : const StrokePattern.solid(),
+
                       // Red for the leg under way, as everywhere else in the
                       // app; the trip's own color for the rest.
                       color: path.happening ? theme.colorScheme.error : accent,

@@ -43,6 +43,16 @@ final class MapPin {
 }
 
 /// A transport leg, as the line between its two ends.
+/// One stored line with the one thing about it the map must know: where it came
+/// from. A line somebody walked and a line a router computed are drawn
+/// differently, because they claim different things.
+final class TrackLine {
+  const TrackLine({required this.points, required this.source});
+
+  final List<LatLng> points;
+  final TrackSource source;
+}
+
 final class MapPath {
   const MapPath({
     required this.itemId,
@@ -50,6 +60,7 @@ final class MapPath {
     this.modeId,
     this.label,
     this.happening = false,
+    this.dashed = false,
   });
 
   final int itemId;
@@ -66,6 +77,12 @@ final class MapPath {
   final int? modeId;
   final String? label;
   final bool happening;
+
+  /// Drawn broken rather than solid, for a line the router *computed* rather
+  /// than one anybody followed. The map can only show a line; whether that line
+  /// is a record or a proposal is exactly the difference a reader needs, and a
+  /// dash is how every paper map has said it.
+  final bool dashed;
 
   /// Where to hang the mode's icon: half way along the longest segment.
   ///
@@ -118,7 +135,7 @@ final class TripMapFeatures {
 TripMapFeatures tripMapFeatures(
   List<ItineraryItem> items, {
   int? happeningItemId,
-  Map<int, List<List<LatLng>>> tracks = const {},
+  Map<int, List<TrackLine>> tracks = const {},
 }) {
   final pins = <MapPin>[];
   final paths = <MapPath>[];
@@ -143,17 +160,27 @@ TripMapFeatures tripMapFeatures(
         // a recording that stopped and started again leaves a gap that must
         // stay a gap — and each is still split at the antimeridian, since a
         // track may cross it exactly as a flight may.
-        final recorded = tracks[item.id];
-        if (recorded != null && recorded.isNotEmpty) {
+        final lines = tracks[item.id] ?? const <TrackLine>[];
+        // What was actually followed supersedes what a router proposed: once a
+        // recording of the leg exists, the computed route adds nothing but a
+        // second line beside it. Both stay stored, and the entry's own form
+        // lists both — only the map picks.
+        final followed = [
+          for (final line in lines)
+            if (line.source != TrackSource.routed) line,
+        ];
+        final drawn = followed.isNotEmpty ? followed : lines;
+        if (drawn.isNotEmpty) {
           paths.add(
             MapPath(
               itemId: item.id,
               segments: [
-                for (final line in recorded) ...splitAtAntimeridian(line),
+                for (final line in drawn) ...splitAtAntimeridian(line.points),
               ],
               modeId: item.mode,
               label: item.title,
               happening: happening,
+              dashed: followed.isEmpty,
             ),
           );
           continue;

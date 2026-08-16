@@ -374,6 +374,14 @@ plan), elevation and timestamps are dropped (the app has no reading for a
 profile, and the file remains where those live), and a recording that stopped
 and started again stays in pieces rather than being joined across the gap.
 
+A connection imported from the search brings its own route with it: the map then
+draws the train along its line and the walk around the corner, rather than a
+straight line between the stops. Those are drawn **dashed**, because they are
+what the router computed and not what you recorded — a map can only draw a line,
+and whether it is a record or a proposal is worth seeing. Import a GPX onto the
+same leg and the recording wins: it is the real thing, and the proposal beside
+it adds nothing.
+
 A line is part of the plan, so it **travels with a copy** — duplicate the leg,
 stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
 carries it, which is what keeps that export lossless. It does *not* survive

@@ -127,6 +127,11 @@ class TransportSearchController {
           companions,
           group: group,
           alternativeId: alternativeId,
+          // The shape is plan, not provenance: it says where the line goes, not
+          // which dated run went along it, so it travels even into a routine —
+          // exactly as the endpoint coordinates and the stops do, and unlike the
+          // `sourceTripId` dropped just above.
+          shapes: [for (final leg in legs) leg.shape],
         );
   }
 

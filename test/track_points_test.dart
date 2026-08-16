@@ -77,4 +77,17 @@ void main() {
       );
     });
   });
+
+  test('a string is meaningless without the precision it was written at', () {
+    // The routing service answers at 1e-6; our column stores 1e-5. The same
+    // characters then mean a tenth of the distance — which is not a small
+    // error, it is a line off the coast that still looks like data.
+    const routed = '_p~iF~ps|U';
+    final ours = decodeTrackPoints(routed);
+    final theirs = decodeTrackPoints(routed, precision: kRoutedShapePrecision);
+
+    expect(ours.single.latitude, closeTo(38.5, 1e-5));
+    expect(theirs.single.latitude, closeTo(3.85, 1e-5));
+    expect(theirs.single.latitude * 10, closeTo(ours.single.latitude, 1e-4));
+  });
 }

@@ -678,6 +678,30 @@ UI (features/*/presentation, *widgets)
   from `replaceJourneyLegs`: there the legs are being swapped for a *different* journey the
   timetable just returned, and carrying the old line onto it would draw the old route under
   the new one and claim it was followed.
+- **A connection brings the route it takes, and says so by being dashed.** The search asks
+  the router for `legGeometry` (`detailedLegs=true` on `/plan` **only**), and the import
+  writes each leg's polyline as a `TrackSource.routed` track — so a train draws along its
+  line instead of as a chord across the country. The live refresh keeps `detailedLegs=false`
+  and that is the point of sending it per call rather than as a constant: it is the button
+  pressed again and again on a platform, it costs 8 KB → 62 KB, and a delay does not move
+  the rails. (The search costs 57 KB → 103 KB, paid once per search, by the only request
+  whose answer is ever written into a plan.) The shape is **plan, not provenance** — it says
+  where the line goes, not which dated run went along it — so it travels into a routine
+  beside the coordinates and the stops, while `sourceTripId` is dropped there. Two traps
+  guarded rather than assumed: the router encodes at **1e-6** and the column stores 1e-5, so
+  `decodeTrackPoints` takes a precision and `_legShape` refuses any other one outright — a
+  line read at the wrong precision lands ten times away, which looks like data instead of
+  looking wrong; and a shape that will not decode costs its own leg a line and nothing else,
+  since the rest of the journey is perfectly good. Deliberately **not** an opt-in on the
+  search form: the switch would have to be set before the user knows whether they will
+  import this connection, it would guard the cheap call while the repeated one stays off
+  anyway, and one screen of map tiles already costs several times more without being asked.
+- **What was followed supersedes what was proposed.** A leg carrying both a recording and a
+  routed shape draws the recording, solid; a routed one alone draws dashed
+  (`MapPath.dashed`). Both stay stored and the entry's own form lists both — only the map
+  picks, because a second line beside the first says nothing a reader wants. The dash is the
+  honest part: a map can only draw a line, and whether that line is a record or a proposal
+  is exactly the difference a reader needs.
 - **A leg with a track draws the track instead of its straight segment**
   (`tripMapFeatures`'s `tracks:`). The chord between the ends and the path between them are
   two answers to the same question, and drawing both puts a line across the bay beside the

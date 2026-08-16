@@ -915,7 +915,7 @@ void main() {
       expect(q, isNot(contains('maxDirectTime')));
     });
 
-    test('no route shapes or walking directions are asked for', () async {
+    test('the shape is asked for where it is used, and nowhere else', () async {
       final seen = <Uri>[];
       final client = MotisTransportSearch(
         httpClient: MockClient((req) async {
@@ -930,8 +930,7 @@ void main() {
         }),
       );
 
-      // Both endpoints that offer the choice: the plan, and the trip query
-      // behind the refresh button — where the polyline is most of the payload.
+      // Both endpoints that offer the choice, and they want opposite answers.
       await client.journeys(
         fromId: 'A',
         toId: 'B',
@@ -939,10 +938,52 @@ void main() {
       );
       await client.tripStops('T1');
 
-      expect(
-        seen.map((u) => u.queryParameters['detailedLegs']),
-        everyElement('false'),
-      );
+      final asked = {
+        for (final u in seen)
+          u.path.split('/').last: u.queryParameters['detailedLegs'],
+      };
+      // The search: its answer is what an import writes into the plan, and the
+      // shape is what makes the map draw a train along its line.
+      expect(asked['plan'], 'true');
+      // The live refresh: pressed again and again on a platform, for a shape a
+      // delay does not change. Eight times the payload for nothing.
+      expect(asked['trip'], 'false');
+    });
+
+    group('a leg keeps the route it takes', () {
+      Map<String, dynamic> legWith(Object? geometry) {
+        final plan = _decode(_fixture('motis_plan_overnight.json')) as Map;
+        final itinerary = (plan['itineraries'] as List).first as Map;
+        final leg = (itinerary['legs'] as List).first as Map;
+        if (geometry == null) {
+          leg.remove('legGeometry');
+        } else {
+          leg['legGeometry'] = geometry;
+        }
+        return plan.cast<String, dynamic>();
+      }
+
+      String? shapeOf(Object? geometry) =>
+          parsePlanResponse(legWith(geometry)).options.first.legs.first.shape;
+
+      test('the polyline is carried through untouched', () {
+        // Untouched because nothing between the parser and the import needs the
+        // points, and decoding a shape nobody imports would be work done for
+        // every result of every search.
+        expect(shapeOf({'points': 'abc', 'length': 2, 'precision': 6}), 'abc');
+      });
+
+      test('a shape at another precision is refused, not misread', () {
+        // Read at 1e-5 a 1e-6 line lands ten times too far away — off the map
+        // rather than visibly wrong, which is worse, because it looks like data.
+        expect(shapeOf({'points': 'abc', 'length': 2, 'precision': 5}), isNull);
+      });
+
+      test('an empty shape means the same as none', () {
+        // What a search made without `detailedLegs` carries.
+        expect(shapeOf({'points': '', 'length': 0, 'precision': 6}), isNull);
+        expect(shapeOf(null), isNull);
+      });
     });
 
     test('dropping the detail costs nothing that is read', () {

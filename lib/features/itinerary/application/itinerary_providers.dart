@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/track_points.dart';
+import '../../map/map_features.dart';
 import '../../../data/database/app_database.dart';
 import '../../trips/application/trip_providers.dart';
 import '../live_items.dart';
@@ -35,7 +36,7 @@ final positionedItemsProvider = StreamProvider.autoDispose<List<ItineraryItem>>(
 /// `build` would repeat it on every camera tick — which is the shape of the
 /// pinch freeze this map has already been through once.
 final tripTracksProvider = StreamProvider.autoDispose
-    .family<Map<int, List<List<LatLng>>>, int>((ref, tripId) {
+    .family<Map<int, List<TrackLine>>, int>((ref, tripId) {
       return ref
           .watch(repositoryProvider)
           .watchTracksForTrip(tripId)
@@ -45,7 +46,7 @@ final tripTracksProvider = StreamProvider.autoDispose
 /// The same for every trip at once — the all-trips map's reading, unfiltered for
 /// the reason [positionedItemsProvider] is.
 final allTracksProvider = StreamProvider.autoDispose
-    .family<Map<int, List<List<LatLng>>>, void>((ref, _) {
+    .family<Map<int, List<TrackLine>>, void>((ref, _) {
       return ref
           .watch(repositoryProvider)
           .watchAllTracks()
@@ -66,8 +67,8 @@ final itemTracksProvider = StreamProvider.autoDispose.family<List<Track>, int>((
 /// reached the database from a shared bundle, which is a file from outside, and
 /// one unreadable line must not blank the map for the whole trip. What is lost
 /// is exactly that line, which is what an unreadable line means.
-Map<int, List<List<LatLng>>> groupTrackPoints(List<Track> rows) {
-  final byItem = <int, List<List<LatLng>>>{};
+Map<int, List<TrackLine>> groupTrackPoints(List<Track> rows) {
+  final byItem = <int, List<TrackLine>>{};
   for (final row in rows) {
     final List<LatLng> points;
     try {
@@ -76,7 +77,9 @@ Map<int, List<List<LatLng>>> groupTrackPoints(List<Track> rows) {
       continue;
     }
     if (points.length < 2) continue;
-    byItem.putIfAbsent(row.itemId, () => []).add(points);
+    byItem
+        .putIfAbsent(row.itemId, () => [])
+        .add(TrackLine(points: points, source: row.source));
   }
   return byItem;
 }

@@ -10,6 +10,12 @@ import 'package:latlong2/latlong.dart';
 /// fit in one or two bytes each instead of the sixteen a pair of doubles takes.
 const int kTrackPrecision = 100000;
 
+/// What the routing service encodes its leg shapes at — a tenth of a degree
+/// finer than ours, and reported by the API in every `legGeometry`. Named here
+/// rather than passed as a literal because getting it wrong is not a small
+/// error: the line lands ten times too far away.
+const int kRoutedShapePrecision = 1000000;
+
 /// A track's points, packed into one string for the column that holds them.
 ///
 /// This is Google's encoded-polyline format, which is worth using rather than
@@ -20,15 +26,23 @@ const int kTrackPrecision = 100000;
 /// track of small steps costs far less than its point count suggests, which is
 /// the whole reason a track can live in a column at all.
 ///
+/// [precision] is what the column stores at and needs no argument; it exists so
+/// the two halves of the codec agree about what is configurable. A codec whose
+/// writer hardcodes what its reader takes as a parameter is a trap waiting for
+/// the first line that has to be written in somebody else's units.
+///
 /// The inverse is [decodeTrackPoints]. Both are pure, and neither knows what a
 /// track *is* — provenance, name and owner live in the row around this string.
-String encodeTrackPoints(List<LatLng> points) {
+String encodeTrackPoints(
+  List<LatLng> points, {
+  int precision = kTrackPrecision,
+}) {
   final out = StringBuffer();
   var lastLat = 0;
   var lastLon = 0;
   for (final point in points) {
-    final lat = (point.latitude * kTrackPrecision).round();
-    final lon = (point.longitude * kTrackPrecision).round();
+    final lat = (point.latitude * precision).round();
+    final lon = (point.longitude * precision).round();
     _writeValue(out, lat - lastLat);
     _writeValue(out, lon - lastLon);
     // Against the *rounded* previous value, not the original: otherwise each
@@ -41,11 +55,21 @@ String encodeTrackPoints(List<LatLng> points) {
 
 /// Reads back what [encodeTrackPoints] wrote.
 ///
+/// [precision] is the divisor the *writer* used, and it is a parameter because
+/// the encoding does not carry it: the same characters mean a tenth of the
+/// distance at 1e-6 that they mean at 1e-5. Our column is always
+/// [kTrackPrecision], but the routing service answers at 1e-6 (measured, not
+/// assumed), and a line read at the wrong one lands ten times too far from
+/// where it belongs — off the map rather than visibly wrong, which is worse.
+///
 /// Throws [FormatException] on a string that is not one of ours — a truncated
 /// run of continuation bytes, or a coordinate outside the world. It is called
 /// on rows this app wrote *and* on a shared bundle somebody else's copy of it
 /// wrote, and the second of those is a file from outside.
-List<LatLng> decodeTrackPoints(String encoded) {
+List<LatLng> decodeTrackPoints(
+  String encoded, {
+  int precision = kTrackPrecision,
+}) {
   final points = <LatLng>[];
   var index = 0;
   var lat = 0;
@@ -58,8 +82,8 @@ List<LatLng> decodeTrackPoints(String encoded) {
     if (index == start) throw const FormatException('Empty track segment');
     lat += dLat;
     lon += dLon;
-    final latitude = lat / kTrackPrecision;
-    final longitude = lon / kTrackPrecision;
+    final latitude = lat / precision;
+    final longitude = lon / precision;
     if (latitude < -90 ||
         latitude > 90 ||
         longitude < -180 ||
