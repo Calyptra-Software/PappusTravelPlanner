@@ -110,8 +110,7 @@ The overview draws the same trips three ways, chosen from one menu in the app ba
 **list**, a **month calendar** where each trip is a bar in its accent color spanning its
 days, and a **map** of everywhere the visible trips go. Whichever you pick is remembered.
 
-The map inherits the filter rather than having one of its own — narrow the list to "only my
-walks" and the map shows those walks. Each trip is drawn in its own accent, the same color
+The map inherits the filter rather than having one of its own. Each trip is drawn in its own accent, the same color
 as its card, so a tangle of routes still says which trip is which. Changing the filter
 re-frames the map on what is left.
 
@@ -122,8 +121,7 @@ answers the other one, about a single entry.
 
 Where several routes lie on top of each other or run side by side — the same commute drawn
 once per day you made it, or two trips sharing a stretch of road — the tap lists **all** of
-them and you pick. Guessing which one you meant would be a coin toss you cannot see, and
-tapping again would not change the answer.
+them and you pick.
 
 ---
 
@@ -193,11 +191,6 @@ the card.
 Untimed entries stay ahead of the line unless something timed after them is already past —
 we cannot know when they happened, and claiming they are done is the guess that would make
 the mark lie.
-
-A night train counts as under way for as long as it runs. Its arrival is a time on the
-*next* day, and reading that naively would put the end of the journey before its own
-beginning — so the entry would look finished the moment it pulled out, while you were still
-on it.
 
 ### Moving entries around
 
@@ -296,27 +289,11 @@ Declining it, finding nothing, or having no signal all leave the copied plan sta
 
 ## The map
 
-### A trip, drawn
-
 Every trip has a map, reached from the map button on the trip screen. Places appear as
-pins and transport legs as lines between their ends, and — like the PDF and the calendar
-export — it draws only the plan as it stands: the entries of an option nobody chose are
-part of the trip's history, not of where you went.
+pins and transport legs as lines between their ends.
 
 Two things it deliberately does not do. A leg is drawn **only when both of its ends have a
-position**, because one end alone would have to be a point, and a point on a map is a
-place — a journey half-drawn is a journey misread. And **nothing is drawn between one
-place and the next**: the plan says the museum follows the hotel, not that anyone walked
-between them in a straight line. The legs are what say how the day was traveled, and
-inventing the connecting line would put journeys on the map the trip never claimed.
-
-### Long legs bend
-
-A straight line on a web map is not the route anything takes. Hamburg to New York really
-does pass north of Newfoundland, so legs beyond a couple of hundred kilometers are drawn
-along the great circle instead of as a chord across the Atlantic. A leg crossing the
-antimeridian — Tokyo to Los Angeles — is drawn as two pieces meeting the edges, since one
-line would streak backwards across the whole map to get there.
+position and nothing is drawn between one place and the next. On today, the entry that is under way is marked.
 
 ### Where the positions come from
 
@@ -325,8 +302,7 @@ through the connection search appears on the map without you doing anything.
 
 Everything else you place yourself. Any place, and either end of any transport leg, has a
 **Coordinates** field beside its name with a map button: the map opens, you tap the spot,
-and *Use this point* writes it down. Tapping again moves the marker; until you have tapped
-once, there is nothing to confirm and the button stays greyed out. The field then shows
+and *Use this point* writes it down. Tapping again moves the marker. The field then shows
 what was written and can be cleared again on its own.
 
 The connection search offers the same thing: its **From** and **To** pickers list *Choose on
@@ -334,70 +310,38 @@ map* above the search results, for an address the geocoder does not know or a sp
 name at all. (A via stop is the exception — the routing service only accepts stations
 there.)
 
-What the app will not do is guess. A name is not a position — which Rahlstedt you meant is
-your call — so nothing is derived from what you typed, in either direction: placing a point
-does not rename the entry either. Trips planned before the app stored coordinates simply
-have none until you give them some, and nothing backfills them.
-
 Placing both ends of a leg has a side effect worth knowing: a leg you entered by hand can
 then be looked up in the timetable, because the app finally knows where it starts and ends.
 And moving an end that *came* from a search makes the app forget which station the search
-used — it now goes by the point you chose, which is the only honest reading of having moved
-it.
+used — it now goes by the point you chose.
 
 ### Asking a marker what it is
 
 Tap a pin or a transport badge and the entry behind it opens: its name, where the leg runs
 from and to, its times with the same green and red `+/−` the timeline shows, any note on it,
 and the coordinates themselves. A map can only draw *where* something is; everything else
-about it lives in the entry, one tap away. Editing is a further tap, in the same form the
-timeline opens.
-
-### "You are here", again
-
-On today, the entry that is under way is marked on the map exactly as it is marked on the
-timeline — same rule, same reading, one definition. What the timeline can also show, and
-the map cannot, is the gap *between* two entries: a map has places but no space between
-them to draw a line in. A routine has no today at all, so nothing there is ever marked.
+about it lives in the entry. Editing is a further tap, in the same form the timeline opens.
 
 ### The line you actually followed
 
 An entry draws as a straight segment between its ends, which is the best a plan
-can say. If you have a **GPX** file of what really happened — a watch, a phone,
-a route somebody sent you — open the leg and *Import GPX…*: the map then draws
-that line instead of the straight one. The two are answers to the same question,
-so showing both would put a line across the bay beside the line around it.
-
-What is read is every track and route in the file. What is left is deliberate:
-waypoints are not turned into places (a mark in a file is not an entry in a
-plan), elevation and timestamps are dropped (the app has no reading for a
-profile, and the file remains where those live), and a recording that stopped
-and started again stays in pieces rather than being joined across the gap.
+can say. If you have a **GPX** file open the leg and *Import GPX…*: the map then draws
+that line instead of the straight one.
 
 A connection imported from the search brings its own route with it: the map then
 draws the train along its line and the walk around the corner, rather than a
 straight line between the stops. Those are drawn **dashed**, because they are
-what the router computed and not what you recorded — a map can only draw a line,
-and whether it is a record or a proposal is worth seeing. Import a GPX onto the
-same leg and the recording wins: it is the real thing, and the proposal beside
-it adds nothing.
+what the router computed and not what you recorded. Importing a GPX onto the
+same leg shows only the imported track.
 
 A line is part of the plan, so it **travels with a copy** — duplicate the leg,
 stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
-carries it, which is what keeps that export lossless. It does *not* survive
-replacing the leg with a different connection from the timetable: that line
-described the journey you just swapped out.
+carries it, which is what keeps that export lossless.
 
 ### Where the background comes from
 
-The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles, credited and
-linked on the map itself. Their servers are donated and their
-[usage policy](https://operations.osmfoundation.org/policies/tiles/) is a condition of use
-rather than a suggestion: requests identify this app and its version, tiles already fetched
-are cached so panning back over ground you have seen costs nobody anything, and **areas are
-never downloaded in advance** — the policy names "download a region for offline use" as the
-thing not to do, which is why there is no button for it. What you have looked at is
-therefore available offline for a while, and nothing beyond it.
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already fetched
+are cached so panning back over ground you have seen does not need to download new tiles again.
 
 ---
 

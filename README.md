@@ -104,10 +104,9 @@ on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles from the
 OpenStreetMap Foundation's own servers. Their
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) permits ordinary
-interactive viewing and forbids downloading areas in advance, which is why there is no
-"save this region" button.
+interactive viewing and forbids downloading areas in advance.
 
-Both policies are functional requirements of this app rather than footnotes — see the
+Both policies are functional requirements of this app — see the
 *routing service* section of [CONTRIBUTING.md](CONTRIBUTING.md) before touching anything
 that makes requests.
 
