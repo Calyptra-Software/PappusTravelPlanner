@@ -110,9 +110,9 @@ The overview draws the same trips three ways, chosen from one menu in the app ba
 **list**, a **month calendar** where each trip is a bar in its accent color spanning its
 days, and a **map** of everywhere the visible trips go. Whichever you pick is remembered.
 
-The map inherits the filter rather than having one of its own. Each trip is drawn in its own accent, the same color
-as its card, so a tangle of routes still says which trip is which. Changing the filter
-re-frames the map on what is left.
+The map inherits the filter rather than having one of its own. Each trip is drawn in its
+own accent, the same color as its card, so a tangle of routes still says which trip
+is which. Changing the filter re-frames the map on what is left.
 
 Tap a route or a place and the **trip** it belongs to comes up — its card, exactly as the
 list draws it — and tapping that opens the trip. The unit here is the trip: with many of
@@ -293,7 +293,8 @@ Every trip has a map, reached from the map button on the trip screen. Places app
 pins and transport legs as lines between their ends.
 
 Two things it deliberately does not do. A leg is drawn **only when both of its ends have a
-position and nothing is drawn between one place and the next. On today, the entry that is under way is marked.
+position and nothing is drawn between one place and the next. On today, the entry that is
+under way is marked.
 
 ### Where the positions come from
 
@@ -340,8 +341,9 @@ carries it, which is what keeps that export lossless.
 
 ### Where the background comes from
 
-The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already fetched
-are cached so panning back over ground you have seen does not need to download new tiles again.
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already
+fetched are cached so panning back over ground you have seen does not need to download new
+tiles again.
 
 ---
 
