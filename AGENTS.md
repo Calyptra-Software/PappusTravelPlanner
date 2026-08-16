@@ -668,6 +668,35 @@ UI (features/*/presentation, *widgets)
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
+- **One recording is divided among the entries it covered.** A file is made in one go and
+  the plan is not, so `splitTrack` / `splitTracks` (pure, `track_split.dart`) cut the line
+  where one entry handed over to the next, and `trackImportPlan` reads a selected run:
+  **only legs** get a stretch (a place is a point with no straight line to replace), and a
+  **positioned place between two legs supplies their handover**, which is exactly what one
+  is. Two properties outrank the exact cut, because they are what a later edit would break:
+  **every stretch gets points** — an entry left empty would draw its chord again the moment
+  somebody gave it coordinates, weeks later — and **neighbours share their handover point**,
+  so the pieces still read as one line. Handovers are located **in order**, each searched
+  only in what is left after the one before it; that is what makes a there-and-back route
+  work, where "nearest to this coordinate" is ambiguous and "nearest after the last
+  handover" is not. `snapToTrack` answers a tap under the same rule, so the preview and the
+  result cannot disagree. A `<trkseg>` gap survives the division: an entry spanning a pause
+  keeps two lines rather than one drawn across ground nobody covered.
+- **The import asks rather than guesses, and shows the division while it is being decided.**
+  `TrackImportScreen` draws the recording, colours it per entry, and asks for each handover
+  nobody could supply — one tap, snapped onto the line. That is the app's own rule (*a
+  position is pointed at, never derived*) applied to a cut, and the reason the screen exists
+  at all: `splitTrack` will happily divide the distance evenly, and a guess nobody can see
+  is the kind that turns into a wrong answer months later. Skipping is allowed and then says
+  so, since somebody who only wants the line on the map should get it. The **outer** ends
+  need no asking: the recording's first point is where the first leg started
+  (`trackImportEnds`), which is also what fills in a single hand-entered leg's coordinates.
+  An end the user already gave is never overwritten — their statement, with the file as a
+  witness. Writing coordinates and writing the pieces is **one transaction**
+  (`TrackDao.importTrackAcross`), and a placed end drops its `fromPlaceId`/`toPlaceId` by
+  the rule that governs moving one. One flow, two doors — the trip's ⋮ menu (nothing ticked)
+  and a leg's form (that leg ticked) — because a recording rarely stops at one entry, and
+  the unit an act applies to is the unit it is offered on.
 - **A track hangs off an item and travels with every copy of it.** `copyItemTracks` is
   called from `duplicateItem`, `copyGroup`, `duplicateAlternative`, `materializeRoutine` and
   the reversed routine, plus the bundle import — deliberately **not** from `copyItemPlan`,

@@ -949,6 +949,51 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get trackImportTitle => 'Import a recorded line';
+
+  @override
+  String get trackPickEntries => 'Which entries does it cover?';
+
+  @override
+  String get trackPickEntriesHint =>
+      'Pick a run of entries in one go — the line is divided between them.';
+
+  @override
+  String trackTapBoundary(String before, String after) {
+    return 'Tap where “$before” hands over to “$after”';
+  }
+
+  @override
+  String get trackBoundarySkip => 'Skip';
+
+  @override
+  String get trackBoundaryEstimated => 'Estimated';
+
+  @override
+  String get trackImportConfirm => 'Import';
+
+  @override
+  String trackImportSummary(int legs, int ends) {
+    String _temp0 = intl.Intl.pluralLogic(
+      legs,
+      locale: localeName,
+      other: '$legs entries',
+      one: '1 entry',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      ends,
+      locale: localeName,
+      other: '$ends coordinates set',
+      one: '1 coordinate set',
+      zero: 'no coordinates set',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get trackNoLegsPicked => 'Pick at least one transport leg';
+
+  @override
   String get trackImported => 'Line imported';
 
   @override

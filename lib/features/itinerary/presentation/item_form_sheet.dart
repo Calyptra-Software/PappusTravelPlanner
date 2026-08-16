@@ -609,7 +609,10 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                   // new entry has none yet.
                   if (_isEditing) ...[
                     const SizedBox(height: 12),
-                    TrackField(itemId: widget.existing!.id),
+                    TrackField(
+                      itemId: widget.existing!.id,
+                      tripId: widget.tripId,
+                    ),
                   ],
                 ] else ...[
                   TextFormField(

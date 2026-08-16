@@ -1706,6 +1706,60 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 line} other{{count} lines}}'**
   String trackCount(int count);
 
+  /// Title of the screen that spreads one GPX across the entries it covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a recorded line'**
+  String get trackImportTitle;
+
+  /// Title of the sheet where the covered entries are ticked.
+  ///
+  /// In en, this message translates to:
+  /// **'Which entries does it cover?'**
+  String get trackPickEntries;
+
+  /// Explains that the selection must be contiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a run of entries in one go — the line is divided between them.'**
+  String get trackPickEntriesHint;
+
+  /// Asks the user to point at the handover between two legs.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap where “{before}” hands over to “{after}”'**
+  String trackTapBoundary(String before, String after);
+
+  /// Leaves a handover unplaced; the split then estimates it.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get trackBoundarySkip;
+
+  /// Marks a handover that was not pointed at.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated'**
+  String get trackBoundaryEstimated;
+
+  /// Writes the divided line onto the entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get trackImportConfirm;
+
+  /// Says what the import will do, since it changes entries and not only the map.
+  ///
+  /// In en, this message translates to:
+  /// **'{legs, plural, =1{1 entry} other{{legs} entries}}, {ends, plural, =0{no coordinates set} =1{1 coordinate set} other{{ends} coordinates set}}'**
+  String trackImportSummary(int legs, int ends);
+
+  /// Shown when the selection holds only places, which cannot carry a line.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least one transport leg'**
+  String get trackNoLegsPicked;
+
   /// Confirmation after a GPX import.
   ///
   /// In en, this message translates to:

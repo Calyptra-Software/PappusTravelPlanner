@@ -335,6 +335,14 @@ straight line between the stops. Those are drawn **dashed**, because they are
 what the router computed and not what you recorded. Importing a GPX onto the
 same leg shows only the imported track.
 
+A recording usually covers more than one entry — a walk, a bus, another walk.
+Import it from the trip's ⋮ menu (or from any leg's form), tick the run of
+entries it covers, and the line is divided between them. Where an entry has no
+coordinates, the map asks you to tap the spot where one leg handed over to the
+next, and draws the division while you decide; the recording's own ends fill in
+the first and last positions, so a single leg usually needs no tapping at all.
+Skipping a handover is allowed — the division is then estimated, and says so.
+
 A line is part of the plan, so it **travels with a copy** — duplicate the leg,
 stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
 carries it, which is what keeps that export lossless.
