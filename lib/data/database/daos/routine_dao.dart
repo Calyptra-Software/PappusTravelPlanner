@@ -536,7 +536,7 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             groupMap[sourceGroup] = newGroupId;
           }
         }
-        itemMap[item.id] = await into(itineraryItems).insert(
+        final copy = await into(itineraryItems).insert(
           copyItemPlan(
             item,
             date: shift(item.date),
@@ -547,6 +547,11 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             sortOrder: item.sortOrder,
           ).copyWith(tripId: Value(newTripId)),
         );
+        itemMap[item.id] = copy;
+        // The walk to the station is part of the plan, and a plan the user has
+        // to redraw every morning is missing by Thursday — the same reason the
+        // checklist and the fare travel.
+        await attachedDatabase.trackDao.copyItemTracks(item.id, copy);
       }
 
       await _copyCosts(
@@ -641,7 +646,7 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       final reversed = items.reversed.toList();
       for (var i = 0; i < reversed.length; i++) {
         final item = reversed[i];
-        await into(itineraryItems).insert(
+        final copy = await into(itineraryItems).insert(
           copyItemPlan(
             item,
             // The days mirror along with the order: the last day of the way out
@@ -676,6 +681,14 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             stopovers: const Value(null),
             sourceTripId: const Value(null),
           ),
+        );
+        // The line *does* travel, where the times did not: a path from A to B is
+        // the path from B to A, the same ground either way. Only its point order
+        // turns round with the leg.
+        await attachedDatabase.trackDao.copyItemTracks(
+          item.id,
+          copy,
+          reversed: true,
         );
       }
       return newTripId;

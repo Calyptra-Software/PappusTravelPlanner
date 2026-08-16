@@ -282,6 +282,16 @@ class ItineraryItems extends Table {
   // --- place-only ---
   TextColumn get location => text().nullable()();
 
+  /// Coordinates (WGS84) of this place, when known — what the user pointed at on
+  /// the map, null for a place that was only named.
+  ///
+  /// Deliberately independent of [location]: that is what the user *wrote*, and
+  /// the app never turns a name into a position by itself. A place keeps its name
+  /// when the coordinates are cleared, and keeps the coordinates when it is
+  /// renamed, because the two answer different questions.
+  RealColumn get lat => real().nullable()();
+  RealColumn get lon => real().nullable()();
+
   // --- transport-only ---
   /// The transport mode of this leg — a row in [TransportModes], or null when
   /// unassigned. On mode deletion this is set to null (the leg keeps its route,
@@ -436,6 +446,71 @@ class CollapsedDays extends Table {
 
   @override
   Set<Column> get primaryKey => {tripId, day};
+}
+
+/// Where a track's line came from.
+///
+/// Persisted by integer index like every other stored enum here, so only ever
+/// append new values at the end.
+enum TrackSource {
+  /// Read out of a GPX file the user picked. What most tracks are, and the only
+  /// one the app can make today.
+  imported,
+
+  /// Recorded by this app from the device's own position. Not built yet — it
+  /// needs the first runtime permission in the app — but named here because the
+  /// distinction is about the *line*, and a table that cannot express it would
+  /// have to be migrated to say "this one was actually walked".
+  recorded,
+
+  /// Computed by a router: the road or path between two ends, rather than a
+  /// record of anyone travelling it.
+  routed,
+}
+
+/// The actual line an itinerary entry followed, as opposed to the straight
+/// segment the map otherwise draws between its ends.
+///
+/// A *line with a provenance*, deliberately not "the GPX file": a recorded walk,
+/// an imported route and a path a router computed later are the same row wearing
+/// different [source] values, so nothing has to be migrated when the second and
+/// third arrive. What is stored is the geometry and nothing else — [points] is
+/// the packed encoding from `track_points.dart`, and elevation, timestamps and
+/// the file's own markup are dropped on the way in (see `parseGpx` for why each
+/// of those is a deliberate omission rather than an oversight).
+///
+/// One row per line, so a GPX whose recording stopped and started again arrives
+/// as several rows under one [name]: joining them would draw a line through
+/// ground nobody covered, which is the same rule the map already follows between
+/// two places.
+///
+/// Hangs off an **item**, not a trip: a track is what *this leg* actually
+/// followed, and it travels with the leg through every copy the app makes (see
+/// `copyItemTracks`). Cascades with it, since a line with no leg under it
+/// describes nothing.
+class Tracks extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get itemId =>
+      integer().references(ItineraryItems, #id, onDelete: KeyAction.cascade)();
+
+  /// Where the line came from. Defaults to [TrackSource.imported], which is
+  /// what every row written today is.
+  IntColumn get source =>
+      intEnum<TrackSource>().withDefault(const Constant(0))();
+
+  /// The name the file gave this line, when it had one. Not defaulted to
+  /// anything: an unnamed track reads as the leg it is on, which is more than a
+  /// made-up "Track 1" would say.
+  TextColumn get name => text().nullable()();
+
+  /// The line itself, packed by `encodeTrackPoints`. Never XML: the file was a
+  /// transport, and keeping it would mean re-parsing foreign markup on every
+  /// draw.
+  TextColumn get points => text()();
+
+  /// Manual ordering among the tracks of one item, appended at the end — a leg
+  /// can carry the walk out of the station and the walk into the next one.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
 /// The modes of transport a leg can use, managed in settings and reused in the

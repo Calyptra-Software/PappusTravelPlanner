@@ -7,7 +7,7 @@ publish_to: 'none'
 
 # In Android, build-name is used as versionName while build-number is used as
 # versionCode; both can be overridden with `flutter build --build-name/--build-number`.
-version: 1.5.0+6
+version: 1.6.0+7
 
 environment:
   sdk: ^3.12.0
@@ -49,6 +49,16 @@ dependencies:
   # named) somewhere visible. See core/app_info.dart and core/widgets/attribution.dart.
   package_info_plus: ^10.2.1 # the app's own version, for the API User-Agent
   url_launcher: ^6.3.2 # opening the data-source attribution links
+  # The map. flutter_map is pure Dart, which is why it is the one renderer that
+  # runs on all six targets — the native MapLibre bindings have no Linux, and a
+  # Leaflet-in-a-WebView has none either. See features/map/basemap.dart for the
+  # tile source and the conditions attached to it.
+  flutter_map: ^8.3.1
+  # Reading a GPX track. Already resolved as a transitive dependency (via
+  # `pdf`), but this app parses foreign files with it, which is a direct and
+  # deliberate use rather than a coincidence of the tree — see SECURITY.md.
+  xml: ^7.0.1
+  latlong2: ^0.10.1 # its coordinate type, shared by the pure map_features.dart
 
 dev_dependencies:
   flutter_test:

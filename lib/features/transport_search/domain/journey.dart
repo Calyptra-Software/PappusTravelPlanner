@@ -80,6 +80,7 @@ class JourneyLeg {
     this.tripId,
     this.cancelled = false,
     this.stops = const [],
+    this.shape,
   });
 
   final TransitMode mode;
@@ -107,6 +108,18 @@ class JourneyLeg {
   /// The stops called at between [from] and [to], in order. Empty for a walking
   /// transfer, and for a service the router reported without them.
   final List<LegStop> stops;
+
+  /// The route the leg actually takes — along the rails, around the corner —
+  /// as the router's own encoded polyline, still at *its* precision
+  /// ([kRoutedShapePrecision]) rather than the app's. Kept as the string it
+  /// arrived as: nothing between here and the import needs the points, and
+  /// decoding a shape nobody imports would be work done for every result in
+  /// every search.
+  ///
+  /// Null when the router sent none — an older server, or a leg it has no
+  /// geometry for — in which case the map falls back to the straight line
+  /// between the ends, which is what it drew before this existed.
+  final String? shape;
 }
 
 /// One stop of a vehicle's whole trip, as returned by the per-trip live query.

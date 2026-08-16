@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart' show Trip;
@@ -264,6 +266,9 @@ void main() {
       ProviderScope(
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
+          // The map picker (reachable from the place picker) sends the app's
+          // version in its tile requests' User-Agent.
+          appVersionProvider.overrideWithValue('0.0.0-test'),
           // The real one is a drift stream, which never resolves under
           // fake-async; only the lookup reads it at all.
           tripListProvider.overrideWith((ref) => Stream.value(trips)),
@@ -1205,5 +1210,43 @@ void main() {
       expect(find.byType(ConnectionSearchSheet), findsOneWidget);
       expect(find.textContaining('ICE 1'), findsOneWidget);
     });
+  });
+
+  testWidgets('an endpoint can be pointed at on the map', (tester) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('From'));
+    await tester.pumpAndSettle();
+
+    // The map is offered beside the geocoder's answers: an address it does not
+    // know, a trailhead with no name, or simply "from here".
+    await tester.tap(find.text('Choose on map'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Use this point'));
+    await tester.pumpAndSettle();
+
+    // It comes back named by its own numbers — the app does not ask the
+    // geocoder what is there and put a name on a choice the user did not make.
+    expect(
+      find.textContaining(RegExp(r'-?\d+\.\d+, -?\d+\.\d+')),
+      findsWidgets,
+    );
+  });
+
+  testWidgets('a via stop is not offered the map', (tester) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // Only stop ids are allowed there, so a coordinate could only fail — the
+    // same reason that list is filtered to stations.
+    await tester.tap(find.text('Add via stop'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose on map'), findsNothing);
   });
 }

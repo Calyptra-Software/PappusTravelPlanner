@@ -901,6 +901,108 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsAllTripsTitle => 'Overall statistics';
 
   @override
+  String get mapTitle => 'Map';
+
+  @override
+  String get mapOpen => 'Show on map';
+
+  @override
+  String get mapNothingToShow => 'Nothing to place yet';
+
+  @override
+  String get mapNothingToShowHint =>
+      'Places and legs appear here once they have coordinates — imported connections bring their own.';
+
+  @override
+  String mapTripsHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count trips here',
+      one: '1 trip here',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trackSection => 'Recorded line';
+
+  @override
+  String get trackImport => 'Import GPX…';
+
+  @override
+  String get trackRemove => 'Remove';
+
+  @override
+  String get trackNone =>
+      'None — the map draws the straight line between the ends.';
+
+  @override
+  String trackCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lines',
+      one: '1 line',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trackImported => 'Line imported';
+
+  @override
+  String get trackNothingInFile => 'No line in that file';
+
+  @override
+  String get trackInvalidFile => 'That file is not readable GPX';
+
+  @override
+  String get mapZoomIn => 'Zoom in';
+
+  @override
+  String get mapZoomOut => 'Zoom out';
+
+  @override
+  String get mapPickConfirm => 'Use this point';
+
+  @override
+  String get mapPickTitlePlace => 'Pick the place';
+
+  @override
+  String get mapPickTitleFrom => 'Pick the starting point';
+
+  @override
+  String get mapPickTitleTo => 'Pick the destination';
+
+  @override
+  String get coordinatesLabel => 'Coordinates';
+
+  @override
+  String get coordinatesFrom => 'Coordinates of the starting point';
+
+  @override
+  String get coordinatesTo => 'Coordinates of the destination';
+
+  @override
+  String get coordinatesNone => 'Not set';
+
+  @override
+  String get coordinatesPick => 'Choose on map';
+
+  @override
+  String get coordinatesClear => 'Remove position';
+
+  @override
+  String get mapPickHint => 'Tap the map to place a point';
+
+  @override
+  String get connectionPickOnMap => 'Choose on map';
+
+  @override
+  String get mapView => 'Map';
+
+  @override
   String get statsOpen => 'Statistics';
 
   @override

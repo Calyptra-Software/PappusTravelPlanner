@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
@@ -10,6 +11,8 @@ import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../map/widgets/track_field.dart';
+import '../../map/presentation/map_picker_screen.dart';
 import '../../trips/planned_journey.dart';
 import '../../trips/widgets/routine_day_field.dart';
 import '../../costs/application/cost_providers.dart';
@@ -101,6 +104,16 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// (a default is filled in once they do) or when there are somehow none.
   int? _mode;
 
+  /// Where this entry is, as the form currently holds it: one position for a
+  /// place, two for a leg. Null means "not known", which is the honest state for
+  /// anything the user has not pointed at and the router never told us about.
+  ///
+  /// The app never derives these from the names beside them — which Rahlstedt was
+  /// meant is the user's answer, not a guess this form should make.
+  _Coordinates? _position;
+  _Coordinates? _fromPosition;
+  _Coordinates? _toPosition;
+
   bool get _isTransport => widget.kind == ItemKind.transport;
   bool get _isEditing => widget.existing != null;
 
@@ -135,6 +148,9 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _times[_TimeSlot.actualStart] = existing.actualStartMinutes;
       _times[_TimeSlot.actualEnd] = existing.actualEndMinutes;
       _mode = existing.mode;
+      _position = _Coordinates.of(existing.lat, existing.lon);
+      _fromPosition = _Coordinates.of(existing.fromLat, existing.fromLon);
+      _toPosition = _Coordinates.of(existing.toLat, existing.toLon);
     } else if (_isTransport) {
       _fromController.text = widget.defaultFromLocation ?? '';
     }
@@ -281,18 +297,38 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           mode: Value(_isTransport ? _mode : null),
           fromLocation: Value(_isTransport ? nullIfEmpty(from) : null),
           toLocation: Value(_isTransport ? nullIfEmpty(to) : null),
-          // Everything a leg carries but the form does not edit — the overnight
-          // flag, the endpoint coordinates and ids, the source trip id the
-          // live-times refresh needs, the stops in between — rides along
-          // untouched, and is cleared only on an entry that is no longer a leg.
-          // Direction/platform live in notes, which the form does edit.
-          fromLat: Value(_isTransport ? base.fromLat : null),
-          fromLon: Value(_isTransport ? base.fromLon : null),
-          toLat: Value(_isTransport ? base.toLat : null),
-          toLon: Value(_isTransport ? base.toLon : null),
+          // The positions the form *does* edit now, one per end of a leg and
+          // one for a place.
+          lat: Value(_isTransport ? null : _position?.lat),
+          lon: Value(_isTransport ? null : _position?.lon),
+          fromLat: Value(_isTransport ? _fromPosition?.lat : null),
+          fromLon: Value(_isTransport ? _fromPosition?.lon : null),
+          toLat: Value(_isTransport ? _toPosition?.lat : null),
+          toLon: Value(_isTransport ? _toPosition?.lon : null),
+          // Everything else a leg carries but the form does not edit — the
+          // overnight flag, the source trip id the live-times refresh needs, the
+          // stops in between — rides along untouched, and is cleared only on an
+          // entry that is no longer a leg. Direction/platform live in notes,
+          // which the form does edit.
+          //
+          // The endpoint **ids** are the exception: they say how the router
+          // addresses that end, so an end the user has just moved somewhere else
+          // no longer has one. Keeping it would be worse than dropping it — the
+          // id wins over the coordinates in `PlannedJourney`, so a re-search
+          // would quietly set off from the old station. Dropped only when the
+          // position actually changed; saving a leg without touching its map
+          // keeps everything it arrived with.
           sourceTripId: Value(_isTransport ? base.sourceTripId : null),
-          fromPlaceId: Value(_isTransport ? base.fromPlaceId : null),
-          toPlaceId: Value(_isTransport ? base.toPlaceId : null),
+          fromPlaceId: Value(
+            _isTransport && !_moved(base.fromLat, base.fromLon, _fromPosition)
+                ? base.fromPlaceId
+                : null,
+          ),
+          toPlaceId: Value(
+            _isTransport && !_moved(base.toLat, base.toLon, _toPosition)
+                ? base.toPlaceId
+                : null,
+          ),
           stopovers: Value(_isTransport ? base.stopovers : null),
         ),
       );
@@ -320,11 +356,108 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           mode: Value(_isTransport ? _mode : null),
           fromLocation: Value(_isTransport ? nullIfEmpty(from) : null),
           toLocation: Value(_isTransport ? nullIfEmpty(to) : null),
+          lat: Value(_isTransport ? null : _position?.lat),
+          lon: Value(_isTransport ? null : _position?.lon),
+          fromLat: Value(_isTransport ? _fromPosition?.lat : null),
+          fromLon: Value(_isTransport ? _fromPosition?.lon : null),
+          toLat: Value(_isTransport ? _toPosition?.lat : null),
+          toLon: Value(_isTransport ? _toPosition?.lon : null),
         ),
       );
     }
     if (mounted) Navigator.of(context).pop();
   }
+
+  /// Opens the map on [current] (or, failing that, near whatever else this trip
+  /// already knows the position of) and stores what comes back.
+  Future<void> _pickPosition({
+    required String title,
+    required _Coordinates? current,
+    required void Function(_Coordinates?) onPicked,
+  }) async {
+    final picked = await pickPointOnMap(
+      context,
+      title: title,
+      initial: current?.toLatLng(),
+      nearby: _tripPoints(),
+    );
+    if (picked != null) {
+      setState(() => onPicked(_Coordinates(picked.latitude, picked.longitude)));
+    }
+  }
+
+  /// The positions this trip already holds, so the picker opens in the right
+  /// part of the world rather than on the null island.
+  List<LatLng> _tripPoints() {
+    final items = ref.read(itineraryProvider(widget.tripId)).value ?? const [];
+    return [
+      for (final item in items)
+        if (item.id != widget.existing?.id) ...[
+          if (item.lat != null && item.lon != null)
+            LatLng(item.lat!, item.lon!),
+          if (item.fromLat != null && item.fromLon != null)
+            LatLng(item.fromLat!, item.fromLon!),
+          if (item.toLat != null && item.toLon != null)
+            LatLng(item.toLat!, item.toLon!),
+        ],
+    ];
+  }
+
+  /// One position, as a row: what it is, a button to set it on the map, and —
+  /// once there is one — a button to take it away again.
+  Widget _positionField(
+    AppLocalizations l10n, {
+    required String label,
+    required String pickerTitle,
+    required _Coordinates? value,
+    required void Function(_Coordinates?) onChanged,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        const Icon(Icons.my_location, size: 18),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: theme.textTheme.bodySmall),
+              Text(
+                value == null
+                    ? l10n.coordinatesNone
+                    : formatCoordinates(value.toLatLng()),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: value == null
+                      ? theme.colorScheme.onSurfaceVariant
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          tooltip: l10n.coordinatesPick,
+          icon: const Icon(Icons.map_outlined),
+          onPressed: () => _pickPosition(
+            title: pickerTitle,
+            current: value,
+            onPicked: onChanged,
+          ),
+        ),
+        if (value != null)
+          IconButton(
+            tooltip: l10n.coordinatesClear,
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() => onChanged(null)),
+          ),
+      ],
+    );
+  }
+
+  /// Whether the position of an end has been changed in this form — the test
+  /// that decides whether that end's router id still describes it.
+  static bool _moved(double? lat, double? lon, _Coordinates? now) =>
+      lat != now?.lat || lon != now?.lon;
 
   Future<void> _delete() async {
     await ref.read(repositoryProvider).deleteItem(widget.existing!.id);
@@ -455,6 +588,29 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 8),
+                  _positionField(
+                    l10n,
+                    label: l10n.coordinatesFrom,
+                    pickerTitle: l10n.mapPickTitleFrom,
+                    value: _fromPosition,
+                    onChanged: (v) => _fromPosition = v,
+                  ),
+                  _positionField(
+                    l10n,
+                    label: l10n.coordinatesTo,
+                    pickerTitle: l10n.mapPickTitleTo,
+                    value: _toPosition,
+                    onChanged: (v) => _toPosition = v,
+                  ),
+                  // The line the leg actually followed, beside the two ends
+                  // that only ever approximated it. On an existing leg only:
+                  // a track hangs off a row, and a form being filled in for a
+                  // new entry has none yet.
+                  if (_isEditing) ...[
+                    const SizedBox(height: 12),
+                    TrackField(itemId: widget.existing!.id),
+                  ],
                 ] else ...[
                   TextFormField(
                     controller: _locationController,
@@ -468,6 +624,14 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                         (value == null || value.trim().isEmpty)
                         ? l10n.placeValidator
                         : null,
+                  ),
+                  const SizedBox(height: 8),
+                  _positionField(
+                    l10n,
+                    label: l10n.coordinatesLabel,
+                    pickerTitle: l10n.mapPickTitlePlace,
+                    value: _position,
+                    onChanged: (v) => _position = v,
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -933,4 +1097,21 @@ class _TimeField extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A position as the form holds it: both halves or neither.
+///
+/// A latitude without a longitude is not half a place, it is no place — keeping
+/// the pair in one value is what stops the two drifting apart across a form that
+/// can also clear them.
+class _Coordinates {
+  const _Coordinates(this.lat, this.lon);
+
+  static _Coordinates? of(double? lat, double? lon) =>
+      lat == null || lon == null ? null : _Coordinates(lat, lon);
+
+  final double lat;
+  final double lon;
+
+  LatLng toLatLng() => LatLng(lat, lon);
 }

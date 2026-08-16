@@ -160,7 +160,25 @@ JourneyLeg _leg(Map<String, dynamic> j) {
     tripId: j['tripId'] as String?,
     cancelled: j['cancelled'] as bool? ?? false,
     stops: _legStops(j['intermediateStops'], realTime),
+    shape: _legShape(j['legGeometry']),
   );
+}
+
+/// The leg's route shape, or null when there is none to read.
+///
+/// The response reports the precision it encoded at, and this refuses anything
+/// other than the one the app converts from: a shape read at the wrong
+/// precision is not slightly wrong, it is ten times too far away — and a line
+/// somewhere off the coast is worse than no line, because it looks like data.
+/// An empty string is the shape a search made without `detailedLegs` carries,
+/// and means the same as absent.
+String? _legShape(Object? geometry) {
+  if (geometry is! Map<String, dynamic>) return null;
+  final points = geometry['points'];
+  if (points is! String || points.isEmpty) return null;
+  final precision = geometry['precision'];
+  if (precision is num && precision.toInt() != 6) return null;
+  return points;
 }
 
 /// The stops between a leg's two ends. The plan response carries them on the

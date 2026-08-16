@@ -2175,6 +2175,24 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lonMeta = const VerificationMeta('lon');
+  @override
+  late final GeneratedColumn<double> lon = GeneratedColumn<double>(
+    'lon',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _modeMeta = const VerificationMeta('mode');
   @override
   late final GeneratedColumn<int> mode = GeneratedColumn<int>(
@@ -2310,6 +2328,8 @@ class $ItineraryItemsTable extends ItineraryItems
     spansNextDay,
     notes,
     location,
+    lat,
+    lon,
     mode,
     fromLocation,
     toLocation,
@@ -2432,6 +2452,18 @@ class $ItineraryItemsTable extends ItineraryItems
       context.handle(
         _locationMeta,
         location.isAcceptableOrUnknown(data['location']!, _locationMeta),
+      );
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    }
+    if (data.containsKey('lon')) {
+      context.handle(
+        _lonMeta,
+        lon.isAcceptableOrUnknown(data['lon']!, _lonMeta),
       );
     }
     if (data.containsKey('mode')) {
@@ -2580,6 +2612,14 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.string,
         data['${effectivePrefix}location'],
       ),
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      ),
+      lon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lon'],
+      ),
       mode: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}mode'],
@@ -2687,6 +2727,16 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final String? notes;
   final String? location;
 
+  /// Coordinates (WGS84) of this place, when known — what the user pointed at on
+  /// the map, null for a place that was only named.
+  ///
+  /// Deliberately independent of [location]: that is what the user *wrote*, and
+  /// the app never turns a name into a position by itself. A place keeps its name
+  /// when the coordinates are cleared, and keeps the coordinates when it is
+  /// renamed, because the two answer different questions.
+  final double? lat;
+  final double? lon;
+
   /// The transport mode of this leg — a row in [TransportModes], or null when
   /// unassigned. On mode deletion this is set to null (the leg keeps its route,
   /// it just loses its mode), like an item losing its group.
@@ -2747,6 +2797,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     required this.spansNextDay,
     this.notes,
     this.location,
+    this.lat,
+    this.lon,
     this.mode,
     this.fromLocation,
     this.toLocation,
@@ -2798,6 +2850,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     }
     if (!nullToAbsent || location != null) {
       map['location'] = Variable<String>(location);
+    }
+    if (!nullToAbsent || lat != null) {
+      map['lat'] = Variable<double>(lat);
+    }
+    if (!nullToAbsent || lon != null) {
+      map['lon'] = Variable<double>(lon);
     }
     if (!nullToAbsent || mode != null) {
       map['mode'] = Variable<int>(mode);
@@ -2870,6 +2928,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       location: location == null && nullToAbsent
           ? const Value.absent()
           : Value(location),
+      lat: lat == null && nullToAbsent ? const Value.absent() : Value(lat),
+      lon: lon == null && nullToAbsent ? const Value.absent() : Value(lon),
       mode: mode == null && nullToAbsent ? const Value.absent() : Value(mode),
       fromLocation: fromLocation == null && nullToAbsent
           ? const Value.absent()
@@ -2927,6 +2987,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       spansNextDay: serializer.fromJson<bool>(json['spansNextDay']),
       notes: serializer.fromJson<String?>(json['notes']),
       location: serializer.fromJson<String?>(json['location']),
+      lat: serializer.fromJson<double?>(json['lat']),
+      lon: serializer.fromJson<double?>(json['lon']),
       mode: serializer.fromJson<int?>(json['mode']),
       fromLocation: serializer.fromJson<String?>(json['fromLocation']),
       toLocation: serializer.fromJson<String?>(json['toLocation']),
@@ -2961,6 +3023,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'spansNextDay': serializer.toJson<bool>(spansNextDay),
       'notes': serializer.toJson<String?>(notes),
       'location': serializer.toJson<String?>(location),
+      'lat': serializer.toJson<double?>(lat),
+      'lon': serializer.toJson<double?>(lon),
       'mode': serializer.toJson<int?>(mode),
       'fromLocation': serializer.toJson<String?>(fromLocation),
       'toLocation': serializer.toJson<String?>(toLocation),
@@ -2991,6 +3055,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     bool? spansNextDay,
     Value<String?> notes = const Value.absent(),
     Value<String?> location = const Value.absent(),
+    Value<double?> lat = const Value.absent(),
+    Value<double?> lon = const Value.absent(),
     Value<int?> mode = const Value.absent(),
     Value<String?> fromLocation = const Value.absent(),
     Value<String?> toLocation = const Value.absent(),
@@ -3024,6 +3090,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     spansNextDay: spansNextDay ?? this.spansNextDay,
     notes: notes.present ? notes.value : this.notes,
     location: location.present ? location.value : this.location,
+    lat: lat.present ? lat.value : this.lat,
+    lon: lon.present ? lon.value : this.lon,
     mode: mode.present ? mode.value : this.mode,
     fromLocation: fromLocation.present ? fromLocation.value : this.fromLocation,
     toLocation: toLocation.present ? toLocation.value : this.toLocation,
@@ -3065,6 +3133,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           : this.spansNextDay,
       notes: data.notes.present ? data.notes.value : this.notes,
       location: data.location.present ? data.location.value : this.location,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lon: data.lon.present ? data.lon.value : this.lon,
       mode: data.mode.present ? data.mode.value : this.mode,
       fromLocation: data.fromLocation.present
           ? data.fromLocation.value
@@ -3105,6 +3175,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
           ..write('mode: $mode, ')
           ..write('fromLocation: $fromLocation, ')
           ..write('toLocation: $toLocation, ')
@@ -3137,6 +3209,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     spansNextDay,
     notes,
     location,
+    lat,
+    lon,
     mode,
     fromLocation,
     toLocation,
@@ -3168,6 +3242,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.spansNextDay == this.spansNextDay &&
           other.notes == this.notes &&
           other.location == this.location &&
+          other.lat == this.lat &&
+          other.lon == this.lon &&
           other.mode == this.mode &&
           other.fromLocation == this.fromLocation &&
           other.toLocation == this.toLocation &&
@@ -3197,6 +3273,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<bool> spansNextDay;
   final Value<String?> notes;
   final Value<String?> location;
+  final Value<double?> lat;
+  final Value<double?> lon;
   final Value<int?> mode;
   final Value<String?> fromLocation;
   final Value<String?> toLocation;
@@ -3224,6 +3302,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
     this.mode = const Value.absent(),
     this.fromLocation = const Value.absent(),
     this.toLocation = const Value.absent(),
@@ -3252,6 +3332,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.location = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
     this.mode = const Value.absent(),
     this.fromLocation = const Value.absent(),
     this.toLocation = const Value.absent(),
@@ -3282,6 +3364,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<bool>? spansNextDay,
     Expression<String>? notes,
     Expression<String>? location,
+    Expression<double>? lat,
+    Expression<double>? lon,
     Expression<int>? mode,
     Expression<String>? fromLocation,
     Expression<String>? toLocation,
@@ -3311,6 +3395,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (spansNextDay != null) 'spans_next_day': spansNextDay,
       if (notes != null) 'notes': notes,
       if (location != null) 'location': location,
+      if (lat != null) 'lat': lat,
+      if (lon != null) 'lon': lon,
       if (mode != null) 'mode': mode,
       if (fromLocation != null) 'from_location': fromLocation,
       if (toLocation != null) 'to_location': toLocation,
@@ -3341,6 +3427,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<bool>? spansNextDay,
     Value<String?>? notes,
     Value<String?>? location,
+    Value<double?>? lat,
+    Value<double?>? lon,
     Value<int?>? mode,
     Value<String?>? fromLocation,
     Value<String?>? toLocation,
@@ -3369,6 +3457,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       spansNextDay: spansNextDay ?? this.spansNextDay,
       notes: notes ?? this.notes,
       location: location ?? this.location,
+      lat: lat ?? this.lat,
+      lon: lon ?? this.lon,
       mode: mode ?? this.mode,
       fromLocation: fromLocation ?? this.fromLocation,
       toLocation: toLocation ?? this.toLocation,
@@ -3433,6 +3523,12 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (location.present) {
       map['location'] = Variable<String>(location.value);
     }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lon.present) {
+      map['lon'] = Variable<double>(lon.value);
+    }
     if (mode.present) {
       map['mode'] = Variable<int>(mode.value);
     }
@@ -3487,6 +3583,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('location: $location, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
           ..write('mode: $mode, ')
           ..write('fromLocation: $fromLocation, ')
           ..write('toLocation: $toLocation, ')
@@ -7062,6 +7160,417 @@ class CollapsedDaysCompanion extends UpdateCompanion<CollapsedDay> {
   }
 }
 
+class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TracksTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
+  @override
+  late final GeneratedColumn<int> itemId = GeneratedColumn<int>(
+    'item_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES itinerary_items (id) ON DELETE CASCADE',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<TrackSource, int> source =
+      GeneratedColumn<int>(
+        'source',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<TrackSource>($TracksTable.$convertersource);
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _pointsMeta = const VerificationMeta('points');
+  @override
+  late final GeneratedColumn<String> points = GeneratedColumn<String>(
+    'points',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sortOrderMeta = const VerificationMeta(
+    'sortOrder',
+  );
+  @override
+  late final GeneratedColumn<int> sortOrder = GeneratedColumn<int>(
+    'sort_order',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    itemId,
+    source,
+    name,
+    points,
+    sortOrder,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tracks';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Track> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('item_id')) {
+      context.handle(
+        _itemIdMeta,
+        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_itemIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    }
+    if (data.containsKey('points')) {
+      context.handle(
+        _pointsMeta,
+        points.isAcceptableOrUnknown(data['points']!, _pointsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pointsMeta);
+    }
+    if (data.containsKey('sort_order')) {
+      context.handle(
+        _sortOrderMeta,
+        sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Track map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Track(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      itemId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}item_id'],
+      )!,
+      source: $TracksTable.$convertersource.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}source'],
+        )!,
+      ),
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      ),
+      points: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}points'],
+      )!,
+      sortOrder: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_order'],
+      )!,
+    );
+  }
+
+  @override
+  $TracksTable createAlias(String alias) {
+    return $TracksTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<TrackSource, int, int> $convertersource =
+      const EnumIndexConverter<TrackSource>(TrackSource.values);
+}
+
+class Track extends DataClass implements Insertable<Track> {
+  final int id;
+  final int itemId;
+
+  /// Where the line came from. Defaults to [TrackSource.imported], which is
+  /// what every row written today is.
+  final TrackSource source;
+
+  /// The name the file gave this line, when it had one. Not defaulted to
+  /// anything: an unnamed track reads as the leg it is on, which is more than a
+  /// made-up "Track 1" would say.
+  final String? name;
+
+  /// The line itself, packed by `encodeTrackPoints`. Never XML: the file was a
+  /// transport, and keeping it would mean re-parsing foreign markup on every
+  /// draw.
+  final String points;
+
+  /// Manual ordering among the tracks of one item, appended at the end — a leg
+  /// can carry the walk out of the station and the walk into the next one.
+  final int sortOrder;
+  const Track({
+    required this.id,
+    required this.itemId,
+    required this.source,
+    this.name,
+    required this.points,
+    required this.sortOrder,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['item_id'] = Variable<int>(itemId);
+    {
+      map['source'] = Variable<int>(
+        $TracksTable.$convertersource.toSql(source),
+      );
+    }
+    if (!nullToAbsent || name != null) {
+      map['name'] = Variable<String>(name);
+    }
+    map['points'] = Variable<String>(points);
+    map['sort_order'] = Variable<int>(sortOrder);
+    return map;
+  }
+
+  TracksCompanion toCompanion(bool nullToAbsent) {
+    return TracksCompanion(
+      id: Value(id),
+      itemId: Value(itemId),
+      source: Value(source),
+      name: name == null && nullToAbsent ? const Value.absent() : Value(name),
+      points: Value(points),
+      sortOrder: Value(sortOrder),
+    );
+  }
+
+  factory Track.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Track(
+      id: serializer.fromJson<int>(json['id']),
+      itemId: serializer.fromJson<int>(json['itemId']),
+      source: $TracksTable.$convertersource.fromJson(
+        serializer.fromJson<int>(json['source']),
+      ),
+      name: serializer.fromJson<String?>(json['name']),
+      points: serializer.fromJson<String>(json['points']),
+      sortOrder: serializer.fromJson<int>(json['sortOrder']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'itemId': serializer.toJson<int>(itemId),
+      'source': serializer.toJson<int>(
+        $TracksTable.$convertersource.toJson(source),
+      ),
+      'name': serializer.toJson<String?>(name),
+      'points': serializer.toJson<String>(points),
+      'sortOrder': serializer.toJson<int>(sortOrder),
+    };
+  }
+
+  Track copyWith({
+    int? id,
+    int? itemId,
+    TrackSource? source,
+    Value<String?> name = const Value.absent(),
+    String? points,
+    int? sortOrder,
+  }) => Track(
+    id: id ?? this.id,
+    itemId: itemId ?? this.itemId,
+    source: source ?? this.source,
+    name: name.present ? name.value : this.name,
+    points: points ?? this.points,
+    sortOrder: sortOrder ?? this.sortOrder,
+  );
+  Track copyWithCompanion(TracksCompanion data) {
+    return Track(
+      id: data.id.present ? data.id.value : this.id,
+      itemId: data.itemId.present ? data.itemId.value : this.itemId,
+      source: data.source.present ? data.source.value : this.source,
+      name: data.name.present ? data.name.value : this.name,
+      points: data.points.present ? data.points.value : this.points,
+      sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Track(')
+          ..write('id: $id, ')
+          ..write('itemId: $itemId, ')
+          ..write('source: $source, ')
+          ..write('name: $name, ')
+          ..write('points: $points, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, itemId, source, name, points, sortOrder);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Track &&
+          other.id == this.id &&
+          other.itemId == this.itemId &&
+          other.source == this.source &&
+          other.name == this.name &&
+          other.points == this.points &&
+          other.sortOrder == this.sortOrder);
+}
+
+class TracksCompanion extends UpdateCompanion<Track> {
+  final Value<int> id;
+  final Value<int> itemId;
+  final Value<TrackSource> source;
+  final Value<String?> name;
+  final Value<String> points;
+  final Value<int> sortOrder;
+  const TracksCompanion({
+    this.id = const Value.absent(),
+    this.itemId = const Value.absent(),
+    this.source = const Value.absent(),
+    this.name = const Value.absent(),
+    this.points = const Value.absent(),
+    this.sortOrder = const Value.absent(),
+  });
+  TracksCompanion.insert({
+    this.id = const Value.absent(),
+    required int itemId,
+    this.source = const Value.absent(),
+    this.name = const Value.absent(),
+    required String points,
+    this.sortOrder = const Value.absent(),
+  }) : itemId = Value(itemId),
+       points = Value(points);
+  static Insertable<Track> custom({
+    Expression<int>? id,
+    Expression<int>? itemId,
+    Expression<int>? source,
+    Expression<String>? name,
+    Expression<String>? points,
+    Expression<int>? sortOrder,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (itemId != null) 'item_id': itemId,
+      if (source != null) 'source': source,
+      if (name != null) 'name': name,
+      if (points != null) 'points': points,
+      if (sortOrder != null) 'sort_order': sortOrder,
+    });
+  }
+
+  TracksCompanion copyWith({
+    Value<int>? id,
+    Value<int>? itemId,
+    Value<TrackSource>? source,
+    Value<String?>? name,
+    Value<String>? points,
+    Value<int>? sortOrder,
+  }) {
+    return TracksCompanion(
+      id: id ?? this.id,
+      itemId: itemId ?? this.itemId,
+      source: source ?? this.source,
+      name: name ?? this.name,
+      points: points ?? this.points,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (itemId.present) {
+      map['item_id'] = Variable<int>(itemId.value);
+    }
+    if (source.present) {
+      map['source'] = Variable<int>(
+        $TracksTable.$convertersource.toSql(source.value),
+      );
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (points.present) {
+      map['points'] = Variable<String>(points.value);
+    }
+    if (sortOrder.present) {
+      map['sort_order'] = Variable<int>(sortOrder.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TracksCompanion(')
+          ..write('id: $id, ')
+          ..write('itemId: $itemId, ')
+          ..write('source: $source, ')
+          ..write('name: $name, ')
+          ..write('points: $points, ')
+          ..write('sortOrder: $sortOrder')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7087,6 +7596,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ChecklistsTable checklists = $ChecklistsTable(this);
   late final $ChecklistItemsTable checklistItems = $ChecklistItemsTable(this);
   late final $CollapsedDaysTable collapsedDays = $CollapsedDaysTable(this);
+  late final $TracksTable tracks = $TracksTable(this);
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ItineraryDao itineraryDao = ItineraryDao(this as AppDatabase);
   late final CostDao costDao = CostDao(this as AppDatabase);
@@ -7097,6 +7607,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final RoutineDao routineDao = RoutineDao(this as AppDatabase);
   late final TagDao tagDao = TagDao(this as AppDatabase);
+  late final TrackDao trackDao = TrackDao(this as AppDatabase);
   late final SharingDao sharingDao = SharingDao(this as AppDatabase);
   late final TransportModeDao transportModeDao = TransportModeDao(
     this as AppDatabase,
@@ -7124,6 +7635,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     checklists,
     checklistItems,
     collapsedDays,
+    tracks,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -7266,6 +7778,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('collapsed_days', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'itinerary_items',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tracks', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -10041,6 +10560,8 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<bool> spansNextDay,
       Value<String?> notes,
       Value<String?> location,
+      Value<double?> lat,
+      Value<double?> lon,
       Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
@@ -10070,6 +10591,8 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<bool> spansNextDay,
       Value<String?> notes,
       Value<String?> location,
+      Value<double?> lat,
+      Value<double?> lon,
       Value<int?> mode,
       Value<String?> fromLocation,
       Value<String?> toLocation,
@@ -10178,6 +10701,25 @@ final class $$ItineraryItemsTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
+
+  static MultiTypedResultKey<$TracksTable, List<Track>> _tracksRefsTable(
+    _$AppDatabase db,
+  ) => MultiTypedResultKey.fromTable(
+    db.tracks,
+    aliasName: 'itinerary_items__id__tracks__item_id',
+  );
+
+  $$TracksTableProcessedTableManager get tracksRefs {
+    final manager = $$TracksTableTableManager(
+      $_db,
+      $_db.tracks,
+    ).filter((f) => f.itemId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_tracksRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ItineraryItemsTableFilterComposer
@@ -10247,6 +10789,16 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<String> get location => $composableBuilder(
     column: $table.location,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lon => $composableBuilder(
+    column: $table.lon,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10416,6 +10968,31 @@ class $$ItineraryItemsTableFilterComposer
     );
     return f(composer);
   }
+
+  Expression<bool> tracksRefs(
+    Expression<bool> Function($$TracksTableFilterComposer f) f,
+  ) {
+    final $$TracksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tracks,
+      getReferencedColumn: (t) => t.itemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TracksTableFilterComposer(
+            $db: $db,
+            $table: $db.tracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ItineraryItemsTableOrderingComposer
@@ -10484,6 +11061,16 @@ class $$ItineraryItemsTableOrderingComposer
 
   ColumnOrderings<String> get location => $composableBuilder(
     column: $table.location,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lon => $composableBuilder(
+    column: $table.lon,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -10685,6 +11272,12 @@ class $$ItineraryItemsTableAnnotationComposer
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
 
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lon =>
+      $composableBuilder(column: $table.lon, builder: (column) => column);
+
   GeneratedColumn<String> get fromLocation => $composableBuilder(
     column: $table.fromLocation,
     builder: (column) => column,
@@ -10839,6 +11432,31 @@ class $$ItineraryItemsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> tracksRefs<T extends Object>(
+    Expression<T> Function($$TracksTableAnnotationComposer a) f,
+  ) {
+    final $$TracksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tracks,
+      getReferencedColumn: (t) => t.itemId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TracksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tracks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ItineraryItemsTableTableManager
@@ -10860,6 +11478,7 @@ class $$ItineraryItemsTableTableManager
             bool alternativeId,
             bool mode,
             bool costsRefs,
+            bool tracksRefs,
           })
         > {
   $$ItineraryItemsTableTableManager(
@@ -10892,6 +11511,8 @@ class $$ItineraryItemsTableTableManager
                 Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lon = const Value.absent(),
                 Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
@@ -10919,6 +11540,8 @@ class $$ItineraryItemsTableTableManager
                 spansNextDay: spansNextDay,
                 notes: notes,
                 location: location,
+                lat: lat,
+                lon: lon,
                 mode: mode,
                 fromLocation: fromLocation,
                 toLocation: toLocation,
@@ -10948,6 +11571,8 @@ class $$ItineraryItemsTableTableManager
                 Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<String?> location = const Value.absent(),
+                Value<double?> lat = const Value.absent(),
+                Value<double?> lon = const Value.absent(),
                 Value<int?> mode = const Value.absent(),
                 Value<String?> fromLocation = const Value.absent(),
                 Value<String?> toLocation = const Value.absent(),
@@ -10975,6 +11600,8 @@ class $$ItineraryItemsTableTableManager
                 spansNextDay: spansNextDay,
                 notes: notes,
                 location: location,
+                lat: lat,
+                lon: lon,
                 mode: mode,
                 fromLocation: fromLocation,
                 toLocation: toLocation,
@@ -11002,10 +11629,14 @@ class $$ItineraryItemsTableTableManager
                 alternativeId = false,
                 mode = false,
                 costsRefs = false,
+                tracksRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
-                  explicitlyWatchedTables: [if (costsRefs) db.costs],
+                  explicitlyWatchedTables: [
+                    if (costsRefs) db.costs,
+                    if (tracksRefs) db.tracks,
+                  ],
                   addJoins:
                       <
                         T extends TableManagerState<
@@ -11108,6 +11739,27 @@ class $$ItineraryItemsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (tracksRefs)
+                        await $_getPrefetchedData<
+                          ItineraryItem,
+                          $ItineraryItemsTable,
+                          Track
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ItineraryItemsTableReferences
+                              ._tracksRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ItineraryItemsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tracksRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.itemId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -11134,6 +11786,7 @@ typedef $$ItineraryItemsTableProcessedTableManager =
         bool alternativeId,
         bool mode,
         bool costsRefs,
+        bool tracksRefs,
       })
     >;
 typedef $$CurrenciesTableCreateCompanionBuilder =
@@ -15111,6 +15764,335 @@ typedef $$CollapsedDaysTableProcessedTableManager =
       CollapsedDay,
       PrefetchHooks Function({bool tripId})
     >;
+typedef $$TracksTableCreateCompanionBuilder =
+    TracksCompanion Function({
+      Value<int> id,
+      required int itemId,
+      Value<TrackSource> source,
+      Value<String?> name,
+      required String points,
+      Value<int> sortOrder,
+    });
+typedef $$TracksTableUpdateCompanionBuilder =
+    TracksCompanion Function({
+      Value<int> id,
+      Value<int> itemId,
+      Value<TrackSource> source,
+      Value<String?> name,
+      Value<String> points,
+      Value<int> sortOrder,
+    });
+
+final class $$TracksTableReferences
+    extends BaseReferences<_$AppDatabase, $TracksTable, Track> {
+  $$TracksTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $ItineraryItemsTable _itemIdTable(_$AppDatabase db) =>
+      db.itineraryItems.createAlias('tracks__item_id__itinerary_items__id');
+
+  $$ItineraryItemsTableProcessedTableManager get itemId {
+    final $_column = $_itemColumn<int>('item_id')!;
+
+    final manager = $$ItineraryItemsTableTableManager(
+      $_db,
+      $_db.itineraryItems,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_itemIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TracksTableFilterComposer
+    extends Composer<_$AppDatabase, $TracksTable> {
+  $$TracksTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<TrackSource, TrackSource, int> get source =>
+      $composableBuilder(
+        column: $table.source,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get points => $composableBuilder(
+    column: $table.points,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ItineraryItemsTableFilterComposer get itemId {
+    final $$ItineraryItemsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.itemId,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableFilterComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TracksTableOrderingComposer
+    extends Composer<_$AppDatabase, $TracksTable> {
+  $$TracksTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get source => $composableBuilder(
+    column: $table.source,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get points => $composableBuilder(
+    column: $table.points,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortOrder => $composableBuilder(
+    column: $table.sortOrder,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ItineraryItemsTableOrderingComposer get itemId {
+    final $$ItineraryItemsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.itemId,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableOrderingComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TracksTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TracksTable> {
+  $$TracksTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TrackSource, int> get source =>
+      $composableBuilder(column: $table.source, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get points =>
+      $composableBuilder(column: $table.points, builder: (column) => column);
+
+  GeneratedColumn<int> get sortOrder =>
+      $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  $$ItineraryItemsTableAnnotationComposer get itemId {
+    final $$ItineraryItemsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.itemId,
+      referencedTable: $db.itineraryItems,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ItineraryItemsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.itineraryItems,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TracksTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TracksTable,
+          Track,
+          $$TracksTableFilterComposer,
+          $$TracksTableOrderingComposer,
+          $$TracksTableAnnotationComposer,
+          $$TracksTableCreateCompanionBuilder,
+          $$TracksTableUpdateCompanionBuilder,
+          (Track, $$TracksTableReferences),
+          Track,
+          PrefetchHooks Function({bool itemId})
+        > {
+  $$TracksTableTableManager(_$AppDatabase db, $TracksTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TracksTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TracksTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TracksTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> itemId = const Value.absent(),
+                Value<TrackSource> source = const Value.absent(),
+                Value<String?> name = const Value.absent(),
+                Value<String> points = const Value.absent(),
+                Value<int> sortOrder = const Value.absent(),
+              }) => TracksCompanion(
+                id: id,
+                itemId: itemId,
+                source: source,
+                name: name,
+                points: points,
+                sortOrder: sortOrder,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int itemId,
+                Value<TrackSource> source = const Value.absent(),
+                Value<String?> name = const Value.absent(),
+                required String points,
+                Value<int> sortOrder = const Value.absent(),
+              }) => TracksCompanion.insert(
+                id: id,
+                itemId: itemId,
+                source: source,
+                name: name,
+                points: points,
+                sortOrder: sortOrder,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) =>
+                    (e.readTable(table), $$TracksTableReferences(db, table, e)),
+              )
+              .toList(),
+          prefetchHooksCallback: ({itemId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (itemId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.itemId,
+                                referencedTable: $$TracksTableReferences
+                                    ._itemIdTable(db),
+                                referencedColumn: $$TracksTableReferences
+                                    ._itemIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TracksTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TracksTable,
+      Track,
+      $$TracksTableFilterComposer,
+      $$TracksTableOrderingComposer,
+      $$TracksTableAnnotationComposer,
+      $$TracksTableCreateCompanionBuilder,
+      $$TracksTableUpdateCompanionBuilder,
+      (Track, $$TracksTableReferences),
+      Track,
+      PrefetchHooks Function({bool itemId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -15148,4 +16130,6 @@ class $AppDatabaseManager {
       $$ChecklistItemsTableTableManager(_db, _db.checklistItems);
   $$CollapsedDaysTableTableManager get collapsedDays =>
       $$CollapsedDaysTableTableManager(_db, _db.collapsedDays);
+  $$TracksTableTableManager get tracks =>
+      $$TracksTableTableManager(_db, _db.tracks);
 }

@@ -5,6 +5,7 @@ import '../../../core/widgets/attribution.dart';
 import '../../../data/database/app_database.dart' show Trip;
 import '../../../data/database/tables.dart' show TripKind;
 import '../../../l10n/app_localizations.dart';
+import '../../map/presentation/map_picker_screen.dart';
 import '../../trips/application/trip_providers.dart';
 import '../../trips/widgets/trip_picker.dart';
 import '../application/journey_search_options_provider.dart';
@@ -945,6 +946,28 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
     super.dispose();
   }
 
+  /// Picks a bare coordinate from the map and answers the sheet with it.
+  ///
+  /// The result is a [TransportPlace] of kind [PlaceKind.place], which is what
+  /// makes `queryId` send `lat,lon` rather than an id — there is no id to send,
+  /// and a coordinate is what the router wants for a door anyway. It is named by
+  /// its own numbers: the app does not ask the geocoder what is there, because
+  /// that would be putting a name on the user's choice that they did not make.
+  Future<void> _pickOnMap(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final point = await pickPointOnMap(context, title: l10n.mapPickTitlePlace);
+    if (point == null || !context.mounted) return;
+    Navigator.of(context).pop(
+      TransportPlace(
+        id: coordinateQueryId(point.latitude, point.longitude),
+        name: formatCoordinates(point),
+        kind: PlaceKind.place,
+        lat: point.latitude,
+        lon: point.longitude,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -1006,6 +1029,21 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
                 shrinkWrap: true,
                 padding: EdgeInsets.only(bottom: 12 + media.padding.bottom),
                 children: [
+                  // Pointing at the map is the answer when naming the place
+                  // fails — an address the geocoder does not know, a trailhead
+                  // with no name at all, or simply "from here". The router takes
+                  // a coordinate anywhere it takes a stop id.
+                  //
+                  // Not offered for a **via** stop: the spec allows only stop
+                  // ids there, so a coordinate would be a choice that could only
+                  // fail — which is the same reason that list is filtered to
+                  // stations.
+                  if (!widget.stopsOnly)
+                    ListTile(
+                      leading: const Icon(Icons.map_outlined),
+                      title: Text(l10n.connectionPickOnMap),
+                      onTap: () => _pickOnMap(context),
+                    ),
                   for (final place in places)
                     ListTile(
                       leading: const Icon(Icons.place_outlined),

@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:travelplanner/data/database/track_points.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
@@ -259,5 +261,58 @@ void main() {
       expect(trip!.startDate, isNull);
       expect(trip.endDate, isNull);
     });
+  });
+
+  group('the route the router computed', () {
+    // Written at the router's own 1e-6: read at our 1e-5 these points would
+    // land a tenth of the way to the equator, which is the mistake the import
+    // exists to not make.
+    final shape = encodeTrackPoints(const [
+      LatLng(53.5511, 9.9937),
+      LatLng(53.5600, 10.0100),
+    ], precision: kRoutedShapePrecision);
+
+    test(
+      'is stored on its leg, marked as computed rather than followed',
+      () async {
+        final tripId = await makeTrip();
+        final ids = await repo.insertJourney(
+          tripId,
+          companions(tripId, [leg(dayA), leg(dayA)]),
+          shapes: [shape, null],
+        );
+
+        final first = await db.trackDao.watchTracksForItem(ids[0]).first;
+        expect(first, hasLength(1));
+        expect(first.single.source, TrackSource.routed);
+        // No name: the leg's own label already stands above it.
+        expect(first.single.name, isNull);
+        // Read at the router's precision and re-encoded at ours.
+        final points = decodeTrackPoints(first.single.points);
+        expect(points.first.latitude, closeTo(53.5511, 1e-4));
+
+        // A leg the router had no geometry for keeps its straight line.
+        expect(await db.trackDao.watchTracksForItem(ids[1]).first, isEmpty);
+      },
+    );
+
+    test(
+      'a shape that will not decode costs its leg and nothing else',
+      () async {
+        final tripId = await makeTrip();
+        final ids = await repo.insertJourney(
+          tripId,
+          companions(tripId, [leg(dayA), leg(dayA)]),
+          shapes: ['!!not a polyline!!', shape],
+        );
+
+        expect(ids, hasLength(2), reason: 'the journey still imported');
+        expect(await db.trackDao.watchTracksForItem(ids[0]).first, isEmpty);
+        expect(
+          await db.trackDao.watchTracksForItem(ids[1]).first,
+          hasLength(1),
+        );
+      },
+    );
   });
 }

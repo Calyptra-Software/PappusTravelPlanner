@@ -53,6 +53,9 @@ void main() {
       // `.watch()` never resolves under fake-async, which hangs the test.
       transportModesProvider.overrideWith((ref) => Stream.value(modes)),
       itineraryProvider(1).overrideWith((ref) => Stream.value(const [])),
+      // The line an entry followed is another drift stream, and the form now
+      // reads one for the leg it is editing.
+      itemTracksProvider.overrideWith((ref, itemId) => Stream.value(const [])),
       groupsProvider(1).overrideWith((ref) => Stream.value(const {})),
       costsForTripProvider(1).overrideWith(
         (ref) => Stream.value((
@@ -174,7 +177,12 @@ void main() {
         startMinutes: const Value(600),
         endMinutes: const Value(700),
         sourceTripId: const Value('trip-42'),
+        // A whole position, not half of one: the form now *edits* the
+        // coordinates, and it holds them as a pair — a latitude with no
+        // longitude is not a place, so saving normalises it away rather than
+        // writing the fragment back.
         fromLat: const Value(53.5),
+        fromLon: const Value(10.0),
       ),
     );
     final existing = await (db.select(
@@ -212,5 +220,6 @@ void main() {
     )..where((i) => i.id.equals(itemId))).getSingle();
     expect(after.sourceTripId, 'trip-42'); // the trip id survived the edit
     expect(after.fromLat, 53.5);
+    expect(after.fromLon, 10.0);
   });
 }

@@ -1,8 +1,10 @@
 import 'dart:typed_data';
+import 'package:latlong2/latlong.dart';
 
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
+import '../database/track_points.dart';
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -74,6 +76,33 @@ class TripRepository {
   // --- itinerary items ---
   Stream<List<ItineraryItem>> watchItems(int tripId) =>
       _db.itineraryDao.watchItemsForTrip(tripId);
+
+  /// Every *live* entry carrying a position, across all trips — what the
+  /// overview's map draws, before the overview's own filter narrows it.
+  Stream<List<ItineraryItem>> watchPositionedItems() =>
+      _db.itineraryDao.watchPositionedItems();
+
+  /// The lines a trip's entries actually followed — live ones only, the same
+  /// rule the items above follow.
+  Stream<List<Track>> watchTracksForTrip(int tripId) =>
+      _db.trackDao.watchTracksForTrip(tripId);
+
+  /// Every trip's, for the all-trips map. Unfiltered for the reason
+  /// [watchPositionedItems] is.
+  Stream<List<Track>> watchAllTracks() => _db.trackDao.watchAllTracks();
+
+  /// What one entry carries, whatever its trip is doing — the item form's
+  /// reading.
+  Stream<List<Track>> watchTracksForItem(int itemId) =>
+      _db.trackDao.watchTracksForItem(itemId);
+
+  Future<void> addTracks(
+    int itemId,
+    List<({List<LatLng> points, String? name})> lines,
+  ) => _db.trackDao.addTracks(itemId, lines);
+
+  Future<void> deleteTracksForItem(int itemId) =>
+      _db.trackDao.deleteTracksForItem(itemId);
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>
@@ -115,17 +144,45 @@ class TripRepository {
   /// run of legs sharing a day is bundled into one group (a shared ticket) — a
   /// journey crossing midnight becomes one group per day, since a group lives
   /// within a single day. Returns the new item ids in order.
+  /// [shapes] runs parallel to [legs]: the route each one takes, as the routing
+  /// service's own encoded polyline at *its* precision. Each becomes a
+  /// [TrackSource.routed] track on the leg it belongs to, which is what lets the
+  /// map draw a train along its line instead of a chord across the country.
+  ///
+  /// Passed separately because a shape is not a column — it is a row in another
+  /// table, and a companion cannot carry it. Null entries (an older server, a
+  /// leg the router has no geometry for) simply write nothing, and the map falls
+  /// back to the straight line it drew before.
   Future<List<int>> insertJourney(
     int tripId,
     List<ItineraryItemsCompanion> legs, {
     bool group = true,
     int? alternativeId,
+    List<String?> shapes = const [],
   }) async {
     final ids = await _db.itineraryDao.insertJourneyLegs(
       tripId,
       legs,
       alternativeId: alternativeId,
     );
+    for (final (index, shape) in shapes.indexed) {
+      if (shape == null || index >= ids.length) continue;
+      final List<LatLng> points;
+      try {
+        points = decodeTrackPoints(shape, precision: kRoutedShapePrecision);
+      } on FormatException {
+        // A shape that will not decode is a shape the map cannot draw. The rest
+        // of the journey is perfectly good, so the import keeps it and this leg
+        // falls back to its straight line.
+        continue;
+      }
+      if (points.length < 2) continue;
+      await _db.trackDao.addTracks(ids[index], [
+        // No name: it is the leg's own route, and "ICE 1081" is already written
+        // above it. A name here would only repeat the label the entry carries.
+        (points: points, name: null),
+      ], source: TrackSource.routed);
+    }
     if (group) {
       var i = 0;
       while (i < legs.length) {

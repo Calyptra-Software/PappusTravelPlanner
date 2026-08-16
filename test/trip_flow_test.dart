@@ -144,8 +144,16 @@ void main() {
       Icons.settings_outlined,
     ];
 
-    // The menu is typed on a private enum, so match the raw widget type.
-    final overflowMenu = find.byWidgetPredicate((w) => w is PopupMenuButton);
+    // Two menus live in this bar: the view switch (list / calendar / map) and
+    // the navigation overflow. Both are typed on private enums, so they are told
+    // apart by the icon each shows rather than by their type.
+    final viewMenu = find.ancestor(
+      of: find.byIcon(Icons.view_list_outlined),
+      matching: find.byWidgetPredicate((w) => w is PopupMenuButton),
+    );
+    final overflowMenu = find
+        .byWidgetPredicate((w) => w is PopupMenuButton)
+        .hitTestable();
 
     testWidgets('collapses navigation actions into a menu on a phone', (
       tester,
@@ -153,14 +161,17 @@ void main() {
       sizeSurface(tester, 400);
       await pumpOverview(tester, const []);
 
-      expect(overflowMenu, findsOneWidget);
+      // The view switch plus the navigation overflow.
+      expect(overflowMenu, findsNWidgets(2));
       for (final icon in navigationIcons) {
         expect(find.byIcon(icon), findsNothing);
       }
       // The actions the list itself uses stay directly reachable.
       expect(find.byIcon(Icons.search), findsOneWidget);
       expect(find.byIcon(Icons.tune), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_month_outlined), findsOneWidget);
+      // The view switch shows the view that is *on screen*, which starts as the
+      // list.
+      expect(viewMenu, findsOneWidget);
     });
 
     testWidgets('shows every action as an icon on a wide window', (
@@ -169,7 +180,10 @@ void main() {
       sizeSurface(tester, 900);
       await pumpOverview(tester, const []);
 
-      expect(overflowMenu, findsNothing);
+      // Only the view switch is left as a menu; every navigation action has its
+      // own slot.
+      expect(overflowMenu, findsOneWidget);
+      expect(viewMenu, findsOneWidget);
       for (final icon in navigationIcons) {
         expect(find.byIcon(icon), findsOneWidget);
       }
@@ -182,7 +196,7 @@ void main() {
       sizeSurface(tester, 400);
       await pumpOverview(tester, const []);
 
-      await tester.tap(overflowMenu);
+      await tester.tap(overflowMenu.last);
       await tester.pumpAndSettle();
 
       expect(find.text('Search connection'), findsOneWidget);

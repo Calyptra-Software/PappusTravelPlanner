@@ -13,8 +13,9 @@
 Plan a trip day by day — where you go, how you get there, and what it costs, broken down by
 category and by person — and keep the whole thing in **one SQLite file that belongs to
 you**. No account, no server, nothing uploaded. The app works with the network switched
-off; the one exception is an optional connection search that looks up real timetables and
-writes the answer into your local plan.
+off; the exceptions are an optional connection search that looks up real timetables and
+writes the answer into your local plan, and the map, whose background tiles are fetched
+while you look at them.
 
 A trip is a trip however long it lasts: a walk to the shops, a multi-day hike, and a
 fortnight in Rome are the same kind of thing with different dates. The primary target is
@@ -56,6 +57,9 @@ Every other platform, and Android if you would rather not run a stranger's binar
 - **Real connections** — search an open routing service covering public transport,
   long-distance trains, buses, and more from operators around the world, compare the results,
   import one as that day's legs, and refresh its live times later.
+- **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
+  is under way marked as the timeline marks it. Import a **GPX** track onto a leg and the
+  map draws the line you actually followed instead of the straight one.
 - **Costs in as many currencies as you like** — attached to a place, a leg, a whole shared
   ticket, or the trip, with your own categories and your own exchange rates.
 - **Statistics** — spending by category and by person, and how you actually traveled:
@@ -70,7 +74,8 @@ Every other platform, and Android if you would rather not run a stranger's binar
 - **English and German**, and a light / dark / system theme.
 
 **[The long version, with the reasoning behind each of these, is in
-`docs/features.md`.](docs/features.md)**
+`docs/features.md`.](docs/features.md)** What changed per release is in
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Your data
 
@@ -97,9 +102,14 @@ The connection search talks to [Transitous](https://transitous.org), a community
 donated MOTIS instance serving [public-transport open data](https://transitous.org/sources/)
 on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
 
-Its [usage policy](https://transitous.org/api/) is a functional requirement of this app
-rather than a footnote — see the *routing service* section of
-[CONTRIBUTING.md](CONTRIBUTING.md) before touching anything that makes requests.
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles from the
+OpenStreetMap Foundation's own servers. Their
+[tile usage policy](https://operations.osmfoundation.org/policies/tiles/) permits ordinary
+interactive viewing and forbids downloading areas in advance.
+
+Both policies are functional requirements of this app — see the
+*routing service* section of [CONTRIBUTING.md](CONTRIBUTING.md) before touching anything
+that makes requests.
 
 ## Build from source
 
@@ -154,6 +164,7 @@ lib/
     trips/                  # overview, calendar, create/edit, detail, participants, tags, routines
     itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
+    map/                    # trip map: pure feature building + the basemap and its screen
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies
     checklist/              # per-trip named checklists
     sharing/                # portable trip bundles (.tpt), plus PDF and .ics export

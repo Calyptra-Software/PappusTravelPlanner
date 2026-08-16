@@ -103,6 +103,9 @@ void main() {
       // `.watch()` never resolves under fake-async, which hangs the test.
       transportModesProvider.overrideWith((ref) => Stream.value(modes)),
       itineraryProvider(1).overrideWith((ref) => Stream.value(items)),
+      // The line an entry followed is another drift stream, and the form now
+      // reads one for the leg it is editing.
+      itemTracksProvider.overrideWith((ref, itemId) => Stream.value(const [])),
       groupsProvider(1).overrideWith((ref) => Stream.value(const {})),
       // A routine's form draws a day *field* instead of a date picker, and
       // that reads the plan's days — another drift stream to stub out.

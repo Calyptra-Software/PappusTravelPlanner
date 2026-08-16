@@ -6,8 +6,10 @@ piece does, and, where the behavior is a decision rather than an obvious default
 works that way. The [README](../README.md) has the same list in a sentence each.
 
 Everything described here happens on your device, against a single SQLite file that
-belongs to you. The one exception is the connection search, which asks a routing service
-about real timetables — and even that only writes its answer into your local plan.
+belongs to you. Two things reach outside it: the connection search, which asks a routing
+service about real timetables and writes the answer into your local plan, and the map,
+which fetches its background tiles while you look at them. Neither sends anything about
+your trip anywhere.
 
 ---
 
@@ -104,8 +106,22 @@ Every part of that except the text search is remembered across launches, so "onl
 walks, newest first" survives closing the app. The text search deliberately is not: a
 search is one act, which is why the app bar's close button throws it away.
 
-The overview **list** can also switch to a **month calendar**, where each trip is a bar in
-its accent color spanning its days.
+The overview draws the same trips three ways, chosen from one menu in the app bar: the
+**list**, a **month calendar** where each trip is a bar in its accent color spanning its
+days, and a **map** of everywhere the visible trips go. Whichever you pick is remembered.
+
+The map inherits the filter rather than having one of its own. Each trip is drawn in its
+own accent, the same color as its card, so a tangle of routes still says which trip
+is which. Changing the filter re-frames the map on what is left.
+
+Tap a route or a place and the **trip** it belongs to comes up — its card, exactly as the
+list draws it — and tapping that opens the trip. The unit here is the trip: with many of
+them on one map, "which trip is that line" is the question, where a single trip's own map
+answers the other one, about a single entry.
+
+Where several routes lie on top of each other or run side by side — the same commute drawn
+once per day you made it, or two trips sharing a stretch of road — the tap lists **all** of
+them and you pick.
 
 ---
 
@@ -268,6 +284,66 @@ on, offering the day's actual departure to swap in.
 
 Declining it, finding nothing, or having no signal all leave the copied plan standing. And
 "no train" is never reported when it was "no network".
+
+---
+
+## The map
+
+Every trip has a map, reached from the map button on the trip screen. Places appear as
+pins and transport legs as lines between their ends.
+
+Two things it deliberately does not do. A leg is drawn **only when both of its ends have a
+position and nothing is drawn between one place and the next. On today, the entry that is
+under way is marked.
+
+### Where the positions come from
+
+An imported connection brings the coordinates of its stations with it, so a trip planned
+through the connection search appears on the map without you doing anything.
+
+Everything else you place yourself. Any place, and either end of any transport leg, has a
+**Coordinates** field beside its name with a map button: the map opens, you tap the spot,
+and *Use this point* writes it down. Tapping again moves the marker. The field then shows
+what was written and can be cleared again on its own.
+
+The connection search offers the same thing: its **From** and **To** pickers list *Choose on
+map* above the search results, for an address the geocoder does not know or a spot with no
+name at all. (A via stop is the exception — the routing service only accepts stations
+there.)
+
+Placing both ends of a leg has a side effect worth knowing: a leg you entered by hand can
+then be looked up in the timetable, because the app finally knows where it starts and ends.
+And moving an end that *came* from a search makes the app forget which station the search
+used — it now goes by the point you chose.
+
+### Asking a marker what it is
+
+Tap a pin or a transport badge and the entry behind it opens: its name, where the leg runs
+from and to, its times with the same green and red `+/−` the timeline shows, any note on it,
+and the coordinates themselves. A map can only draw *where* something is; everything else
+about it lives in the entry. Editing is a further tap, in the same form the timeline opens.
+
+### The line you actually followed
+
+An entry draws as a straight segment between its ends, which is the best a plan
+can say. If you have a **GPX** file open the leg and *Import GPX…*: the map then draws
+that line instead of the straight one.
+
+A connection imported from the search brings its own route with it: the map then
+draws the train along its line and the walk around the corner, rather than a
+straight line between the stops. Those are drawn **dashed**, because they are
+what the router computed and not what you recorded. Importing a GPX onto the
+same leg shows only the imported track.
+
+A line is part of the plan, so it **travels with a copy** — duplicate the leg,
+stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
+carries it, which is what keeps that export lossless.
+
+### Where the background comes from
+
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already
+fetched are cached so panning back over ground you have seen does not need to download new
+tiles again.
 
 ---
 

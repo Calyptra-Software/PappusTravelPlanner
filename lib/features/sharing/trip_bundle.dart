@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../core/format/money_format.dart';
-import '../../data/database/tables.dart' show ItemKind, TripKind;
+import '../../data/database/tables.dart' show ItemKind, TrackSource, TripKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
 /// share-sheet intent filter matches only Pappus trips, not every binary file.
@@ -75,6 +75,13 @@ class TripBundle {
   /// filing it will not have. A **routine**, though, forces v4 and must be
   /// refused by an older app rather than silently imported as a dated trip
   /// whose entries all sit on a 1970 anchor day.
+  /// Coordinates — a place's, and a leg's ends — were added **without** a bump.
+  /// The rule is that a version marks a shape an importer must *branch* on, and
+  /// there is nothing to branch on here: an older app ignores the extra keys and
+  /// imports exactly the trip it would have imported anyway, merely without
+  /// positions it has no map to draw. Nothing is misread, which is what forced
+  /// v2 and v4 — unlike a decision flattened into its day or a routine read as a
+  /// dated trip.
   static const int currentFormatVersion = 4;
 
   /// Magic string identifying the payload as a Pappus trip bundle.
@@ -423,12 +430,19 @@ class BundleItem {
     this.spansNextDay = false,
     this.notes,
     this.location,
+    this.lat,
+    this.lon,
     this.mode,
     this.fromLocation,
     this.toLocation,
+    this.fromLat,
+    this.fromLon,
+    this.toLat,
+    this.toLon,
     this.stopovers,
     this.fromPlaceId,
     this.toPlaceId,
+    this.tracks = const [],
   });
 
   final int localId;
@@ -455,6 +469,13 @@ class BundleItem {
   // place-only
   final String? location;
 
+  /// Where the place is. Part of the plan — a shared trip points at the same
+  /// spot on the recipient's map as on the sender's — so it travels beside the
+  /// name. Absent from bundles written before places could carry a position, and
+  /// simply unset on import then.
+  final double? lat;
+  final double? lon;
+
   // transport-only
   /// The leg's transport mode as a portable key: a built-in's `builtinKey`
   /// (e.g. "train") or a custom mode's name. Resolved to a local mode row on
@@ -463,6 +484,15 @@ class BundleItem {
   final String? mode;
   final String? fromLocation;
   final String? toLocation;
+
+  /// Where the leg's ends are. Like [fromPlaceId]/[toPlaceId] these say *where*
+  /// and never *when*, so they are plan and travel — the same reason they are
+  /// copied. They were dropped by bundles written before this, which is why a
+  /// shared trip used to arrive with its journeys unplottable.
+  final double? fromLat;
+  final double? fromLon;
+  final double? toLat;
+  final double? toLon;
 
   /// The leg's intermediate stops, in the encoding `stopovers.dart` reads — the
   /// one part of a routed leg that is content rather than provenance, so it
@@ -475,6 +505,12 @@ class BundleItem {
   /// `sourceTripId` deliberately does not travel: it names one dated run.
   final String? fromPlaceId;
   final String? toPlaceId;
+
+  /// The lines this entry actually followed. Plan, not provenance — the ground
+  /// covered is the same wherever the trip is read — so they travel, and `.tpt`
+  /// stays the one lossless way out of the app. Empty in bundles written before
+  /// tracks existed, which is what such a trip had.
+  final List<BundleTrack> tracks;
 
   Map<String, dynamic> toJson() => {
     'localId': localId,
@@ -491,12 +527,22 @@ class BundleItem {
     'spansNextDay': spansNextDay,
     'notes': notes,
     'location': location,
+    'lat': lat,
+    'lon': lon,
     'mode': mode,
     'fromLocation': fromLocation,
     'toLocation': toLocation,
+    'fromLat': fromLat,
+    'fromLon': fromLon,
+    'toLat': toLat,
+    'toLon': toLon,
     'stopovers': stopovers,
     'fromPlaceId': fromPlaceId,
     'toPlaceId': toPlaceId,
+    // Omitted entirely when there are none, so an ordinary trip's bundle is
+    // byte-for-byte what it was before tracks existed.
+    if (tracks.isNotEmpty)
+      'tracks': [for (final track in tracks) track.toJson()],
   };
 
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
@@ -514,12 +560,66 @@ class BundleItem {
     spansNextDay: json['spansNextDay'] as bool? ?? false,
     notes: json['notes'] as String?,
     location: json['location'] as String?,
+    // Read as `num`, not `double`: a coordinate that happens to be whole may
+    // come back from another writer's JSON as an int, and a cast would throw on
+    // a file the app is otherwise able to read.
+    lat: (json['lat'] as num?)?.toDouble(),
+    lon: (json['lon'] as num?)?.toDouble(),
     mode: json['mode'] as String?,
     fromLocation: json['fromLocation'] as String?,
     toLocation: json['toLocation'] as String?,
+    fromLat: (json['fromLat'] as num?)?.toDouble(),
+    fromLon: (json['fromLon'] as num?)?.toDouble(),
+    toLat: (json['toLat'] as num?)?.toDouble(),
+    toLon: (json['toLon'] as num?)?.toDouble(),
     stopovers: json['stopovers'] as String?,
     fromPlaceId: json['fromPlaceId'] as String?,
     toPlaceId: json['toPlaceId'] as String?,
+    tracks: [
+      for (final track in (json['tracks'] as List<dynamic>? ?? const []))
+        BundleTrack.fromJson(track as Map<String, dynamic>),
+    ],
+  );
+}
+
+/// A [Tracks] row: the line an entry followed, with where the line came from.
+///
+/// The points ride as the packed string the column holds — it is already
+/// compact, printable and the format every mapping tool reads, so unpacking it
+/// into a JSON array would quadruple the bundle to say the same thing. The
+/// source travels by **name**, not index, for the reason every portable enum
+/// here does: an index is a promise about the order of a Dart declaration, and
+/// a name survives one being inserted.
+class BundleTrack {
+  const BundleTrack({
+    required this.points,
+    required this.source,
+    this.name,
+    this.sortOrder = 0,
+  });
+
+  final String points;
+  final TrackSource source;
+  final String? name;
+  final int sortOrder;
+
+  Map<String, dynamic> toJson() => {
+    'points': points,
+    'source': source.name,
+    'name': name,
+    'sortOrder': sortOrder,
+  };
+
+  factory BundleTrack.fromJson(Map<String, dynamic> json) => BundleTrack(
+    points: json['points'] as String,
+    // A source this app does not know is read as an import: the line is still a
+    // line, and refusing the whole trip over a label would be the wrong trade.
+    source: TrackSource.values.firstWhere(
+      (s) => s.name == json['source'],
+      orElse: () => TrackSource.imported,
+    ),
+    name: json['name'] as String?,
+    sortOrder: json['sortOrder'] as int? ?? 0,
   );
 }
 

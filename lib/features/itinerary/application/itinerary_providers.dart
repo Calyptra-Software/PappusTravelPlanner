@@ -1,6 +1,9 @@
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
+import '../../../data/database/track_points.dart';
+import '../../map/map_features.dart';
 import '../../../data/database/app_database.dart';
 import '../../trips/application/trip_providers.dart';
 import '../live_items.dart';
@@ -14,6 +17,72 @@ final itineraryProvider = StreamProvider.autoDispose
     .family<List<ItineraryItem>, int>((ref, tripId) {
       return ref.watch(repositoryProvider).watchItems(tripId);
     });
+
+/// Every *live* entry that carries a position, across all trips — the one query
+/// here that is not about a single trip.
+///
+/// Deliberately unfiltered: the overview's map draws whatever `applyTripQuery`
+/// left visible, and asking this stream per visible trip would need a family
+/// keyed by a list, which compares by identity and would rebuild on every frame.
+/// One stream, grouped by trip id where it is drawn.
+final positionedItemsProvider = StreamProvider.autoDispose<List<ItineraryItem>>(
+  (ref) => ref.watch(repositoryProvider).watchPositionedItems(),
+);
+
+/// The lines one trip's entries actually followed, decoded and keyed by entry.
+///
+/// Decoded **here**, once per change, rather than in the widget that draws them:
+/// unpacking is the only expensive thing a track does, and doing it inside
+/// `build` would repeat it on every camera tick — which is the shape of the
+/// pinch freeze this map has already been through once.
+final tripTracksProvider = StreamProvider.autoDispose
+    .family<Map<int, List<TrackLine>>, int>((ref, tripId) {
+      return ref
+          .watch(repositoryProvider)
+          .watchTracksForTrip(tripId)
+          .map(groupTrackPoints);
+    });
+
+/// The same for every trip at once — the all-trips map's reading, unfiltered for
+/// the reason [positionedItemsProvider] is.
+final allTracksProvider = StreamProvider.autoDispose
+    .family<Map<int, List<TrackLine>>, void>((ref, _) {
+      return ref
+          .watch(repositoryProvider)
+          .watchAllTracks()
+          .map(groupTrackPoints);
+    });
+
+/// What one entry carries, for the form that edits it.
+final itemTracksProvider = StreamProvider.autoDispose.family<List<Track>, int>((
+  ref,
+  itemId,
+) {
+  return ref.watch(repositoryProvider).watchTracksForItem(itemId);
+});
+
+/// Rows to points, grouped by the entry they belong to.
+///
+/// A row whose string is not one of ours is **dropped**, not thrown on: it
+/// reached the database from a shared bundle, which is a file from outside, and
+/// one unreadable line must not blank the map for the whole trip. What is lost
+/// is exactly that line, which is what an unreadable line means.
+Map<int, List<TrackLine>> groupTrackPoints(List<Track> rows) {
+  final byItem = <int, List<TrackLine>>{};
+  for (final row in rows) {
+    final List<LatLng> points;
+    try {
+      points = decodeTrackPoints(row.points);
+    } on FormatException {
+      continue;
+    }
+    if (points.length < 2) continue;
+    byItem
+        .putIfAbsent(row.itemId, () => [])
+        .add(TrackLine(points: points, source: row.source));
+  }
+  return byItem;
+}
 
 /// The set of a trip's days (normalized to midnight) currently collapsed in the
 /// overview. Days not in the set are expanded (the default).

@@ -90,7 +90,7 @@ Two conventions worth stating here:
 - **Match the surrounding code** rather than importing your own style: the naming, the
   comment density, and the habit of writing down *why* a rule exists where it is enforced.
 
-## The routing service
+## The routing service and the tile server
 
 The connection search runs against [Transitous](https://transitous.org), a community-run
 instance donated for free and open-source, non-commercial use. Its
@@ -99,6 +99,16 @@ footnote: requests carry a `User-Agent` naming the app, its version, and a conta
 (`lib/core/app_info.dart`); the data sources are linked wherever the data is shown
 (`lib/core/widgets/attribution.dart`); journeys are searched on an explicit button and
 never on a timer; and the staging and `motis-project` hosts are off limits.
+
+The map stands on the same kind of ground: its tiles come from the OpenStreetMap
+Foundation's servers, whose
+[usage policy](https://operations.osmfoundation.org/policies/tiles/) permits a human panning
+around a viewport and **forbids downloading areas in advance** — it names "download region
+for offline use" as the prohibited pattern. Requests therefore carry the same identifying
+`User-Agent`, caching is left on, and `Basemap.offlineDownload`
+(`lib/features/map/basemap.dart`) records per source whether prefetching is allowed at all,
+so a future download feature has to ask the source rather than apply to whichever one
+happens to be selected.
 
 Please do not add anything that increases request volume — polling, prefetching, a search
 that fires while typing — without discussing it in an issue first. The policy asks that

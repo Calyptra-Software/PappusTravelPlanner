@@ -30,23 +30,32 @@ first thing worth putting in a report, because it names the build exactly
 Worth stating plainly, because the attack surface of an offline app is small but
 not empty:
 
-**It reads files it did not write.** A `.tpt` trip bundle arrives through the
-share sheet or a file picker, and `TripBundle.fromJson`
-(`lib/features/sharing/trip_bundle.dart`) parses whatever is in it. A malformed
-bundle should produce a clean refusal and nothing else. Anything beyond that —
-a crash that leaves the database inconsistent, an import that writes outside the
-trip it was told to create, a value that ends up somewhere it is not escaped —
-is worth reporting.
+**It reads files it did not write.** Two formats, both through a file picker or
+the share sheet:
+
+* A `.tpt` trip bundle, parsed by `TripBundle.fromJson`
+  (`lib/features/sharing/trip_bundle.dart`).
+* A `.gpx` track, parsed by `parseGpx` (`lib/features/map/gpx.dart`) using the
+  `xml` package, and stored as packed coordinates — the file's markup is never
+  kept and never re-read. A bundle may also carry an already-packed line, which
+  `decodeTrackPoints` (`lib/data/database/track_points.dart`) reads back and
+  which is therefore held to the same standard as the file it came from.
+
+A malformed file of either kind should produce a clean refusal and nothing else.
+Anything beyond that — a crash that leaves the database inconsistent, an import
+that writes outside the trip it was told to create, a value that ends up
+somewhere it is not escaped — is worth reporting.
 
 **It opens databases it did not create.** On desktop the settings screen will
 point the app at any `.sqlite` a file picker hands back, and the app writes to
 it. The header check (`kApplicationId`) is a sanity check, not a security
 boundary.
 
-**It parses replies from one network service.** The connection search talks to
-`https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`).
-A hostile or compromised reply should not be able to do more than produce a
-wrong or empty result.
+**It parses replies from two network services.** The connection search talks to
+`https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`),
+and the map fetches tile images from `https://tile.openstreetmap.org`
+(`lib/features/map/basemap.dart`). A hostile or compromised reply should not be
+able to do more than produce a wrong or empty result, or a wrong picture.
 
 **It accepts deep links.** `pappus://trip?id=N`, used by the Android home-screen
 widget to open a trip.
@@ -71,6 +80,15 @@ and linking this repository — its
 [usage policy](https://transitous.org/api/) asks for exactly that. Searching a
 connection without telling anyone where and when you want to go is not a thing
 that can be built.
+
+**The map tells OpenStreetMap which tiles it is looking at.** Opening a trip's
+map requests the image tiles covering it, which means the tile server sees the
+area you are looking at, along with a `User-Agent` naming the app and its
+version — the [tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
+requires that identification. Tiles are cached, so panning back over ground
+already seen asks for nothing. No coordinate of yours is ever *sent*: a tile is
+addressed by a grid square, and which entries of your trip sit inside it is
+something only your device knows.
 
 **Nothing else leaves the device.** There is no analytics, no crash reporting,
 and no telemetry of any kind, and the Android build asks for one permission,

@@ -10,7 +10,9 @@ import '../../costs/application/currency_providers.dart';
 import '../../sharing/presentation/trip_import.dart';
 import '../../transport_search/presentation/connection_search_sheet.dart';
 import '../../transport_search/presentation/journey_destination.dart';
+import '../../map/presentation/all_trips_map.dart';
 import '../application/trip_providers.dart';
+import '../application/trip_view_provider.dart';
 import '../application/trip_query_provider.dart';
 import 'create_trip_from_routine.dart';
 import '../trip_filter.dart';
@@ -41,7 +43,6 @@ class TripListScreen extends ConsumerStatefulWidget {
 class _TripListScreenState extends ConsumerState<TripListScreen> {
   final _searchController = TextEditingController();
   bool _searching = false;
-  bool _calendarView = false;
 
   /// The routines, kept from the last build so the "+" menu can offer to stamp
   /// one out without re-reading a provider that may have been disposed.
@@ -189,13 +190,27 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
       if (searching) return _NoResults(query: query.text.trim());
       return const _EmptyState();
     }
-    if (_calendarView) {
-      return TripCalendar(
-        trips: visible,
-        totals: totalsByTrip,
-        book: book,
-        onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
-      );
+    switch (ref.watch(tripViewProvider)) {
+      case TripView.calendar:
+        return TripCalendar(
+          trips: visible,
+          totals: totalsByTrip,
+          book: book,
+          onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
+        );
+      case TripView.map:
+        // Handed the same list the other two draw, so the filter is inherited
+        // rather than rebuilt — and the same totals and tags, so a trip tapped
+        // on the map reads exactly as its card in the list does.
+        return AllTripsMap(
+          trips: visible,
+          totalsByTrip: totalsByTrip,
+          tagsByTrip: tagsByTrip,
+          book: book,
+          onOpenTrip: (trip) => context.push('/trip/${trip.id}'),
+        );
+      case TripView.list:
+        break;
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
@@ -304,16 +319,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                 ),
               ]
             : [
-                IconButton(
-                  tooltip: _calendarView ? l10n.listView : l10n.calendarView,
-                  icon: Icon(
-                    _calendarView
-                        ? Icons.view_list_outlined
-                        : Icons.calendar_month_outlined,
-                  ),
-                  onPressed: () =>
-                      setState(() => _calendarView = !_calendarView),
-                ),
+                _ViewMenu(l10n: l10n),
                 IconButton(
                   tooltip: l10n.searchTrips,
                   icon: const Icon(Icons.search),
@@ -770,6 +776,57 @@ class _NoResults extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The one control that chooses between list, calendar and map.
+///
+/// A menu, not a button that cycles. Cycling reads unambiguously with two
+/// states — the icon can show the other one — but with three it can only show
+/// *the next*, and getting from the list to the map becomes two taps with a stop
+/// in between. The stop is the problem: the map fetches tiles, so a control the
+/// map merely lies on spends somebody's mobile data on the way past.
+class _ViewMenu extends ConsumerWidget {
+  const _ViewMenu({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  static IconData _icon(TripView view) => switch (view) {
+    TripView.list => Icons.view_list_outlined,
+    TripView.calendar => Icons.calendar_month_outlined,
+    TripView.map => Icons.map_outlined,
+  };
+
+  String _label(TripView view) => switch (view) {
+    TripView.list => l10n.listView,
+    TripView.calendar => l10n.calendarView,
+    TripView.map => l10n.mapView,
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(tripViewProvider);
+    return PopupMenuButton<TripView>(
+      // The icon shows what is on screen, not what a tap would bring — the
+      // question it answers is "which view is this", and the menu below says
+      // what else there is.
+      icon: Icon(_icon(current)),
+      tooltip: _label(current),
+      onSelected: (view) => ref.read(tripViewProvider.notifier).set(view),
+      itemBuilder: (context) => [
+        for (final view in TripView.values)
+          CheckedPopupMenuItem(
+            value: view,
+            checked: view == current,
+            child: ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(_icon(view)),
+              title: Text(_label(view)),
+            ),
+          ),
+      ],
     );
   }
 }

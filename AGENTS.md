@@ -337,7 +337,11 @@ UI (features/*/presentation, *widgets)
   entries the day draws no line — the boundary is inside the card, and so is the line.
   Untimed entries stay
   *ahead* of the line unless something timed after them is already past — we cannot know when
-  they happen, and claiming they are done is the guess that would make the mark lie. A decision
+  they happen, and claiming they are done is the guess that would make the mark lie. An
+  **overnight** entry's end is minutes into the *next* day, so `itemSpan` carries it past
+  midnight (`+ kMinutesPerDay`) rather than letting `end < start` collapse the span to a
+  moment: without that, a night train reads as finished the minute it departs, and the
+  traveller sitting on it is told the journey is behind them. A decision
   is timed by its **chosen** option only. The mark is drawn *inside* the tile/card, never as an
   extra list child: the day is a `ReorderableListView` indexed by its blocks. `core/clock.dart`'s
   `nowProvider` ticks it on the minute; today's day header carries `Today · HH:mm` so a collapsed
@@ -568,6 +572,166 @@ UI (features/*/presentation, *widgets)
   `printableChecklists`), so the picker's numbers cannot drift from the document's contents.
   A section unavailable on this trip keeps its stored setting for the next one.
 
+- **The map draws the plan, and the ground it draws on is swappable.** `features/map/` holds
+  the pure `map_features.dart` (items → pins and lines, testable without a tile server),
+  `basemap.dart`, and the screen. It reads the trip through the providers the timeline
+  already uses and shows only **live** entries, the same rule the PDF and `.ics` follow, so
+  an option nobody chose is never on the map. Two rules decide what appears: a leg is drawn
+  only when **both** ends carry coordinates — one end alone would be a point, and on a map a
+  point is a place — and **nothing connects one place to the next**, because the plan says a
+  museum follows a hotel, not that anyone walked between them in a straight line. Long legs
+  are interpolated along a **great circle** (a straight line in Web Mercator is not the route
+  anything takes) and split where they cross the **antimeridian**, since a Tokyo-to-Los
+  Angeles flight is one journey but cannot be one polyline. "You are here" is
+  `now_marker.dart` again, asked about today's entries and used only for its *happening*
+  answer — a map has slots but no gaps between them to draw a line in — and never on a
+  routine, which has no today. **A marker answers when tapped**
+  (`map_item_sheet.dart`): a map can only say *where*, while the name, the times, how late
+  the leg ran and the note someone left on it all live in the row it was drawn from — a pin
+  with no way to ask about it is a dot on a picture. The sheet is a *reading*, not a second
+  editor: times come from the same `ItemTimes` the timeline uses, so a delay reads
+  identically in both, and the one button hands the job to the form that already owns it.
+  Lines and markers take the **trip's own accent**
+  (`Trips.colorValue`), the color its card, header, calendar bar and PDF already use, not a
+  color from the theme, which says nothing about *which* trip is on screen — and that is the
+  rule the all-trips map inherits, so every line there identifies itself. Each line carries a
+  casing (`borderStrokeWidth`) in the surface color: a user-chosen accent will land on tiles
+  it disappears against otherwise, which is why paper maps do the same.
+- **A position is pointed at, never derived.** `map_picker_screen.dart` opens the map on a
+  full-screen route — a sheet answers a vertical drag by closing, which is the same gesture
+  as panning. A **tap** drops the marker, the readout says where it landed, and *Use this
+  point* stays disabled until there is one, so the screen can never return a position nobody
+  chose; an edit opens holding the position it is editing. (A fixed crosshair with the map
+  moving under it was tried first — a fingertip does cover the point it is placing — but
+  tapping won on being the more obvious of the two: the mark appears where you pointed.) The
+  marker is drawn ink-on-halo in **map** colours, not theme colours: raster tiles are pale in
+  both themes and full of thin red lines, so a mark tinted by the theme is a road.
+- **The search can be pointed at the map too.** The place picker in `connection_search_sheet.dart`
+  offers *Choose on map* above the geocoder's answers, for an address it does not know, a
+  trailhead with no name, or simply "from here". What comes back is a `TransportPlace` of
+  kind `place` — which is what makes `queryId` send `lat,lon`, since there is no id to send
+  and a coordinate is what the router wants for a door anyway — named by its own numbers,
+  because asking the geocoder what is there would put a name on a choice the user did not
+  make. Not offered for a **via** stop: only stop ids are allowed there, so a coordinate
+  would be a choice that could only fail, which is the same reason that list is filtered to
+  stations.
+- **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
+  mean "the id the search was issued against", and a tap on a map is not a search. The
+  coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
+  silently makes a hand-entered leg `canLookUp`-able once both its ends are placed. The one
+  write in the other direction is a **clearing**: moving (or removing) an end drops *that
+  end's* id, because the id no longer describes where the end is — and it would win over the
+  coordinates, sending a re-search off from the old station. `sourceTripId` stays: it names
+  the service, not the end. Reverse geocoding is deliberately absent — the app never turns a
+  name into a position or a position into a name; which Rahlstedt was meant is the user's
+  answer. A position is therefore its own field in the item sheet, beside the name and
+  clearable on its own, and the two are kept as a **pair**: a latitude without a longitude
+  is not half a place, so the form normalises the fragment away rather than writing it back.
+- **The overview draws the same trips three ways, and which one is a setting.**
+  `TripView` (list / calendar / map) lives in `tripViewProvider`, persisted by index and
+  append-only like every other stored enum here — the list/calendar switch used to be a
+  `bool` in the screen's `State`, which sat oddly beside the rule that *how the overview is
+  read* is remembered. It matters more with three: the map fetches tiles, so being dropped
+  onto it unasked spends somebody's data. One control, a **menu and not a cycle** — the icon
+  shows the view that is on screen, and a cycle past three states makes the map a stop on
+  the way somewhere else.
+- **The all-trips map is handed its trips, so the filter is inherited rather than rebuilt.**
+  `AllTripsMap` draws exactly the list `applyTripQuery` left visible, which is why "only my
+  walks, this year" needs no second filter UI; routines are excluded because that function
+  already excludes them. Each trip keeps its **own accent**, the color its card is drawn in,
+  which is what makes a tangle of lines readable. The camera re-frames when the *selection*
+  changes but not when the stream merely ticks: tapping a tag chip is an explicit act with
+  an expectation attached, while a rebuild is not. Its entries come from
+  `ItineraryDao.watchPositionedItems` — the one query here that is not about a single trip,
+  with the live rule expressed in **SQL** (the precedent is `CostDao._countsTowardTotals`)
+  and no trip filter at all, since a family keyed by a list compares by identity and would
+  rebuild every frame. **A tap answers with every trip under it, not the topmost**, because
+  overlap is this map's normal state: a commute is drawn once per day it was made, so twenty
+  lines lie exactly on each other, and at any zoom showing a country neighboring routes
+  share their stretch of highway. Picking the last-drawn line would be a coin toss the user
+  cannot see and cannot re-roll — the trip they meant may be unreachable at that spot. So
+  `hitValues` is folded to one entry per trip, in the **overview's** order rather than the
+  drawing order (the map is a view of that list, and a stable order is one you can learn);
+  one trip opens its card as before, several are listed to choose from. `kLineHitbox` widens
+  the hit test past the 3px stroke for the same reason — what "on this line" means has to be
+  a fingertip, and a shared stretch that reads as one line should be one tap.
+- **A track is a line with a provenance, not "the GPX file".** `Tracks` (v29) holds the
+  line an entry *actually* followed — packed by `track_points.dart` into the encoded-polyline
+  format every mapping tool reads, so a dense recording costs a fraction of its point count
+  and can leave the app without a decoder being written first. A recorded walk, an imported
+  route and a path a router computes later are the same row wearing different `TrackSource`
+  values, which is why the enum names all three though only the first can be made today: a
+  table that could not say "this one was actually walked" would have to be migrated to say
+  it. Elevation, timestamps and the file's markup are dropped on the way in (`parseGpx`),
+  each for a stated reason — the app has no reading for a profile, and the file remains where
+  those live. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
+  arrive as separate rows under one name, which is the same rule the map already follows
+  between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
+  dozen untimed entries from a route file is an import of a different kind.
+- **A track hangs off an item and travels with every copy of it.** `copyItemTracks` is
+  called from `duplicateItem`, `copyGroup`, `duplicateAlternative`, `materializeRoutine` and
+  the reversed routine, plus the bundle import — deliberately **not** from `copyItemPlan`,
+  which builds a companion out of columns and cannot reach a second table. That is exactly
+  where this rule rots if nobody writes it down. The reversed routine passes `reversed: true`:
+  a path from A to B *is* the path from B to A, unlike the times and stops beside it, which
+  that copy drops rather than reverse into a plausible-looking fiction. It is **not** called
+  from `replaceJourneyLegs`: there the legs are being swapped for a *different* journey the
+  timetable just returned, and carrying the old line onto it would draw the old route under
+  the new one and claim it was followed.
+- **A connection brings the route it takes, and says so by being dashed.** The search asks
+  the router for `legGeometry` (`detailedLegs=true` on `/plan` **only**), and the import
+  writes each leg's polyline as a `TrackSource.routed` track — so a train draws along its
+  line instead of as a chord across the country. The live refresh keeps `detailedLegs=false`
+  and that is the point of sending it per call rather than as a constant: it is the button
+  pressed again and again on a platform, it costs 8 KB → 62 KB, and a delay does not move
+  the rails. (The search costs 57 KB → 103 KB, paid once per search, by the only request
+  whose answer is ever written into a plan.) The shape is **plan, not provenance** — it says
+  where the line goes, not which dated run went along it — so it travels into a routine
+  beside the coordinates and the stops, while `sourceTripId` is dropped there. Two traps
+  guarded rather than assumed: the router encodes at **1e-6** and the column stores 1e-5, so
+  `decodeTrackPoints` takes a precision and `_legShape` refuses any other one outright — a
+  line read at the wrong precision lands ten times away, which looks like data instead of
+  looking wrong; and a shape that will not decode costs its own leg a line and nothing else,
+  since the rest of the journey is perfectly good. Deliberately **not** an opt-in on the
+  search form: the switch would have to be set before the user knows whether they will
+  import this connection, it would guard the cheap call while the repeated one stays off
+  anyway, and one screen of map tiles already costs several times more without being asked.
+- **What was followed supersedes what was proposed.** A leg carrying both a recording and a
+  routed shape draws the recording, solid; a routed one alone draws dashed
+  (`MapPath.dashed`). Both stay stored and the entry's own form lists both — only the map
+  picks, because a second line beside the first says nothing a reader wants. The dash is the
+  honest part: a map can only draw a line, and whether that line is a record or a proposal
+  is exactly the difference a reader needs.
+- **A leg with a track draws the track instead of its straight segment**
+  (`tripMapFeatures`'s `tracks:`). The chord between the ends and the path between them are
+  two answers to the same question, and drawing both puts a line across the bay beside the
+  line around it. The points are decoded once in `tripTracksProvider` / `allTracksProvider`
+  rather than in `build` — unpacking is the only expensive thing a track does, and doing it
+  per camera tick is the shape of the pinch freeze this map has already been through. A row
+  whose string does not decode is **dropped rather than thrown on**: it may have come from a
+  shared bundle, and one unreadable line must not blank the map for a whole trip.
+- **The bundle carries tracks and stays lossless**, as `BundleTrack` on the item, with the
+  points as the packed string rather than a JSON array of coordinates — the string is the
+  storage format on both sides, so a round trip through pairs of doubles would quadruple the
+  file and round every point a second time. `TrackSource` travels by **name**: an index is a
+  promise about the order of a Dart declaration. No format-version bump, by the rule already
+  stated for coordinates — a version marks a shape an importer must *branch* on, and an older
+  app ignoring `tracks` imports exactly the trip it would have imported anyway. The bundle is
+  **not** gzipped, unlike the earlier plan: the packed encoding already answers the size
+  question that plan raised, and compressing the container would break every older app's
+  reading of *every* bundle for a further third.
+- **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
+  raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
+  hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.
+  Each entry carries its own **attribution** (a condition of use, so it travels with the
+  source rather than living on the screen) and an `OfflineDownload` flag: the OpenStreetMap
+  tile policy permits interactive viewing and forbids downloading regions ahead of time, so
+  a future download feature must **ask the source** instead of applying to whichever one is
+  selected. The `User-Agent` goes out as a real header via `NetworkTileProvider`, not through
+  `userAgentPackageName`, whose generic format the policy names as a reason for blocking;
+  caching stays on flutter_map's default, which honors the server's own headers and is the
+  conforming caching the policy requires. `appVersionProvider` now has two callers, not one.
+
 ### Database portability & schema changes
 
 - Data is one SQLite file. Desktop can open/create a DB at any path; Android imports/exports.
@@ -580,7 +744,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 27) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 29) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

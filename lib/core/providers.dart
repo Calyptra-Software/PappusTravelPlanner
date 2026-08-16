@@ -14,8 +14,10 @@ final bootstrapDbPathProvider = Provider<String>((ref) {
 /// metadata at startup and overridden in `main` beside the database path, so
 /// that — like it — it can be read synchronously.
 ///
-/// It exists for one caller: the connection search sends it in its `User-Agent`
-/// (see `core/app_info.dart`), which the donated Transitous instance asks for.
+/// It exists for the two things that talk to someone else's server: the
+/// connection search and the map's tile requests both send it in their
+/// `User-Agent` (see `core/app_info.dart`), which the donated Transitous
+/// instance and the OpenStreetMap tile policy each ask for by name.
 /// Deliberately unimplemented rather than defaulted to a literal, which would
 /// go stale at the first release and misname the build making the requests.
 final appVersionProvider = Provider<String>((ref) {

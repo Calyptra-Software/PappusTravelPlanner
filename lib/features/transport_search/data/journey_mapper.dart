@@ -166,6 +166,9 @@ MappedLeg _mapLeg(
     toLat: leg.to.lat,
     toLon: leg.to.lon,
     stopovers: _mapStops(leg, from.date),
+    // Carried through untouched, still at the router's precision: the import
+    // writes it, and nothing between here and there needs the points.
+    shape: leg.shape,
   );
 }
 
@@ -276,6 +279,7 @@ class MappedLeg {
     required this.toLat,
     required this.toLon,
     this.stopovers = const [],
+    this.shape,
   });
 
   final DateTime date;
@@ -306,6 +310,12 @@ class MappedLeg {
   /// The stops passed through between the two ends, kept so the journey can be
   /// read back offline (see [Stopover]).
   final List<Stopover> stopovers;
+
+  /// The route the leg takes, as the router's encoded polyline at *its*
+  /// precision. Unlike everything else here this is not a column: it becomes a
+  /// `Tracks` row beside the item, which is why `insertJourney` takes it
+  /// separately rather than finding it on the companion.
+  final String? shape;
 }
 
 /// Builds the resolver [journeyToLegs] needs: a routing mode → a concrete
