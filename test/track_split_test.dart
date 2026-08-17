@@ -43,24 +43,15 @@ void main() {
     () {
       // The property that matters: an entry left empty would draw the straight
       // line between its ends the moment somebody gave it coordinates.
-      final pieces = splitTrack(line(4), [null, null]);
+      final pieces = splitTrack(line(4), [
+        const LatLng(0, 0.001),
+        const LatLng(0, 0.002),
+      ]);
 
       expect(pieces, hasLength(3));
       expect(pieces.every((p) => p.length >= 2), isTrue);
     },
   );
-
-  test('a handover nobody could place is spread by distance, not by count', () {
-    // Dense at the start, sparse after: counting vertices would put the
-    // boundary in the crowd rather than half way along the ground.
-    final crawl = [for (var i = 0; i < 20; i++) LatLng(0, i * 0.00001)];
-    final dash = [for (var i = 1; i <= 4; i++) LatLng(0, 0.0002 + i * 0.05)];
-    final pieces = splitTrack([...crawl, ...dash], [null]);
-
-    // Half the *distance* is out in the sparse part, so the first piece has to
-    // swallow the whole crawl and then some.
-    expect(pieces[0].length, greaterThan(crawl.length));
-  });
 
   group('a there-and-back route', () {
     // Out along the equator and back over the same ground: every coordinate
@@ -136,5 +127,29 @@ void main() {
         [a, b],
       ]);
     });
+  });
+
+  test('a handover moved back stays after the one before it', () {
+    // A stretch cannot run backwards, so the bound is what a re-placed handover
+    // is clamped by rather than something the user has to remember.
+    final points = line(9);
+    final snapped = snapToTrack(
+      points,
+      const LatLng(0, 0),
+      after: 5,
+      before: 7,
+    );
+    expect(snapped, points[5]);
+  });
+
+  test('and before the one after it', () {
+    final points = line(9);
+    final snapped = snapToTrack(
+      points,
+      const LatLng(0, 0.008),
+      after: 1,
+      before: 3,
+    );
+    expect(snapped, points[3]);
   });
 }

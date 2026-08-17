@@ -19,13 +19,28 @@ import '../track_import_flow.dart';
 /// Showing the point count would be the kind of number that invites tuning
 /// something that has no dial.
 class TrackField extends ConsumerWidget {
-  const TrackField({super.key, required this.itemId, required this.tripId});
+  const TrackField({
+    super.key,
+    required this.itemId,
+    required this.tripId,
+    this.onImported,
+  });
 
   final int itemId;
 
   /// The trip the entry belongs to — the import offers *its* entries, since a
   /// recording rarely stops at one.
   final int tripId;
+
+  /// Called after an import that wrote something, so the form around this can
+  /// catch up.
+  ///
+  /// The import writes coordinates straight to the row — it has to, since it
+  /// places the *other* entries' ends in the same transaction. The form editing
+  /// this one is then holding the values from before, and saving would write
+  /// them back over what the import just set. It happened, and only to the entry
+  /// whose form was open, which is exactly the shape of two writers on one row.
+  final VoidCallback? onImported;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,12 +75,15 @@ class TrackField extends ConsumerWidget {
           spacing: 8,
           children: [
             TextButton.icon(
-              onPressed: () => startTrackImport(
-                context,
-                ref,
-                tripId: tripId,
-                preselected: [itemId],
-              ),
+              onPressed: () async {
+                final imported = await startTrackImport(
+                  context,
+                  ref,
+                  tripId: tripId,
+                  preselected: [itemId],
+                );
+                if (imported) onImported?.call();
+              },
               icon: const Icon(Icons.timeline),
               label: Text(l10n.trackImport),
             ),

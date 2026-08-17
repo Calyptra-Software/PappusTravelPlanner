@@ -964,10 +964,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get trackBoundarySkip => 'Skip';
-
-  @override
-  String get trackBoundaryEstimated => 'Estimated';
+  String get trackBoundaryMove => 'Tapping moves the nearest handover';
 
   @override
   String get trackImportConfirm => 'Import';

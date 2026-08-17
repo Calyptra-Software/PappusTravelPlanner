@@ -971,10 +971,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get trackBoundarySkip => 'Überspringen';
-
-  @override
-  String get trackBoundaryEstimated => 'Geschätzt';
+  String get trackBoundaryMove =>
+      'Ein Tipp verschiebt den nächsten Übergabepunkt';
 
   @override
   String get trackImportConfirm => 'Importieren';

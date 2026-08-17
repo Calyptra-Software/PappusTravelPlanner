@@ -423,13 +423,9 @@
     "description": "Asks the user to point at the handover between two legs.",
     "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
   },
-  "trackBoundarySkip": "Skip",
-  "@trackBoundarySkip": {
-    "description": "Leaves a handover unplaced; the split then estimates it."
-  },
-  "trackBoundaryEstimated": "Estimated",
-  "@trackBoundaryEstimated": {
-    "description": "Marks a handover that was not pointed at."
+  "trackBoundaryMove": "Tapping moves the nearest handover",
+  "@trackBoundaryMove": {
+    "description": "Says that a handover already placed is not final."
   },
   "trackImportConfirm": "Import",
   "@trackImportConfirm": {

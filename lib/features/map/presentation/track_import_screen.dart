@@ -12,6 +12,26 @@ import '../track_import_plan.dart';
 import '../track_split.dart';
 import '../widgets/map_overlays.dart';
 
+/// Colours for the stretches, chosen here rather than taken from the theme.
+///
+/// The theme's primary, secondary and tertiary are three shades of one hue in
+/// this app, which is right for a coherent screen and wrong for the one job
+/// this screen has: saying which stretch is which. These are far apart in hue
+/// and dark enough to hold their own on pale raster tiles, which are themselves
+/// full of thin red and orange lines — so no red, and nothing pastel.
+const List<Color> kTrackPieceColors = [
+  Color(0xFF1565C0), // blue
+  Color(0xFFEF6C00), // orange
+  Color(0xFF6A1B9A), // purple
+  Color(0xFF2E7D32), // green
+  Color(0xFFC2185B), // magenta
+  Color(0xFF00838F), // teal
+];
+
+/// What the part of the line nobody has divided yet is drawn in: present, but
+/// visibly not yet anybody's.
+const Color kTrackUndividedColor = Color(0xFF9E9E9E);
+
 /// Spreads one recording over the entries it covered, with the division on
 /// screen before anything is written.
 ///
@@ -21,16 +41,22 @@ import '../widgets/map_overlays.dart';
 ///
 /// The screen exists because of what it refuses to do. The line has to be cut
 /// where one entry handed over to the next, and for entries that were never
-/// given coordinates nobody knows where that is. Guessing is possible —
-/// `splitTrack` will divide the distance evenly — but this app's rule is that a
-/// position is *pointed at, never derived*, and a cut nobody can see is exactly
-/// the kind of guess that turns into a wrong answer months later. So the
-/// handovers are asked for, one tap each, on the recording itself; and because
-/// the division is drawn while it is being decided, the answer is visible before
-/// it is a fact.
+/// given coordinates nobody knows where that is. So it asks — every handover,
+/// no exceptions — and because the division is drawn while it is being decided,
+/// the answer is visible before it is a fact. There is deliberately no way to
+/// skip: an estimated cut is invisible, and an invisible guess is the kind that
+/// turns into a wrong answer months later. It also means nothing downstream
+/// needs a rule for dividing a line nobody has said anything about.
 ///
-/// Skipping is allowed. Somebody who just wants the line on the map should get
-/// it, and the estimate is then honest about being one.
+/// There is one interaction and no modes: **a tap puts a handover where it
+/// landed.** While one is still open it is that one; once they are all placed a
+/// tap moves the nearest, which is what changing your mind looks like. An
+/// earlier version made the marker itself tappable to "pick up" first — an
+/// invisible state, and one that competed with the map for the same tap, so
+/// often neither happened. The marks are inert on purpose, and the tap is the
+/// map's own `onTap`: flutter_map's gesture handling wraps its children, so a
+/// `GestureDetector` placed among them never wins the arena and no tap arrives
+/// at all. Both of those were tried; neither is worth trying again.
 Future<bool?> importTrackAcrossEntries(
   BuildContext context, {
   required List<List<LatLng>> lines,
@@ -64,22 +90,13 @@ class TrackImportScreen extends ConsumerStatefulWidget {
 }
 
 class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
+  final MapController _controller = MapController();
   late TrackImportPlan _plan;
   late List<LatLng?> _boundaries;
 
   /// Every point of the recording in one sequence — what a tap is snapped
   /// against, and the same order the cutting walks.
   late List<LatLng> _flat;
-
-  /// Which handover is being asked for, or null when none is left.
-  int? get _asking {
-    for (var i = 0; i < _boundaries.length; i++) {
-      if (_boundaries[i] == null && !_skipped.contains(i)) return i;
-    }
-    return null;
-  }
-
-  final _skipped = <int>{};
 
   @override
   void initState() {
@@ -89,28 +106,78 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     _flat = [for (final line in widget.lines) ...line];
   }
 
-  /// A tap lands on the line, never beside it, and never before the handover
-  /// already placed — the rule `splitTrack` follows, so the preview and the
-  /// result cannot disagree.
-  void _place(LatLng tap) {
-    final asking = _asking;
-    if (asking == null) return;
-    var after = 0;
-    for (var i = 0; i < asking; i++) {
-      final placed = _boundaries[i];
-      if (placed == null) continue;
-      after = _flat.indexOf(placed) + 1;
+  /// The first handover nobody has said anything about, or null once they are
+  /// all placed.
+  int? get _open {
+    for (var i = 0; i < _boundaries.length; i++) {
+      if (_boundaries[i] == null) return i;
     }
-    final snapped = snapToTrack(_flat, tap, after: after);
+    return null;
+  }
+
+  /// The handovers placed so far, as a prefix — everything up to the first one
+  /// still open. That prefix is what can be drawn as divided; the rest of the
+  /// line belongs to nobody yet.
+  List<LatLng> get _placedPrefix {
+    final out = <LatLng>[];
+    for (final at in _boundaries) {
+      if (at == null) break;
+      out.add(at);
+    }
+    return out;
+  }
+
+  bool get _complete => _boundaries.every((b) => b != null);
+
+  /// A tap puts a handover where it landed. That is the whole interaction.
+  ///
+  /// While one is still open it is that one; once they are all placed a tap
+  /// moves the **nearest**, which is what changing your mind looks like. There
+  /// is deliberately no picking-up step: a mode you cannot see is a mode you
+  /// cannot use, and nothing here is written until *Import* anyway — so a tap in
+  /// the wrong place costs another tap and is visible the moment it happens,
+  /// because the division is redrawn under it.
+  void _place(LatLng tap) {
+    final index = _open ?? _nearest(tap);
+    if (index == null) return;
+
+    // Between its neighbours, because a stretch cannot run backwards.
+    final previous = index == 0 ? null : _boundaries[index - 1];
+    final next = index + 1 < _boundaries.length ? _boundaries[index + 1] : null;
+    final after = previous == null ? 0 : trackIndexOf(_flat, previous) + 1;
+    final before = next == null ? null : trackIndexOf(_flat, next) - 1;
+    final snapped = snapToTrack(_flat, tap, after: after, before: before);
     if (snapped == null) return;
-    setState(() => _boundaries[asking] = snapped);
+    setState(() => _boundaries[index] = snapped);
+  }
+
+  /// The placed handover closest to [tap].
+  int? _nearest(LatLng tap) {
+    const distance = Distance(calculator: Haversine());
+    var best = -1;
+    var bestMetres = double.infinity;
+    for (var i = 0; i < _boundaries.length; i++) {
+      final at = _boundaries[i];
+      if (at == null) continue;
+      final metres = distance.as(LengthUnit.Meter, at, tap);
+      if (metres < bestMetres) {
+        bestMetres = metres;
+        best = i;
+      }
+    }
+    return best < 0 ? null : best;
   }
 
   Future<void> _confirm() async {
     final navigator = Navigator.of(context);
-    final stretches = splitTracks(widget.lines, _boundaries);
+    final boundaries = [for (final at in _boundaries) at!];
+    final stretches = splitTracks(widget.lines, boundaries);
     final ends = trackImportEnds(
-      TrackImportPlan(legs: _plan.legs, boundaries: _boundaries),
+      TrackImportPlan(
+        legs: _plan.legs,
+        boundaries: _boundaries,
+        selection: widget.selection,
+      ),
       first: _flat.first,
       last: _flat.last,
     );
@@ -147,17 +214,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     const basemap = kDefaultBasemap;
-    final asking = _asking;
-    final stretches = splitTracks(widget.lines, _boundaries);
-
-    // One colour per entry, cycled: the division is the whole point of this
-    // screen, so it has to be visible at a glance rather than inferred from
-    // where the markers sit.
-    final palette = [
-      theme.colorScheme.primary,
-      theme.colorScheme.tertiary,
-      theme.colorScheme.secondary,
-    ];
+    final open = _open;
+    final placed = _placedPrefix;
+    final stretches = splitTracks(widget.lines, placed);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.trackImportTitle)),
@@ -168,6 +227,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
               fit: StackFit.expand,
               children: [
                 FlutterMap(
+                  mapController: _controller,
                   options: MapOptions(
                     minZoom: kMinMapZoom,
                     maxZoom: maxZoomOf(basemap),
@@ -180,6 +240,11 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                         : null,
                     initialCenter: _flat.first,
                     initialZoom: 13,
+                    // The map's own tap, not a `GestureDetector` among its
+                    // children: flutter_map's gesture handling wraps the
+                    // children, so one placed there never wins the arena and no
+                    // tap arrives at all. Nothing competes with it now — the
+                    // handover marks are inert.
                     onTap: (_, point) => _place(point),
                     interactionOptions: const InteractionOptions(
                       flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
@@ -194,7 +259,12 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                             Polyline(
                               points: line,
                               strokeWidth: 4,
-                              color: palette[i % palette.length],
+                              // The last stretch is only *this* entry's once
+                              // every handover after it has been placed.
+                              color: i < placed.length || _complete
+                                  ? kTrackPieceColors[i %
+                                        kTrackPieceColors.length]
+                                  : kTrackUndividedColor,
                               borderStrokeWidth: 2,
                               borderColor: theme.colorScheme.surface,
                             ),
@@ -202,19 +272,34 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                     ),
                     MarkerLayer(
                       markers: [
-                        for (final at in _boundaries.nonNulls)
-                          Marker(
-                            point: at,
-                            width: 22,
-                            height: 22,
-                            child: _Handover(
-                              color: theme.colorScheme.onSurface,
-                              ring: theme.colorScheme.surface,
+                        for (var i = 0; i < _boundaries.length; i++)
+                          if (_boundaries[i] case final at?)
+                            Marker(
+                              point: at,
+                              width: 28,
+                              height: 28,
+                              // Ignoring pointers on purpose: the mark is a
+                              // mark, not a control. Letting it take taps put it
+                              // in competition with the layer that places
+                              // handovers, and a tap that two widgets both want
+                              // is a tap that does nothing.
+                              child: const IgnorePointer(child: _Handover()),
                             ),
-                          ),
                       ],
                     ),
                   ],
+                ),
+                // Placing a handover means finding a spot precisely, which is
+                // exactly when a trackpad or a shaky finger needs a button.
+                Positioned(
+                  top: 12,
+                  right: 12 + MediaQuery.paddingOf(context).right,
+                  child: MapZoomButtons(
+                    controller: _controller,
+                    basemap: basemap,
+                    zoomInTooltip: l10n.mapZoomIn,
+                    zoomOutTooltip: l10n.mapZoomOut,
+                  ),
                 ),
                 const Positioned(
                   left: 0,
@@ -228,31 +313,36 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
           _Panel(
             l10n: l10n,
             theme: theme,
-            // The question, or the summary once there is nothing left to ask.
-            question: asking == null
+            question: open == null
                 ? null
                 : l10n.trackTapBoundary(
-                    _label(_plan.legs[asking], l10n),
-                    _label(_plan.legs[asking + 1], l10n),
+                    _label(_plan.legs[open], l10n),
+                    _label(_plan.legs[open + 1], l10n),
                   ),
+            hint: _complete ? l10n.trackBoundaryMove : null,
             legend: [
               for (var i = 0; i < _plan.legs.length; i++)
-                (_label(_plan.legs[i], l10n), palette[i % palette.length]),
+                (
+                  _label(_plan.legs[i], l10n),
+                  kTrackPieceColors[i % kTrackPieceColors.length],
+                ),
             ],
             // Says what it will do, because this import changes entries and not
             // only the map.
             summary: l10n.trackImportSummary(
               _plan.legs.length,
               trackImportEnds(
-                TrackImportPlan(legs: _plan.legs, boundaries: _boundaries),
+                TrackImportPlan(
+                  legs: _plan.legs,
+                  boundaries: _boundaries,
+                  selection: widget.selection,
+                ),
                 first: _flat.first,
                 last: _flat.last,
               ).length,
             ),
-            onSkip: asking == null
-                ? null
-                : () => setState(() => _skipped.add(asking)),
-            onConfirm: _plan.legs.isEmpty ? null : _confirm,
+            // Nothing is written until every handover has been pointed at.
+            onConfirm: _plan.legs.isEmpty || !_complete ? null : _confirm,
           ),
         ],
       ),
@@ -260,25 +350,25 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   }
 }
 
-/// The strip under the map: what is being asked, which colour is which entry,
-/// and the two buttons.
+/// The strip under the map: which colour is which entry, what is being asked,
+/// and the one button.
 class _Panel extends StatelessWidget {
   const _Panel({
     required this.l10n,
     required this.theme,
     required this.question,
+    required this.hint,
     required this.legend,
     required this.summary,
-    required this.onSkip,
     required this.onConfirm,
   });
 
   final AppLocalizations l10n;
   final ThemeData theme;
   final String? question;
+  final String? hint;
   final List<(String, Color)> legend;
   final String summary;
-  final VoidCallback? onSkip;
   final VoidCallback? onConfirm;
 
   @override
@@ -299,7 +389,7 @@ class _Panel extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(width: 12, height: 4, color: colour),
+                      Container(width: 14, height: 4, color: colour),
                       const SizedBox(width: 6),
                       Text(label, style: theme.textTheme.labelSmall),
                     ],
@@ -308,7 +398,7 @@ class _Panel extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              question ?? summary,
+              question ?? hint ?? summary,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: question == null
                     ? theme.colorScheme.onSurfaceVariant
@@ -318,12 +408,14 @@ class _Panel extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                if (onSkip != null)
-                  TextButton(
-                    onPressed: onSkip,
-                    child: Text(l10n.trackBoundarySkip),
+                Expanded(
+                  child: Text(
+                    summary,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                const Spacer(),
+                ),
                 FilledButton(
                   onPressed: onConfirm,
                   child: Text(l10n.trackImportConfirm),
@@ -337,21 +429,24 @@ class _Panel extends StatelessWidget {
   }
 }
 
-/// A handover already placed. Ink on a halo, in map colours rather than theme
-/// colours — raster tiles are pale in both themes and full of thin red lines,
-/// so a mark tinted by the theme reads as a road.
+/// A handover already placed.
+///
+/// Ink on a halo, in its own colours rather than the theme's — raster tiles are
+/// pale in both themes and full of thin lines, so a mark tinted by the theme
+/// reads as a road.
 class _Handover extends StatelessWidget {
-  const _Handover({required this.color, required this.ring});
-
-  final Color color;
-  final Color ring;
+  const _Handover();
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: color,
-      shape: BoxShape.circle,
-      border: Border.all(color: ring, width: 3),
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        color: const Color(0xFF212121),
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+      ),
     ),
   );
 }

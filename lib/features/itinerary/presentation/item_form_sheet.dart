@@ -250,6 +250,28 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     if (done && mounted) navigator.pop();
   }
 
+  /// Re-reads this entry's coordinates after an import wrote them.
+  ///
+  /// The import has to write straight to the row — it places the *other*
+  /// entries' ends in the same transaction — so for the one entry whose form is
+  /// open there are briefly two writers. Without this the form would still hold
+  /// the values from before and put them back on save, which is how an import
+  /// across two legs left the one it was started from with no coordinates at
+  /// all while the other was correct.
+  Future<void> _reloadPositions() async {
+    final items = await ref
+        .read(repositoryProvider)
+        .watchItems(widget.tripId)
+        .first;
+    final fresh = items.where((i) => i.id == widget.existing!.id).firstOrNull;
+    if (fresh == null || !mounted) return;
+    setState(() {
+      _position = _Coordinates.of(fresh.lat, fresh.lon);
+      _fromPosition = _Coordinates.of(fresh.fromLat, fresh.fromLon);
+      _toPosition = _Coordinates.of(fresh.toLat, fresh.toLon);
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final repo = ref.read(repositoryProvider);
@@ -612,6 +634,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     TrackField(
                       itemId: widget.existing!.id,
                       tripId: widget.tripId,
+                      onImported: _reloadPositions,
                     ),
                   ],
                 ] else ...[

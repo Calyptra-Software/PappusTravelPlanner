@@ -1730,17 +1730,11 @@ abstract class AppLocalizations {
   /// **'Tap where “{before}” hands over to “{after}”'**
   String trackTapBoundary(String before, String after);
 
-  /// Leaves a handover unplaced; the split then estimates it.
+  /// Says that a handover already placed is not final.
   ///
   /// In en, this message translates to:
-  /// **'Skip'**
-  String get trackBoundarySkip;
-
-  /// Marks a handover that was not pointed at.
-  ///
-  /// In en, this message translates to:
-  /// **'Estimated'**
-  String get trackBoundaryEstimated;
+  /// **'Tapping moves the nearest handover'**
+  String get trackBoundaryMove;
 
   /// Writes the divided line onto the entries.
   ///

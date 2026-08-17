@@ -11,10 +11,10 @@ const Distance _distance = Distance(calculator: Haversine());
 /// actually covered and none of the ground it did not.
 ///
 /// [boundaries] are the handovers *between* consecutive entries, in order, and
-/// there is one fewer of them than there are stretches. A boundary is null when
-/// nobody could say where it falls: no coordinate on either side, and the user
-/// declined to point at one. Those are placed by dividing the distance between
-/// their known neighbours evenly, which is a guess — and the only one here.
+/// there is one fewer of them than there are stretches. Every one of them is
+/// known: the import will not proceed until each has been pointed at, so there
+/// is no rule here for dividing a line nobody has said anything about — and
+/// therefore no guess anywhere in this file.
 ///
 /// Two properties matter more than the exact cut, because they are what a later
 /// edit could otherwise break:
@@ -30,7 +30,7 @@ const Distance _distance = Distance(calculator: Haversine());
 /// line left after the one before it. That is what makes a there-and-back route
 /// work: the turning point is passed twice, so "nearest to this coordinate" is
 /// ambiguous while "nearest *after* the last handover" is not.
-List<List<LatLng>> splitTrack(List<LatLng> points, List<LatLng?> boundaries) {
+List<List<LatLng>> splitTrack(List<LatLng> points, List<LatLng> boundaries) {
   if (boundaries.isEmpty) return [points];
   if (points.length < 2) {
     return [for (var i = 0; i <= boundaries.length; i++) points];
@@ -56,7 +56,7 @@ List<List<LatLng>> splitTrack(List<LatLng> points, List<LatLng?> boundaries) {
 /// Returns one list of lines per stretch, in the order [lines] arrived in.
 List<List<List<LatLng>>> splitTracks(
   List<List<LatLng>> lines,
-  List<LatLng?> boundaries,
+  List<LatLng> boundaries,
 ) {
   // Flattened, with each point remembering which line it came from, so a cut
   // can be looked for along the outing and rebuilt within its segments.
@@ -105,81 +105,23 @@ List<List<LatLng>> _linesBetween(
 
 /// The index each boundary falls on, strictly increasing, with room left for
 /// every stretch to keep at least two points.
-List<int> _cutIndices(List<LatLng> points, List<LatLng?> boundaries) {
-  final cuts = List<int?>.filled(boundaries.length, null);
-
-  // Pass one: everything anybody could say where it is.
+List<int> _cutIndices(List<LatLng> points, List<LatLng> boundaries) {
+  final cuts = <int>[];
   var searchFrom = 1;
   for (var i = 0; i < boundaries.length; i++) {
-    final at = boundaries[i];
-    if (at == null) continue;
     // Leave one point per remaining stretch, so a cut cannot swallow the ones
     // behind it on a line with barely more points than entries.
     final latest = points.length - 2 - (boundaries.length - 1 - i);
-    if (searchFrom > latest) break;
-    final index = _nearestIndex(points, at, searchFrom, latest);
-    cuts[i] = index;
+    final index = _nearestIndex(
+      points,
+      boundaries[i],
+      searchFrom.clamp(1, latest < 1 ? 1 : latest),
+      latest < 1 ? 1 : latest,
+    );
+    cuts.add(index);
     searchFrom = index + 1;
   }
-
-  // Pass two: the rest, spread by distance between the neighbours that are
-  // placed — the guess, and the only one.
-  var start = 0;
-  while (start < cuts.length) {
-    if (cuts[start] != null) {
-      start++;
-      continue;
-    }
-    var end = start;
-    while (end < cuts.length && cuts[end] == null) {
-      end++;
-    }
-    final fromIndex = start == 0 ? 0 : cuts[start - 1]!;
-    final toIndex = end == cuts.length ? points.length - 1 : cuts[end]!;
-    final placed = _spread(points, fromIndex, toIndex, end - start);
-    for (var i = start; i < end; i++) {
-      cuts[i] = placed[i - start];
-    }
-    start = end;
-  }
-
-  return [for (final cut in cuts) cut!];
-}
-
-/// [count] indices strictly between [from] and [to], at even distances along the
-/// line rather than every so many points: a recording is dense where it was slow
-/// and sparse where it was fast, so counting vertices would put every boundary
-/// in the traffic jam.
-List<int> _spread(List<LatLng> points, int from, int to, int count) {
-  final lengths = <double>[0];
-  for (var i = from + 1; i <= to; i++) {
-    lengths.add(
-      lengths.last + _distance.as(LengthUnit.Meter, points[i - 1], points[i]),
-    );
-  }
-  final total = lengths.last;
-  final out = <int>[];
-  var cursor = from + 1;
-  for (var k = 1; k <= count; k++) {
-    if (total == 0) {
-      // A stretch that stands still — the recorder left running. Nothing to
-      // divide, so the boundaries fall one point apart.
-      out.add(cursor.clamp(from + 1, to - 1));
-      cursor++;
-      continue;
-    }
-    final target = total * k / (count + 1);
-    var index = from + 1;
-    for (var i = 1; i < lengths.length; i++) {
-      if (lengths[i] >= target) {
-        index = from + i;
-        break;
-      }
-    }
-    out.add(index.clamp(cursor, to - 1));
-    cursor = out.last + 1;
-  }
-  return out;
+  return cuts;
 }
 
 /// The point of [points] nearest to [target], looked for in `[from, to]`.
@@ -196,14 +138,28 @@ int _nearestIndex(List<LatLng> points, LatLng target, int from, int to) {
   return best;
 }
 
-/// Where a tap lands on the line: the nearest recorded point at or after
-/// [after].
+/// Where a tap lands on the line: the nearest recorded point within
+/// `[after, before]`.
 ///
 /// Snapped, because a handover has to lie *on* the recording — a point beside it
-/// would not divide anything — and because a fingertip is wider than a line. The
-/// [after] bound is the same rule the cutting uses, so what the user points at
-/// and what the split does cannot disagree.
-LatLng? snapToTrack(List<LatLng> points, LatLng tap, {int after = 0}) {
-  if (points.length < 2 || after >= points.length) return null;
-  return points[_nearestIndex(points, tap, after, points.length - 1)];
+/// would not divide anything — and because a fingertip is wider than a line.
+///
+/// The bounds are the same rule the cutting uses, so what the user points at and
+/// what the split does cannot disagree. They also keep a handover **between its
+/// neighbours** when one is moved after the fact: dragging the second boundary
+/// back past the first would ask for a stretch that runs backwards, and the
+/// honest answer is that the line does not go there.
+LatLng? snapToTrack(
+  List<LatLng> points,
+  LatLng tap, {
+  int after = 0,
+  int? before,
+}) {
+  final last = (before ?? points.length - 1).clamp(0, points.length - 1);
+  if (points.length < 2 || after > last) return null;
+  return points[_nearestIndex(points, tap, after, last)];
 }
+
+/// Where a point of the recording sits in it, or -1. Used to turn a handover
+/// back into the bound its neighbours are searched against.
+int trackIndexOf(List<LatLng> points, LatLng point) => points.indexOf(point);

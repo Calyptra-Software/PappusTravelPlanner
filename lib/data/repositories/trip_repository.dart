@@ -5,6 +5,7 @@ import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
 import '../database/track_points.dart';
+import '../../features/map/track_import_plan.dart' show TrackEnd;
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -109,7 +110,7 @@ class TripRepository {
   Future<void> importTrackAcross({
     required String? name,
     required List<({int itemId, List<LatLng> points})> pieces,
-    required List<({int itemId, bool isStart, LatLng at})> ends,
+    required List<({int itemId, TrackEnd end, LatLng at})> ends,
   }) => _db.trackDao.importTrackAcross(name: name, pieces: pieces, ends: ends);
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);

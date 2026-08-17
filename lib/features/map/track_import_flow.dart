@@ -19,7 +19,7 @@ import 'widgets/track_entry_picker.dart';
 /// that leg. Keeping it one flow is what makes the single-leg case get the map
 /// as well — which is where an entry that was never given coordinates finally
 /// gets them, from the recording's own ends.
-Future<void> startTrackImport(
+Future<bool> startTrackImport(
   BuildContext context,
   WidgetRef ref, {
   required int tripId,
@@ -29,31 +29,31 @@ Future<void> startTrackImport(
   final messenger = ScaffoldMessenger.of(context);
 
   final source = await _pickGpx();
-  if (source == null || !context.mounted) return;
+  if (source == null || !context.mounted) return false;
 
   final List<GpxTrack> read;
   try {
     read = parseGpx(source);
   } on FormatException {
     messenger.showSnackBar(SnackBar(content: Text(l10n.trackInvalidFile)));
-    return;
+    return false;
   }
   if (read.isEmpty) {
     messenger.showSnackBar(SnackBar(content: Text(l10n.trackNothingInFile)));
-    return;
+    return false;
   }
 
   // Read once rather than watched: this is a question asked at a moment, and a
   // stream would keep the picker's list moving under the user's finger.
   final items = await ref.read(repositoryProvider).watchItems(tripId).first;
-  if (!context.mounted) return;
+  if (!context.mounted) return false;
 
   final selection = await showTrackEntryPicker(
     context,
     items: items,
     preselected: preselected,
   );
-  if (selection == null || selection.isEmpty || !context.mounted) return;
+  if (selection == null || selection.isEmpty || !context.mounted) return false;
 
   final imported = await importTrackAcrossEntries(
     context,
@@ -61,9 +61,9 @@ Future<void> startTrackImport(
     name: read.map((t) => t.name).nonNulls.firstOrNull,
     selection: selection,
   );
-  if (imported == true) {
-    messenger.showSnackBar(SnackBar(content: Text(l10n.trackImported)));
-  }
+  if (imported != true) return false;
+  messenger.showSnackBar(SnackBar(content: Text(l10n.trackImported)));
+  return true;
 }
 
 /// The file, as text.
