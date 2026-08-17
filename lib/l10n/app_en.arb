@@ -406,6 +406,40 @@
     "description": "How many lines an entry carries; a recording that stopped and resumed arrives as several.",
     "placeholders": { "count": { "type": "int" } }
   },
+  "trackImportTitle": "Import a recorded line",
+  "@trackImportTitle": {
+    "description": "Title of the screen that spreads one GPX across the entries it covers."
+  },
+  "trackPickEntries": "Which entries does it cover?",
+  "@trackPickEntries": {
+    "description": "Title of the sheet where the covered entries are ticked."
+  },
+  "trackPickEntriesHint": "Pick a run of entries in one go \u2014 the line is divided between them.",
+  "@trackPickEntriesHint": {
+    "description": "Explains that the selection must be contiguous."
+  },
+  "trackTapBoundary": "Tap where \u201c{before}\u201d hands over to \u201c{after}\u201d",
+  "@trackTapBoundary": {
+    "description": "Asks the user to point at the handover between two legs.",
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "trackBoundaryMove": "Tapping moves the nearest handover",
+  "@trackBoundaryMove": {
+    "description": "Says that a handover already placed is not final."
+  },
+  "trackImportConfirm": "Import",
+  "@trackImportConfirm": {
+    "description": "Writes the divided line onto the entries."
+  },
+  "trackImportSummary": "{legs, plural, =1{1 entry} other{{legs} entries}}, {ends, plural, =0{no coordinates set} =1{1 coordinate set} other{{ends} coordinates set}}",
+  "@trackImportSummary": {
+    "description": "Says what the import will do, since it changes entries and not only the map.",
+    "placeholders": { "legs": { "type": "int" }, "ends": { "type": "int" } }
+  },
+  "trackNoLegsPicked": "Pick at least one transport leg",
+  "@trackNoLegsPicked": {
+    "description": "Shown when the selection holds only places, which cannot carry a line."
+  },
   "trackImported": "Line imported",
   "@trackImported": {
     "description": "Confirmation after a GPX import."

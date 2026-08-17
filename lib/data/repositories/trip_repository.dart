@@ -5,6 +5,7 @@ import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
 import '../database/track_points.dart';
+import '../../features/map/track_import_plan.dart' show TrackEnd;
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -79,6 +80,10 @@ class TripRepository {
 
   /// Every *live* entry carrying a position, across all trips — what the
   /// overview's map draws, before the overview's own filter narrows it.
+  /// A trip's entries as they stand — a question asked at a moment, not watched.
+  Future<List<ItineraryItem>> itemsFor(int tripId) =>
+      _db.itineraryDao.itemsFor(tripId);
+
   Stream<List<ItineraryItem>> watchPositionedItems() =>
       _db.itineraryDao.watchPositionedItems();
 
@@ -103,6 +108,14 @@ class TripRepository {
 
   Future<void> deleteTracksForItem(int itemId) =>
       _db.trackDao.deleteTracksForItem(itemId);
+
+  /// One recording across the entries it covered, with the coordinates the
+  /// import learned on the way.
+  Future<void> importTrackAcross({
+    required String? name,
+    required List<({int itemId, List<LatLng> points})> pieces,
+    required List<({int itemId, TrackEnd end, LatLng at})> ends,
+  }) => _db.trackDao.importTrackAcross(name: name, pieces: pieces, ends: ends);
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>

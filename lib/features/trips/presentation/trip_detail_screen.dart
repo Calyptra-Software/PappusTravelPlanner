@@ -15,6 +15,7 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../map/track_import_flow.dart';
 import '../../checklist/presentation/trip_checklists_section.dart';
 import '../../costs/application/cost_display_provider.dart';
 import '../../costs/application/cost_providers.dart';
@@ -43,7 +44,7 @@ import '../widgets/trip_when_line.dart';
 /// the app's own re-importable `.tpt` bundle, exported as a printable PDF or an
 /// `.ics` for a calendar, reversed into a return journey (routines only), or
 /// deleted.
-enum _TripAction { duplicateReversed, share, pdf, ics, delete }
+enum _TripAction { importTrack, duplicateReversed, share, pdf, ics, delete }
 
 /// One entry of that menu. Written once so the five cannot drift apart in
 /// padding or density, which is the usual way a menu ends up looking assembled.
@@ -575,6 +576,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
             onSelected: (action) {
               final title = tripAsync.value?.title ?? '';
               switch (action) {
+                case _TripAction.importTrack:
+                  // A recording rarely stops at one entry, so it is offered on
+                  // the trip: the unit an act applies to is the unit it is
+                  // offered on, and a leg's form cannot speak for its neighbours.
+                  startTrackImport(context, ref, tripId: tripId);
                 case _TripAction.duplicateReversed:
                   _duplicateReversed(context, ref, title);
                 case _TripAction.share:
@@ -594,6 +600,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   Icons.swap_vert,
                   l10n.routineDuplicateReversed,
                 ),
+              _menuItem(
+                _TripAction.importTrack,
+                Icons.timeline,
+                l10n.trackImport,
+              ),
               _menuItem(_TripAction.share, Icons.ios_share, l10n.shareTrip),
               // A routine has no dates, so neither paper nor a calendar can
               // hold it.

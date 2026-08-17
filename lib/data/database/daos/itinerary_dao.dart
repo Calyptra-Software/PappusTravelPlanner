@@ -49,6 +49,25 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Ordered by trip and then as a day reads, because the caller groups by trip
   /// and hands each group to `tripMapFeatures`, which needs a plan in order.
+  /// One trip's entries as they stand, in the order a day reads them.
+  ///
+  /// A Future rather than a stream, because the callers are asking a question at
+  /// a moment — "what is there to pick from" — and a stream would keep the
+  /// answer moving under the user's finger. It is also the only shape that
+  /// resolves under `flutter_test`'s clock, where a drift `.watch()` never does.
+  Future<List<ItineraryItem>> itemsFor(int tripId) =>
+      (select(itineraryItems)
+            ..where((i) => i.tripId.equals(tripId))
+            ..orderBy([
+              (i) => OrderingTerm(expression: i.date),
+              (i) => OrderingTerm(expression: i.sortOrder),
+              (i) => OrderingTerm(
+                expression: i.startMinutes,
+                nulls: NullsOrder.last,
+              ),
+            ]))
+          .get();
+
   Stream<List<ItineraryItem>> watchPositionedItems() {
     final query =
         select(itineraryItems).join([
