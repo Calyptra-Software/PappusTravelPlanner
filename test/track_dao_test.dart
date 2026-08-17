@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/database/track_points.dart';
+import 'package:travelplanner/features/map/track_import_plan.dart';
 import 'package:travelplanner/features/sharing/trip_bundle.dart';
 
 /// Storing the line an entry followed, and keeping it through every copy.
@@ -186,5 +187,146 @@ void main() {
     await (db.delete(db.itineraryItems)..where((i) => i.id.equals(leg))).go();
 
     expect(await db.select(db.tracks).get(), isEmpty);
+  });
+
+  group('one recording across several entries', () {
+    test('writes the pieces and the coordinates it learned, together', () async {
+      final trip = await makeTrip();
+      final a = await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+              kind: ItemKind.transport,
+              // An end that came from a search: placing it by hand has to drop the
+              // id, which no longer describes where the end is.
+              toPlaceId: const Value('de:02000:11'),
+            ),
+          );
+      final b = await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+              kind: ItemKind.transport,
+            ),
+          );
+      final stop = await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+              kind: ItemKind.place,
+              title: const Value('B'),
+            ),
+          );
+
+      await db.trackDao.importTrackAcross(
+        name: 'Walk',
+        pieces: [
+          (itemId: a, points: const [LatLng(50, 8), LatLng(51, 8.2)]),
+          (itemId: b, points: const [LatLng(51, 8.2), LatLng(52, 8.5)]),
+        ],
+        ends: [
+          (itemId: a, end: TrackEnd.from, at: const LatLng(50, 8)),
+          (itemId: a, end: TrackEnd.to, at: const LatLng(51, 8.2)),
+          (itemId: b, end: TrackEnd.from, at: const LatLng(51, 8.2)),
+          (itemId: b, end: TrackEnd.to, at: const LatLng(52, 8.5)),
+          // A place has one position, not two.
+          (itemId: stop, end: TrackEnd.place, at: const LatLng(51, 8.2)),
+        ],
+      );
+
+      final rows = {
+        for (final i in await db.select(db.itineraryItems).get()) i.id: i,
+      };
+      expect(rows[a]!.fromLat, 50);
+      expect(rows[a]!.toLat, 51);
+      expect(rows[b]!.fromLat, 51);
+      expect(rows[b]!.toLat, 52);
+      expect(rows[stop]!.lat, 51);
+      expect(rows[stop]!.lon, 8.2);
+      // The id no longer describes the end, so it goes.
+      expect(rows[a]!.toPlaceId, null);
+
+      expect(await db.trackDao.watchTracksForItem(a).first, hasLength(1));
+      expect(await db.trackDao.watchTracksForItem(b).first, hasLength(1));
+      // A place carries no line: it is a point, with no straight segment to
+      // replace.
+      expect(await db.trackDao.watchTracksForItem(stop).first, isEmpty);
+    });
+
+    test('a piece too short to be a line is not written', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+
+      await db.trackDao.importTrackAcross(
+        name: null,
+        pieces: [
+          (itemId: leg, points: const [LatLng(50, 8)]),
+        ],
+        ends: const [],
+      );
+
+      expect(await db.trackDao.watchTracksForItem(leg).first, isEmpty);
+    });
+  });
+
+  test('every trip\'s lines come back in one query', () async {
+    // The all-trips map's reading — the only query here not about one trip.
+    final one = await makeTrip();
+    final two = await makeTrip();
+    await db.trackDao.addTracks(await makeLeg(one), [
+      (points: line, name: 'One'),
+    ]);
+    await db.trackDao.addTracks(await makeLeg(two), [
+      (points: line, name: 'Two'),
+    ]);
+
+    expect(
+      (await db.trackDao.watchAllTracks().first).map((t) => t.name),
+      containsAll(['One', 'Two']),
+    );
+  });
+
+  test('one line of several can be removed on its own', () async {
+    final trip = await makeTrip();
+    final leg = await makeLeg(trip);
+    await db.trackDao.addTracks(leg, [
+      (points: line, name: 'First'),
+      (points: line, name: 'Second'),
+    ]);
+
+    final stored = await db.trackDao.watchTracksForItem(leg).first;
+    await db.trackDao.deleteTrack(stored.first.id);
+
+    expect(
+      (await db.trackDao.watchTracksForItem(leg).first).map((t) => t.name),
+      ['Second'],
+    );
+  });
+
+  test('the way home covers the ground the way out covered, reversed', () async {
+    // A path from A to B *is* the path from B to A — unlike the times beside it,
+    // which the reversed routine drops rather than turn into a fiction.
+    final trip = await makeTrip();
+    final out = await makeLeg(trip);
+    final back = await makeLeg(trip);
+    await db.trackDao.addTracks(out, [
+      (
+        points: const [LatLng(53.1, 9.1), LatLng(53.2, 9.2), LatLng(53.3, 9.3)],
+        name: 'Out',
+      ),
+    ]);
+
+    await db.trackDao.copyItemTracks(out, back, reversed: true);
+
+    final copied = await db.trackDao.watchTracksForItem(back).first;
+    final points = decodeTrackPoints(copied.single.points);
+    expect(points.first.latitude, closeTo(53.3, 1e-4));
+    expect(points.last.latitude, closeTo(53.1, 1e-4));
   });
 }

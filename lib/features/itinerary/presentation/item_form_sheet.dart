@@ -259,10 +259,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// across two legs left the one it was started from with no coordinates at
   /// all while the other was correct.
   Future<void> _reloadPositions() async {
-    final items = await ref
-        .read(repositoryProvider)
-        .watchItems(widget.tripId)
-        .first;
+    final items = await ref.read(repositoryProvider).itemsFor(widget.tripId);
     final fresh = items.where((i) => i.id == widget.existing!.id).firstOrNull;
     if (fresh == null || !mounted) return;
     setState(() {

@@ -19,16 +19,21 @@ import 'widgets/track_entry_picker.dart';
 /// that leg. Keeping it one flow is what makes the single-leg case get the map
 /// as well — which is where an entry that was never given coordinates finally
 /// gets them, from the recording's own ends.
+/// [readFile] is how the file is obtained, and exists so this can be driven
+/// without a file chooser: everything after the picking — the refusals, the
+/// question about which entries, the division — is behaviour worth a test, and a
+/// native dialog in the middle would put all of it out of reach.
 Future<bool> startTrackImport(
   BuildContext context,
   WidgetRef ref, {
   required int tripId,
   List<int> preselected = const [],
+  Future<String?> Function()? readFile,
 }) async {
   final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
 
-  final source = await _pickGpx();
+  final source = await (readFile ?? _pickGpx)();
   if (source == null || !context.mounted) return false;
 
   final List<GpxTrack> read;
@@ -45,7 +50,7 @@ Future<bool> startTrackImport(
 
   // Read once rather than watched: this is a question asked at a moment, and a
   // stream would keep the picker's list moving under the user's finger.
-  final items = await ref.read(repositoryProvider).watchItems(tripId).first;
+  final items = await ref.read(repositoryProvider).itemsFor(tripId);
   if (!context.mounted) return false;
 
   final selection = await showTrackEntryPicker(
