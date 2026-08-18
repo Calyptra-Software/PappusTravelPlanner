@@ -90,6 +90,30 @@ class PlannedJourney {
 
   List<int> get legIds => [for (final leg in legs) leg.id];
 
+  /// Whether this run is one a timetable has anything to say about: it holds at
+  /// least one leg that is not a street mode.
+  ///
+  /// A run made only of walking, cycling or driving is one the router can only
+  /// hand back unchanged — it recomputes the same path over the same pavement —
+  /// so asking about it spends a request on a donated server, and the user's
+  /// attention, to be told what the plan already says. That matters here because
+  /// a leg becomes *addressable* the moment both its ends carry coordinates,
+  /// which is a side effect of pointing at them on the map for the map's own
+  /// sake: a routine with a walk across the campus in it was asking about that
+  /// walk every morning it was stamped out.
+  ///
+  /// [streetModeIds] are the rows of [TransportModes] that are street modes, from
+  /// [streetTransportModeIds] — the mode is a foreign key into a table the user
+  /// manages, so which ids those are cannot be known here.
+  ///
+  /// A leg whose mode is null or a custom one is **not** a street leg for this
+  /// purpose: only what is positively known to be one counts, since the cost of
+  /// being wrong the other way is a run that can never be looked up again. The
+  /// same reason `plannedJourneyOf` ignores all of this — with the user present,
+  /// a walk is theirs to ask about.
+  bool carriesService(Set<int> streetModeIds) =>
+      legs.any((leg) => leg.mode == null || !streetModeIds.contains(leg.mode));
+
   /// Whether this run holds enough to be searched **unattended**: both endpoints
   /// as the router addresses them, and a departure time to search around.
   ///
@@ -149,16 +173,46 @@ PlannedJourney? plannedJourneyOf(List<ItineraryItem> items) {
   return journeys.length == 1 ? journeys.single : null;
 }
 
-/// The journeys in [items] that could be looked up again, in day order.
+/// The journeys in [items] worth looking up again, in day order.
 ///
-/// A run qualifies when its ends can still be addressed to the router — by the
-/// id the search used, or failing that by the coordinates the leg carries —
-/// and it is grouped exactly as the import grouped it. Items in an option that was not chosen are skipped by the
-/// caller, not here: this only answers what the plan *holds*.
-List<PlannedJourney> plannedJourneys(List<ItineraryItem> items) => [
+/// Two conditions, deliberately separate. A run must be **addressable** — its
+/// ends reachable by the id the search used, or failing that by the coordinates
+/// the leg carries ([PlannedJourney.canLookUp]) — and it must be a journey a
+/// timetable can answer for at all ([PlannedJourney.carriesService]). The first
+/// asks whether the query can be issued, the second whether it is worth issuing;
+/// running them together once meant a walk across the campus was searched every
+/// time a routine was stamped out, simply because both its ends had been given
+/// coordinates.
+///
+/// Grouping is as the import left it. Items in an option that was not chosen are
+/// skipped by the caller, not here: this only answers what the plan *holds*.
+List<PlannedJourney> plannedJourneys(
+  List<ItineraryItem> items, {
+  required Set<int> streetModeIds,
+}) => [
   for (final journey in _runs(items))
-    if (journey.canLookUp) journey,
+    if (journey.canLookUp && journey.carriesService(streetModeIds)) journey,
 ];
+
+/// The modes among [modes] that are **street** modes: the ones the router itself
+/// plans as a path over the ground rather than as a service with a timetable.
+///
+/// Exactly the built-ins that `builtinTransportModeFor` produces from
+/// [TransitMode.walk] / [TransitMode.bike] / [TransitMode.car], which is what
+/// gives the set a definition rather than a taste — the question "is this a
+/// journey a timetable knows about" is the router's own to answer. A built-in
+/// keeps its [TransportModeRow.builtinKey] through any rename or re-icon, so a
+/// user who calls walking "Schlendern" is still recognised; a mode they invented
+/// has no key and is therefore not one of these, by the rule stated on
+/// [PlannedJourney.carriesService].
+Set<int> streetTransportModeIds(List<TransportModeRow> modes) {
+  const street = {TransportMode.walk, TransportMode.bike, TransportMode.car};
+  final keys = {for (final mode in street) mode.name};
+  return {
+    for (final mode in modes)
+      if (keys.contains(mode.builtinKey)) mode.id,
+  };
+}
 
 /// The transport legs among [items], in the order a day is read: by date, then
 /// the manual ordering, then the clock. The one place that order is written down.

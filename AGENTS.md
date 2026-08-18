@@ -190,6 +190,23 @@ UI (features/*/presentation, *widgets)
   refreshable). A template is as worth re-routing as an outing: a line withdrawn or a 07:32
   retired changes every morning from now on, and the alternative was deleting the leg and
   importing a new one.
+- **Being addressable is not the same as being worth asking.** `plannedJourneys` now applies
+  two conditions rather than one: `canLookUp` (can the query be issued at all) *and*
+  `carriesService` (is this a journey a timetable answers for). A run made only of street
+  legs — walking, cycling, driving — is one the router can only hand back unchanged, since it
+  recomputes the same path over the same pavement. Running the two together meant that
+  pointing at both ends of a campus walk on the map, for the map's own sake, quietly enlisted
+  that walk in the unattended lookup, and a routine then asked about it every morning it was
+  stamped out. The set is `streetTransportModeIds`, resolved from the **table** and not from
+  the enum (a mode is a row the user manages), and defined as exactly the built-ins
+  `builtinTransportModeFor` produces from `TransitMode.walk`/`bike`/`car` — the router's own
+  answer to "is this a service", rather than a list chosen by taste. A renamed built-in still
+  counts, by its `builtinKey`; a mode the user invented, or a leg with no mode at all, does
+  **not** count as a street leg, because only what is positively known to be one may cost a
+  run its lookup. What is given up is stated plainly: the routine will not discover by itself
+  that a bus now beats the walk. `plannedJourneyOf` is untouched, so that question is still
+  one tap away from the journey sheet or the item form — the capability moves to where a
+  human is watching, which is the split those two functions already exist to draw.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the
@@ -644,7 +661,9 @@ UI (features/*/presentation, *widgets)
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
-  silently makes a hand-entered leg `canLookUp`-able once both its ends are placed. The one
+  makes a hand-entered leg `canLookUp`-able once both its ends are placed — but no longer
+  *searchable* by itself if it is a walk, since that silent side effect turned out to be the
+  bug (see the street-mode rule below). The one
   write in the other direction is a **clearing**: moving (or removing) an end drops *that
   end's* id, because the id no longer describes where the end is — and it would win over the
   coordinates, sending a re-search off from the old station. `sourceTripId` stays: it names
