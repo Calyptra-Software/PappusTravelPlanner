@@ -29,8 +29,8 @@ import '../domain/transit_mode.dart';
 ///    at [resolveMode] without touching the fan-in.
 ///
 /// Requires the timezone database to be initialised (`initializeTimeZones()`)
-/// before it runs; an unknown or missing zone falls back to UTC rather than
-/// throwing, so a leg still imports.
+/// before it runs; an unknown or missing zone falls back to the device's own
+/// rather than throwing, so a leg still imports (see [localParts]).
 /// Formats a platform label (e.g. "Pl. 20") for a leg's auto-notes; supply a
 /// localized one, else the neutral default is used.
 typedef TrackLabel = String Function(String track);
@@ -237,22 +237,35 @@ String? _trackOrNull(String? track) =>
 
 /// Projects a UTC instant into [tzName]'s local wall-clock, returning the
 /// calendar day and minutes-since-midnight. Shared by the mapper and the results
-/// UI so both read a stop's local time the same way. Unknown zone → UTC.
+/// UI so both read a stop's local time the same way.
+///
+/// With no usable zone — none given, or one this build's tzdata does not know —
+/// it falls back to the **device's** zone, not to UTC. Every end of a journey
+/// normally carries one, and `journey_ends.dart` fills in an end the router left
+/// unzoned from the journey around it; what reaches here unzoned is therefore a
+/// journey with no zoned stop anywhere in it, which in practice means walking or
+/// cycling between two coordinates. Reading that as UTC put a Hamburg walk in the
+/// timeline two hours early — and, on import, two hours early in the database.
+/// The device's zone is a guess too, but it is the one that is right for the
+/// short hop this case actually is, and it is wrong only for a traveller who has
+/// not yet changed their clock; UTC was wrong for everybody outside it.
 ({DateTime date, int minutes}) localParts(DateTime utc, String? tzName) {
-  final location = _locationOrUtc(tzName);
-  final local = tz.TZDateTime.from(utc, location);
+  final location = _locationOrNull(tzName);
+  final local = location == null
+      ? utc.toLocal()
+      : tz.TZDateTime.from(utc, location);
   return (
     date: DateTime(local.year, local.month, local.day),
     minutes: local.hour * 60 + local.minute,
   );
 }
 
-tz.Location _locationOrUtc(String? tzName) {
-  if (tzName == null) return tz.UTC;
+tz.Location? _locationOrNull(String? tzName) {
+  if (tzName == null) return null;
   try {
     return tz.getLocation(tzName);
   } on tz.LocationNotFoundException {
-    return tz.UTC;
+    return null;
   }
 }
 

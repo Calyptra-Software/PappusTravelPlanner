@@ -395,6 +395,32 @@ UI (features/*/presentation, *widgets)
   legs into one, so a group already *is* a journey and the button sits on the run's label
   (`TimelineTile.onShowJourney`); an imported leg standing alone carries its own. Each leg
   card hosts the leg's own `LiveRefreshButton` — still one tap, one leg.
+- **An end addressed by a coordinate comes back unnamed and unzoned, and both
+  silences have to be filled before anything reads the answer.** A stop answers
+  as `Hamburg-Rahlstedt` / `Europe/Berlin`; a coordinate — which is what a picked
+  address, a point tapped on the map and an imported leg's own ends all travel as
+  (`TransportPlace.queryId`) — answers as `{"name": "START"}` with no `stopId`
+  and **no `tz` at all**, since the router knows a point on the street network and
+  nothing else about it. Left alone each silence became a false statement rather
+  than a missing one: `START`/`END` were written into the timeline as the
+  stations' names, and the absent zone was read as UTC, which showed *and stored*
+  a Hamburg walk two hours early — a wrong time that looks like a time, with
+  nothing about it saying it was guessed. `domain/journey_ends.dart` (pure) fills
+  both, keyed on the missing `stopId` rather than on the placeholder name, which
+  is a label and could change: the run's **outer** ends take the names the search
+  was *issued* with (the place the user picked, or what the run being re-routed
+  already calls its ends — the middle are changes the router named itself, and
+  the query has no name for them anyway), and an unzoned end takes the **nearest**
+  zone in the journey, carried forward from the last end that had one else back
+  from the next. What the service itself said always stands. It is applied at the
+  two places an answer arrives — `JourneyResultsController._fetch`, so paging
+  windows are merged already resolved, and `searchPlannedJourney` — so the result
+  rows, the preview, the journey sheet and the import all read one resolved
+  answer instead of each repairing it. When *nothing* in the journey is zoned —
+  a walk between two coordinates, which is exactly the short hop this arises on —
+  `localParts` falls back to the **device's** zone: a guess too, but the one that
+  is right for a hop, and wrong only for a traveller who has not yet changed
+  their clock, where UTC was wrong for everybody outside it.
 - **A connection is planned where the button that searched for it plans everything else.**
   The search is reached from the item form, which is reached from a day's *Add transport* or
   from one **option's**, so the option rides along — `ItemFormSheet` → `showConnectionSearchSheet`

@@ -202,6 +202,11 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
         // has to travel as a coordinate (see `TransportPlace.queryId`).
         fromId: _from!.queryId,
         toId: _to!.queryId,
+        // Carried so an end answered as a bare coordinate can be named by what
+        // the user picked rather than by the router's `START` / `END` — see
+        // `journey_ends.dart`.
+        fromName: _from!.name,
+        toName: _to!.name,
         // A via *is* always a stop (the picker allows nothing else), so each
         // queryId here is a stop id — the only thing the service takes.
         via: ViaStops([

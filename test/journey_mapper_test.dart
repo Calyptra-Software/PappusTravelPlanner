@@ -236,11 +236,13 @@ void main() {
       expect(mapped.notes, isNull); // no direction, no platforms
     });
 
-    test('an unknown timezone falls back to UTC rather than throwing', () {
+    test('an unknown or absent zone falls back to the device\'s, not UTC', () {
+      final start = DateTime.utc(2026, 7, 27, 10);
+      final end = DateTime.utc(2026, 7, 27, 11);
       final leg = JourneyLeg(
         mode: TransitMode.bus,
-        from: _point('A', DateTime.utc(2026, 7, 27, 10), 'Not/AZone'),
-        to: _point('B', DateTime.utc(2026, 7, 27, 11), null),
+        from: _point('A', start, 'Not/AZone'),
+        to: _point('B', end, null),
         realTime: false,
       );
       final mapped = journeyToLegs(
@@ -248,8 +250,24 @@ void main() {
         resolveMode: _stubResolve,
       ).single;
 
-      expect(mapped.startMinutes, 10 * 60); // treated as UTC
-      expect(mapped.endMinutes, 11 * 60);
+      // Stated against the device's own zone rather than a fixed number, so the
+      // test says what the rule is wherever it runs. Reading these as UTC put a
+      // walk between two coordinates two hours early in Berlin's summer.
+      int minutesOf(DateTime utc) {
+        final local = utc.toLocal();
+        return local.hour * 60 + local.minute;
+      }
+
+      expect(mapped.startMinutes, minutesOf(start));
+      expect(mapped.endMinutes, minutesOf(end));
+      expect(
+        mapped.date,
+        DateTime(
+          start.toLocal().year,
+          start.toLocal().month,
+          start.toLocal().day,
+        ),
+      );
     });
   });
 

@@ -217,6 +217,10 @@ LegPoint _legEnd(
     name: j['name'] as String? ?? '',
     scheduled: _parseUtc(j[scheduledKey] ?? live),
     actual: realTime && live != null ? _parseUtc(live) : null,
+    // Absent for an end the query addressed by coordinate, which is what says
+    // the name is the service's placeholder and the missing `tz` its silence
+    // rather than an omission — see `journey_ends.dart`.
+    stopId: j['stopId'] as String?,
     lat: _toDouble(j['lat']),
     lon: _toDouble(j['lon']),
     track: (j['track'] ?? j['scheduledTrack']) as String?,
