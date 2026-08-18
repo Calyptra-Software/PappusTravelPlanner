@@ -13,6 +13,7 @@ class LegPoint {
     required this.name,
     required this.scheduled,
     this.actual,
+    this.stopId,
     this.lat,
     this.lon,
     this.track,
@@ -22,6 +23,14 @@ class LegPoint {
   final String name;
   final DateTime scheduled;
   final DateTime? actual;
+
+  /// The routing service's id for the stop this end is, or null when it is not
+  /// a stop at all — which is what an end the query addressed by **coordinate**
+  /// comes back as. That is the structural fact behind the placeholder `START`
+  /// / `END` the service names such an end with, and behind its missing
+  /// [timeZone]: both are read off this rather than off the name, which is a
+  /// label and could change.
+  final String? stopId;
   final double? lat;
   final double? lon;
 
@@ -34,6 +43,21 @@ class LegPoint {
   /// The best-known time at this point: the real-time value if present, else the
   /// plan. Still a UTC instant (see the class doc).
   DateTime get effective => actual ?? scheduled;
+
+  /// This point with [name] and/or [timeZone] replaced; either omitted keeps
+  /// what is here. Plain override rather than fill-in semantics — *whether* an
+  /// end should be renamed or given a zone is a judgement, and it is made in
+  /// one place (`journey_ends.dart`, the only caller) rather than half here.
+  LegPoint copyWith({String? name, String? timeZone}) => LegPoint(
+    name: name ?? this.name,
+    scheduled: scheduled,
+    actual: actual,
+    stopId: stopId,
+    lat: lat,
+    lon: lon,
+    track: track,
+    timeZone: timeZone ?? this.timeZone,
+  );
 }
 
 /// A stop the vehicle calls at **between** a leg's two ends.
@@ -120,6 +144,21 @@ class JourneyLeg {
   /// geometry for — in which case the map falls back to the straight line
   /// between the ends, which is what it drew before this existed.
   final String? shape;
+
+  /// This leg with either end replaced; everything that describes the *service*
+  /// is carried through untouched. See `journey_ends.dart`.
+  JourneyLeg withEnds({LegPoint? from, LegPoint? to}) => JourneyLeg(
+    mode: mode,
+    from: from ?? this.from,
+    to: to ?? this.to,
+    realTime: realTime,
+    line: line,
+    headsign: headsign,
+    tripId: tripId,
+    cancelled: cancelled,
+    stops: stops,
+    shape: shape,
+  );
 }
 
 /// One stop of a vehicle's whole trip, as returned by the per-trip live query.
@@ -239,4 +278,15 @@ class JourneyOption {
   final Duration duration;
   final int transfers;
   final List<JourneyLeg> legs;
+
+  /// This option with [legs] replaced. The times either side are the journey's
+  /// own UTC instants and are unaffected by anything `journey_ends.dart` does
+  /// to the legs, which only names an end and dates it.
+  JourneyOption withLegs(List<JourneyLeg> legs) => JourneyOption(
+    departure: departure,
+    arrival: arrival,
+    duration: duration,
+    transfers: transfers,
+    legs: legs,
+  );
 }

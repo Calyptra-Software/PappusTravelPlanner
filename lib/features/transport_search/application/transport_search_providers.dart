@@ -4,6 +4,7 @@ import '../../../core/app_info.dart';
 import '../../../core/providers.dart';
 import '../data/motis_client.dart';
 import '../domain/journey.dart';
+import '../domain/journey_ends.dart';
 import '../domain/journey_options.dart';
 import '../domain/transport_place.dart';
 import '../domain/via_stop.dart';
@@ -51,9 +52,20 @@ final geocodeProvider = FutureProvider.autoDispose
 /// The parameters of a journey search — a value type, so two identical searches
 /// share one cached result. [JourneySearchOptions] and [ViaStops] compare by
 /// value for the same reason.
+///
+/// [fromName] / [toName] name the two ends as the user picked them. They are not
+/// sent anywhere: they are what `resolvedEnds` puts on an end the router could
+/// only answer with a placeholder, which is why they ride here rather than being
+/// applied by whoever reads the results — the paging windows are joined inside
+/// the controller, and a window resolved differently from the one it is merged
+/// onto would be two answers to one question. Being part of the key is harmless:
+/// a name travels with the place it belongs to, so two searches that differ only
+/// in it do not arise.
 typedef JourneyQuery = ({
   String fromId,
   String toId,
+  String fromName,
+  String toName,
   ViaStops via,
   DateTime time,
   bool arriveBy,
@@ -110,15 +122,25 @@ class JourneyResultsController extends AsyncNotifier<JourneyResults> {
     }
   }
 
-  Future<JourneyResults> _fetch({String? pageCursor}) => ref
-      .read(transportSearchProvider)
-      .journeys(
-        fromId: query.fromId,
-        toId: query.toId,
-        via: query.via,
-        time: query.time,
-        arriveBy: query.arriveBy,
-        options: query.options,
-        pageCursor: pageCursor,
-      );
+  Future<JourneyResults> _fetch({String? pageCursor}) async {
+    final results = await ref
+        .read(transportSearchProvider)
+        .journeys(
+          fromId: query.fromId,
+          toId: query.toId,
+          via: query.via,
+          time: query.time,
+          arriveBy: query.arriveBy,
+          options: query.options,
+          pageCursor: pageCursor,
+        );
+    // One of the two places a search's answer arrives, and so one of the two
+    // that resolve the ends the router addressed by coordinate — before the
+    // results are read, merged or imported. See `journey_ends.dart`.
+    return resolvedEnds(
+      results,
+      fromName: query.fromName,
+      toName: query.toName,
+    );
+  }
 }

@@ -190,6 +190,23 @@ UI (features/*/presentation, *widgets)
   refreshable). A template is as worth re-routing as an outing: a line withdrawn or a 07:32
   retired changes every morning from now on, and the alternative was deleting the leg and
   importing a new one.
+- **Being addressable is not the same as being worth asking.** `plannedJourneys` now applies
+  two conditions rather than one: `canLookUp` (can the query be issued at all) *and*
+  `carriesService` (is this a journey a timetable answers for). A run made only of street
+  legs — walking, cycling, driving — is one the router can only hand back unchanged, since it
+  recomputes the same path over the same pavement. Running the two together meant that
+  pointing at both ends of a campus walk on the map, for the map's own sake, quietly enlisted
+  that walk in the unattended lookup, and a routine then asked about it every morning it was
+  stamped out. The set is `streetTransportModeIds`, resolved from the **table** and not from
+  the enum (a mode is a row the user manages), and defined as exactly the built-ins
+  `builtinTransportModeFor` produces from `TransitMode.walk`/`bike`/`car` — the router's own
+  answer to "is this a service", rather than a list chosen by taste. A renamed built-in still
+  counts, by its `builtinKey`; a mode the user invented, or a leg with no mode at all, does
+  **not** count as a street leg, because only what is positively known to be one may cost a
+  run its lookup. What is given up is stated plainly: the routine will not discover by itself
+  that a bus now beats the walk. `plannedJourneyOf` is untouched, so that question is still
+  one tap away from the journey sheet or the item form — the capability moves to where a
+  human is watching, which is the split those two functions already exist to draw.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the
@@ -395,6 +412,32 @@ UI (features/*/presentation, *widgets)
   legs into one, so a group already *is* a journey and the button sits on the run's label
   (`TimelineTile.onShowJourney`); an imported leg standing alone carries its own. Each leg
   card hosts the leg's own `LiveRefreshButton` — still one tap, one leg.
+- **An end addressed by a coordinate comes back unnamed and unzoned, and both
+  silences have to be filled before anything reads the answer.** A stop answers
+  as `Hamburg-Rahlstedt` / `Europe/Berlin`; a coordinate — which is what a picked
+  address, a point tapped on the map and an imported leg's own ends all travel as
+  (`TransportPlace.queryId`) — answers as `{"name": "START"}` with no `stopId`
+  and **no `tz` at all**, since the router knows a point on the street network and
+  nothing else about it. Left alone each silence became a false statement rather
+  than a missing one: `START`/`END` were written into the timeline as the
+  stations' names, and the absent zone was read as UTC, which showed *and stored*
+  a Hamburg walk two hours early — a wrong time that looks like a time, with
+  nothing about it saying it was guessed. `domain/journey_ends.dart` (pure) fills
+  both, keyed on the missing `stopId` rather than on the placeholder name, which
+  is a label and could change: the run's **outer** ends take the names the search
+  was *issued* with (the place the user picked, or what the run being re-routed
+  already calls its ends — the middle are changes the router named itself, and
+  the query has no name for them anyway), and an unzoned end takes the **nearest**
+  zone in the journey, carried forward from the last end that had one else back
+  from the next. What the service itself said always stands. It is applied at the
+  two places an answer arrives — `JourneyResultsController._fetch`, so paging
+  windows are merged already resolved, and `searchPlannedJourney` — so the result
+  rows, the preview, the journey sheet and the import all read one resolved
+  answer instead of each repairing it. When *nothing* in the journey is zoned —
+  a walk between two coordinates, which is exactly the short hop this arises on —
+  `localParts` falls back to the **device's** zone: a guess too, but the one that
+  is right for a hop, and wrong only for a traveller who has not yet changed
+  their clock, where UTC was wrong for everybody outside it.
 - **A connection is planned where the button that searched for it plans everything else.**
   The search is reached from the item form, which is reached from a day's *Add transport* or
   from one **option's**, so the option rides along — `ItemFormSheet` → `showConnectionSearchSheet`
@@ -618,7 +661,9 @@ UI (features/*/presentation, *widgets)
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
-  silently makes a hand-entered leg `canLookUp`-able once both its ends are placed. The one
+  makes a hand-entered leg `canLookUp`-able once both its ends are placed — but no longer
+  *searchable* by itself if it is a walk, since that silent side effect turned out to be the
+  bug (see the street-mode rule below). The one
   write in the other direction is a **clearing**: moving (or removing) an end drops *that
   end's* id, because the id no longer describes where the end is — and it would win over the
   coordinates, sending a re-search off from the old station. `sourceTripId` stays: it names
@@ -731,7 +776,16 @@ UI (features/*/presentation, *widgets)
   `decodeTrackPoints` takes a precision and `_legShape` refuses any other one outright — a
   line read at the wrong precision lands ten times away, which looks like data instead of
   looking wrong; and a shape that will not decode costs its own leg a line and nothing else,
-  since the rest of the journey is perfectly good. Deliberately **not** an opt-in on the
+  since the rest of the journey is perfectly good. **A replacement is a routed
+  connection too**: `replaceJourneyLegs` writes the new run's shapes exactly as
+  the import does, which is why the repository owns that step for both
+  (`_writeRoutedShapes`) and why the DAO returns its ids in *leg* order. Leaving
+  it out meant a journey fell back to chords between its stops the moment it was
+  looked up again — most visibly in a **routine**, where re-routing is the
+  ordinary act and adding a run the rare one. Not to be confused with
+  `copyItemTracks`, still deliberately absent here: that would carry the *old*
+  run's line onto the new one and claim a route was followed that was not, while
+  this writes the route the router has just returned for these very legs. Deliberately **not** an opt-in on the
   search form: the switch would have to be set before the user knows whether they will
   import this connection, it would guard the cheap call while the repeated one stays off
   anyway, and one screen of map tiles already costs several times more without being asked.
