@@ -46,6 +46,11 @@ ItineraryItemsCompanion copyItemPlan(
   // never in another town, so the position travels exactly as the name does.
   lat: Value(item.lat),
   lon: Value(item.lon),
+  // How it is drawn on the map. Part of what the entry *is* as much as its
+  // title is: a commute the user drew in green is still that commute on the day
+  // it is copied onto, and a copy that reverted to the trip's accent would have
+  // to be re-colored every time.
+  colorValue: Value(item.colorValue),
   mode: Value(item.mode),
   fromLocation: Value(item.fromLocation),
   toLocation: Value(item.toLocation),

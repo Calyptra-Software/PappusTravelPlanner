@@ -67,6 +67,18 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// days are the union of the range and the entries) while the overview card goes
   /// on calling it a one-day trip.
   ///
+  /// The **map color** survives too, when the old run wore one and wore it
+  /// throughout. It belongs to the slot rather than to the run filling it — the
+  /// same reason the group and its ticket are kept — and it is the one thing here
+  /// a user chose by hand: a commute drawn in green stays green when this
+  /// morning's connection is looked up, where otherwise it would quietly revert
+  /// every time. A run whose legs disagreed has no one color to carry, so the
+  /// replacement takes none rather than picking a leg's and calling it the run's.
+  /// The recorded **line** deliberately does not travel the same way
+  /// (`copyItemTracks` is not called here): a color says how to draw this
+  /// stretch of the plan, while a track claims a particular route was followed,
+  /// and that claim is about the run being replaced.
+  ///
   /// [oldLegIds] are removed and [legs] inserted in their place, into
   /// [groupId] when there is one. Returns the new leg ids.
   Future<List<int>> replaceJourneyLegs(
@@ -98,6 +110,10 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       // A run lies entirely inside one option or entirely outside every one, so
       // any member answers for where the whole thing is ordered.
       final branchId = oldLegs.isEmpty ? null : oldLegs.first.alternativeId;
+
+      // The color the old run wore, if it wore one throughout — see above.
+      final colors = oldLegs.map((l) => l.colorValue).toSet();
+      final keptColor = colors.length == 1 ? colors.first : null;
 
       // Taken off the doomed legs before they go, so the cascade cannot take
       // the fare with them. Parked on the trip for the moment; re-homed on the
@@ -162,6 +178,7 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
               entry.value[i].copyWith(
                 sortOrder: Value(base + i),
                 alternativeId: Value(branchId),
+                colorValue: Value(keptColor),
               ),
             ),
           );

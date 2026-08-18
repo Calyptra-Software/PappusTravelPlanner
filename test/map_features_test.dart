@@ -381,4 +381,48 @@ void main() {
       expect(features.paths.single.dashed, isFalse);
     });
   });
+
+  group('an entry may carry its own color', () {
+    ItineraryItem colored(ItineraryItem item, int? colorValue) =>
+        item.copyWith(colorValue: Value(colorValue));
+
+    test('a place hands its color to its pin, and null stays null', () {
+      final features = tripMapFeatures([
+        colored(place(lat: 50.1, lon: 8.6, title: 'Städel'), 0xFFB71C1C),
+        place(lat: 50.2, lon: 8.7, title: 'Palmengarten'),
+      ]);
+      expect(features.pins.map((p) => p.colorValue), [0xFFB71C1C, null]);
+    });
+
+    test('a leg hands its color to the line drawn between its ends', () {
+      final features = tripMapFeatures([
+        colored(
+          leg(fromLat: 53.5, fromLon: 10.0, toLat: 50.1, toLon: 8.6),
+          0xFF1B5E20,
+        ),
+      ]);
+      expect(features.paths.single.colorValue, 0xFF1B5E20);
+    });
+
+    test('and to its recorded line, which is the same claim', () {
+      // Whichever line the leg turned out to be drawn as wears the color: it
+      // is a statement about the entry, not about which of its lines won.
+      final item = colored(
+        leg(fromLat: 53.5511, fromLon: 9.9937, toLat: 53.5600, toLon: 10.0100),
+        0xFF1B5E20,
+      );
+      final features = tripMapFeatures(
+        [item],
+        tracks: {
+          item.id: [
+            const TrackLine(
+              points: [LatLng(53.5511, 9.9937), LatLng(53.5600, 10.0100)],
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+      expect(features.paths.single.colorValue, 0xFF1B5E20);
+    });
+  });
 }

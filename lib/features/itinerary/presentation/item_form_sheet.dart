@@ -11,6 +11,7 @@ import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../map/widgets/item_color_field.dart';
 import '../../map/widgets/track_field.dart';
 import '../../map/presentation/map_picker_screen.dart';
 import '../../trips/planned_journey.dart';
@@ -114,6 +115,11 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   _Coordinates? _fromPosition;
   _Coordinates? _toPosition;
 
+  /// The color this entry is drawn in on the map, or null for the trip's own
+  /// accent — which is what an entry nobody has colored means. The only field
+  /// here that is about how the entry is *drawn* rather than what it is.
+  int? _colorValue;
+
   bool get _isTransport => widget.kind == ItemKind.transport;
   bool get _isEditing => widget.existing != null;
 
@@ -151,6 +157,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _position = _Coordinates.of(existing.lat, existing.lon);
       _fromPosition = _Coordinates.of(existing.fromLat, existing.fromLon);
       _toPosition = _Coordinates.of(existing.toLat, existing.toLon);
+      _colorValue = existing.colorValue;
     } else if (_isTransport) {
       _fromController.text = widget.defaultFromLocation ?? '';
     }
@@ -324,6 +331,9 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           fromLon: Value(_isTransport ? _fromPosition?.lon : null),
           toLat: Value(_isTransport ? _toPosition?.lat : null),
           toLon: Value(_isTransport ? _toPosition?.lon : null),
+          // How the entry is drawn on the map. Not cleared for either kind: a
+          // place and a leg are both drawn there, so both keep their color.
+          colorValue: Value(_colorValue),
           // Everything else a leg carries but the form does not edit — the
           // overnight flag, the source trip id the live-times refresh needs, the
           // stops in between — rides along untouched, and is cleared only on an
@@ -381,6 +391,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           fromLon: Value(_isTransport ? _fromPosition?.lon : null),
           toLat: Value(_isTransport ? _toPosition?.lat : null),
           toLon: Value(_isTransport ? _toPosition?.lon : null),
+          colorValue: Value(_colorValue),
         ),
       );
     }
@@ -657,6 +668,15 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     onChanged: (v) => _position = v,
                   ),
                 ],
+                // Beside the positions and the recorded line, because it is the
+                // third thing about this entry that is only about the map — and
+                // the only one that changes nothing but how it looks.
+                const SizedBox(height: 16),
+                ItemColorField(
+                  tripId: widget.tripId,
+                  value: _colorValue,
+                  onChanged: (value) => setState(() => _colorValue = value),
+                ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _titleController,

@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -160,6 +161,79 @@ void main() {
     // And a casing under it, so a user-chosen color stays legible over whatever
     // the tiles happen to show there.
     expect(polyline.borderStrokeWidth, greaterThan(0));
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets("an entry's own color outranks the trip's accent", (
+    tester,
+  ) async {
+    const own = 0xFF1B5E20;
+    await pumpMap(
+      tester,
+      items: [
+        ItineraryItem(
+          id: 3,
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          sortOrder: 0,
+          kind: ItemKind.transport,
+          spansNextDay: false,
+          fromLat: 53.5511,
+          fromLon: 9.9937,
+          toLat: 50.1109,
+          toLon: 8.6821,
+          colorValue: own,
+        ),
+        place(
+          id: 4,
+          lat: 50.1,
+          lon: 8.6,
+        ).copyWith(colorValue: const Value(own)),
+      ],
+    );
+
+    final layer = tester.widget<PolylineLayer>(find.byType(PolylineLayer));
+    expect(layer.polylines.single.color, const Color(own));
+    // The pin follows: a color is a statement about the entry, not about which
+    // kind of mark it happens to be drawn as.
+    expect(
+      tester.widget<MapPlacePin>(find.byType(MapPlacePin)).color,
+      const Color(own),
+    );
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('the entry under way stays red, whatever color it carries', (
+    tester,
+  ) async {
+    // Red is the app's one reserved color — the timeline, the widget and the map
+    // all say "you are here" with it — so a chosen color must not hide it.
+    await pumpMap(
+      tester,
+      items: [
+        place(
+          id: 1,
+          lat: 50.1,
+          lon: 8.6,
+          startMinutes: 9 * 60,
+          endMinutes: 11 * 60,
+        ).copyWith(colorValue: const Value(0xFF1B5E20)),
+      ],
+      now: DateTime(2026, 5, 1, 10),
+    );
+
+    final pin = tester.widget<MapPlacePin>(find.byType(MapPlacePin));
+    expect(pin.color, isNot(const Color(0xFF1B5E20)));
 
     // Tile loading is throttled, so a timer outlives the last pump. It runs on
     // once after firing (the trailing call), hence twice — otherwise the tree is

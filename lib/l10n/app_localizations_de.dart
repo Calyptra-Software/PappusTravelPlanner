@@ -932,6 +932,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get mapColor => 'Farbe auf der Karte';
+
+  @override
+  String get mapColorHint =>
+      'Färbt die Linie bzw. den Marker dieses Eintrags. Alles andere an der Reise bleibt unberührt.';
+
+  @override
+  String get mapColorTrip => 'Reisefarbe';
+
+  @override
   String get trackSection => 'Aufgezeichnete Linie';
 
   @override

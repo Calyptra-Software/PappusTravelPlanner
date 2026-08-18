@@ -323,6 +323,26 @@ from and to, its times with the same green and red `+/−` the timeline shows, a
 and the coordinates themselves. A map can only draw *where* something is; everything else
 about it lives in the entry. Editing is a further tap, in the same form the timeline opens.
 
+### Giving one entry its own color
+
+Everything on a trip's map is drawn in that trip's accent color. One entry can be given a
+color of its own — useful when several legs run over the same ground, or when one stretch
+is worth picking out of the rest.
+
+The choice sits in two places, and it is the same choice: **Color on the map** in the
+entry's own form, and the same row in the sheet a marker opens — where you can see what
+you are choosing against, and the map redraws as you pick. Presets, a custom color, and a
+first swatch showing the trip's own accent, which is what an entry is drawn in until you
+say otherwise and what that swatch puts it back to. Colors apply to whichever line the
+entry is drawn as: the GPX track when it has one, the straight segment when it has not.
+
+Nothing else changes — the timeline, the totals and the exports do not read it. It is a
+choice about the entry, so it travels with a copy and in a shared `.tpt` bundle exactly as
+the plan does, and a connection looked up again keeps the color the run it replaces wore.
+The entry that is **under way** is still drawn red, whatever color it carries. On the
+all-trips map every line stays in its trip's accent: there, the color is what says *which
+trip* a line belongs to.
+
 ### The line you actually followed
 
 An entry draws as a straight segment between its ends, which is the best a plan

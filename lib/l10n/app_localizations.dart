@@ -1676,6 +1676,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 trip here} other{{count} trips here}}'**
   String mapTripsHere(int count);
 
+  /// Heading of the control choosing the color one itinerary entry is drawn in on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Color on the map'**
+  String get mapColor;
+
+  /// Explains what the entry's map color applies to.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors this entry\'s line or pin. Everything else about the trip is unaffected.'**
+  String get mapColorHint;
+
+  /// Tooltip of the swatch that leaves an entry in its trip's accent color instead of giving it one of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip color'**
+  String get mapColorTrip;
+
   /// Heading of the item form's section for the GPX line an entry followed.
   ///
   /// In en, this message translates to:

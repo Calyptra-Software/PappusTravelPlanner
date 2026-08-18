@@ -74,7 +74,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 29;
+  int get schemaVersion => 30;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -349,6 +349,13 @@ class AppDatabase extends _$AppDatabase {
       if (from < 29) {
         await m.createTable(tracks);
       }
+      // v30 lets an entry be drawn on the map in a color of its own. Nullable
+      // and nothing is backfilled: null means "the trip's accent", which is
+      // exactly what every existing row means and how it has always been drawn.
+      // Added only when a recreation above hasn't already, as v24 and v28 do.
+      if (from < 30) {
+        await _addItineraryColumnsIfMissing(m, [itineraryItems.colorValue]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -412,7 +419,7 @@ class AppDatabase extends _$AppDatabase {
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
         // otherwise the copy step selects a column the old table lacks. The v24
-        // through v28 additions; extend this list when a later version adds more.
+        // through v30 additions; extend this list when a later version adds more.
         newColumns: [
           itineraryItems.spansNextDay,
           itineraryItems.fromLat,
@@ -425,6 +432,7 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.toPlaceId,
           itineraryItems.lat,
           itineraryItems.lon,
+          itineraryItems.colorValue,
         ],
       ),
     );
