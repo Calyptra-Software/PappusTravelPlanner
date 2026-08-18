@@ -267,6 +267,12 @@ class TransportSearchController {
           oldLegIds: journey.legIds,
           legs: companions,
           groupId: journey.groupId,
+          // The replacement is a routed connection like any other: it draws
+          // along the line the router just returned. Plan, not provenance, so it
+          // travels into a routine beside the coordinates and the stops — the
+          // same reasoning that keeps it on an import while `sourceTripId` is
+          // dropped there.
+          shapes: [for (final leg in legs) leg.shape],
         );
   }
 

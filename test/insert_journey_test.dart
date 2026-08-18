@@ -296,6 +296,58 @@ void main() {
       },
     );
 
+    test('is stored on a replacement too, not only on an import', () async {
+      // Re-routing a run is as much a routed connection as adding one, and in a
+      // routine it is the ordinary act — the plan is already there, and what the
+      // timetable is asked for is a better version of it. Without this the
+      // journey fell back to chords between its stops the moment it was looked
+      // up again.
+      final tripId = await makeTrip();
+      final old = await repo.insertJourney(
+        tripId,
+        companions(tripId, [leg(dayA)]),
+      );
+
+      final ids = await repo.replaceJourneyLegs(
+        tripId,
+        oldLegIds: old,
+        legs: companions(tripId, [leg(dayA), leg(dayA)]),
+        shapes: [null, shape],
+      );
+
+      expect(await db.trackDao.watchTracksForItem(ids[0]).first, isEmpty);
+      final second = await db.trackDao.watchTracksForItem(ids[1]).first;
+      expect(second.single.source, TrackSource.routed);
+    });
+
+    test(
+      'a replacement\'s ids come back in the order its legs were given',
+      () async {
+        // The shapes are lined up against these, so a run written day by day must
+        // still answer in leg order — otherwise each leg draws its neighbour's
+        // route.
+        final tripId = await makeTrip();
+        final old = await repo.insertJourney(
+          tripId,
+          companions(tripId, [leg(dayA)]),
+        );
+
+        final ids = await repo.replaceJourneyLegs(
+          tripId,
+          oldLegIds: old,
+          legs: companions(tripId, [
+            leg(dayA, startMinutes: 600),
+            leg(dayB, startMinutes: 60),
+            leg(dayB, startMinutes: 120),
+          ]),
+        );
+
+        final items = [for (final id in ids) await read(id)];
+        expect([for (final i in items) i.date], [dayA, dayB, dayB]);
+        expect([for (final i in items) i.startMinutes], [600, 60, 120]);
+      },
+    );
+
     test(
       'a shape that will not decode costs its leg and nothing else',
       () async {

@@ -23,6 +23,41 @@ class TripRepository {
   Future<bool> updateTrip(Trip trip) => _db.tripDao.updateTrip(trip);
   Future<int> deleteTrip(int id) => _db.tripDao.deleteTrip(id);
 
+  /// Writes the routed [shapes] as tracks on the legs [ids] name, one for one.
+  ///
+  /// The two ways a connection enters a plan share it: [insertJourney], which
+  /// adds a run, and [replaceJourneyLegs], which swaps one for a freshly
+  /// searched one. A replacement is as much a routed connection as an import —
+  /// the run being drawn is the one the router just returned — and leaving this
+  /// out of it meant a re-routed journey silently fell back to chords between
+  /// its stops, most visibly in a routine, where re-routing is the ordinary act
+  /// and adding is the rare one.
+  ///
+  /// Not to be confused with `copyItemTracks`, which is deliberately *not* called
+  /// on a replacement: that would carry the **old** run's line onto the new one
+  /// and claim a route was followed that was not. This writes the new run's own.
+  ///
+  /// A shape that will not decode costs its own leg a line and nothing else: the
+  /// rest of the journey is perfectly good. So does one of fewer than two points,
+  /// which is not a line.
+  Future<void> _writeRoutedShapes(List<int> ids, List<String?> shapes) async {
+    for (final (index, shape) in shapes.indexed) {
+      if (shape == null || index >= ids.length) continue;
+      final List<LatLng> points;
+      try {
+        points = decodeTrackPoints(shape, precision: kRoutedShapePrecision);
+      } on FormatException {
+        continue;
+      }
+      if (points.length < 2) continue;
+      await _db.trackDao.addTracks(ids[index], [
+        // No name: it is the leg's own route, and "ICE 1081" is already written
+        // above it. A name here would only repeat the label the entry carries.
+        (points: points, name: null),
+      ], source: TrackSource.routed);
+    }
+  }
+
   // --- routines ---
   Stream<List<Trip>> watchRoutines() => _db.routineDao.watchRoutines();
 
@@ -36,17 +71,32 @@ class TripRepository {
     int routineId, {
     required String title,
   }) => _db.routineDao.duplicateReversed(routineId, title: title);
+
+  /// Swaps a run of legs for a freshly searched one — see
+  /// [RoutineDao.replaceJourneyLegs] for what survives the exchange (the bundle,
+  /// its ticket, the slot, the colour).
+  ///
+  /// [shapes] runs parallel to [legs], exactly as in [insertJourney]: the
+  /// replacement is a routed connection too, and draws along its line rather
+  /// than as chords between its stops. The DAO returns the new ids in [legs]
+  /// order so the two line up.
   Future<List<int>> replaceJourneyLegs(
     int tripId, {
     required List<int> oldLegIds,
     required List<ItineraryItemsCompanion> legs,
     int? groupId,
-  }) => _db.routineDao.replaceJourneyLegs(
-    tripId,
-    oldLegIds: oldLegIds,
-    legs: legs,
-    groupId: groupId,
-  );
+    List<String?> shapes = const [],
+  }) async {
+    final ids = await _db.routineDao.replaceJourneyLegs(
+      tripId,
+      oldLegIds: oldLegIds,
+      legs: legs,
+      groupId: groupId,
+    );
+    await _writeRoutedShapes(ids, shapes);
+    return ids;
+  }
+
   Future<int> routineDaySpan(int routineId) =>
       _db.routineDao.routineDaySpan(routineId);
   Future<List<Trip>> tripsFromRoutineOn(int routineId, DateTime day) =>
@@ -180,24 +230,7 @@ class TripRepository {
       legs,
       alternativeId: alternativeId,
     );
-    for (final (index, shape) in shapes.indexed) {
-      if (shape == null || index >= ids.length) continue;
-      final List<LatLng> points;
-      try {
-        points = decodeTrackPoints(shape, precision: kRoutedShapePrecision);
-      } on FormatException {
-        // A shape that will not decode is a shape the map cannot draw. The rest
-        // of the journey is perfectly good, so the import keeps it and this leg
-        // falls back to its straight line.
-        continue;
-      }
-      if (points.length < 2) continue;
-      await _db.trackDao.addTracks(ids[index], [
-        // No name: it is the leg's own route, and "ICE 1081" is already written
-        // above it. A name here would only repeat the label the entry carries.
-        (points: points, name: null),
-      ], source: TrackSource.routed);
-    }
+    await _writeRoutedShapes(ids, shapes);
     if (group) {
       var i = 0;
       while (i < legs.length) {

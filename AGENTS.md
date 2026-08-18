@@ -776,7 +776,16 @@ UI (features/*/presentation, *widgets)
   `decodeTrackPoints` takes a precision and `_legShape` refuses any other one outright — a
   line read at the wrong precision lands ten times away, which looks like data instead of
   looking wrong; and a shape that will not decode costs its own leg a line and nothing else,
-  since the rest of the journey is perfectly good. Deliberately **not** an opt-in on the
+  since the rest of the journey is perfectly good. **A replacement is a routed
+  connection too**: `replaceJourneyLegs` writes the new run's shapes exactly as
+  the import does, which is why the repository owns that step for both
+  (`_writeRoutedShapes`) and why the DAO returns its ids in *leg* order. Leaving
+  it out meant a journey fell back to chords between its stops the moment it was
+  looked up again — most visibly in a **routine**, where re-routing is the
+  ordinary act and adding a run the rare one. Not to be confused with
+  `copyItemTracks`, still deliberately absent here: that would carry the *old*
+  run's line onto the new one and claim a route was followed that was not, while
+  this writes the route the router has just returned for these very legs. Deliberately **not** an opt-in on the
   search form: the switch would have to be set before the user knows whether they will
   import this connection, it would guard the cheap call while the repeated one stays off
   anyway, and one screen of map tiles already costs several times more without being asked.
