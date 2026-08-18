@@ -325,9 +325,8 @@ about it lives in the entry. Editing is a further tap, in the same form the time
 
 ### Giving one entry its own color
 
-Everything on a trip's map is drawn in that trip's accent color. One entry can be given a
-color of its own — useful when several legs run over the same ground, or when one stretch
-is worth picking out of the rest.
+Everything on a trip's map is drawn in that trip's accent color. Each entry can be given a
+color of its own.
 
 The choice sits in two places, and it is the same choice: **Color on the map** in the
 entry's own form, and the same row in the sheet a marker opens — where you can see what
