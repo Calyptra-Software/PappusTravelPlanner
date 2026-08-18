@@ -741,6 +741,27 @@ UI (features/*/presentation, *widgets)
   picks, because a second line beside the first says nothing a reader wants. The dash is the
   honest part: a map can only draw a line, and whether that line is a record or a proposal
   is exactly the difference a reader needs.
+- **A color is a property of the entry, not of the line it happens to be drawn as.**
+  `ItineraryItems.colorValue` (nullable, v30) colors an entry on the map — a leg's line or a
+  place's pin — and null means the trip's accent, which is what every row written before it
+  means and what the great majority go on meaning. Deliberately **not** on `Tracks`: a line
+  has to be colorable before there is a track to hang the color on (the straight segment is
+  the ordinary case), and an entry that later gains a recording would otherwise lose the
+  color it was given. Nothing outside the map reads it — the timeline, the totals and the
+  PDF are untouched — so it is the one property whose choice is offered *on* the map, in
+  `MapItemSheet`, which is otherwise a reading and not an editor: a color is chosen against
+  the picture it lands in, and picking it anywhere else means guessing which line was hard to
+  follow. The same `ItemColorField` sits in the item form, and the sheet writes through
+  `setItemColor` (a targeted update, since it holds a snapshot of the row from when the
+  marker was tapped) while the form saves it with everything else. It is a choice about the
+  entry, so it travels: `copyItemPlan`, the `.tpt` bundle (no format-version bump, by the
+  rule stated for coordinates), and `replaceJourneyLegs`, which carries the color the old run
+  wore throughout — a commute drawn green would otherwise revert every morning the timetable
+  is asked again, and the slot is what the color belongs to, exactly as the group and its
+  ticket are kept. **Happening still outranks it**: red is the app's one reserved color, and
+  a user's choice must not hide where they are. The **all-trips map** ignores it and keeps
+  every line in its trip's accent — there the color answers "which trip is that line", which
+  is the whole reason that map is readable.
 - **A leg with a track draws the track instead of its straight segment**
   (`tripMapFeatures`'s `tracks:`). The chord between the ends and the path between them are
   two answers to the same question, and drawing both puts a line across the bay beside the
@@ -783,7 +804,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 29) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 30) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

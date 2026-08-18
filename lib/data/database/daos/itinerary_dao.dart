@@ -126,6 +126,19 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
     ),
   );
 
+  /// Writes just the color an entry is drawn in on the map — null puts it back
+  /// to its trip's accent.
+  ///
+  /// Targeted rather than a full-row replace, because its caller is the map's
+  /// own sheet: that holds the entry as it stood when the marker was tapped, and
+  /// replacing the row from a snapshot would quietly undo whatever has changed
+  /// since. Nothing but the color is being said here, so nothing but the color
+  /// is written.
+  Future<void> setItemColor(int id, int? colorValue) =>
+      (update(itineraryItems)..where((i) => i.id.equals(id))).write(
+        ItineraryItemsCompanion(colorValue: Value(colorValue)),
+      );
+
   Future<int> deleteItem(int id) =>
       (delete(itineraryItems)..where((i) => i.id.equals(id))).go();
 

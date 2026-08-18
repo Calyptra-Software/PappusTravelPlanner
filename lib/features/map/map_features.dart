@@ -30,11 +30,17 @@ final class MapPin {
     required this.position,
     this.label,
     this.happening = false,
+    this.colorValue,
   });
 
   final int itemId;
   final LatLng position;
   final String? label;
+
+  /// The ARGB color the entry carries, or null to be drawn in the trip's
+  /// accent. Named and not pictured, exactly as [MapPath.modeId] is: what a
+  /// color *is* belongs to the widget, and this layer stays free of `dart:ui`.
+  final int? colorValue;
 
   /// Whether this entry is under way right now — the map's half of the
   /// timeline's "you are here". Decided by `now_marker.dart`, never here: this
@@ -61,6 +67,7 @@ final class MapPath {
     this.label,
     this.happening = false,
     this.dashed = false,
+    this.colorValue,
   });
 
   final int itemId;
@@ -83,6 +90,12 @@ final class MapPath {
   /// is a record or a proposal is exactly the difference a reader needs, and a
   /// dash is how every paper map has said it.
   final bool dashed;
+
+  /// The ARGB color the entry carries, or null to be drawn in the trip's
+  /// accent. It colors *whichever* line this path turned out to be — the
+  /// recorded track when there is one, the segment between the ends when there
+  /// is not — since both are the same claim about the same leg.
+  final int? colorValue;
 
   /// Where to hang the mode's icon: half way along the longest segment.
   ///
@@ -152,6 +165,7 @@ TripMapFeatures tripMapFeatures(
             position: position,
             label: item.title ?? item.location,
             happening: happening,
+            colorValue: item.colorValue,
           ),
         );
       case ItemKind.transport:
@@ -181,6 +195,7 @@ TripMapFeatures tripMapFeatures(
               label: item.title,
               happening: happening,
               dashed: followed.isEmpty,
+              colorValue: item.colorValue,
             ),
           );
           continue;
@@ -195,6 +210,7 @@ TripMapFeatures tripMapFeatures(
             modeId: item.mode,
             label: item.title,
             happening: happening,
+            colorValue: item.colorValue,
           ),
         );
     }

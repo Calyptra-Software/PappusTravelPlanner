@@ -120,6 +120,8 @@ class TripRepository {
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>
       _db.itineraryDao.updateItem(item);
+  Future<void> setItemColor(int itemId, int? colorValue) =>
+      _db.itineraryDao.setItemColor(itemId, colorValue);
   Future<void> setLiveTimes(
     int itemId, {
     required int? actualStart,

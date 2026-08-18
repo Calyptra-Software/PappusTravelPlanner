@@ -15,6 +15,7 @@ import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
+import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -103,6 +104,20 @@ void main() {
       // `.watch()` never resolves under fake-async, which hangs the test.
       transportModesProvider.overrideWith((ref) => Stream.value(modes)),
       itineraryProvider(1).overrideWith((ref) => Stream.value(items)),
+      // The color an entry is drawn in on the map falls back to the trip's own
+      // accent, so the form reads the trip — one more drift stream to stub.
+      tripProvider(1).overrideWith(
+        (ref) => Stream.value(
+          Trip(
+            id: 1,
+            title: 'Trip',
+            destination: '',
+            colorValue: 0xFF00695C,
+            createdAt: DateTime(2026),
+            kind: TripKind.trip,
+          ),
+        ),
+      ),
       // The line an entry followed is another drift stream, and the form now
       // reads one for the leg it is editing.
       itemTracksProvider.overrideWith((ref, itemId) => Stream.value(const [])),

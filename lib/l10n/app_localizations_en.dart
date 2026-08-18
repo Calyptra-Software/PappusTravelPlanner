@@ -925,6 +925,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get mapColor => 'Color on the map';
+
+  @override
+  String get mapColorHint =>
+      'Colors this entry\'s line or pin. Everything else about the trip is unaffected.';
+
+  @override
+  String get mapColorTrip => 'Trip color';
+
+  @override
   String get trackSection => 'Recorded line';
 
   @override

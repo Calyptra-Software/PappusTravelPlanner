@@ -385,6 +385,18 @@
     "description": "Title of the sheet listing the trips a tapped line belongs to, when more than one runs under the finger.",
     "placeholders": { "count": { "type": "int" } }
   },
+  "mapColor": "Color on the map",
+  "@mapColor": {
+    "description": "Heading of the control choosing the color one itinerary entry is drawn in on the map."
+  },
+  "mapColorHint": "Colors this entry's line or pin. Everything else about the trip is unaffected.",
+  "@mapColorHint": {
+    "description": "Explains what the entry's map color applies to."
+  },
+  "mapColorTrip": "Trip color",
+  "@mapColorTrip": {
+    "description": "Tooltip of the swatch that leaves an entry in its trip's accent color instead of giving it one of its own."
+  },
   "trackSection": "Recorded line",
   "@trackSection": {
     "description": "Heading of the item form's section for the GPX line an entry followed."

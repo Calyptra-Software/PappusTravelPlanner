@@ -216,6 +216,26 @@ void main() {
     expect(copy.sourceTripId, isNull);
   });
 
+  test('a copy keeps the color it is drawn in on the map', () async {
+    final tripId = await makeTrip();
+    final green = await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day1,
+        kind: ItemKind.transport,
+        title: const Value('Commute'),
+        colorValue: const Value(0xFF1B5E20),
+      ),
+    );
+
+    // A commute drawn in green is still that commute on the day it lands on;
+    // reverting to the trip's accent would mean recoloring it every morning.
+    final copy = await readItem(
+      await db.itineraryDao.duplicateItem(green, day: day2),
+    );
+    expect(copy.colorValue, 0xFF1B5E20);
+  });
+
   test('a copy does not join the original\'s group', () async {
     final tripId = await makeTrip();
     final leg1 = await makeItem(tripId, title: 'Leg 1', sortOrder: 0);
