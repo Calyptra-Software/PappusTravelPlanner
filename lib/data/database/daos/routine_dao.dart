@@ -67,8 +67,25 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// days are the union of the range and the entries) while the overview card goes
   /// on calling it a one-day trip.
   ///
+  /// The **map color** survives too, when the old run wore one and wore it
+  /// throughout. It belongs to the slot rather than to the run filling it — the
+  /// same reason the group and its ticket are kept — and it is the one thing here
+  /// a user chose by hand: a commute drawn in green stays green when this
+  /// morning's connection is looked up, where otherwise it would quietly revert
+  /// every time. A run whose legs disagreed has no one color to carry, so the
+  /// replacement takes none rather than picking a leg's and calling it the run's.
+  /// The recorded **line** deliberately does not travel the same way
+  /// (`copyItemTracks` is not called here): a color says how to draw this
+  /// stretch of the plan, while a track claims a particular route was followed,
+  /// and that claim is about the run being replaced. The replacement's *own*
+  /// routed shape is a different matter and is written — by
+  /// `TripRepository.replaceJourneyLegs`, which owns that step for the import
+  /// too, since decoding a polyline is no business of this table.
+  ///
   /// [oldLegIds] are removed and [legs] inserted in their place, into
-  /// [groupId] when there is one. Returns the new leg ids.
+  /// [groupId] when there is one. Returns the new leg ids **in [legs] order**,
+  /// not in the order the days were written, so a caller can line per-leg data
+  /// up against them.
   Future<List<int>> replaceJourneyLegs(
     int tripId, {
     required List<int> oldLegIds,
@@ -99,6 +116,10 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       // any member answers for where the whole thing is ordered.
       final branchId = oldLegs.isEmpty ? null : oldLegs.first.alternativeId;
 
+      // The color the old run wore, if it wore one throughout — see above.
+      final colors = oldLegs.map((l) => l.colorValue).toSet();
+      final keptColor = colors.length == 1 ? colors.first : null;
+
       // Taken off the doomed legs before they go, so the cascade cannot take
       // the fare with them. Parked on the trip for the moment; re-homed on the
       // replacement below.
@@ -118,15 +139,20 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
         await (delete(itineraryItems)..where((i) => i.id.equals(id))).go();
       }
 
-      final byDay = <DateTime, List<ItineraryItemsCompanion>>{};
-      for (final leg in legs) {
+      // Each leg keeps the index it arrived at, so the ids can be returned in
+      // **input** order however the days are walked. The caller lines its own
+      // per-leg data up against them — the routed shapes an import writes as
+      // tracks — and a run whose days were visited in another order would then
+      // draw each leg along its neighbour's route.
+      final byDay = <DateTime, List<(int, ItineraryItemsCompanion)>>{};
+      for (final (index, leg) in legs.indexed) {
         final date = leg.date.value;
         byDay
             .putIfAbsent(DateTime(date.year, date.month, date.day), () => [])
-            .add(leg);
+            .add((index, leg));
       }
 
-      final ids = <int>[];
+      final ids = List<int>.filled(legs.length, 0);
       // The bundle each day's legs end up in: the surviving [groupId] for the
       // first day written, a fresh one for any further day, and — where there was
       // no group at all — one opened for a day that now holds a run rather than a
@@ -156,17 +182,17 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
         }
 
         final dayIds = <int>[];
-        for (var i = 0; i < entry.value.length; i++) {
-          dayIds.add(
-            await into(itineraryItems).insert(
-              entry.value[i].copyWith(
-                sortOrder: Value(base + i),
-                alternativeId: Value(branchId),
-              ),
+        for (final (i, (index, leg)) in entry.value.indexed) {
+          final id = await into(itineraryItems).insert(
+            leg.copyWith(
+              sortOrder: Value(base + i),
+              alternativeId: Value(branchId),
+              colorValue: Value(keptColor),
             ),
           );
+          dayIds.add(id);
+          ids[index] = id;
         }
-        ids.addAll(dayIds);
 
         // This day's bundle. The surviving group takes the first day written and
         // no other: a ticket does not span a night. A day that came without one

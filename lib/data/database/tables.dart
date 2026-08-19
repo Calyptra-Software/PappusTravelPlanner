@@ -279,6 +279,23 @@ class ItineraryItems extends Table {
   BoolColumn get spansNextDay => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
 
+  /// ARGB color this entry is drawn in **on the map**, or null to be drawn in
+  /// the trip's own accent — which is what every entry written before this
+  /// existed means, and what the great majority go on meaning.
+  ///
+  /// The one property of an entry that is purely about how it is *drawn*: the
+  /// line of a leg (whichever line that is — its recorded track when it has one,
+  /// the segment between its ends when it has not) and the pin of a place. It
+  /// says nothing about the plan, which is why nothing outside the map reads it:
+  /// the timeline, the PDF and the totals are unaffected, and a trip whose
+  /// entries are all uncolored looks exactly as it did.
+  ///
+  /// Deliberately **not** on [Tracks]: a line has to be colorable before there
+  /// is a track to hang the color on — the straight segment is the ordinary
+  /// case — and an entry that later gains a recording would otherwise lose the
+  /// color it was given. One entry, one color, however it is drawn.
+  IntColumn get colorValue => integer().nullable()();
+
   // --- place-only ---
   TextColumn get location => text().nullable()();
 

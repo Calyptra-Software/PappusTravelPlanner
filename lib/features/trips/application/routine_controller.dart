@@ -32,16 +32,21 @@ class RoutineController {
         .materializeRoutine(routineId, startDate: startDate);
   }
 
-  /// The journeys in [tripId]'s plan that could be looked up again.
+  /// The journeys in [tripId]'s plan that are worth looking up again.
   ///
   /// Only *live* entries are offered: a journey sitting in an option that was
   /// not chosen is not what the trip is doing, and searching it would spend a
-  /// request and the user's attention on a road not taken.
+  /// request and the user's attention on a road not taken. The modes are read
+  /// for the same kind of reason — a run of nothing but walking is one the
+  /// timetable cannot improve on, see [plannedJourneys].
   Future<List<PlannedJourney>> lookUpCandidates(int tripId) async {
     final repo = _ref.read(repositoryProvider);
     final items = await repo.watchItems(tripId).first;
     final branches = await repo.watchAlternativeBranches(tripId).first;
-    return plannedJourneys(liveItems(items, chosenBranchIds(branches)));
+    return plannedJourneys(
+      liveItems(items, chosenBranchIds(branches)),
+      streetModeIds: streetTransportModeIds(await repo.transportModes()),
+    );
   }
 
   /// Searches for [journey] as it now stands: the same endpoints the routine

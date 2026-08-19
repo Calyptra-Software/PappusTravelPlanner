@@ -3,6 +3,31 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.7.0 — 2026-08-18
+
+- **One recording is divided among the entries it covered.** A GPX file is made
+  in one go and a plan is not, so an import cuts the line where one entry handed
+  over to the next. Only legs get a stretch, a place between two legs supplies
+  their handover — and a place with no position is filled in from it. Every
+  handover nobody could supply is asked for, one tap on the line, with the
+  division drawn while it is being decided.
+- **An entry carries its own color on the map** (schema v30): a leg's line or a
+  place's pin, chosen against the picture it lands in. Null still means the
+  trip's accent. It travels with a copy, in a `.tpt` bundle, and through a
+  re-route — but "under way" still outranks it, since red must not be hidden.
+- **An end the router was given as a coordinate is named and dated.** A picked
+  address, a point tapped on the map or an imported leg's own ends come back as
+  `START`/`END` with no timezone at all. Those were being read as statements: the
+  placeholder went into the timeline as the station's name, and the missing zone
+  as UTC, which showed *and stored* a Hamburg walk two hours early.
+- **The timetable is asked only about runs it can answer for.** Placing both ends
+  of a campus walk on the map used to enlist it in a routine's unattended lookup,
+  which asked about it every morning. A run of nothing but street legs is left
+  alone; asking is still one tap away where a human is watching.
+- **A re-routed connection draws along its line too**, not as chords between its
+  stops — which is most visible in a routine, where re-routing is the ordinary
+  act and adding a run the rare one.
+
 ## 1.6.0 — 2026-08-16
 
 The map.

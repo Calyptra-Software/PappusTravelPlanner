@@ -557,6 +557,46 @@ void main() {
       expect(items.single.fromPlaceId, 'stop:1');
       expect(items.single.sourceTripId, isNull);
     });
+
+    test(
+      "an entry's map color travels, and an uncolored one stays so",
+      () async {
+        final tripId = await db.tripDao.createTrip(
+          TripsCompanion.insert(title: 'Hamburg'),
+        );
+        await db.itineraryDao.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: tripId,
+            date: DateTime(2026, 5),
+            kind: ItemKind.transport,
+            title: const Value('Commute'),
+            colorValue: const Value(0xFF1B5E20),
+          ),
+        );
+        await db.itineraryDao.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: tripId,
+            date: DateTime(2026, 5),
+            kind: ItemKind.place,
+            title: const Value('Office'),
+            sortOrder: const Value(1),
+          ),
+        );
+
+        final bundle = (await db.sharingDao.exportTrip(tripId))!;
+        expect(bundle.items.map((i) => i.colorValue), [0xFF1B5E20, null]);
+
+        final target = AppDatabase.forTesting(NativeDatabase.memory());
+        addTearDown(target.close);
+        final importedId = await target.sharingDao.importTrip(bundle);
+        final items = await target.itineraryDao
+            .watchItemsForTrip(importedId)
+            .first;
+        // The recipient's map draws the same trip, so the choice comes with it —
+        // and the entry nobody colored keeps falling back to the trip's accent.
+        expect(items.map((i) => i.colorValue), [0xFF1B5E20, null]);
+      },
+    );
   });
 }
 

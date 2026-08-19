@@ -430,6 +430,7 @@ class BundleItem {
     this.spansNextDay = false,
     this.notes,
     this.location,
+    this.colorValue,
     this.lat,
     this.lon,
     this.mode,
@@ -465,6 +466,13 @@ class BundleItem {
   /// which is what such a bundle meant.
   final bool spansNextDay;
   final String? notes;
+
+  /// The color the entry is drawn in on the map, or null for the trip's own
+  /// accent. Plan rather than provenance — it is a choice about the entry, and
+  /// the recipient's map draws the same trip — so it travels, and `.tpt` stays
+  /// lossless. Absent from bundles written before entries could carry one,
+  /// which read as null: exactly the trip they described.
+  final int? colorValue;
 
   // place-only
   final String? location;
@@ -526,6 +534,7 @@ class BundleItem {
     'actualEndMinutes': actualEndMinutes,
     'spansNextDay': spansNextDay,
     'notes': notes,
+    'colorValue': colorValue,
     'location': location,
     'lat': lat,
     'lon': lon,
@@ -559,6 +568,7 @@ class BundleItem {
     actualEndMinutes: json['actualEndMinutes'] as int?,
     spansNextDay: json['spansNextDay'] as bool? ?? false,
     notes: json['notes'] as String?,
+    colorValue: json['colorValue'] as int?,
     location: json['location'] as String?,
     // Read as `num`, not `double`: a coordinate that happens to be whole may
     // come back from another writer's JSON as an int, and a cast would throw on

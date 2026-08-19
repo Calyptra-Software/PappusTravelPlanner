@@ -49,6 +49,25 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
   ///
   /// Ordered by trip and then as a day reads, because the caller groups by trip
   /// and hands each group to `tripMapFeatures`, which needs a plan in order.
+  /// One trip's entries as they stand, in the order a day reads them.
+  ///
+  /// A Future rather than a stream, because the callers are asking a question at
+  /// a moment — "what is there to pick from" — and a stream would keep the
+  /// answer moving under the user's finger. It is also the only shape that
+  /// resolves under `flutter_test`'s clock, where a drift `.watch()` never does.
+  Future<List<ItineraryItem>> itemsFor(int tripId) =>
+      (select(itineraryItems)
+            ..where((i) => i.tripId.equals(tripId))
+            ..orderBy([
+              (i) => OrderingTerm(expression: i.date),
+              (i) => OrderingTerm(expression: i.sortOrder),
+              (i) => OrderingTerm(
+                expression: i.startMinutes,
+                nulls: NullsOrder.last,
+              ),
+            ]))
+          .get();
+
   Stream<List<ItineraryItem>> watchPositionedItems() {
     final query =
         select(itineraryItems).join([
@@ -106,6 +125,19 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
       stopovers: Value(stopovers),
     ),
   );
+
+  /// Writes just the color an entry is drawn in on the map — null puts it back
+  /// to its trip's accent.
+  ///
+  /// Targeted rather than a full-row replace, because its caller is the map's
+  /// own sheet: that holds the entry as it stood when the marker was tapped, and
+  /// replacing the row from a snapshot would quietly undo whatever has changed
+  /// since. Nothing but the color is being said here, so nothing but the color
+  /// is written.
+  Future<void> setItemColor(int id, int? colorValue) =>
+      (update(itineraryItems)..where((i) => i.id.equals(id))).write(
+        ItineraryItemsCompanion(colorValue: Value(colorValue)),
+      );
 
   Future<int> deleteItem(int id) =>
       (delete(itineraryItems)..where((i) => i.id.equals(id))).go();

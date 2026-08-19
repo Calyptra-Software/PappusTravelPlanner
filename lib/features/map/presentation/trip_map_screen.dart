@@ -25,9 +25,10 @@ import 'map_item_sheet.dart';
 /// timeline marks it.
 ///
 /// Everything drawn is derived from the itinerary, so the screen needs no query
-/// of its own. It does not write either — tapping a marker opens a *reading* of
-/// that entry, and the one button there hands the job on to the form that owns
-/// it.
+/// of its own. Tapping a marker opens a *reading* of that entry, and the one
+/// button there hands editing on to the form that owns it — the single exception
+/// being the color the entry is drawn in, which is about this screen and nothing
+/// else (see `MapItemSheet`).
 class TripMapScreen extends ConsumerWidget {
   const TripMapScreen({super.key, required this.tripId});
 
@@ -138,6 +139,10 @@ class _MapViewState extends ConsumerState<_MapView> {
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
+      // Free to be taller than the default nine-sixteenths: a leg with both ends
+      // placed, a note and the color row needs the room, and the sheet scrolls
+      // rather than being clipped when it still does not fit.
+      isScrollControlled: true,
       builder: (_) => MapItemSheet(item: item),
     );
   }
@@ -151,6 +156,17 @@ class _MapViewState extends ConsumerState<_MapView> {
     final modes = ref.watch(transportModesByIdProvider);
     final points = features.allPoints;
     final accent = widget.accent ?? theme.colorScheme.primary;
+
+    /// What one entry is drawn in: its own color when it has been given one,
+    /// and the trip's accent otherwise — which is what an entry that carries
+    /// none means, and what every entry meant before they could carry one.
+    ///
+    /// Being *under way* still outranks both: red is the app's one reserved
+    /// color, said the same way in the timeline, the widget and here, and a
+    /// user's choice must not be able to hide where they are.
+    Color colorOf(int? colorValue, {required bool happening}) => happening
+        ? theme.colorScheme.error
+        : (colorValue == null ? accent : Color(colorValue));
 
     // A casing under every line. Map tiles are busy and any color, including
     // one the user picked, lands on something it disappears against sooner or
@@ -210,8 +226,11 @@ class _MapViewState extends ConsumerState<_MapView> {
                           : const StrokePattern.solid(),
 
                       // Red for the leg under way, as everywhere else in the
-                      // app; the trip's own color for the rest.
-                      color: path.happening ? theme.colorScheme.error : accent,
+                      // app; the entry's own color, or the trip's, for the rest.
+                      color: colorOf(
+                        path.colorValue,
+                        happening: path.happening,
+                      ),
                       borderStrokeWidth: 2,
                       borderColor: casing,
                       // Simplification is flutter_map's own, per frame: a
@@ -231,7 +250,10 @@ class _MapViewState extends ConsumerState<_MapView> {
                     child: _Tappable(
                       onTap: () => _showItem(path.itemId),
                       child: _ModeBadge(
-                        accent: accent,
+                        color: colorOf(
+                          path.colorValue,
+                          happening: path.happening,
+                        ),
                         // The row's own icon, which for a built-in falls back to
                         // that built-in's default — the same resolution the
                         // timeline tile uses. Reading `iconId` directly instead
@@ -240,7 +262,6 @@ class _MapViewState extends ConsumerState<_MapView> {
                         icon:
                             modes[path.modeId]?.icon ??
                             kDefaultTransportModeIcon,
-                        happening: path.happening,
                       ),
                     ),
                   ),
@@ -254,9 +275,11 @@ class _MapViewState extends ConsumerState<_MapView> {
                     alignment: Alignment.topCenter,
                     child: _Tappable(
                       onTap: () => _showItem(pin.itemId),
-                      child: _PlacePin(
-                        accent: accent,
-                        happening: pin.happening,
+                      child: MapPlacePin(
+                        color: colorOf(
+                          pin.colorValue,
+                          happening: pin.happening,
+                        ),
                       ),
                     ),
                   ),
@@ -286,21 +309,19 @@ class _MapViewState extends ConsumerState<_MapView> {
 }
 
 /// The transport mode, sitting on the middle of its leg.
+///
+/// Handed a resolved [color] rather than deciding one: which color a leg wears
+/// — its own, the trip's, or the red of being under way — is settled once, where
+/// the line is drawn, so the badge and the line it sits on cannot disagree.
 class _ModeBadge extends StatelessWidget {
-  const _ModeBadge({
-    required this.icon,
-    required this.accent,
-    required this.happening,
-  });
+  const _ModeBadge({required this.icon, required this.color});
 
   final IconData icon;
-  final Color accent;
-  final bool happening;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = happening ? scheme.error : accent;
     return Container(
       decoration: BoxDecoration(
         color: scheme.surface,
@@ -309,19 +330,6 @@ class _ModeBadge extends StatelessWidget {
       ),
       child: Icon(icon, size: 16, color: color),
     );
-  }
-}
-
-class _PlacePin extends StatelessWidget {
-  const _PlacePin({required this.accent, required this.happening});
-
-  final Color accent;
-  final bool happening;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return MapPlacePin(color: happening ? scheme.error : accent);
   }
 }
 

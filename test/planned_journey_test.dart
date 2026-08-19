@@ -3,6 +3,10 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/planned_journey.dart';
 
+/// The `TransportModes` rows that are street modes, as `streetTransportModeIds`
+/// would resolve them from a database seeded with the built-ins in enum order.
+const _streetModes = {1, 2, 3}; // walk, bike, car
+
 /// Which runs of legs in a plan can be *looked up again* — searched afresh for
 /// the day they now sit on, so a routine's copied plan becomes a connection
 /// that really runs and can be refreshed.
@@ -22,8 +26,10 @@ void main() {
     double? fromLon,
     double? toLat,
     double? toLon,
+    int? mode,
   }) => ItineraryItem(
     id: nextId++,
+    mode: mode,
     tripId: 1,
     date: date ?? DateTime(2026, 8, 3),
     sortOrder: sortOrder,
@@ -61,7 +67,7 @@ void main() {
         to: 'Office',
         toPlaceId: 'stop:office',
       ),
-    ]);
+    ], streetModeIds: _streetModes);
 
     expect(journeys, hasLength(1));
     final journey = journeys.single;
@@ -79,7 +85,7 @@ void main() {
   test('a lone imported leg is a journey of its own', () {
     final journeys = plannedJourneys([
       leg(start: 462, fromPlaceId: 'stop:a', toPlaceId: 'stop:b'),
-    ]);
+    ], streetModeIds: _streetModes);
     expect(journeys, hasLength(1));
     expect(journeys.single.groupId, isNull);
   });
@@ -88,27 +94,36 @@ void main() {
     // No place ids: there is no query to re-issue, and guessing one from the
     // station's name would be a different journey wearing the same label.
     expect(
-      plannedJourneys([leg(start: 462, from: 'Home', to: 'Office')]),
+      plannedJourneys([
+        leg(start: 462, from: 'Home', to: 'Office'),
+      ], streetModeIds: _streetModes),
       isEmpty,
     );
   });
 
   test('a leg with no departure time cannot be looked up either', () {
     expect(
-      plannedJourneys([leg(fromPlaceId: 'stop:a', toPlaceId: 'stop:b')]),
+      plannedJourneys([
+        leg(fromPlaceId: 'stop:a', toPlaceId: 'stop:b'),
+      ], streetModeIds: _streetModes),
       isEmpty,
     );
   });
 
   test('one end addressed is not enough', () {
-    expect(plannedJourneys([leg(start: 462, fromPlaceId: 'stop:a')]), isEmpty);
+    expect(
+      plannedJourneys([
+        leg(start: 462, fromPlaceId: 'stop:a'),
+      ], streetModeIds: _streetModes),
+      isEmpty,
+    );
   });
 
   test('places are not journeys', () {
     expect(
       plannedJourneys([
         leg(kind: ItemKind.place, start: 540, fromPlaceId: 'x', toPlaceId: 'y'),
-      ]),
+      ], streetModeIds: _streetModes),
       isEmpty,
     );
   });
@@ -133,7 +148,7 @@ void main() {
         fromPlaceId: 'e',
         toPlaceId: 'f',
       ),
-    ]);
+    ], streetModeIds: _streetModes);
     expect(journeys.map((j) => (j.date.day, j.departMinutes)), [
       (3, 462),
       (3, 1060),
@@ -159,7 +174,7 @@ void main() {
         to: 'Change',
         fromPlaceId: 'stop:home',
       ),
-    ]);
+    ], streetModeIds: _streetModes);
     expect(journeys.single.fromLocation, 'Home');
     expect(journeys.single.toLocation, 'Office');
   });
@@ -188,7 +203,7 @@ void main() {
           to: 'Schlump',
           toPlaceId: 'de-DELFI_de:02000:84903:1:849008',
         ),
-      ]);
+      ], streetModeIds: _streetModes);
 
       expect(journeys, hasLength(1));
       expect(journeys.single.fromPlaceId, '53.60486,10.154396');
@@ -207,13 +222,15 @@ void main() {
           fromLon: 10.154396,
           toPlaceId: 'stop:office',
         ),
-      ]);
+      ], streetModeIds: _streetModes);
       expect(journeys.single.fromPlaceId, 'stop:home');
     });
 
     test('neither an id nor coordinates is still nothing to search', () {
       expect(
-        plannedJourneys([leg(start: 542, from: 'Home', to: 'Office')]),
+        plannedJourneys([
+          leg(start: 542, from: 'Home', to: 'Office'),
+        ], streetModeIds: _streetModes),
         isEmpty,
       );
     });
@@ -222,7 +239,7 @@ void main() {
       expect(
         plannedJourneys([
           leg(start: 542, fromLat: 53.6, toPlaceId: 'stop:office'),
-        ]),
+        ], streetModeIds: _streetModes),
         isEmpty,
       );
     });
@@ -248,7 +265,7 @@ void main() {
           to: 'Schlump',
           toPlaceId: 'stop:schlump',
         ),
-      ]).single;
+      ], streetModeIds: _streetModes).single;
 
       // The form shows the names; the query goes out on the ids — the very
       // strings this run was found by, not re-derived from the coordinates.
@@ -267,19 +284,145 @@ void main() {
           fromLon: 10.154396,
           toPlaceId: 'stop:office',
         ),
-      ]).single;
+      ], streetModeIds: _streetModes).single;
 
       expect(journey.fromPlace?.queryId, '53.60486,10.154396');
       // Still named for the traveller, coordinates or not.
       expect(journey.fromPlace?.name, 'Home');
     });
   });
+  group('a run a timetable can answer for', () {
+    test('a walk between two placed ends is addressable but not asked', () {
+      // The reported bug: pointing at both ends of a campus walk on the map —
+      // for the map's own sake — made it addressable, and a routine then asked
+      // about that walk every morning it was stamped out.
+      final items = [
+        leg(
+          start: 570,
+          from: 'Schlump',
+          to: 'Geomatikum',
+          fromLat: 53.567944,
+          fromLon: 9.970069,
+          toLat: 53.568168,
+          toLon: 9.974076,
+          mode: 1, // walk
+        ),
+      ];
+
+      expect(plannedJourneyOf(items)!.canLookUp, isTrue); // addressable…
+      expect(plannedJourneys(items, streetModeIds: _streetModes), isEmpty);
+      // …and still the user's to ask about, with the form in front of them.
+      expect(plannedJourneyOf(items), isNotNull);
+    });
+
+    test('cycling and driving are street modes too', () {
+      for (final mode in [2, 3]) {
+        final items = [
+          leg(
+            start: 570,
+            from: 'A',
+            to: 'B',
+            fromPlaceId: 'stop:a',
+            toPlaceId: 'stop:b',
+            mode: mode,
+          ),
+        ];
+        expect(plannedJourneys(items, streetModeIds: _streetModes), isEmpty);
+      }
+    });
+
+    test('one service in the run is enough to ask about the whole of it', () {
+      // The ordinary imported shape: walk to the station, train, walk off. The
+      // walks are the run's ends, and the run is what gets searched.
+      final journeys = plannedJourneys([
+        leg(
+          groupId: 7,
+          sortOrder: 0,
+          start: 542,
+          from: 'Home',
+          to: 'Rahlstedt',
+          fromPlaceId: 'stop:home',
+          mode: 1,
+        ),
+        leg(
+          groupId: 7,
+          sortOrder: 1,
+          start: 558,
+          from: 'Rahlstedt',
+          to: 'Hamburg Hbf',
+          mode: 6, // train
+        ),
+        leg(
+          groupId: 7,
+          sortOrder: 2,
+          start: 578,
+          from: 'Hamburg Hbf',
+          to: 'Office',
+          toPlaceId: 'stop:office',
+          mode: 1,
+        ),
+      ], streetModeIds: _streetModes);
+
+      expect(journeys, hasLength(1));
+    });
+
+    test(
+      'a leg with no mode, or one the user invented, is not a street leg',
+      () {
+        // Only what is positively known to be a street mode counts: being wrong
+        // the other way would leave a run that can never be looked up again.
+        for (final mode in [null, 13]) {
+          final items = [
+            leg(
+              start: 570,
+              from: 'A',
+              to: 'B',
+              fromPlaceId: 'stop:a',
+              toPlaceId: 'stop:b',
+              mode: mode,
+            ),
+          ];
+          expect(
+            plannedJourneys(items, streetModeIds: _streetModes),
+            hasLength(1),
+          );
+        }
+      },
+    );
+  });
+
+  group('street modes resolve from the table, not from the enum', () {
+    TransportModeRow row(int id, String? builtinKey, String? name) =>
+        TransportModeRow(
+          id: id,
+          builtinKey: builtinKey,
+          name: name,
+          sortOrder: id,
+        );
+
+    test('a renamed built-in is still recognised, a custom mode is not', () {
+      final ids = streetTransportModeIds([
+        row(1, 'walk', 'Schlendern'), // renamed, same builtinKey
+        row(2, 'bike', null),
+        row(3, 'car', null),
+        row(6, 'train', null),
+        row(13, null, 'Wandern'), // the user's own
+      ]);
+
+      expect(ids, {1, 2, 3});
+    });
+
+    test('a deleted built-in is simply absent', () {
+      expect(streetTransportModeIds([row(6, 'train', null)]), isEmpty);
+    });
+  });
+
   group('the run the user is looking at', () {
     test('a hand-entered run is one, though it cannot be searched alone', () {
       final items = [leg(start: 452, from: 'Rahlstedt', to: 'Hamburg Hbf')];
 
       // Nothing to issue a query with, so the unattended flow passes it over…
-      expect(plannedJourneys(items), isEmpty);
+      expect(plannedJourneys(items, streetModeIds: _streetModes), isEmpty);
       // …while the form takes it: naming the ends is what the form is for.
       final journey = plannedJourneyOf(items);
       expect(journey, isNotNull);

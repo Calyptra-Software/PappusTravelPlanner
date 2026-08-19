@@ -5,6 +5,7 @@ import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
 import '../database/track_points.dart';
+import '../../features/map/track_import_plan.dart' show TrackEnd;
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
 /// a cloud-backed implementation could be swapped in later without touching the
@@ -22,6 +23,41 @@ class TripRepository {
   Future<bool> updateTrip(Trip trip) => _db.tripDao.updateTrip(trip);
   Future<int> deleteTrip(int id) => _db.tripDao.deleteTrip(id);
 
+  /// Writes the routed [shapes] as tracks on the legs [ids] name, one for one.
+  ///
+  /// The two ways a connection enters a plan share it: [insertJourney], which
+  /// adds a run, and [replaceJourneyLegs], which swaps one for a freshly
+  /// searched one. A replacement is as much a routed connection as an import —
+  /// the run being drawn is the one the router just returned — and leaving this
+  /// out of it meant a re-routed journey silently fell back to chords between
+  /// its stops, most visibly in a routine, where re-routing is the ordinary act
+  /// and adding is the rare one.
+  ///
+  /// Not to be confused with `copyItemTracks`, which is deliberately *not* called
+  /// on a replacement: that would carry the **old** run's line onto the new one
+  /// and claim a route was followed that was not. This writes the new run's own.
+  ///
+  /// A shape that will not decode costs its own leg a line and nothing else: the
+  /// rest of the journey is perfectly good. So does one of fewer than two points,
+  /// which is not a line.
+  Future<void> _writeRoutedShapes(List<int> ids, List<String?> shapes) async {
+    for (final (index, shape) in shapes.indexed) {
+      if (shape == null || index >= ids.length) continue;
+      final List<LatLng> points;
+      try {
+        points = decodeTrackPoints(shape, precision: kRoutedShapePrecision);
+      } on FormatException {
+        continue;
+      }
+      if (points.length < 2) continue;
+      await _db.trackDao.addTracks(ids[index], [
+        // No name: it is the leg's own route, and "ICE 1081" is already written
+        // above it. A name here would only repeat the label the entry carries.
+        (points: points, name: null),
+      ], source: TrackSource.routed);
+    }
+  }
+
   // --- routines ---
   Stream<List<Trip>> watchRoutines() => _db.routineDao.watchRoutines();
 
@@ -35,17 +71,32 @@ class TripRepository {
     int routineId, {
     required String title,
   }) => _db.routineDao.duplicateReversed(routineId, title: title);
+
+  /// Swaps a run of legs for a freshly searched one — see
+  /// [RoutineDao.replaceJourneyLegs] for what survives the exchange (the bundle,
+  /// its ticket, the slot, the colour).
+  ///
+  /// [shapes] runs parallel to [legs], exactly as in [insertJourney]: the
+  /// replacement is a routed connection too, and draws along its line rather
+  /// than as chords between its stops. The DAO returns the new ids in [legs]
+  /// order so the two line up.
   Future<List<int>> replaceJourneyLegs(
     int tripId, {
     required List<int> oldLegIds,
     required List<ItineraryItemsCompanion> legs,
     int? groupId,
-  }) => _db.routineDao.replaceJourneyLegs(
-    tripId,
-    oldLegIds: oldLegIds,
-    legs: legs,
-    groupId: groupId,
-  );
+    List<String?> shapes = const [],
+  }) async {
+    final ids = await _db.routineDao.replaceJourneyLegs(
+      tripId,
+      oldLegIds: oldLegIds,
+      legs: legs,
+      groupId: groupId,
+    );
+    await _writeRoutedShapes(ids, shapes);
+    return ids;
+  }
+
   Future<int> routineDaySpan(int routineId) =>
       _db.routineDao.routineDaySpan(routineId);
   Future<List<Trip>> tripsFromRoutineOn(int routineId, DateTime day) =>
@@ -79,6 +130,10 @@ class TripRepository {
 
   /// Every *live* entry carrying a position, across all trips — what the
   /// overview's map draws, before the overview's own filter narrows it.
+  /// A trip's entries as they stand — a question asked at a moment, not watched.
+  Future<List<ItineraryItem>> itemsFor(int tripId) =>
+      _db.itineraryDao.itemsFor(tripId);
+
   Stream<List<ItineraryItem>> watchPositionedItems() =>
       _db.itineraryDao.watchPositionedItems();
 
@@ -103,10 +158,20 @@ class TripRepository {
 
   Future<void> deleteTracksForItem(int itemId) =>
       _db.trackDao.deleteTracksForItem(itemId);
+
+  /// One recording across the entries it covered, with the coordinates the
+  /// import learned on the way.
+  Future<void> importTrackAcross({
+    required String? name,
+    required List<({int itemId, List<LatLng> points})> pieces,
+    required List<({int itemId, TrackEnd end, LatLng at})> ends,
+  }) => _db.trackDao.importTrackAcross(name: name, pieces: pieces, ends: ends);
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>
       _db.itineraryDao.updateItem(item);
+  Future<void> setItemColor(int itemId, int? colorValue) =>
+      _db.itineraryDao.setItemColor(itemId, colorValue);
   Future<void> setLiveTimes(
     int itemId, {
     required int? actualStart,
@@ -165,24 +230,7 @@ class TripRepository {
       legs,
       alternativeId: alternativeId,
     );
-    for (final (index, shape) in shapes.indexed) {
-      if (shape == null || index >= ids.length) continue;
-      final List<LatLng> points;
-      try {
-        points = decodeTrackPoints(shape, precision: kRoutedShapePrecision);
-      } on FormatException {
-        // A shape that will not decode is a shape the map cannot draw. The rest
-        // of the journey is perfectly good, so the import keeps it and this leg
-        // falls back to its straight line.
-        continue;
-      }
-      if (points.length < 2) continue;
-      await _db.trackDao.addTracks(ids[index], [
-        // No name: it is the leg's own route, and "ICE 1081" is already written
-        // above it. A name here would only repeat the label the entry carries.
-        (points: points, name: null),
-      ], source: TrackSource.routed);
-    }
+    await _writeRoutedShapes(ids, shapes);
     if (group) {
       var i = 0;
       while (i < legs.length) {

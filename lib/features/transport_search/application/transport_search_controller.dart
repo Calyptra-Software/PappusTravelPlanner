@@ -8,6 +8,7 @@ import '../data/journey_mapper.dart';
 import '../data/live_refresh.dart';
 import '../../trips/planned_journey.dart';
 import '../domain/journey.dart';
+import '../domain/journey_ends.dart';
 import 'journey_search_options_provider.dart';
 import 'transport_search_providers.dart';
 
@@ -172,7 +173,20 @@ class TransportSearchController {
         );
     // The direct options (walking or cycling the whole way) are part of the
     // answer for a short hop, which a commute often is.
-    return [...results.options, ...results.direct];
+    //
+    // The other of the two places a search's answer arrives (see
+    // `journey_ends.dart`). The names to fall back on are the run's own: this
+    // journey is already in the plan, calling its ends `Schlump` and
+    // `Geomatikum`, and a re-routing of it should go on saying so rather than
+    // renaming them `START` and `END`.
+    return [
+      for (final option in [...results.options, ...results.direct])
+        resolvedOptionEnds(
+          option,
+          fromName: journey.fromLocation,
+          toName: journey.toLocation,
+        ),
+    ];
   }
 
   /// Replaces one run of legs in a trip with a freshly-searched connection,
@@ -253,6 +267,12 @@ class TransportSearchController {
           oldLegIds: journey.legIds,
           legs: companions,
           groupId: journey.groupId,
+          // The replacement is a routed connection like any other: it draws
+          // along the line the router just returned. Plan, not provenance, so it
+          // travels into a routine beside the coordinates and the stops — the
+          // same reasoning that keeps it on an import while `sourceTripId` is
+          // dropped there.
+          shapes: [for (final leg in legs) leg.shape],
         );
   }
 

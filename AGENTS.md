@@ -190,6 +190,23 @@ UI (features/*/presentation, *widgets)
   refreshable). A template is as worth re-routing as an outing: a line withdrawn or a 07:32
   retired changes every morning from now on, and the alternative was deleting the leg and
   importing a new one.
+- **Being addressable is not the same as being worth asking.** `plannedJourneys` now applies
+  two conditions rather than one: `canLookUp` (can the query be issued at all) *and*
+  `carriesService` (is this a journey a timetable answers for). A run made only of street
+  legs — walking, cycling, driving — is one the router can only hand back unchanged, since it
+  recomputes the same path over the same pavement. Running the two together meant that
+  pointing at both ends of a campus walk on the map, for the map's own sake, quietly enlisted
+  that walk in the unattended lookup, and a routine then asked about it every morning it was
+  stamped out. The set is `streetTransportModeIds`, resolved from the **table** and not from
+  the enum (a mode is a row the user manages), and defined as exactly the built-ins
+  `builtinTransportModeFor` produces from `TransitMode.walk`/`bike`/`car` — the router's own
+  answer to "is this a service", rather than a list chosen by taste. A renamed built-in still
+  counts, by its `builtinKey`; a mode the user invented, or a leg with no mode at all, does
+  **not** count as a street leg, because only what is positively known to be one may cost a
+  run its lookup. What is given up is stated plainly: the routine will not discover by itself
+  that a bus now beats the walk. `plannedJourneyOf` is untouched, so that question is still
+  one tap away from the journey sheet or the item form — the capability moves to where a
+  human is watching, which is the split those two functions already exist to draw.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the
@@ -395,6 +412,32 @@ UI (features/*/presentation, *widgets)
   legs into one, so a group already *is* a journey and the button sits on the run's label
   (`TimelineTile.onShowJourney`); an imported leg standing alone carries its own. Each leg
   card hosts the leg's own `LiveRefreshButton` — still one tap, one leg.
+- **An end addressed by a coordinate comes back unnamed and unzoned, and both
+  silences have to be filled before anything reads the answer.** A stop answers
+  as `Hamburg-Rahlstedt` / `Europe/Berlin`; a coordinate — which is what a picked
+  address, a point tapped on the map and an imported leg's own ends all travel as
+  (`TransportPlace.queryId`) — answers as `{"name": "START"}` with no `stopId`
+  and **no `tz` at all**, since the router knows a point on the street network and
+  nothing else about it. Left alone each silence became a false statement rather
+  than a missing one: `START`/`END` were written into the timeline as the
+  stations' names, and the absent zone was read as UTC, which showed *and stored*
+  a Hamburg walk two hours early — a wrong time that looks like a time, with
+  nothing about it saying it was guessed. `domain/journey_ends.dart` (pure) fills
+  both, keyed on the missing `stopId` rather than on the placeholder name, which
+  is a label and could change: the run's **outer** ends take the names the search
+  was *issued* with (the place the user picked, or what the run being re-routed
+  already calls its ends — the middle are changes the router named itself, and
+  the query has no name for them anyway), and an unzoned end takes the **nearest**
+  zone in the journey, carried forward from the last end that had one else back
+  from the next. What the service itself said always stands. It is applied at the
+  two places an answer arrives — `JourneyResultsController._fetch`, so paging
+  windows are merged already resolved, and `searchPlannedJourney` — so the result
+  rows, the preview, the journey sheet and the import all read one resolved
+  answer instead of each repairing it. When *nothing* in the journey is zoned —
+  a walk between two coordinates, which is exactly the short hop this arises on —
+  `localParts` falls back to the **device's** zone: a guess too, but the one that
+  is right for a hop, and wrong only for a traveller who has not yet changed
+  their clock, where UTC was wrong for everybody outside it.
 - **A connection is planned where the button that searched for it plans everything else.**
   The search is reached from the item form, which is reached from a day's *Add transport* or
   from one **option's**, so the option rides along — `ItemFormSheet` → `showConnectionSearchSheet`
@@ -618,7 +661,9 @@ UI (features/*/presentation, *widgets)
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
-  silently makes a hand-entered leg `canLookUp`-able once both its ends are placed. The one
+  makes a hand-entered leg `canLookUp`-able once both its ends are placed — but no longer
+  *searchable* by itself if it is a walk, since that silent side effect turned out to be the
+  bug (see the street-mode rule below). The one
   write in the other direction is a **clearing**: moving (or removing) an end drops *that
   end's* id, because the id no longer describes where the end is — and it would win over the
   coordinates, sending a re-search off from the old station. `sourceTripId` stays: it names
@@ -668,6 +713,45 @@ UI (features/*/presentation, *widgets)
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
+- **One recording is divided among the entries it covered.** A file is made in one go and
+  the plan is not, so `splitTrack` / `splitTracks` (pure, `track_split.dart`) cut the line
+  where one entry handed over to the next, and `trackImportPlan` reads a selected run:
+  **only legs** get a stretch (a place is a point with no straight line to replace), and a
+  **positioned place between two legs supplies their handover**, which is exactly what one
+  is. It works the other way too: a place *without* a position is **filled in** from the
+  handover its neighbours get, or from the recording's own end when it stands at the front
+  or back of the run — all three readings of one spot then agree, which they did not when a
+  place was left out of the writing. Two properties outrank the exact cut, because they are what a later edit would break:
+  **every stretch gets points** — an entry left empty would draw its chord again the moment
+  somebody gave it coordinates, weeks later — and **neighbours share their handover point**,
+  so the pieces still read as one line. Handovers are located **in order**, each searched
+  only in what is left after the one before it; that is what makes a there-and-back route
+  work, where "nearest to this coordinate" is ambiguous and "nearest after the last
+  handover" is not, and it is what keeps a handover *moved after the fact* between its
+  neighbours, since a stretch cannot run backwards. `snapToTrack` answers a tap under the
+  same rule, so the preview and the result cannot disagree. A `<trkseg>` gap survives the
+  division: an entry spanning a pause keeps two lines rather than one drawn across ground
+  nobody covered. There is **no rule for a handover nobody placed**, because there is no way
+  to leave one unplaced.
+- **The import asks rather than guesses, and shows the division while it is being decided.**
+  `TrackImportScreen` draws the recording, colours it per entry, and asks for each handover
+  nobody could supply — one tap, snapped onto the line, and **every** one of them: there is
+  deliberately no way to skip. That is the app's own rule (*a position is pointed at, never
+  derived*) applied to a cut, and an estimated cut is invisible, which is what makes it the
+  kind of guess that turns into a wrong answer months later. Insisting also means nothing
+  downstream needs a rule for dividing a line nobody has said anything about, and no entry
+  can come out of an import half-placed — the failure that made the rule necessary. A
+  handover already placed is not final: a further tap moves the nearest one, which is the
+  screen's only interaction — an earlier "pick it up, then put it down" step was a state
+  nobody could see, competing with the map for the same tap. The **outer** ends
+  need no asking: the recording's first point is where the first leg started
+  (`trackImportEnds`), which is also what fills in a single hand-entered leg's coordinates.
+  An end the user already gave is never overwritten — their statement, with the file as a
+  witness. Writing coordinates and writing the pieces is **one transaction**
+  (`TrackDao.importTrackAcross`), and a placed end drops its `fromPlaceId`/`toPlaceId` by
+  the rule that governs moving one. One flow, two doors — the trip's ⋮ menu (nothing ticked)
+  and a leg's form (that leg ticked) — because a recording rarely stops at one entry, and
+  the unit an act applies to is the unit it is offered on.
 - **A track hangs off an item and travels with every copy of it.** `copyItemTracks` is
   called from `duplicateItem`, `copyGroup`, `duplicateAlternative`, `materializeRoutine` and
   the reversed routine, plus the bundle import — deliberately **not** from `copyItemPlan`,
@@ -692,7 +776,16 @@ UI (features/*/presentation, *widgets)
   `decodeTrackPoints` takes a precision and `_legShape` refuses any other one outright — a
   line read at the wrong precision lands ten times away, which looks like data instead of
   looking wrong; and a shape that will not decode costs its own leg a line and nothing else,
-  since the rest of the journey is perfectly good. Deliberately **not** an opt-in on the
+  since the rest of the journey is perfectly good. **A replacement is a routed
+  connection too**: `replaceJourneyLegs` writes the new run's shapes exactly as
+  the import does, which is why the repository owns that step for both
+  (`_writeRoutedShapes`) and why the DAO returns its ids in *leg* order. Leaving
+  it out meant a journey fell back to chords between its stops the moment it was
+  looked up again — most visibly in a **routine**, where re-routing is the
+  ordinary act and adding a run the rare one. Not to be confused with
+  `copyItemTracks`, still deliberately absent here: that would carry the *old*
+  run's line onto the new one and claim a route was followed that was not, while
+  this writes the route the router has just returned for these very legs. Deliberately **not** an opt-in on the
   search form: the switch would have to be set before the user knows whether they will
   import this connection, it would guard the cheap call while the repeated one stays off
   anyway, and one screen of map tiles already costs several times more without being asked.
@@ -702,6 +795,27 @@ UI (features/*/presentation, *widgets)
   picks, because a second line beside the first says nothing a reader wants. The dash is the
   honest part: a map can only draw a line, and whether that line is a record or a proposal
   is exactly the difference a reader needs.
+- **A color is a property of the entry, not of the line it happens to be drawn as.**
+  `ItineraryItems.colorValue` (nullable, v30) colors an entry on the map — a leg's line or a
+  place's pin — and null means the trip's accent, which is what every row written before it
+  means and what the great majority go on meaning. Deliberately **not** on `Tracks`: a line
+  has to be colorable before there is a track to hang the color on (the straight segment is
+  the ordinary case), and an entry that later gains a recording would otherwise lose the
+  color it was given. Nothing outside the map reads it — the timeline, the totals and the
+  PDF are untouched — so it is the one property whose choice is offered *on* the map, in
+  `MapItemSheet`, which is otherwise a reading and not an editor: a color is chosen against
+  the picture it lands in, and picking it anywhere else means guessing which line was hard to
+  follow. The same `ItemColorField` sits in the item form, and the sheet writes through
+  `setItemColor` (a targeted update, since it holds a snapshot of the row from when the
+  marker was tapped) while the form saves it with everything else. It is a choice about the
+  entry, so it travels: `copyItemPlan`, the `.tpt` bundle (no format-version bump, by the
+  rule stated for coordinates), and `replaceJourneyLegs`, which carries the color the old run
+  wore throughout — a commute drawn green would otherwise revert every morning the timetable
+  is asked again, and the slot is what the color belongs to, exactly as the group and its
+  ticket are kept. **Happening still outranks it**: red is the app's one reserved color, and
+  a user's choice must not hide where they are. The **all-trips map** ignores it and keeps
+  every line in its trip's accent — there the color answers "which trip is that line", which
+  is the whole reason that map is readable.
 - **A leg with a track draws the track instead of its straight segment**
   (`tripMapFeatures`'s `tracks:`). The chord between the ends and the path between them are
   two answers to the same question, and drawing both puts a line across the bay beside the
@@ -744,7 +858,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 29) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 30) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

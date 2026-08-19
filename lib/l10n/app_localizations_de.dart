@@ -932,6 +932,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get mapColor => 'Farbe auf der Karte';
+
+  @override
+  String get mapColorHint =>
+      'Färbt die Linie bzw. den Marker dieses Eintrags. Alles andere an der Reise bleibt unberührt.';
+
+  @override
+  String get mapColorTrip => 'Reisefarbe';
+
+  @override
   String get trackSection => 'Aufgezeichnete Linie';
 
   @override
@@ -954,6 +964,49 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get trackImportTitle => 'Aufgezeichnete Linie importieren';
+
+  @override
+  String get trackPickEntries => 'Welche Einträge deckt sie ab?';
+
+  @override
+  String get trackPickEntriesHint =>
+      'Wähle einen zusammenhängenden Lauf — die Linie wird darauf aufgeteilt.';
+
+  @override
+  String trackTapBoundary(String before, String after) {
+    return 'Antippen, wo „$before“ an „$after“ übergibt';
+  }
+
+  @override
+  String get trackBoundaryMove =>
+      'Ein Tipp verschiebt den nächsten Übergabepunkt';
+
+  @override
+  String get trackImportConfirm => 'Importieren';
+
+  @override
+  String trackImportSummary(int legs, int ends) {
+    String _temp0 = intl.Intl.pluralLogic(
+      legs,
+      locale: localeName,
+      other: '$legs Einträge',
+      one: '1 Eintrag',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      ends,
+      locale: localeName,
+      other: '$ends Koordinaten gesetzt',
+      one: '1 Koordinate gesetzt',
+      zero: 'keine Koordinaten gesetzt',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String get trackNoLegsPicked => 'Mindestens einen Transport-Eintrag wählen';
 
   @override
   String get trackImported => 'Linie importiert';

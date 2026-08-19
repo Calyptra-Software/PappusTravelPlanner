@@ -1676,6 +1676,24 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 trip here} other{{count} trips here}}'**
   String mapTripsHere(int count);
 
+  /// Heading of the control choosing the color one itinerary entry is drawn in on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Color on the map'**
+  String get mapColor;
+
+  /// Explains what the entry's map color applies to.
+  ///
+  /// In en, this message translates to:
+  /// **'Colors this entry\'s line or pin. Everything else about the trip is unaffected.'**
+  String get mapColorHint;
+
+  /// Tooltip of the swatch that leaves an entry in its trip's accent color instead of giving it one of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip color'**
+  String get mapColorTrip;
+
   /// Heading of the item form's section for the GPX line an entry followed.
   ///
   /// In en, this message translates to:
@@ -1705,6 +1723,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 line} other{{count} lines}}'**
   String trackCount(int count);
+
+  /// Title of the screen that spreads one GPX across the entries it covers.
+  ///
+  /// In en, this message translates to:
+  /// **'Import a recorded line'**
+  String get trackImportTitle;
+
+  /// Title of the sheet where the covered entries are ticked.
+  ///
+  /// In en, this message translates to:
+  /// **'Which entries does it cover?'**
+  String get trackPickEntries;
+
+  /// Explains that the selection must be contiguous.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a run of entries in one go — the line is divided between them.'**
+  String get trackPickEntriesHint;
+
+  /// Asks the user to point at the handover between two legs.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap where “{before}” hands over to “{after}”'**
+  String trackTapBoundary(String before, String after);
+
+  /// Says that a handover already placed is not final.
+  ///
+  /// In en, this message translates to:
+  /// **'Tapping moves the nearest handover'**
+  String get trackBoundaryMove;
+
+  /// Writes the divided line onto the entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get trackImportConfirm;
+
+  /// Says what the import will do, since it changes entries and not only the map.
+  ///
+  /// In en, this message translates to:
+  /// **'{legs, plural, =1{1 entry} other{{legs} entries}}, {ends, plural, =0{no coordinates set} =1{1 coordinate set} other{{ends} coordinates set}}'**
+  String trackImportSummary(int legs, int ends);
+
+  /// Shown when the selection holds only places, which cannot carry a line.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least one transport leg'**
+  String get trackNoLegsPicked;
 
   /// Confirmation after a GPX import.
   ///
