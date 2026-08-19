@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:travelplanner/core/clock.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
@@ -15,6 +16,8 @@ import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/map/presentation/trip_map_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'location_fixture.dart';
 
 /// The trip map screen. Drift's `.watch()` streams never resolve under
 /// `flutter_test`'s fake-async clock, so every provider it reads is overridden
@@ -342,5 +345,88 @@ void main() {
     // disposed with a timer still pending.
     await tester.pump(kTileUpdateThrottle);
     await tester.pump(kTileUpdateThrottle);
+  });
+
+  group('where the device is', () {
+    late FakeGeolocator platform;
+
+    setUp(() {
+      platform = FakeGeolocator()..permission = LocationPermission.whileInUse;
+      GeolocatorPlatform.instance = platform;
+    });
+
+    /// The mark: the reading as a dot, and the error around it as a circle.
+    final locationCircle = find.byWidgetPredicate((w) => w is CircleLayer);
+
+    testWidgets('nothing is asked for until the button is pressed', (
+      tester,
+    ) async {
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      await tester.pumpAndSettle();
+
+      // A map that switched a receiver on because it was opened would be asking
+      // for a permission the user never requested.
+      expect(find.byTooltip('Show my position'), findsOneWidget);
+      expect(locationCircle, findsNothing);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a reading draws the mark and its error', (tester) async {
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Show my position'));
+      await tester.pump();
+      platform.emit(latitude: 53.56, longitude: 9.98, accuracy: 40);
+      await tester.pumpAndSettle();
+
+      expect(locationCircle, findsOneWidget);
+      final circle = tester.widget<CircleLayer>(locationCircle);
+      // The radius is the platform's own figure, in meters — drawn to scale, so
+      // an uncertain fix looks uncertain.
+      expect(circle.circles.single.radius, 40);
+      expect(circle.circles.single.useRadiusInMeter, isTrue);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('switching it off again takes the mark with it', (
+      tester,
+    ) async {
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Show my position'));
+      await tester.pump();
+      platform.emit(latitude: 53.56, longitude: 9.98, accuracy: 40);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Hide my position'));
+      await tester.pumpAndSettle();
+
+      expect(locationCircle, findsNothing);
+      expect(platform.streamCancelled, isTrue);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a refusal is said out loud, once', (tester) async {
+      platform.permission = LocationPermission.denied;
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Show my position'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Location access was declined'), findsOneWidget);
+      expect(locationCircle, findsNothing);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
   });
 }

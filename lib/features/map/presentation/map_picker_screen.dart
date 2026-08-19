@@ -7,6 +7,8 @@ import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
 import '../finite_camera.dart';
+import '../location/device_location.dart';
+import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
 
 /// Opens the map so the user can point at a place, and returns what they chose —
@@ -71,11 +73,52 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   /// than a trap.
   late LatLng? _picked = widget.initial;
 
+  /// Whether the locate button is still waiting for the reading it will pick.
+  ///
+  /// Pressing it is a request for a point that does not exist yet, and a fix can
+  /// take several seconds to arrive — long enough for the user to give up and
+  /// tap the map instead. Their tap wins: this is cleared by it, so the reading
+  /// that turns up afterwards moves the blue mark and leaves the choice alone.
+  bool _awaitingFix = false;
+
+  /// Pick where the device says it is.
+  ///
+  /// Still a pointing act and not a derived one — the rule this screen exists to
+  /// keep is that a position is *stated*, and pressing this states one. What it
+  /// must not do is go on stating it: only the reading the press was waiting for
+  /// is taken, so a receiver that walks the mark down the street afterwards does
+  /// not walk the user's choice with it.
+  void _useMyLocation() {
+    final fix = ref.read(deviceLocationProvider).fix;
+    if (fix != null) {
+      setState(() => _picked = fix.position);
+      centerOnFix(_controller, fix);
+      return;
+    }
+    setState(() => _awaitingFix = true);
+    ref.read(deviceLocationProvider.notifier).start();
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     const basemap = kDefaultBasemap;
+    final location = ref.watch(deviceLocationProvider);
+
+    reportLocationProblems(context, ref);
+    listenForFirstFix(ref, (fix) {
+      // Only when the press is still waiting for it. A tap made in the meantime
+      // has already answered the question, and moving the camera onto a reading
+      // the user has stopped caring about would take their chosen point off
+      // screen.
+      if (!_awaitingFix) return;
+      centerOnFix(_controller, fix);
+      setState(() {
+        _picked = fix.position;
+        _awaitingFix = false;
+      });
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -127,7 +170,12 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               interactionOptions: const InteractionOptions(
                 flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
-              onTap: (_, point) => setState(() => _picked = point),
+              onTap: (_, point) => setState(() {
+                _picked = point;
+                // A tap is the more specific statement of the two, so it ends
+                // the wait rather than being overwritten by what it beat.
+                _awaitingFix = false;
+              }),
             ),
             children: [
               basemapTileLayer(basemap, ref.watch(appVersionProvider)),
@@ -171,16 +219,35 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                     ),
                   ],
                 ),
+              // Where the device says it is — context for the choice, and the
+              // point the button below picks. Drawn under the red pin, which is
+              // the thing actually being chosen.
+              const DeviceLocationLayer(),
             ],
           ),
           Positioned(
             top: 12,
             right: 12 + MediaQuery.paddingOf(context).right,
-            child: MapZoomButtons(
-              controller: _controller,
-              basemap: basemap,
-              zoomInTooltip: l10n.mapZoomIn,
-              zoomOutTooltip: l10n.mapZoomOut,
+            child: Column(
+              children: [
+                MapZoomButtons(
+                  controller: _controller,
+                  basemap: basemap,
+                  zoomInTooltip: l10n.mapZoomIn,
+                  zoomOutTooltip: l10n.mapZoomOut,
+                ),
+                const SizedBox(height: 8),
+                // Not the trip map's on/off toggle: here the mark is never the
+                // point of switching the receiver on, so one button says what
+                // pressing it is *for* — take my position — and the mark comes
+                // along because it is the evidence for what was taken.
+                MapRoundButton(
+                  icon: Icons.my_location,
+                  tooltip: l10n.mapUseMyLocation,
+                  onPressed: _useMyLocation,
+                  busy: location.locating,
+                ),
+              ],
             ),
           ),
           // What will be saved, in the open. A coordinate is not something you

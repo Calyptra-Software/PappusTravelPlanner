@@ -3,6 +3,16 @@
          profile manifests declare this too, but a release build uses this one, so
          without it the search can't reach the network. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- The map's "you are here". Asked for at the moment the locate button is
+         pressed and never at launch, and nothing the receiver answers is stored
+         or sent anywhere. Both are declared because Android 12 and later let the
+         user grant the coarse one from the same dialog: fine is what a map on a
+         footpath needs, coarse is the user's right to say "roughly" instead, and
+         a build that declares only fine offers them no such choice.
+         Deliberately no ACCESS_BACKGROUND_LOCATION: the mark exists while a map
+         is open, and there is no feature here that follows anyone. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

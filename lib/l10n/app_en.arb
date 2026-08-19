@@ -472,6 +472,38 @@
   "@mapZoomOut": {
     "description": "Tooltip of the map's zoom-out button."
   },
+  "mapMyLocationShow": "Show my position",
+  "@mapMyLocationShow": {
+    "description": "Tooltip of the map button that switches the device's own position on."
+  },
+  "mapMyLocationHide": "Hide my position",
+  "@mapMyLocationHide": {
+    "description": "Tooltip of the same button while the device's position is being shown."
+  },
+  "mapUseMyLocation": "Use my position",
+  "@mapUseMyLocation": {
+    "description": "Tooltip of the map picker's button that puts the mark on the device's own position."
+  },
+  "mapLocationDenied": "Location access was declined",
+  "@mapLocationDenied": {
+    "description": "Shown when the user dismissed the system's location permission dialog."
+  },
+  "mapLocationBlocked": "Location access is blocked for this app",
+  "@mapLocationBlocked": {
+    "description": "Shown when the permission was denied permanently, so only the system settings can grant it."
+  },
+  "mapLocationServiceOff": "Location is switched off on this device",
+  "@mapLocationServiceOff": {
+    "description": "Shown when the device's location service itself is off."
+  },
+  "mapLocationFailed": "Could not determine your position",
+  "@mapLocationFailed": {
+    "description": "Shown when the device has no position to give — no receiver, no fix, or an error."
+  },
+  "mapLocationOpenSettings": "Settings",
+  "@mapLocationOpenSettings": {
+    "description": "Action on the location message, opening the system settings where it can be granted or switched on."
+  },
   "mapPickConfirm": "Use this point",
   "@mapPickConfirm": {
     "description": "Confirms the position under the crosshair in the map picker."

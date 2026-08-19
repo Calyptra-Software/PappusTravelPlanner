@@ -107,13 +107,13 @@ class MapZoomButtons extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _ZoomButton(
+        MapRoundButton(
           icon: Icons.add,
           tooltip: zoomInTooltip,
           onPressed: () => _zoomBy(1),
         ),
         const SizedBox(height: 8),
-        _ZoomButton(
+        MapRoundButton(
           icon: Icons.remove,
           tooltip: zoomOutTooltip,
           onPressed: () => _zoomBy(-1),
@@ -123,16 +123,35 @@ class MapZoomButtons extends StatelessWidget {
   }
 }
 
-class _ZoomButton extends StatelessWidget {
-  const _ZoomButton({
+/// One of the round buttons floating over a map.
+///
+/// Public and shared rather than private to the zoom pair, because the controls
+/// that sit over a map are a *set*: they are read as one column, and a locate
+/// button half a shade off or two pixels wider than the `+` above it looks like
+/// something that wandered in from another screen. Anything new belongs here
+/// too.
+class MapRoundButton extends StatelessWidget {
+  const MapRoundButton({
+    super.key,
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.foreground,
+    this.busy = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
+
+  /// The icon's color, or null for the theme's own. Used to say that a button
+  /// is *on* — a state the zoom pair does not have and the locate button does.
+  final Color? foreground;
+
+  /// Whether to draw a spinner around the icon: something was started that has
+  /// not answered yet. The button stays pressable throughout, since the way out
+  /// of a fix that is taking too long is to switch it off again.
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
@@ -140,10 +159,24 @@ class _ZoomButton extends StatelessWidget {
       color: Theme.of(context).colorScheme.surface,
       elevation: 2,
       shape: const CircleBorder(),
-      child: IconButton(
-        icon: Icon(icon),
-        tooltip: tooltip,
-        onPressed: onPressed,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (busy)
+            SizedBox.square(
+              dimension: 36,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: foreground,
+              ),
+            ),
+          IconButton(
+            icon: Icon(icon),
+            color: foreground,
+            tooltip: tooltip,
+            onPressed: onPressed,
+          ),
+        ],
       ),
     );
   }

@@ -12,6 +12,7 @@ import '../../itinerary/application/itinerary_providers.dart';
 import '../basemap.dart';
 import '../finite_camera.dart';
 import '../map_features.dart';
+import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
 import '../../trips/widgets/trip_card.dart';
 
@@ -202,6 +203,11 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
       _frame(points, tripIds);
     }
 
+    // The one other thing allowed to move this camera, and by the same rule the
+    // framing follows: an explicit act with an expectation attached moves it,
+    // a tick of the stream does not.
+    listenForFirstFix(ref, (fix) => centerOnFix(_controller, fix));
+
     return Stack(
       // The map *fills* the stack; it does not size it — see the note in
       // `trip_map_screen.dart`: a loosely constrained map is laid out just to
@@ -303,16 +309,25 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
                     ),
               ],
             ),
+            // Above every trip's own marks: "where am I in all this" is asked
+            // *of* them, so it must not end up under one.
+            const DeviceLocationLayer(),
           ],
         ),
         Positioned(
           top: 12,
           right: 12 + MediaQuery.paddingOf(context).right,
-          child: MapZoomButtons(
-            controller: _controller,
-            basemap: basemap,
-            zoomInTooltip: l10n.mapZoomIn,
-            zoomOutTooltip: l10n.mapZoomOut,
+          child: Column(
+            children: [
+              MapZoomButtons(
+                controller: _controller,
+                basemap: basemap,
+                zoomInTooltip: l10n.mapZoomIn,
+                zoomOutTooltip: l10n.mapZoomOut,
+              ),
+              const SizedBox(height: 8),
+              const MapLocationButton(),
+            ],
           ),
         ),
         Positioned(

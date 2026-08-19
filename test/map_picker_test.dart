@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
@@ -12,6 +13,8 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
 import 'package:travelplanner/features/map/presentation/map_picker_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'location_fixture.dart';
 
 /// Giving an entry a position by pointing at it on a map, and what that does —
 /// and deliberately does not do — to the rest of the row.
@@ -162,6 +165,120 @@ void main() {
 
       expect(called, isTrue);
       expect(picked, isNull);
+    });
+  });
+
+  group('picking where the device is', () {
+    late FakeGeolocator platform;
+
+    setUp(() {
+      platform = FakeGeolocator()..permission = LocationPermission.whileInUse;
+      GeolocatorPlatform.instance = platform;
+    });
+
+    /// Opens the picker and presses the locate button.
+    Future<LatLng?> open(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      LatLng? picked;
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () async {
+                  picked = await pickPointOnMap(context, title: 'Pick');
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Use my position'));
+      await tester.pump();
+      return picked;
+    }
+
+    testWidgets('the reading it was waiting for becomes the point', (
+      tester,
+    ) async {
+      await open(tester);
+
+      platform.emit(latitude: 53.5511, longitude: 9.9937, accuracy: 8);
+      await tester.pumpAndSettle();
+
+      // The readout says the number that is about to be written down, exactly
+      // as it does for a point tapped by hand.
+      expect(find.textContaining('53.55110'), findsOneWidget);
+    });
+
+    testWidgets('a later reading moves the mark, not the choice', (
+      tester,
+    ) async {
+      await open(tester);
+      platform.emit(latitude: 53.5511, longitude: 9.9937, accuracy: 8);
+      await tester.pumpAndSettle();
+
+      // Walking on is not re-deciding: only the reading the press was waiting
+      // for is taken, or a choice made at a doorway would follow its owner
+      // down the street.
+      platform.emit(latitude: 53.6000, longitude: 10.1000, accuracy: 8);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('53.55110'), findsOneWidget);
+      expect(find.textContaining('53.60000'), findsNothing);
+    });
+
+    testWidgets('a tap made while waiting wins', (tester) async {
+      await open(tester);
+
+      await tester.tapAt(tester.getCenter(find.byType(FlutterMap)));
+      // flutter_map waits out a possible second tap before reporting one, and
+      // that wait is a Timer — which `pumpAndSettle` does not advance. And
+      // `pumpAndSettle` cannot be used here at all: the locate button spins
+      // until a reading arrives, and this test is about what happens before
+      // one does.
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      final tapped = tester
+          .widget<Text>(
+            find.descendant(
+              of: find.byType(Scaffold),
+              matching: find.textContaining(', '),
+            ),
+          )
+          .data;
+
+      platform.emit(latitude: 53.5511, longitude: 9.9937, accuracy: 8);
+      await tester.pumpAndSettle();
+
+      // The more specific statement of the two ends the wait rather than being
+      // overwritten by what it beat.
+      expect(find.text(tapped!), findsOneWidget);
+      expect(find.textContaining('53.55110'), findsNothing);
+    });
+
+    testWidgets('a refusal is said out loud and nothing is picked', (
+      tester,
+    ) async {
+      platform.permission = LocationPermission.deniedForever;
+      await open(tester);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Location access is blocked for this app'),
+        findsOneWidget,
+      );
+      expect(find.text('Tap the map to place a point'), findsOneWidget);
+      final button = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Use this point'),
+      );
+      expect(button.onPressed, isNull);
     });
   });
 

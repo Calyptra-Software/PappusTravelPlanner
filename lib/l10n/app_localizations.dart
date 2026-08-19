@@ -1802,6 +1802,54 @@ abstract class AppLocalizations {
   /// **'Zoom out'**
   String get mapZoomOut;
 
+  /// Tooltip of the map button that switches the device's own position on.
+  ///
+  /// In en, this message translates to:
+  /// **'Show my position'**
+  String get mapMyLocationShow;
+
+  /// Tooltip of the same button while the device's position is being shown.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide my position'**
+  String get mapMyLocationHide;
+
+  /// Tooltip of the map picker's button that puts the mark on the device's own position.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my position'**
+  String get mapUseMyLocation;
+
+  /// Shown when the user dismissed the system's location permission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Location access was declined'**
+  String get mapLocationDenied;
+
+  /// Shown when the permission was denied permanently, so only the system settings can grant it.
+  ///
+  /// In en, this message translates to:
+  /// **'Location access is blocked for this app'**
+  String get mapLocationBlocked;
+
+  /// Shown when the device's location service itself is off.
+  ///
+  /// In en, this message translates to:
+  /// **'Location is switched off on this device'**
+  String get mapLocationServiceOff;
+
+  /// Shown when the device has no position to give — no receiver, no fix, or an error.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not determine your position'**
+  String get mapLocationFailed;
+
+  /// Action on the location message, opening the system settings where it can be granted or switched on.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get mapLocationOpenSettings;
+
   /// Confirms the position under the crosshair in the map picker.
   ///
   /// In en, this message translates to:

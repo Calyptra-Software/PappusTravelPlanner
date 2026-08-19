@@ -3,6 +3,21 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **The map can show where you are.** A locate button on a trip's map, on the
+  all-trips map, and in the map picker — where it also takes that reading as the
+  point being picked. One press asks for the permission, starts the receiver and
+  centers the map once; after that the mark moves and the camera does not, so a
+  map panned ahead stays where it was put. The reading is drawn with its accuracy
+  as a circle around it, in a blue of its own so it cannot be mistaken for the
+  plan's own "you are here".
+- The position is **never stored and never sent** — not to a row, not into a
+  `.tpt` bundle or any export, and not to the tile server, which is addressed by
+  grid square exactly as before. It is the app's first runtime permission, asked
+  for on the button press and at no other moment, and the receiver is released
+  when the map is left. Nothing runs in the background.
+
 ## 1.7.0 — 2026-08-18
 
 - **One recording is divided among the entries it covered.** A GPX file is made
