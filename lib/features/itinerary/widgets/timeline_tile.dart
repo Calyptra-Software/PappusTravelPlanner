@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
@@ -244,6 +245,7 @@ class GroupRunTile extends StatelessWidget {
                 _GroupMenu(
                   groupId: groupId,
                   tripId: items.first.tripId,
+                  label: label,
                   accent: accent,
                 ),
                 ?dragHandle,
@@ -313,26 +315,42 @@ class GroupRunTile extends StatelessWidget {
 
 /// What can be done to a whole group, on the group's own label.
 ///
-/// Moving and copying were reachable before, but only from the *grouping*
-/// section of one member's edit form — a place you go to change that entry,
-/// and which says nothing about the run standing above it. Deleting a run had
-/// no path at all: an entry deleted one at a time takes the group with it only
-/// once it is down to its last member, and the shared ticket is rescued onto
-/// whichever leg happened to be left, so a journey removed leg by leg left its
-/// fare behind, attached to nothing anyone had meant to keep.
+/// Every act here is one whose *unit* is the run: its name, where it goes, and
+/// whether it survives. Each of them was once reachable only from the grouping
+/// section of one member's edit form — a place you go to change that entry, and
+/// which says nothing about the run standing above it; which member you had
+/// opened to rename the band or dissolve it was pure accident. Deleting a run
+/// had no path at all: an entry deleted one at a time takes the group with it
+/// only once it is down to its last member, and the shared ticket is rescued
+/// onto whichever leg happened to be left, so a journey removed leg by leg left
+/// its fare behind, attached to nothing anyone had meant to keep.
 ///
-/// The three acts share one shape with the rest of the app: move and copy pick
-/// the run up into [itemClipboardProvider] and let the destination name itself
-/// (the run stays where it is, dimmed, until it is put down), while the
-/// destructive one asks first.
+/// The member's form keeps exactly what is about that entry's own membership —
+/// group with next, remove from group — and this menu is the only place the run
+/// itself is addressed, the same shape the decision card's menu has for a set
+/// and its options.
+///
+/// Ungrouping sits directly above deleting because it is the harmless half of
+/// the same question, and the delete dialog says so in words ("to keep the
+/// entries, ungroup instead"): the way out has to be next to the door it warns
+/// about, not two levels away in a member's form. The acts share one shape with
+/// the rest of the app: move and copy pick the run up into
+/// [itemClipboardProvider] and let the destination name itself (the run stays
+/// where it is, dimmed, until it is put down), while the destructive one asks
+/// first.
 class _GroupMenu extends ConsumerWidget {
   const _GroupMenu({
     required this.groupId,
     required this.tripId,
+    required this.label,
     required this.accent,
   });
 
   final int groupId;
+
+  /// The run's current name, or null while it goes by the default label — what
+  /// the rename prompt opens on.
+  final String? label;
 
   /// Read off a member rather than the group row: the run is on screen, so its
   /// trip is not in doubt even if the groups stream has yet to arrive.
@@ -349,6 +367,17 @@ class _GroupMenu extends ConsumerWidget {
       onSelected: (action) async {
         final repo = ref.read(repositoryProvider);
         switch (action) {
+          case _GroupAction.rename:
+            final name = await showTextPromptDialog(
+              context,
+              title: l10n.groupNameLabel,
+              hint: l10n.groupNameHint,
+              initial: label ?? '',
+              confirmLabel: l10n.save,
+            );
+            if (name != null) await repo.setGroupLabel(groupId, name);
+          case _GroupAction.ungroup:
+            await repo.dissolveGroup(groupId);
           case _GroupAction.move:
           case _GroupAction.copy:
             ref
@@ -369,9 +398,18 @@ class _GroupMenu extends ConsumerWidget {
         }
       },
       itemBuilder: (context) => [
+        PopupMenuItem(
+          value: _GroupAction.rename,
+          child: Text(l10n.groupRename),
+        ),
+        const PopupMenuDivider(),
         PopupMenuItem(value: _GroupAction.move, child: Text(l10n.groupMoveTo)),
         PopupMenuItem(value: _GroupAction.copy, child: Text(l10n.groupCopyTo)),
         const PopupMenuDivider(),
+        PopupMenuItem(
+          value: _GroupAction.ungroup,
+          child: Text(l10n.groupUngroup),
+        ),
         PopupMenuItem(
           value: _GroupAction.delete,
           child: Text(l10n.groupDelete),
@@ -405,7 +443,7 @@ class _GroupMenu extends ConsumerWidget {
   }
 }
 
-enum _GroupAction { move, copy, delete }
+enum _GroupAction { rename, ungroup, move, copy, delete }
 
 /// Left gutter with a continuous rail line and a node marker.
 class _Gutter extends StatelessWidget {

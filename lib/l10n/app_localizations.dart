@@ -2504,6 +2504,12 @@ abstract class AppLocalizations {
   /// **'Group with next item'**
   String get groupWithNext;
 
+  /// No description provided for @groupRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename group'**
+  String get groupRename;
+
   /// No description provided for @groupMoveTo.
   ///
   /// In en, this message translates to:

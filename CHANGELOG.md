@@ -5,6 +5,13 @@ exact commits.
 
 ## Unreleased
 
+- **Everything done to a group is now done on the group.** Its name and
+  *Ungroup* move from the edit form of whichever member you happened to open to
+  the ⋮ menu on the run's own label, beside moving, copying and deleting it.
+  Ungrouping sits right above deleting, where the warning that ungrouping is the
+  way to keep the entries can be acted on. A member's form keeps what is about
+  that entry: group with next, remove from group.
+
 - **The map can show where you are.** A locate button on a trip's map, on the
   all-trips map, and in the map picker — where it also takes that reading as the
   point being picked. One press asks for the permission, starts the receiver and
