@@ -727,6 +727,7 @@
   "grouping": "Grouping",
   "groupActions": "Group actions",
   "groupWithNext": "Group with next item",
+  "groupRename": "Rename group",
   "groupMoveTo": "Move group to…",
   "groupCopyTo": "Copy group to…",
   "groupRemoveItem": "Remove from group",

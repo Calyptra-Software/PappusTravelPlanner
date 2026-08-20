@@ -316,14 +316,18 @@ UI (features/*/presentation, *widgets)
   fields live once, in `copyItemPlan` (`data/database/item_copy.dart`), shared by every
   duplicate so a new column reaches them all at once.
 - **What is done to a whole run is done on the run's label** — the ⋮ menu on the group band
-  (`_GroupMenu` in `widgets/timeline_tile.dart`): *Move group to…*, *Copy group to…*,
-  *Delete group*. The unit an act applies to is the unit it is offered on, the way a decision's
-  acts sit on the decision card; a member's edit form is where that *entry* is changed, and it
-  cannot name the run standing above it. So move and copy live here **only**: the grouping
-  section of a member's sheet keeps just what is about that entry's own membership — group with
-  next, remove from group, ungroup, and the group's name — and no longer carries a second,
-  buried way to relocate the run. Delete could not have lived there in any case, since it
-  deletes the entry the form is editing. It is also the act that had no path
+  (`_GroupMenu` in `widgets/timeline_tile.dart`): *Rename group*, *Move group to…*,
+  *Copy group to…*, *Ungroup*, *Delete group*. The unit an act applies to is the unit it is
+  offered on, the way a decision's acts sit on the decision card; a member's edit form is where
+  that *entry* is changed, and it cannot name the run standing above it. So all five live here
+  **only**, and the grouping section of a member's sheet keeps just what is about that entry's
+  own membership — group with next, remove from group. The name and the dissolving were the last
+  two to move: both act on the run, yet were reached through whichever member you happened to
+  open, which is an accident deciding where an act is performed from. Delete could not have
+  lived there in any case, since it deletes the entry the form is editing. Ungrouping sits
+  directly above deleting because it is the harmless half of the same question, and the delete
+  dialog says as much in words — a way out named in a warning has to be within reach of the door
+  it warns about, not two levels down in a member's form. Delete is also the act that had no path
   at all: deleting a run entry by entry dissolves the group only once one member is left, and
   `_dissolveIfDegenerate` then *rescues* the shared ticket onto that survivor, so a journey
   removed leg by leg left its fare behind on the last leg standing. `GroupDao.deleteGroup` is

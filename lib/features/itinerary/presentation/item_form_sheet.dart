@@ -9,7 +9,6 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
-import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/widgets/item_color_field.dart';
 import '../../map/widgets/track_field.dart';
@@ -797,7 +796,6 @@ class _GroupingAndCosts extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final repo = ref.read(repositoryProvider);
     final items = ref.watch(itineraryProvider(tripId)).value ?? const [];
-    final groups = ref.watch(groupsProvider(tripId)).value ?? const {};
 
     // Resolve the item from live data so its group membership stays current
     // after grouping without closing the sheet.
@@ -926,25 +924,13 @@ class _GroupingAndCosts extends ConsumerWidget {
                   label: Text(l10n.groupWithNext),
                   onPressed: () => repo.groupItems(itemId, next!.id),
                 ),
-              TextButton.icon(
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: Text(l10n.groupNameLabel),
-                onPressed: () => _renameGroup(
-                  context,
-                  repo,
-                  groupId,
-                  groups[groupId]?.label,
-                ),
-              ),
+              // Only this entry's own membership lives here. The run's name,
+              // where it goes, and whether it survives are acts on the run, and
+              // are offered on the run's label — see `_GroupMenu`.
               TextButton.icon(
                 icon: const Icon(Icons.link_off, size: 18),
                 label: Text(l10n.groupRemoveItem),
                 onPressed: () => repo.removeFromGroup(itemId),
-              ),
-              TextButton.icon(
-                icon: const Icon(Icons.layers_clear_outlined, size: 18),
-                label: Text(l10n.groupUngroup),
-                onPressed: () => repo.dissolveGroup(groupId),
               ),
             ],
           ),
@@ -997,23 +983,6 @@ class _GroupingAndCosts extends ConsumerWidget {
     );
     navigator.pop();
     messenger.showSnackBar(SnackBar(content: Text(l10n.copiedWithoutCosts)));
-  }
-
-  Future<void> _renameGroup(
-    BuildContext context,
-    TripRepository repo,
-    int groupId,
-    String? current,
-  ) async {
-    final l10n = AppLocalizations.of(context);
-    final result = await showTextPromptDialog(
-      context,
-      title: l10n.groupNameLabel,
-      hint: l10n.groupNameHint,
-      initial: current ?? '',
-      confirmLabel: l10n.save,
-    );
-    if (result != null) await repo.setGroupLabel(groupId, result);
   }
 }
 

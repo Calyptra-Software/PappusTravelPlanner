@@ -1421,6 +1421,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get groupWithNext => 'Group with next item';
 
   @override
+  String get groupRename => 'Rename group';
+
+  @override
   String get groupMoveTo => 'Move group to…';
 
   @override

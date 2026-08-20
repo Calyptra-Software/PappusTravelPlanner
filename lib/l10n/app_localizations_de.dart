@@ -1429,6 +1429,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get groupWithNext => 'Mit nächstem Element gruppieren';
 
   @override
+  String get groupRename => 'Gruppe umbenennen';
+
+  @override
   String get groupMoveTo => 'Gruppe verschieben nach…';
 
   @override
