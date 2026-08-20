@@ -17,6 +17,7 @@ import '../../trips/application/trip_providers.dart';
 import '../basemap.dart';
 import '../finite_camera.dart';
 import '../map_features.dart';
+import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
 import 'map_item_sheet.dart';
 
@@ -157,6 +158,11 @@ class _MapViewState extends ConsumerState<_MapView> {
     final points = features.allPoints;
     final accent = widget.accent ?? theme.colorScheme.primary;
 
+    // The map is put where the user is once, when the receiver first answers.
+    // After that the mark moves and the camera does not — see
+    // `listenForFirstFix`.
+    listenForFirstFix(ref, (fix) => centerOnFix(_controller, fix));
+
     /// What one entry is drawn in: its own color when it has been given one,
     /// and the trip's accent otherwise — which is what an entry that carries
     /// none means, and what every entry meant before they could carry one.
@@ -285,16 +291,25 @@ class _MapViewState extends ConsumerState<_MapView> {
                   ),
               ],
             ),
+            // Above the plan's own marks: the question it answers ("where am I
+            // in all this") is asked *of* them, so it must not end up under one.
+            const DeviceLocationLayer(),
           ],
         ),
         Positioned(
           top: 12,
           right: 12 + MediaQuery.paddingOf(context).right,
-          child: MapZoomButtons(
-            controller: _controller,
-            basemap: basemap,
-            zoomInTooltip: l10n.mapZoomIn,
-            zoomOutTooltip: l10n.mapZoomOut,
+          child: Column(
+            children: [
+              MapZoomButtons(
+                controller: _controller,
+                basemap: basemap,
+                zoomInTooltip: l10n.mapZoomIn,
+                zoomOutTooltip: l10n.mapZoomOut,
+              ),
+              const SizedBox(height: 8),
+              const MapLocationButton(),
+            ],
           ),
         ),
         Positioned(

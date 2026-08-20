@@ -60,6 +60,13 @@ able to do more than produce a wrong or empty result, or a wrong picture.
 **It accepts deep links.** `pappus://trip?id=N`, used by the Android home-screen
 widget to open a trip.
 
+**It reads the device's position, on request.** A map's locate button starts the
+platform's location service and stops it again when the map is closed. The
+reading is held in memory for as long as it is on screen — it is not written to
+the database, does not go into a `.tpt` bundle or any other export, and is not
+sent anywhere. See *What is deliberately not a vulnerability* below for what the
+tile server does and does not learn from it.
+
 ## What is deliberately not a vulnerability
 
 **The database is not encrypted.** It is an ordinary SQLite file, and being able
@@ -90,9 +97,21 @@ already seen asks for nothing. No coordinate of yours is ever *sent*: a tile is
 addressed by a grid square, and which entries of your trip sit inside it is
 something only your device knows.
 
+**The map can show where you are, and tells nobody.** Pressing the locate button
+asks the platform for the device's position; the mark it draws is the only thing
+that happens with the answer. It is never stored and never transmitted — and in
+particular it is not what the map is fetched with: a tile is addressed by grid
+square, exactly as it is when the mark is off, so centering on yourself asks for
+the same tiles as panning there by hand would. Nothing on the device is followed
+in the background either: the request has no `ACCESS_BACKGROUND_LOCATION` behind
+it, and the receiver is released when the map goes away.
+
 **Nothing else leaves the device.** There is no analytics, no crash reporting,
-and no telemetry of any kind, and the Android build asks for one permission,
-`INTERNET`.
+and no telemetry of any kind, and the Android build asks for three permissions:
+`INTERNET`, and — only when the locate button is pressed —
+`ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`. Both of the latter are
+declared so that the system dialog can offer the choice between an exact and an
+approximate position; the app works either way.
 
 ## What happens after a report
 

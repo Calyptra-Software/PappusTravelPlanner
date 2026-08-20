@@ -1016,6 +1016,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapZoomOut => 'Zoom out';
 
   @override
+  String get mapMyLocationShow => 'Show my position';
+
+  @override
+  String get mapMyLocationHide => 'Hide my position';
+
+  @override
+  String get mapUseMyLocation => 'Use my position';
+
+  @override
+  String get mapLocationDenied => 'Location access was declined';
+
+  @override
+  String get mapLocationBlocked => 'Location access is blocked for this app';
+
+  @override
+  String get mapLocationServiceOff => 'Location is switched off on this device';
+
+  @override
+  String get mapLocationFailed => 'Could not determine your position';
+
+  @override
+  String get mapLocationOpenSettings => 'Settings';
+
+  @override
   String get mapPickConfirm => 'Use this point';
 
   @override

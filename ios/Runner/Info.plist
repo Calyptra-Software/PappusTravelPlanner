@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Shown by the system when the locate button on a map is pressed, which
+	     is the only moment this is asked for. -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Pappus shows your position on the trip map, and can use it as a point you pick. It is never stored and never sent anywhere.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

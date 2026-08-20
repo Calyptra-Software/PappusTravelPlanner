@@ -1024,6 +1024,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapZoomOut => 'Verkleinern';
 
   @override
+  String get mapMyLocationShow => 'Meine Position anzeigen';
+
+  @override
+  String get mapMyLocationHide => 'Meine Position ausblenden';
+
+  @override
+  String get mapUseMyLocation => 'Meine Position übernehmen';
+
+  @override
+  String get mapLocationDenied => 'Standortzugriff wurde abgelehnt';
+
+  @override
+  String get mapLocationBlocked => 'Standortzugriff ist für diese App gesperrt';
+
+  @override
+  String get mapLocationServiceOff =>
+      'Die Ortung ist auf diesem Gerät ausgeschaltet';
+
+  @override
+  String get mapLocationFailed => 'Position konnte nicht bestimmt werden';
+
+  @override
+  String get mapLocationOpenSettings => 'Einstellungen';
+
+  @override
   String get mapPickConfirm => 'Punkt übernehmen';
 
   @override

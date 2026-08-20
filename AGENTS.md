@@ -672,6 +672,34 @@ UI (features/*/presentation, *widgets)
   answer. A position is therefore its own field in the item sheet, beside the name and
   clearable on its own, and the two are kept as a **pair**: a latitude without a longitude
   is not half a place, so the form normalises the fragment away rather than writing it back.
+- **Where the device is, is a measurement; everything else on the map is a
+  statement.** `features/map/location/device_location.dart` holds the sensor's
+  answer and nothing else does: a fix lives in `deviceLocationProvider`'s state,
+  is never written to a row, never rides in a `.tpt` bundle or an export, and is
+  never sent anywhere — the tile server is still addressed by grid square, so
+  centering on yourself asks for exactly the tiles panning there by hand would.
+  It is the app's **first and only runtime permission**, requested on the press
+  of the locate button and at no other moment, and released again by
+  `autoDispose` when the last map watching it goes away — which is why the map
+  must not start it for you: a screen that switched a receiver on because it was
+  opened would be asking for something nobody requested. Declining, location
+  switched off device-wide, and no receiver at all are three *answers*
+  (`LocationProblem`), each with its own sentence and, for the two with a system
+  screen behind them, a button that opens it. The one press does the whole job:
+  permission, receiver, and **one** centering — `listenForFirstFix` reads "first"
+  off the null-to-fix transition, which is exactly why switching the mark off
+  clears the fix, and every reading after that moves the mark and not the camera,
+  since a map panned ahead to see what is coming must stay where it was put.
+  The mark is drawn in a **blue of its own** (`device_location_overlay.dart`),
+  not the trip's accent and not the reserved red: it is not part of the plan, and
+  the two "you are here"s must not be mistakable — `now_marker.dart` answers
+  where the *plan* has got to, this one where the *device* is. Its accuracy is
+  drawn as a circle to scale rather than dropped, because a 300 m fix drawn as a
+  bare dot is a false statement in the most convincing form available. The picker
+  offers the same reading as something to **take** rather than to watch, and it
+  is still a pointing act — but only the reading the press was waiting for is
+  taken, and a map tap made while waiting wins, or a choice made at a doorway
+  would follow its owner down the street.
 - **The overview draws the same trips three ways, and which one is a setting.**
   `TripView` (list / calendar / map) lives in `tripViewProvider`, persisted by index and
   append-only like every other stored enum here — the list/calendar switch used to be a

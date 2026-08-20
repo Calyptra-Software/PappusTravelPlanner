@@ -59,6 +59,12 @@ dependencies:
   # deliberate use rather than a coincidence of the tree — see SECURITY.md.
   xml: ^7.0.1
   latlong2: ^0.10.1 # its coordinate type, shared by the pure map_features.dart
+  # Where the device says it is, for the map's "you are here" — the app's first
+  # and only runtime permission, asked for on a button press and never at
+  # launch. Endorsed on all six targets (Linux goes through GeoClue over D-Bus),
+  # so the map keeps the platform coverage flutter_map was chosen for. Nothing
+  # of what it answers is stored or sent anywhere; see features/map/location/.
+  geolocator: ^14.0.3
 
 dev_dependencies:
   flutter_test:
@@ -76,6 +82,10 @@ dev_dependencies:
 
   # Launcher icons: `dart run flutter_launcher_icons` (see flutter_launcher_icons.yaml).
   flutter_launcher_icons: ^0.14.4
+
+  # Lets a test stand in for the location plugin (`MockPlatformInterfaceMixin`),
+  # so the permission-and-fix state machine can be exercised without a receiver.
+  plugin_platform_interface: ^2.1.8
 
 flutter:
   uses-material-design: true
