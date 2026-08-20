@@ -89,17 +89,28 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # The exact command used to cut a release. `release` signs with the debug
-      # keys (android/app/build.gradle.kts), so this needs no keystore secret
+      # The command used to cut a release, in the one variant that can be
+      # installed beside a real one: `pappusSideBySide` suffixes the
+      # applicationId and relabels the app (android/app/build.gradle.kts).
+      # Without it the artifact below is refused by any phone already holding
+      # the released app — same id, different signing key reads as a
+      # conflicting package, not as a second app. The build path is otherwise
+      # untouched, so this job still guards what it was added to guard: the
+      # plugins Gradle applies, long before Dart or Kotlin is compiled.
+      #
+      # `release` signs with the debug keys, so this needs no keystore secret
       # and works on pull requests from forks.
       - name: Build APK
+        env:
+          ORG_GRADLE_PROJECT_pappusSideBySide: 'true'
         run: flutter build apk --split-per-abi
 
       # The arm64-v8a split is the one every phone made in the last decade
       # runs, so it is the one worth handing out: a reviewer can install the
-      # branch instead of reading it. Debug-signed like the build above, so it
-      # is a test build and nothing else — it cannot upgrade an install signed
-      # with a release key.
+      # branch instead of reading it. It installs *alongside* the real app
+      # rather than over it (see the build step) and therefore starts on an
+      # empty database of its own — a test build cannot touch the trips on the
+      # phone, which is the property that makes it safe to hand to anyone.
       #
       # Named per commit, and `overwrite` because a name is claimed once: a
       # second run on the same commit — a re-run, or `workflow_dispatch` after
@@ -109,7 +120,7 @@ jobs:
       - name: Upload arm64-v8a APK
         uses: actions/upload-artifact@v7
         with:
-          name: pappus-arm64-v8a-${{ github.sha }}
+          name: pappus-ci-arm64-v8a-${{ github.sha }}
           path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           if-no-files-found: error
           overwrite: true

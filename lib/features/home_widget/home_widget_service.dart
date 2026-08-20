@@ -17,8 +17,17 @@ import '../itinerary/widgets/transport_mode.dart';
 import '../trips/application/trip_providers.dart';
 import 'widget_payload.dart';
 
-/// Native provider class name (matches the Kotlin `AppWidgetProvider`).
-const String _androidWidgetName = 'PappusWidgetProvider';
+/// Native provider class, named in full (matches the Kotlin
+/// `AppWidgetProvider`, in the package `android/app/build.gradle.kts` declares
+/// as the `namespace`).
+///
+/// Fully qualified rather than bare, because the plugin's fallback for a bare
+/// name is `context.packageName + '.' + name` — the runtime package, which is
+/// the **applicationId**, not the namespace the class lives in. The two are
+/// the same string in an ordinary build and differ in a side-by-side one
+/// (`.ci`), where the lookup would then miss and the widget would silently
+/// stop updating. The class does not move, so its real name is right in both.
+const String _androidWidgetName = 'dev.calyptra.pappus.PappusWidgetProvider';
 
 /// Whether the home widget feature is available on this platform.
 bool get _widgetSupported =>
@@ -68,7 +77,7 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
     );
 
     await _save(payload);
-    await HomeWidget.updateWidget(androidName: _androidWidgetName);
+    await HomeWidget.updateWidget(qualifiedAndroidName: _androidWidgetName);
   } catch (error, stack) {
     debugPrint('Home widget update failed: $error\n$stack');
   }
