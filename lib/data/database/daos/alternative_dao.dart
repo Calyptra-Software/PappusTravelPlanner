@@ -32,32 +32,50 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
 
   /// All of a trip's decision points, keyed by id, so the timeline can place
   /// each one in its day without a stream per set.
-  Stream<Map<int, AlternativeSet>> watchSetsForTrip(int tripId) {
-    return (select(alternativeSets)..where((s) => s.tripId.equals(tripId)))
-        .watch()
-        .map((rows) => {for (final s in rows) s.id: s});
-  }
+  Stream<Map<int, AlternativeSet>> watchSetsForTrip(int tripId) =>
+      _setsForTrip(tripId).watch().map(_setsById);
+
+  /// The same, as a question asked at a moment. The counterpart of
+  /// [ItineraryDao.itemsFor], and there for the same two reasons: a caller
+  /// assembling a plan to *choose* from wants it to hold still, and a drift
+  /// `.watch()` never resolves under `flutter_test`'s clock.
+  Future<Map<int, AlternativeSet>> setsForTrip(int tripId) =>
+      _setsForTrip(tripId).get().then(_setsById);
 
   /// The branches of every set in a trip, keyed by set id and in swipe order.
   /// Sets with no branches (transient at most) are absent from the map.
-  Stream<Map<int, List<Alternative>>> watchBranchesForTrip(int tripId) {
-    final query =
-        select(alternatives).join([
-            innerJoin(
-              alternativeSets,
-              alternativeSets.id.equalsExp(alternatives.setId),
-            ),
-          ])
-          ..where(alternativeSets.tripId.equals(tripId))
-          ..orderBy([OrderingTerm(expression: alternatives.sortOrder)]);
-    return query.watch().map((rows) {
-      final bySet = <int, List<Alternative>>{};
-      for (final row in rows) {
-        final branch = row.readTable(alternatives);
-        bySet.putIfAbsent(branch.setId, () => []).add(branch);
-      }
-      return bySet;
-    });
+  Stream<Map<int, List<Alternative>>> watchBranchesForTrip(int tripId) =>
+      _branchesForTrip(tripId).watch().map(_branchesBySet);
+
+  /// The same, read once. See [setsForTrip].
+  Future<Map<int, List<Alternative>>> branchesForTrip(int tripId) =>
+      _branchesForTrip(tripId).get().then(_branchesBySet);
+
+  SimpleSelectStatement<$AlternativeSetsTable, AlternativeSet> _setsForTrip(
+    int tripId,
+  ) => select(alternativeSets)..where((s) => s.tripId.equals(tripId));
+
+  JoinedSelectStatement _branchesForTrip(int tripId) =>
+      select(alternatives).join([
+          innerJoin(
+            alternativeSets,
+            alternativeSets.id.equalsExp(alternatives.setId),
+          ),
+        ])
+        ..where(alternativeSets.tripId.equals(tripId))
+        ..orderBy([OrderingTerm(expression: alternatives.sortOrder)]);
+
+  Map<int, AlternativeSet> _setsById(List<AlternativeSet> rows) => {
+    for (final s in rows) s.id: s,
+  };
+
+  Map<int, List<Alternative>> _branchesBySet(List<TypedResult> rows) {
+    final bySet = <int, List<Alternative>>{};
+    for (final row in rows) {
+      final branch = row.readTable(alternatives);
+      bySet.putIfAbsent(branch.setId, () => []).add(branch);
+    }
+    return bySet;
   }
 
   /// Turns an existing item into a decision point: the item — together with its

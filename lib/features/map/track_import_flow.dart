@@ -49,13 +49,20 @@ Future<bool> startTrackImport(
   }
 
   // Read once rather than watched: this is a question asked at a moment, and a
-  // stream would keep the picker's list moving under the user's finger.
-  final items = await ref.read(repositoryProvider).itemsFor(tripId);
+  // stream would keep the picker's list moving under the user's finger. The
+  // decisions come along because the picker shows *one path* through the plan
+  // — a recording followed one option of a fork, not all of them.
+  final repo = ref.read(repositoryProvider);
+  final items = await repo.itemsFor(tripId);
+  final sets = await repo.alternativeSetsFor(tripId);
+  final branchesBySet = await repo.alternativeBranchesFor(tripId);
   if (!context.mounted) return false;
 
   final selection = await showTrackEntryPicker(
     context,
     items: items,
+    sets: sets,
+    branchesBySet: branchesBySet,
     preselected: preselected,
   );
   if (selection == null || selection.isEmpty || !context.mounted) return false;

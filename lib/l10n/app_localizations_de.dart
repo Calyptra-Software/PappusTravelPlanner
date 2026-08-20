@@ -976,6 +976,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle einen zusammenhängenden Lauf — die Linie wird darauf aufgeteilt.';
 
   @override
+  String get trackPickOptionHint =>
+      'Wo sich der Plan gabelt: wähle die Option, der die Linie gefolgt ist.';
+
+  @override
+  String get trackPickOption => 'Welcher Option ist die Linie gefolgt?';
+
+  @override
+  String get trackOptionNotChosen => 'Nicht die Option, der die Reise folgt';
+
+  @override
   String trackTapBoundary(String before, String after) {
     return 'Antippen, wo „$before“ an „$after“ übergibt';
   }

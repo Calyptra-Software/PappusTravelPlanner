@@ -288,6 +288,13 @@ class TripRepository {
       _db.alternativeDao.watchSetsForTrip(tripId);
   Stream<Map<int, List<Alternative>>> watchAlternativeBranches(int tripId) =>
       _db.alternativeDao.watchBranchesForTrip(tripId);
+
+  /// A trip's decisions, read once rather than watched — the shape [itemsFor]
+  /// is in, and for the same reason: a plan being *chosen from* must hold still.
+  Future<Map<int, AlternativeSet>> alternativeSetsFor(int tripId) =>
+      _db.alternativeDao.setsForTrip(tripId);
+  Future<Map<int, List<Alternative>>> alternativeBranchesFor(int tripId) =>
+      _db.alternativeDao.branchesForTrip(tripId);
   Future<int> createAlternativeSetFromItem(int itemId, {String? label}) =>
       _db.alternativeDao.createSetFromItem(itemId, label: label);
   Future<int> addAlternative(int setId, {String? label}) =>
