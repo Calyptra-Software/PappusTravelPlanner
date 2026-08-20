@@ -94,3 +94,23 @@ jobs:
       # and works on pull requests from forks.
       - name: Build APK
         run: flutter build apk --split-per-abi
+
+      # The arm64-v8a split is the one every phone made in the last decade
+      # runs, so it is the one worth handing out: a reviewer can install the
+      # branch instead of reading it. Debug-signed like the build above, so it
+      # is a test build and nothing else — it cannot upgrade an install signed
+      # with a release key.
+      #
+      # Named per commit, and `overwrite` because a name is claimed once: a
+      # second run on the same commit — a re-run, or `workflow_dispatch` after
+      # the push — would otherwise fail the job on the upload rather than
+      # replace the file. The APK a commit builds is the same APK either way,
+      # so the last run winning costs nothing.
+      - name: Upload arm64-v8a APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-arm64-v8a-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14
