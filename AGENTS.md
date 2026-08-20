@@ -888,6 +888,33 @@ UI (features/*/presentation, *widgets)
   **not** gzipped, unlike the earlier plan: the packed encoding already answers the size
   question that plan raised, and compressing the container would break every older app's
   reading of *every* bundle for a further third.
+- **Where you have been is an aggregate, so it lives with the aggregates.** The countries a
+  trip touched are a third tab of `TripStatsScreen`, not a layer on the all-trips map: the
+  map answers "where did I go" and this answers "how much have I seen", and the two sit on
+  opposite sides of the filter split — the map draws what `applyTripQuery` left visible,
+  while the statistics read the whole record, which is why an answer here must not move when
+  a tag chip is tapped. It is a `FlutterMap` with **no tiles at all**, only a `PolygonLayer`
+  over `assets/geo/countries.json`, so it costs nobody's donated server, works offline, and
+  worked on the web from its first day. A street map under it would answer a question nobody
+  asked and make the fills harder to read.
+- **A country is counted from where an entry *stands*, never from the line between two.**
+  `visitedPoints` yields a place's own position and **both ends** of a leg, and nothing in
+  between: a flight from Hamburg to Rome passes over Austria without anybody setting foot in
+  it, and a chord on a map is not a claim about the ground beneath it. A point in no country
+  is left uncounted rather than given to the nearest one — the outlines are generalised, so a
+  coastal position can fall just offshore, and a wrong country is a claim while a missing one
+  is only a gap. A single trip reads through `liveItems`, since an option nobody chose took
+  nobody anywhere.
+- **The outlines are Natural Earth at 1:110m, packed with the track codec.** Rings are
+  encoded polylines at three decimals (~110 m, finer than the source's own generalisation),
+  which is what turns 820 KB of GeoJSON into a 61 KB asset — the codec was already there and
+  tested, and every mapping tool reads the format. **Holes are kept**, so Lesotho is Lesotho
+  and not South Africa; that is the one thing a naive "outer ring only" conversion gets
+  wrong, and there is a test standing on Maseru to say so. Two limits are stated in
+  `assets/geo/countries-ATTRIBUTION.txt` rather than discovered later: a country too small to
+  appear at 1:110m is not in the set and so can never be reported, and the names come from
+  the source's own `NAME_EN`/`NAME_DE` rather than from a list this project would have to
+  maintain.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.

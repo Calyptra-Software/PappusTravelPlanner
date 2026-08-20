@@ -1,0 +1,38 @@
+Country outlines: Natural Earth
+===============================
+
+assets/geo/countries.json is derived from Natural Earth's
+"Admin 0 – Countries" set at 1:110m scale.
+
+    https://www.naturalearthdata.com/
+
+Natural Earth places its data in the public domain:
+
+    "All versions of Natural Earth raster and vector map data found on this
+    website are in the public domain. You may use the maps in any manner,
+    including modifying the content and design, electronic dissemination, and
+    offset printing. The primary authors, Tom Patterson and Nathaniel Vaughn
+    Kelso, and all other contributors renounce all financial claim to the maps
+    and invite you to use them for personal, educational, and commercial
+    purposes.
+
+    No permission is needed to use Natural Earth. Crediting the authors is
+    unnecessary."
+
+The credit is given anyway: a map is only as truthful as the outlines under
+it, and somebody should be able to see where these came from.
+
+What was changed on the way in
+------------------------------
+
+The source GeoJSON is 820 KB and carries some eighty attributes per country.
+This asset keeps four: the ISO 3166-1 alpha-2 code (or the three-letter
+administrative code where the source has no alpha-2), the English and German
+names, and the geometry. Rings are stored as encoded polylines at three decimal
+places — about 110 m, finer than the 1:110m source's own generalisation — which
+brings the file to 61 KB.
+
+Two consequences worth knowing. Countries too small to appear at 1:110m are not
+in the set at all, so a visit to one of them cannot be reported. And a coastal
+position may fall just outside a generalised outline, in which case it counts
+for no country rather than for the nearest one.

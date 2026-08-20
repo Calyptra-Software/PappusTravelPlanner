@@ -5,6 +5,13 @@ exact commits.
 
 ## Unreleased
 
+- **Which countries you have been to**, as a third tab of the statistics: the
+  world drawn from bundled outlines with the ones you have stood in filled in,
+  plus a count and a list. It is counted from where an entry stands and never
+  from the line between two, so a flight does not claim the countries it passes
+  over. The map draws no tiles at all, so it needs no connection — the outlines
+  are Natural Earth, public domain, credited on the licence page.
+
 - **Everything done to a group is now done on the group.** Its name and
   *Ungroup* move from the edit form of whichever member you happened to open to
   the ⋮ menu on the run's own label, beside moving, copying and deleting it.

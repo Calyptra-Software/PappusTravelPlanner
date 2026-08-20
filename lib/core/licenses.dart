@@ -21,6 +21,9 @@ void registerBundledFontLicenses() {
     yield LicenseEntryWithLineBreaks(const [
       'Roboto',
     ], await rootBundle.loadString('assets/fonts/Roboto-LICENSE.txt'));
+    yield LicenseEntryWithLineBreaks(const [
+      'Natural Earth',
+    ], await rootBundle.loadString('assets/geo/countries-ATTRIBUTION.txt'));
     yield LicenseEntryWithLineBreaks(
       const ['TransportGlyphs'],
       await rootBundle.loadString(

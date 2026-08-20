@@ -8,6 +8,7 @@ import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/transport_stats.dart';
 import '../../itinerary/widgets/transport_mode.dart';
+import '../../map/widgets/visited_countries_map.dart';
 import '../../trips/application/trip_providers.dart';
 import '../application/cost_providers.dart';
 import '../application/currency_providers.dart';
@@ -66,7 +67,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
         : stats.byCurrency.firstWhere((c) => c.currency == selected);
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(allTrips ? l10n.statsAllTripsTitle : l10n.statsTitle),
@@ -74,6 +75,7 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
             tabs: [
               Tab(text: l10n.statsTabExpenses),
               Tab(text: l10n.statsTabTransport),
+              Tab(text: l10n.statsTabCountries),
             ],
           ),
         ),
@@ -91,6 +93,10 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
               currency: book.byCode(selected),
             ),
             _TransportTab(stats: transportStats, accent: accent),
+            // Where the trips *were*, as an aggregate among aggregates: the
+            // map answers "where did I go", this answers "how much have I
+            // seen".
+            VisitedCountriesMap(tripId: tripId, accent: accent),
           ],
         ),
       ),

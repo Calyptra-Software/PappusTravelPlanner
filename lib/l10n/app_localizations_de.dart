@@ -1107,6 +1107,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get statsTabExpenses => 'Ausgaben';
 
   @override
+  String get statsTabCountries => 'Länder';
+
+  @override
+  String countriesVisited(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Länder',
+      one: '1 Land',
+      zero: 'Noch kein Land',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get countriesNothingPlaced => 'Noch nichts verortet';
+
+  @override
+  String get countriesNothingPlacedHint =>
+      'Ein Land wird von dort gezählt, wo ein Eintrag steht — gib einem Ort oder den Enden einer Etappe Koordinaten, oder importiere eine Verbindung, und es erscheint hier.';
+
+  @override
   String get statsTabTransport => 'Transport';
 
   @override

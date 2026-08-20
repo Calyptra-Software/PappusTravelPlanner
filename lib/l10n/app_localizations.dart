@@ -1964,6 +1964,30 @@ abstract class AppLocalizations {
   /// **'Expenses'**
   String get statsTabExpenses;
 
+  /// Tab showing which countries the trips touched.
+  ///
+  /// In en, this message translates to:
+  /// **'Countries'**
+  String get statsTabCountries;
+
+  /// How many countries have been visited.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No country yet} =1{1 country} other{{count} countries}}'**
+  String countriesVisited(int count);
+
+  /// Shown when no entry carries coordinates, so no country can be counted.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing placed yet'**
+  String get countriesNothingPlaced;
+
+  /// Explains what makes a country countable.
+  ///
+  /// In en, this message translates to:
+  /// **'A country is counted from where an entry stands — give a place or a leg\'s ends coordinates, or import a connection, and it appears here.'**
+  String get countriesNothingPlacedHint;
+
   /// No description provided for @statsTabTransport.
   ///
   /// In en, this message translates to:

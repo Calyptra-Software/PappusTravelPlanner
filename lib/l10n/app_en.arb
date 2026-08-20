@@ -571,6 +571,23 @@
   "statsOpen": "Statistics",
   "statsAllTripsOpen": "Overall statistics",
   "statsTabExpenses": "Expenses",
+  "statsTabCountries": "Countries",
+  "@statsTabCountries": {
+    "description": "Tab showing which countries the trips touched."
+  },
+  "countriesVisited": "{count, plural, =0{No country yet} =1{1 country} other{{count} countries}}",
+  "@countriesVisited": {
+    "description": "How many countries have been visited.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "countriesNothingPlaced": "Nothing placed yet",
+  "@countriesNothingPlaced": {
+    "description": "Shown when no entry carries coordinates, so no country can be counted."
+  },
+  "countriesNothingPlacedHint": "A country is counted from where an entry stands — give a place or a leg's ends coordinates, or import a connection, and it appears here.",
+  "@countriesNothingPlacedHint": {
+    "description": "Explains what makes a country countable."
+  },
   "statsTabTransport": "Transport",
   "statsNoData": "No expenses to analyze yet",
   "statsNoTransport": "No transport legs to analyze yet",

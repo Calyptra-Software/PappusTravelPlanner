@@ -369,6 +369,23 @@ A line is part of the plan, so it **travels with a copy** — duplicate the leg,
 stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
 carries it, which is what keeps that export lossless.
 
+### Which countries you have been to
+
+The statistics have a **Countries** tab: the world drawn from bundled outlines,
+with the ones you have stood in filled in, and a count and list underneath. For
+one trip it is that trip's countries; from the overview it is all of them.
+
+It is counted from where an entry *stands* — a place's position, and each end of
+a transport leg — and never from the line between two. A flight from Hamburg to
+Rome passes over Austria without anybody setting foot there, and a line on a map
+is not a claim about the ground under it. A position that falls in no country at
+all is simply not counted rather than being given to the nearest one.
+
+This map draws no tiles: everything on it is the bundled outline set, so it
+needs no connection and asks nothing of anybody's servers. The outlines are
+Natural Earth, which is public domain; the licence page credits them anyway, and
+says what was changed on the way in.
+
 ### Where the background comes from
 
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already
