@@ -969,6 +969,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick a run of entries in one go — the line is divided between them.';
 
   @override
+  String get trackPickOptionHint =>
+      'Where the plan forks, pick the option the line followed.';
+
+  @override
+  String get trackPickOption => 'Which option did the line follow?';
+
+  @override
+  String get trackOptionNotChosen => 'Not the option the trip follows';
+
+  @override
   String trackTapBoundary(String before, String after) {
     return 'Tap where “$before” hands over to “$after”';
   }

@@ -430,6 +430,18 @@
   "@trackPickEntriesHint": {
     "description": "Explains that the selection must be contiguous."
   },
+  "trackPickOptionHint": "Where the plan forks, pick the option the line followed.",
+  "@trackPickOptionHint": {
+    "description": "Second line of the picker's hint, shown only when the plan holds a decision."
+  },
+  "trackPickOption": "Which option did the line follow?",
+  "@trackPickOption": {
+    "description": "Tooltip of the switch that points the import at one option of a decision."
+  },
+  "trackOptionNotChosen": "Not the option the trip follows",
+  "@trackOptionNotChosen": {
+    "description": "Says that the line is about to be imported into a road not taken. Switching here does not settle the decision."
+  },
   "trackTapBoundary": "Tap where \u201c{before}\u201d hands over to \u201c{after}\u201d",
   "@trackTapBoundary": {
     "description": "Asks the user to point at the handover between two legs.",

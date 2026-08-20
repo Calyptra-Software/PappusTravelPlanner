@@ -1742,6 +1742,24 @@ abstract class AppLocalizations {
   /// **'Pick a run of entries in one go — the line is divided between them.'**
   String get trackPickEntriesHint;
 
+  /// Second line of the picker's hint, shown only when the plan holds a decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the plan forks, pick the option the line followed.'**
+  String get trackPickOptionHint;
+
+  /// Tooltip of the switch that points the import at one option of a decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Which option did the line follow?'**
+  String get trackPickOption;
+
+  /// Says that the line is about to be imported into a road not taken. Switching here does not settle the decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Not the option the trip follows'**
+  String get trackOptionNotChosen;
+
   /// Asks the user to point at the handover between two legs.
   ///
   /// In en, this message translates to:

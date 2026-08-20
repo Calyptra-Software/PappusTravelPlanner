@@ -780,6 +780,28 @@ UI (features/*/presentation, *widgets)
   the rule that governs moving one. One flow, two doors — the trip's ⋮ menu (nothing ticked)
   and a leg's form (that leg ticked) — because a recording rarely stops at one entry, and
   the unit an act applies to is the unit it is offered on.
+- **A recording covers one path through the plan, because a decision is a fork.** The
+  entry picker is handed `buildTrackEntryPath` (`features/map/track_entry_path.dart`,
+  pure) rather than `itemsFor` as it comes, for two reasons that turn out to be one. The
+  visible one: listing every option at once printed the same station two and three times
+  with nothing to tell the copies apart. The silent one: a branch item's `sortOrder` counts
+  *within its branch* and shares no ordering space with the day's loose entries — exactly
+  what `itemsInDayOrder` warns about — so an option's first entry jumped ahead of the loose
+  ones it comes after, and since `splitTrack` divides the line **in the order the entries
+  are handed over**, the cuts landed in the wrong places and said so only weeks later on
+  the map. The path therefore reads in timeline order and each fork contributes **one**
+  option. Which one is a switch on the decision's own row, and it is a choice *about this
+  import*: it defaults to the option the trip follows, never settles the decision (the same
+  rule that makes swiping an `AlternativeCard` browse rather than choose), and says
+  `trackOptionNotChosen` out loud when it points at a road not taken — attaching a scouted
+  walk to the option you are still weighing is worth doing, and not worth doing unnoticed.
+  Switching carries the run's ends across by identity, so a fork the run merely passes
+  *through* keeps the run and swaps its middle, while switching away from an entry that
+  *is* an end clears the run: there is no honest place to put an end that has left the
+  path. The door has a say too — `pathThrough` opens the picker on the option the import
+  was started from, or a leg reached through its own option's form would be missing from
+  the list it opened for. A group is still listed leg by leg here, unlike in the timeline
+  where it is one slot: the recording is divided per leg, so each one needs its own tick.
 - **A track hangs off an item and travels with every copy of it.** `copyItemTracks` is
   called from `duplicateItem`, `copyGroup`, `duplicateAlternative`, `materializeRoutine` and
   the reversed routine, plus the bundle import — deliberately **not** from `copyItemPlan`,
