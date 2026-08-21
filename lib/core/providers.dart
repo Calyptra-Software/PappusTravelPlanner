@@ -24,6 +24,14 @@ final appVersionProvider = Provider<String>((ref) {
   throw UnimplementedError('appVersionProvider must be overridden');
 });
 
+/// Whether this is the side-by-side CI build (see [isCiBuild]).
+///
+/// Resolved once at startup from `PackageInfo` and overridden into the scope
+/// beside [appVersionProvider], so a widget can read it synchronously.
+final isCiBuildProvider = Provider<bool>((ref) {
+  throw UnimplementedError('isCiBuildProvider must be overridden');
+});
+
 /// SharedPreferences key holding the user-chosen database path (desktop).
 const String kDbPathPrefKey = 'db_path';
 

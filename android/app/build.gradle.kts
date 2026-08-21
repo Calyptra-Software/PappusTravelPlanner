@@ -51,6 +51,14 @@ android {
             applicationIdSuffix = ".ci"
         }
         manifestPlaceholders["appLabel"] = if (sideBySide) "Pappus CI" else "@string/app_name"
+        // The icon differs for the same reason the label does, and by the same
+        // mechanism: a placeholder, because a Gradle property cannot bring a
+        // resource source set with it the way a flavor would. Both icons
+        // therefore live in `main` and the unused one rides along in a release
+        // build -- a few tens of kilobytes, against a second flavor's cost of
+        // making `--flavor` mandatory on every command.
+        manifestPlaceholders["appIcon"] =
+            if (sideBySide) "@mipmap/ic_launcher_ci" else "@mipmap/ic_launcher"
     }
 
     signingConfigs {

@@ -1061,6 +1061,8 @@
   "tagNameLabel": "Name",
   "tagDuplicate": "A tag with that name already exists.",
   "aboutSection": "About",
+  "aboutCiBuild": "CI test build",
+  "aboutCiBuildSubtitle": "Runs beside the released app with a database of its own. Not for real trips.",
   "aboutVersion": "Version",
   "aboutVersionCopied": "Version copied",
   "aboutSourceCode": "Source code",

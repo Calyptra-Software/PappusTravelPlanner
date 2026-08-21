@@ -2058,6 +2058,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutSection => 'About';
 
   @override
+  String get aboutCiBuild => 'CI test build';
+
+  @override
+  String get aboutCiBuildSubtitle =>
+      'Runs beside the released app with a database of its own. Not for real trips.';
+
+  @override
   String get aboutVersion => 'Version';
 
   @override
