@@ -395,9 +395,11 @@ greyed out, because the way to undo those is to change the trip. Ticking Denmark
 fills Denmark and not the islands under its flag; ticking Greenland counts for
 Denmark, because Greenland is not a state of its own.
 
-What counts as a country here is who governs the ground, not who recognizes it —
-so Kosovo, Taiwan, Northern Cyprus and Somaliland each count as one. Antarctica
-is on the map and counts for nothing: no state governs it.
+What counts is the 195 states of the United Nations — its 193 members and the
+two observer states, Vatican City and Palestine. Kosovo, Taiwan, Northern
+Cyprus, Somaliland, Western Sahara and Antarctica are drawn and can be ticked,
+but count for no country: filing them under someone else's would be a claim this
+app has no business making.
 
 The outlines are generalized, and a very small country sits far enough from its
 own outline that it cannot be recognized from a position: Monaco and the Vatican

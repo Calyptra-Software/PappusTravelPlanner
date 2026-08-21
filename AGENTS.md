@@ -928,18 +928,23 @@ UI (features/*/presentation, *widgets)
   "country" is the **200 sovereign states** (`ADMIN == SOVEREIGNT` in the source, which is
   where the number comes from), so every area carries the `stateCode` it counts toward and
   `sovereign` says whether it *is* that state. A week in Greenland is a week in a country and
-  counts for Denmark; ground under no state at all — Siachen Glacier, which the source files
-  under Kashmir and no further — counts for nothing, which is the only honest answer a travel
-  app has about a disputed glacier. The source's test is that an area's administration is its
-  own, which takes **no view on who recognizes it**: Kosovo, Taiwan, Northern Cyprus and
-  Somaliland are each a state here because each governs its own ground, which is the only
-  criterion this app can apply without taking somebody's side. **Antarctica** is the one area
-  that passes that test and is plainly not a country, so `tool/build_country_outlines.dart`
-  excludes it by name: it is drawn, it can be ticked, and it counts for nothing. That is why
-  the tally is out of **199** and why the list has six regions rather than seven. The area's
-  own id is the three-letter administrative code, because the alpha-2 is *not* unique:
-  Australia, its Indian Ocean Territories and Ashmore and Cartier all answer `AU`, and keying
-  the map by that silently merged three shapes into one.
+  counts for Denmark. The area's own id is the three-letter administrative code, because the
+  alpha-2 is *not* unique: Australia, its Indian Ocean Territories and Ashmore and Cartier all
+  answer `AU`, and keying the map by that silently merged three shapes into one.
+- **What counts as a state is a list, not a rule.** `kCountedStates` in the builder is the 193
+  **UN members plus the two observer states**, Vatican City and Palestine. Natural Earth's own
+  test — an area whose administration is its own — was tried first and does not survive
+  contact: it makes states of Kosovo, Taiwan, Northern Cyprus, Somaliland and Western Sahara
+  while filing **Palestine under Israel**, which is the same question answered the other way
+  round, and it counts **Antarctica**, which no state governs. Those five, Antarctica, and
+  Siachen Glacier are therefore drawn, tickable, and counted for **no** state: attributing
+  them to Serbia, China, Cyprus, Somalia or Morocco would be a claim this app has no business
+  making, and the alternative to a claim is a gap — the same answer `visitedAreaCodes` already
+  gives for a point in the sea. The list is the thing to change if the world changes; the
+  builder **refuses to write the asset** unless every code in it has exactly one outline, so
+  the denominator cannot drift silently in either direction. A dependency never counts as a
+  state even when it shares its state's alpha-2, or Australia would be in the tally three
+  times.
 - **The two sets are kept apart, because filling by state would lie about the picture.**
   `visitedWorld` returns `areas` (what the map fills) beside `states` (what the list counts):
   a visit fills the ground it happened on and credits the state, while a **mark** fills that

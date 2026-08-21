@@ -32,7 +32,7 @@ void main() {
 
   test('the whole world is there, and reads back', () {
     expect(countries.length, greaterThan(150));
-    expect(sovereignStates(countries), hasLength(199));
+    expect(sovereignStates(countries), hasLength(195));
     expect(countries.every((c) => c.polygons.isNotEmpty), isTrue);
     expect(
       countries.every((c) => c.polygons.every((p) => p.first.length >= 4)),
@@ -167,7 +167,7 @@ void main() {
       'every state is counted under exactly one region, and only states',
       () {
         final tallies = regionTallies(countries, const {});
-        expect(tallies.fold<int>(0, (sum, t) => sum + t.total), 199);
+        expect(tallies.fold<int>(0, (sum, t) => sum + t.total), 195);
         expect(tallies.map((t) => t.region).toSet().length, tallies.length);
       },
     );
@@ -230,9 +230,34 @@ void main() {
       );
     });
 
+    test('a de facto state is drawn, ticked, and counted for nobody', () {
+      // The tally is the 193 UN members plus the two observer states. Filing
+      // Northern Cyprus under Cyprus, or Taiwan under China, would be a claim
+      // this app has no business making — and the alternative to a claim is a
+      // gap, which is what these are.
+      for (final code in ['CYN', 'TWN', 'KOS', 'SOL', 'SAH']) {
+        final area = countries.firstWhere((c) => c.code == code);
+        expect(area.sovereign, isFalse, reason: code);
+        expect(area.stateCode, null, reason: code);
+      }
+      expect(visitedWorld(countries, const {'TWN'}, const {}).states, isEmpty);
+      // Drawn and tickable all the same: it is on the map.
+      expect(
+        visitedWorld(countries, const {}, const {'TWN'}).areas,
+        contains('TWN'),
+      );
+    });
+
+    test('an observer state is one of the counted', () {
+      // The source files Palestine under Israel, which is the same question
+      // answered the other way round from Northern Cyprus; the list settles it.
+      final palestine = state('PS');
+      expect(palestine.sovereign, isTrue);
+      expect(statesAt([const LatLng(31.9038, 35.2034)]), {'PS'}); // Ramallah
+    });
+
     test('Antarctica is drawn and is not a country', () {
-      // It passes the source's test — its administration is its own — and is
-      // plainly not a state: nobody governs it.
+      // No state governs it, so it counts for none.
       final antarctica = countries.firstWhere((c) => c.code == 'ATA');
       expect(antarctica.sovereign, isFalse);
       expect(antarctica.stateCode, null);

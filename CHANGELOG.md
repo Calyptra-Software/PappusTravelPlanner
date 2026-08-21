@@ -7,10 +7,11 @@ exact commits.
 
 - **Which countries you have been to**, as a third tab of the statistics: the
   world drawn from bundled outlines with the ones you have stood in filled in,
-  and underneath a list by continent with how many of each you have been to,
-  as a share and a worldwide total. It is counted from where an entry stands and
-  never from the line between two, so a flight does not claim the countries it
-  passes over. The map draws no tiles at all, so it needs no connection — the
+  and underneath a list by continent with how many of each you have been to, as
+  a share and a worldwide total — out of the 195 states of the United Nations,
+  with a dependency counting for the state it belongs to. It is counted from
+  where an entry stands and never from the line between two, so a flight does
+  not claim the countries it passes over. The map draws no tiles at all, so it needs no connection — the
   outlines are Natural Earth, public domain, credited on the license page.
 - A country can also be **ticked by hand** — in the list, or by tapping it on the
   map, which is the only way to tick a territory like Greenland — for somewhere

@@ -33,12 +33,35 @@ void main(List<String> args) {
   final source = jsonDecode(File(args[0]).readAsStringSync()) as Map;
   final features = (source['features'] as List).cast<Map<String, dynamic>>();
 
+  // Which row a dependency's state is drawn from, keyed by the source's own
+  // grouping. Only a row that *administers* its group answers: Palestine is a
+  // counted state and sits in Israel's group, and it speaks for itself alone.
   final stateCodes = <String, String>{};
+  final found = <String>{};
   for (final feature in features) {
     final p = feature['properties'] as Map<String, dynamic>;
-    if (_isState(p)) {
+    if (!_isState(p)) continue;
+    found.add(_stateCode(p));
+    if (p['SOVEREIGNT'] == p['ADMIN']) {
       stateCodes.putIfAbsent(p['SOV_A3'] as String, () => _stateCode(p));
     }
+  }
+  final missing = kCountedStates.difference(found);
+  if (missing.isNotEmpty) {
+    // Loudly, because a state silently absent from the tally is a wrong
+    // denominator that looks like a right one.
+    stderr.writeln('no outline for: ${missing.join(', ')}');
+    exitCode = 65;
+    return;
+  }
+  final stateRows = features
+      .where((f) => _isState(f['properties'] as Map<String, dynamic>))
+      .length;
+  if (stateRows != kCountedStates.length) {
+    // One row per state, or the denominator is wrong in the other direction.
+    stderr.writeln('$stateRows rows for ${kCountedStates.length} states');
+    exitCode = 65;
+    return;
   }
 
   final countries = <Map<String, dynamic>>[];
@@ -67,7 +90,7 @@ void main(List<String> args) {
 
     countries.add({
       'c': p['ADM0_A3'],
-      'sov': ?stateCodes[p['SOV_A3']],
+      'sov': ?(_isState(p) ? _stateCode(p) : stateCodes[p['SOV_A3']]),
       'en': p['NAME_EN'],
       'de': p['NAME_DE'] ?? p['NAME_EN'],
       'k': _region(p),
@@ -90,18 +113,53 @@ void main(List<String> args) {
   }
 }
 
-/// Whether this area is a sovereign state — one row per state, and what the
-/// tally counts.
+/// Whether this area is one of the states the tally counts.
 ///
-/// The source's own test is that an area's administration is its own, which
-/// takes no view on who *recognizes* it: Kosovo, Taiwan, Northern Cyprus and
-/// Somaliland are each their own state here because each governs its own
-/// ground, which is the only criterion a travel app can apply without taking
-/// somebody's side. Antarctica is the one area that passes the test and is
-/// plainly not a country: no state governs it, so it is drawn and counts for
-/// nothing, exactly as Siachen Glacier does.
+/// Membership rather than the source's own `SOVEREIGNT == ADMIN`, which asks
+/// who administers the ground and so makes states of Kosovo, Taiwan, Northern
+/// Cyprus, Somaliland and Western Sahara — while filing Palestine under Israel,
+/// which is that same question answered the other way round. A list nobody in
+/// this repository has to defend country by country is the better of the two.
+/// A dependency is never one, even where it shares its state's alpha-2: the
+/// Indian Ocean Territories and Ashmore and Cartier both answer `AU`, and
+/// counting them would put Australia in the tally three times.
 bool _isState(Map<String, dynamic> p) =>
-    p['SOVEREIGNT'] == p['ADMIN'] && p['ADM0_A3'] != 'ATA';
+    kCountedStates.contains(_stateCode(p)) && p['TYPE'] != 'Dependency';
+
+/// The 193 members of the United Nations, plus the two observer states —
+/// Vatican City and Palestine.
+///
+/// A list rather than a rule, because Natural Earth carries no attribute for
+/// it; the builder refuses to write the asset if any of these has no outline,
+/// so the denominator cannot quietly drift. It has changed once since 2002,
+/// when South Sudan joined in 2011.
+///
+/// What this leaves out is stated rather than hidden: Kosovo, Taiwan, Northern
+/// Cyprus, Somaliland and Western Sahara are drawn, can be ticked, and count
+/// for no state — attributing them to Serbia, China, Cyprus, Somalia or Morocco
+/// would be a claim this app has no business making, and the alternative to a
+/// claim is a gap. Antarctica and Siachen Glacier fall out the same way.
+const Set<String> kCountedStates = {
+  'AF', 'AL', 'DZ', 'AD', 'AO', 'AG', 'AR', 'AM', 'AU', 'AT', 'AZ', 'BS', //
+  'BH', 'BD', 'BB', 'BY', 'BE', 'BZ', 'BJ', 'BT', 'BO', 'BA', 'BW', 'BR', //
+  'BN', 'BG', 'BF', 'BI', 'CV', 'KH', 'CM', 'CA', 'CF', 'TD', 'CL', 'CN', //
+  'CO', 'KM', 'CG', 'CD', 'CR', 'CI', 'HR', 'CU', 'CY', 'CZ', 'DK', 'DJ', //
+  'DM', 'DO', 'EC', 'EG', 'SV', 'GQ', 'ER', 'EE', 'SZ', 'ET', 'FJ', 'FI', //
+  'FR', 'GA', 'GM', 'GE', 'DE', 'GH', 'GR', 'GD', 'GT', 'GN', 'GW', 'GY', //
+  'HT', 'HN', 'HU', 'IS', 'IN', 'ID', 'IR', 'IQ', 'IE', 'IL', 'IT', 'JM', //
+  'JP', 'JO', 'KZ', 'KE', 'KI', 'KP', 'KR', 'KW', 'KG', 'LA', 'LV', 'LB', //
+  'LS', 'LR', 'LY', 'LI', 'LT', 'LU', 'MG', 'MW', 'MY', 'MV', 'ML', 'MT', //
+  'MH', 'MR', 'MU', 'MX', 'FM', 'MD', 'MC', 'MN', 'ME', 'MA', 'MZ', 'MM', //
+  'NA', 'NR', 'NP', 'NL', 'NZ', 'NI', 'NE', 'NG', 'MK', 'NO', 'OM', 'PK', //
+  'PW', 'PA', 'PG', 'PY', 'PE', 'PH', 'PL', 'PT', 'QA', 'RO', 'RU', 'RW', //
+  'KN', 'LC', 'VC', 'WS', 'SM', 'ST', 'SA', 'SN', 'RS', 'SC', 'SL', 'SG', //
+  'SK', 'SI', 'SB', 'SO', 'ZA', 'SS', 'ES', 'LK', 'SD', 'SR', 'SE', 'CH', //
+  'SY', 'TJ', 'TZ', 'TH', 'TL', 'TG', 'TO', 'TT', 'TN', 'TR', 'TM', 'TV', //
+  'UG', 'UA', 'AE', 'GB', 'US', 'UY', 'UZ', 'VU', 'VE', 'VN', 'YE', 'ZM', //
+  'ZW',
+  // The two non-member observer states.
+  'VA', 'PS',
+};
 
 /// ISO 3166-1 alpha-2 where the source has one, its three-letter
 /// administrative code where it does not — Somaliland and Northern Cyprus have

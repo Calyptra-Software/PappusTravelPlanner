@@ -142,7 +142,7 @@ void main() {
     await pump(tester, items: [place(1, 53.5511, 9.9937)]);
 
     // 200 of them, not the 242 areas the map draws.
-    expect(find.textContaining('of 199'), findsOneWidget);
+    expect(find.textContaining('of 195'), findsOneWidget);
     await tester.tap(find.text('North America'));
     await tester.pumpAndSettle();
     expect(find.text('Denmark'), findsNothing);
