@@ -63,8 +63,7 @@ Every other platform, and Android if you would rather not run a stranger's binar
 - **Costs in as many currencies as you like** — attached to a place, a leg, a whole shared
   ticket, or the trip, with your own categories and your own exchange rates.
 - **Countries you have been to** — the world drawn from bundled outlines, counted from
-  where your entries stand rather than from the lines between them. No tiles, no
-  connection.
+  your trips or entered manually.
 - **Statistics** — spending by category and by person, and how you actually traveled:
   legs and time per transport mode, planned against what really happened.
 - **Settle-up** — paid versus fair share, a minimal set of payments to square up, and
