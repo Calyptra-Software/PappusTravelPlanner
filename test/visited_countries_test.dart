@@ -40,6 +40,46 @@ void main() {
     );
   });
 
+  test('no ring asks the projection to unwrap it', () {
+    // What turned the Southern Ocean inside out. flutter_map projects a
+    // polygon's points in sequence and moves a point a whole world sideways
+    // when the step from the one before is wider than half of one — so a ring
+    // holding a 360° step had the rest of itself drawn in the next world along,
+    // and the self-crossing path that made came out filled where the sea is.
+    //
+    // Antarctica's ring is the only one that crosses the antimeridian, and the
+    // builder rotates it so the crossing falls between its last point and its
+    // first, where the painter draws it as the closing edge instead.
+    for (final country in countries) {
+      for (final polygon in country.polygons) {
+        for (final ring in polygon) {
+          for (var i = 1; i < ring.length; i++) {
+            expect(
+              (ring[i].longitude - ring[i - 1].longitude).abs(),
+              lessThanOrEqualTo(180),
+              reason: '${country.code} steps across the seam at $i',
+            );
+          }
+        }
+      }
+    }
+  });
+
+  test('Antarctica closes along the bottom of the world', () {
+    // Its ring runs to the pole, which Mercator sends to infinity; clamped to
+    // the projection's limit it closes along the bottom edge, which is how
+    // every Mercator map has ever drawn it.
+    final antarctica = countries.firstWhere((c) => c.code == 'ATA');
+    expect(antarctica.bounds.south, greaterThan(-85.06));
+    expect(antarctica.bounds.south, lessThan(-85.0));
+    final ring = antarctica.polygons
+        .reduce((a, b) => a.first.length > b.first.length ? a : b)
+        .first;
+    // The seam is where the ring ends and begins again.
+    expect(ring.first.longitude, -180);
+    expect(ring.last.longitude, 180);
+  });
+
   test('a country carries a name in each language the app speaks', () {
     final germany = state('DE');
     expect(germany.name('en'), 'Germany');

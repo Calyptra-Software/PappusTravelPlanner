@@ -111,7 +111,12 @@ class CountryOutline {
 ///
 /// Longitude is taken as it comes rather than normalized. The source splits a
 /// country that crosses the antimeridian into separate landmasses at ±180, so
-/// no ring here spans the seam and there is nothing to unwrap.
+/// no ring here *steps* across the seam and there is nothing to unwrap. One ring
+/// closes across it — Antarctica's, between its last point and its first, which
+/// is what keeps the projection from drawing it inside out — and that edge is
+/// harmless to this: it lies at a constant -85.05°, so the latitude it
+/// contributes is -85.05 whatever the point's longitude, and nothing in the set
+/// is further south than that.
 bool _inRing(List<LatLng> ring, LatLng point) {
   var inside = false;
   for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {

@@ -989,6 +989,21 @@ UI (features/*/presentation, *widgets)
   territories'** — since a mark on Greenland is what was making Denmark read as visited, and
   leaving it standing would put the tick straight back on the next rebuild. `hitValue` is the
   area code and the hit is resolved innermost-first, so a tap on Lesotho means Lesotho.
+- **Two rings in the world need special handling, and both are Antarctica's.** Its outline
+  runs to **-89.999°**, which Mercator sends two and a third worlds below the bottom of the
+  map, and it **steps 360°** along the pole to close the continent — the one ring in the set
+  that crosses the antimeridian, since the source splits every other country there. Left
+  alone, flutter_map's `projectList` unwrapped that step (it moves a point a whole world
+  sideways when the step from the one before is wider than half of one), drew the returning
+  coastline in the next world along, and filled the self-crossing path that made: the Southern
+  Ocean came out as land and the continent as sea. The builder therefore **clamps** latitudes
+  to `kMercatorLimit` and **rotates** a seam-crossing ring so the crossing falls between its
+  last point and its first, where the painter draws it as the closing edge — which is exactly
+  the edge along the bottom of the map the continent needs. Both are asserted in
+  `visited_countries_test.dart`, since neither is visible until somebody pans south. The cost
+  is stated: a position below 85° now falls outside its outline, which costs nothing — that
+  ground counts for no state anyway, and no other outline comes within four degrees of the
+  limit.
 - **The list is what the map cannot say, so it sits under it and is never scrolled to.**
   `regionTallies` (pure) counts visited-of-total per region and the map is capped at **half
   the screen** — the map answers *how much*, the list answers *which*, and a list you have to
@@ -997,7 +1012,11 @@ UI (features/*/presentation, *widgets)
   map's zoom is fixed at the bottom by the width (`minZoom = log2(width / 256)`), which is
   exactly where flutter_map stops drawing the next copy of the world beside this one; where
   the height cap bites, the map gives up **width** and sits centered rather than cropping the
-  poles off a full-width band.
+  poles off a full-width band. At the top it stops at `kCountryMapMaxZoom` — two steps past
+  what a world view needs, since Liechtenstein and Monaco are a few pixels across at any zoom
+  showing a continent and a country nobody can see is one nobody can tap, and no further,
+  because the rings are stored to three decimals and simplified on top of that: past there the
+  map would be promising a coastline it does not have.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.

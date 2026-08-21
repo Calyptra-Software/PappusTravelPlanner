@@ -13,6 +13,9 @@ exact commits.
   where an entry stands and never from the line between two, so a flight does
   not claim the countries it passes over. The map draws no tiles at all, so it needs no connection — the
   outlines are Natural Earth, public domain, credited on the license page.
+- The countries map zooms **two steps further in**, which is what it takes to see
+  Liechtenstein or Monaco, and Antarctica is drawn the right way round — the sea
+  south of 60° was filled in and the continent left empty.
 - A country can also be **ticked by hand** — in the list, or by tapping it on the
   map, which is the only way to tick a territory like Greenland — for somewhere
   you went before the app knew about it; it counts and draws exactly like one

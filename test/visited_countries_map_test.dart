@@ -138,6 +138,19 @@ void main() {
     expect(layer.polygons.map((p) => p.color).toSet(), hasLength(2));
   });
 
+  testWidgets('the map zooms past what a world view needs', (tester) async {
+    // Two steps further in than the whole world, because Liechtenstein and
+    // Monaco are a few pixels across at any zoom that shows a continent.
+    await pump(tester, items: const []);
+
+    final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
+    expect(map.options.maxZoom, kCountryMapMaxZoom);
+    // And never out past the zoom that puts one world on screen, or flutter_map
+    // draws the next copy of it alongside.
+    expect(map.options.minZoom, isNotNull);
+    expect(map.options.minZoom, lessThan(kCountryMapMaxZoom));
+  });
+
   testWidgets('only sovereign states are listed and counted', (tester) async {
     await pump(tester, items: [place(1, 53.5511, 9.9937)]);
 

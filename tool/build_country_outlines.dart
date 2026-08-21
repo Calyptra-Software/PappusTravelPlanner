@@ -72,7 +72,9 @@ void main(List<String> args) {
     for (final polygon in _polygons(feature['geometry'] as Map)) {
       final encoded = <String>[];
       for (final ring in polygon) {
-        final simplified = _simplify(ring, _toleranceFor(ring));
+        final simplified = _startAfterSeam(
+          _simplify(ring, _toleranceFor(ring)),
+        );
         // Two points are a line and one is a dot; neither encloses anything,
         // and a hole that has collapsed to either is better dropped than drawn.
         if (simplified.length < 4) continue;
@@ -184,14 +186,34 @@ String _region(Map<String, dynamic> p) {
   return region;
 }
 
+/// How far from the equator Web Mercator reaches.
+///
+/// The projection sends the poles to infinity, so every map that uses it stops
+/// here — this is the latitude at which the world is exactly as tall as it is
+/// wide, and what makes the tiles square.
+const double kMercatorLimit = 85.051129;
+
 /// Every ring of a feature, as `[outer, hole, hole, …]` per landmass.
+///
+/// Latitudes are clamped to [kMercatorLimit] on the way in. Only Antarctica
+/// reaches past it — its ring runs along **-89.999°** to close the continent
+/// across the pole — and those points project to two and a third worlds below
+/// the bottom of the map, which flutter_map's culling turns inside out: the
+/// ocean south of 60° came out filled and the continent came out empty. Clamped,
+/// the ring closes along the bottom edge of the world, which is how every
+/// Mercator map has ever drawn Antarctica. The cost is stated: a position south
+/// of 85° now falls outside its outline. Antarctica counts for no state anyway,
+/// and no other outline comes within four degrees of the limit.
 Iterable<List<List<LatLng>>> _polygons(Map geometry) sync* {
   List<List<LatLng>> rings(List polygon) => [
     for (final ring in polygon)
       [
         for (final point in ring as List)
           LatLng(
-            ((point as List)[1] as num).toDouble(),
+            ((point as List)[1] as num).toDouble().clamp(
+              -kMercatorLimit,
+              kMercatorLimit,
+            ),
             (point[0] as num).toDouble(),
           ),
       ],
@@ -206,6 +228,40 @@ Iterable<List<List<LatLng>>> _polygons(Map geometry) sync* {
         yield rings(polygon as List);
       }
   }
+}
+
+/// Rotates a ring so that a crossing of the antimeridian falls between its
+/// **last** point and its first.
+///
+/// One ring in the set crosses: Antarctica's, which runs along the bottom of
+/// the world from 180° to -180° to close the continent across the pole. Every
+/// other country the source splits at the seam into separate landmasses.
+///
+/// Left alone that one step of 360° is what turned the Southern Ocean inside
+/// out. flutter_map projects a polygon's points in sequence and *unwraps* a
+/// step wider than half the world (`Projection.projectList`) — so the point at
+/// -180 was placed on top of the one at 180, and the whole returning coastline
+/// was drawn one world to the right, leaving a self-crossing path whose fill
+/// came out as the sea rather than the land.
+///
+/// Rotating puts that step where it is never projected: the painter closes a
+/// polygon with a straight line from the last point to the first, which is
+/// exactly the edge along the bottom of the map that the continent needs. The
+/// ring is also left **open** — the repeated closing point would otherwise land
+/// in the middle of it — which both the painter and this app's own
+/// point-in-polygon test already assume nothing about.
+List<LatLng> _startAfterSeam(List<LatLng> ring) {
+  final closed =
+      ring.length > 1 &&
+      ring.first.latitude == ring.last.latitude &&
+      ring.first.longitude == ring.last.longitude;
+  final open = closed ? ring.sublist(0, ring.length - 1) : ring;
+  for (var i = 1; i < open.length; i++) {
+    if ((open[i].longitude - open[i - 1].longitude).abs() > 180) {
+      return [...open.sublist(i), ...open.sublist(0, i)];
+    }
+  }
+  return ring;
 }
 
 /// How far a vertex may move, in degrees — scaled to the ring's own extent.

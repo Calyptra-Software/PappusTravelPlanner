@@ -14,6 +14,16 @@ import '../visited_countries.dart';
 /// How wide one whole world is, in pixels, at zoom zero.
 const double _worldPixels = 256;
 
+/// As far in as the outlines are worth drawing.
+///
+/// Two steps past what a world map needs, because Liechtenstein and Monaco are
+/// a few pixels across at any zoom that shows a continent, and a country you
+/// cannot see is one you cannot tap. Not further: the rings are stored to three
+/// decimals (~110 m) and simplified on top of that, so past here the coastline
+/// visibly turns to straight lines and the map would be promising a detail it
+/// does not have.
+const double kCountryMapMaxZoom = 10;
+
 /// Which countries a trip — or the whole record — has stood in.
 ///
 /// A map with **no tiles at all**. Everything drawn is the bundled outline set,
@@ -212,7 +222,7 @@ class _WorldMapState extends State<_WorldMap> {
               mapController: _controller,
               options: MapOptions(
                 minZoom: fit,
-                maxZoom: 8,
+                maxZoom: kCountryMapMaxZoom,
                 initialZoom: fit,
                 initialCenter: const LatLng(20, 0),
                 // Latitude only: the zoom floor above already rules out a
@@ -311,7 +321,10 @@ class _ZoomButtons extends StatelessWidget {
 
   void _by(double delta) {
     final camera = controller.camera;
-    controller.move(camera.center, (camera.zoom + delta).clamp(minZoom, 8));
+    controller.move(
+      camera.center,
+      (camera.zoom + delta).clamp(minZoom, kCountryMapMaxZoom),
+    );
   }
 
   @override
