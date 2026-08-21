@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.8.0 — 2026-08-21
 
 - **Which countries you have been to**, as a third tab of the statistics: the
   world drawn from bundled outlines with the ones you have stood in filled in,
@@ -11,8 +11,9 @@ exact commits.
   a share and a worldwide total — out of the 195 states of the United Nations,
   with a dependency counting for the state it belongs to. It is counted from
   where an entry stands and never from the line between two, so a flight does
-  not claim the countries it passes over. The map draws no tiles at all, so it needs no connection — the
-  outlines are Natural Earth, public domain, credited on the license page.
+  not claim the countries it passes over. The map draws no tiles at all, so it
+  needs no connection — the outlines are Natural Earth, public domain, credited
+  on the license page.
 - The countries map zooms **two steps further in**, which is what it takes to see
   Liechtenstein or Monaco, and Antarctica is drawn the right way round — the sea
   south of 60° was filled in and the continent left empty.
@@ -22,14 +23,12 @@ exact commits.
   worked out from a trip. Which is also the answer to the very small countries:
   Monaco and the Vatican sit too far from their own generalized outlines to be
   recognized from a position.
-
 - **Everything done to a group is now done on the group.** Its name and
   *Ungroup* move from the edit form of whichever member you happened to open to
   the ⋮ menu on the run's own label, beside moving, copying and deleting it.
   Ungrouping sits right above deleting, where the warning that ungrouping is the
   way to keep the entries can be acted on. A member's form keeps what is about
   that entry: group with next, remove from group.
-
 - **The map can show where you are.** A locate button on a trip's map, on the
   all-trips map, and in the map picker — where it also takes that reading as the
   point being picked. One press asks for the permission, starts the receiver and
@@ -42,6 +41,11 @@ exact commits.
   grid square exactly as before. It is the app's first runtime permission, asked
   for on the button press and at no other moment, and the receiver is released
   when the map is left. Nothing runs in the background.
+- **A GPX import covers one path through the plan.** The entry picker lists a
+  day as the timeline reads it, and each decision contributes a single option,
+  switched on the decision's own row — which never settles it, and says so when
+  it points at a road not taken. Listing every option at once printed the same
+  station two and three times, and divided the recording at the wrong places.
 
 ## 1.7.0 — 2026-08-18
 
