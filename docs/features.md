@@ -320,10 +320,8 @@ used — it now goes by the point you chose.
 ### Where you are
 
 A **locate** button sits on every map. The first press asks for the location permission,
-starts the receiver, and centers the map once; after that the mark moves and the camera
-does not, so a map you panned ahead stays where you put it. The reading is drawn with its
-accuracy as a circle around it, in a blue of its own so it cannot be mistaken for the
-plan's own "you are here". In the map picker the same button offers that reading as the
+starts the receiver, and centers the map once. The reading is drawn with its
+accuracy as a circle around it. In the map picker the same button offers that reading as the
 point being picked.
 
 Declining, location switched off device-wide, and no receiver at all each get their own
@@ -393,13 +391,12 @@ between its ends without anybody setting foot in them, and a line on a map is no
 about the ground under it. A position that falls in no country at all is left uncounted
 rather than given to the nearest one.
 
-Under the map the countries are listed by continent, each with how many of them you have
-been to and the share as a percentage, plus a worldwide total. What is counted is the
-**195 states of the United Nations** — its members and the two observer states. A
-dependency is drawn and counts for the state that governs it, so a week in one is a week
-in a country. Territory that no UN state governs is drawn and can be ticked, but counts
-for no country: filing it under somebody else's would be a claim this app has no business
-making.
+Under the map the countries are listed by continent, each with how many of them you have been to
+and the share as a percentage, plus a worldwide total. What is counted is the **195 states of
+the United Nations** — its members and the two observer states. A dependency is drawn and counts
+for the state that governs it. Territory that no UN state governs is drawn and can be ticked,
+but counts for no country: filing it under somebody else's would be a claim this app has no
+business making.
 
 You can also **tick a country by hand**, from the overview's Countries tab — either in the
 list or by tapping it on the map, which is the only way to tick a dependency, since the
@@ -414,8 +411,7 @@ position inside it cannot be recognized.
 
 This map draws no tiles: everything on it is the bundled outline set, so it needs no
 connection and asks nothing of anybody's servers. The outlines are Natural Earth, which is
-public domain; the license page credits them anyway and says what was changed on the way
-in.
+public domain.
 
 ### Where the background comes from
 
