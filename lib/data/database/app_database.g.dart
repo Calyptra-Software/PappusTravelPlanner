@@ -7638,6 +7638,219 @@ class TracksCompanion extends UpdateCompanion<Track> {
   }
 }
 
+class $VisitedCountriesTable extends VisitedCountries
+    with TableInfo<$VisitedCountriesTable, VisitedCountry> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $VisitedCountriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _codeMeta = const VerificationMeta('code');
+  @override
+  late final GeneratedColumn<String> code = GeneratedColumn<String>(
+    'code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _markedAtMeta = const VerificationMeta(
+    'markedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> markedAt = GeneratedColumn<DateTime>(
+    'marked_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [code, markedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'visited_countries';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<VisitedCountry> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('code')) {
+      context.handle(
+        _codeMeta,
+        code.isAcceptableOrUnknown(data['code']!, _codeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_codeMeta);
+    }
+    if (data.containsKey('marked_at')) {
+      context.handle(
+        _markedAtMeta,
+        markedAt.isAcceptableOrUnknown(data['marked_at']!, _markedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {code};
+  @override
+  VisitedCountry map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return VisitedCountry(
+      code: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}code'],
+      )!,
+      markedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}marked_at'],
+      )!,
+    );
+  }
+
+  @override
+  $VisitedCountriesTable createAlias(String alias) {
+    return $VisitedCountriesTable(attachedDatabase, alias);
+  }
+}
+
+class VisitedCountry extends DataClass implements Insertable<VisitedCountry> {
+  final String code;
+  final DateTime markedAt;
+  const VisitedCountry({required this.code, required this.markedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['code'] = Variable<String>(code);
+    map['marked_at'] = Variable<DateTime>(markedAt);
+    return map;
+  }
+
+  VisitedCountriesCompanion toCompanion(bool nullToAbsent) {
+    return VisitedCountriesCompanion(
+      code: Value(code),
+      markedAt: Value(markedAt),
+    );
+  }
+
+  factory VisitedCountry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return VisitedCountry(
+      code: serializer.fromJson<String>(json['code']),
+      markedAt: serializer.fromJson<DateTime>(json['markedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'code': serializer.toJson<String>(code),
+      'markedAt': serializer.toJson<DateTime>(markedAt),
+    };
+  }
+
+  VisitedCountry copyWith({String? code, DateTime? markedAt}) => VisitedCountry(
+    code: code ?? this.code,
+    markedAt: markedAt ?? this.markedAt,
+  );
+  VisitedCountry copyWithCompanion(VisitedCountriesCompanion data) {
+    return VisitedCountry(
+      code: data.code.present ? data.code.value : this.code,
+      markedAt: data.markedAt.present ? data.markedAt.value : this.markedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisitedCountry(')
+          ..write('code: $code, ')
+          ..write('markedAt: $markedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(code, markedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is VisitedCountry &&
+          other.code == this.code &&
+          other.markedAt == this.markedAt);
+}
+
+class VisitedCountriesCompanion extends UpdateCompanion<VisitedCountry> {
+  final Value<String> code;
+  final Value<DateTime> markedAt;
+  final Value<int> rowid;
+  const VisitedCountriesCompanion({
+    this.code = const Value.absent(),
+    this.markedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  VisitedCountriesCompanion.insert({
+    required String code,
+    this.markedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : code = Value(code);
+  static Insertable<VisitedCountry> custom({
+    Expression<String>? code,
+    Expression<DateTime>? markedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (code != null) 'code': code,
+      if (markedAt != null) 'marked_at': markedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  VisitedCountriesCompanion copyWith({
+    Value<String>? code,
+    Value<DateTime>? markedAt,
+    Value<int>? rowid,
+  }) {
+    return VisitedCountriesCompanion(
+      code: code ?? this.code,
+      markedAt: markedAt ?? this.markedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (code.present) {
+      map['code'] = Variable<String>(code.value);
+    }
+    if (markedAt.present) {
+      map['marked_at'] = Variable<DateTime>(markedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('VisitedCountriesCompanion(')
+          ..write('code: $code, ')
+          ..write('markedAt: $markedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7664,6 +7877,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ChecklistItemsTable checklistItems = $ChecklistItemsTable(this);
   late final $CollapsedDaysTable collapsedDays = $CollapsedDaysTable(this);
   late final $TracksTable tracks = $TracksTable(this);
+  late final $VisitedCountriesTable visitedCountries = $VisitedCountriesTable(
+    this,
+  );
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ItineraryDao itineraryDao = ItineraryDao(this as AppDatabase);
   late final CostDao costDao = CostDao(this as AppDatabase);
@@ -7675,6 +7891,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final RoutineDao routineDao = RoutineDao(this as AppDatabase);
   late final TagDao tagDao = TagDao(this as AppDatabase);
   late final TrackDao trackDao = TrackDao(this as AppDatabase);
+  late final VisitedCountryDao visitedCountryDao = VisitedCountryDao(
+    this as AppDatabase,
+  );
   late final SharingDao sharingDao = SharingDao(this as AppDatabase);
   late final TransportModeDao transportModeDao = TransportModeDao(
     this as AppDatabase,
@@ -7703,6 +7922,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     checklistItems,
     collapsedDays,
     tracks,
+    visitedCountries,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -16181,6 +16401,155 @@ typedef $$TracksTableProcessedTableManager =
       Track,
       PrefetchHooks Function({bool itemId})
     >;
+typedef $$VisitedCountriesTableCreateCompanionBuilder =
+    VisitedCountriesCompanion Function({
+      required String code,
+      Value<DateTime> markedAt,
+      Value<int> rowid,
+    });
+typedef $$VisitedCountriesTableUpdateCompanionBuilder =
+    VisitedCountriesCompanion Function({
+      Value<String> code,
+      Value<DateTime> markedAt,
+      Value<int> rowid,
+    });
+
+class $$VisitedCountriesTableFilterComposer
+    extends Composer<_$AppDatabase, $VisitedCountriesTable> {
+  $$VisitedCountriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get markedAt => $composableBuilder(
+    column: $table.markedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$VisitedCountriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $VisitedCountriesTable> {
+  $$VisitedCountriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get code => $composableBuilder(
+    column: $table.code,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get markedAt => $composableBuilder(
+    column: $table.markedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$VisitedCountriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $VisitedCountriesTable> {
+  $$VisitedCountriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get code =>
+      $composableBuilder(column: $table.code, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get markedAt =>
+      $composableBuilder(column: $table.markedAt, builder: (column) => column);
+}
+
+class $$VisitedCountriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $VisitedCountriesTable,
+          VisitedCountry,
+          $$VisitedCountriesTableFilterComposer,
+          $$VisitedCountriesTableOrderingComposer,
+          $$VisitedCountriesTableAnnotationComposer,
+          $$VisitedCountriesTableCreateCompanionBuilder,
+          $$VisitedCountriesTableUpdateCompanionBuilder,
+          (
+            VisitedCountry,
+            BaseReferences<
+              _$AppDatabase,
+              $VisitedCountriesTable,
+              VisitedCountry
+            >,
+          ),
+          VisitedCountry,
+          PrefetchHooks Function()
+        > {
+  $$VisitedCountriesTableTableManager(
+    _$AppDatabase db,
+    $VisitedCountriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$VisitedCountriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$VisitedCountriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$VisitedCountriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> code = const Value.absent(),
+                Value<DateTime> markedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VisitedCountriesCompanion(
+                code: code,
+                markedAt: markedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String code,
+                Value<DateTime> markedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => VisitedCountriesCompanion.insert(
+                code: code,
+                markedAt: markedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$VisitedCountriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $VisitedCountriesTable,
+      VisitedCountry,
+      $$VisitedCountriesTableFilterComposer,
+      $$VisitedCountriesTableOrderingComposer,
+      $$VisitedCountriesTableAnnotationComposer,
+      $$VisitedCountriesTableCreateCompanionBuilder,
+      $$VisitedCountriesTableUpdateCompanionBuilder,
+      (
+        VisitedCountry,
+        BaseReferences<_$AppDatabase, $VisitedCountriesTable, VisitedCountry>,
+      ),
+      VisitedCountry,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -16220,4 +16589,6 @@ class $AppDatabaseManager {
       $$CollapsedDaysTableTableManager(_db, _db.collapsedDays);
   $$TracksTableTableManager get tracks =>
       $$TracksTableTableManager(_db, _db.tracks);
+  $$VisitedCountriesTableTableManager get visitedCountries =>
+      $$VisitedCountriesTableTableManager(_db, _db.visitedCountries);
 }

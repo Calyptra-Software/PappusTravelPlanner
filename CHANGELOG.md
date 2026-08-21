@@ -5,6 +5,24 @@ exact commits.
 
 ## Unreleased
 
+- **Which countries you have been to**, as a third tab of the statistics: the
+  world drawn from bundled outlines with the ones you have stood in filled in,
+  and underneath a list by continent with how many of each you have been to, as
+  a share and a worldwide total — out of the 195 states of the United Nations,
+  with a dependency counting for the state it belongs to. It is counted from
+  where an entry stands and never from the line between two, so a flight does
+  not claim the countries it passes over. The map draws no tiles at all, so it needs no connection — the
+  outlines are Natural Earth, public domain, credited on the license page.
+- The countries map zooms **two steps further in**, which is what it takes to see
+  Liechtenstein or Monaco, and Antarctica is drawn the right way round — the sea
+  south of 60° was filled in and the continent left empty.
+- A country can also be **ticked by hand** — in the list, or by tapping it on the
+  map, which is the only way to tick a territory like Greenland — for somewhere
+  you went before the app knew about it; it counts and draws exactly like one
+  worked out from a trip. Which is also the answer to the very small countries:
+  Monaco and the Vatican sit too far from their own generalized outlines to be
+  recognized from a position.
+
 - **Everything done to a group is now done on the group.** Its name and
   *Ungroup* move from the edit form of whichever member you happened to open to
   the ⋮ menu on the run's own label, beside moving, copying and deleting it.

@@ -67,4 +67,47 @@ void main() {
       throwsAssertionError,
     );
   });
+
+  group('composed with a second rule', () {
+    // Only one constraint can be given to a map, so a map that has something
+    // else to say about the camera has to compose — and this guard goes first,
+    // since a rule about *where* the camera is says nothing useful when the
+    // answer is not a number.
+    final world = LatLngBounds(const LatLng(-85, -180), const LatLng(85, 180));
+
+    test('the inner rule is asked once the numbers are numbers', () {
+      final constraint = FiniteCamera(
+        then: CameraConstraint.contain(bounds: world),
+      );
+      // At zoom 0 the whole world is 256 px wide and the viewport is wider
+      // than that, which is exactly when flutter_map draws the next copy of it
+      // beside this one.
+      expect(constraint.constrain(cameraAt(const LatLng(0, 0), 0)), isNull);
+      expect(constraint.constrain(cameraAt(const LatLng(0, 0), 5)), isNotNull);
+    });
+
+    test('a camera that is not a number never reaches the inner rule', () {
+      var asked = false;
+      final constraint = FiniteCamera(then: _Watching(() => asked = true));
+
+      expect(
+        constraint.constrain(cameraAt(LatLng(double.nan, double.nan), 10)),
+        isNull,
+      );
+      expect(asked, isFalse);
+    });
+  });
+}
+
+/// Records whether it was consulted at all.
+class _Watching extends CameraConstraint {
+  const _Watching(this.onAsked);
+
+  final void Function() onAsked;
+
+  @override
+  MapCamera? constrain(MapCamera camera) {
+    onAsked();
+    return camera;
+  }
 }

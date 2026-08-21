@@ -1964,6 +1964,72 @@ abstract class AppLocalizations {
   /// **'Expenses'**
   String get statsTabExpenses;
 
+  /// How much of a region has been visited.
+  ///
+  /// In en, this message translates to:
+  /// **'{visited} of {total} · {percent}%'**
+  String countriesRatio(int visited, int total, int percent);
+
+  /// Heading of the total across every region.
+  ///
+  /// In en, this message translates to:
+  /// **'Worldwide'**
+  String get countriesWorld;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Africa'**
+  String get regionAfrica;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Asia'**
+  String get regionAsia;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Europe'**
+  String get regionEurope;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'North America'**
+  String get regionNorthAmerica;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'South America'**
+  String get regionSouthAmerica;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Australia and Oceania'**
+  String get regionOceania;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Antarctica'**
+  String get regionAntarctica;
+
+  /// Tab showing which countries the trips touched.
+  ///
+  /// In en, this message translates to:
+  /// **'Countries'**
+  String get statsTabCountries;
+
+  /// How many countries have been visited.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No country yet} =1{1 country} other{{count} countries}}'**
+  String countriesVisited(int count);
+
   /// No description provided for @statsTabTransport.
   ///
   /// In en, this message translates to:

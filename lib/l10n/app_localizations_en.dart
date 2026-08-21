@@ -1098,6 +1098,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsTabExpenses => 'Expenses';
 
   @override
+  String countriesRatio(int visited, int total, int percent) {
+    return '$visited of $total · $percent%';
+  }
+
+  @override
+  String get countriesWorld => 'Worldwide';
+
+  @override
+  String get regionAfrica => 'Africa';
+
+  @override
+  String get regionAsia => 'Asia';
+
+  @override
+  String get regionEurope => 'Europe';
+
+  @override
+  String get regionNorthAmerica => 'North America';
+
+  @override
+  String get regionSouthAmerica => 'South America';
+
+  @override
+  String get regionOceania => 'Australia and Oceania';
+
+  @override
+  String get regionAntarctica => 'Antarctica';
+
+  @override
+  String get statsTabCountries => 'Countries';
+
+  @override
+  String countriesVisited(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count countries',
+      one: '1 country',
+      zero: 'No country yet',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get statsTabTransport => 'Transport';
 
   @override

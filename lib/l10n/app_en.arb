@@ -571,6 +571,38 @@
   "statsOpen": "Statistics",
   "statsAllTripsOpen": "Overall statistics",
   "statsTabExpenses": "Expenses",
+  "countriesRatio": "{visited} of {total} · {percent}%",
+  "@countriesRatio": {
+    "description": "How much of a region has been visited.",
+    "placeholders": { "visited": {"type": "int"}, "total": {"type": "int"}, "percent": {"type": "int"} }
+  },
+  "countriesWorld": "Worldwide",
+  "@countriesWorld": {
+    "description": "Heading of the total across every region."
+  },
+  "regionAfrica": "Africa",
+  "@regionAfrica": { "description": "Region name." },
+  "regionAsia": "Asia",
+  "@regionAsia": { "description": "Region name." },
+  "regionEurope": "Europe",
+  "@regionEurope": { "description": "Region name." },
+  "regionNorthAmerica": "North America",
+  "@regionNorthAmerica": { "description": "Region name." },
+  "regionSouthAmerica": "South America",
+  "@regionSouthAmerica": { "description": "Region name." },
+  "regionOceania": "Australia and Oceania",
+  "@regionOceania": { "description": "Region name." },
+  "regionAntarctica": "Antarctica",
+  "@regionAntarctica": { "description": "Region name." },
+  "statsTabCountries": "Countries",
+  "@statsTabCountries": {
+    "description": "Tab showing which countries the trips touched."
+  },
+  "countriesVisited": "{count, plural, =0{No country yet} =1{1 country} other{{count} countries}}",
+  "@countriesVisited": {
+    "description": "How many countries have been visited.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "statsTabTransport": "Transport",
   "statsNoData": "No expenses to analyze yet",
   "statsNoTransport": "No transport legs to analyze yet",

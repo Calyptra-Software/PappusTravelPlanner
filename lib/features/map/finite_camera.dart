@@ -26,13 +26,27 @@ import 'package:flutter_map/flutter_map.dart';
 /// number was never a position, and the next event carries a real one.
 class FiniteCamera extends CameraConstraint {
   /// Const so it can sit in a `const MapOptions`.
-  const FiniteCamera();
+  ///
+  /// [then] is applied after this one, for a map that has a second thing to say
+  /// about where the camera may go. Only one constraint can be given to a map,
+  /// so composing is the only way to keep this guard while adding another — and
+  /// this one goes first, since a rule about *where* the camera is says nothing
+  /// useful when the answer is not a number.
+  const FiniteCamera({this.then});
+
+  final CameraConstraint? then;
 
   @override
-  MapCamera? constrain(MapCamera camera) =>
-      camera.zoom.isFinite &&
-          camera.center.latitude.isFinite &&
-          camera.center.longitude.isFinite
-      ? camera
-      : null;
+  MapCamera? constrain(MapCamera camera) {
+    if (!camera.zoom.isFinite ||
+        !camera.center.latitude.isFinite ||
+        !camera.center.longitude.isFinite) {
+      return null;
+    }
+    // Not `then?.constrain(camera) ?? camera`: that reads a *refusal* from the
+    // inner rule as "nothing to say" and hands the camera back anyway, which is
+    // the one thing composing must not do.
+    final inner = then;
+    return inner == null ? camera : inner.constrain(camera);
+  }
 }

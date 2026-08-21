@@ -107,6 +107,11 @@ flutter:
     # at 72 dp — big enough for a 3x screen, and small enough that the binary
     # does not carry a launcher-sized bitmap for one icon.
     - assets/logo/pappus_mark.png
+    # The world's country outlines, for the visited-countries map. Public
+    # domain (Natural Earth), credited anyway on the licence page — see the
+    # attribution file beside it for what was changed on the way in.
+    - assets/geo/countries.json
+    - assets/geo/countries-ATTRIBUTION.txt
 
   # assets/icon/pappus.png and pappus_adaptive.png are only source images for
   # flutter_launcher_icons, so they are deliberately not bundled here.

@@ -147,7 +147,7 @@ you delete leaves its legs intact.
 
 Adjacent entries can be **grouped** — the three trains of one journey, sharing one ticket.
 A group is a single thing to the plan: it drags as a unit, it is priced once, and the
-whole run can be moved, copied, or deleted from the label above it.
+label above it is where the whole run is named, moved, copied, ungrouped, or deleted.
 
 ### Alternatives
 
@@ -204,8 +204,9 @@ duplicating it would invent money inside the settle-up.
 
 ### What the legs add up to
 
-The bar-chart button in a trip's app bar opens its **Statistics**, which has two tabs:
-**Expenses** and **Transport**. The transport one counts the traveling — for each mode, how
+The bar-chart button in a trip's app bar opens its **Statistics**, which has three tabs:
+**Expenses**, **Transport**, and the **Countries** one described with the map. The
+transport one counts the traveling — for each mode, how
 many legs used it and how much time they came to, most-used first — and a **Legs** / **Time**
 switch decides which of the two the bars are sized by. The overview's overflow menu holds
 the same thing across every trip at once, as **Overall statistics**.
@@ -292,9 +293,9 @@ Declining it, finding nothing, or having no signal all leave the copied plan sta
 Every trip has a map, reached from the map button on the trip screen. Places appear as
 pins and transport legs as lines between their ends.
 
-Two things it deliberately does not do. A leg is drawn **only when both of its ends have a
-position and nothing is drawn between one place and the next. On today, the entry that is
-under way is marked.
+Two things it deliberately does not do: a leg is drawn **only when both of its ends have a
+position**, and nothing is drawn between one place and the next. On today, the entry that
+is under way is marked.
 
 ### Where the positions come from
 
@@ -315,6 +316,17 @@ Placing both ends of a leg has a side effect worth knowing: a leg you entered by
 then be looked up in the timetable, because the app finally knows where it starts and ends.
 And moving an end that *came* from a search makes the app forget which station the search
 used — it now goes by the point you chose.
+
+### Where you are
+
+A **locate** button sits on every map. The first press asks for the location permission,
+starts the receiver, and centers the map once. The reading is drawn with its
+accuracy as a circle around it. In the map picker the same button offers that reading as the
+point being picked.
+
+Declining, location switched off device-wide, and no receiver at all each get their own
+sentence, with a button to the system screen where there is one. The position is never
+stored, never exported, and never sent anywhere; switching the mark off stops the receiver.
 
 ### Asking a marker what it is
 
@@ -344,30 +356,62 @@ trip* a line belongs to.
 
 ### The line you actually followed
 
-An entry draws as a straight segment between its ends, which is the best a plan
-can say. If you have a **GPX** file open the leg and *Import GPX…*: the map then draws
-that line instead of the straight one.
+An entry draws as a straight segment between its ends, which is the best a plan can say. If you
+have a **GPX** file open the leg and *Import GPX…*: the map then draws that line instead of the
+straight one.
 
-A connection imported from the search brings its own route with it: the map then
-draws the train along its line and the walk around the corner, rather than a
-straight line between the stops. Those are drawn **dashed**, because they are
-what the router computed and not what you recorded. Importing a GPX onto the
-same leg shows only the imported track.
+A connection imported from the search brings its own route with it: the map then draws the train
+along its line and the walk around the corner, rather than a straight line between the stops.
+Those are drawn **dashed**, because they are what the router computed and not what you recorded.
+Importing a GPX onto the same leg shows only the imported track.
 
-A recording usually covers more than one entry — a walk, a bus, another walk.
-Import it from the trip's ⋮ menu (or from any leg's form), tick the run of
-entries it covers, and the line is divided between them. Where an entry has no
-coordinates, the map asks you to tap the spot where one leg handed over to the
-next, and draws the division while you decide; the recording's own ends fill in
-the first and last positions, so a single leg usually needs no tapping at all.
-Every handover has to be pointed at. Places in the run are given coordinates
-as well: a place standing between two legs is their handover, so it gets the
-same spot they do, and one at either end of the run gets where the recording
-started or finished. Anything you had already placed yourself is left alone.
+A recording usually covers more than one entry — a walk, a bus, another walk. Import it from the
+trip's ⋮ menu (or from any leg's form), tick the run of entries it covers, and the line is
+divided between them. Where an entry has no coordinates, the map asks you to tap the spot where
+one leg handed over to the next, and draws the division while you decide; the recording's own
+ends fill in the first and last positions, so a single leg usually needs no tapping at all.
+Every handover has to be pointed at. Places in the run are given coordinates as well: a place
+standing between two legs is their handover, so it gets the same spot they do, and one at either
+end of the run gets where the recording started or finished. Anything you had already placed
+yourself is left alone.
 
-A line is part of the plan, so it **travels with a copy** — duplicate the leg,
-stamp out the routine, share the trip, and it comes along. A `.tpt` bundle
-carries it, which is what keeps that export lossless.
+A line is part of the plan, so it **travels with a copy** — duplicate the leg, stamp out the
+routine, share the trip, and it comes along. A `.tpt` bundle carries it, which is what keeps
+that export lossless.
+
+### Which countries you have been to
+
+The statistics have a **Countries** tab: the world drawn from bundled outlines, with the
+ones you have stood in filled in, and a count and list underneath. For one trip it is that
+trip's countries; from the overview it is all of them.
+
+It is counted from where an entry *stands* — a place's position, and each end of a
+transport leg — and never from the line between two: a flight passes over the countries
+between its ends without anybody setting foot in them, and a line on a map is not a claim
+about the ground under it. A position that falls in no country at all is left uncounted
+rather than given to the nearest one.
+
+Under the map the countries are listed by continent, each with how many of them you have been to
+and the share as a percentage, plus a worldwide total. What is counted is the **195 states of
+the United Nations** — its members and the two observer states. A dependency is drawn and counts
+for the state that governs it. Territory that no UN state governs is drawn and can be ticked,
+but counts for no country: filing it under somebody else's would be a claim this app has no
+business making.
+
+You can also **tick a country by hand**, from the overview's Countries tab — either in the
+list or by tapping it on the map, which is the only way to tick a dependency, since the
+list is of states. A tick counts and draws exactly like a visit worked out from a trip;
+the ones your trips put there are ticked and grayed out, because the way to undo those is
+to change the trip. Ticking a state fills that state and not the territories under its
+flag.
+
+Ticking by hand is also the answer to the smallest countries. The outlines are generalized,
+and a country only a kilometer or two across sits far enough from its own outline that a
+position inside it cannot be recognized.
+
+This map draws no tiles: everything on it is the bundled outline set, so it needs no
+connection and asks nothing of anybody's servers. The outlines are Natural Earth, which is
+public domain.
 
 ### Where the background comes from
 
@@ -514,6 +558,6 @@ asks the routing service for its results in the app's language too.
 with the same planned-time-plus-delay marks the timeline uses. Tapping a row opens that
 entry.
 
-**Offline-first.** No account, no server, no network required. The connection search is the
-only thing that needs an internet connection, and what it brings back becomes part of your
-local plan like anything else.
+**Offline-first.** No account, no server, no network required. The connection search and the
+map's background tiles are the only things that reach the network, and what the search
+brings back becomes part of your local plan like anything else.

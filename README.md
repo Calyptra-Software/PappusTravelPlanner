@@ -62,6 +62,8 @@ Every other platform, and Android if you would rather not run a stranger's binar
   map draws the line you actually followed instead of the straight one.
 - **Costs in as many currencies as you like** — attached to a place, a leg, a whole shared
   ticket, or the trip, with your own categories and your own exchange rates.
+- **Countries you have been to** — the world drawn from bundled outlines, counted from
+  your trips or entered manually.
 - **Statistics** — spending by category and by person, and how you actually traveled:
   legs and time per transport mode, planned against what really happened.
 - **Settle-up** — paid versus fair share, a minimal set of payments to square up, and
