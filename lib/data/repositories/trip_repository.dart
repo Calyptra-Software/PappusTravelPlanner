@@ -146,6 +146,13 @@ class TripRepository {
   /// [watchPositionedItems] is.
   Stream<List<Track>> watchAllTracks() => _db.trackDao.watchAllTracks();
 
+  /// Countries the user marked by hand, with no trip here to show for them.
+  Stream<Set<String>> watchMarkedCountries() =>
+      _db.visitedCountryDao.watchMarked();
+
+  Future<void> setCountryMarked(String code, bool marked) =>
+      _db.visitedCountryDao.setMarked(code, marked);
+
   /// What one entry carries, whatever its trip is doing — the item form's
   /// reading.
   Stream<List<Track>> watchTracksForItem(int itemId) =>

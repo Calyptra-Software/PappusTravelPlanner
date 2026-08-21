@@ -2,7 +2,7 @@ Country outlines: Natural Earth
 ===============================
 
 assets/geo/countries.json is derived from Natural Earth's
-"Admin 0 – Countries" set at 1:110m scale.
+"Admin 0 – Countries" set at 1:50m scale.
 
     https://www.naturalearthdata.com/
 
@@ -25,14 +25,32 @@ it, and somebody should be able to see where these came from.
 What was changed on the way in
 ------------------------------
 
-The source GeoJSON is 820 KB and carries some eighty attributes per country.
-This asset keeps four: the ISO 3166-1 alpha-2 code (or the three-letter
+The source GeoJSON is 3.0 MB and carries some eighty attributes per country.
+This asset keeps six: the ISO 3166-1 alpha-2 code (or the three-letter
 administrative code where the source has no alpha-2), the English and German
-names, and the geometry. Rings are stored as encoded polylines at three decimal
-places — about 110 m, finer than the 1:110m source's own generalisation — which
-brings the file to 61 KB.
+names, the region, whether the area is self-governing, and the geometry.
 
-Two consequences worth knowing. Countries too small to appear at 1:110m are not
-in the set at all, so a visit to one of them cannot be reported. And a coastal
-position may fall just outside a generalised outline, in which case it counts
-for no country rather than for the nearest one.
+Rings are stored as encoded polylines at three decimal places — about 110 m —
+and simplified with a Douglas-Peucker tolerance scaled to each ring's own
+extent, which brings the file to 243 KB. The scaling is the point: one fixed
+tolerance loose enough to be worth applying to Russia's coastline collapses San
+Marino to a triangle and Monaco to nothing at all.
+
+Regions are the source's own REGION_UN, except that the Americas are split by
+CONTINENT into North and South America, and South Georgia is filed under South
+America rather than Antarctica.
+
+Two consequences worth knowing
+------------------------------
+
+A generalised outline lies a little off the ground it stands for, and below a
+certain size that is the whole country. Measured against real coordinates at
+this scale, San Marino, Liechtenstein, Andorra, Singapore, Malta and the
+Maldives are found; Monaco and the Vatican are not — their outlines sit one
+to two kilometres away, so a point in St Peter's Square falls in Italy and a
+point in Monaco falls in the sea. The same effect puts a coastal position just
+outside its own country's outline now and then. Such a point counts for no
+country rather than for the nearest one: a missing country is a gap, a wrong
+one is a claim.
+
+That is why a country can also be ticked by hand.

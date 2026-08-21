@@ -1098,6 +1098,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get statsTabExpenses => 'Expenses';
 
   @override
+  String countriesRatio(int visited, int total, int percent) {
+    return '$visited of $total · $percent%';
+  }
+
+  @override
+  String get countriesWorld => 'Worldwide';
+
+  @override
+  String get countriesMarkHint =>
+      'Tick a country you have been to but have no trip here for.';
+
+  @override
+  String get countriesFromTrips => 'From your trips';
+
+  @override
+  String get regionAfrica => 'Africa';
+
+  @override
+  String get regionAsia => 'Asia';
+
+  @override
+  String get regionEurope => 'Europe';
+
+  @override
+  String get regionNorthAmerica => 'North America';
+
+  @override
+  String get regionSouthAmerica => 'South America';
+
+  @override
+  String get regionOceania => 'Oceania';
+
+  @override
+  String get regionAntarctica => 'Antarctica';
+
+  @override
   String get statsTabCountries => 'Countries';
 
   @override
@@ -1111,13 +1147,6 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get countriesNothingPlaced => 'Nothing placed yet';
-
-  @override
-  String get countriesNothingPlacedHint =>
-      'A country is counted from where an entry stands — give a place or a leg\'s ends coordinates, or import a connection, and it appears here.';
 
   @override
   String get statsTabTransport => 'Transport';

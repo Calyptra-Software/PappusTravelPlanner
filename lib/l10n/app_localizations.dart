@@ -1964,6 +1964,72 @@ abstract class AppLocalizations {
   /// **'Expenses'**
   String get statsTabExpenses;
 
+  /// How much of a region has been visited.
+  ///
+  /// In en, this message translates to:
+  /// **'{visited} of {total} · {percent}%'**
+  String countriesRatio(int visited, int total, int percent);
+
+  /// Heading of the total across every region.
+  ///
+  /// In en, this message translates to:
+  /// **'Worldwide'**
+  String get countriesWorld;
+
+  /// Explains the checkboxes in the all-trips country list.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick a country you have been to but have no trip here for.'**
+  String get countriesMarkHint;
+
+  /// Why a country is ticked and cannot be unticked: a trip puts it there.
+  ///
+  /// In en, this message translates to:
+  /// **'From your trips'**
+  String get countriesFromTrips;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Africa'**
+  String get regionAfrica;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Asia'**
+  String get regionAsia;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Europe'**
+  String get regionEurope;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'North America'**
+  String get regionNorthAmerica;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'South America'**
+  String get regionSouthAmerica;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Oceania'**
+  String get regionOceania;
+
+  /// Region name.
+  ///
+  /// In en, this message translates to:
+  /// **'Antarctica'**
+  String get regionAntarctica;
+
   /// Tab showing which countries the trips touched.
   ///
   /// In en, this message translates to:
@@ -1975,18 +2041,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No country yet} =1{1 country} other{{count} countries}}'**
   String countriesVisited(int count);
-
-  /// Shown when no entry carries coordinates, so no country can be counted.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing placed yet'**
-  String get countriesNothingPlaced;
-
-  /// Explains what makes a country countable.
-  ///
-  /// In en, this message translates to:
-  /// **'A country is counted from where an entry stands — give a place or a leg\'s ends coordinates, or import a connection, and it appears here.'**
-  String get countriesNothingPlacedHint;
 
   /// No description provided for @statsTabTransport.
   ///

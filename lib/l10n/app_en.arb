@@ -571,6 +571,37 @@
   "statsOpen": "Statistics",
   "statsAllTripsOpen": "Overall statistics",
   "statsTabExpenses": "Expenses",
+  "countriesRatio": "{visited} of {total} · {percent}%",
+  "@countriesRatio": {
+    "description": "How much of a region has been visited.",
+    "placeholders": { "visited": {"type": "int"}, "total": {"type": "int"}, "percent": {"type": "int"} }
+  },
+  "countriesWorld": "Worldwide",
+  "@countriesWorld": {
+    "description": "Heading of the total across every region."
+  },
+  "countriesMarkHint": "Tick a country you have been to but have no trip here for.",
+  "@countriesMarkHint": {
+    "description": "Explains the checkboxes in the all-trips country list."
+  },
+  "countriesFromTrips": "From your trips",
+  "@countriesFromTrips": {
+    "description": "Why a country is ticked and cannot be unticked: a trip puts it there."
+  },
+  "regionAfrica": "Africa",
+  "@regionAfrica": { "description": "Region name." },
+  "regionAsia": "Asia",
+  "@regionAsia": { "description": "Region name." },
+  "regionEurope": "Europe",
+  "@regionEurope": { "description": "Region name." },
+  "regionNorthAmerica": "North America",
+  "@regionNorthAmerica": { "description": "Region name." },
+  "regionSouthAmerica": "South America",
+  "@regionSouthAmerica": { "description": "Region name." },
+  "regionOceania": "Oceania",
+  "@regionOceania": { "description": "Region name." },
+  "regionAntarctica": "Antarctica",
+  "@regionAntarctica": { "description": "Region name." },
   "statsTabCountries": "Countries",
   "@statsTabCountries": {
     "description": "Tab showing which countries the trips touched."
@@ -579,14 +610,6 @@
   "@countriesVisited": {
     "description": "How many countries have been visited.",
     "placeholders": { "count": { "type": "int" } }
-  },
-  "countriesNothingPlaced": "Nothing placed yet",
-  "@countriesNothingPlaced": {
-    "description": "Shown when no entry carries coordinates, so no country can be counted."
-  },
-  "countriesNothingPlacedHint": "A country is counted from where an entry stands — give a place or a leg's ends coordinates, or import a connection, and it appears here.",
-  "@countriesNothingPlacedHint": {
-    "description": "Explains what makes a country countable."
   },
   "statsTabTransport": "Transport",
   "statsNoData": "No expenses to analyze yet",

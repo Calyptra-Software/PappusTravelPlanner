@@ -114,4 +114,101 @@ void main() {
       expect(visited, isNot(contains('AT')));
     });
   });
+
+  group('the small countries', () {
+    test('are in the set at all, which the coarser outlines were not', () {
+      // A 1:110m set leaves every one of these out, so they could be neither
+      // drawn nor ticked. This is why the app ships the finer one.
+      for (final code in ['MC', 'VA', 'SM', 'LI', 'AD', 'MT', 'SG', 'MV']) {
+        expect(
+          countries.any((c) => c.code == code),
+          isTrue,
+          reason: '$code is missing from the set',
+        );
+      }
+    });
+
+    test('are found from a real position, once they are a few km across', () {
+      // The simplification's tolerance is scaled to each ring, so a long
+      // coastline is thinned while a small country keeps the points it has.
+      expect(visitedCountryCodes(countries, [const LatLng(43.9424, 12.4578)]), {
+        'SM',
+      });
+      expect(visitedCountryCodes(countries, [const LatLng(47.1410, 9.5209)]), {
+        'LI',
+      });
+      expect(visitedCountryCodes(countries, [const LatLng(42.5063, 1.5218)]), {
+        'AD',
+      });
+      expect(visitedCountryCodes(countries, [const LatLng(1.3521, 103.8198)]), {
+        'SG',
+      });
+    });
+
+    test('below that, the outline is off the ground it stands for', () {
+      // Monaco and the Vatican are about a kilometre across, and the source
+      // generalises by more than that: a real position in St Peter's Square
+      // falls inside Italy's outline, and one in Monaco falls in the sea. This
+      // is recorded rather than worked around — a tolerance wide enough to
+      // catch them would be wide enough to mis-attribute every border town, and
+      // the honest route for these is the tick box, which is exactly what it is
+      // there for.
+      expect(visitedCountryCodes(countries, [const LatLng(41.9022, 12.4539)]), {
+        'IT',
+      });
+      expect(
+        visitedCountryCodes(countries, [const LatLng(43.7393, 7.4276)]),
+        isEmpty,
+      );
+    });
+  });
+
+  group('the tally per region', () {
+    test('every country is counted under exactly one region', () {
+      final tallies = regionTallies(countries, const {});
+      expect(tallies.fold<int>(0, (sum, t) => sum + t.total), countries.length);
+      expect(tallies.map((t) => t.region).toSet().length, tallies.length);
+    });
+
+    test('the regions read in a fixed order, not in the order of travel', () {
+      // A list that reorders itself as you travel is one you have to re-read
+      // every time.
+      final before = regionTallies(countries, const {}).map((t) => t.region);
+      final after = regionTallies(countries, {
+        'DE',
+        'FR',
+        'JP',
+      }).map((t) => t.region);
+      expect(after, before);
+    });
+
+    test('visiting one moves that region and the world, and nothing else', () {
+      final tallies = regionTallies(countries, {'DE'});
+      final europe = tallies.firstWhere((t) => t.region == 'Europe');
+      expect(europe.visited, 1);
+      expect(europe.total, greaterThan(40));
+      expect(
+        tallies.where((t) => t.region != 'Europe').every((t) => t.visited == 0),
+        isTrue,
+      );
+    });
+
+    test(
+      'the percentage is rounded for reading, and safe on an empty region',
+      () {
+        const tally = RegionTally(region: 'Europe', visited: 12, total: 50);
+        expect(tally.percent, 24);
+        expect(const RegionTally(region: 'X', visited: 0, total: 0).percent, 0);
+      },
+    );
+  });
+
+  test('a dependency is drawn and named, and says it governs nothing', () {
+    // Greenland is on the map because a map with holes in it is a worse map,
+    // and somebody who has been there should be able to say so.
+    final greenland = countries.firstWhere((c) => c.code == 'GL');
+    expect(greenland.sovereign, isFalse);
+    expect(greenland.region, 'North America');
+    expect(countries.firstWhere((c) => c.code == 'DE').sovereign, isTrue);
+  });
 }

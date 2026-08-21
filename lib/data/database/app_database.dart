@@ -11,6 +11,7 @@ import 'daos/routine_dao.dart';
 import 'daos/sharing_dao.dart';
 import 'daos/tag_dao.dart';
 import 'daos/track_dao.dart';
+import 'daos/visited_country_dao.dart';
 import 'daos/transport_mode_dao.dart';
 import 'daos/trip_dao.dart';
 import 'tables.dart';
@@ -49,6 +50,7 @@ const int kApplicationId = 0x5452504C;
     ChecklistItems,
     CollapsedDays,
     Tracks,
+    VisitedCountries,
   ],
   daos: [
     TripDao,
@@ -60,6 +62,7 @@ const int kApplicationId = 0x5452504C;
     RoutineDao,
     TagDao,
     TrackDao,
+    VisitedCountryDao,
     SharingDao,
     TransportModeDao,
     CurrencyDao,
@@ -74,7 +77,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 31;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -355,6 +358,14 @@ class AppDatabase extends _$AppDatabase {
       // Added only when a recreation above hasn't already, as v24 and v28 do.
       if (from < 30) {
         await _addItineraryColumnsIfMissing(m, [itineraryItems.colorValue]);
+      }
+      // v31 records a country the user says they have been to without a trip
+      // here to show for it. A new table and nothing else: every visit the app
+      // had derived so far it still derives, and there is nothing to backfill —
+      // a statement is the one thing that cannot be reconstructed from the
+      // data, which is why it needed somewhere to live.
+      if (from < 31) {
+        await m.createTable(visitedCountries);
       }
     },
     beforeOpen: (details) async {

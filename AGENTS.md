@@ -905,16 +905,49 @@ UI (features/*/presentation, *widgets)
   coastal position can fall just offshore, and a wrong country is a claim while a missing one
   is only a gap. A single trip reads through `liveItems`, since an option nobody chose took
   nobody anywhere.
-- **The outlines are Natural Earth at 1:110m, packed with the track codec.** Rings are
-  encoded polylines at three decimals (~110 m, finer than the source's own generalisation),
-  which is what turns 820 KB of GeoJSON into a 61 KB asset — the codec was already there and
-  tested, and every mapping tool reads the format. **Holes are kept**, so Lesotho is Lesotho
-  and not South Africa; that is the one thing a naive "outer ring only" conversion gets
-  wrong, and there is a test standing on Maseru to say so. Two limits are stated in
-  `assets/geo/countries-ATTRIBUTION.txt` rather than discovered later: a country too small to
-  appear at 1:110m is not in the set and so can never be reported, and the names come from
-  the source's own `NAME_EN`/`NAME_DE` rather than from a list this project would have to
-  maintain.
+- **The outlines are Natural Earth at 1:50m, packed with the track codec.** Rings are
+  encoded polylines at three decimals (~110 m) and simplified with a Douglas-Peucker
+  tolerance **scaled to each ring's own extent** (`min(0.02, extent / 60)`), which is what
+  turns 3.0 MB of GeoJSON into a 243 KB asset without deleting the micro-states: a fixed
+  tolerance generous enough for Russia's coastline collapses San Marino to a triangle and
+  Monaco to nothing. The codec was already there and tested, and every mapping tool reads the
+  format. **Holes are kept**, so Lesotho is Lesotho and not South Africa; that is the one
+  thing a naive "outer ring only" conversion gets wrong, and there is a test standing on
+  Maseru to say so. The set is the source's own 242 areas — dependencies included, since what
+  is drawn is what is counted, and a visit to Greenland has to land somewhere. Each carries a
+  `sovereign` flag it does not yet use, so narrowing the tally to the 200 self-governing
+  states later is a filter and not a re-conversion. Regions are `REGION_UN`, except that the
+  Americas are split by `CONTINENT` (the UN's single "Americas" is not how anybody reads a
+  list of continents), and the names come from the source's own `NAME_EN`/`NAME_DE` rather
+  than from a list this project would have to maintain.
+- **A generalised outline is off the ground it stands for, and below a certain size that is
+  the whole country.** At 1:50m the micro-states are present and San Marino, Liechtenstein,
+  Andorra, Singapore, Malta and the Maldives are all detected from real coordinates — but
+  **Monaco and the Vatican are not**: their outlines sit one to two kilometres off, so St
+  Peter's Square reads as `IT` and a point in Monaco reads as sea. Measured, written down in
+  `assets/geo/countries-ATTRIBUTION.txt` and standing in a test, rather than left to be
+  discovered by whoever goes there. The answer is not a finer asset — it is that a country
+  can be ticked by hand.
+- **A country ticked by hand counts exactly like one a trip stood in.** `VisitedCountries`
+  (v31, keyed by code) records the marks; `markedCountriesProvider` streams them and
+  `allVisitedCountriesProvider` merges them with the derived set — for the **all-trips**
+  reading only, since a mark is a statement about a life and not about one journey, and a
+  single trip's tab would be claiming the trip went there. The map is never told which is
+  which: a life has journeys in it that were never planned here, and drawing them differently
+  would make the app's own record the standard. The *list* does distinguish them, because
+  only one of the two is the user's to undo — a trip-derived visit has its checkbox disabled
+  and says where it came from, a mark is ticked and untickable at will. What is deliberately
+  not built is a date, a note, or a level ("lived in", "passed through"): the question here is
+  how much of the world, and the record of *when* is the trip.
+- **The list is what the map cannot say, so it sits under it and is never scrolled to.**
+  `regionTallies` (pure) counts visited-of-total per region and the map is capped at **half
+  the screen** — the map answers *how much*, the list answers *which*, and a list you have to
+  scroll to discover is one nobody finds. Regions are ordered by size and never reorder as
+  you travel: a list whose rows move when you visit a country is one you cannot learn. The
+  map's zoom is fixed at the bottom by the width (`minZoom = log2(width / 256)`), which is
+  exactly where flutter_map stops drawing the next copy of the world beside this one; where
+  the height cap bites, the map gives up **width** and sits centred rather than cropping the
+  poles off a full-width band.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.

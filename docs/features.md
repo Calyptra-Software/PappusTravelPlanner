@@ -381,6 +381,18 @@ Rome passes over Austria without anybody setting foot there, and a line on a map
 is not a claim about the ground under it. A position that falls in no country at
 all is simply not counted rather than being given to the nearest one.
 
+Under the map the countries are listed by continent, each with how many of them
+you have been to and the share as a percentage, plus a worldwide total.
+
+You can also **tick a country by hand**, from the overview's Countries tab, for
+somewhere you went before the app knew about it. A tick counts and draws exactly
+like a visit worked out from a trip; only the list distinguishes them, since a
+tick is yours to take back and a trip's countries are not.
+
+The outlines are generalised, and a very small country sits far enough from its
+own outline that it cannot be recognised from a position: Monaco and the Vatican
+are the two that miss. Tick them.
+
 This map draws no tiles: everything on it is the bundled outline set, so it
 needs no connection and asks nothing of anybody's servers. The outlines are
 Natural Earth, which is public domain; the licence page credits them anyway, and

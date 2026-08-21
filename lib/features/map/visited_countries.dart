@@ -16,6 +16,8 @@ class CountryOutline {
     required this.code,
     required this.nameEn,
     required this.nameDe,
+    required this.region,
+    required this.sovereign,
     required this.polygons,
   }) : bounds = _boundsOf(polygons);
 
@@ -25,6 +27,18 @@ class CountryOutline {
   final String code;
   final String nameEn;
   final String nameDe;
+
+  /// The group this is counted under: the UN region, except that the Americas
+  /// are split into north and south, which is how an atlas draws them and how
+  /// anybody reading a list expects to find them.
+  final String region;
+
+  /// Whether it governs itself. The set carries dependencies and disputed
+  /// areas as well — Greenland, Bermuda, Western Sahara — because a map with
+  /// holes in it is a worse map, and somebody who has been to Greenland should
+  /// be able to say so. Kept as a flag rather than acted on, so counting only
+  /// sovereign states later is a filter and not a re-conversion.
+  final bool sovereign;
 
   /// Rings in decoded coordinates: `polygons[i][0]` is an outer ring, anything
   /// after it a hole in that same landmass.
@@ -110,6 +124,8 @@ List<CountryOutline> parseCountryOutlines(String source) {
           code: country['c'] as String,
           nameEn: country['en'] as String,
           nameDe: country['de'] as String,
+          region: country['k'] as String? ?? 'Other',
+          sovereign: (country['s'] as int? ?? 1) == 1,
           polygons: [
             for (final polygon in country['p'] as List<dynamic>)
               [
@@ -165,4 +181,54 @@ Set<String> visitedCountryCodes(
     }
   }
   return visited;
+}
+
+/// How much of one region has been seen.
+class RegionTally {
+  const RegionTally({
+    required this.region,
+    required this.visited,
+    required this.total,
+  });
+
+  final String region;
+  final int visited;
+  final int total;
+
+  /// Rounded for reading, not for arithmetic — the ratio beside it is the
+  /// figure that means anything.
+  int get percent => total == 0 ? 0 : (visited * 100 / total).round();
+}
+
+/// The tally per region, and the world's, in a fixed order.
+///
+/// Ordered by how many countries a region holds rather than alphabetically or
+/// by how much of it has been seen: a list that reorders itself as you travel
+/// is one you have to re-read every time, and this way each region keeps the
+/// place you learned it in.
+List<RegionTally> regionTallies(
+  List<CountryOutline> countries,
+  Set<String> visited,
+) {
+  final total = <String, int>{};
+  final seen = <String, int>{};
+  for (final country in countries) {
+    total[country.region] = (total[country.region] ?? 0) + 1;
+    if (visited.contains(country.code)) {
+      seen[country.region] = (seen[country.region] ?? 0) + 1;
+    }
+  }
+  final regions = total.keys.toList()
+    ..sort((a, b) {
+      final byCount = total[b]!.compareTo(total[a]!);
+      return byCount != 0 ? byCount : a.compareTo(b);
+    });
+  return [
+    for (final region in regions)
+      RegionTally(
+        region: region,
+        visited: seen[region] ?? 0,
+        total: total[region]!,
+      ),
+  ];
 }

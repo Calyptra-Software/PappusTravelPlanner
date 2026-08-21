@@ -48,6 +48,7 @@ void main() {
       ProviderScope(
         overrides: [
           countryOutlinesProvider.overrideWith((ref) async => outlines),
+          markedCountriesProvider.overrideWith((ref) => Stream.value(const {})),
           itineraryProvider(tripId).overrideWith((ref) => Stream.value(items)),
           alternativeBranchesProvider(
             tripId,
@@ -69,10 +70,11 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('nothing placed is said, not drawn as an empty world', (
+  testWidgets('with nothing placed the world is still drawn, at zero', (
     tester,
   ) async {
-    // A world map with nothing filled would read as "you have been nowhere".
+    // Not an empty screen: a country can still be ticked by hand from here,
+    // which is the whole point of the list underneath.
     await pump(
       tester,
       items: [
@@ -87,8 +89,8 @@ void main() {
       ],
     );
 
-    expect(find.text('Nothing placed yet'), findsOneWidget);
-    expect(find.byType(FlutterMap), findsNothing);
+    expect(find.byType(FlutterMap), findsOneWidget);
+    expect(find.textContaining('0 of'), findsWidgets);
   });
 
   testWidgets('the countries stood in are counted and named', (tester) async {
@@ -101,9 +103,10 @@ void main() {
     );
 
     expect(find.byType(FlutterMap), findsOneWidget);
-    expect(find.text('2 countries'), findsOneWidget);
-    expect(find.textContaining('France'), findsOneWidget);
-    expect(find.textContaining('Germany'), findsOneWidget);
+    // The world's own tally, and the two regions' — Europe holds both.
+    expect(find.textContaining('2 of'), findsWidgets);
+    expect(find.text('Worldwide'), findsOneWidget);
+    expect(find.text('Europe'), findsOneWidget);
   });
 
   testWidgets('the names follow the app language', (tester) async {
@@ -113,8 +116,8 @@ void main() {
       locale: const Locale('de'),
     );
 
-    expect(find.text('1 Land'), findsOneWidget);
-    expect(find.textContaining('Deutschland'), findsOneWidget);
+    expect(find.text('Weltweit'), findsOneWidget);
+    expect(find.text('Europa'), findsOneWidget);
   });
 
   testWidgets('the whole world is drawn, visited or not', (tester) async {
@@ -139,6 +142,79 @@ void main() {
       ],
     );
 
-    expect(find.text('1 country'), findsOneWidget);
+    expect(find.textContaining('1 of'), findsWidgets);
+  });
+
+  group('marking a country by hand', () {
+    Future<void> pumpAllTrips(
+      WidgetTester tester, {
+      Set<String> marked = const {},
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            countryOutlinesProvider.overrideWith((ref) async => outlines),
+            markedCountriesProvider.overrideWith((ref) => Stream.value(marked)),
+            positionedItemsProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: VisitedCountriesMap(tripId: null)),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a mark counts exactly like a visit derived from a trip', (
+      tester,
+    ) async {
+      // The map is never told which is which: a life has journeys in it that
+      // were never planned here.
+      await pumpAllTrips(tester, marked: {'JP', 'NZ'});
+
+      expect(find.textContaining('2 of'), findsWidgets);
+    });
+
+    testWidgets('the list says a mark can be taken back and a trip cannot', (
+      tester,
+    ) async {
+      await pumpAllTrips(tester, marked: {'JP'});
+      await tester.tap(find.text('Asia'));
+      await tester.pumpAndSettle();
+
+      final japan = tester.widget<CheckboxListTile>(
+        find.ancestor(
+          of: find.text('Japan'),
+          matching: find.byType(CheckboxListTile),
+        ),
+      );
+      expect(japan.value, isTrue);
+      expect(
+        japan.onChanged,
+        isNotNull,
+        reason: 'a mark is the user\'s to undo',
+      );
+    });
+
+    testWidgets('marking is not offered on a single trip\'s own tab', (
+      tester,
+    ) async {
+      // A mark is a statement about a life, not about one journey.
+      await pump(tester, items: const []);
+
+      expect(
+        find.textContaining('Tick a country you have been to'),
+        findsNothing,
+      );
+    });
   });
 }

@@ -465,6 +465,36 @@ class CollapsedDays extends Table {
   Set<Column> get primaryKey => {tripId, day};
 }
 
+/// A country the user says they have been to, without a trip in this app to
+/// show for it.
+///
+/// The app derives most of them: an entry with coordinates stands in a country,
+/// and that is that. But a life has journeys in it that were never planned here
+/// — everything before the app existed, and everything nobody bothered to file
+/// — and a map that can only show what happens to be typed in is not a record of
+/// where somebody has been.
+///
+/// A row here is therefore a **statement**, not a derivation, which is exactly
+/// why it is a table of its own rather than a flag on something: the two answers
+/// come from different places and must not be able to overwrite each other.
+/// Removing the mark leaves any trip-derived visit standing, and adding one
+/// changes nothing about the trips. On the map they are drawn identically —
+/// having been somewhere is having been somewhere, and a second shade would be
+/// the app disagreeing with the user about their own past.
+///
+/// Keyed by the code of `assets/geo/countries.json`, which is ISO 3166-1
+/// alpha-2 where the source has one. A code the current outline set does not
+/// know is kept rather than dropped: the set may be replaced by a finer one, and
+/// a mark nobody can currently draw is still something the user said.
+@DataClassName('VisitedCountry')
+class VisitedCountries extends Table {
+  TextColumn get code => text()();
+  DateTimeColumn get markedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  Set<Column> get primaryKey => {code};
+}
+
 /// Where a track's line came from.
 ///
 /// Persisted by integer index like every other stored enum here, so only ever
