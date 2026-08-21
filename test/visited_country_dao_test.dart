@@ -42,6 +42,23 @@ void main() {
     expect(await db.visitedCountryDao.watchMarked().first, {'XK'});
   });
 
+  test('several are taken back in one write', () async {
+    // What unticking a state in the list does: a mark on one of its
+    // territories is what was making the row true, so it goes too.
+    await db.visitedCountryDao.setMarked('DK', true);
+    await db.visitedCountryDao.setMarked('GRL', true);
+    await db.visitedCountryDao.setMarked('JP', true);
+
+    await db.visitedCountryDao.clearMarks({'DK', 'GRL'});
+    expect(await db.visitedCountryDao.watchMarked().first, {'JP'});
+  });
+
+  test('clearing nothing is not a clearing of everything', () async {
+    await db.visitedCountryDao.setMarked('JP', true);
+    await db.visitedCountryDao.clearMarks(const {});
+    expect(await db.visitedCountryDao.watchMarked().first, {'JP'});
+  });
+
   test('a mark survives what a trip does', () async {
     // The two answers come from different places on purpose: deleting every
     // trip in the app does not un-say where somebody has been.

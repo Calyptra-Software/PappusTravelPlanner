@@ -33,7 +33,18 @@ class VisitedCountryDao extends DatabaseAccessor<AppDatabase>
         visitedCountries,
       ).insertOnConflictUpdate(VisitedCountriesCompanion.insert(code: code));
     } else {
-      await (delete(visitedCountries)..where((c) => c.code.equals(code))).go();
+      await clearMarks({code});
     }
+  }
+
+  /// Removes several at once.
+  ///
+  /// A state's row in the list stands for the state *and* its territories — a
+  /// mark on Greenland is what makes Denmark read as visited — so unticking it
+  /// has to take back all of them in one write rather than leaving one behind
+  /// to put the tick straight back.
+  Future<void> clearMarks(Set<String> codes) async {
+    if (codes.isEmpty) return;
+    await (delete(visitedCountries)..where((c) => c.code.isIn(codes))).go();
   }
 }

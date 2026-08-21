@@ -52,7 +52,7 @@ America rather than Antarctica.
 Two consequences worth knowing
 ------------------------------
 
-A generalised outline lies a little off the ground it stands for, and below a
+A generalized outline lies a little off the ground it stands for, and below a
 certain size that is the whole country. Measured against real coordinates at
 this scale, San Marino, Liechtenstein, Andorra, Singapore, Malta and the
 Maldives are found; Monaco and the Vatican are not — their outlines sit one

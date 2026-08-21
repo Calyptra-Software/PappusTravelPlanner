@@ -1106,13 +1106,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get countriesWorld => 'Worldwide';
 
   @override
-  String get countriesMarkHint =>
-      'Tick a country you have been to but have no trip here for.';
-
-  @override
-  String get countriesFromTrips => 'From your trips';
-
-  @override
   String get regionAfrica => 'Africa';
 
   @override
@@ -1128,7 +1121,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get regionSouthAmerica => 'South America';
 
   @override
-  String get regionOceania => 'Oceania';
+  String get regionOceania => 'Australia and Oceania';
 
   @override
   String get regionAntarctica => 'Antarctica';

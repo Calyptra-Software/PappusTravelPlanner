@@ -50,9 +50,19 @@ class CountryOutline {
   /// anybody reading a list expects to find them.
   final String region;
 
-  /// Whether this area *is* its state — the 200 rows the tally counts and the
-  /// list shows. The other 42 are drawn and attributed, never listed.
+  /// Whether this area *is* its state — the rows the tally counts and the list
+  /// shows. The rest are drawn and attributed, never listed.
   final bool sovereign;
+
+  /// What a mark on this area is stored under.
+  ///
+  /// A state answers with its own code, so a tick in the list and a tap on the
+  /// map write the same row; a territory answers with its area code, since
+  /// Greenland has to be tickable as itself — it is on the map, and a mark you
+  /// cannot make is worse than no mark. The two cannot collide: a state's code
+  /// is its alpha-2 (or, where the source has none, the very code its own area
+  /// carries).
+  String get markKey => sovereign ? (stateCode ?? code) : code;
 
   /// Rings in decoded coordinates: `polygons[i][0]` is an outer ring, anything
   /// after it a hole in that same landmass.
@@ -99,7 +109,7 @@ class CountryOutline {
 
 /// Ray casting: count the ring's edges directly above the point.
 ///
-/// Longitude is taken as it comes rather than normalised. The source splits a
+/// Longitude is taken as it comes rather than normalized. The source splits a
 /// country that crosses the antimeridian into separate landmasses at ±180, so
 /// no ring here spans the seam and there is nothing to unwrap.
 bool _inRing(List<LatLng> ring, LatLng point) {
@@ -183,7 +193,7 @@ Iterable<LatLng> visitedPoints(Iterable<ItineraryItem> items) sync* {
 /// is where somebody stood, and it is what the map fills. What it *counts
 /// toward* is [statesVisited].
 ///
-/// A point in no area is simply not counted: the outlines are generalised, so a
+/// A point in no area is simply not counted: the outlines are generalized, so a
 /// coastal position can fall a little offshore, and an ocean crossing's ends are
 /// genuinely nowhere. Neither is worth inventing a nearest country for — a wrong
 /// country is a claim, while a missing one is only a gap.
@@ -223,13 +233,24 @@ Set<String> statesVisited(List<CountryOutline> countries, Set<String> areas) {
 /// visited would light up the whole Arctic for a weekend in Copenhagen, and in
 /// Mercator that is a quarter of the picture.
 class VisitedWorld {
-  const VisitedWorld({required this.areas, required this.states});
+  const VisitedWorld({
+    required this.areas,
+    required this.states,
+    required this.derivedAreas,
+    required this.derivedStates,
+  });
 
   /// Area codes to draw as visited.
   final Set<String> areas;
 
   /// State codes to count and tick.
   final Set<String> states;
+
+  /// The part of each that the trips put there, which is the part nobody may
+  /// untick: taking a tick back is retracting a *statement*, and a trip is not
+  /// one — the way to undo it is to change the trip.
+  final Set<String> derivedAreas;
+  final Set<String> derivedStates;
 }
 
 /// What the trips say plus what the user said themselves.
@@ -245,13 +266,32 @@ VisitedWorld visitedWorld(
   final areas = {
     ...visitedAreas,
     for (final country in countries)
-      if (country.sovereign && marked.contains(country.stateCode)) country.code,
+      if (marked.contains(country.markKey)) country.code,
   };
+  // Through the areas rather than straight from the marks, so a mark on a
+  // territory credits the state it belongs to — a fortnight in Greenland is a
+  // fortnight in a country — and a mark on ground under no state credits
+  // nothing.
   return VisitedWorld(
     areas: areas,
-    states: {...statesVisited(countries, visitedAreas), ...marked},
+    states: statesVisited(countries, areas),
+    derivedAreas: visitedAreas,
+    derivedStates: statesVisited(countries, visitedAreas),
   );
 }
+
+/// Every mark that would make [stateCode] read as visited: its own, and its
+/// territories'.
+///
+/// What the list's tick writes is the state's own key; what it *clears* is all
+/// of these. The row means "I have been to Denmark", so turning it off has to
+/// take back whatever was making it true — and a mark on Greenland was making
+/// it true. Leaving that one standing would put the row back on the next
+/// rebuild, which is a switch that does not switch.
+Set<String> markKeysFor(List<CountryOutline> countries, String stateCode) => {
+  for (final country in countries)
+    if (country.stateCode == stateCode) country.markKey,
+};
 
 /// How much of one region has been seen.
 class RegionTally {

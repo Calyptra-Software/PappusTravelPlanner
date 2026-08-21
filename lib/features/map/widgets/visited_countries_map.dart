@@ -65,7 +65,7 @@ class VisitedCountriesMap extends ConsumerWidget {
             // draws the next copy of the world beside this one — so the height
             // is what decides how much of the world is on screen. Where the cap
             // bites, the map gives up *width* rather than latitude and sits
-            // centred: a whole world with a margin reads better than a band
+            // centered: a whole world with a margin reads better than a band
             // with the poles cut off, and stretching it edge to edge is what
             // cost Scandinavia and Patagonia.
             Builder(
@@ -80,6 +80,22 @@ class VisitedCountriesMap extends ConsumerWidget {
                       countries: countries,
                       visited: visited.areas,
                       fill: fill,
+                      // Tapping a country is how a territory is ticked at all:
+                      // the list is of states, so Greenland has no row of its
+                      // own, and it is on the map in front of you.
+                      onTapCountry: _canMark
+                          ? (country) {
+                              if (visited.derivedAreas.contains(country.code)) {
+                                return;
+                              }
+                              ref
+                                  .read(repositoryProvider)
+                                  .setCountryMarked(
+                                    country.markKey,
+                                    !marked.contains(country.markKey),
+                                  );
+                            }
+                          : null,
                     ),
                   ),
                 );
@@ -93,16 +109,6 @@ class VisitedCountriesMap extends ConsumerWidget {
               theme: theme,
               emphasis: true,
             ),
-            if (_canMark)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: Text(
-                  l10n.countriesMarkHint,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
             for (final tally in tallies)
               _RegionSection(
                 tally: tally,
@@ -111,13 +117,21 @@ class VisitedCountriesMap extends ConsumerWidget {
                     (a, b) => a.name(language).compareTo(b.name(language)),
                   ),
                 visited: visited.states,
-                marked: marked,
+                fromTrips: visited.derivedStates,
                 language: language,
                 canMark: _canMark,
                 l10n: l10n,
                 theme: theme,
-                onToggle: (code, value) =>
-                    ref.read(repositoryProvider).setCountryMarked(code, value),
+                onToggle: (code, value) {
+                  final repository = ref.read(repositoryProvider);
+                  if (value) {
+                    repository.setCountryMarked(code, true);
+                  } else {
+                    // Everything that was making the row true, its territories
+                    // included — see [markKeysFor].
+                    repository.clearCountryMarks(markKeysFor(countries, code));
+                  }
+                },
               ),
           ],
         );
@@ -132,6 +146,7 @@ class _WorldMap extends StatefulWidget {
     required this.countries,
     required this.visited,
     required this.fill,
+    this.onTapCountry,
   });
 
   final List<CountryOutline> countries;
@@ -140,12 +155,41 @@ class _WorldMap extends StatefulWidget {
   final Set<String> visited;
   final Color fill;
 
+  /// What a tap on an area means, or null where marking is not offered.
+  final void Function(CountryOutline country)? onTapCountry;
+
   @override
   State<_WorldMap> createState() => _WorldMapState();
 }
 
 class _WorldMapState extends State<_WorldMap> {
   final MapController _controller = MapController();
+
+  /// What lay under the last tap, by area code. `PolygonLayer` fills this
+  /// before the gesture arrives, which is the arrangement the all-trips map
+  /// already uses for its lines.
+  final LayerHitNotifier<String> _hits = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _hits.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    final hit = _hits.value;
+    if (hit == null) return;
+    // Innermost first: an enclave is drawn over the country around it, and a
+    // tap on Lesotho means Lesotho. `hitValues` comes back in the order the
+    // polygons were given, and the visited ones are drawn last.
+    final codes = hit.hitValues.toSet();
+    for (final country in widget.countries.reversed) {
+      if (codes.contains(country.code)) {
+        widget.onTapCountry?.call(country);
+        return;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -186,32 +230,38 @@ class _WorldMapState extends State<_WorldMap> {
                 ),
               ),
               children: [
-                PolygonLayer(
-                  // Unvisited first, so a filled country is never hidden under
-                  // the outline of the one it borders.
-                  polygons: [
-                    for (final country in widget.countries)
-                      if (!widget.visited.contains(country.code))
-                        ..._shapes(
-                          country,
-                          border: theme.colorScheme.outline,
-                          // Land, filled — not merely outlined. A hairline of
-                          // border colour against the sea is a country nobody
-                          // can make out at world scale, and the shape of the
-                          // continents is what the eye reads first. So the
-                          // unvisited world is drawn as land: grey against the
-                          // sea, and the accent then reads as a fill on it
-                          // rather than as the only thing on the map.
-                          fill: theme.colorScheme.surfaceContainerHigh,
-                        ),
-                    for (final country in widget.countries)
-                      if (widget.visited.contains(country.code))
-                        ..._shapes(
-                          country,
-                          border: widget.fill,
-                          fill: widget.fill.withValues(alpha: 0.55),
-                        ),
-                  ],
+                GestureDetector(
+                  onTap: widget.onTapCountry == null ? null : _onTap,
+                  child: PolygonLayer(
+                    // Left off where a tap means nothing, so the layer does no
+                    // hit-testing for an answer nobody reads.
+                    hitNotifier: widget.onTapCountry == null ? null : _hits,
+                    // Unvisited first, so a filled country is never hidden
+                    // under the outline of the one it borders.
+                    polygons: [
+                      for (final country in widget.countries)
+                        if (!widget.visited.contains(country.code))
+                          ..._shapes(
+                            country,
+                            border: theme.colorScheme.outline,
+                            // Land, filled — not merely outlined. A hairline of
+                            // border color against the sea is a country nobody
+                            // can make out at world scale, and the shape of the
+                            // continents is what the eye reads first. So the
+                            // unvisited world is drawn as land: grey against the
+                            // sea, and the accent then reads as a fill on it
+                            // rather than as the only thing on the map.
+                            fill: theme.colorScheme.surfaceContainerHigh,
+                          ),
+                      for (final country in widget.countries)
+                        if (widget.visited.contains(country.code))
+                          ..._shapes(
+                            country,
+                            border: widget.fill,
+                            fill: widget.fill.withValues(alpha: 0.55),
+                          ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -228,7 +278,7 @@ class _WorldMapState extends State<_WorldMap> {
 
   /// One polygon per landmass, holes and all — so an enclave is drawn as the
   /// separate country it is rather than swallowed by the one around it.
-  Iterable<Polygon> _shapes(
+  Iterable<Polygon<String>> _shapes(
     CountryOutline country, {
     required Color border,
     Color? fill,
@@ -240,6 +290,10 @@ class _WorldMapState extends State<_WorldMap> {
         borderColor: border,
         borderStrokeWidth: 0.6,
         color: fill,
+        // What a tap here means: this area. A state's own ground and its
+        // territories are separate answers, which is the whole reason
+        // Greenland can be ticked without saying anything about Denmark.
+        hitValue: country.code,
       );
     }
   }
@@ -371,7 +425,7 @@ class _RegionSection extends StatelessWidget {
     required this.tally,
     required this.countries,
     required this.visited,
-    required this.marked,
+    required this.fromTrips,
     required this.language,
     required this.canMark,
     required this.l10n,
@@ -382,7 +436,9 @@ class _RegionSection extends StatelessWidget {
   final RegionTally tally;
   final List<CountryOutline> countries;
   final Set<String> visited;
-  final Set<String> marked;
+
+  /// The ones a trip put here, which are the ones nobody may untick.
+  final Set<String> fromTrips;
   final String language;
   final bool canMark;
   final AppLocalizations l10n;
@@ -413,21 +469,12 @@ class _RegionSection extends StatelessWidget {
               value: visited.contains(code),
               // A country a trip put here cannot be unticked: unticking is
               // taking back a *statement*, and the trips are not one — the way
-              // to undo them is to change the trip. Only what was marked by
-              // hand is the user's to take back.
-              onChanged:
-                  canMark && (marked.contains(code) || !visited.contains(code))
+              // to undo them is to change the trip. The greyed-out tick says
+              // so by itself, which is why there is no line of text under it.
+              onChanged: canMark && !fromTrips.contains(code)
                   ? (value) => onToggle(code, value ?? false)
                   : null,
               title: Text(country.name(language)),
-              subtitle: visited.contains(code) && !marked.contains(code)
-                  ? Text(
-                      l10n.countriesFromTrips,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    )
-                  : null,
             ),
       ],
     );
@@ -436,9 +483,12 @@ class _RegionSection extends StatelessWidget {
 
 /// The region's name in the app's language.
 ///
-/// Translated here rather than carried in the asset: there are seven of them,
-/// they never change, and the asset's own `REGION_UN` is an English key rather
-/// than a label — using it directly would put "North America" in a German list.
+/// Translated here rather than carried in the asset: there are six of them, they
+/// never change, and the asset's own `REGION_UN` is an English key rather than a
+/// label — using it directly would put "North America" in a German list. The key
+/// and the label are also allowed to differ: `Oceania` reads as "Australia and
+/// Oceania", which is what an atlas calls it and what somebody looking for
+/// Australia in a list of continents expects to find.
 String regionLabel(String region, AppLocalizations l10n) => switch (region) {
   'Africa' => l10n.regionAfrica,
   'Asia' => l10n.regionAsia,

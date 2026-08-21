@@ -1,12 +1,16 @@
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/map/application/visited_countries_providers.dart';
 import 'package:travelplanner/features/map/visited_countries.dart';
@@ -124,10 +128,12 @@ void main() {
     // The unvisited ones are what make the visited ones mean something.
     await pump(tester, items: [place(1, 53.5511, 9.9937)]);
 
-    final layer = tester.widget<PolygonLayer>(find.byType(PolygonLayer));
+    final layer = tester.widget<PolygonLayer<String>>(
+      find.byType(PolygonLayer<String>),
+    );
     expect(layer.polygons.length, greaterThan(200));
     // Every landmass is filled — land against sea, not a hairline against
-    // black — and the visited ones are filled in a second colour.
+    // black — and the visited ones are filled in a second color.
     expect(layer.polygons.every((p) => p.color != null), isTrue);
     expect(layer.polygons.map((p) => p.color).toSet(), hasLength(2));
   });
@@ -136,7 +142,7 @@ void main() {
     await pump(tester, items: [place(1, 53.5511, 9.9937)]);
 
     // 200 of them, not the 242 areas the map draws.
-    expect(find.textContaining('of 200'), findsOneWidget);
+    expect(find.textContaining('of 199'), findsOneWidget);
     await tester.tap(find.text('North America'));
     await tester.pumpAndSettle();
     expect(find.text('Denmark'), findsNothing);
@@ -177,6 +183,7 @@ void main() {
     Future<void> pumpAllTrips(
       WidgetTester tester, {
       Set<String> marked = const {},
+      AppDatabase? writingTo,
     }) async {
       await tester.pumpWidget(
         ProviderScope(
@@ -186,6 +193,11 @@ void main() {
             positionedItemsProvider.overrideWith(
               (ref) => Stream.value(const []),
             ),
+            // Only where a test wants to see what a tap writes: the marks the
+            // screen *reads* are stubbed above, since a drift stream never
+            // resolves under fake-async.
+            if (writingTo case final db?)
+              repositoryProvider.overrideWithValue(TripRepository(db)),
           ],
           child: MaterialApp(
             localizationsDelegates: const [
@@ -238,11 +250,45 @@ void main() {
     ) async {
       // A mark is a statement about a life, not about one journey.
       await pump(tester, items: const []);
+      await tester.tap(find.text('Europe'));
+      await tester.pumpAndSettle();
 
-      expect(
-        find.textContaining('Tick a country you have been to'),
-        findsNothing,
+      final germany = tester.widget<CheckboxListTile>(
+        find.ancestor(
+          of: find.text('Germany'),
+          matching: find.byType(CheckboxListTile),
+        ),
       );
+      expect(germany.onChanged, isNull);
+      // And the map answers no taps either.
+      final layer = tester.widget<PolygonLayer<String>>(
+        find.byType(PolygonLayer<String>),
+      );
+      expect(layer.hitNotifier, isNull);
+    });
+
+    testWidgets('a country is ticked by tapping it on the map', (tester) async {
+      // The only way a territory can be ticked at all: the list is of states,
+      // so Greenland has no row — and it is right there on the map.
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      await pumpAllTrips(tester, writingTo: db);
+
+      // Inland Greenland, projected by hand: the map is 600 x 300 at the zoom
+      // that fits one world across it, centered on 20°N, and sits centered in an
+      // 800-wide test surface.
+      expect(
+        outlines
+            .firstWhere((c) => c.code == 'GRL')
+            .contains(const LatLng(65, -45)),
+        isTrue,
+        reason: 'the tap has to land on Greenland to mean anything',
+      );
+      await tester.tapAt(const Offset(325, 40));
+      await tester.pumpAndSettle();
+
+      final rows = await db.select(db.visitedCountries).get();
+      expect(rows.map((r) => r.code), ['GRL']);
     });
   });
 }

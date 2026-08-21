@@ -1115,13 +1115,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get countriesWorld => 'Weltweit';
 
   @override
-  String get countriesMarkHint =>
-      'Hake ein Land ab, in dem du warst, ohne dass hier eine Reise dazu liegt.';
-
-  @override
-  String get countriesFromTrips => 'Aus deinen Reisen';
-
-  @override
   String get regionAfrica => 'Afrika';
 
   @override
@@ -1137,7 +1130,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get regionSouthAmerica => 'Südamerika';
 
   @override
-  String get regionOceania => 'Ozeanien';
+  String get regionOceania => 'Australien und Ozeanien';
 
   @override
   String get regionAntarctica => 'Antarktis';

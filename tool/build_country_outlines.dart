@@ -33,14 +33,10 @@ void main(List<String> args) {
   final source = jsonDecode(File(args[0]).readAsStringSync()) as Map;
   final features = (source['features'] as List).cast<Map<String, dynamic>>();
 
-  // A sovereign state is one whose administration is its own: that is the
-  // source's own way of saying it, and it yields exactly the 200 states the
-  // tally counts. Everything else — Greenland, Bermuda, Western Sahara — is
-  // drawn but counted under the state it belongs to.
   final stateCodes = <String, String>{};
   for (final feature in features) {
     final p = feature['properties'] as Map<String, dynamic>;
-    if (p['SOVEREIGNT'] == p['ADMIN']) {
+    if (_isState(p)) {
       stateCodes.putIfAbsent(p['SOV_A3'] as String, () => _stateCode(p));
     }
   }
@@ -75,7 +71,7 @@ void main(List<String> args) {
       'en': p['NAME_EN'],
       'de': p['NAME_DE'] ?? p['NAME_EN'],
       'k': _region(p),
-      's': p['SOVEREIGNT'] == p['ADMIN'] ? 1 : 0,
+      's': _isState(p) ? 1 : 0,
       'p': polygons,
     });
   }
@@ -93,6 +89,19 @@ void main(List<String> args) {
     stdout.writeln('under no state: ${orphans.join(', ')}');
   }
 }
+
+/// Whether this area is a sovereign state — one row per state, and what the
+/// tally counts.
+///
+/// The source's own test is that an area's administration is its own, which
+/// takes no view on who *recognizes* it: Kosovo, Taiwan, Northern Cyprus and
+/// Somaliland are each their own state here because each governs its own
+/// ground, which is the only criterion a travel app can apply without taking
+/// somebody's side. Antarctica is the one area that passes the test and is
+/// plainly not a country: no state governs it, so it is drawn and counts for
+/// nothing, exactly as Siachen Glacier does.
+bool _isState(Map<String, dynamic> p) =>
+    p['SOVEREIGNT'] == p['ADMIN'] && p['ADM0_A3'] != 'ATA';
 
 /// ISO 3166-1 alpha-2 where the source has one, its three-letter
 /// administrative code where it does not — Somaliland and Northern Cyprus have

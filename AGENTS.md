@@ -904,7 +904,7 @@ UI (features/*/presentation, *widgets)
   `visitedPoints` yields a place's own position and **both ends** of a leg, and nothing in
   between: a flight from Hamburg to Rome passes over Austria without anybody setting foot in
   it, and a chord on a map is not a claim about the ground beneath it. A point in no country
-  is left uncounted rather than given to the nearest one — the outlines are generalised, so a
+  is left uncounted rather than given to the nearest one — the outlines are generalized, so a
   coastal position can fall just offshore, and a wrong country is a claim while a missing one
   is only a gap. A single trip reads through `liveItems`, since an option nobody chose took
   nobody anywhere.
@@ -930,9 +930,16 @@ UI (features/*/presentation, *widgets)
   `sovereign` says whether it *is* that state. A week in Greenland is a week in a country and
   counts for Denmark; ground under no state at all — Siachen Glacier, which the source files
   under Kashmir and no further — counts for nothing, which is the only honest answer a travel
-  app has about a disputed glacier. The area's own id is the three-letter administrative code,
-  because the alpha-2 is *not* unique: Australia, its Indian Ocean Territories and Ashmore and
-  Cartier all answer `AU`, and keying the map by that silently merged three shapes into one.
+  app has about a disputed glacier. The source's test is that an area's administration is its
+  own, which takes **no view on who recognizes it**: Kosovo, Taiwan, Northern Cyprus and
+  Somaliland are each a state here because each governs its own ground, which is the only
+  criterion this app can apply without taking somebody's side. **Antarctica** is the one area
+  that passes that test and is plainly not a country, so `tool/build_country_outlines.dart`
+  excludes it by name: it is drawn, it can be ticked, and it counts for nothing. That is why
+  the tally is out of **199** and why the list has six regions rather than seven. The area's
+  own id is the three-letter administrative code, because the alpha-2 is *not* unique:
+  Australia, its Indian Ocean Territories and Ashmore and Cartier all answer `AU`, and keying
+  the map by that silently merged three shapes into one.
 - **The two sets are kept apart, because filling by state would lie about the picture.**
   `visitedWorld` returns `areas` (what the map fills) beside `states` (what the list counts):
   a visit fills the ground it happened on and credits the state, while a **mark** fills that
@@ -940,14 +947,14 @@ UI (features/*/presentation, *widgets)
   been to Denmark", which is not a claim about Greenland, and in Mercator Greenland is a
   quarter of the picture. So the two can disagree by design: stand in Nuuk and Greenland is
   shaded while Denmark is not, and Denmark is nonetheless ticked in the list.
-- **The unvisited world is drawn as land, not as an outline.** A hairline of border colour on
+- **The unvisited world is drawn as land, not as an outline.** A hairline of border color on
   a dark sea is a country nobody can make out at world scale, and the shape of the continents
   is what the eye reads before it reads anything else — so every area is filled, grey against
   the sea, and the trip's accent then reads as a fill *on* the land rather than as the only
   thing on the map. Both greys come from the scheme (`surfaceContainerHigh` on
   `surfaceContainerLowest`), so the picture inverts correctly in a light theme instead of
   being a dark map with a white sea.
-- **A generalised outline is off the ground it stands for, and below a certain size that is
+- **A generalized outline is off the ground it stands for, and below a certain size that is
   the whole country.** At 1:50m the micro-states are present and San Marino, Liechtenstein,
   Andorra, Singapore, Malta and the Maldives are all detected from real coordinates — but
   **Monaco and the Vatican are not**: their outlines sit one to two kilometres off, so St
@@ -962,10 +969,21 @@ UI (features/*/presentation, *widgets)
   single trip's tab would be claiming the trip went there. The map is never told which is
   which: a life has journeys in it that were never planned here, and drawing them differently
   would make the app's own record the standard. The *list* does distinguish them, because
-  only one of the two is the user's to undo — a trip-derived visit has its checkbox disabled
-  and says where it came from, a mark is ticked and untickable at will. What is deliberately
-  not built is a date, a note, or a level ("lived in", "passed through"): the question here is
-  how much of the world, and the record of *when* is the trip.
+  only one of the two is the user's to undo — a trip-derived visit is ticked and **greyed
+  out**, which says it by itself; there is no line of text under it, and none above the list
+  either, because a control whose state is legible does not need a caption. What is
+  deliberately not built is a date, a note, or a level ("lived in", "passed through"): the
+  question here is how much of the world, and the record of *when* is the trip.
+- **A country is also ticked by tapping it on the map**, which is the only way a *territory*
+  can be ticked at all: the list is of states, so Greenland has no row of its own — and it is
+  right there on the map. So a mark is stored under `CountryOutline.markKey`: a state's own
+  code, a territory's area code, one key per thing that can be pointed at. The two cannot
+  collide, and a state's key is the same whether the tick came from the list or from the map.
+  Tapping something a *trip* put there does nothing, by the rule above. Its corollary is that
+  unticking a state in the list clears `markKeysFor` — the state's own mark **and its
+  territories'** — since a mark on Greenland is what was making Denmark read as visited, and
+  leaving it standing would put the tick straight back on the next rebuild. `hitValue` is the
+  area code and the hit is resolved innermost-first, so a tap on Lesotho means Lesotho.
 - **The list is what the map cannot say, so it sits under it and is never scrolled to.**
   `regionTallies` (pure) counts visited-of-total per region and the map is capped at **half
   the screen** — the map answers *how much*, the list answers *which*, and a list you have to
@@ -973,7 +991,7 @@ UI (features/*/presentation, *widgets)
   you travel: a list whose rows move when you visit a country is one you cannot learn. The
   map's zoom is fixed at the bottom by the width (`minZoom = log2(width / 256)`), which is
   exactly where flutter_map stops drawing the next copy of the world beside this one; where
-  the height cap bites, the map gives up **width** and sits centred rather than cropping the
+  the height cap bites, the map gives up **width** and sits centered rather than cropping the
   poles off a full-width band.
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles

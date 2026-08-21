@@ -387,15 +387,20 @@ counted is the **sovereign states**, 200 of them. Dependencies are drawn — a
 world map with holes in it is a worse map — and count for the state they belong
 to, so a week in Greenland is a week in Denmark.
 
-You can also **tick a country by hand**, from the overview's Countries tab, for
-somewhere you went before the app knew about it. A tick counts and draws exactly
-like a visit worked out from a trip; only the list distinguishes them, since a
-tick is yours to take back and a trip's countries are not. A tick fills the
-country itself and not the islands it flies a flag over — saying you have been
-to Denmark is not saying you have been to Greenland.
+You can also **tick a country by hand**, from the overview's Countries tab —
+either in the list or by **tapping it on the map**, which is the only way to tick
+a territory like Greenland, since the list is of states. A tick counts and draws
+exactly like a visit worked out from a trip; the ones your trips put there are
+greyed out, because the way to undo those is to change the trip. Ticking Denmark
+fills Denmark and not the islands under its flag; ticking Greenland counts for
+Denmark, because Greenland is not a state of its own.
 
-The outlines are generalised, and a very small country sits far enough from its
-own outline that it cannot be recognised from a position: Monaco and the Vatican
+What counts as a country here is who governs the ground, not who recognizes it —
+so Kosovo, Taiwan, Northern Cyprus and Somaliland each count as one. Antarctica
+is on the map and counts for nothing: no state governs it.
+
+The outlines are generalized, and a very small country sits far enough from its
+own outline that it cannot be recognized from a position: Monaco and the Vatican
 are the two that miss. Tick them.
 
 This map draws no tiles: everything on it is the bundled outline set, so it

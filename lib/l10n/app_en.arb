@@ -580,14 +580,6 @@
   "@countriesWorld": {
     "description": "Heading of the total across every region."
   },
-  "countriesMarkHint": "Tick a country you have been to but have no trip here for.",
-  "@countriesMarkHint": {
-    "description": "Explains the checkboxes in the all-trips country list."
-  },
-  "countriesFromTrips": "From your trips",
-  "@countriesFromTrips": {
-    "description": "Why a country is ticked and cannot be unticked: a trip puts it there."
-  },
   "regionAfrica": "Africa",
   "@regionAfrica": { "description": "Region name." },
   "regionAsia": "Asia",
@@ -598,7 +590,7 @@
   "@regionNorthAmerica": { "description": "Region name." },
   "regionSouthAmerica": "South America",
   "@regionSouthAmerica": { "description": "Region name." },
-  "regionOceania": "Oceania",
+  "regionOceania": "Australia and Oceania",
   "@regionOceania": { "description": "Region name." },
   "regionAntarctica": "Antarctica",
   "@regionAntarctica": { "description": "Region name." },

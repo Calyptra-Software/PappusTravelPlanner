@@ -153,6 +153,9 @@ class TripRepository {
   Future<void> setCountryMarked(String code, bool marked) =>
       _db.visitedCountryDao.setMarked(code, marked);
 
+  Future<void> clearCountryMarks(Set<String> codes) =>
+      _db.visitedCountryDao.clearMarks(codes);
+
   /// What one entry carries, whatever its trip is doing — the item form's
   /// reading.
   Stream<List<Track>> watchTracksForItem(int itemId) =>

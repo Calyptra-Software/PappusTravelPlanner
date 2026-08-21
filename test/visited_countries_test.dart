@@ -32,7 +32,7 @@ void main() {
 
   test('the whole world is there, and reads back', () {
     expect(countries.length, greaterThan(150));
-    expect(sovereignStates(countries), hasLength(200));
+    expect(sovereignStates(countries), hasLength(199));
     expect(countries.every((c) => c.polygons.isNotEmpty), isTrue);
     expect(
       countries.every((c) => c.polygons.every((p) => p.first.length >= 4)),
@@ -151,7 +151,7 @@ void main() {
 
     test('below that, the outline is off the ground it stands for', () {
       // Monaco and the Vatican are about a kilometre across, and the source
-      // generalises by more than that: a real position in St Peter's Square
+      // generalizes by more than that: a real position in St Peter's Square
       // falls inside Italy's outline, and one in Monaco falls in the sea. This
       // is recorded rather than worked around — a tolerance wide enough to
       // catch them would be wide enough to mis-attribute every border town, and
@@ -167,7 +167,7 @@ void main() {
       'every state is counted under exactly one region, and only states',
       () {
         final tallies = regionTallies(countries, const {});
-        expect(tallies.fold<int>(0, (sum, t) => sum + t.total), 200);
+        expect(tallies.fold<int>(0, (sum, t) => sum + t.total), 199);
         expect(tallies.map((t) => t.region).toSet().length, tallies.length);
       },
     );
@@ -218,7 +218,7 @@ void main() {
 
     test('counts for the state it belongs to', () {
       // Inland, on the ice sheet: a coastal town can fall just outside a
-      // generalised outline, which is a separate limit and has its own test.
+      // generalized outline, which is a separate limit and has its own test.
       expect(statesAt([const LatLng(72.0, -40.0)]), {'DK'});
     });
 
@@ -227,6 +227,20 @@ void main() {
       expect(
         statesIn(countries, 'North America').any((c) => c.code == 'GRL'),
         isFalse,
+      );
+    });
+
+    test('Antarctica is drawn and is not a country', () {
+      // It passes the source's test — its administration is its own — and is
+      // plainly not a state: nobody governs it.
+      final antarctica = countries.firstWhere((c) => c.code == 'ATA');
+      expect(antarctica.sovereign, isFalse);
+      expect(antarctica.stateCode, null);
+      expect(visitedWorld(countries, const {'ATA'}, const {}).states, isEmpty);
+      // And it is not a region of the list either, having nothing to list.
+      expect(
+        regionTallies(countries, const {}).map((t) => t.region),
+        isNot(contains('Antarctica')),
       );
     });
 
@@ -256,10 +270,39 @@ void main() {
       expect(world.areas, isNot(contains('GRL')));
     });
 
-    test('a mark for a state that is not in the set is simply ignored', () {
+    test('a territory is ticked as itself, and credits its state', () {
+      // The list has no row for Greenland — it is not a state — so the map is
+      // the only place it can be ticked, and a mark on it has to count.
+      final greenland = countries.firstWhere((c) => c.code == 'GRL');
+      expect(greenland.markKey, 'GRL');
+      final world = visitedWorld(countries, const {}, {greenland.markKey});
+      expect(world.areas, {'GRL'});
+      expect(world.states, {'DK'});
+      expect(world.derivedStates, isEmpty);
+    });
+
+    test('unticking a state takes back its territories\' marks too', () {
+      // Otherwise the row goes straight back on: Greenland is what was making
+      // Denmark true.
+      expect(markKeysFor(countries, 'DK'), containsAll(['DK', 'GRL']));
+      final world = visitedWorld(countries, const {}, const {'GRL'});
+      expect(world.states, {'DK'});
+    });
+
+    test('a mark for nothing in the set is simply ignored', () {
       final world = visitedWorld(countries, const {}, const {'XX'});
       expect(world.areas, isEmpty);
-      expect(world.states, {'XX'});
+      expect(world.states, isEmpty);
+    });
+
+    test('what a trip put there is reported apart from what was ticked', () {
+      // A trip's set is of *areas*, a mark's key is what the tick wrote: a
+      // state's own alpha-2, which is not its area code.
+      expect(state('FR').markKey, 'FR');
+      final world = visitedWorld(countries, const {'DEU'}, const {'FR'});
+      expect(world.states, {'DE', 'FR'});
+      expect(world.derivedStates, {'DE'});
+      expect(world.derivedAreas, {'DEU'});
     });
   });
 }

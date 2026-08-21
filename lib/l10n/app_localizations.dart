@@ -1976,18 +1976,6 @@ abstract class AppLocalizations {
   /// **'Worldwide'**
   String get countriesWorld;
 
-  /// Explains the checkboxes in the all-trips country list.
-  ///
-  /// In en, this message translates to:
-  /// **'Tick a country you have been to but have no trip here for.'**
-  String get countriesMarkHint;
-
-  /// Why a country is ticked and cannot be unticked: a trip puts it there.
-  ///
-  /// In en, this message translates to:
-  /// **'From your trips'**
-  String get countriesFromTrips;
-
   /// Region name.
   ///
   /// In en, this message translates to:
@@ -2021,7 +2009,7 @@ abstract class AppLocalizations {
   /// Region name.
   ///
   /// In en, this message translates to:
-  /// **'Oceania'**
+  /// **'Australia and Oceania'**
   String get regionOceania;
 
   /// Region name.
