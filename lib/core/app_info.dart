@@ -36,6 +36,24 @@ const String kAppRepositoryUrl =
 /// level in — kept beside it so the two cannot drift apart.
 const String kAppIssuesUrl = '$kAppRepositoryUrl/issues';
 
+/// What an `applicationId` gains when the build is the one meant to be
+/// installed *beside* a real one (`android/app/build.gradle.kts`, the
+/// `pappusSideBySide` property).
+const String kCiApplicationIdSuffix = '.ci';
+
+/// Whether [packageName] names the side-by-side CI build.
+///
+/// Derived from the application id rather than carried as a second switch of
+/// its own: the suffix is what *makes* a build the CI one, so a `--dart-define`
+/// beside it could be set when the Gradle property was not, and the app would
+/// then be wrong about itself in the one field a bug report quotes. Only
+/// Android has such a build, and no other platform's package name ends this
+/// way, so the answer is simply false everywhere else.
+///
+/// Pure, so the rule is testable without a platform channel.
+bool isCiBuild(String packageName) =>
+    packageName.endsWith(kCiApplicationIdSuffix);
+
 /// The copyright line shown above the bundled licenses.
 ///
 /// Deliberately untranslated: a copyright notice and a license name are the

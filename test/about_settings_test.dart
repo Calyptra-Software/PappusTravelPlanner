@@ -16,10 +16,17 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> pumpAbout(WidgetTester tester, {String version = '9.8.7+42'}) {
+  Future<void> pumpAbout(
+    WidgetTester tester, {
+    String version = '9.8.7+42',
+    bool isCi = false,
+  }) {
     return tester.pumpWidget(
       ProviderScope(
-        overrides: [appVersionProvider.overrideWithValue(version)],
+        overrides: [
+          appVersionProvider.overrideWithValue(version),
+          isCiBuildProvider.overrideWithValue(isCi),
+        ],
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -122,5 +129,26 @@ void main() {
       ),
     );
     expect((icon.image as AssetImage).assetName, 'assets/logo/pappus_mark.png');
+  });
+
+  testWidgets('says nothing about CI in an ordinary build', (tester) async {
+    await pumpAbout(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('CI test build'), findsNothing);
+    expect(find.text('9.8.7+42'), findsOneWidget);
+  });
+
+  testWidgets('names the CI build and marks the version it copies', (
+    tester,
+  ) async {
+    await pumpAbout(tester, isCi: true);
+    await tester.pumpAndSettle();
+
+    expect(find.text('CI test build'), findsOneWidget);
+    // The marker rides on the string itself: the version is read in order to be
+    // pasted into a bug report, which must say it came from a test build.
+    expect(find.text('9.8.7+42 \u00b7 CI'), findsOneWidget);
+    expect(find.text('9.8.7+42'), findsNothing);
   });
 }

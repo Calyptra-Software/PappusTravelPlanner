@@ -3554,6 +3554,18 @@ abstract class AppLocalizations {
   /// **'About'**
   String get aboutSection;
 
+  /// No description provided for @aboutCiBuild.
+  ///
+  /// In en, this message translates to:
+  /// **'CI test build'**
+  String get aboutCiBuild;
+
+  /// No description provided for @aboutCiBuildSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs beside the released app with a database of its own. Not for real trips.'**
+  String get aboutCiBuildSubtitle;
+
   /// No description provided for @aboutVersion.
   ///
   /// In en, this message translates to:

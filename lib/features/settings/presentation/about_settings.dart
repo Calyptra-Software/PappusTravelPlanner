@@ -36,15 +36,35 @@ class AboutSettings extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final version = ref.watch(appVersionProvider);
+    final isCi = ref.watch(isCiBuildProvider);
+    // The version is read in order to be pasted into a bug report, so a report
+    // from a test build has to say so by itself: the marker rides on the string
+    // that gets copied, not merely beside it. Deliberately not on
+    // [appVersionProvider] itself, which is what the connection search sends as
+    // its `User-Agent` — that string's shape is what the router's usage policy
+    // asks for, and this is a matter for the reader, not the server.
+    final shownVersion = isCi ? '$version · CI' : version;
 
     return Column(
       children: [
+        if (isCi)
+          ListTile(
+            leading: Icon(
+              Icons.science_outlined,
+              color: theme.colorScheme.tertiary,
+            ),
+            title: Text(l10n.aboutCiBuild),
+            subtitle: Text(
+              l10n.aboutCiBuildSubtitle,
+              style: theme.textTheme.bodySmall,
+            ),
+          ),
         ListTile(
           leading: const Icon(Icons.info_outline),
           title: Text(l10n.aboutVersion),
-          subtitle: Text(version, style: theme.textTheme.bodySmall),
+          subtitle: Text(shownVersion, style: theme.textTheme.bodySmall),
           trailing: const Icon(Icons.copy_outlined, size: 18),
-          onTap: () => _copyVersion(context, version),
+          onTap: () => _copyVersion(context, shownVersion),
         ),
         ListTile(
           leading: const Icon(Icons.code),
@@ -77,7 +97,7 @@ class AboutSettings extends ConsumerWidget {
           onTap: () => showLicensePage(
             context: context,
             applicationName: l10n.appTitle,
-            applicationVersion: version,
+            applicationVersion: shownVersion,
             applicationIcon: const Padding(
               padding: EdgeInsets.only(top: 8),
               child: Image(

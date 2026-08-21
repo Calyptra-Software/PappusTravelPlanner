@@ -16,3 +16,9 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# ...except this one, which is deliberately public: it signs only the
+# side-by-side CI build (`dev.calyptra.pappus.ci`), never a release. See the
+# `ci` signingConfig in app/build.gradle.kts for what that does and does not
+# allow. The blanket rules above stay, so a real signing key still cannot be
+# committed by accident.
+!app/pappus-ci.jks

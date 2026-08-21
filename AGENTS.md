@@ -1070,6 +1070,57 @@ in-memory database.
 
 ## Platform build constraints
 
+- **The build CI hands out installs beside a real one, not over it.** Every
+  pull request's `Build Android APK` job uploads the arm64-v8a APK as an
+  artifact, so a change can be installed rather than only read. It is built with
+  `ORG_GRADLE_PROJECT_pappusSideBySide=true` — a Gradle *property*, since
+  `flutter build` forwards no `-P`, and a product flavor would make `--flavor`
+  mandatory on every command this file documents. The property switches three
+  things at once and they are three halves of one idea: the `applicationId`
+  gains `.ci` (Android identifies an app by that, so the same id signed with a
+  different key is a *conflicting update*, not a second app), the label becomes
+  `Pappus CI`, and the icon becomes `ic_launcher_ci`. Label and icon travel
+  through **manifest placeholders** (`${appLabel}`, `${appIcon}`) rather than a
+  resource source set, which only a flavor or build type could bring; both icons
+  therefore live in `main` and the unused one rides along in a release build.
+  The **namespace** deliberately does not follow the id — it is where the Kotlin
+  classes and `R` live. That gap is load-bearing: `home_widget` resolves a bare
+  provider name as `context.packageName + '.' + name`, and `context.packageName`
+  is the applicationId at runtime, so the widget is addressed by its **fully
+  qualified** class name (`home_widget_service.dart`) or a `.ci` build would look
+  for a class that does not exist and silently stop updating its widget.
+- **The CI build's signing key is in the repo on purpose**
+  (`android/app/pappus-ci.jks`, the `ci` signingConfig). `debug` is not one key
+  but whichever one sits in `~/.android/debug.keystore` — a file AGP *generates*
+  when missing, so every CI runner signed with a fresh random key and a tester
+  could only install the next pull request's APK by uninstalling the last one.
+  A committed key is the same key on every runner and every fork, with no secret
+  involved, which is what keeps this working for pull requests from forks. What
+  it allows is stated rather than hidden: anyone can build an APK Android accepts
+  as an update to `dev.calyptra.pappus.ci`, inheriting that install's data
+  directory and already-granted permissions. It cannot touch the released app —
+  different id *and* different key, separate sandboxes — and it is selected only
+  when `sideBySide` is on, so the key and the suffixed id always arrive together.
+  `android/.gitignore` keeps its blanket `**/*.jks` rule and names this one file
+  as the exception, so a real signing key still cannot be committed by accident.
+- **The app says which build it is by looking at its own id.** `isCiBuild`
+  (`core/app_info.dart`, pure) reads the `.ci` suffix off `PackageInfo`'s package
+  name, resolved once in `main` into `isCiBuildProvider`. Deliberately not a
+  `--dart-define` beside the Gradle property: two switches can disagree, and the
+  one that would be wrong is the field a bug report quotes. The About screen
+  then grows a row naming the build, and the **version string it copies** reads
+  `1.7.0+8 · CI` — the marker rides on the text that gets pasted, not merely
+  beside it. `appVersionProvider` itself is untouched, because that is what the
+  connection search sends as its `User-Agent`, whose shape the router's usage
+  policy asks for; which build it is, is a matter for the reader.
+- The icon is generated, not drawn twice: `tool/build_ci_icon.py` composes the
+  app's own mark with an amber `CI` chip and writes all five densities plus the
+  legacy icon (minSdk is 24; adaptive icons start at 26). The chip sits inside
+  the adaptive icon's **safe circle** — 66 of 108dp — because a round launcher
+  mask slices off anything outside it, which reads as a broken icon rather than
+  as a badge. That is also why it is not a corner badge or a bottom band.
+
+
 The Android toolchain is **AGP 9.3.1 on Gradle 9.6.1**, and nothing about that combination
 is pinned any more — the version ceilings that used to live in `.github/dependabot.yml` are
 gone, because the `Build Android APK` job in CI now exercises the real

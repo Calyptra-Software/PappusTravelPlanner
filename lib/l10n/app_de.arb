@@ -749,6 +749,8 @@
   "tagNameLabel": "Name",
   "tagDuplicate": "Ein Tag mit diesem Namen existiert bereits.",
   "aboutSection": "Über die App",
+  "aboutCiBuild": "CI-Testversion",
+  "aboutCiBuildSubtitle": "Läuft neben der veröffentlichten App und hat eine eigene Datenbank. Nicht für echte Reisen.",
   "aboutVersion": "Version",
   "aboutVersionCopied": "Version kopiert",
   "aboutSourceCode": "Quellcode",

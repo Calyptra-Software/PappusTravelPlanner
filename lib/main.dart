@@ -7,6 +7,7 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'app.dart';
 import 'core/database/database_location.dart';
 import 'core/licenses.dart';
+import 'core/app_info.dart';
 import 'core/providers.dart';
 import 'core/settings/locale_provider.dart';
 
@@ -35,6 +36,7 @@ Future<void> main() async {
         appVersionProvider.overrideWithValue(
           '${packageInfo.version}+${packageInfo.buildNumber}',
         ),
+        isCiBuildProvider.overrideWithValue(isCiBuild(packageInfo.packageName)),
       ],
       child: const PappusApp(),
     ),

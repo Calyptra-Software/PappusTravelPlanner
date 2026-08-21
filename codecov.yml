@@ -14,3 +14,14 @@ ignore:
   - 'macos/**'
   - 'windows/**'
   - 'web/**'
+
+# The PR comment's layout is not left to the default. Codecov's default has
+# changed, and which of the two a repository gets depends on when it was
+# activated rather than on anything in the repository: a recently activated one
+# gets the condensed comment, without the header and without the "Additional
+# details and impacted files" dropdown that carries the line totals. Two
+# projects configuring nothing therefore disagree, which is the reason to
+# configure it.
+comment:
+  layout: 'header, diff, flags, components, files, footer'
+  hide_project_coverage: false
