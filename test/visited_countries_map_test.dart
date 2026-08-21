@@ -126,8 +126,36 @@ void main() {
 
     final layer = tester.widget<PolygonLayer>(find.byType(PolygonLayer));
     expect(layer.polygons.length, greaterThan(200));
-    // Exactly the visited country's landmasses carry a fill.
-    expect(layer.polygons.where((p) => p.color != null), isNotEmpty);
+    // Every landmass is filled — land against sea, not a hairline against
+    // black — and the visited ones are filled in a second colour.
+    expect(layer.polygons.every((p) => p.color != null), isTrue);
+    expect(layer.polygons.map((p) => p.color).toSet(), hasLength(2));
+  });
+
+  testWidgets('only sovereign states are listed and counted', (tester) async {
+    await pump(tester, items: [place(1, 53.5511, 9.9937)]);
+
+    // 200 of them, not the 242 areas the map draws.
+    expect(find.textContaining('of 200'), findsOneWidget);
+    await tester.tap(find.text('North America'));
+    await tester.pumpAndSettle();
+    expect(find.text('Denmark'), findsNothing);
+    expect(find.text('Greenland'), findsNothing);
+  });
+
+  testWidgets('a dependency counts for its state', (tester) async {
+    // Inland Greenland. Denmark is what moves, and it is in Europe.
+    await pump(tester, items: [place(1, 72.0, -40.0)]);
+
+    await tester.tap(find.text('Europe'));
+    await tester.pumpAndSettle();
+    final denmark = tester.widget<CheckboxListTile>(
+      find.ancestor(
+        of: find.text('Denmark'),
+        matching: find.byType(CheckboxListTile),
+      ),
+    );
+    expect(denmark.value, isTrue);
   });
 
   testWidgets('an entry counts once, however many entries stand there', (

@@ -20,8 +20,19 @@ void main() {
     );
   });
 
+  /// The row a sovereign state's own ground is drawn from.
+  CountryOutline state(String code) =>
+      countries.firstWhere((c) => c.sovereign && c.stateCode == code);
+
+  /// Which states a set of positions counts for — the two steps the screen
+  /// takes, since where somebody stood and what it counts toward are not the
+  /// same question.
+  Set<String> statesAt(Iterable<LatLng> points) =>
+      statesVisited(countries, visitedAreaCodes(countries, points));
+
   test('the whole world is there, and reads back', () {
     expect(countries.length, greaterThan(150));
+    expect(sovereignStates(countries), hasLength(200));
     expect(countries.every((c) => c.polygons.isNotEmpty), isTrue);
     expect(
       countries.every((c) => c.polygons.every((p) => p.first.length >= 4)),
@@ -30,7 +41,7 @@ void main() {
   });
 
   test('a country carries a name in each language the app speaks', () {
-    final germany = countries.firstWhere((c) => c.code == 'DE');
+    final germany = state('DE');
     expect(germany.name('en'), 'Germany');
     expect(germany.name('de'), 'Deutschland');
     // Anything else falls back to English rather than to nothing.
@@ -39,7 +50,7 @@ void main() {
 
   group('where a point falls', () {
     String? countryOf(LatLng point) {
-      final found = visitedCountryCodes(countries, [point]);
+      final found = statesAt([point]);
       return found.isEmpty ? null : found.single;
     }
 
@@ -108,8 +119,9 @@ void main() {
 
     test('the ground between two ends is not claimed', () {
       // Hamburg to Rome passes over Austria without anybody setting foot in it.
-      final points = visitedPoints([leg(fromLat: 53.5511, toLat: 41.9028)]);
-      final visited = visitedCountryCodes(countries, points);
+      final visited = statesAt(
+        visitedPoints([leg(fromLat: 53.5511, toLat: 41.9028)]),
+      );
       expect(visited, contains('DE'));
       expect(visited, isNot(contains('AT')));
     });
@@ -121,7 +133,7 @@ void main() {
       // drawn nor ticked. This is why the app ships the finer one.
       for (final code in ['MC', 'VA', 'SM', 'LI', 'AD', 'MT', 'SG', 'MV']) {
         expect(
-          countries.any((c) => c.code == code),
+          countries.any((c) => c.stateCode == code),
           isTrue,
           reason: '$code is missing from the set',
         );
@@ -131,18 +143,10 @@ void main() {
     test('are found from a real position, once they are a few km across', () {
       // The simplification's tolerance is scaled to each ring, so a long
       // coastline is thinned while a small country keeps the points it has.
-      expect(visitedCountryCodes(countries, [const LatLng(43.9424, 12.4578)]), {
-        'SM',
-      });
-      expect(visitedCountryCodes(countries, [const LatLng(47.1410, 9.5209)]), {
-        'LI',
-      });
-      expect(visitedCountryCodes(countries, [const LatLng(42.5063, 1.5218)]), {
-        'AD',
-      });
-      expect(visitedCountryCodes(countries, [const LatLng(1.3521, 103.8198)]), {
-        'SG',
-      });
+      expect(statesAt([const LatLng(43.9424, 12.4578)]), {'SM'});
+      expect(statesAt([const LatLng(47.1410, 9.5209)]), {'LI'});
+      expect(statesAt([const LatLng(42.5063, 1.5218)]), {'AD'});
+      expect(statesAt([const LatLng(1.3521, 103.8198)]), {'SG'});
     });
 
     test('below that, the outline is off the ground it stands for', () {
@@ -153,22 +157,20 @@ void main() {
       // catch them would be wide enough to mis-attribute every border town, and
       // the honest route for these is the tick box, which is exactly what it is
       // there for.
-      expect(visitedCountryCodes(countries, [const LatLng(41.9022, 12.4539)]), {
-        'IT',
-      });
-      expect(
-        visitedCountryCodes(countries, [const LatLng(43.7393, 7.4276)]),
-        isEmpty,
-      );
+      expect(statesAt([const LatLng(41.9022, 12.4539)]), {'IT'});
+      expect(statesAt([const LatLng(43.7393, 7.4276)]), isEmpty);
     });
   });
 
   group('the tally per region', () {
-    test('every country is counted under exactly one region', () {
-      final tallies = regionTallies(countries, const {});
-      expect(tallies.fold<int>(0, (sum, t) => sum + t.total), countries.length);
-      expect(tallies.map((t) => t.region).toSet().length, tallies.length);
-    });
+    test(
+      'every state is counted under exactly one region, and only states',
+      () {
+        final tallies = regionTallies(countries, const {});
+        expect(tallies.fold<int>(0, (sum, t) => sum + t.total), 200);
+        expect(tallies.map((t) => t.region).toSet().length, tallies.length);
+      },
+    );
 
     test('the regions read in a fixed order, not in the order of travel', () {
       // A list that reorders itself as you travel is one you have to re-read
@@ -203,12 +205,61 @@ void main() {
     );
   });
 
-  test('a dependency is drawn and named, and says it governs nothing', () {
+  group('a dependency', () {
     // Greenland is on the map because a map with holes in it is a worse map,
-    // and somebody who has been there should be able to say so.
-    final greenland = countries.firstWhere((c) => c.code == 'GL');
-    expect(greenland.sovereign, isFalse);
-    expect(greenland.region, 'North America');
-    expect(countries.firstWhere((c) => c.code == 'DE').sovereign, isTrue);
+    // and it counts for Denmark because only states are counted and a week
+    // there was a week in a country.
+    test('is drawn, and says it governs nothing', () {
+      final greenland = countries.firstWhere((c) => c.code == 'GRL');
+      expect(greenland.sovereign, isFalse);
+      expect(greenland.region, 'North America');
+      expect(state('DE').sovereign, isTrue);
+    });
+
+    test('counts for the state it belongs to', () {
+      // Inland, on the ice sheet: a coastal town can fall just outside a
+      // generalised outline, which is a separate limit and has its own test.
+      expect(statesAt([const LatLng(72.0, -40.0)]), {'DK'});
+    });
+
+    test('is not listed as a country of its own', () {
+      expect(sovereignStates(countries).any((c) => c.code == 'GRL'), isFalse);
+      expect(
+        statesIn(countries, 'North America').any((c) => c.code == 'GRL'),
+        isFalse,
+      );
+    });
+
+    test('ground under no state at all counts for nothing', () {
+      // Siachen Glacier, which the source files under Kashmir and no further.
+      final siachen = countries.firstWhere((c) => c.code == 'KAS');
+      expect(siachen.stateCode, null);
+      expect(statesVisited(countries, {'KAS'}), isEmpty);
+    });
+  });
+
+  group('what the map fills and what the list counts', () {
+    test('a visit fills the ground it happened on, and counts its state', () {
+      final world = visitedWorld(countries, const {'GRL'}, const {});
+      expect(world.areas, contains('GRL'));
+      expect(world.states, {'DK'});
+      // Denmark proper is not shaded: nobody was there.
+      expect(world.areas, isNot(contains('DNK')));
+    });
+
+    test('a mark fills the state and not the oceans it flies a flag over', () {
+      // A tick says "I have been to Denmark", which is not a claim about
+      // Greenland — and in Mercator Greenland is a quarter of the picture.
+      final world = visitedWorld(countries, const {}, const {'DK'});
+      expect(world.states, {'DK'});
+      expect(world.areas, contains('DNK'));
+      expect(world.areas, isNot(contains('GRL')));
+    });
+
+    test('a mark for a state that is not in the set is simply ignored', () {
+      final world = visitedWorld(countries, const {}, const {'XX'});
+      expect(world.areas, isEmpty);
+      expect(world.states, {'XX'});
+    });
   });
 }

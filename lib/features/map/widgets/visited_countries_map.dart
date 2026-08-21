@@ -51,20 +51,15 @@ class VisitedCountriesMap extends ConsumerWidget {
       error: (error, _) => Center(child: Text(l10n.genericError('$error'))),
       data: (countries) {
         final fill = accent ?? theme.colorScheme.primary;
-        final tallies = regionTallies(countries, visited);
+        final tallies = regionTallies(countries, visited.states);
+        final states = sovereignStates(countries);
         final byRegion = <String, List<CountryOutline>>{};
-        for (final country in countries) {
-          byRegion.putIfAbsent(country.region, () => []).add(country);
+        for (final state in states) {
+          byRegion.putIfAbsent(state.region, () => []).add(state);
         }
 
         return ListView(
           children: [
-            // Twice as wide as it is tall. The zoom is fixed by the width —
-            // any less and flutter_map starts drawing the next copy of the
-            // world beside this one — so the *height* is what decides how much
-            // of the world is on screen, and a fixed one cropped it to a band
-            // on a wide window. At 2:1 the view reaches roughly the polar
-            // circles, which is every latitude anybody travels to.
             // Twice as wide as it is tall, and never more than half the
             // screen. The zoom is fixed by the width — any less and flutter_map
             // draws the next copy of the world beside this one — so the height
@@ -83,7 +78,7 @@ class VisitedCountriesMap extends ConsumerWidget {
                     height: height,
                     child: _WorldMap(
                       countries: countries,
-                      visited: visited,
+                      visited: visited.areas,
                       fill: fill,
                     ),
                   ),
@@ -92,8 +87,8 @@ class VisitedCountriesMap extends ConsumerWidget {
             ),
             _TallyRow(
               label: l10n.countriesWorld,
-              visited: visited.length,
-              total: countries.length,
+              visited: visited.states.length,
+              total: states.length,
               l10n: l10n,
               theme: theme,
               emphasis: true,
@@ -115,7 +110,7 @@ class VisitedCountriesMap extends ConsumerWidget {
                   ..sort(
                     (a, b) => a.name(language).compareTo(b.name(language)),
                   ),
-                visited: visited,
+                visited: visited.states,
                 marked: marked,
                 language: language,
                 canMark: _canMark,
@@ -140,6 +135,8 @@ class _WorldMap extends StatefulWidget {
   });
 
   final List<CountryOutline> countries;
+
+  /// Area codes, not state codes: what is drawn is where somebody stood.
   final Set<String> visited;
   final Color fill;
 
@@ -197,7 +194,15 @@ class _WorldMapState extends State<_WorldMap> {
                       if (!widget.visited.contains(country.code))
                         ..._shapes(
                           country,
-                          border: theme.colorScheme.outlineVariant,
+                          border: theme.colorScheme.outline,
+                          // Land, filled — not merely outlined. A hairline of
+                          // border colour against the sea is a country nobody
+                          // can make out at world scale, and the shape of the
+                          // continents is what the eye reads first. So the
+                          // unvisited world is drawn as land: grey against the
+                          // sea, and the accent then reads as a fill on it
+                          // rather than as the only thing on the map.
+                          fill: theme.colorScheme.surfaceContainerHigh,
                         ),
                     for (final country in widget.countries)
                       if (widget.visited.contains(country.code))
@@ -399,31 +404,31 @@ class _RegionSection extends StatelessWidget {
         theme: theme,
       ),
       children: [
+        // Every row here is a sovereign state and therefore names one; the
+        // pattern is what says so, rather than a `!` claiming it.
         for (final country in countries)
-          CheckboxListTile(
-            dense: true,
-            value: visited.contains(country.code),
-            // A country a trip put here cannot be unticked: unticking is taking
-            // back a *statement*, and the trips are not one — the way to undo
-            // them is to change the trip. Only what was marked by hand is the
-            // user's to take back.
-            onChanged:
-                canMark &&
-                    (marked.contains(country.code) ||
-                        !visited.contains(country.code))
-                ? (value) => onToggle(country.code, value ?? false)
-                : null,
-            title: Text(country.name(language)),
-            subtitle:
-                visited.contains(country.code) && !marked.contains(country.code)
-                ? Text(
-                    l10n.countriesFromTrips,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  )
-                : null,
-          ),
+          if (country.stateCode case final code?)
+            CheckboxListTile(
+              dense: true,
+              value: visited.contains(code),
+              // A country a trip put here cannot be unticked: unticking is
+              // taking back a *statement*, and the trips are not one — the way
+              // to undo them is to change the trip. Only what was marked by
+              // hand is the user's to take back.
+              onChanged:
+                  canMark && (marked.contains(code) || !visited.contains(code))
+                  ? (value) => onToggle(code, value ?? false)
+                  : null,
+              title: Text(country.name(language)),
+              subtitle: visited.contains(code) && !marked.contains(code)
+                  ? Text(
+                      l10n.countriesFromTrips,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  : null,
+            ),
       ],
     );
   }

@@ -20,6 +20,9 @@ flutter test                                             # all tests
 flutter test test/cost_dao_test.dart                     # a single test file
 flutter test test/cost_dao_test.dart --plain-name "adds a cost"  # a single test by name
 flutter run -d <android|chrome|linux>                    # run; list targets with `flutter devices`
+
+dart run tool/build_country_outlines.dart \
+  ne_50m_admin_0_countries.geojson assets/geo/countries.json   # rebuild the country outlines
 ```
 
 Regenerate code after editing anything under generation:
@@ -913,13 +916,37 @@ UI (features/*/presentation, *widgets)
   Monaco to nothing. The codec was already there and tested, and every mapping tool reads the
   format. **Holes are kept**, so Lesotho is Lesotho and not South Africa; that is the one
   thing a naive "outer ring only" conversion gets wrong, and there is a test standing on
-  Maseru to say so. The set is the source's own 242 areas — dependencies included, since what
-  is drawn is what is counted, and a visit to Greenland has to land somewhere. Each carries a
-  `sovereign` flag it does not yet use, so narrowing the tally to the 200 self-governing
-  states later is a filter and not a re-conversion. Regions are `REGION_UN`, except that the
-  Americas are split by `CONTINENT` (the UN's single "Americas" is not how anybody reads a
-  list of continents), and the names come from the source's own `NAME_EN`/`NAME_DE` rather
-  than from a list this project would have to maintain.
+  Maseru to say so. Regions are `REGION_UN`, except that the Americas are split by
+  `CONTINENT` (the UN's single "Americas" is not how anybody reads a list of continents), and
+  the names come from the source's own `NAME_EN`/`NAME_DE` rather than from a list this
+  project would have to maintain. `tool/build_country_outlines.dart` is the conversion, kept
+  in the repo and writing through `encodeTrackPoints` — the same codec the app reads it with,
+  so the two halves cannot drift, and rebuilding the asset is not an exercise in guessing what
+  was done to it the first time.
+- **An area is drawn; a state is counted.** The set holds the source's 242 areas, since a
+  world map with holes where the dependencies are is a worse map — but what a tally means by
+  "country" is the **200 sovereign states** (`ADMIN == SOVEREIGNT` in the source, which is
+  where the number comes from), so every area carries the `stateCode` it counts toward and
+  `sovereign` says whether it *is* that state. A week in Greenland is a week in a country and
+  counts for Denmark; ground under no state at all — Siachen Glacier, which the source files
+  under Kashmir and no further — counts for nothing, which is the only honest answer a travel
+  app has about a disputed glacier. The area's own id is the three-letter administrative code,
+  because the alpha-2 is *not* unique: Australia, its Indian Ocean Territories and Ashmore and
+  Cartier all answer `AU`, and keying the map by that silently merged three shapes into one.
+- **The two sets are kept apart, because filling by state would lie about the picture.**
+  `visitedWorld` returns `areas` (what the map fills) beside `states` (what the list counts):
+  a visit fills the ground it happened on and credits the state, while a **mark** fills that
+  state's own ground and not the dependencies scattered under its flag — a tick says "I have
+  been to Denmark", which is not a claim about Greenland, and in Mercator Greenland is a
+  quarter of the picture. So the two can disagree by design: stand in Nuuk and Greenland is
+  shaded while Denmark is not, and Denmark is nonetheless ticked in the list.
+- **The unvisited world is drawn as land, not as an outline.** A hairline of border colour on
+  a dark sea is a country nobody can make out at world scale, and the shape of the continents
+  is what the eye reads before it reads anything else — so every area is filled, grey against
+  the sea, and the trip's accent then reads as a fill *on* the land rather than as the only
+  thing on the map. Both greys come from the scheme (`surfaceContainerHigh` on
+  `surfaceContainerLowest`), so the picture inverts correctly in a light theme instead of
+  being a dark map with a white sea.
 - **A generalised outline is off the ground it stands for, and below a certain size that is
   the whole country.** At 1:50m the micro-states are present and San Marino, Liechtenstein,
   Andorra, Singapore, Malta and the Maldives are all detected from real coordinates — but

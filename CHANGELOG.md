@@ -11,11 +11,11 @@ exact commits.
   as a share and a worldwide total. It is counted from where an entry stands and
   never from the line between two, so a flight does not claim the countries it
   passes over. The map draws no tiles at all, so it needs no connection — the
-  outlines are Natural Earth, public domain, credited on the licence page.
+  outlines are Natural Earth, public domain, credited on the license page.
 - A country can also be **ticked by hand**, for somewhere you went before the app
   knew about it; it counts and draws exactly like one worked out from a trip.
   Which is also the answer to the very small countries — Monaco and the Vatican
-  sit too far from their own generalised outlines to be recognised from a
+  sit too far from their own generalized outlines to be recognized from a
   position.
 
 - **Everything done to a group is now done on the group.** Its name and

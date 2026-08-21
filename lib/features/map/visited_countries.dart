@@ -6,7 +6,13 @@ import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../data/database/track_points.dart';
 
-/// One country's outline, as the bundled set holds it.
+/// One area's outline, as the bundled set holds it.
+///
+/// An *area* is not a country: the set carries dependencies and disputed
+/// ground — Greenland, Bermuda, Western Sahara — as well as the states
+/// themselves, because a world map with holes in it is a worse map. What is
+/// counted is the **state** an area belongs to ([stateCode]); what is drawn is
+/// the area.
 ///
 /// [polygons] is one entry per landmass — a country is rarely one shape — and
 /// each of those is its outer ring followed by any holes, which is how Lesotho
@@ -14,6 +20,7 @@ import '../../data/database/track_points.dart';
 class CountryOutline {
   CountryOutline({
     required this.code,
+    required this.stateCode,
     required this.nameEn,
     required this.nameDe,
     required this.region,
@@ -21,10 +28,20 @@ class CountryOutline {
     required this.polygons,
   }) : bounds = _boundsOf(polygons);
 
-  /// ISO 3166-1 alpha-2 where the source has one, and its three-letter
-  /// administrative code where it does not — Kosovo, Somaliland and the like
-  /// have no alpha-2 to give. Only ever used as an identity, never shown.
+  /// This area's own identity: the source's three-letter administrative code,
+  /// which unlike the alpha-2 is unique — Australia, its Indian Ocean
+  /// Territories and Ashmore and Cartier all answer `AU`. Never shown.
   final String code;
+
+  /// The sovereign state this area counts toward, as ISO 3166-1 alpha-2 (or the
+  /// three-letter code where the source has no alpha-2 to give — Somaliland,
+  /// Northern Cyprus). A state's own area carries its own code here.
+  ///
+  /// Null for ground under no state at all: Siachen Glacier, which the source
+  /// files under Kashmir and no further. A position there counts for nothing,
+  /// which is the only honest answer a travel app has about a disputed glacier.
+  final String? stateCode;
+
   final String nameEn;
   final String nameDe;
 
@@ -33,11 +50,8 @@ class CountryOutline {
   /// anybody reading a list expects to find them.
   final String region;
 
-  /// Whether it governs itself. The set carries dependencies and disputed
-  /// areas as well — Greenland, Bermuda, Western Sahara — because a map with
-  /// holes in it is a worse map, and somebody who has been to Greenland should
-  /// be able to say so. Kept as a flag rather than acted on, so counting only
-  /// sovereign states later is a filter and not a re-conversion.
+  /// Whether this area *is* its state — the 200 rows the tally counts and the
+  /// list shows. The other 42 are drawn and attributed, never listed.
   final bool sovereign;
 
   /// Rings in decoded coordinates: `polygons[i][0]` is an outer ring, anything
@@ -108,9 +122,10 @@ bool _inRing(List<LatLng> ring, LatLng point) {
 /// Reads the bundled outlines.
 ///
 /// The rings are the same encoded polyline a track is stored in — the codec was
-/// there, the format is compact, and every mapping tool reads it. That is what
-/// turns 820 KB of source GeoJSON into 61 KB of asset, at a resolution finer
-/// than the source's own generalisation.
+/// there, the format is compact, and every mapping tool reads it. That, plus a
+/// simplification scaled to each ring's own size, is what turns 3.0 MB of
+/// source GeoJSON into 240 KB of asset. `tool/build_country_outlines.dart` is
+/// the other half of this and writes through the same codec.
 List<CountryOutline> parseCountryOutlines(String source) {
   final json = jsonDecode(source);
   if (json is! Map<String, dynamic>) {
@@ -122,6 +137,7 @@ List<CountryOutline> parseCountryOutlines(String source) {
       if (country is Map<String, dynamic>)
         CountryOutline(
           code: country['c'] as String,
+          stateCode: country['sov'] as String?,
           nameEn: country['en'] as String,
           nameDe: country['de'] as String,
           region: country['k'] as String? ?? 'Other',
@@ -161,13 +177,17 @@ Iterable<LatLng> visitedPoints(Iterable<ItineraryItem> items) sync* {
   }
 }
 
-/// Which of [countries] the [points] fall in.
+/// Which of [countries] the [points] fall in, by area.
 ///
-/// A point in no country is simply not counted: the outlines are generalised,
-/// so a coastal position can fall a little offshore, and an ocean crossing's
-/// ends are genuinely nowhere. Neither is worth inventing a nearest country for
-/// — a wrong country is a claim, while a missing one is only a gap.
-Set<String> visitedCountryCodes(
+/// Areas rather than states, because the two answer different questions: this
+/// is where somebody stood, and it is what the map fills. What it *counts
+/// toward* is [statesVisited].
+///
+/// A point in no area is simply not counted: the outlines are generalised, so a
+/// coastal position can fall a little offshore, and an ocean crossing's ends are
+/// genuinely nowhere. Neither is worth inventing a nearest country for — a wrong
+/// country is a claim, while a missing one is only a gap.
+Set<String> visitedAreaCodes(
   List<CountryOutline> countries,
   Iterable<LatLng> points,
 ) {
@@ -181,6 +201,56 @@ Set<String> visitedCountryCodes(
     }
   }
   return visited;
+}
+
+/// The states [areas] count toward.
+///
+/// A dependency counts for the state it belongs to — a week in Greenland is a
+/// week in a country, and with only the states counted it has to be Denmark's
+/// — while ground under no state at all counts for nothing.
+Set<String> statesVisited(List<CountryOutline> countries, Set<String> areas) {
+  return {
+    for (final country in countries)
+      if (areas.contains(country.code)) ?country.stateCode,
+  };
+}
+
+/// Everywhere somebody has been, in the two shapes the screen needs it.
+///
+/// The distinction is not pedantry: the states are what "how much of the world"
+/// means once only sovereign states are counted, while the areas are where the
+/// person actually was. Filling a state's dependencies because its mainland was
+/// visited would light up the whole Arctic for a weekend in Copenhagen, and in
+/// Mercator that is a quarter of the picture.
+class VisitedWorld {
+  const VisitedWorld({required this.areas, required this.states});
+
+  /// Area codes to draw as visited.
+  final Set<String> areas;
+
+  /// State codes to count and tick.
+  final Set<String> states;
+}
+
+/// What the trips say plus what the user said themselves.
+///
+/// A mark names a *state*, so it fills that state's own ground and not the
+/// dependencies scattered across the oceans under its flag — the tick says
+/// "I have been to Denmark", which is not a claim about Greenland.
+VisitedWorld visitedWorld(
+  List<CountryOutline> countries,
+  Set<String> visitedAreas,
+  Set<String> marked,
+) {
+  final areas = {
+    ...visitedAreas,
+    for (final country in countries)
+      if (country.sovereign && marked.contains(country.stateCode)) country.code,
+  };
+  return VisitedWorld(
+    areas: areas,
+    states: {...statesVisited(countries, visitedAreas), ...marked},
+  );
 }
 
 /// How much of one region has been seen.
@@ -200,7 +270,24 @@ class RegionTally {
   int get percent => total == 0 ? 0 : (visited * 100 / total).round();
 }
 
+/// The states of one region, in the order the list shows them.
+List<CountryOutline> statesIn(List<CountryOutline> countries, String region) =>
+    [
+      for (final country in countries)
+        if (country.sovereign && country.region == region) country,
+    ];
+
+/// Every sovereign state, which is what the tally is out of.
+List<CountryOutline> sovereignStates(List<CountryOutline> countries) => [
+  for (final country in countries)
+    if (country.sovereign) country,
+];
+
 /// The tally per region, and the world's, in a fixed order.
+///
+/// Over the **sovereign states** only: a dependency is drawn and attributed but
+/// never counted as a country of its own, so "50 of 50 in Europe" is a claim
+/// about states and not about how many shapes are shaded.
 ///
 /// Ordered by how many countries a region holds rather than alphabetically or
 /// by how much of it has been seen: a list that reorders itself as you travel
@@ -213,8 +300,9 @@ List<RegionTally> regionTallies(
   final total = <String, int>{};
   final seen = <String, int>{};
   for (final country in countries) {
+    if (!country.sovereign) continue;
     total[country.region] = (total[country.region] ?? 0) + 1;
-    if (visited.contains(country.code)) {
+    if (visited.contains(country.stateCode)) {
       seen[country.region] = (seen[country.region] ?? 0) + 1;
     }
   }

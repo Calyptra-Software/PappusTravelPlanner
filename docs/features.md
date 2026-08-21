@@ -382,12 +382,17 @@ is not a claim about the ground under it. A position that falls in no country at
 all is simply not counted rather than being given to the nearest one.
 
 Under the map the countries are listed by continent, each with how many of them
-you have been to and the share as a percentage, plus a worldwide total.
+you have been to and the share as a percentage, plus a worldwide total. What is
+counted is the **sovereign states**, 200 of them. Dependencies are drawn — a
+world map with holes in it is a worse map — and count for the state they belong
+to, so a week in Greenland is a week in Denmark.
 
 You can also **tick a country by hand**, from the overview's Countries tab, for
 somewhere you went before the app knew about it. A tick counts and draws exactly
 like a visit worked out from a trip; only the list distinguishes them, since a
-tick is yours to take back and a trip's countries are not.
+tick is yours to take back and a trip's countries are not. A tick fills the
+country itself and not the islands it flies a flag over — saying you have been
+to Denmark is not saying you have been to Greenland.
 
 The outlines are generalised, and a very small country sits far enough from its
 own outline that it cannot be recognised from a position: Monaco and the Vatican

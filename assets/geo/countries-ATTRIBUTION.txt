@@ -26,9 +26,18 @@ What was changed on the way in
 ------------------------------
 
 The source GeoJSON is 3.0 MB and carries some eighty attributes per country.
-This asset keeps six: the ISO 3166-1 alpha-2 code (or the three-letter
-administrative code where the source has no alpha-2), the English and German
+This asset keeps six: the three-letter administrative code, the sovereign state
+the area counts toward (its ISO 3166-1 alpha-2, or its three-letter code where
+the source has no alpha-2 — Somaliland, Northern Cyprus), the English and German
 names, the region, whether the area is self-governing, and the geometry.
+
+All 242 areas are kept and drawn, dependencies included, because a world map
+with holes in it is a worse map. What is counted is the 200 sovereign states —
+the ones whose administration is their own, which is the source's own way of
+saying it. Siachen Glacier belongs to no state in the source and so counts for
+none here.
+
+`tool/build_country_outlines.dart` in this repository is the conversion.
 
 Rings are stored as encoded polylines at three decimal places — about 110 m —
 and simplified with a Douglas-Peucker tolerance scaled to each ring's own

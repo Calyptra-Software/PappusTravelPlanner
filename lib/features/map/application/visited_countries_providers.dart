@@ -9,7 +9,8 @@ import '../visited_countries.dart';
 
 /// The world's country outlines, read from the bundle once.
 ///
-/// Deliberately **not** `autoDispose`: it is 61 KB of asset and a few thousand
+/// Deliberately **not** `autoDispose`: it is 240 KB of asset and some fifty
+/// thousand
 /// decoded points, the same for every trip and every launch, and re-reading it
 /// each time the statistics screen is opened would be work done for nothing.
 final countryOutlinesProvider = FutureProvider<List<CountryOutline>>((
@@ -25,8 +26,11 @@ final markedCountriesProvider = StreamProvider.autoDispose<Set<String>>(
   (ref) => ref.watch(repositoryProvider).watchMarkedCountries(),
 );
 
-/// Which countries a trip's entries stand in, or — with a null trip — every
+/// Which *areas* a trip's entries stand in, or — with a null trip — every
 /// trip's.
+///
+/// Areas rather than states: this is where somebody stood, and Greenland is not
+/// Denmark to a map even though it is to a tally.
 ///
 /// The all-trips reading is the **whole record**, not what the overview happens
 /// to be filtered to: the map answers "where did I go", this answers "how much
@@ -49,7 +53,7 @@ final visitedCountriesProvider = Provider.autoDispose.family<Set<String>, int?>(
       final all = ref.watch(itineraryProvider(tripId)).value ?? const [];
       items = liveItems(all, ref.watch(chosenBranchIdsProvider(tripId)));
     }
-    return visitedCountryCodes(outlines, visitedPoints(items));
+    return visitedAreaCodes(outlines, visitedPoints(items));
   },
 );
 
@@ -66,9 +70,11 @@ final visitedCountriesProvider = Provider.autoDispose.family<Set<String>, int?>(
 /// is which countries that trip touched, and a mark says nothing about any
 /// particular journey.
 final allVisitedCountriesProvider = Provider.autoDispose
-    .family<Set<String>, int?>((ref, tripId) {
+    .family<VisitedWorld, int?>((ref, tripId) {
+      final outlines = ref.watch(countryOutlinesProvider).value ?? const [];
       final derived = ref.watch(visitedCountriesProvider(tripId));
-      if (tripId != null) return derived;
-      final marked = ref.watch(markedCountriesProvider).value ?? const {};
-      return {...derived, ...marked};
+      final marked = tripId == null
+          ? (ref.watch(markedCountriesProvider).value ?? const <String>{})
+          : const <String>{};
+      return visitedWorld(outlines, derived, marked);
     });
