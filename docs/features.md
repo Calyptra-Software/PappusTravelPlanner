@@ -375,6 +375,11 @@ standing between two legs is their handover, so it gets the same spot they do, a
 end of the run gets where the recording started or finished. Anything you had already placed
 yourself is left alone.
 
+The list follows **one path** through the plan: where a day forks into alternatives, it shows
+a single option — the one the trip follows — with a menu on the decision's row to pick another.
+Picking one there only says which option the line covered; it does not choose it for the trip,
+and a row pointing at an option the trip does not follow says so.
+
 A line is part of the plan, so it **travels with a copy** — duplicate the leg, stamp out the
 routine, share the trip, and it comes along. A `.tpt` bundle carries it, which is what keeps
 that export lossless.
