@@ -4,6 +4,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Whether to build the variant that installs beside a real install rather than
+// over it. Read once here because both `defaultConfig` and `buildTypes` need
+// it: the id and label are half the trick, the signing key is the other half.
+// CI sets it by exporting ORG_GRADLE_PROJECT_pappusSideBySide=true, which is
+// how a project property reaches Gradle through a Flutter build that forwards
+// no -P.
+val sideBySide = (project.findProperty("pappusSideBySide") as String?).toBoolean()
+
 android {
     namespace = "dev.calyptra.pappus"
     compileSdk = flutter.compileSdkVersion
@@ -32,27 +40,58 @@ android {
         // and the widget picker inherits it, having no label of its own.
         //
         // Off unless asked for, so an ordinary `flutter build apk` and every
-        // `flutter run` stay exactly what they were. CI asks by exporting
-        // ORG_GRADLE_PROJECT_pappusSideBySide=true, which is how a project
-        // property reaches Gradle through a Flutter build that forwards no -P.
+        // `flutter run` stay exactly what they were.
         //
         // The *namespace* deliberately does not follow: it is where the Kotlin
         // classes and R actually live, and moving it would move them. That is
         // also why the widget is addressed by its fully qualified name from
         // Dart (see home_widget_service.dart) — the plugin's fallback builds
         // the class name out of the runtime package, which is this id.
-        val sideBySide = (project.findProperty("pappusSideBySide") as String?).toBoolean()
         if (sideBySide) {
             applicationIdSuffix = ".ci"
         }
         manifestPlaceholders["appLabel"] = if (sideBySide) "Pappus CI" else "@string/app_name"
     }
 
+    signingConfigs {
+        // The key the side-by-side build is signed with, checked into the repo
+        // on purpose.
+        //
+        // Android refuses to update an installed app whose signature does not
+        // match, and `debug` is not one key but whichever one happens to be in
+        // ~/.android/debug.keystore — a file AGP *generates* when it is
+        // missing. Every CI runner is a fresh machine, so every run signed the
+        // artifact with a new random key, and a tester who had installed the
+        // APK from one pull request could only install the next by uninstalling
+        // first. A key that lives in the repo is the same key on every runner
+        // and on every fork, with no secret involved.
+        //
+        // The password is here in the open because hiding it would buy nothing:
+        // the key it protects is in the same commit. What it does allow is
+        // stated plainly — anyone can build an APK that Android accepts as an
+        // update to `dev.calyptra.pappus.ci`, so a test install trusts anyone
+        // who can hand you a file. What it does *not* allow is touching the
+        // released app: that has a different applicationId and a different key,
+        // and the two are separate installs with separate data directories.
+        // This config is therefore only ever selected when `sideBySide` is on.
+        create("ci") {
+            storeFile = file("pappus-ci.jks")
+            storePassword = "pappus-ci"
+            keyAlias = "pappus-ci"
+            keyPassword = "pappus-ci"
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig =
+                if (sideBySide) {
+                    signingConfigs.getByName("ci")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 }
