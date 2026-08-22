@@ -42,6 +42,26 @@ void main() {
     mode: mode,
   );
 
+  Attachment photo({
+    double? lat,
+    double? lon,
+    int? itemId,
+    int? groupId,
+    AttachmentKind kind = AttachmentKind.photo,
+  }) => Attachment(
+    id: ++nextId,
+    itemId: itemId,
+    groupId: groupId,
+    kind: kind,
+    mimeType: 'image/jpeg',
+    byteSize: 1024,
+    lat: lat,
+    lon: lon,
+    positionSource: lat == null ? null : AttachmentPositionSource.exif,
+    sortOrder: 0,
+    createdAt: DateTime(2026, 5, 1),
+  );
+
   setUp(() => nextId = 0);
 
   group('what reaches the map', () {
@@ -423,6 +443,143 @@ void main() {
         },
       );
       expect(features.paths.single.colorValue, 0xFF1B5E20);
+    });
+  });
+
+  group('photos on the map', () {
+    test('one with a position is drawn, one without is not', () {
+      final entry = place(lat: 53.55, lon: 9.99, title: 'Landungsbrücken');
+      final features = tripMapFeatures(
+        [entry],
+        photos: [
+          photo(lat: 53.5460, lon: 9.9680, itemId: entry.id),
+          photo(itemId: entry.id),
+        ],
+      );
+
+      expect(features.photos, hasLength(1));
+      expect(features.photos.single.position.latitude, closeTo(53.546, 1e-9));
+      // Deliberately not fallen back to the entry's own pin: the app does not
+      // claim to know where a picture was taken.
+      expect(features.pins, hasLength(1));
+    });
+
+    test('a photo has no position of the entry it hangs on', () {
+      final entry = place(lat: 53.55, lon: 9.99);
+      final features = tripMapFeatures(
+        [entry],
+        photos: [photo(itemId: entry.id)],
+      );
+
+      expect(features.photos, isEmpty);
+    });
+
+    test('one on an entry no longer in the plan is not drawn', () {
+      final entry = place(lat: 53.55, lon: 9.99);
+      // The entry is gone from `items` — it sits in an option nobody chose, and
+      // `liveItems` dropped it before the map ever saw it.
+      final features = tripMapFeatures(
+        [entry],
+        photos: [photo(lat: 53.1, lon: 9.1, itemId: entry.id + 100)],
+      );
+
+      expect(features.photos, isEmpty);
+    });
+
+    test('one on a run is drawn while the run has a live member', () {
+      final member = leg(
+        fromLat: 53.5,
+        fromLon: 10.0,
+        toLat: 50.1,
+        toLon: 8.6,
+      ).copyWith(groupId: const Value(7));
+      final features = tripMapFeatures(
+        [member],
+        photos: [photo(lat: 52.0, lon: 9.0, groupId: 7)],
+      );
+
+      expect(features.photos.single.groupId, 7);
+      expect(features.photos.single.itemId, isNull);
+    });
+
+    test('one on a run with nothing live left is not drawn', () {
+      final loose = place(lat: 53.55, lon: 9.99);
+      final features = tripMapFeatures(
+        [loose],
+        photos: [photo(lat: 52.0, lon: 9.0, groupId: 7)],
+      );
+
+      expect(features.photos, isEmpty);
+    });
+
+    test("takes its entry's color, and a run's photo takes none", () {
+      final entry = place(
+        lat: 53.55,
+        lon: 9.99,
+      ).copyWith(colorValue: const Value(0xFF1B5E20));
+      final member = leg(
+        fromLat: 53.5,
+        fromLon: 10.0,
+        toLat: 50.1,
+        toLon: 8.6,
+      ).copyWith(groupId: const Value(7));
+      final features = tripMapFeatures(
+        [entry, member],
+        photos: [
+          photo(lat: 53.1, lon: 9.1, itemId: entry.id),
+          photo(lat: 52.0, lon: 9.0, groupId: 7),
+        ],
+      );
+
+      expect(features.photos.first.colorValue, 0xFF1B5E20);
+      // A group carries no color, and picking one of its members' would be an
+      // accident deciding what the run looks like.
+      expect(features.photos.last.colorValue, isNull);
+    });
+
+    test('a document is never a marker, position or no position', () {
+      final entry = place(lat: 53.55, lon: 9.99);
+      final features = tripMapFeatures(
+        [entry],
+        photos: [
+          photo(
+            lat: 53.1,
+            lon: 9.1,
+            itemId: entry.id,
+            kind: AttachmentKind.document,
+          ),
+        ],
+      );
+
+      // Nothing here filters by kind — the query the map reads does, and this
+      // says the pure layer draws whatever it is handed rather than second-
+      // guessing it. The rule lives in `watchPositionedPhotosForTrip`.
+      expect(features.photos, hasLength(1));
+    });
+
+    test('a photo is framed with everything else', () {
+      final entry = place(lat: 53.55, lon: 9.99);
+      final features = tripMapFeatures(
+        [entry],
+        photos: [photo(lat: 40.0, lon: -3.0, itemId: entry.id)],
+      );
+
+      // A picture taken a valley over is exactly what a viewport fitted to the
+      // plan alone would cut off.
+      expect(features.allPoints, hasLength(2));
+      expect(features.allPoints.any((p) => p.latitude == 40.0), isTrue);
+    });
+
+    test('a trip with only a positioned photo is not an empty map', () {
+      final entry = place();
+      final features = tripMapFeatures(
+        [entry],
+        photos: [photo(lat: 53.1, lon: 9.1, itemId: entry.id)],
+      );
+
+      expect(features.pins, isEmpty);
+      expect(features.paths, isEmpty);
+      expect(features.isEmpty, isFalse);
     });
   });
 }

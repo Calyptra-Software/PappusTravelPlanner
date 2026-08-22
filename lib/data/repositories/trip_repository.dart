@@ -197,6 +197,11 @@ class TripRepository {
   watchAttachmentCountsForTrip(int tripId) =>
       _db.attachmentDao.watchAttachmentCountsForTrip(tripId);
 
+  /// The positioned photos of one trip — what the map draws, before the live
+  /// rule is applied to them (see `tripMapFeatures`).
+  Stream<List<Attachment>> watchPositionedPhotosForTrip(int tripId) =>
+      _db.attachmentDao.watchPositionedPhotosForTrip(tripId);
+
   Future<Attachment?> attachment(int id) => _db.attachmentDao.attachment(id);
 
   Stream<Attachment?> watchAttachment(int id) =>

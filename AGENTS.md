@@ -1064,6 +1064,42 @@ UI (features/*/presentation, *widgets)
   provenance is stored and shown, `0,0` is refused (a camera with no fix writes zeros),
   and the position is never inherited from the entry it hangs on — that entry already has
   a pin, and a second one would be the app claiming to know where a picture was taken.
+- **A photo is on the map when it carries a position, and never otherwise.**
+  `MapPhoto` (`map_features.dart`) draws the stored **thumbnail**, framed in the owning
+  entry's color — which is why one is kept beside every picture. Falling back to the
+  entry's own coordinates was never on: the entry already has a pin there, and a second
+  one would be the app claiming to know where the picture was taken, the same rule that
+  keeps a one-ended leg off the map. Which photos may be drawn is decided in **Dart**, by
+  `_photoMarkers` against the live entries the screen already holds, and deliberately
+  *not* in SQL as `TrackDao` does it: the answer is "is its owner part of the plan", which
+  `live_items.dart` already owns, and `watchPositionedPhotosForTrip` would only be a second
+  copy of it. A run's photo rides on any live member (a group lies wholly inside one option
+  or wholly outside every one) and takes no color, since a group has none. Photos are framed
+  with everything else by `allPoints` — one taken a valley over is exactly what a viewport
+  fitted to the plan would cut off. They sit in a layer **above** the plan and below the
+  device's mark, and never wear the reserved red: a photograph records a moment that has
+  passed, so it is never "under way". The all-trips map does not draw them.
+- **A `.tpt` carries the bytes, Base64-encoded, and does not bump the format version.**
+  It has to carry them: an attachment exists only inside the database, so naming one
+  without it would hand the recipient a reference to a file on somebody else's phone, and
+  `.tpt` is the one lossless export. The version stays where it was by the rule already
+  stated for coordinates and tracks — a version marks a shape an importer must *branch* on,
+  and an older app that ignores `attachments` imports exactly the trip it would have anyway.
+  The thumbnail travels too rather than being rebuilt: the importer would otherwise decode
+  and rescale every picture of the trip on a device that has just been handed a file.
+  `byteSize` is **measured on arrival**, never read from the file — a number the sender
+  could contradict is a number not to trust — and a row whose Base64 will not decode is
+  skipped rather than failing the import, the trade the unreadable track already makes.
+- **Photos are a PDF section, and the one a fresh install leaves off.** Hence
+  `kDefaultPdfSections` beside `kAllPdfSections`: every other section costs a few kilobytes
+  of text and this one can turn a two-page itinerary into a document too large to mail, so
+  it is asked for rather than assumed. The picker names the **size** next to the count for
+  exactly that reason — "12 photos" invites a tick, "12 photos · 4.1 MB" invites a decision.
+  Each picture is embedded at the size the app stored it: making a third size at export time
+  would mean decoding and rescaling every one on a phone, to save megabytes in a document
+  whose cost the user has already been shown and accepted. Documents are not printed at all —
+  a PDF cannot hold a PDF, and printing a ticket's *name* would be a list of files the
+  reader does not have.
 - **A picture the decoder cannot read is refused, not stored raw.** HEIC/HEIF is the case
   that matters, and keeping it as an opaque document would break all three rules above at
   once — unbounded size, no thumbnail, EXIF intact — silently. The probe itself is wrapped

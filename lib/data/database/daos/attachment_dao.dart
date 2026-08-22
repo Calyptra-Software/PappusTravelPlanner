@@ -79,6 +79,44 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Every photo of one trip that carries a position — what the map draws.
+  ///
+  /// Deliberately **not** filtered by the live rule here, unlike
+  /// `TrackDao.watchTracksForTrip`: whether a picture belongs on the map is a
+  /// question about the entry it hangs off, and the screen already holds the
+  /// trip's live entries. Answering it in SQL as well would be a second copy of
+  /// a definition that `live_items.dart` owns — see `_photoMarkers`.
+  ///
+  /// Documents are left out. A file with a position would still only be a dot
+  /// with a paperclip on it, and the reason to be on a map is to be *seen*.
+  Stream<List<Attachment>> watchPositionedPhotosForTrip(int tripId) {
+    final query =
+        select(attachments).join([
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(attachments.itemId),
+            ),
+            leftOuterJoin(
+              itemGroups,
+              itemGroups.id.equalsExp(attachments.groupId),
+            ),
+          ])
+          ..where(
+            (itineraryItems.tripId.equals(tripId) |
+                    itemGroups.tripId.equals(tripId)) &
+                attachments.kind.equalsValue(AttachmentKind.photo) &
+                attachments.lat.isNotNull() &
+                attachments.lon.isNotNull(),
+          )
+          ..orderBy([
+            OrderingTerm(expression: attachments.sortOrder),
+            OrderingTerm(expression: attachments.id),
+          ]);
+    return query.watch().map(
+      (rows) => rows.map((row) => row.readTable(attachments)).toList(),
+    );
+  }
+
   /// One row, for a viewer that was handed an id rather than the row.
   Future<Attachment?> attachment(int id) =>
       (select(attachments)..where((a) => a.id.equals(id))).getSingleOrNull();

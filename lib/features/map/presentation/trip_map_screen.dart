@@ -8,6 +8,8 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../attachments/application/attachment_providers.dart';
+import '../../attachments/presentation/attachment_sheet.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/live_items.dart';
@@ -54,6 +56,12 @@ class TripMapScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text(l10n.genericError('$error'))),
         data: (items) {
           final live = liveItems(items, chosen);
+          // Read once and used twice: the marker needs its thumbnail, and the
+          // pure layer needs the rows to decide which of them the plan still
+          // admits to.
+          final photos =
+              ref.watch(tripPhotoMarkersProvider(tripId)).value ??
+              const <Attachment>[];
           final features = tripMapFeatures(
             live,
             happeningItemId: _happeningItemId(live, now),
@@ -62,11 +70,20 @@ class TripMapScreen extends ConsumerWidget {
             // could say. Empty while the stream is still opening, so the map
             // draws the plan first and sharpens rather than waiting.
             tracks: ref.watch(tripTracksProvider(tripId)).value ?? const {},
+            // The pictures that carry a position. Unfiltered on the way in —
+            // which of them belong to the plan as it stands is decided by
+            // `tripMapFeatures` against the same live entries everything else
+            // here is drawn from.
+            photos: photos,
           );
           if (features.isEmpty) return _EmptyMap(l10n: l10n);
           return _MapView(
             features: features,
             itemsById: {for (final item in live) item.id: item},
+            // Keyed by id so a marker, which carries one and nothing else, can
+            // find the thumbnail it is drawn from — the same arrangement the
+            // entries use.
+            photosById: {for (final photo in photos) photo.id: photo},
             basemap: kDefaultBasemap,
             // The trip's own accent, the same one its card, its header, its
             // calendar bar and its PDF are drawn in — the map was the one place
@@ -104,6 +121,7 @@ class _MapView extends ConsumerStatefulWidget {
   const _MapView({
     required this.features,
     required this.itemsById,
+    required this.photosById,
     required this.basemap,
     this.accent,
   });
@@ -114,6 +132,10 @@ class _MapView extends ConsumerStatefulWidget {
   /// nothing else, so what to *say* about it is looked up here rather than
   /// copied into the pure layer, which has no business knowing about labels.
   final Map<int, ItineraryItem> itemsById;
+
+  /// The photo rows the markers stand for, keyed by id — their thumbnails, and
+  /// what the sheet opened by a tap reads.
+  final Map<int, Attachment> photosById;
   final Basemap basemap;
 
   /// The trip's accent color, or null while the trip is still loading (the
@@ -146,6 +168,18 @@ class _MapViewState extends ConsumerState<_MapView> {
       isScrollControlled: true,
       builder: (_) => MapItemSheet(item: item),
     );
+  }
+
+  /// What a photo marker is for: the picture itself, at the size the app kept
+  /// it, with its name, its position and the ways to change either.
+  ///
+  /// The same sheet the entry's form opens. A photo is one thing wherever it is
+  /// reached from, and a second, map-only viewer would be a second place to keep
+  /// the delete confirmation right.
+  void _showPhoto(int attachmentId) {
+    final photo = widget.photosById[attachmentId];
+    if (photo == null) return;
+    showAttachmentSheet(context, photo);
   }
 
   @override
@@ -286,6 +320,31 @@ class _MapViewState extends ConsumerState<_MapView> {
                           pin.colorValue,
                           happening: pin.happening,
                         ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            // Photos in a layer of their own, above the plan rather than
+            // among it: a picture is bigger than a pin and would cover the
+            // entry it is about if the two were interleaved by list order.
+            // Still below the device's mark, which has to stay findable.
+            MarkerLayer(
+              markers: [
+                for (final photo in features.photos)
+                  Marker(
+                    point: photo.position,
+                    width: 44,
+                    height: 44,
+                    child: _Tappable(
+                      onTap: () => _showPhoto(photo.attachmentId),
+                      child: MapPhotoMarker(
+                        thumbnail:
+                            widget.photosById[photo.attachmentId]?.thumbnail,
+                        // A photo is never "under way": it records a moment
+                        // that has passed, so it takes its entry's color or the
+                        // trip's and never the reserved red.
+                        color: colorOf(photo.colorValue, happening: false),
                       ),
                     ),
                   ),

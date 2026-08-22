@@ -3751,6 +3751,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'That file could not be opened.'**
   String get attachmentPhotoOpenFailed;
+
+  /// No description provided for @pdfSectionPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get pdfSectionPhotos;
+
+  /// No description provided for @pdfPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String pdfPhotos(int count);
+
+  /// No description provided for @pdfPhotoUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get pdfPhotoUnnamed;
 }
 
 class _AppLocalizationsDelegate

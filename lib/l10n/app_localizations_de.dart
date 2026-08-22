@@ -2184,4 +2184,21 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get attachmentPhotoOpenFailed =>
       'Die Datei konnte nicht geöffnet werden.';
+
+  @override
+  String get pdfSectionPhotos => 'Fotos';
+
+  @override
+  String pdfPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pdfPhotoUnnamed => 'Foto';
 }

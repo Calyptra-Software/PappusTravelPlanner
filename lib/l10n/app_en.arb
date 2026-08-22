@@ -1105,5 +1105,11 @@
   "attachmentPositionNone": "No position",
   "attachmentPositionSet": "Place on map",
   "attachmentPositionClear": "Remove position",
-  "attachmentPhotoOpenFailed": "That file could not be opened."
+  "attachmentPhotoOpenFailed": "That file could not be opened.",
+  "pdfSectionPhotos": "Photos",
+  "pdfPhotos": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@pdfPhotos": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pdfPhotoUnnamed": "Photo"
 }

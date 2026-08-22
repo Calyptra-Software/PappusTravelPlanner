@@ -99,6 +99,15 @@ this app can add on top without giving up what it is for.
 be handed to other people and other programs. An attachment handed to the share
 sheet is likewise a plain copy of the file, for whichever program the user picks.
 
+**Attachments travel with a shared trip.** A `.tpt` bundle carries every photo
+and file on the trip, Base64-encoded — it is the one lossless export, and an
+attachment exists nowhere but in the database, so a bundle that named one
+without carrying it would be handing over a broken reference. A photo's stored
+*position* travels with it, which is worth knowing before sharing: the EXIF the
+camera wrote is gone, but where it was taken is a column of the row, shown in
+the attachment's sheet and clearable there. The PDF prints pictures only when
+that section is ticked, and it is off until someone ticks it.
+
 **There are no accounts and no server of ours.** Nothing to authenticate to,
 nothing held anywhere but on your device.
 

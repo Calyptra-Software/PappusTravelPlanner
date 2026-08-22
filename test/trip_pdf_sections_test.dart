@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -23,8 +26,17 @@ void main() {
     l10n = await AppLocalizations.delegate.load(const Locale('en'));
   });
 
+  /// A real, decodable picture — `pw.MemoryImage` reads the bytes, so a handful
+  /// of made-up ones would be dropped as unreadable and the section would come
+  /// out empty for the wrong reason.
+  String photoBytes() {
+    final image = img.Image(width: 8, height: 6);
+    img.fill(image, color: img.ColorRgb8(20, 120, 90));
+    return base64Encode(img.encodePng(image));
+  }
+
   /// A trip with something in every section: two days of entries, expenses in
-  /// two currencies, a settlement, and one checklist.
+  /// two currencies, a settlement, one checklist, and a photo.
   TripBundle sample() => TripBundle(
     schemaVersion: 22,
     trip: BundleTrip(
@@ -41,6 +53,21 @@ void main() {
         date: DateTime(2026, 5, 1),
         kind: ItemKind.place,
         title: 'Colosseum',
+        attachments: [
+          BundleAttachment(
+            kind: AttachmentKind.photo,
+            mimeType: 'image/jpeg',
+            bytes: photoBytes(),
+            name: 'arena.jpg',
+          ),
+          // A document is not printable in a PDF and is not counted as one.
+          BundleAttachment(
+            kind: AttachmentKind.document,
+            mimeType: 'application/pdf',
+            bytes: photoBytes(),
+            name: 'ticket.pdf',
+          ),
+        ],
       ),
       BundleItem(
         localId: 101,
@@ -122,6 +149,9 @@ void main() {
       expect(s.transfers, 1);
       expect(s.checklists, 1);
       expect(s.checklistItems, 2);
+      // The ticket is an attachment but not a picture: a PDF cannot hold a PDF.
+      expect(s.photos, 1);
+      expect(s.photoBytes, greaterThan(0));
       expect(s.available, kAllPdfSections);
     });
 
@@ -263,6 +293,162 @@ void main() {
     });
   });
 
+  group('photos in the document', () {
+    test('the section carries the pictures and nothing else does', () async {
+      final bundle = sample();
+      final without = await buildTripPdf(
+        bundle: bundle,
+        l10n: l10n,
+        localeName: 'en',
+        sections: kDefaultPdfSections,
+      );
+      final with_ = await buildTripPdf(
+        bundle: bundle,
+        l10n: l10n,
+        localeName: 'en',
+        sections: {...kDefaultPdfSections, PdfSection.photos},
+      );
+
+      // The default set is the one the app starts on, and it does not print
+      // pictures: a section that multiplies the size of a document people mail
+      // is one to be asked for.
+      expect(kDefaultPdfSections.contains(PdfSection.photos), isFalse);
+      expect(with_.length, greaterThan(without.length));
+    });
+
+    test('a picture that will not decode costs its own place only', () async {
+      final bundle = sample();
+      final broken = TripBundle(
+        schemaVersion: bundle.schemaVersion,
+        trip: bundle.trip,
+        items: [
+          for (final i in bundle.items)
+            BundleItem(
+              localId: i.localId,
+              date: i.date,
+              sortOrder: i.sortOrder,
+              kind: i.kind,
+              title: i.title,
+              fromLocation: i.fromLocation,
+              toLocation: i.toLocation,
+              mode: i.mode,
+              attachments: [
+                for (final a in i.attachments)
+                  BundleAttachment(
+                    kind: a.kind,
+                    mimeType: a.mimeType,
+                    name: a.name,
+                    bytes: 'AAAA',
+                  ),
+              ],
+            ),
+        ],
+      );
+
+      final bytes = await buildTripPdf(
+        bundle: broken,
+        l10n: l10n,
+        localeName: 'en',
+        sections: {PdfSection.itinerary, PdfSection.photos},
+      );
+
+      // The trip still prints: one unreadable file must not cost the reader the
+      // document, the same trade the map makes with a line it cannot decode.
+      expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+    });
+
+    test('only the chosen option\'s pictures are printed', () {
+      final bundle = TripBundle(
+        schemaVersion: 22,
+        trip: BundleTrip(
+          title: 'Weekend',
+          destination: '',
+          colorValue: 0xFF00695C,
+          createdAt: DateTime(2026, 1, 2),
+        ),
+        alternativeSets: [
+          BundleAlternativeSet(
+            localId: 1,
+            date: DateTime(2026, 5, 2),
+            alternatives: [
+              BundleAlternative(localId: 10, chosen: true),
+              BundleAlternative(localId: 11),
+            ],
+          ),
+        ],
+        items: [
+          BundleItem(
+            localId: 100,
+            alternativeLocalId: 10,
+            date: DateTime(2026, 5, 2),
+            kind: ItemKind.place,
+            attachments: [
+              BundleAttachment(
+                kind: AttachmentKind.photo,
+                mimeType: 'image/jpeg',
+                bytes: photoBytes(),
+                name: 'taken.jpg',
+              ),
+            ],
+          ),
+          BundleItem(
+            localId: 101,
+            alternativeLocalId: 11,
+            date: DateTime(2026, 5, 2),
+            kind: ItemKind.place,
+            attachments: [
+              BundleAttachment(
+                kind: AttachmentKind.photo,
+                mimeType: 'image/jpeg',
+                bytes: photoBytes(),
+                name: 'not-taken.jpg',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      // The road not taken leaves the app in no export, pictures included.
+      expect(printablePhotos(bundle).map((a) => a.name), ['taken.jpg']);
+    });
+
+    test("a run's own pictures print while the run is part of the plan", () {
+      final bundle = TripBundle(
+        schemaVersion: 22,
+        trip: BundleTrip(
+          title: 'Rome',
+          destination: '',
+          colorValue: 0xFF00695C,
+          createdAt: DateTime(2026, 1, 2),
+        ),
+        groups: [
+          BundleGroup(
+            localId: 5,
+            label: 'Train',
+            attachments: [
+              BundleAttachment(
+                kind: AttachmentKind.photo,
+                mimeType: 'image/jpeg',
+                bytes: photoBytes(),
+                name: 'platform.jpg',
+              ),
+            ],
+          ),
+        ],
+        items: [
+          BundleItem(
+            localId: 100,
+            groupLocalId: 5,
+            date: DateTime(2026, 5, 1),
+            kind: ItemKind.transport,
+          ),
+        ],
+      );
+
+      expect(printablePhotos(bundle).map((a) => a.name), ['platform.jpg']);
+    });
+  });
+
   group('the picker', () {
     /// Pumps a screen whose one button opens the sheet, and hands back a box
     /// that fills with what the sheet returned once it closes (the sheet is
@@ -350,9 +536,9 @@ void main() {
         summary: summarizePdfSections(bundle),
         initial: kAllPdfSections,
       );
-      // Two of the three rows have nothing to print, so they read as empty and
-      // their switches are dead.
-      expect(find.text('Nothing recorded'), findsNWidgets(2));
+      // Three of the four rows have nothing to print, so they read as empty
+      // and their switches are dead.
+      expect(find.text('Nothing recorded'), findsNWidgets(3));
       final switches = tester
           .widgetList<SwitchListTile>(find.byType(SwitchListTile))
           .toList();
@@ -379,6 +565,7 @@ void main() {
 
       await tester.tap(find.text('Expenses'));
       await tester.tap(find.text('Checklist'));
+      await tester.tap(find.text('Photos'));
       await tester.pumpAndSettle();
 
       final button = tester.widget<FilledButton>(find.byType(FilledButton));

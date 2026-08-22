@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../../features/sharing/trip_bundle.dart';
@@ -31,6 +33,8 @@ part 'sharing_dao.g.dart';
     Checklists,
     ChecklistItems,
     CollapsedDays,
+    Attachments,
+    AttachmentBlobs,
   ],
 )
 class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
@@ -73,6 +77,57 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             ])..where(itineraryItems.tripId.equals(tripId)))
             .map((row) => row.readTable(tracks))
             .get();
+    // Attachments in one query for the whole trip, joined to whichever of the
+    // two owners they hang on — an itinerary is mostly entries with no file, so
+    // a query per entry would be mostly empty answers. The payloads come
+    // separately: they are the one thing here that can be megabytes, and
+    // reading them means reading the metadata twice over otherwise.
+    final attachmentRows =
+        await (select(attachments).join([
+              leftOuterJoin(
+                itineraryItems,
+                itineraryItems.id.equalsExp(attachments.itemId),
+              ),
+              leftOuterJoin(
+                itemGroups,
+                itemGroups.id.equalsExp(attachments.groupId),
+              ),
+            ])..where(
+              itineraryItems.tripId.equals(tripId) |
+                  itemGroups.tripId.equals(tripId),
+            ))
+            .map((row) => row.readTable(attachments))
+            .get();
+    final attachmentBytes = attachmentRows.isEmpty
+        ? <int, Uint8List>{}
+        : {
+            for (final row
+                in await (select(attachmentBlobs)..where(
+                      (b) => b.attachmentId.isIn([
+                        for (final a in attachmentRows) a.id,
+                      ]),
+                    ))
+                    .get())
+              row.attachmentId: row.bytes,
+          };
+    List<BundleAttachment> attachmentsOf({int? itemId, int? groupId}) => [
+      for (final a in attachmentRows)
+        if (a.itemId == itemId && a.groupId == groupId)
+          BundleAttachment(
+            kind: a.kind,
+            mimeType: a.mimeType,
+            name: a.name,
+            bytes: base64Encode(attachmentBytes[a.id] ?? Uint8List(0)),
+            thumbnail: a.thumbnail == null ? null : base64Encode(a.thumbnail!),
+            width: a.width,
+            height: a.height,
+            lat: a.lat,
+            lon: a.lon,
+            positionSource: a.positionSource,
+            sortOrder: a.sortOrder,
+          ),
+    ];
+
     final costRows = await _costsForTrip(tripId);
     final beneficiariesByCost = await _beneficiaryNamesByCost(tripId);
     final checklistRows = await (select(
@@ -162,7 +217,12 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       ),
       groups: [
         for (final g in groupRows)
-          BundleGroup(localId: g.id, label: g.label, collapsed: g.collapsed),
+          BundleGroup(
+            localId: g.id,
+            label: g.label,
+            collapsed: g.collapsed,
+            attachments: attachmentsOf(groupId: g.id),
+          ),
       ],
       alternativeSets: [
         for (final s in setRows)
@@ -223,6 +283,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
                   sortOrder: t.sortOrder,
                 ),
             ],
+            attachments: attachmentsOf(itemId: i.id),
           ),
       ],
       costs: [
@@ -334,6 +395,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             collapsed: Value(g.collapsed),
           ),
         );
+        await _writeAttachments(g.attachments, groupId: groupIds[g.localId]);
       }
 
       // Decisions and their options next, for the same reason: an item planned
@@ -417,6 +479,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             ),
           );
         }
+        await _writeAttachments(i.attachments, itemId: itemIds[i.localId]);
       }
 
       for (final c in bundle.costs) {
@@ -637,6 +700,58 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
 
   /// Maps a bundle-local key to its freshly-inserted id, or null when the key is
   /// null. Assumes the referenced row was inserted earlier in the same import.
+  /// Writes a bundle's attachments onto the entry or the run they arrived with.
+  ///
+  /// The row and its payload, since the payload is why they were in the file at
+  /// all. `byteSize` is measured here rather than read from the bundle: it is a
+  /// fact about what was stored, and a number a sender could contradict is a
+  /// number the app should not trust. A row whose Base64 will not decode is
+  /// **skipped** rather than failing the import — the same trade the unreadable
+  /// track makes, since one bad picture must not cost the recipient the trip.
+  Future<void> _writeAttachments(
+    List<BundleAttachment> incoming, {
+    int? itemId,
+    int? groupId,
+  }) async {
+    if (incoming.isEmpty) return;
+    if ((itemId == null) == (groupId == null)) return;
+    for (final a in incoming) {
+      final Uint8List bytes;
+      final Uint8List? thumbnail;
+      try {
+        bytes = base64Decode(a.bytes);
+        thumbnail = a.thumbnail == null ? null : base64Decode(a.thumbnail!);
+      } on FormatException {
+        continue;
+      }
+      if (bytes.isEmpty) continue;
+      final id = await into(attachments).insert(
+        AttachmentsCompanion.insert(
+          itemId: Value(itemId),
+          groupId: Value(groupId),
+          kind: a.kind,
+          mimeType: a.mimeType,
+          name: Value(a.name),
+          byteSize: bytes.length,
+          width: Value(a.width),
+          height: Value(a.height),
+          // A position and the kind of claim it is travel together, and one
+          // without the other is not written: half a position is not a place.
+          lat: Value(a.lon == null ? null : a.lat),
+          lon: Value(a.lat == null ? null : a.lon),
+          positionSource: Value(
+            a.lat == null || a.lon == null ? null : a.positionSource,
+          ),
+          thumbnail: Value(thumbnail),
+          sortOrder: Value(a.sortOrder),
+        ),
+      );
+      await into(attachmentBlobs).insert(
+        AttachmentBlobsCompanion.insert(attachmentId: Value(id), bytes: bytes),
+      );
+    }
+  }
+
   int? _mapId(Map<int, int> ids, int? localId) =>
       localId == null ? null : ids[localId];
 

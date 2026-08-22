@@ -30,6 +30,16 @@ final tripAttachmentCountsProvider = StreamProvider.autoDispose
           ref.watch(repositoryProvider).watchAttachmentCountsForTrip(tripId),
     );
 
+/// The positioned photos of one trip, for its map.
+///
+/// Carries each row's thumbnail, which is what the marker is drawn from — the
+/// whole reason one is stored beside the picture rather than derived from it.
+final tripPhotoMarkersProvider = StreamProvider.autoDispose
+    .family<List<Attachment>, int>(
+      (ref, tripId) =>
+          ref.watch(repositoryProvider).watchPositionedPhotosForTrip(tripId),
+    );
+
 /// One attachment, live — for the sheet that renames and positions it, where
 /// what is on screen has to be what is stored. Null once it is deleted.
 final attachmentProvider = StreamProvider.autoDispose.family<Attachment?, int>(

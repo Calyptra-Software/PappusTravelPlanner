@@ -2172,4 +2172,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attachmentPhotoOpenFailed => 'That file could not be opened.';
+
+  @override
+  String get pdfSectionPhotos => 'Photos';
+
+  @override
+  String pdfPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pdfPhotoUnnamed => 'Photo';
 }

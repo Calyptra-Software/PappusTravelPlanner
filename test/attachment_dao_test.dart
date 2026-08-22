@@ -204,6 +204,104 @@ void main() {
     expect(counts.byGroup, isEmpty);
   });
 
+  group('what the map may ask for', () {
+    test('only photos, and only ones carrying a position', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'placed.jpg', at: const LatLng(53.55, 9.99)),
+        itemId: leg,
+      );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'unplaced.jpg'),
+        itemId: leg,
+      );
+      // A document with a position would still only be a dot with a paperclip
+      // on it, and the reason to be on a map is to be seen.
+      final document = await db.attachmentDao.addAttachment(
+        ticket(name: 'ticket.pdf'),
+        itemId: leg,
+      );
+      await db.attachmentDao.setAttachmentPosition(
+        document,
+        const LatLng(53.5, 10.0),
+      );
+
+      final drawn = await db.attachmentDao
+          .watchPositionedPhotosForTrip(trip)
+          .first;
+
+      expect(drawn.map((a) => a.name), ['placed.jpg']);
+    });
+
+    test('a run\'s photo comes through its group', () async {
+      final trip = await makeTrip();
+      final group = await makeGroup(trip);
+      await makeLeg(trip, groupId: group);
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'platform.jpg', at: const LatLng(53.55, 9.99)),
+        groupId: group,
+      );
+
+      final drawn = await db.attachmentDao
+          .watchPositionedPhotosForTrip(trip)
+          .first;
+
+      expect(drawn.single.groupId, group);
+    });
+
+    test('another trip\'s photos stay off this map', () async {
+      final trip = await makeTrip();
+      final elsewhere = await makeTrip();
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'far.jpg', at: const LatLng(1, 1)),
+        itemId: await makeLeg(elsewhere),
+      );
+
+      expect(
+        await db.attachmentDao.watchPositionedPhotosForTrip(trip).first,
+        isEmpty,
+      );
+    });
+
+    test('an option nobody chose is not filtered out here', () async {
+      // Deliberately: whether a picture belongs to the plan as it stands is
+      // decided against the live entries the screen already holds, so this
+      // query has no second copy of that definition. See `_photoMarkers`.
+      final trip = await makeTrip();
+      final set = await db
+          .into(db.alternativeSets)
+          .insert(
+            AlternativeSetsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+            ),
+          );
+      final branch = await db
+          .into(db.alternatives)
+          .insert(AlternativesCompanion.insert(setId: set));
+      final legInBranch = await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+              kind: ItemKind.transport,
+              alternativeId: Value(branch),
+            ),
+          );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'maybe.jpg', at: const LatLng(53.55, 9.99)),
+        itemId: legInBranch,
+      );
+
+      expect(
+        await db.attachmentDao.watchPositionedPhotosForTrip(trip).first,
+        hasLength(1),
+      );
+    });
+  });
+
   group('a run looked up again', () {
     test('keeps the files that hung on its legs', () async {
       final trip = await makeTrip();
