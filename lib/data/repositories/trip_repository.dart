@@ -201,6 +201,9 @@ class TripRepository {
   watchAttachmentCountsForTrip(int tripId) =>
       _db.attachmentDao.watchAttachmentCountsForTrip(tripId);
 
+  Future<void> setTripPhotosCollapsed(int tripId, bool collapsed) =>
+      _db.tripDao.setPhotosCollapsed(tripId, collapsed);
+
   /// Every photo of one trip, before the live rule is applied to them — what
   /// the gallery reads (see `tripGallery`).
   Stream<List<Attachment>> watchPhotosForTrip(int tripId) =>

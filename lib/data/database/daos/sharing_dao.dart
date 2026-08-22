@@ -220,6 +220,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         notes: trip.notes,
         kind: trip.kind,
         colorValue: trip.colorValue,
+        photosCollapsed: trip.photosCollapsed,
         createdAt: trip.createdAt,
       ),
       groups: [
@@ -389,6 +390,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
           notes: Value(bundle.trip.notes),
           kind: Value(bundle.trip.kind),
           colorValue: Value(bundle.trip.colorValue),
+          photosCollapsed: Value(bundle.trip.photosCollapsed),
           createdAt: Value(bundle.trip.createdAt),
         ),
       );

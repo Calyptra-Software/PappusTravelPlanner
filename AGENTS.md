@@ -1147,7 +1147,15 @@ UI (features/*/presentation, *widgets)
   overflow and says in its own comment that a fourth leaves no room for the title, and the
   overflow is for what a trip is *done to* rather than a way of looking at it. `TripPhotoStrip`
   costs no bar space, is visibly there, and hands the gallery the picture that was tapped;
-  it is absent when the trip has none. This is not the rule against thumbnails *in the
+  it is absent when the trip has none. It **collapses**, and remembers, the way a checklist
+  and a day do — a band of thumbnails is the heaviest thing on that screen and a trip with
+  two hundred photographs should not have to be scrolled past to read the plan. The state
+  is a column on the trip's own row (`Trips.photosCollapsed`, v34) rather than a table:
+  `CollapsedDays` is one because a trip has many days, and this is one per trip. In the
+  database rather than in preferences, because it is per-trip state and belongs to the file
+  the trip lives in — so it travels in a `.tpt` too, as a checklist's collapsed state and
+  the collapsed days already do. The count stays in the header while folded: a collapsed
+  section that says nothing about what is inside it is a row with no reason to be tapped. This is not the rule against thumbnails *in the
   timeline*: there a picture would displace the entry it hangs on, here the photographs are
   the subject. Elsewhere the rule is **a photo opens the gallery, a document opens the
   sheet** — with one deliberate exception, the map, where a marker keeps opening
@@ -1204,7 +1212,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 33) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 34) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

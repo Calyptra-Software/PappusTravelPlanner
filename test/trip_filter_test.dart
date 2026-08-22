@@ -27,6 +27,7 @@ void main() {
       kind: kind,
       fromRoutineId: fromRoutineId,
       colorValue: 0xFF00695C,
+      photosCollapsed: false,
       createdAt: createdAt ?? DateTime(2026, 1, 1),
     );
   }

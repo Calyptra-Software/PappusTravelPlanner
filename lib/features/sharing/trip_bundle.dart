@@ -279,6 +279,7 @@ class BundleTrip {
     this.notes,
     this.kind = TripKind.trip,
     required this.colorValue,
+    this.photosCollapsed = false,
     required this.createdAt,
   });
 
@@ -294,6 +295,12 @@ class BundleTrip {
   final TripKind kind;
 
   final int colorValue;
+
+  /// Whether the recipient sees the strip of photographs folded away. Travels
+  /// for the reason a checklist's collapsed state and the collapsed days do:
+  /// how the sender had the trip laid out is part of the trip they are handing
+  /// over. False in bundles written before it existed, which is what they meant.
+  final bool photosCollapsed;
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -304,6 +311,7 @@ class BundleTrip {
     'notes': notes,
     'kind': kind.name,
     'colorValue': colorValue,
+    'photosCollapsed': photosCollapsed,
     'createdAt': _encodeDate(createdAt),
   };
 
@@ -321,6 +329,7 @@ class BundleTrip {
       orElse: () => TripKind.trip,
     ),
     colorValue: json['colorValue'] as int,
+    photosCollapsed: json['photosCollapsed'] as bool? ?? false,
     createdAt: _decodeDate(json['createdAt'] as String)!,
   );
 }

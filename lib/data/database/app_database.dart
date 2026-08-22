@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 34;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -388,6 +388,12 @@ class AppDatabase extends _$AppDatabase {
       // has the column.
       if (from < 33 && from >= 32) {
         await m.addColumn(attachments, attachments.tripId);
+      }
+      // v34 remembers whether a trip's strip of photographs is collapsed, the
+      // way a checklist and a day already remember theirs. Defaulted to false,
+      // which is what every existing trip has been showing all along.
+      if (from < 34) {
+        await m.addColumn(trips, trips.photosCollapsed);
       }
     },
     beforeOpen: (details) async {

@@ -141,6 +141,10 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
           notes: notes.isEmpty ? null : notes,
           kind: _kind,
           colorValue: _colorValue,
+          // Carried over rather than defaulted: this form is about the trip's
+          // identity, and whether its photo strip is folded away is not
+          // something editing the title should undo.
+          photosCollapsed: _editing!.photosCollapsed,
           createdAt: _editing!.createdAt,
         ),
       );

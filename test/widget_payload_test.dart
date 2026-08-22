@@ -28,6 +28,7 @@ void main() {
       notes: null,
       kind: kind,
       colorValue: 0xFF00695C,
+      photosCollapsed: false,
       createdAt: DateTime(2026, 1, 1),
     );
   }

@@ -694,7 +694,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   // The way into the gallery, and the only one that costs no
                   // app-bar space — which this bar has none of, by its own
                   // comment above. Absent when the trip has no photographs.
-                  TripPhotoStrip(tripId: tripId),
+                  TripPhotoStrip(
+                    tripId: tripId,
+                    collapsed: trip.photosCollapsed,
+                  ),
                   TripAttachmentsSection(tripId: tripId, accent: accent),
                   TripChecklistsSection(tripId: tripId, accent: accent),
                   ItineraryTimeline(

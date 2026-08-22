@@ -32,6 +32,16 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   Future<bool> updateTrip(Trip trip) => update(trips).replace(trip);
 
+  /// Collapses or expands the trip's strip of photographs.
+  ///
+  /// A targeted update rather than `updateTrip`, which replaces the whole row:
+  /// this is written from a screen holding the trip as it was when it opened,
+  /// and a full replace would undo anything that has changed since.
+  Future<void> setPhotosCollapsed(int tripId, bool collapsed) =>
+      (update(trips)..where((t) => t.id.equals(tripId))).write(
+        TripsCompanion(photosCollapsed: Value(collapsed)),
+      );
+
   Future<int> deleteTrip(int id) =>
       (delete(trips)..where((t) => t.id.equals(id))).go();
 

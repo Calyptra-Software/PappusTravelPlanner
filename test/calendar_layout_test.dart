@@ -12,6 +12,7 @@ void main() {
     endDate: end,
     kind: TripKind.trip,
     colorValue: 0xFF00695C,
+    photosCollapsed: false,
     createdAt: DateTime(2026, 1, 1),
   );
 

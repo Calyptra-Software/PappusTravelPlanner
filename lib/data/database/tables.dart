@@ -134,6 +134,20 @@ class Trips extends Table {
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   IntColumn get colorValue =>
       integer().withDefault(const Constant(0xFF00695C))();
+
+  /// Whether the strip of photographs on the trip screen is shown collapsed.
+  ///
+  /// A column here rather than a table of its own — the shape [CollapsedDays]
+  /// needs, because a trip has many days and only ever one photo strip — and in
+  /// the database rather than in preferences, because this is per-trip state and
+  /// that is where [Checklists.collapsed] and [CollapsedDays] both keep theirs:
+  /// it belongs to the file the trip lives in, and travels with it when the
+  /// database does.
+  ///
+  /// Defaults to false, so a trip that has never been told otherwise shows its
+  /// photographs — the strip is how the gallery is found at all.
+  BoolColumn get photosCollapsed =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

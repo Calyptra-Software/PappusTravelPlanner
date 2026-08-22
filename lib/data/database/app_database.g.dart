@@ -113,6 +113,21 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0xFF00695C),
   );
+  static const VerificationMeta _photosCollapsedMeta = const VerificationMeta(
+    'photosCollapsed',
+  );
+  @override
+  late final GeneratedColumn<bool> photosCollapsed = GeneratedColumn<bool>(
+    'photos_collapsed',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("photos_collapsed" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -136,6 +151,7 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     kind,
     fromRoutineId,
     colorValue,
+    photosCollapsed,
     createdAt,
   ];
   @override
@@ -203,6 +219,15 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         colorValue.isAcceptableOrUnknown(data['color_value']!, _colorValueMeta),
       );
     }
+    if (data.containsKey('photos_collapsed')) {
+      context.handle(
+        _photosCollapsedMeta,
+        photosCollapsed.isAcceptableOrUnknown(
+          data['photos_collapsed']!,
+          _photosCollapsedMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -256,6 +281,10 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         DriftSqlType.int,
         data['${effectivePrefix}color_value'],
       )!,
+      photosCollapsed: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}photos_collapsed'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -293,6 +322,19 @@ class Trip extends DataClass implements Insertable<Trip> {
 
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   final int colorValue;
+
+  /// Whether the strip of photographs on the trip screen is shown collapsed.
+  ///
+  /// A column here rather than a table of its own — the shape [CollapsedDays]
+  /// needs, because a trip has many days and only ever one photo strip — and in
+  /// the database rather than in preferences, because this is per-trip state and
+  /// that is where [Checklists.collapsed] and [CollapsedDays] both keep theirs:
+  /// it belongs to the file the trip lives in, and travels with it when the
+  /// database does.
+  ///
+  /// Defaults to false, so a trip that has never been told otherwise shows its
+  /// photographs — the strip is how the gallery is found at all.
+  final bool photosCollapsed;
   final DateTime createdAt;
   const Trip({
     required this.id,
@@ -304,6 +346,7 @@ class Trip extends DataClass implements Insertable<Trip> {
     required this.kind,
     this.fromRoutineId,
     required this.colorValue,
+    required this.photosCollapsed,
     required this.createdAt,
   });
   @override
@@ -328,6 +371,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       map['from_routine_id'] = Variable<int>(fromRoutineId);
     }
     map['color_value'] = Variable<int>(colorValue);
+    map['photos_collapsed'] = Variable<bool>(photosCollapsed);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -351,6 +395,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           ? const Value.absent()
           : Value(fromRoutineId),
       colorValue: Value(colorValue),
+      photosCollapsed: Value(photosCollapsed),
       createdAt: Value(createdAt),
     );
   }
@@ -372,6 +417,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       ),
       fromRoutineId: serializer.fromJson<int?>(json['fromRoutineId']),
       colorValue: serializer.fromJson<int>(json['colorValue']),
+      photosCollapsed: serializer.fromJson<bool>(json['photosCollapsed']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -388,6 +434,7 @@ class Trip extends DataClass implements Insertable<Trip> {
       'kind': serializer.toJson<int>($TripsTable.$converterkind.toJson(kind)),
       'fromRoutineId': serializer.toJson<int?>(fromRoutineId),
       'colorValue': serializer.toJson<int>(colorValue),
+      'photosCollapsed': serializer.toJson<bool>(photosCollapsed),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -402,6 +449,7 @@ class Trip extends DataClass implements Insertable<Trip> {
     TripKind? kind,
     Value<int?> fromRoutineId = const Value.absent(),
     int? colorValue,
+    bool? photosCollapsed,
     DateTime? createdAt,
   }) => Trip(
     id: id ?? this.id,
@@ -415,6 +463,7 @@ class Trip extends DataClass implements Insertable<Trip> {
         ? fromRoutineId.value
         : this.fromRoutineId,
     colorValue: colorValue ?? this.colorValue,
+    photosCollapsed: photosCollapsed ?? this.photosCollapsed,
     createdAt: createdAt ?? this.createdAt,
   );
   Trip copyWithCompanion(TripsCompanion data) {
@@ -434,6 +483,9 @@ class Trip extends DataClass implements Insertable<Trip> {
       colorValue: data.colorValue.present
           ? data.colorValue.value
           : this.colorValue,
+      photosCollapsed: data.photosCollapsed.present
+          ? data.photosCollapsed.value
+          : this.photosCollapsed,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -450,6 +502,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('kind: $kind, ')
           ..write('fromRoutineId: $fromRoutineId, ')
           ..write('colorValue: $colorValue, ')
+          ..write('photosCollapsed: $photosCollapsed, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -466,6 +519,7 @@ class Trip extends DataClass implements Insertable<Trip> {
     kind,
     fromRoutineId,
     colorValue,
+    photosCollapsed,
     createdAt,
   );
   @override
@@ -481,6 +535,7 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.kind == this.kind &&
           other.fromRoutineId == this.fromRoutineId &&
           other.colorValue == this.colorValue &&
+          other.photosCollapsed == this.photosCollapsed &&
           other.createdAt == this.createdAt);
 }
 
@@ -494,6 +549,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<TripKind> kind;
   final Value<int?> fromRoutineId;
   final Value<int> colorValue;
+  final Value<bool> photosCollapsed;
   final Value<DateTime> createdAt;
   const TripsCompanion({
     this.id = const Value.absent(),
@@ -505,6 +561,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.kind = const Value.absent(),
     this.fromRoutineId = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.photosCollapsed = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   TripsCompanion.insert({
@@ -517,6 +574,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.kind = const Value.absent(),
     this.fromRoutineId = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.photosCollapsed = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title);
   static Insertable<Trip> custom({
@@ -529,6 +587,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<int>? kind,
     Expression<int>? fromRoutineId,
     Expression<int>? colorValue,
+    Expression<bool>? photosCollapsed,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -541,6 +600,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (kind != null) 'kind': kind,
       if (fromRoutineId != null) 'from_routine_id': fromRoutineId,
       if (colorValue != null) 'color_value': colorValue,
+      if (photosCollapsed != null) 'photos_collapsed': photosCollapsed,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -555,6 +615,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Value<TripKind>? kind,
     Value<int?>? fromRoutineId,
     Value<int>? colorValue,
+    Value<bool>? photosCollapsed,
     Value<DateTime>? createdAt,
   }) {
     return TripsCompanion(
@@ -567,6 +628,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       kind: kind ?? this.kind,
       fromRoutineId: fromRoutineId ?? this.fromRoutineId,
       colorValue: colorValue ?? this.colorValue,
+      photosCollapsed: photosCollapsed ?? this.photosCollapsed,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -601,6 +663,9 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (colorValue.present) {
       map['color_value'] = Variable<int>(colorValue.value);
     }
+    if (photosCollapsed.present) {
+      map['photos_collapsed'] = Variable<bool>(photosCollapsed.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -619,6 +684,7 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('kind: $kind, ')
           ..write('fromRoutineId: $fromRoutineId, ')
           ..write('colorValue: $colorValue, ')
+          ..write('photosCollapsed: $photosCollapsed, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -9277,6 +9343,7 @@ typedef $$TripsTableCreateCompanionBuilder =
       Value<TripKind> kind,
       Value<int?> fromRoutineId,
       Value<int> colorValue,
+      Value<bool> photosCollapsed,
       Value<DateTime> createdAt,
     });
 typedef $$TripsTableUpdateCompanionBuilder =
@@ -9290,6 +9357,7 @@ typedef $$TripsTableUpdateCompanionBuilder =
       Value<TripKind> kind,
       Value<int?> fromRoutineId,
       Value<int> colorValue,
+      Value<bool> photosCollapsed,
       Value<DateTime> createdAt,
     });
 
@@ -9529,6 +9597,11 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get photosCollapsed => $composableBuilder(
+    column: $table.photosCollapsed,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9835,6 +9908,11 @@ class $$TripsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get photosCollapsed => $composableBuilder(
+    column: $table.photosCollapsed,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -9898,6 +9976,11 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get photosCollapsed => $composableBuilder(
+    column: $table.photosCollapsed,
     builder: (column) => column,
   );
 
@@ -10201,6 +10284,7 @@ class $$TripsTableTableManager
                 Value<TripKind> kind = const Value.absent(),
                 Value<int?> fromRoutineId = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
+                Value<bool> photosCollapsed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion(
                 id: id,
@@ -10212,6 +10296,7 @@ class $$TripsTableTableManager
                 kind: kind,
                 fromRoutineId: fromRoutineId,
                 colorValue: colorValue,
+                photosCollapsed: photosCollapsed,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -10225,6 +10310,7 @@ class $$TripsTableTableManager
                 Value<TripKind> kind = const Value.absent(),
                 Value<int?> fromRoutineId = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
+                Value<bool> photosCollapsed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion.insert(
                 id: id,
@@ -10236,6 +10322,7 @@ class $$TripsTableTableManager
                 kind: kind,
                 fromRoutineId: fromRoutineId,
                 colorValue: colorValue,
+                photosCollapsed: photosCollapsed,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0
