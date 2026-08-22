@@ -72,6 +72,27 @@ sources:
   care applies to the persisted enums (cost display, expense scope, PDF sections, sort
   order, trip statuses): they are stored by index, so append only — never reorder.
 
+## Trying your change on a phone
+
+A build from source will not install over a Pappus you already use: the released APK is
+signed with the maintainer's key and yours is not, which Android reads as a conflicting
+package rather than as an update. Build the side-by-side variant instead:
+
+```bash
+ORG_GRADLE_PROJECT_pappusSideBySide=true flutter run
+ORG_GRADLE_PROJECT_pappusSideBySide=true flutter build apk --split-per-abi
+```
+
+It installs as **Pappus CI**, with its own launcher icon and its own database, beside the
+app you use — nothing it does can reach your real trips. The key it is signed with is in
+the repository, so this needs nothing you do not already have, and it is the same variant
+every pull request's `Build Android APK` artifact contains: your local build and a
+downloaded one can replace each other on the device.
+
+To try it against realistic data, use *Export database…* in the real app and *Import
+database…* in Pappus CI. Don't uninstall the real app to make room — that takes its
+database with it.
+
 ## How the code is arranged
 
 [AGENTS.md](AGENTS.md) is the long version — the layering, why a trip and a routine are one
