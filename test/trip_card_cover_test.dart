@@ -20,10 +20,12 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 void main() {
   const width = 400.0;
 
-  Trip trip(String title) => Trip(
+  Trip trip(String title, {DateTime? start, DateTime? end}) => Trip(
     id: 1,
     title: title,
     destination: '',
+    startDate: start,
+    endDate: end,
     kind: TripKind.trip,
     colorValue: 0xFF00695C,
     coverHidden: false,
@@ -112,5 +114,36 @@ void main() {
     // No placeholder: an invented square would be something put there to fill a
     // space rather than something said.
     expect(find.byType(Image), findsNothing);
+  });
+
+  testWidgets('the day count stays at the right of the text block', (
+    tester,
+  ) async {
+    await pumpCard(
+      tester,
+      // A title far longer than the date line, so the two rows disagree about
+      // how wide they want to be — which is the only case where this shows.
+      data: trip(
+        'A trip with a title much longer than its dates',
+        start: DateTime(2026, 5, 1),
+        end: DateTime(2026, 5, 3),
+      ),
+      cover: png(),
+    );
+
+    // The day count, drawn as a pill at the end of the date line.
+    final pill = tester.getRect(find.text('3 days'));
+    final image = tester.getRect(find.byType(Image));
+    final title = tester.getRect(
+      find.text('A trip with a title much longer than its dates'),
+    );
+
+    // At the end of the block whose width the title sets, not tucked in behind
+    // the date text. Measured on the label rather than the pill around it, so
+    // the pill's own padding is the whole of the slack allowed here.
+    expect(pill.right, lessThanOrEqualTo(title.right));
+    expect(pill.right, greaterThan(title.right - 16));
+    // And still left of the picture.
+    expect(pill.right, lessThan(image.left));
   });
 }
