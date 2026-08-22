@@ -64,12 +64,18 @@ class TripCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(width: 6, color: accent),
-              Expanded(
+              // `Flexible` and not `Expanded`, so the column is only as wide as
+              // its longest line: that is what lets the picture sit against the
+              // text instead of out at the card's edge. Every row inside it has
+              // to shrink-wrap too (`MainAxisSize.min` and `Flexible` rather
+              // than `Expanded`), or one of them would claim the full width and
+              // push the picture back out again.
+              Flexible(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
                     16,
                     16,
-                    cover == null ? 16 : 8,
+                    cover == null ? 16 : 12,
                     16,
                   ),
                   child: Column(
@@ -86,6 +92,7 @@ class TripCard extends StatelessWidget {
                       if (trip.destination.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.place_outlined,
@@ -93,7 +100,7 @@ class TripCard extends StatelessWidget {
                               color: theme.colorScheme.primary,
                             ),
                             const SizedBox(width: 4),
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 trip.destination,
                                 style: theme.textTheme.bodyMedium,
@@ -106,6 +113,7 @@ class TripCard extends StatelessWidget {
                       ],
                       const SizedBox(height: 10),
                       Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
                             when.icon,
@@ -113,7 +121,7 @@ class TripCard extends StatelessWidget {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                           const SizedBox(width: 6),
-                          Expanded(
+                          Flexible(
                             child: Text(
                               when.text,
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -137,6 +145,7 @@ class TripCard extends StatelessWidget {
                       if (totals.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.account_balance_wallet_outlined,
@@ -144,7 +153,7 @@ class TripCard extends StatelessWidget {
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
                             const SizedBox(width: 6),
-                            Expanded(
+                            Flexible(
                               child: Text(
                                 formatTotals(totals, book, localeName),
                                 style: theme.textTheme.bodySmall?.copyWith(
@@ -162,12 +171,13 @@ class TripCard extends StatelessWidget {
                   ),
                 ),
               ),
-              // At the **trailing** edge, opposite the accent stripe. Leading
-              // would push the title of every card with a picture to the right
-              // and leave the list a ragged left edge — or force a placeholder,
-              // which is something invented to fill a space rather than
-              // something said. Here a trip without one simply gives its text
-              // the width back, and the edge you scan down never moves.
+              // After the text rather than at the card's edge: the picture
+              // belongs to what is written beside it, and pushed out to the
+              // right it read as a separate column of the list. Still on the
+              // trailing side, not the leading one — leading would move the
+              // title of every card that has a picture and leave the edge you
+              // scan down ragged, or force a placeholder, which is something
+              // invented to fill a space rather than something said.
               if (cover case final bytes?)
                 // Centred rather than stretched: the row's children are laid
                 // out with `stretch`, so without this the picture would take
@@ -175,7 +185,7 @@ class TripCard extends StatelessWidget {
                 // totals, giving each card a differently proportioned crop.
                 Center(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.memory(
