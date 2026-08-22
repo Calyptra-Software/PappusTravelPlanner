@@ -55,6 +55,31 @@ class TripCard extends StatelessWidget {
     final localeName = Localizations.localeOf(context).languageCode;
     final accent = Color(trip.colorValue);
     final when = tripWhenLine(trip, l10n, localeName);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    /// One quiet line of the card: an icon and a piece of text that gives way
+    /// before the picture does.
+    ///
+    /// `MainAxisSize.min` with a `Flexible` inside, never `Expanded`: the column
+    /// these sit in is only as wide as its widest line, and one row claiming the
+    /// full width would push the photograph back out to the card's edge.
+    Widget line(IconData icon, String text, {TextStyle? style}) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: style ?? muted,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
 
     return Card(
       child: InkWell(
@@ -65,11 +90,9 @@ class TripCard extends StatelessWidget {
             children: [
               Container(width: 6, color: accent),
               // `Flexible` and not `Expanded`, so the column is only as wide as
-              // its longest line: that is what lets the picture sit against the
-              // text instead of out at the card's edge. Every row inside it has
-              // to shrink-wrap too (`MainAxisSize.min` and `Flexible` rather
-              // than `Expanded`), or one of them would claim the full width and
-              // push the picture back out again.
+              // its longest line — which is what lets the picture sit against
+              // the text instead of out at the card's edge. Every row inside it
+              // shrink-wraps for the same reason.
               Flexible(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(
@@ -78,110 +101,52 @@ class TripCard extends StatelessWidget {
                     cover == null ? 16 : 12,
                     16,
                   ),
-                  // Gives the column a width of its own — the widest line it
-                  // holds — which is what lets a row inside it push something
-                  // to the *column's* right edge. Without it a `Column` only
-                  // knows the width it is allowed, so either every row fills
-                  // the card (and the picture is back at the edge) or every row
-                  // shrink-wraps (and the day count sits mid-line). The cost is
-                  // a second intrinsic pass per card, on top of the
-                  // `IntrinsicHeight` this row already needs.
-                  child: IntrinsicWidth(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          trip.title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        trip.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
                         ),
-                        if (trip.destination.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.place_outlined,
-                                size: 16,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  trip.destination,
-                                  style: theme.textTheme.bodyMedium,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        const SizedBox(height: 10),
-                        // Left to fill the column, unlike the rows around it, so
-                        // the day-count chip stays at the right-hand end of the
-                        // block the way it always has.
-                        Row(
-                          children: [
-                            Icon(
-                              when.icon,
-                              size: 14,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                when.text,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (when.pill != null) _Pill(label: when.pill!),
-                          ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (trip.destination.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        line(
+                          Icons.place_outlined,
+                          trip.destination,
+                          style: theme.textTheme.bodyMedium,
                         ),
-                        if (tags.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 4,
-                            children: [
-                              for (final tag in tags) TagChip(tag: tag),
-                            ],
-                          ),
-                        ],
-                        if (totals.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.account_balance_wallet_outlined,
-                                size: 14,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  formatTotals(totals, book, localeName),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
-                    ),
+                      const SizedBox(height: 10),
+                      line(when.icon, when.text),
+                      // On a line of its own under the dates, not at the end of
+                      // them: beside the text it is the first thing to run out
+                      // of room on a phone, and what gives way then is the date
+                      // itself — the line the chip is about.
+                      if (when.pill != null) ...[
+                        const SizedBox(height: 6),
+                        _Pill(label: when.pill!),
+                      ],
+                      if (tags.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 4,
+                          children: [for (final tag in tags) TagChip(tag: tag)],
+                        ),
+                      ],
+                      if (totals.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        line(
+                          Icons.account_balance_wallet_outlined,
+                          formatTotals(totals, book, localeName),
+                          style: muted?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),

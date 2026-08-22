@@ -116,34 +116,25 @@ void main() {
     expect(find.byType(Image), findsNothing);
   });
 
-  testWidgets('the day count stays at the right of the text block', (
+  testWidgets('the day count sits on a line of its own, under the dates', (
     tester,
   ) async {
     await pumpCard(
       tester,
-      // A title far longer than the date line, so the two rows disagree about
-      // how wide they want to be — which is the only case where this shows.
-      data: trip(
-        'A trip with a title much longer than its dates',
-        start: DateTime(2026, 5, 1),
-        end: DateTime(2026, 5, 3),
-      ),
+      data: trip('Rom', start: DateTime(2026, 5, 1), end: DateTime(2026, 5, 3)),
       cover: png(),
     );
 
-    // The day count, drawn as a pill at the end of the date line.
     final pill = tester.getRect(find.text('3 days'));
+    final dates = tester.getRect(find.textContaining('2026'));
     final image = tester.getRect(find.byType(Image));
-    final title = tester.getRect(
-      find.text('A trip with a title much longer than its dates'),
-    );
 
-    // At the end of the block whose width the title sets, not tucked in behind
-    // the date text. Measured on the label rather than the pill around it, so
-    // the pill's own padding is the whole of the slack allowed here.
-    expect(pill.right, lessThanOrEqualTo(title.right));
-    expect(pill.right, greaterThan(title.right - 16));
-    // And still left of the picture.
+    // Below the dates rather than beside them: on a phone the chip is the first
+    // thing to run out of room, and what gives way for it is the date line the
+    // chip is about.
+    expect(pill.top, greaterThanOrEqualTo(dates.bottom));
+    expect(pill.left, closeTo(dates.left, 24));
+    // And inside the text block, so the picture still follows the text.
     expect(pill.right, lessThan(image.left));
   });
 }
