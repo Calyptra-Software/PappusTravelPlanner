@@ -133,24 +133,34 @@ android {
     }
 
     buildTypes {
-        release {
-            // Three keys, in order of how specific the claim they make is: the
-            // side-by-side build is signed as itself, a machine holding the
-            // release key signs as the published app, and everyone else falls
-            // back to the debug keys so the build still works.
+        if (sideBySide) {
+            // `sideBySide` is not a property of one build type. It renames and
+            // re-icons the app in `defaultConfig`, so *every* variant it
+            // produces -- debug and profile as much as release -- is the CI app
+            // and has to carry the CI app's key. Signing only the release type
+            // left a locally built debug APK calling itself
+            // `dev.calyptra.pappus.ci` while wearing the debug key, which is a
+            // second signature for one applicationId: it could not be installed
+            // over a CI artifact, nor a CI artifact over it. The same conflict
+            // this whole arrangement exists to avoid, one level down.
             //
-            // `sideBySide` wins over the release key deliberately. The property
-            // suffixes the applicationId in the same breath, so a build that
-            // took the release key here would be signing something that is not
-            // the released app -- and a developer with the key on disk is
-            // exactly who builds the CI variant to test it.
-            signingConfig =
-                when {
-                    sideBySide -> signingConfigs.getByName("ci")
-                    else ->
-                        signingConfigs.findByName("release")
-                            ?: signingConfigs.getByName("debug")
-                }
+            // `all` rather than naming the types: the container is live, so
+            // this reaches `profile`, which the Flutter Gradle plugin adds.
+            //
+            // It wins over the release key on purpose. The property suffixes
+            // the applicationId in the same breath, so a build taking the
+            // release key here would be signing something that is not the
+            // released app -- and a developer with that key on disk is exactly
+            // who builds the CI variant to test it.
+            all { signingConfig = signingConfigs.getByName("ci") }
+        } else {
+            release {
+                // The published app's key when this machine holds it, and the
+                // debug keys otherwise, so a fresh clone and CI still build.
+                signingConfig =
+                    signingConfigs.findByName("release")
+                        ?: signingConfigs.getByName("debug")
+            }
         }
     }
 }

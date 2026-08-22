@@ -1075,11 +1075,17 @@ in-memory database.
   artifact, so a change can be installed rather than only read. It is built with
   `ORG_GRADLE_PROJECT_pappusSideBySide=true` — a Gradle *property*, since
   `flutter build` forwards no `-P`, and a product flavor would make `--flavor`
-  mandatory on every command this file documents. The property switches three
-  things at once and they are three halves of one idea: the `applicationId`
+  mandatory on every command this file documents. The property switches four
+  things at once and they are four quarters of one idea: the `applicationId`
   gains `.ci` (Android identifies an app by that, so the same id signed with a
   different key is a *conflicting update*, not a second app), the label becomes
-  `Pappus CI`, and the icon becomes `ic_launcher_ci`. Label and icon travel
+  `Pappus CI`, the icon becomes `ic_launcher_ci`, and **every** build type is
+  signed with the `ci` key — `all { }` over the build types, not the release one
+  alone, because the id and the label are set in `defaultConfig` and so apply to
+  a debug build too: signing only `release` left a locally built debug APK
+  calling itself `dev.calyptra.pappus.ci` under the *debug* key, which is a
+  second signature for one applicationId and could not be installed over a CI
+  artifact or the other way round. Label and icon travel
   through **manifest placeholders** (`${appLabel}`, `${appIcon}`) rather than a
   resource source set, which only a flavor or build type could bring; both icons
   therefore live in `main` and the unused one rides along in a release build.
