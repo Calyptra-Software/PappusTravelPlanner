@@ -40,18 +40,24 @@ Future<void> showGroupAttachmentsSheet(BuildContext context, int groupId) {
 /// has no row yet. Not a hardship — attaching the ticket is something done about
 /// a leg that is already in the plan.
 ///
-/// Exactly one of [itemId] and [groupId] is set: an attachment belongs to an
-/// entry or to a run, never to both. The run's is reached from the label above
-/// it, where everything about a run is done.
+/// Exactly one of [itemId], [groupId] and [tripId] is set: an attachment
+/// belongs to an entry, to a run, or to the trip, never to two of them. The
+/// run's is reached from the label above it, where everything about a run is
+/// done; the trip's from its own section on the trip screen, since a file filed
+/// there appears on no timeline row and would be forgotten behind a menu.
 class AttachmentsField extends ConsumerWidget {
-  const AttachmentsField({super.key, this.itemId, this.groupId})
+  const AttachmentsField({super.key, this.itemId, this.groupId, this.tripId})
     : assert(
-        (itemId == null) != (groupId == null),
-        'An attachment belongs to exactly one of an item or a group.',
+        (itemId == null ? 0 : 1) +
+                (groupId == null ? 0 : 1) +
+                (tripId == null ? 0 : 1) ==
+            1,
+        'An attachment belongs to exactly one of an item, a group, or a trip.',
       );
 
   final int? itemId;
   final int? groupId;
+  final int? tripId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,7 +68,9 @@ class AttachmentsField extends ConsumerWidget {
             .watch(
               itemId != null
                   ? itemAttachmentsProvider(itemId!)
-                  : groupAttachmentsProvider(groupId!),
+                  : groupId != null
+                  ? groupAttachmentsProvider(groupId!)
+                  : tripAttachmentsProvider(tripId!),
             )
             .value ??
         const <Attachment>[];
@@ -95,6 +103,7 @@ class AttachmentsField extends ConsumerWidget {
                 ref,
                 itemId: itemId,
                 groupId: groupId,
+                tripId: tripId,
                 photosOnly: true,
               ),
               icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -106,6 +115,7 @@ class AttachmentsField extends ConsumerWidget {
                 ref,
                 itemId: itemId,
                 groupId: groupId,
+                tripId: tripId,
               ),
               icon: const Icon(Icons.attach_file),
               label: Text(l10n.attachmentsAddFile),

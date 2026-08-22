@@ -191,6 +191,10 @@ class TripRepository {
   Stream<List<Attachment>> watchAttachmentsForGroup(int groupId) =>
       _db.attachmentDao.watchAttachmentsForGroup(groupId);
 
+  /// What the trip itself carries, rather than any one part of it.
+  Stream<List<Attachment>> watchAttachmentsForTrip(int tripId) =>
+      _db.attachmentDao.watchAttachmentsForTrip(tripId);
+
   /// How much each entry and each run of a trip carries — what the timeline
   /// needs to show that there is something there, without reading it.
   Stream<({Map<int, int> byItem, Map<int, int> byGroup})>
@@ -220,10 +224,12 @@ class TripRepository {
     PreparedAttachment prepared, {
     int? itemId,
     int? groupId,
+    int? tripId,
   }) => _db.attachmentDao.addAttachment(
     prepared,
     itemId: itemId,
     groupId: groupId,
+    tripId: tripId,
   );
 
   Future<int> deleteAttachment(int id) =>

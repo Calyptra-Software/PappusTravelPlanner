@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 32;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -379,6 +379,15 @@ class AppDatabase extends _$AppDatabase {
       if (from < 32) {
         await m.createTable(attachments);
         await m.createTable(attachmentBlobs);
+      }
+      // v33 lets a file belong to the whole trip rather than to one part of it:
+      // the insurance, the passport scan, a routine's season ticket. Nullable
+      // and nothing to backfill — every row written so far hangs on an entry or
+      // a run, which is still exactly what it means. Skipped when the table was
+      // created above, since it is built from the current schema and already
+      // has the column.
+      if (from < 33 && from >= 32) {
+        await m.addColumn(attachments, attachments.tripId);
       }
     },
     beforeOpen: (details) async {

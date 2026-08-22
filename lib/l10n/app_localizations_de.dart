@@ -2204,4 +2204,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get attachmentSaved => 'Datei gespeichert.';
+
+  @override
+  String get attachmentsTripTitle => 'Reiseunterlagen';
+
+  @override
+  String get attachmentsTripAdd => 'An die Reise anhängen';
 }

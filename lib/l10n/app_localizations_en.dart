@@ -2192,4 +2192,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attachmentSaved => 'File saved.';
+
+  @override
+  String get attachmentsTripTitle => 'Trip documents';
+
+  @override
+  String get attachmentsTripAdd => 'Attach to the trip';
 }

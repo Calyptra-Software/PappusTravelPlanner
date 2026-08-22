@@ -51,6 +51,7 @@ class TripBundle {
     this.items = const [],
     this.costs = const [],
     this.checklists = const [],
+    this.attachments = const [],
     this.collapsedDays = const [],
     this.participants = const [],
     this.tags = const [],
@@ -122,6 +123,12 @@ class TripBundle {
   final List<BundleCost> costs;
   final List<BundleChecklist> checklists;
 
+  /// The files hanging on the **trip itself** — the insurance, the passport
+  /// scan, a routine's season ticket. The third level of ownership, beside
+  /// [BundleItem.attachments] and [BundleGroup.attachments], and the only one
+  /// with nowhere else to live in this file.
+  final List<BundleAttachment> attachments;
+
   /// Itinerary days (normalized to midnight) the user had collapsed.
   final List<DateTime> collapsedDays;
 
@@ -169,6 +176,8 @@ class TripBundle {
     'items': [for (final i in items) i.toJson()],
     'costs': [for (final c in costs) c.toJson()],
     'checklists': [for (final c in checklists) c.toJson()],
+    if (attachments.isNotEmpty)
+      'attachments': [for (final a in attachments) a.toJson()],
     'collapsedDays': [for (final d in collapsedDays) _encodeDate(d)],
     'participants': participants,
     'reasonIcons': reasonIcons,
@@ -206,6 +215,7 @@ class TripBundle {
         for (final c in (json['checklists'] as List? ?? const []))
           BundleChecklist.fromJson(c as Map<String, dynamic>),
       ],
+      attachments: _decodeAttachments(json['attachments']),
       collapsedDays: [
         for (final d in (json['collapsedDays'] as List? ?? const []))
           _decodeDate(d as String)!,

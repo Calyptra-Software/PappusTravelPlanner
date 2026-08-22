@@ -14,11 +14,11 @@ part 'attachment_dao.g.dart';
 /// *listing* attachments is not *reading* them — drift selects every column of
 /// the table it is given, and a stream over a day's entries would otherwise
 /// carry every photo in that day on every rebuild. And an attachment belongs to
-/// exactly one of an item or a group ([Attachments]), which is one invariant
-/// with no way to express it in the schema, so every write here goes through
-/// [_owner] and no caller assembles a companion of its own.
+/// exactly one of an item, a group, or the trip ([Attachments]), which is one
+/// invariant with no way to express it in the schema, so every write here goes
+/// through [_owner] and no caller assembles a companion of its own.
 @DriftAccessor(
-  tables: [Attachments, AttachmentBlobs, ItineraryItems, ItemGroups],
+  tables: [Attachments, AttachmentBlobs, ItineraryItems, ItemGroups, Trips],
 )
 class AttachmentDao extends DatabaseAccessor<AppDatabase>
     with _$AttachmentDaoMixin {
@@ -79,6 +79,16 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// What the trip itself carries: the insurance, the passport scan, a
+  /// routine's season ticket — the files that belong to the journey rather than
+  /// to any one part of it.
+  ///
+  /// Only those. An entry's and a run's are read by the two above, because the
+  /// three are edited in three different places, and a list that mixed them
+  /// would be a fourth place showing files nobody could act on from there.
+  Stream<List<Attachment>> watchAttachmentsForTrip(int tripId) =>
+      _ordered(attachments.tripId.equals(tripId)).watch();
+
   /// Every photo of one trip that carries a position — what the map draws.
   ///
   /// Deliberately **not** filtered by the live rule here, unlike
@@ -102,8 +112,12 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
             ),
           ])
           ..where(
+            // The trip's own files count here too: a picture hung on the trip
+            // rather than on one of its entries is no less part of it, and
+            // being on the map is a question about the position it carries.
             (itineraryItems.tripId.equals(tripId) |
-                    itemGroups.tripId.equals(tripId)) &
+                    itemGroups.tripId.equals(tripId) |
+                    attachments.tripId.equals(tripId)) &
                 attachments.kind.equalsValue(AttachmentKind.photo) &
                 attachments.lat.isNotNull() &
                 attachments.lon.isNotNull(),
@@ -162,16 +176,15 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     PreparedAttachment prepared, {
     int? itemId,
     int? groupId,
+    int? tripId,
   }) {
-    final owner = _owner(itemId: itemId, groupId: groupId);
+    final owner = _owner(itemId: itemId, groupId: groupId, tripId: tripId);
     return transaction(() async {
       final existing =
           await (selectOnly(attachments)
                 ..addColumns([attachments.sortOrder.max()])
                 ..where(
-                  itemId != null
-                      ? attachments.itemId.equals(itemId)
-                      : attachments.groupId.equals(groupId!),
+                  _ownedBy(itemId: itemId, groupId: groupId, tripId: tripId),
                 ))
               .map((row) => row.read(attachments.sortOrder.max()))
               .getSingleOrNull();
@@ -179,6 +192,7 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
         AttachmentsCompanion.insert(
           itemId: owner.itemId,
           groupId: owner.groupId,
+          tripId: owner.tripId,
           kind: prepared.kind,
           mimeType: prepared.mimeType,
           name: Value(prepared.name),
@@ -228,6 +242,55 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     ),
   );
 
+  /// Copies the **trip-level** attachments of [fromTripId] onto [toTripId].
+  ///
+  /// The one level of ownership that travels with a copy, and only from a
+  /// routine: everywhere else in this app a copy takes the plan and not the
+  /// record, which is why an entry's photograph of last Tuesday's platform stays
+  /// behind. A file on the *trip* of a routine is the template's own paperwork —
+  /// the season ticket, the pass, the printed map — and a routine whose paperwork
+  /// had to be re-attached every morning would be missing it by Thursday, which
+  /// is the reasoning that already sends the checklist, the tags and the fare
+  /// across.
+  ///
+  /// The rule is by **level**, not by kind. A scanned receipt and a season
+  /// ticket are both documents and this app cannot tell them apart; where the
+  /// user *put* the file is a decision they made, and it reads as one: on the
+  /// routine means "needed every time", on a leg means "about that one morning".
+  ///
+  /// Called from `materializeRoutine` and the reversed duplicate, and — like
+  /// `copyItemTracks` — deliberately from nowhere else. This is exactly where
+  /// that kind of rule rots if it is not written down.
+  Future<void> copyTripAttachments(int fromTripId, int toTripId) async {
+    final source = await (select(
+      attachments,
+    )..where((a) => a.tripId.equals(fromTripId))).get();
+    if (source.isEmpty) return;
+    for (final row in source) {
+      final bytes = await readAttachmentBytes(row.id);
+      if (bytes == null) continue;
+      final id = await into(attachments).insert(
+        AttachmentsCompanion.insert(
+          tripId: Value(toTripId),
+          kind: row.kind,
+          mimeType: row.mimeType,
+          name: Value(row.name),
+          byteSize: row.byteSize,
+          width: Value(row.width),
+          height: Value(row.height),
+          lat: Value(row.lat),
+          lon: Value(row.lon),
+          positionSource: Value(row.positionSource),
+          thumbnail: Value(row.thumbnail),
+          sortOrder: Value(row.sortOrder),
+        ),
+      );
+      await into(attachmentBlobs).insert(
+        AttachmentBlobsCompanion.insert(attachmentId: Value(id), bytes: bytes),
+      );
+    }
+  }
+
   /// Takes the attachments of [itemIds] off their entries without deleting
   /// them, and returns the ids that were parked. For [rehomeAttachments].
   ///
@@ -243,7 +306,11 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     )..where((a) => a.itemId.isIn(itemIds))).get();
     if (rows.isEmpty) return const [];
     await (update(attachments)..where((a) => a.itemId.isIn(itemIds))).write(
-      const AttachmentsCompanion(itemId: Value(null), groupId: Value(null)),
+      const AttachmentsCompanion(
+        itemId: Value(null),
+        groupId: Value(null),
+        tripId: Value(null),
+      ),
     );
     return [for (final row in rows) row.id];
   }
@@ -253,11 +320,16 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     List<int> ids, {
     int? itemId,
     int? groupId,
+    int? tripId,
   }) async {
     if (ids.isEmpty) return;
-    final owner = _owner(itemId: itemId, groupId: groupId);
+    final owner = _owner(itemId: itemId, groupId: groupId, tripId: tripId);
     await (update(attachments)..where((a) => a.id.isIn(ids))).write(
-      AttachmentsCompanion(itemId: owner.itemId, groupId: owner.groupId),
+      AttachmentsCompanion(
+        itemId: owner.itemId,
+        groupId: owner.groupId,
+        tripId: owner.tripId,
+      ),
     );
   }
 
@@ -269,15 +341,29 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     ]);
 
   /// The one invariant the schema cannot state: exactly one owner.
-  ({Value<int?> itemId, Value<int?> groupId}) _owner({
+  ({Value<int?> itemId, Value<int?> groupId, Value<int?> tripId}) _owner({
     int? itemId,
     int? groupId,
+    int? tripId,
   }) {
-    if ((itemId == null) == (groupId == null)) {
+    final given = [itemId, groupId, tripId].nonNulls.length;
+    if (given != 1) {
       throw ArgumentError(
-        'An attachment belongs to exactly one of an item or a group.',
+        'An attachment belongs to exactly one of an item, a group, or a trip.',
       );
     }
-    return (itemId: Value(itemId), groupId: Value(groupId));
+    return (
+      itemId: Value(itemId),
+      groupId: Value(groupId),
+      tripId: Value(tripId),
+    );
+  }
+
+  /// The same one owner, as a predicate — for finding what an owner already
+  /// holds. Assumes [_owner] has passed.
+  Expression<bool> _ownedBy({int? itemId, int? groupId, int? tripId}) {
+    if (itemId != null) return attachments.itemId.equals(itemId);
+    if (groupId != null) return attachments.groupId.equals(groupId);
+    return attachments.tripId.equals(tripId!);
   }
 }

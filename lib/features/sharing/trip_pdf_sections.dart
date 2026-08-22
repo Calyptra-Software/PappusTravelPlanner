@@ -86,9 +86,8 @@ List<BundleCost> bundleTransfers(TripBundle bundle) => [
     if (c.isTransfer) c,
 ];
 
-/// Every attachment on the trip's live entries and runs, in the order they
-/// would be printed: by the entry they hang on, and by their own order within
-/// it.
+/// Every picture on the trip, on its live entries and on its runs, in the order
+/// they would be printed.
 ///
 /// Documents are left out, and that is not an oversight — a PDF can hold a
 /// picture and cannot hold a PDF. Printing a ticket's *name* under a heading
@@ -104,6 +103,10 @@ List<BundleAttachment> printablePhotos(
         i.groupLocalId!,
   };
   return [
+    // The trip's own first: they are about the journey rather than about a day
+    // of it, which is the order the document already reads in.
+    for (final a in bundle.attachments)
+      if (a.kind == AttachmentKind.photo) a,
     for (final i in bundle.items)
       if (bundleItemIsLive(i, chosen))
         for (final a in i.attachments)

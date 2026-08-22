@@ -1,9 +1,9 @@
 /// Attaching a file, from wherever it was asked for.
 ///
-/// One flow with two doors, like `startTrackImport`: an entry's own form and the
-/// label above a run. The door decides only *what the file hangs on* — an item
-/// or a group, never both (see [Attachments]) — and everything after the picking
-/// is the same.
+/// One flow with three doors, like `startTrackImport`: an entry's own form, the
+/// label above a run, and the trip's own section. The door decides only *what
+/// the file hangs on* — an item, a group or the trip, never two of them (see
+/// [Attachments]) — and everything after the picking is the same.
 ///
 /// The reading itself happens off the platform thread. `prepareAttachment`
 /// decodes, scales twice and encodes twice, which on a phone-sized photo is long
@@ -26,7 +26,8 @@ import 'attachment_import.dart';
 /// A file as it comes back from a picker: the bytes, and the name it had.
 typedef PickedAttachment = ({Uint8List bytes, String? name});
 
-/// Picks files and hangs them on [itemId] or [groupId] — exactly one of the two.
+/// Picks files and hangs them on [itemId], [groupId] or [tripId] — exactly one
+/// of the three.
 ///
 /// [photosOnly] narrows the chooser to pictures, which is what the *Add photo*
 /// door asks for; the other door takes anything. [pickFiles] exists so the flow
@@ -41,6 +42,7 @@ Future<int> addAttachments(
   WidgetRef ref, {
   int? itemId,
   int? groupId,
+  int? tripId,
   bool photosOnly = false,
   Future<List<PickedAttachment>?> Function()? pickFiles,
 }) async {
@@ -92,7 +94,12 @@ Future<int> addAttachments(
       refusal ??= l10n.attachmentUnreadable;
       continue;
     }
-    await repo.addAttachment(prepared, itemId: itemId, groupId: groupId);
+    await repo.addAttachment(
+      prepared,
+      itemId: itemId,
+      groupId: groupId,
+      tripId: tripId,
+    );
     added++;
   }
 

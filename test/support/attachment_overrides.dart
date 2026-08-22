@@ -12,7 +12,7 @@ import 'package:travelplanner/features/attachments/application/attachment_provid
 /// test, arriving through teardown rather than through a stream that never
 /// emits.
 ///
-/// So the three providers the attachment UI watches are replaced with plain
+/// So the four providers the attachment UI watches are replaced with plain
 /// streams. Every one of them says "nothing attached", which is what these
 /// tests are about: they exercise the plan, and an attachment badge that never
 /// appears is exactly the state they assume. A test that is *about* attachments
@@ -24,6 +24,9 @@ final attachmentTestOverrides = [
     (ref, id) => Stream.value(const <Attachment>[]),
   ),
   groupAttachmentsProvider.overrideWith(
+    (ref, id) => Stream.value(const <Attachment>[]),
+  ),
+  tripAttachmentsProvider.overrideWith(
     (ref, id) => Stream.value(const <Attachment>[]),
   ),
   tripAttachmentCountsProvider.overrideWith(

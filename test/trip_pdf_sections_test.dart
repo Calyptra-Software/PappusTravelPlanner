@@ -412,6 +412,48 @@ void main() {
       expect(printablePhotos(bundle).map((a) => a.name), ['taken.jpg']);
     });
 
+    test("the trip's own pictures print, and come first", () {
+      final bundle = TripBundle(
+        schemaVersion: 22,
+        trip: BundleTrip(
+          title: 'Rome',
+          destination: '',
+          colorValue: 0xFF00695C,
+          createdAt: DateTime(2026, 1, 2),
+        ),
+        attachments: [
+          BundleAttachment(
+            kind: AttachmentKind.photo,
+            mimeType: 'image/jpeg',
+            bytes: photoBytes(),
+            name: 'the-whole-trip.jpg',
+          ),
+        ],
+        items: [
+          BundleItem(
+            localId: 100,
+            date: DateTime(2026, 5, 1),
+            kind: ItemKind.place,
+            attachments: [
+              BundleAttachment(
+                kind: AttachmentKind.photo,
+                mimeType: 'image/jpeg',
+                bytes: photoBytes(),
+                name: 'one-day.jpg',
+              ),
+            ],
+          ),
+        ],
+      );
+
+      // About the journey rather than a day of it, which is the order the
+      // document already reads in.
+      expect(printablePhotos(bundle).map((a) => a.name), [
+        'the-whole-trip.jpg',
+        'one-day.jpg',
+      ]);
+    });
+
     test("a run's own pictures print while the run is part of the plan", () {
       final bundle = TripBundle(
         schemaVersion: 22,

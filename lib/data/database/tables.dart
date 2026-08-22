@@ -788,13 +788,20 @@ enum AttachmentPositionSource {
 /// database is read into memory to be exported on Android and on the web, which
 /// is the real ceiling here and not disk space.
 ///
-/// **It belongs to exactly one of an item or a group**, the way a [Costs] row
-/// does and for the same reason: a ticket covers the run, not one leg of it, so
-/// the unit the file belongs to is the unit it hangs off. Both columns cascade —
-/// unlike [ItineraryItems.groupId], which is nulled when a group dissolves,
-/// because an item outlives its group and an attachment of that group does not.
-/// (There is no trip-level attachment yet. It would be a third nullable column
-/// and nothing else, but nothing has asked for one.)
+/// **It belongs to exactly one of an item, a group, or the trip**, the way a
+/// [Costs] row does and for the same reason: a ticket covers the run and not
+/// one leg of it, and a passport scan belongs to the journey and not to
+/// Tuesday's train, so the unit the file belongs to is the unit it hangs off.
+/// All three columns cascade — unlike [ItineraryItems.groupId], which is nulled
+/// when a group dissolves, because an item outlives its group and an attachment
+/// of that group does not.
+///
+/// The trip level is also where a **routine's** own paperwork goes, and the one
+/// level that travels when the routine is stamped out (`materializeRoutine`).
+/// That rule is by *level* and not by kind, because the level is something the
+/// user chose deliberately: on the routine means "needed every time", on a leg
+/// means "about that one morning". The app cannot tell a season ticket from a
+/// scanned receipt, and does not try.
 ///
 /// The payload sits in [AttachmentBlobs] rather than here, so that listing what
 /// an entry carries — which the timeline does for every visible day, in a
@@ -814,6 +821,15 @@ class Attachments extends Table {
   /// The run this hangs off, or null when it belongs to a single [itemId].
   IntColumn get groupId => integer().nullable().references(
     ItemGroups,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+
+  /// Set for a file that belongs to the whole trip rather than to any one part
+  /// of it: the insurance, the passport scan, the visa, a routine's season
+  /// ticket. Null when it hangs on an [itemId] or a [groupId] instead.
+  IntColumn get tripId => integer().nullable().references(
+    Trips,
     #id,
     onDelete: KeyAction.cascade,
   )();

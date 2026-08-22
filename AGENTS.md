@@ -1030,7 +1030,8 @@ UI (features/*/presentation, *widgets)
   conforming caching the policy requires. `appVersionProvider` now has two callers, not one.
 
 - **An attachment's bytes live in the database, and that is the whole design.**
-  `Attachments` + `AttachmentBlobs` (v32) hold a photo or a file hung on part of a plan.
+  `Attachments` + `AttachmentBlobs` (v32, trip level v33) hold a photo or a file hung on
+  part of a plan.
   Not a sidecar directory: one portable SQLite file is what the app *is*, and an
   attachment kept beside it would mean every copy, backup and export that has ever
   worked silently stops carrying everything — the file would go on claiming to be the
@@ -1042,14 +1043,35 @@ UI (features/*/presentation, *widgets)
   unbounded photo library costs the user the ability to move their trips off the device.
   The payload is a **second table** because drift selects every column of the table it
   is given: listing what a day carries must not be reading it.
-- **It hangs on exactly one of an item or a group**, the way a `Costs` row does and for
-  the same reason — a ticket covers the run, not one leg of it. Both cascade (unlike
+- **It hangs on exactly one of an item, a group, or the trip**, the way a `Costs` row does
+  and for the same reason — a ticket covers the run and not one leg of it, and a passport
+  scan belongs to the journey and not to Tuesday's train. Both cascade (unlike
   `ItineraryItems.groupId`, nulled on dissolve: an item outlives its group, an
   attachment of that group does not), and the invariant lives in `AttachmentDao._owner`
   since SQL cannot state it. The run's are reached from the ⋮ menu on the group band,
   where everything whose unit is the run already is; an entry's from its own form, below
   the note, and — like `TrackField` — only on an entry that **already exists**, since a
-  file hangs off a row. `replaceJourneyLegs` **rescues** them exactly as it rescues the
+  file hangs off a row. The trip's are a **section on the trip screen**
+  (`TripAttachmentsSection`, above the checklists), and that placement is the decision:
+  an entry's and a run's announce themselves with a badge on the timeline row they hang
+  on, the trip has no row, so a file filed at that level appears nowhere unless the screen
+  shows it — behind a menu it would be the insurance nobody can find in the one situation
+  it exists for. It collapses to a single button while there is nothing, since there is
+  nothing to say about no files.
+- **The trip level is the one that travels when a routine is stamped out.**
+  `AttachmentDao.copyTripAttachments`, called from `materializeRoutine` and the reversed
+  duplicate and — like `copyItemTracks` — from nowhere else. Everywhere else a copy takes
+  the plan and not the record, which is why an entry's photograph of last Tuesday's
+  platform stays behind; a file on the *trip* of a routine is the template's own paperwork
+  (the season ticket, the pass), and one that had to be re-attached every morning would be
+  missing by Thursday — the reasoning that already sends the checklist, the tags and the
+  fare across. The rule is by **level, not by kind**: a scanned receipt and a season ticket
+  are both documents and the app cannot tell them apart, while where the user *put* the
+  file is a decision they made and reads as one. On the map a trip-level photo is always
+  drawn (no option it could sit in, nothing that could stop being chosen) and wears the
+  trip's accent, having no entry to take a color from. `watchAttachmentCountsForTrip`
+  deliberately leaves it out: those two maps feed the badges on entries and runs, and there
+  is no timeline row to put one on. `replaceJourneyLegs` **rescues** them exactly as it rescues the
   fare: parked owner-less for the length of the transaction, then re-homed onto the
   surviving group or the replacement's first leg. Looking a connection up again is not a
   reason to lose the photo of the ticket. **Dissolving** a group rescues them the same way
@@ -1152,7 +1174,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 32) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 33) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

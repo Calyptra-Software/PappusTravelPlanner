@@ -7896,6 +7896,18 @@ class $AttachmentsTable extends Attachments
       'REFERENCES item_groups (id) ON DELETE CASCADE',
     ),
   );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE CASCADE',
+    ),
+  );
   @override
   late final GeneratedColumnWithTypeConverter<AttachmentKind, int> kind =
       GeneratedColumn<int>(
@@ -8024,6 +8036,7 @@ class $AttachmentsTable extends Attachments
     id,
     itemId,
     groupId,
+    tripId,
     kind,
     mimeType,
     name,
@@ -8062,6 +8075,12 @@ class $AttachmentsTable extends Attachments
       context.handle(
         _groupIdMeta,
         groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta),
+      );
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
       );
     }
     if (data.containsKey('mime_type')) {
@@ -8149,6 +8168,10 @@ class $AttachmentsTable extends Attachments
         DriftSqlType.int,
         data['${effectivePrefix}group_id'],
       ),
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      ),
       kind: $AttachmentsTable.$converterkind.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -8229,6 +8252,11 @@ class Attachment extends DataClass implements Insertable<Attachment> {
 
   /// The run this hangs off, or null when it belongs to a single [itemId].
   final int? groupId;
+
+  /// Set for a file that belongs to the whole trip rather than to any one part
+  /// of it: the insurance, the passport scan, the visa, a routine's season
+  /// ticket. Null when it hangs on an [itemId] or a [groupId] instead.
+  final int? tripId;
   final AttachmentKind kind;
 
   /// The media type, kept to hand the file back to the platform when it is
@@ -8281,6 +8309,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     required this.id,
     this.itemId,
     this.groupId,
+    this.tripId,
     required this.kind,
     required this.mimeType,
     this.name,
@@ -8303,6 +8332,9 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     }
     if (!nullToAbsent || groupId != null) {
       map['group_id'] = Variable<int>(groupId);
+    }
+    if (!nullToAbsent || tripId != null) {
+      map['trip_id'] = Variable<int>(tripId);
     }
     {
       map['kind'] = Variable<int>($AttachmentsTable.$converterkind.toSql(kind));
@@ -8346,6 +8378,9 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       groupId: groupId == null && nullToAbsent
           ? const Value.absent()
           : Value(groupId),
+      tripId: tripId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tripId),
       kind: Value(kind),
       mimeType: Value(mimeType),
       name: name == null && nullToAbsent ? const Value.absent() : Value(name),
@@ -8378,6 +8413,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       id: serializer.fromJson<int>(json['id']),
       itemId: serializer.fromJson<int?>(json['itemId']),
       groupId: serializer.fromJson<int?>(json['groupId']),
+      tripId: serializer.fromJson<int?>(json['tripId']),
       kind: $AttachmentsTable.$converterkind.fromJson(
         serializer.fromJson<int>(json['kind']),
       ),
@@ -8403,6 +8439,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       'id': serializer.toJson<int>(id),
       'itemId': serializer.toJson<int?>(itemId),
       'groupId': serializer.toJson<int?>(groupId),
+      'tripId': serializer.toJson<int?>(tripId),
       'kind': serializer.toJson<int>(
         $AttachmentsTable.$converterkind.toJson(kind),
       ),
@@ -8426,6 +8463,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     int? id,
     Value<int?> itemId = const Value.absent(),
     Value<int?> groupId = const Value.absent(),
+    Value<int?> tripId = const Value.absent(),
     AttachmentKind? kind,
     String? mimeType,
     Value<String?> name = const Value.absent(),
@@ -8442,6 +8480,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     id: id ?? this.id,
     itemId: itemId.present ? itemId.value : this.itemId,
     groupId: groupId.present ? groupId.value : this.groupId,
+    tripId: tripId.present ? tripId.value : this.tripId,
     kind: kind ?? this.kind,
     mimeType: mimeType ?? this.mimeType,
     name: name.present ? name.value : this.name,
@@ -8462,6 +8501,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
       id: data.id.present ? data.id.value : this.id,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       groupId: data.groupId.present ? data.groupId.value : this.groupId,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
       kind: data.kind.present ? data.kind.value : this.kind,
       mimeType: data.mimeType.present ? data.mimeType.value : this.mimeType,
       name: data.name.present ? data.name.value : this.name,
@@ -8485,6 +8525,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           ..write('id: $id, ')
           ..write('itemId: $itemId, ')
           ..write('groupId: $groupId, ')
+          ..write('tripId: $tripId, ')
           ..write('kind: $kind, ')
           ..write('mimeType: $mimeType, ')
           ..write('name: $name, ')
@@ -8506,6 +8547,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
     id,
     itemId,
     groupId,
+    tripId,
     kind,
     mimeType,
     name,
@@ -8526,6 +8568,7 @@ class Attachment extends DataClass implements Insertable<Attachment> {
           other.id == this.id &&
           other.itemId == this.itemId &&
           other.groupId == this.groupId &&
+          other.tripId == this.tripId &&
           other.kind == this.kind &&
           other.mimeType == this.mimeType &&
           other.name == this.name &&
@@ -8544,6 +8587,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
   final Value<int> id;
   final Value<int?> itemId;
   final Value<int?> groupId;
+  final Value<int?> tripId;
   final Value<AttachmentKind> kind;
   final Value<String> mimeType;
   final Value<String?> name;
@@ -8560,6 +8604,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     this.id = const Value.absent(),
     this.itemId = const Value.absent(),
     this.groupId = const Value.absent(),
+    this.tripId = const Value.absent(),
     this.kind = const Value.absent(),
     this.mimeType = const Value.absent(),
     this.name = const Value.absent(),
@@ -8577,6 +8622,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     this.id = const Value.absent(),
     this.itemId = const Value.absent(),
     this.groupId = const Value.absent(),
+    this.tripId = const Value.absent(),
     required AttachmentKind kind,
     required String mimeType,
     this.name = const Value.absent(),
@@ -8596,6 +8642,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     Expression<int>? id,
     Expression<int>? itemId,
     Expression<int>? groupId,
+    Expression<int>? tripId,
     Expression<int>? kind,
     Expression<String>? mimeType,
     Expression<String>? name,
@@ -8613,6 +8660,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       if (id != null) 'id': id,
       if (itemId != null) 'item_id': itemId,
       if (groupId != null) 'group_id': groupId,
+      if (tripId != null) 'trip_id': tripId,
       if (kind != null) 'kind': kind,
       if (mimeType != null) 'mime_type': mimeType,
       if (name != null) 'name': name,
@@ -8632,6 +8680,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     Value<int>? id,
     Value<int?>? itemId,
     Value<int?>? groupId,
+    Value<int?>? tripId,
     Value<AttachmentKind>? kind,
     Value<String>? mimeType,
     Value<String?>? name,
@@ -8649,6 +8698,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
       id: id ?? this.id,
       itemId: itemId ?? this.itemId,
       groupId: groupId ?? this.groupId,
+      tripId: tripId ?? this.tripId,
       kind: kind ?? this.kind,
       mimeType: mimeType ?? this.mimeType,
       name: name ?? this.name,
@@ -8675,6 +8725,9 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
     }
     if (groupId.present) {
       map['group_id'] = Variable<int>(groupId.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
     }
     if (kind.present) {
       map['kind'] = Variable<int>(
@@ -8725,6 +8778,7 @@ class AttachmentsCompanion extends UpdateCompanion<Attachment> {
           ..write('id: $id, ')
           ..write('itemId: $itemId, ')
           ..write('groupId: $groupId, ')
+          ..write('tripId: $tripId, ')
           ..write('kind: $kind, ')
           ..write('mimeType: $mimeType, ')
           ..write('name: $name, ')
@@ -9197,6 +9251,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('attachments', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
         'attachments',
         limitUpdateKind: UpdateKind.delete,
       ),
@@ -9398,6 +9459,24 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_collapsedDaysRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$AttachmentsTable, List<Attachment>>
+  _attachmentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.attachments,
+    aliasName: 'trips__id__attachments__trip_id',
+  );
+
+  $$AttachmentsTableProcessedTableManager get attachmentsRefs {
+    final manager = $$AttachmentsTableTableManager(
+      $_db,
+      $_db.attachments,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_attachmentsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -9672,6 +9751,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$CollapsedDaysTableFilterComposer(
             $db: $db,
             $table: $db.collapsedDays,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> attachmentsRefs(
+    Expression<bool> Function($$AttachmentsTableFilterComposer f) f,
+  ) {
+    final $$AttachmentsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.attachments,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentsTableFilterComposer(
+            $db: $db,
+            $table: $db.attachments,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10022,6 +10126,31 @@ class $$TripsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> attachmentsRefs<T extends Object>(
+    Expression<T> Function($$AttachmentsTableAnnotationComposer a) f,
+  ) {
+    final $$AttachmentsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.attachments,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AttachmentsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.attachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager
@@ -10047,6 +10176,7 @@ class $$TripsTableTableManager
             bool tripParticipantsRefs,
             bool checklistsRefs,
             bool collapsedDaysRefs,
+            bool attachmentsRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -10125,6 +10255,7 @@ class $$TripsTableTableManager
                 tripParticipantsRefs = false,
                 checklistsRefs = false,
                 collapsedDaysRefs = false,
+                attachmentsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -10137,6 +10268,7 @@ class $$TripsTableTableManager
                     if (tripParticipantsRefs) db.tripParticipants,
                     if (checklistsRefs) db.checklists,
                     if (collapsedDaysRefs) db.collapsedDays,
+                    if (attachmentsRefs) db.attachments,
                   ],
                   addJoins:
                       <
@@ -10320,6 +10452,27 @@ class $$TripsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (attachmentsRefs)
+                        await $_getPrefetchedData<
+                          Trip,
+                          $TripsTable,
+                          Attachment
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._attachmentsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).attachmentsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -10350,6 +10503,7 @@ typedef $$TripsTableProcessedTableManager =
         bool tripParticipantsRefs,
         bool checklistsRefs,
         bool collapsedDaysRefs,
+        bool attachmentsRefs,
       })
     >;
 typedef $$ItemGroupsTableCreateCompanionBuilder =
@@ -17870,6 +18024,7 @@ typedef $$AttachmentsTableCreateCompanionBuilder =
       Value<int> id,
       Value<int?> itemId,
       Value<int?> groupId,
+      Value<int?> tripId,
       required AttachmentKind kind,
       required String mimeType,
       Value<String?> name,
@@ -17888,6 +18043,7 @@ typedef $$AttachmentsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int?> itemId,
       Value<int?> groupId,
+      Value<int?> tripId,
       Value<AttachmentKind> kind,
       Value<String> mimeType,
       Value<String?> name,
@@ -17935,6 +18091,23 @@ final class $$AttachmentsTableReferences
       $_db.itemGroups,
     ).filter((f) => f.id.sqlEquals($_column));
     final item = $_typedResult.readTableOrNull(_groupIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('attachments__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager? get tripId {
+    final $_column = $_itemColumn<int>('trip_id');
+    if ($_column == null) return null;
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -18079,6 +18252,29 @@ class $$AttachmentsTableFilterComposer
           }) => $$ItemGroupsTableFilterComposer(
             $db: $db,
             $table: $db.itemGroups,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -18233,6 +18429,29 @@ class $$AttachmentsTableOrderingComposer
     );
     return composer;
   }
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
 }
 
 class $$AttachmentsTableAnnotationComposer
@@ -18332,6 +18551,29 @@ class $$AttachmentsTableAnnotationComposer
     return composer;
   }
 
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
   Expression<T> attachmentBlobsRefs<T extends Object>(
     Expression<T> Function($$AttachmentBlobsTableAnnotationComposer a) f,
   ) {
@@ -18374,6 +18616,7 @@ class $$AttachmentsTableTableManager
           PrefetchHooks Function({
             bool itemId,
             bool groupId,
+            bool tripId,
             bool attachmentBlobsRefs,
           })
         > {
@@ -18393,6 +18636,7 @@ class $$AttachmentsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int?> itemId = const Value.absent(),
                 Value<int?> groupId = const Value.absent(),
+                Value<int?> tripId = const Value.absent(),
                 Value<AttachmentKind> kind = const Value.absent(),
                 Value<String> mimeType = const Value.absent(),
                 Value<String?> name = const Value.absent(),
@@ -18410,6 +18654,7 @@ class $$AttachmentsTableTableManager
                 id: id,
                 itemId: itemId,
                 groupId: groupId,
+                tripId: tripId,
                 kind: kind,
                 mimeType: mimeType,
                 name: name,
@@ -18428,6 +18673,7 @@ class $$AttachmentsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int?> itemId = const Value.absent(),
                 Value<int?> groupId = const Value.absent(),
+                Value<int?> tripId = const Value.absent(),
                 required AttachmentKind kind,
                 required String mimeType,
                 Value<String?> name = const Value.absent(),
@@ -18445,6 +18691,7 @@ class $$AttachmentsTableTableManager
                 id: id,
                 itemId: itemId,
                 groupId: groupId,
+                tripId: tripId,
                 kind: kind,
                 mimeType: mimeType,
                 name: name,
@@ -18467,7 +18714,12 @@ class $$AttachmentsTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({itemId = false, groupId = false, attachmentBlobsRefs = false}) {
+              ({
+                itemId = false,
+                groupId = false,
+                tripId = false,
+                attachmentBlobsRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
@@ -18515,6 +18767,21 @@ class $$AttachmentsTableTableManager
                                     referencedColumn:
                                         $$AttachmentsTableReferences
                                             ._groupIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+                        if (tripId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.tripId,
+                                    referencedTable:
+                                        $$AttachmentsTableReferences
+                                            ._tripIdTable(db),
+                                    referencedColumn:
+                                        $$AttachmentsTableReferences
+                                            ._tripIdTable(db)
                                             .id,
                                   )
                                   as T;
@@ -18568,6 +18835,7 @@ typedef $$AttachmentsTableProcessedTableManager =
       PrefetchHooks Function({
         bool itemId,
         bool groupId,
+        bool tripId,
         bool attachmentBlobsRefs,
       })
     >;

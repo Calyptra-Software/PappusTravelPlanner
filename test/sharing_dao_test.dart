@@ -535,6 +535,45 @@ void main() {
       expect(arrived.single.positionSource, AttachmentPositionSource.exif);
     });
 
+    test("the trip's own paperwork travels at its own level", () async {
+      final tripId = await _seedTrip(db);
+      await db.attachmentDao.addAttachment(
+        PreparedAttachment(
+          kind: AttachmentKind.document,
+          mimeType: 'application/pdf',
+          bytes: bytes(4, 24),
+          name: 'insurance.pdf',
+        ),
+        tripId: tripId,
+      );
+      final items = await db.itineraryDao.itemsFor(tripId);
+      await db.attachmentDao.addAttachment(photo(), itemId: items.first.id);
+
+      final json = (await db.sharingDao.exportTrip(tripId))!.toJson();
+      final bundle = TripBundle.fromJson(json);
+
+      // At the top level, and not swept in with an entry's: the level is the
+      // user's own statement about what the file is for.
+      expect(bundle.attachments.single.name, 'insurance.pdf');
+      expect(bundle.items.expand((i) => i.attachments).map((a) => a.name), [
+        'view.jpg',
+      ]);
+
+      final other = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(other.close);
+      final newTripId = await other.sharingDao.importTrip(bundle);
+
+      final arrived = await other.attachmentDao
+          .watchAttachmentsForTrip(newTripId)
+          .first;
+      expect(arrived.single.name, 'insurance.pdf');
+      expect(arrived.single.itemId, isNull);
+      expect(
+        await other.attachmentDao.readAttachmentBytes(arrived.single.id),
+        hasLength(24),
+      );
+    });
+
     test('a bundle written before attachments existed reads as none', () {
       // The key is simply absent in an older sender's JSON, on both owners.
       expect(

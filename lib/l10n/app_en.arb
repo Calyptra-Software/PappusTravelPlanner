@@ -1112,5 +1112,7 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "pdfPhotoUnnamed": "Photo",
-  "attachmentSaved": "File saved."
+  "attachmentSaved": "File saved.",
+  "attachmentsTripTitle": "Trip documents",
+  "attachmentsTripAdd": "Attach to the trip"
 }

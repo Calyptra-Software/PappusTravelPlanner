@@ -94,7 +94,8 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
               ),
             ])..where(
               itineraryItems.tripId.equals(tripId) |
-                  itemGroups.tripId.equals(tripId),
+                  itemGroups.tripId.equals(tripId) |
+                  attachments.tripId.equals(tripId),
             ))
             .map((row) => row.readTable(attachments))
             .get();
@@ -110,9 +111,15 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
                     .get())
               row.attachmentId: row.bytes,
           };
-    List<BundleAttachment> attachmentsOf({int? itemId, int? groupId}) => [
+    List<BundleAttachment> attachmentsOf({
+      int? itemId,
+      int? groupId,
+      bool onTrip = false,
+    }) => [
       for (final a in attachmentRows)
-        if (a.itemId == itemId && a.groupId == groupId)
+        if (a.itemId == itemId &&
+            a.groupId == groupId &&
+            (a.tripId != null) == onTrip)
           BundleAttachment(
             kind: a.kind,
             mimeType: a.mimeType,
@@ -301,6 +308,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             beneficiaries: beneficiariesByCost[c.id] ?? const [],
           ),
       ],
+      attachments: attachmentsOf(onTrip: true),
       checklists: [
         for (final c in checklistRows)
           BundleChecklist(
@@ -481,6 +489,9 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         }
         await _writeAttachments(i.attachments, itemId: itemIds[i.localId]);
       }
+
+      // The trip's own paperwork, which hangs on nothing inside it.
+      await _writeAttachments(bundle.attachments, tripId: tripId);
 
       for (final c in bundle.costs) {
         final itemId = _mapId(itemIds, c.itemLocalId);
@@ -712,9 +723,10 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
     List<BundleAttachment> incoming, {
     int? itemId,
     int? groupId,
+    int? tripId,
   }) async {
     if (incoming.isEmpty) return;
-    if ((itemId == null) == (groupId == null)) return;
+    if ([itemId, groupId, tripId].nonNulls.length != 1) return;
     for (final a in incoming) {
       final Uint8List bytes;
       final Uint8List? thumbnail;
@@ -729,6 +741,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         AttachmentsCompanion.insert(
           itemId: Value(itemId),
           groupId: Value(groupId),
+          tripId: Value(tripId),
           kind: a.kind,
           mimeType: a.mimeType,
           name: Value(a.name),

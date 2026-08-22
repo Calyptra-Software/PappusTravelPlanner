@@ -247,6 +247,121 @@ void main() {
     expect(counts.byGroup, isEmpty);
   });
 
+  group('a routine stamped out', () {
+    Future<int> makeRoutine() => db
+        .into(db.trips)
+        .insert(
+          TripsCompanion.insert(
+            title: 'Commute',
+            destination: const Value(''),
+            kind: const Value(TripKind.routine),
+          ),
+        );
+
+    test("takes the routine's own paperwork with it", () async {
+      final routine = await makeRoutine();
+      await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: routine,
+              date: kRoutineAnchorDay,
+              kind: ItemKind.transport,
+            ),
+          );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'season-ticket.pdf'),
+        tripId: routine,
+      );
+
+      final trip = await db.routineDao.materializeRoutine(
+        routine,
+        startDate: DateTime(2026, 5, 4),
+      );
+
+      // The one level that travels: a pass the user has to re-attach every
+      // morning is missing by Thursday, which is why the checklist and the fare
+      // travel too.
+      final arrived = await db.attachmentDao
+          .watchAttachmentsForTrip(trip)
+          .first;
+      expect(arrived.single.name, 'season-ticket.pdf');
+      expect(
+        await db.attachmentDao.readAttachmentBytes(arrived.single.id),
+        hasLength(64),
+      );
+      // A copy, not a move: the routine keeps its own.
+      expect(
+        await db.attachmentDao.watchAttachmentsForTrip(routine).first,
+        hasLength(1),
+      );
+    });
+
+    test("leaves a file hung on one of its legs behind", () async {
+      final routine = await makeRoutine();
+      final leg = await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: routine,
+              date: kRoutineAnchorDay,
+              kind: ItemKind.transport,
+            ),
+          );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'platform.jpg'),
+        itemId: leg,
+      );
+
+      final trip = await db.routineDao.materializeRoutine(
+        routine,
+        startDate: DateTime(2026, 5, 4),
+      );
+
+      // The rule is by level, because the level is what the user chose: on the
+      // routine means "every time", on a leg means "that one morning".
+      final counts = await db.attachmentDao
+          .watchAttachmentCountsForTrip(trip)
+          .first;
+      expect(counts.byItem, isEmpty);
+      expect(
+        await db.attachmentDao.watchAttachmentsForTrip(trip).first,
+        isEmpty,
+      );
+    });
+
+    test('the way back takes the same ticket', () async {
+      final routine = await makeRoutine();
+      await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: routine,
+              date: kRoutineAnchorDay,
+              kind: ItemKind.transport,
+              fromLocation: const Value('Home'),
+              toLocation: const Value('Work'),
+            ),
+          );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'season-ticket.pdf'),
+        tripId: routine,
+      );
+
+      final back = await db.routineDao.duplicateReversed(
+        routine,
+        title: 'Commute back',
+      );
+
+      expect(
+        (await db.attachmentDao.watchAttachmentsForTrip(back).first)
+            .single
+            .name,
+        'season-ticket.pdf',
+      );
+    });
+  });
+
   group('what the map may ask for', () {
     test('only photos, and only ones carrying a position', () async {
       final trip = await makeTrip();

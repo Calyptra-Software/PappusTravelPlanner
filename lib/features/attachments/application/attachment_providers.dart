@@ -19,6 +19,15 @@ final groupAttachmentsProvider = StreamProvider.autoDispose
           ref.watch(repositoryProvider).watchAttachmentsForGroup(groupId),
     );
 
+/// What the trip itself carries — the insurance, the passport scan, a
+/// routine's season ticket. Not the same question as
+/// [tripAttachmentCountsProvider], which is about its entries and runs.
+final tripAttachmentsProvider = StreamProvider.autoDispose
+    .family<List<Attachment>, int>(
+      (ref, tripId) =>
+          ref.watch(repositoryProvider).watchAttachmentsForTrip(tripId),
+    );
+
 /// How many files hang on each entry and each run of one trip.
 ///
 /// One stream for the whole trip rather than one per tile: a timeline draws

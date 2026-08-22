@@ -788,5 +788,7 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "pdfPhotoUnnamed": "Foto",
-  "attachmentSaved": "Datei gespeichert."
+  "attachmentSaved": "Datei gespeichert.",
+  "attachmentsTripTitle": "Reiseunterlagen",
+  "attachmentsTripAdd": "An die Reise anhängen"
 }

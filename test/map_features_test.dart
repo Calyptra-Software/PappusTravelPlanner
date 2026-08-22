@@ -537,6 +537,29 @@ void main() {
       expect(features.photos.last.colorValue, isNull);
     });
 
+    test("the trip's own photo is always drawn", () {
+      final features = tripMapFeatures(
+        [place(lat: 53.55, lon: 9.99)],
+        photos: [photo(lat: 41.9, lon: 12.5)],
+      );
+
+      // It belongs to the journey rather than to a part of it: there is no
+      // option it could sit in and nothing that could stop being chosen.
+      expect(features.photos.single.itemId, isNull);
+      expect(features.photos.single.groupId, isNull);
+      expect(features.photos.single.colorValue, isNull);
+    });
+
+    test("the trip's own is drawn even when the plan is empty", () {
+      final features = tripMapFeatures(
+        const [],
+        photos: [photo(lat: 41.9, lon: 12.5)],
+      );
+
+      expect(features.photos, hasLength(1));
+      expect(features.isEmpty, isFalse);
+    });
+
     test('a document is never a marker, position or no position', () {
       final entry = place(lat: 53.55, lon: 9.99);
       final features = tripMapFeatures(

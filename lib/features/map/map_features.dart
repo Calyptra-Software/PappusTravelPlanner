@@ -141,7 +141,8 @@ final class MapPhoto {
   /// frame is drawn in it, which is what ties the picture to the leg it is
   /// about when several trips' worth of lines are on screen. A run's photo has
   /// none: a group carries no color, and picking one of its members' would be
-  /// the accident the group menu exists to avoid.
+  /// the accident the group menu exists to avoid. Nor has the trip's own, for
+  /// the plainer reason that there is no entry to take one from.
   final int? colorValue;
 }
 
@@ -282,7 +283,8 @@ TripMapFeatures tripMapFeatures(
 /// position, so being drawn is never a question about *where* the entry is, only
 /// about whether that entry is part of the plan as it stands. A group's photo
 /// needs one live member: a run lies entirely inside one option or entirely
-/// outside every one, so any member answers for the whole thing.
+/// outside every one, so any member answers for the whole thing. The trip's own
+/// is always drawn, having no part of the plan to be dropped with.
 List<MapPhoto> _photoMarkers(
   List<ItineraryItem> items,
   List<Attachment> photos,
@@ -302,7 +304,12 @@ List<MapPhoto> _photoMarkers(
     final onLiveItem = owner != null;
     final onLiveGroup =
         photo.groupId != null && liveGroups.contains(photo.groupId);
-    if (!onLiveItem && !onLiveGroup) continue;
+    // A picture hung on the **trip** has no liveness question to answer: it
+    // belongs to the journey rather than to a part of it, so there is no option
+    // it could sit in and nothing that could stop being chosen. It takes the
+    // trip's accent, having no entry whose color it could wear.
+    final onTrip = photo.itemId == null && photo.groupId == null;
+    if (!onLiveItem && !onLiveGroup && !onTrip) continue;
     markers.add(
       MapPhoto(
         attachmentId: photo.id,

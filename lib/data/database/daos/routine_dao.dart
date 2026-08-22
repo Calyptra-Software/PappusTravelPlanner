@@ -623,6 +623,15 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       for (final list in lists) {
         await attachedDatabase.checklistDao.copyChecklist(list.id, newTripId);
       }
+
+      // The routine's own paperwork — the season ticket, the pass — for the same
+      // reason the checklist and the fare travel. Only what hangs on the routine
+      // *itself*: a file on one of its legs is about that leg's occurrences, and
+      // a photograph is a record rather than a plan. See `copyTripAttachments`.
+      await attachedDatabase.attachmentDao.copyTripAttachments(
+        routineId,
+        newTripId,
+      );
       return newTripId;
     });
   }
@@ -740,6 +749,11 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
           reversed: true,
         );
       }
+      // The way home needs the same ticket as the way out.
+      await attachedDatabase.attachmentDao.copyTripAttachments(
+        routineId,
+        newTripId,
+      );
       return newTripId;
     });
   }

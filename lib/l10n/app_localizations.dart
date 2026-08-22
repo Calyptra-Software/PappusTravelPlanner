@@ -3775,6 +3775,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'File saved.'**
   String get attachmentSaved;
+
+  /// No description provided for @attachmentsTripTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip documents'**
+  String get attachmentsTripTitle;
+
+  /// No description provided for @attachmentsTripAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach to the trip'**
+  String get attachmentsTripAdd;
 }
 
 class _AppLocalizationsDelegate
