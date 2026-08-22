@@ -2197,5 +2197,5 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachmentsTripTitle => 'Trip documents';
 
   @override
-  String get attachmentsTripAdd => 'Attach to the trip';
+  String get attachmentsTripAdd => 'Add trip document';
 }

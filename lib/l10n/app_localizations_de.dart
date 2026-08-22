@@ -2209,5 +2209,5 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attachmentsTripTitle => 'Reiseunterlagen';
 
   @override
-  String get attachmentsTripAdd => 'An die Reise anhängen';
+  String get attachmentsTripAdd => 'Reiseunterlage hinzufügen';
 }

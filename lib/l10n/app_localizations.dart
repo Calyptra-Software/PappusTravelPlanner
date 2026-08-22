@@ -3785,7 +3785,7 @@ abstract class AppLocalizations {
   /// No description provided for @attachmentsTripAdd.
   ///
   /// In en, this message translates to:
-  /// **'Attach to the trip'**
+  /// **'Add trip document'**
   String get attachmentsTripAdd;
 }
 
