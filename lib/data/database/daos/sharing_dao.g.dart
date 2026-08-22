@@ -24,6 +24,8 @@ mixin _$SharingDaoMixin on DatabaseAccessor<AppDatabase> {
   $ChecklistsTable get checklists => attachedDatabase.checklists;
   $ChecklistItemsTable get checklistItems => attachedDatabase.checklistItems;
   $CollapsedDaysTable get collapsedDays => attachedDatabase.collapsedDays;
+  $AttachmentsTable get attachments => attachedDatabase.attachments;
+  $AttachmentBlobsTable get attachmentBlobs => attachedDatabase.attachmentBlobs;
   SharingDaoManager get managers => SharingDaoManager(this);
 }
 
@@ -84,4 +86,11 @@ class SharingDaoManager {
       );
   $$CollapsedDaysTableTableManager get collapsedDays =>
       $$CollapsedDaysTableTableManager(_db.attachedDatabase, _db.collapsedDays);
+  $$AttachmentsTableTableManager get attachments =>
+      $$AttachmentsTableTableManager(_db.attachedDatabase, _db.attachments);
+  $$AttachmentBlobsTableTableManager get attachmentBlobs =>
+      $$AttachmentBlobsTableTableManager(
+        _db.attachedDatabase,
+        _db.attachmentBlobs,
+      );
 }

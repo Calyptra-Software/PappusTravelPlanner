@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/database/database_location.dart';
 import 'daos/alternative_dao.dart';
+import 'daos/attachment_dao.dart';
 import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
 import 'daos/currency_dao.dart';
@@ -51,6 +52,8 @@ const int kApplicationId = 0x5452504C;
     CollapsedDays,
     Tracks,
     VisitedCountries,
+    Attachments,
+    AttachmentBlobs,
   ],
   daos: [
     TripDao,
@@ -62,6 +65,7 @@ const int kApplicationId = 0x5452504C;
     RoutineDao,
     TagDao,
     TrackDao,
+    AttachmentDao,
     VisitedCountryDao,
     SharingDao,
     TransportModeDao,
@@ -77,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 35;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -367,11 +371,43 @@ class AppDatabase extends _$AppDatabase {
       if (from < 31) {
         await m.createTable(visitedCountries);
       }
+      // v32 lets a file hang on part of the plan: a photo of the place, the
+      // ticket for the run, a booking confirmation. Two new tables and nothing
+      // else — the payload is separated from what a list needs to read, see
+      // [AttachmentBlobs] — and nothing to backfill: the app has never had a
+      // file to store, so there is nothing an existing row could be holding.
+      if (from < 32) {
+        await m.createTable(attachments);
+        await m.createTable(attachmentBlobs);
+      }
+      // v33 lets a file belong to the whole trip rather than to one part of it:
+      // the insurance, the passport scan, a routine's season ticket. Nullable
+      // and nothing to backfill — every row written so far hangs on an entry or
+      // a run, which is still exactly what it means. Skipped when the table was
+      // created above, since it is built from the current schema and already
+      // has the column.
+      if (from < 33 && from >= 32) {
+        await m.addColumn(attachments, attachments.tripId);
+      }
+      // v34 remembers whether a trip's strip of photographs is collapsed, the
+      // way a checklist and a day already remember theirs. Defaulted to false,
+      // which is what every existing trip has been showing all along.
+      if (from < 34) {
+        await m.addColumn(trips, trips.photosCollapsed);
+      }
+      // v35 lets a trip carry the photograph its overview card shows, and lets
+      // it say it wants none. Both nullable/defaulted: every existing trip has
+      // chosen nothing, which is what null and false mean.
+      if (from < 35) {
+        await m.addColumn(trips, trips.coverAttachmentId);
+        await m.addColumn(trips, trips.coverHidden);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
       await customStatement('PRAGMA foreign_keys = ON');
       await _stampApplicationId();
+      await _enableAutoVacuum();
     },
   );
 
@@ -391,6 +427,47 @@ class AppDatabase extends _$AppDatabase {
     // Pragma values can't be bound as parameters; the id is a compile-time
     // constant, so interpolating it is safe.
     await customStatement('PRAGMA application_id = $kApplicationId');
+  }
+
+  /// Switches the file to `auto_vacuum = FULL`, once, if it is not already.
+  ///
+  /// SQLite does **not** return deleted pages to the file system by default: it
+  /// keeps them on a free list and reuses them. That is the right trade for a
+  /// database of text, and the wrong one the moment a row can be a photograph —
+  /// delete a 15 MB attachment and the file stays 15 MB larger for good, which
+  /// then travels into every export and every backup. Measured: 10 MB of blobs
+  /// deleted leaves a 10 MB file with the default setting and a 12 KB file with
+  /// this one.
+  ///
+  /// `FULL` and not `INCREMENTAL` because `FULL` needs no *call site*. An
+  /// attachment dies in half a dozen places — its own delete, its entry's, its
+  /// group's, its trip's, a journey being replaced — and `incremental_vacuum`
+  /// would have to be remembered at each of them, which is the shape of rule
+  /// this codebase has already watched rot once (see `copyItemTracks`). The
+  /// usual objection to `FULL` is its cost per commit; at this app's write
+  /// volume it does not appear — 6000 small writes against a file with 16 MB of
+  /// blobs in it measured 5.6 s with `FULL` and 6.1 s without, which is the
+  /// `fsync` and not the page moving.
+  ///
+  /// It runs here, on every open, rather than from an `onUpgrade` branch, for
+  /// exactly the reason [_stampApplicationId] does: the setting lives in the
+  /// file header and not in the schema, so every database already at the
+  /// current [schemaVersion] — which is every existing user's — would never
+  /// reach a migration. One path serves both cases: a database being created is
+  /// empty, so the `VACUUM` costs nothing, and one that already exists is
+  /// rewritten once and answers 1 from the next launch on.
+  ///
+  /// The `VACUUM` is what makes it stick — the pragma alone is silently ignored
+  /// once the file has tables. It rewrites the whole file, which is why this is
+  /// worth doing *now*: no released database can hold an attachment yet, so
+  /// every one of them is small (measured: 14 ms at 1 MB, 51 ms at 10 MB,
+  /// 554 ms at 100 MB). It cannot run inside a transaction, which is another
+  /// reason it is here and not in a migration.
+  Future<void> _enableAutoVacuum() async {
+    final row = await customSelect('PRAGMA auto_vacuum').getSingleOrNull();
+    if (row == null || row.read<int>('auto_vacuum') != 0) return;
+    await customStatement('PRAGMA auto_vacuum = FULL');
+    await customStatement('VACUUM');
   }
 
   /// The v20 transport-modes setup, shared by the v20 branch and the v21

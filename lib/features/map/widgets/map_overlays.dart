@@ -7,6 +7,8 @@
 /// one of them quietly ends up missing on the screen nobody looked at.
 library;
 
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
@@ -288,4 +290,61 @@ class MapPlacePin extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// A photo, as a marker: the thumbnail the import stored, framed.
+///
+/// The frame is what makes it a mark rather than a picture lying on the map —
+/// a raster tile is busy, and a photograph of a street laid on a drawing of the
+/// same street reads as an artefact until something says where one stops and
+/// the other starts. It is drawn in the entry's color (the trip's accent
+/// otherwise), which is the same thing the leg's line is drawn in, so the
+/// picture and what it is about are visibly the same subject.
+///
+/// The thumbnail and not the picture: it is what `Attachments` carries in the
+/// row the marker was built from, so a map of thirty photos costs thirty small
+/// JPEGs and not thirty originals — the reason one is stored at all.
+class MapPhotoMarker extends StatelessWidget {
+  const MapPhotoMarker({
+    super.key,
+    required this.thumbnail,
+    required this.color,
+    this.size = 40,
+  });
+
+  /// The stored thumbnail, or null for a photo that somehow has none — drawn as
+  /// an icon rather than skipped, since the position is still a statement.
+  final Uint8List? thumbnail;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bytes = thumbnail;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0x33000000),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: bytes == null
+            ? Icon(Icons.photo_camera_outlined, size: size * 0.55, color: color)
+            // `gaplessPlayback` so a rebuild that hands the same photo over as a
+            // fresh byte list does not blink the marker white while it decodes.
+            : Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true),
+      ),
+    );
+  }
 }

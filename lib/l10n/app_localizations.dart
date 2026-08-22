@@ -3607,6 +3607,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The libraries and fonts this app is built from'**
   String get aboutLicensesSubtitle;
+
+  /// No description provided for @attachmentsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get attachmentsLabel;
+
+  /// No description provided for @attachmentsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing attached yet'**
+  String get attachmentsNone;
+
+  /// No description provided for @attachmentsAddPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photo'**
+  String get attachmentsAddPhoto;
+
+  /// No description provided for @attachmentsAddFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Add file'**
+  String get attachmentsAddFile;
+
+  /// No description provided for @attachmentsAdding.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading the file…'**
+  String get attachmentsAdding;
+
+  /// No description provided for @attachmentsAddedOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Attached.'**
+  String get attachmentsAddedOne;
+
+  /// No description provided for @attachmentsAddedMany.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} files attached.'**
+  String attachmentsAddedMany(int count);
+
+  /// No description provided for @attachmentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 attachment} other{{count} attachments}}'**
+  String attachmentsCount(int count);
+
+  /// No description provided for @attachmentTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'That file is {size} — the limit is {limit}. The whole database is copied when a trip is exported, so a large file can make it impossible to move.'**
+  String attachmentTooLarge(String size, String limit);
+
+  /// No description provided for @attachmentUnreadableImage.
+  ///
+  /// In en, this message translates to:
+  /// **'This picture format ({format}) can\'t be read here. Save it as JPEG or PNG first.'**
+  String attachmentUnreadableImage(String format);
+
+  /// No description provided for @attachmentUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'That file could not be read.'**
+  String get attachmentUnreadable;
+
+  /// No description provided for @attachmentRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get attachmentRename;
+
+  /// No description provided for @attachmentNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get attachmentNameLabel;
+
+  /// No description provided for @attachmentOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get attachmentOpen;
+
+  /// No description provided for @attachmentShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get attachmentShare;
+
+  /// No description provided for @attachmentDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get attachmentDelete;
+
+  /// No description provided for @attachmentDeleteQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this attachment?'**
+  String get attachmentDeleteQuestion;
+
+  /// No description provided for @attachmentDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The file is stored in this database and nowhere else. Deleting it here removes it for good.'**
+  String get attachmentDeleteBody;
+
+  /// No description provided for @attachmentPositionExif.
+  ///
+  /// In en, this message translates to:
+  /// **'Position taken from the photo'**
+  String get attachmentPositionExif;
+
+  /// No description provided for @attachmentPositionPicked.
+  ///
+  /// In en, this message translates to:
+  /// **'Position chosen on the map'**
+  String get attachmentPositionPicked;
+
+  /// No description provided for @attachmentPositionNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No position'**
+  String get attachmentPositionNone;
+
+  /// No description provided for @attachmentPositionSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Place on map'**
+  String get attachmentPositionSet;
+
+  /// No description provided for @attachmentPositionClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove position'**
+  String get attachmentPositionClear;
+
+  /// No description provided for @attachmentPhotoOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That file could not be opened.'**
+  String get attachmentPhotoOpenFailed;
+
+  /// No description provided for @pdfSectionPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get pdfSectionPhotos;
+
+  /// No description provided for @pdfPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String pdfPhotos(int count);
+
+  /// No description provided for @pdfPhotoUnnamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo'**
+  String get pdfPhotoUnnamed;
+
+  /// No description provided for @attachmentSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'File saved.'**
+  String get attachmentSaved;
+
+  /// No description provided for @attachmentsTripTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip documents'**
+  String get attachmentsTripTitle;
+
+  /// No description provided for @attachmentsTripAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add trip document'**
+  String get attachmentsTripAdd;
+
+  /// No description provided for @galleryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get galleryTitle;
+
+  /// No description provided for @coverSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as trip cover'**
+  String get coverSet;
+
+  /// No description provided for @coverRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove as trip cover'**
+  String get coverRemove;
 }
 
 class _AppLocalizationsDelegate

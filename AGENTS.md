@@ -1029,6 +1029,227 @@ UI (features/*/presentation, *widgets)
   caching stays on flutter_map's default, which honors the server's own headers and is the
   conforming caching the policy requires. `appVersionProvider` now has two callers, not one.
 
+- **An attachment's bytes live in the database, and that is the whole design.**
+  `Attachments` + `AttachmentBlobs` (v32, trip level v33) hold a photo or a file hung on
+  part of a plan.
+  Not a sidecar directory: one portable SQLite file is what the app *is*, and an
+  attachment kept beside it would mean every copy, backup and export that has ever
+  worked silently stops carrying everything — the file would go on claiming to be the
+  whole trip, and on Android and the web there is no second path to point at anyway.
+  The price is paid on the way in: `attachment_import.dart` (pure) re-encodes a photo to
+  `kMaxPhotoEdge`/`kPhotoQuality` with a thumbnail beside it, and caps a document at
+  `kMaxAttachmentBytes`. The ceiling being defended is not disk space — it is that
+  `readDatabaseBytes` reads the *whole* database into memory to export it, so an
+  unbounded photo library costs the user the ability to move their trips off the device.
+  The payload is a **second table** because drift selects every column of the table it
+  is given: listing what a day carries must not be reading it.
+- **It hangs on exactly one of an item, a group, or the trip**, the way a `Costs` row does
+  and for the same reason — a ticket covers the run and not one leg of it, and a passport
+  scan belongs to the journey and not to Tuesday's train. Both cascade (unlike
+  `ItineraryItems.groupId`, nulled on dissolve: an item outlives its group, an
+  attachment of that group does not), and the invariant lives in `AttachmentDao._owner`
+  since SQL cannot state it. The run's are reached from the ⋮ menu on the group band,
+  where everything whose unit is the run already is; an entry's from its own form, below
+  the note, and — like `TrackField` — only on an entry that **already exists**, since a
+  file hangs off a row. The trip's are a **section on the trip screen**
+  (`TripAttachmentsSection`, above the checklists), and that placement is the decision:
+  an entry's and a run's announce themselves with a badge on the timeline row they hang
+  on, the trip has no row, so a file filed at that level appears nowhere unless the screen
+  shows it — behind a menu it would be the insurance nobody can find in the one situation
+  it exists for. It collapses to a single button while there is nothing, since there is
+  nothing to say about no files.
+- **The trip level is the one that travels when a routine is stamped out.**
+  `AttachmentDao.copyTripAttachments`, called from `materializeRoutine` and the reversed
+  duplicate and — like `copyItemTracks` — from nowhere else. Everywhere else a copy takes
+  the plan and not the record, which is why an entry's photograph of last Tuesday's
+  platform stays behind; a file on the *trip* of a routine is the template's own paperwork
+  (the season ticket, the pass), and one that had to be re-attached every morning would be
+  missing by Thursday — the reasoning that already sends the checklist, the tags and the
+  fare across. The rule is by **level, not by kind**: a scanned receipt and a season ticket
+  are both documents and the app cannot tell them apart, while where the user *put* the
+  file is a decision they made and reads as one. On the map a trip-level photo is always
+  drawn (no option it could sit in, nothing that could stop being chosen) and wears the
+  trip's accent, having no entry to take a color from. `watchAttachmentCountsForTrip`
+  deliberately leaves it out: those two maps feed the badges on entries and runs, and there
+  is no timeline row to put one on. `replaceJourneyLegs` **rescues** them exactly as it rescues the
+  fare: parked owner-less for the length of the transaction, then re-homed onto the
+  surviving group or the replacement's first leg. Looking a connection up again is not a
+  reason to lose the photo of the ticket. **Dissolving** a group rescues them the same way
+  (`GroupDao._preserveSharedThings`, which the degenerate-group tidy-up goes through too):
+  ungrouping is advertised as the harmless half of deleting, so the entries stay and what
+  they paid for stays with them — the fare and the ticket are the same thing said twice,
+  and for a while only one of them was kept. `deleteGroup` is the other way round and
+  deliberately so: nothing survives to carry them.
+- **A photo keeps one thing out of its EXIF and loses the rest.** The position is lifted
+  into `Attachments.lat`/`lon` with an `AttachmentPositionSource` beside it, and the
+  re-encoding drops everything else — deliberately, with `full.exif = ExifData()` doing
+  it and a test standing on it, because the resize *copies* the metadata and without that
+  line the camera body and serial number would ride into every `.tpt` and PDF. Reading
+  EXIF is not a breach of *a position is pointed at, never derived*: that rule is about
+  turning a **name** into a place, and nothing is inferred here — the file says where the
+  camera stood. But a camera's fix and a user's tap are not the same claim, so the
+  provenance is stored and shown, `0,0` is refused (a camera with no fix writes zeros),
+  and the position is never inherited from the entry it hangs on — that entry already has
+  a pin, and a second one would be the app claiming to know where a picture was taken.
+- **A photo is on the map when it carries a position, and never otherwise.**
+  `MapPhoto` (`map_features.dart`) draws the stored **thumbnail**, framed in the owning
+  entry's color — which is why one is kept beside every picture. Falling back to the
+  entry's own coordinates was never on: the entry already has a pin there, and a second
+  one would be the app claiming to know where the picture was taken, the same rule that
+  keeps a one-ended leg off the map. Which photos may be drawn is decided in **Dart**, by
+  `_photoMarkers` against the live entries the screen already holds, and deliberately
+  *not* in SQL as `TrackDao` does it: the answer is "is its owner part of the plan", which
+  `live_items.dart` already owns, and `watchPositionedPhotosForTrip` would only be a second
+  copy of it. A run's photo rides on any live member (a group lies wholly inside one option
+  or wholly outside every one) and takes no color, since a group has none. Photos are framed
+  with everything else by `allPoints` — one taken a valley over is exactly what a viewport
+  fitted to the plan would cut off. They sit in a layer **above** the plan and below the
+  device's mark, and never wear the reserved red: a photograph records a moment that has
+  passed, so it is never "under way". The all-trips map does not draw them.
+- **A `.tpt` carries the bytes, Base64-encoded, and does not bump the format version.**
+  It has to carry them: an attachment exists only inside the database, so naming one
+  without it would hand the recipient a reference to a file on somebody else's phone, and
+  `.tpt` is the one lossless export. The version stays where it was by the rule already
+  stated for coordinates and tracks — a version marks a shape an importer must *branch* on,
+  and an older app that ignores `attachments` imports exactly the trip it would have anyway.
+  The thumbnail travels too rather than being rebuilt: the importer would otherwise decode
+  and rescale every picture of the trip on a device that has just been handed a file.
+  `byteSize` is **measured on arrival**, never read from the file — a number the sender
+  could contradict is a number not to trust — and a row whose Base64 will not decode is
+  skipped rather than failing the import, the trade the unreadable track already makes.
+- **Photos are a PDF section, and the one a fresh install leaves off.** Hence
+  `kDefaultPdfSections` beside `kAllPdfSections`: every other section costs a few kilobytes
+  of text and this one can turn a two-page itinerary into a document too large to mail, so
+  it is asked for rather than assumed. The picker names the **size** next to the count for
+  exactly that reason — "12 photos" invites a tick, "12 photos · 4.1 MB" invites a decision.
+  Each picture is embedded at the size the app stored it: making a third size at export time
+  would mean decoding and rescaling every one on a phone, to save megabytes in a document
+  whose cost the user has already been shown and accepted. Documents are not printed at all —
+  a PDF cannot hold a PDF, and printing a ticket's *name* would be a list of files the
+  reader does not have.
+- **A picture the decoder cannot read is refused, not stored raw.** HEIC/HEIF is the case
+  that matters, and keeping it as an opaque document would break all three rules above at
+  once — unbounded size, no thumbnail, EXIF intact — silently. The probe itself is wrapped
+  in a catch-all: identifying a format means offering the bytes to every decoder in turn,
+  and four bytes of nothing is enough to walk one off the end of its buffer.
+
+- **A trip's photographs are also a set, and the set is read as a gallery.**
+  `tripGallery` (`features/attachments/trip_gallery.dart`, pure — the sibling of
+  `map_features.dart`) orders them: the **trip's own first**, since the insurance and the
+  printed map are about the journey rather than a day of it, which is the order the PDF
+  already prints in, then everything else in timeline order, with a run's own sitting at
+  its first member. The live rule is applied here in Dart against the entries the screen
+  holds, for the reason `_photoMarkers` does it there: `live_items.dart` owns that
+  definition and a query would hold a second copy. Each page carries the **label of the
+  entry it hangs on** — the one thing a single picture never needs and twenty in a row
+  cannot do without, or they are a pile of photographs with a trip somewhere behind them.
+- **The way in is a thumbnail strip, not an app-bar icon.** That bar is three icons and an
+  overflow and says in its own comment that a fourth leaves no room for the title, and the
+  overflow is for what a trip is *done to* rather than a way of looking at it. `TripPhotoStrip`
+  costs no bar space, is visibly there, and hands the gallery the picture that was tapped;
+  it is absent when the trip has none. It **collapses**, and remembers, the way a checklist
+  and a day do — a band of thumbnails is the heaviest thing on that screen and a trip with
+  two hundred photographs should not have to be scrolled past to read the plan. The state
+  is a column on the trip's own row (`Trips.photosCollapsed`, v34) rather than a table:
+  `CollapsedDays` is one because a trip has many days, and this is one per trip. In the
+  database rather than in preferences, because it is per-trip state and belongs to the file
+  the trip lives in — so it travels in a `.tpt` too, as a checklist's collapsed state and
+  the collapsed days already do. The count stays in the header while folded: a collapsed
+  section that says nothing about what is inside it is a row with no reason to be tapped. This is not the rule against thumbnails *in the
+  timeline*: there a picture would displace the entry it hangs on, here the photographs are
+  the subject. Elsewhere the rule is **a photo opens the gallery, a document opens the
+  sheet** — with one deliberate exception, the map, where a marker keeps opening
+  `AttachmentSheet`: you tapped a pin to ask about *that* position, and the position
+  controls live in the sheet, so swiping away to pictures that are not on the map would
+  leave the question behind.
+- **The gallery is a reading.** Swiping browses and writes nothing (the `AlternativeCard`
+  rule), and the four acts stay in `AttachmentSheet` behind the ⋮ — two places holding the
+  delete confirmation means one of them going stale, the same reason `MapItemSheet` hands
+  editing back to the item form. Pages decode through the `autoDispose`
+  `attachmentBytesProvider` and a `PageView` builds lazily, so two hundred photographs cost
+  three in memory. Zoom and page-turn are one gesture, so the page is **locked while
+  magnified** (`_zoomed`, compared against `> 1.01` because a pinch back out settles on
+  1.0000001 and an equality test would lock the page for good).
+
+- **A trip's overview card shows one photograph, and which one is three states.**
+  `coverPhoto` (in `trip_gallery.dart`, pure) answers: **none** when the trip says it wants
+  none, the **named** one when it named one and that one is still in the gallery, and
+  otherwise the **first** in gallery order. Three states need two columns —
+  `Trips.coverAttachmentId` and `Trips.coverHidden` (v35) — because null in the id means
+  "nothing chosen", which is not the statement "nothing wanted": a trip whose pictures are
+  all of receipts has photos and no cover, and deriving one anyway would overrule that.
+  `TripDao` keeps the invariant that hiding **clears** the id rather than parking it, so no
+  two columns can disagree about what the card shows and un-hiding returns to the derived
+  picture rather than to a memory nothing on screen hinted at.
+- **`Trips.coverAttachmentId` is deliberately not a foreign key, and this is the general
+  rule: never put two tables in a reference cycle.** `Attachments` already references
+  `Trips`, so declaring the reverse closes one — and **drift answers a cycle by silently
+  dropping foreign keys elsewhere** until it can order its `CREATE TABLE`s again. Measured
+  when it happened: `item_groups.trip_id` and `alternative_sets.trip_id` came out with no
+  `REFERENCES` clause at all, `itinerary_items` lost one of four, and deleting a trip
+  stopped cascading to its groups and its decisions. Nothing warns; the schema simply comes
+  out weaker, and four unrelated cascade tests are what noticed. A stale id is the cheaper
+  problem: `coverPhoto` looks it up in the gallery it was handed and falls back when it is
+  not there, and `attachments.id` being `AUTOINCREMENT` means SQLite never reissues the
+  number, so it can never come to mean a different picture. `attachment_dao_test.dart`
+  stands on both halves.
+- **One star does all three states.** An amber star in the **gallery's** app bar, filled
+  when this picture is the one the card shows — the argument that put `ItemColorField` on
+  the map rather than in a form. Starring an unstarred picture makes it the cover;
+  **unstarring the cover means the trip wants none**. Deriving is never named: it is where a
+  trip starts and it looks exactly like having chosen that picture, which is the point.
+  Crucially the star is filled for the **derived** cover too — an earlier version lit it
+  only for a named one, which left the commonest case a card showing a photograph with no
+  star anywhere, reading as the app having picked one behind the user's back. Resolving
+  which picture that is belongs to `tripCoverIdProvider`, so the strip and the gallery
+  cannot disagree. This replaced a checkable *No cover photo* on a ⋮ in the strip's header:
+  one control with one meaning beats two, and the menu is gone.
+  The strip carries the same star as a **mark**, ink-on-halo like the map's own marker, and
+  deliberately not as a control: a real 48dp target inside a 72dp tile takes half of it and
+  steals the taps that open the gallery. Amber because red is reserved for "happening" and a
+  user-chosen accent is invisible against half the photographs it would be drawn on
+  (`kCoverStarColor`, defined once so the two cannot drift).
+- **The card reads one map, not one query per card.** `tripCoversProvider` is the
+  `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
+  `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and
+  `thumbnailsFor` then fetches the handful that were chosen. Fetching every thumbnail to
+  pick a dozen would push megabytes through the stream on every tick. The thumbnail is `kTripCoverSize` square at
+  the card's **trailing** edge, opposite the accent stripe: leading would shift the title of
+  every card that has one and leave the list a ragged left edge, or force a placeholder —
+  something invented to fill a space rather than something said. One stated cost: this
+  provider does **not** apply the live rule, since that would mean holding every trip's
+  entries for a picture the size of a fingernail, so a photograph in an unchosen option can
+  reach a card where it reaches no export and no map.
+
+- **Deleted space comes back by itself, because a user must not have to ask for it.**
+  `AppDatabase._enableAutoVacuum` puts every file on `auto_vacuum = FULL`. SQLite otherwise
+  keeps freed pages on a free list forever, which is the right trade for a database of text
+  and the wrong one once a row can be a photograph: measured, 10 MB of blobs deleted leaves
+  a 10 MB file by default and a 12 KB one with this. `FULL` rather than `INCREMENTAL`
+  precisely because it needs **no call site** — an attachment dies in half a dozen places
+  (its own delete, its entry's, its group's, its trip's, a journey replaced) and an
+  `incremental_vacuum` at each is the shape of rule that rots. The usual objection, the
+  per-commit cost, does not appear at this write volume: 6000 small writes against a file
+  holding 16 MB of blobs measured 5.6 s with it and 6.1 s without, which is the `fsync`.
+  It sits in `beforeOpen` beside `_stampApplicationId` for that function's own stated
+  reason — the setting is in the file header, not the schema, so no `onUpgrade` branch would
+  ever reach the databases that already exist. The `VACUUM` is what makes the pragma stick
+  (alone it is silently ignored once there are tables) and is why doing this *now* was
+  cheap: no released database can hold an attachment yet, so every one is small (14 ms at
+  1 MB, 554 ms at 100 MB). It cannot run inside a transaction, which is a second reason it
+  is not in a migration. Consequently there is no "reclaim space" button, and there should
+  not be one.
+- **The settings screen says what the database weighs**, in the tile that already says
+  where it is (`_DatabaseTile`) — the path and the size are one question about one file.
+  Two numbers, the file's own and what the attachments account for
+  (`AttachmentDao.attachmentStorage`, reading the denormalised `byteSize` so no payload is
+  touched): the file size alone leaves open where it came from, the attachment total alone
+  says nothing about the thing anyone copies. The file size is null on the web, where the
+  bytes could only be counted through `WasmDatabase.probe`, which wants the connection
+  closed — far too much for a settings row. It is read **once**, not watched: nothing on
+  that screen moves it, and a drift stream in a widget tree is one more thing every test
+  that pumps it has to stub.
+
 ### Database portability & schema changes
 
 - Data is one SQLite file. Desktop can open/create a DB at any path; Android imports/exports.
@@ -1041,7 +1262,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 30) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 35) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget
@@ -1067,6 +1288,27 @@ widget tests hang if they depend on the real DB stream. Override the feature pro
 plain `Stream.value(...)` instead (see `pumpOverview` in `test/trip_flow_test.dart`). For
 DAO/logic tests, construct `AppDatabase.forTesting(NativeDatabase.memory())` against an
 in-memory database.
+
+The same hazard has a second face, which is worth knowing because it fails *after* the
+assertions pass: cancelling a drift stream schedules a zero-duration timer
+(`StreamQueryStore.markAsClosed`), and a test whose tree is disposed at the end leaves it
+pending — reported as "A Timer is still pending even after the widget tree was disposed".
+Any widget that watches a DB-backed provider therefore has to be stubbed out in every test
+that pumps it, even one that never looks at what it draws. `test/support/attachment_overrides.dart`
+is that stub for the attachment providers; a new provider watched from the timeline or the
+item form needs the same treatment, and the symptom of forgetting is six unrelated files
+timing out.
+
+A third face, for a flow that hops to an isolate: `compute` runs on a **real** one, which
+the fake clock does not drive, so `pumpAndSettle` returns long before the work is done and
+awaiting the flow's future from the fake zone deadlocks — its continuations need a pump,
+and the pump is what you are waiting to be allowed to do. `test/attachment_flow_test.dart`
+holds the future the tap started and awaits it *with the tap* inside one `tester.runAsync`,
+which is deterministic where sleeping "long enough" is not. The production side of the same
+seam: `addAttachments` takes an injectable `pickFiles`, and its `endOfFrame` await — there
+so the browser can paint the "reading" message before `compute` blocks its one thread — is
+guarded by `kIsWeb`, because awaiting a frame from inside a callback is exactly what
+deadlocks a widget test and there is nothing to gain from it where the work is off-thread.
 
 ## Platform build constraints
 

@@ -110,16 +110,57 @@ final class MapPath {
       midpointOf(segments.reduce((a, b) => _length(b) > _length(a) ? b : a));
 }
 
+/// A photo, at the position it carries.
+///
+/// Drawn only when it has one: a picture with no coordinates is not a place, and
+/// putting it on the entry it hangs off would be the map claiming to know where
+/// it was taken — the entry already has a pin there. Which is the same rule
+/// [MapPath] follows for a leg with one end.
+///
+/// Carries the ids of both possible owners because a photo is reached *through*
+/// what it hangs on: an entry's own, or a whole run's shared one.
+final class MapPhoto {
+  const MapPhoto({
+    required this.attachmentId,
+    required this.position,
+    this.itemId,
+    this.groupId,
+    this.colorValue,
+  });
+
+  final int attachmentId;
+  final LatLng position;
+
+  /// The entry this hangs off, or null when it belongs to a run.
+  final int? itemId;
+
+  /// The run this hangs off, or null when it belongs to a single entry.
+  final int? groupId;
+
+  /// The color of the entry it belongs to, or null for the trip's accent — the
+  /// frame is drawn in it, which is what ties the picture to the leg it is
+  /// about when several trips' worth of lines are on screen. A run's photo has
+  /// none: a group carries no color, and picking one of its members' would be
+  /// the accident the group menu exists to avoid. Nor has the trip's own, for
+  /// the plainer reason that there is no entry to take one from.
+  final int? colorValue;
+}
+
 /// Everything a trip contributes to the map.
 final class TripMapFeatures {
-  const TripMapFeatures({required this.pins, required this.paths});
+  const TripMapFeatures({
+    required this.pins,
+    required this.paths,
+    this.photos = const [],
+  });
 
   static const TripMapFeatures empty = TripMapFeatures(pins: [], paths: []);
 
   final List<MapPin> pins;
   final List<MapPath> paths;
+  final List<MapPhoto> photos;
 
-  bool get isEmpty => pins.isEmpty && paths.isEmpty;
+  bool get isEmpty => pins.isEmpty && paths.isEmpty && photos.isEmpty;
 
   /// Every point drawn, for framing the view. Deliberately includes the
   /// interpolated ones: a great-circle arc bulges well outside the box its two
@@ -128,6 +169,10 @@ final class TripMapFeatures {
     for (final pin in pins) pin.position,
     for (final path in paths)
       for (final segment in path.segments) ...segment,
+    // Photos are framed with the rest: one taken a valley over from everything
+    // planned is exactly the thing a viewport fitted to the plan alone would
+    // cut off, and it is on the map to be found.
+    for (final photo in photos) photo.position,
   ];
 }
 
@@ -145,10 +190,19 @@ final class TripMapFeatures {
 /// path are two answers to the same question, and drawing both would put a line
 /// across the bay beside the line around it. Without one, nothing changes — the
 /// great circle between the ends is still the best the plan can say.
+///
+/// [photos] are the trip's positioned pictures, *unfiltered*: which of them the
+/// map may draw is decided here rather than in SQL, because the answer is
+/// already in [items] — one belongs on the map when the entry it hangs off is
+/// live, or when the run it hangs off still has a live member. Doing it here
+/// keeps one definition of "live" for the whole screen instead of a second copy
+/// in a query, and a photo on the road not taken is no more drawn than the road
+/// is.
 TripMapFeatures tripMapFeatures(
   List<ItineraryItem> items, {
   int? happeningItemId,
   Map<int, List<TrackLine>> tracks = const {},
+  List<Attachment> photos = const [],
 }) {
   final pins = <MapPin>[];
   final paths = <MapPath>[];
@@ -216,7 +270,57 @@ TripMapFeatures tripMapFeatures(
     }
   }
 
-  return TripMapFeatures(pins: pins, paths: paths);
+  return TripMapFeatures(
+    pins: pins,
+    paths: paths,
+    photos: _photoMarkers(items, photos),
+  );
+}
+
+/// The pictures that may be drawn, in the order they were given.
+///
+/// A photo rides on its owner's liveness and on nothing else — it has its own
+/// position, so being drawn is never a question about *where* the entry is, only
+/// about whether that entry is part of the plan as it stands. A group's photo
+/// needs one live member: a run lies entirely inside one option or entirely
+/// outside every one, so any member answers for the whole thing. The trip's own
+/// is always drawn, having no part of the plan to be dropped with.
+List<MapPhoto> _photoMarkers(
+  List<ItineraryItem> items,
+  List<Attachment> photos,
+) {
+  if (photos.isEmpty) return const [];
+  final liveItems = {for (final item in items) item.id: item};
+  final liveGroups = {
+    for (final item in items)
+      if (item.groupId != null) item.groupId!,
+  };
+
+  final markers = <MapPhoto>[];
+  for (final photo in photos) {
+    final position = _point(photo.lat, photo.lon);
+    if (position == null) continue;
+    final owner = photo.itemId == null ? null : liveItems[photo.itemId];
+    final onLiveItem = owner != null;
+    final onLiveGroup =
+        photo.groupId != null && liveGroups.contains(photo.groupId);
+    // A picture hung on the **trip** has no liveness question to answer: it
+    // belongs to the journey rather than to a part of it, so there is no option
+    // it could sit in and nothing that could stop being chosen. It takes the
+    // trip's accent, having no entry whose color it could wear.
+    final onTrip = photo.itemId == null && photo.groupId == null;
+    if (!onLiveItem && !onLiveGroup && !onTrip) continue;
+    markers.add(
+      MapPhoto(
+        attachmentId: photo.id,
+        position: position,
+        itemId: photo.itemId,
+        groupId: photo.groupId,
+        colorValue: owner?.colorValue,
+      ),
+    );
+  }
+  return markers;
 }
 
 LatLng? _point(double? lat, double? lon) =>

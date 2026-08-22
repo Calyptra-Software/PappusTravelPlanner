@@ -10,6 +10,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../attachments/widgets/attachments_field.dart';
 import '../../map/widgets/item_color_field.dart';
 import '../../map/widgets/track_field.dart';
 import '../../map/presentation/map_picker_screen.dart';
@@ -734,7 +735,13 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     prefixIcon: const Icon(Icons.notes),
                   ),
                 ),
+                // After the note, because it is the same kind of thing: what
+                // this entry carries beyond the plan itself. On an existing
+                // entry only, for the reason the track field is — a file hangs
+                // off a row, and a form being filled in has none yet.
                 if (_isEditing) ...[
+                  const SizedBox(height: 20),
+                  AttachmentsField(itemId: widget.existing!.id),
                   const SizedBox(height: 20),
                   _GroupingAndCosts(
                     tripId: widget.tripId,

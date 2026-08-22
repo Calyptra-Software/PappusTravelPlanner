@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/format/money_format.dart';
@@ -6,7 +8,15 @@ import '../../../l10n/app_localizations.dart';
 import 'tag_chip.dart';
 import 'trip_when_line.dart';
 
-/// Overview card summarising a single trip, with a colour accent stripe.
+/// How large the cover photograph is drawn on an overview card.
+///
+/// Big enough to be a picture rather than a bullet point, and bounded by what
+/// the text beside it needs: on a 320dp phone this still leaves the title some
+/// 170dp, which is a readable line.
+const double kTripCoverSize = 104;
+
+/// Overview card summarising a single trip: a colour accent stripe on one edge
+/// and, when the trip has a cover photograph, its thumbnail on the other.
 class TripCard extends StatelessWidget {
   const TripCard({
     super.key,
@@ -15,6 +25,7 @@ class TripCard extends StatelessWidget {
     required this.book,
     this.totals = const {},
     this.tags = const [],
+    this.cover,
   });
 
   final Trip trip;
@@ -31,6 +42,12 @@ class TripCard extends StatelessWidget {
   /// when the trip has no costs, in which case the total row is hidden.
   final Map<String, int> totals;
 
+  /// The thumbnail of the trip's cover photograph, or null — which is the
+  /// ordinary case, since most trips have no pictures and a trip may say it
+  /// wants no cover at all. Passed in rather than watched, like [book] and
+  /// [totals]: the list screen reads one map for every card.
+  final Uint8List? cover;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -38,6 +55,31 @@ class TripCard extends StatelessWidget {
     final localeName = Localizations.localeOf(context).languageCode;
     final accent = Color(trip.colorValue);
     final when = tripWhenLine(trip, l10n, localeName);
+    final muted = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+    );
+
+    /// One quiet line of the card: an icon and a piece of text that gives way
+    /// before the picture does.
+    ///
+    /// `MainAxisSize.min` with a `Flexible` inside, never `Expanded`: the column
+    /// these sit in is only as wide as its widest line, and one row claiming the
+    /// full width would push the photograph back out to the card's edge.
+    Widget line(IconData icon, String text, {TextStyle? style}) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            text,
+            style: style ?? muted,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
 
     return Card(
       child: InkWell(
@@ -47,9 +89,18 @@ class TripCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(width: 6, color: accent),
-              Expanded(
+              // `Flexible` and not `Expanded`, so the column is only as wide as
+              // its longest line — which is what lets the picture sit against
+              // the text instead of out at the card's edge. Every row inside it
+              // shrink-wraps for the same reason.
+              Flexible(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    cover == null ? 16 : 12,
+                    16,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -63,47 +114,22 @@ class TripCard extends StatelessWidget {
                       ),
                       if (trip.destination.isNotEmpty) ...[
                         const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.place_outlined,
-                              size: 16,
-                              color: theme.colorScheme.primary,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                trip.destination,
-                                style: theme.textTheme.bodyMedium,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        line(
+                          Icons.place_outlined,
+                          trip.destination,
+                          style: theme.textTheme.bodyMedium,
                         ),
                       ],
                       const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Icon(
-                            when.icon,
-                            size: 14,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              when.text,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (when.pill != null) _Pill(label: when.pill!),
-                        ],
-                      ),
+                      line(when.icon, when.text),
+                      // On a line of its own under the dates, not at the end of
+                      // them: beside the text it is the first thing to run out
+                      // of room on a phone, and what gives way then is the date
+                      // itself — the line the chip is about.
+                      if (when.pill != null) ...[
+                        const SizedBox(height: 6),
+                        _Pill(label: when.pill!),
+                      ],
                       if (tags.isNotEmpty) ...[
                         const SizedBox(height: 8),
                         Wrap(
@@ -114,32 +140,43 @@ class TripCard extends StatelessWidget {
                       ],
                       if (totals.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.account_balance_wallet_outlined,
-                              size: 14,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                formatTotals(totals, book, localeName),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                        line(
+                          Icons.account_balance_wallet_outlined,
+                          formatTotals(totals, book, localeName),
+                          style: muted?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ],
                     ],
                   ),
                 ),
               ),
+              // After the text rather than at the card's edge: the picture
+              // belongs to what is written beside it, and pushed out to the
+              // right it read as a separate column of the list. Still on the
+              // trailing side, not the leading one — leading would move the
+              // title of every card that has a picture and leave the edge you
+              // scan down ragged, or force a placeholder, which is something
+              // invented to fill a space rather than something said.
+              if (cover case final bytes?)
+                // Centred rather than stretched: the row's children are laid
+                // out with `stretch`, so without this the picture would take
+                // the card's whole height — which varies with the tags and the
+                // totals, giving each card a differently proportioned crop.
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        bytes,
+                        width: kTripCoverSize,
+                        height: kTripCoverSize,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

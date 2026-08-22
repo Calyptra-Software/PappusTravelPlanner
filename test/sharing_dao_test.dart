@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:travelplanner/features/attachments/attachment_import.dart';
 import 'package:travelplanner/features/sharing/trip_bundle.dart';
 
 import 'currency_fixture.dart';
@@ -432,6 +436,202 @@ void main() {
     final b = await db.sharingDao.exportTrip(newId);
     final trainCost = b!.costs.firstWhere((c) => c.reason == 'Train');
     expect(trainCost.groupLocalId, groups.single.id);
+  });
+
+  group('attachments', () {
+    Uint8List bytes(int fill, int length) =>
+        Uint8List.fromList(List.filled(length, fill));
+
+    PreparedAttachment photo({String? name = 'view.jpg', LatLng? at}) =>
+        PreparedAttachment(
+          kind: AttachmentKind.photo,
+          mimeType: 'image/jpeg',
+          bytes: bytes(7, 96),
+          name: name,
+          thumbnail: bytes(3, 12),
+          width: 640,
+          height: 480,
+          position: at,
+          positionSource: at == null ? null : AttachmentPositionSource.exif,
+        );
+
+    test('an entry\'s and a run\'s files both travel, bytes and all', () async {
+      final tripId = await _seedTrip(db);
+      final items = await db.itineraryDao.itemsFor(tripId);
+      final leg = items.firstWhere((i) => i.kind == ItemKind.transport);
+      final groupId = await db.groupDao.groupItems(items.first.id, leg.id);
+      await db.attachmentDao.addAttachment(
+        photo(at: const LatLng(41.8902, 12.4922)),
+        itemId: items.first.id,
+      );
+      await db.attachmentDao.addAttachment(
+        PreparedAttachment(
+          kind: AttachmentKind.document,
+          mimeType: 'application/pdf',
+          bytes: bytes(9, 40),
+          name: 'ticket.pdf',
+        ),
+        groupId: groupId,
+      );
+
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+
+      final onItem = bundle.items.expand((i) => i.attachments).toList();
+      expect(onItem.single.name, 'view.jpg');
+      expect(base64Decode(onItem.single.bytes), hasLength(96));
+      expect(base64Decode(onItem.single.thumbnail!), hasLength(12));
+      expect(onItem.single.lat, closeTo(41.8902, 1e-9));
+      expect(onItem.single.positionSource, AttachmentPositionSource.exif);
+      final onGroup = bundle.groups.expand((g) => g.attachments).toList();
+      expect(onGroup.single.name, 'ticket.pdf');
+      expect(onGroup.single.kind, AttachmentKind.document);
+    });
+
+    test('they survive the round trip into a fresh database', () async {
+      final tripId = await _seedTrip(db);
+      final items = await db.itineraryDao.itemsFor(tripId);
+      final leg = items.firstWhere((i) => i.kind == ItemKind.transport);
+      final groupId = await db.groupDao.groupItems(items.first.id, leg.id);
+      await db.attachmentDao.addAttachment(
+        photo(at: const LatLng(41.8902, 12.4922)),
+        itemId: items.first.id,
+      );
+      await db.attachmentDao.addAttachment(
+        PreparedAttachment(
+          kind: AttachmentKind.document,
+          mimeType: 'application/pdf',
+          bytes: bytes(9, 40),
+          name: 'ticket.pdf',
+        ),
+        groupId: groupId,
+      );
+
+      final json = (await db.sharingDao.exportTrip(tripId))!.toJson();
+      final other = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(other.close);
+      final newTripId = await other.sharingDao.importTrip(
+        TripBundle.fromJson(json),
+      );
+
+      final counts = await other.attachmentDao
+          .watchAttachmentCountsForTrip(newTripId)
+          .first;
+      expect(counts.byItem.values.single, 1);
+      expect(counts.byGroup.values.single, 1);
+
+      final arrived = await other.attachmentDao
+          .watchPositionedPhotosForTrip(newTripId)
+          .first;
+      expect(arrived.single.name, 'view.jpg');
+      expect(arrived.single.width, 640);
+      expect(arrived.single.thumbnail, hasLength(12));
+      // Measured on arrival rather than believed from the file: a number the
+      // sender could contradict is a number not to trust.
+      expect(arrived.single.byteSize, 96);
+      expect(
+        await other.attachmentDao.readAttachmentBytes(arrived.single.id),
+        hasLength(96),
+      );
+      expect(arrived.single.positionSource, AttachmentPositionSource.exif);
+    });
+
+    test("the trip's own paperwork travels at its own level", () async {
+      final tripId = await _seedTrip(db);
+      await db.attachmentDao.addAttachment(
+        PreparedAttachment(
+          kind: AttachmentKind.document,
+          mimeType: 'application/pdf',
+          bytes: bytes(4, 24),
+          name: 'insurance.pdf',
+        ),
+        tripId: tripId,
+      );
+      final items = await db.itineraryDao.itemsFor(tripId);
+      await db.attachmentDao.addAttachment(photo(), itemId: items.first.id);
+
+      final json = (await db.sharingDao.exportTrip(tripId))!.toJson();
+      final bundle = TripBundle.fromJson(json);
+
+      // At the top level, and not swept in with an entry's: the level is the
+      // user's own statement about what the file is for.
+      expect(bundle.attachments.single.name, 'insurance.pdf');
+      expect(bundle.items.expand((i) => i.attachments).map((a) => a.name), [
+        'view.jpg',
+      ]);
+
+      final other = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(other.close);
+      final newTripId = await other.sharingDao.importTrip(bundle);
+
+      final arrived = await other.attachmentDao
+          .watchAttachmentsForTrip(newTripId)
+          .first;
+      expect(arrived.single.name, 'insurance.pdf');
+      expect(arrived.single.itemId, isNull);
+      expect(
+        await other.attachmentDao.readAttachmentBytes(arrived.single.id),
+        hasLength(24),
+      );
+    });
+
+    test('a bundle written before attachments existed reads as none', () {
+      // The key is simply absent in an older sender's JSON, on both owners.
+      expect(
+        BundleItem.fromJson({
+          'localId': 1,
+          'date': '2026-05-01',
+          'kind': 'place',
+        }).attachments,
+        isEmpty,
+      );
+      expect(
+        BundleGroup.fromJson({
+          'localId': 1,
+          'label': 'Train',
+          'collapsed': false,
+        }).attachments,
+        isEmpty,
+      );
+    });
+
+    test('a file the sender mangled costs its own row and no more', () async {
+      final tripId = await _seedTrip(db);
+      final items = await db.itineraryDao.itemsFor(tripId);
+      await db.attachmentDao.addAttachment(photo(), itemId: items.first.id);
+
+      final json = (await db.sharingDao.exportTrip(tripId))!.toJson();
+      final firstItem =
+          (json['items'] as List).firstWhere(
+                (i) => (i as Map)['attachments'] != null,
+              )
+              as Map<String, dynamic>;
+      (firstItem['attachments'] as List).first['bytes'] = 'not base64 !!';
+
+      final other = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(other.close);
+      final newTripId = await other.sharingDao.importTrip(
+        TripBundle.fromJson(json),
+      );
+
+      // The trip arrives; the unreadable picture does not — the same trade the
+      // unreadable track makes.
+      expect(await other.itineraryDao.itemsFor(newTripId), isNotEmpty);
+      final counts = await other.attachmentDao
+          .watchAttachmentCountsForTrip(newTripId)
+          .first;
+      expect(counts.byItem, isEmpty);
+    });
+
+    test('carrying files does not bump the format version', () async {
+      final tripId = await _seedTrip(db);
+      final items = await db.itineraryDao.itemsFor(tripId);
+      final before = (await db.sharingDao.exportTrip(tripId))!.formatVersion;
+      await db.attachmentDao.addAttachment(photo(), itemId: items.first.id);
+
+      // A version marks a shape an importer must branch on. An older app that
+      // ignores `attachments` imports exactly the trip it would have anyway.
+      expect((await db.sharingDao.exportTrip(tripId))!.formatVersion, before);
+    });
   });
 
   group('trip kind and tags', () {
