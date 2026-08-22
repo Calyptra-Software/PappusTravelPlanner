@@ -52,6 +52,20 @@ void copyDatabaseFile(String from, String to) {
   File(from).copySync(to);
 }
 
+/// The size of the database file at [path] in bytes, or null when there is no
+/// file there.
+///
+/// The **main file only**, deliberately: that is what an export copies, since
+/// [copyDatabaseFile] runs after a checkpoint has folded the `-wal` back into
+/// it. Adding the sidecars would count pages twice as often as not — a
+/// checkpoint leaves the `-wal` in place to be reused rather than truncating
+/// it — and the number is being shown to answer "what does it cost to move
+/// this", which is the copied file.
+int? databaseFileSize(String path) {
+  final file = File(path);
+  return file.existsSync() ? file.lengthSync() : null;
+}
+
 /// Reads the raw bytes of the database file at [path] (used when exporting).
 Future<Uint8List> readDatabaseBytes(String path) => File(path).readAsBytes();
 

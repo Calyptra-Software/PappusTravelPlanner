@@ -117,6 +117,21 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// How many attachments the whole database holds, and what they weigh.
+  ///
+  /// Reads [Attachments.byteSize] rather than the payloads — which is the whole
+  /// point of storing that number beside the row instead of asking the blob how
+  /// long it is. Across every trip, because the question it answers is about the
+  /// *file*: what it costs to copy, back up, or hand to another device.
+  Future<({int count, int bytes})> attachmentStorage() async {
+    final count = attachments.id.count();
+    final total = attachments.byteSize.sum();
+    final row = await (selectOnly(
+      attachments,
+    )..addColumns([count, total])).getSingle();
+    return (count: row.read(count) ?? 0, bytes: row.read(total)?.toInt() ?? 0);
+  }
+
   /// One row, for a viewer that was handed an id rather than the row.
   Future<Attachment?> attachment(int id) =>
       (select(attachments)..where((a) => a.id.equals(id))).getSingleOrNull();

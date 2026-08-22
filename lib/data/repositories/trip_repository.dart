@@ -202,6 +202,11 @@ class TripRepository {
   Stream<List<Attachment>> watchPositionedPhotosForTrip(int tripId) =>
       _db.attachmentDao.watchPositionedPhotosForTrip(tripId);
 
+  /// What every attachment in the database adds up to — the settings screen's
+  /// reading, and about the file rather than about any one trip.
+  Future<({int count, int bytes})> attachmentStorage() =>
+      _db.attachmentDao.attachmentStorage();
+
   Future<Attachment?> attachment(int id) => _db.attachmentDao.attachment(id);
 
   Stream<Attachment?> watchAttachment(int id) =>

@@ -10,6 +10,8 @@
 ///   `deleteSidecars`, `deleteDatabaseFile`, `copyDatabaseFile`,
 ///   `readDatabaseBytes` (the latter three are unsupported on the web, whose UI
 ///   never calls them).
+/// - `databaseFileSize`, which the settings screen reports; null on the web,
+///   where there is no file to measure.
 library;
 
 export 'database_location_io.dart'
