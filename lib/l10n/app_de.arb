@@ -791,5 +791,8 @@
   "attachmentSaved": "Datei gespeichert.",
   "attachmentsTripTitle": "Reiseunterlagen",
   "attachmentsTripAdd": "Reiseunterlage hinzufügen",
-  "galleryTitle": "Fotos"
+  "galleryTitle": "Fotos",
+  "coverSet": "Als Titelbild verwenden",
+  "coverRemove": "Titelbild entfernen",
+  "coverNone": "Kein Titelbild"
 }

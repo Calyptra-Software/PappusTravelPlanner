@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
+import '../database/daos/attachment_dao.dart' show CoverCandidate;
 import '../database/track_points.dart';
 import '../../features/attachments/attachment_import.dart'
     show PreparedAttachment;
@@ -200,6 +201,21 @@ class TripRepository {
   Stream<({Map<int, int> byItem, Map<int, int> byGroup})>
   watchAttachmentCountsForTrip(int tripId) =>
       _db.attachmentDao.watchAttachmentCountsForTrip(tripId);
+
+  /// Every trip's photographs, without their thumbnails — the overview's
+  /// reading, before it picks one per trip (see `watchCoverCandidates`).
+  Stream<List<CoverCandidate>> watchCoverCandidates() =>
+      _db.attachmentDao.watchCoverCandidates();
+
+  /// The thumbnails of the ones it picked.
+  Future<Map<int, Uint8List>> thumbnailsFor(List<int> ids) =>
+      _db.attachmentDao.thumbnailsFor(ids);
+
+  Future<void> setTripCover(int tripId, int? attachmentId) =>
+      _db.tripDao.setCover(tripId, attachmentId);
+
+  Future<void> setTripCoverHidden(int tripId, bool hidden) =>
+      _db.tripDao.setCoverHidden(tripId, hidden);
 
   Future<void> setTripPhotosCollapsed(int tripId, bool collapsed) =>
       _db.tripDao.setPhotosCollapsed(tripId, collapsed);

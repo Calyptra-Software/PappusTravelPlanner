@@ -3793,6 +3793,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photos'**
   String get galleryTitle;
+
+  /// No description provided for @coverSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as trip cover'**
+  String get coverSet;
+
+  /// No description provided for @coverRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove as trip cover'**
+  String get coverRemove;
+
+  /// No description provided for @coverNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No cover photo'**
+  String get coverNone;
 }
 
 class _AppLocalizationsDelegate

@@ -1171,6 +1171,51 @@ UI (features/*/presentation, *widgets)
   magnified** (`_zoomed`, compared against `> 1.01` because a pinch back out settles on
   1.0000001 and an equality test would lock the page for good).
 
+- **A trip's overview card shows one photograph, and which one is three states.**
+  `coverPhoto` (in `trip_gallery.dart`, pure) answers: **none** when the trip says it wants
+  none, the **named** one when it named one and that one is still in the gallery, and
+  otherwise the **first** in gallery order. Three states need two columns —
+  `Trips.coverAttachmentId` and `Trips.coverHidden` (v35) — because null in the id means
+  "nothing chosen", which is not the statement "nothing wanted": a trip whose pictures are
+  all of receipts has photos and no cover, and deriving one anyway would overrule that.
+  `TripDao` keeps the invariant that hiding **clears** the id rather than parking it, so no
+  two columns can disagree about what the card shows and un-hiding returns to the derived
+  picture rather than to a memory nothing on screen hinted at.
+- **`Trips.coverAttachmentId` is deliberately not a foreign key, and this is the general
+  rule: never put two tables in a reference cycle.** `Attachments` already references
+  `Trips`, so declaring the reverse closes one — and **drift answers a cycle by silently
+  dropping foreign keys elsewhere** until it can order its `CREATE TABLE`s again. Measured
+  when it happened: `item_groups.trip_id` and `alternative_sets.trip_id` came out with no
+  `REFERENCES` clause at all, `itinerary_items` lost one of four, and deleting a trip
+  stopped cascading to its groups and its decisions. Nothing warns; the schema simply comes
+  out weaker, and four unrelated cascade tests are what noticed. A stale id is the cheaper
+  problem: `coverPhoto` looks it up in the gallery it was handed and falls back when it is
+  not there, and `attachments.id` being `AUTOINCREMENT` means SQLite never reissues the
+  number, so it can never come to mean a different picture. `attachment_dao_test.dart`
+  stands on both halves.
+- **The cover is chosen where the picture is big.** An amber star in the **gallery's** app
+  bar, filled when this is the cover — the argument that put `ItemColorField` on the map
+  rather than in a form. Deliberately *not* a tappable star on each thumbnail in the strip:
+  a real 48dp target inside a 72dp tile takes half of it and steals the taps that open the
+  gallery, and nineteen empty stars answer a question nobody asked. The strip carries the
+  same star as a **mark** on the one that has it, ink-on-halo like the map's own marker,
+  and not as a control. The third state is not per-photograph, so it is not on the star: it
+  is a checkable *No cover photo* on the strip's ⋮, which is the only control that is about
+  the trip rather than about a picture. Amber because red is reserved for "happening" and a
+  user-chosen accent is invisible against half the photographs it would be drawn on
+  (`kCoverStarColor`, defined once so the two cannot drift).
+- **The card reads one map, not one query per card.** `tripCoversProvider` is the
+  `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
+  `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and
+  `thumbnailsFor` then fetches the handful that were chosen. Fetching every thumbnail to
+  pick a dozen would push megabytes through the stream on every tick. The thumbnail sits at
+  the card's **trailing** edge, opposite the accent stripe: leading would shift the title of
+  every card that has one and leave the list a ragged left edge, or force a placeholder —
+  something invented to fill a space rather than something said. One stated cost: this
+  provider does **not** apply the live rule, since that would mean holding every trip's
+  entries for a picture the size of a fingernail, so a photograph in an unchosen option can
+  reach a card where it reaches no export and no map.
+
 - **Deleted space comes back by itself, because a user must not have to ask for it.**
   `AppDatabase._enableAutoVacuum` puts every file on `auto_vacuum = FULL`. SQLite otherwise
   keeps freed pages on a free list forever, which is the right trade for a database of text
@@ -1212,7 +1257,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 34) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 35) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

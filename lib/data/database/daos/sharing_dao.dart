@@ -132,6 +132,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             lon: a.lon,
             positionSource: a.positionSource,
             sortOrder: a.sortOrder,
+            isCover: a.id == trip.coverAttachmentId,
           ),
     ];
 
@@ -221,6 +222,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
         kind: trip.kind,
         colorValue: trip.colorValue,
         photosCollapsed: trip.photosCollapsed,
+        coverHidden: trip.coverHidden,
         createdAt: trip.createdAt,
       ),
       groups: [
@@ -391,6 +393,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
           kind: Value(bundle.trip.kind),
           colorValue: Value(bundle.trip.colorValue),
           photosCollapsed: Value(bundle.trip.photosCollapsed),
+          coverHidden: Value(bundle.trip.coverHidden),
           createdAt: Value(bundle.trip.createdAt),
         ),
       );
@@ -405,7 +408,11 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             collapsed: Value(g.collapsed),
           ),
         );
-        await _writeAttachments(g.attachments, groupId: groupIds[g.localId]);
+        await _writeAttachments(
+          g.attachments,
+          importedTripId: tripId,
+          groupId: groupIds[g.localId],
+        );
       }
 
       // Decisions and their options next, for the same reason: an item planned
@@ -489,11 +496,19 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             ),
           );
         }
-        await _writeAttachments(i.attachments, itemId: itemIds[i.localId]);
+        await _writeAttachments(
+          i.attachments,
+          importedTripId: tripId,
+          itemId: itemIds[i.localId],
+        );
       }
 
       // The trip's own paperwork, which hangs on nothing inside it.
-      await _writeAttachments(bundle.attachments, tripId: tripId);
+      await _writeAttachments(
+        bundle.attachments,
+        importedTripId: tripId,
+        tripId: tripId,
+      );
 
       for (final c in bundle.costs) {
         final itemId = _mapId(itemIds, c.itemLocalId);
@@ -713,7 +728,9 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
 
   /// Maps a bundle-local key to its freshly-inserted id, or null when the key is
   /// null. Assumes the referenced row was inserted earlier in the same import.
-  /// Writes a bundle's attachments onto the entry or the run they arrived with.
+  /// Writes a bundle's attachments onto the entry, the run, or the trip they
+  /// arrived with. [importedTripId] is the trip being written — the same one in
+  /// every call, and what a cover flag points back at.
   ///
   /// The row and its payload, since the payload is why they were in the file at
   /// all. `byteSize` is measured here rather than read from the bundle: it is a
@@ -723,6 +740,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
   /// track makes, since one bad picture must not cost the recipient the trip.
   Future<void> _writeAttachments(
     List<BundleAttachment> incoming, {
+    required int importedTripId,
     int? itemId,
     int? groupId,
     int? tripId,
@@ -764,6 +782,13 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       await into(attachmentBlobs).insert(
         AttachmentBlobsCompanion.insert(attachmentId: Value(id), bytes: bytes),
       );
+      // The trip points at the row that has just been written, which is the
+      // whole reason the cover travels as a flag rather than as an id.
+      if (a.isCover) {
+        await (update(trips)..where((t) => t.id.equals(importedTripId))).write(
+          TripsCompanion(coverAttachmentId: Value(id)),
+        );
+      }
     }
   }
 

@@ -194,4 +194,62 @@ void main() {
 
     expect(gallery.single.label, isNull);
   });
+
+  group('which one the overview card shows', () {
+    Trip trip({int? coverAttachmentId, bool coverHidden = false}) => Trip(
+      id: 1,
+      title: 'Rome',
+      destination: '',
+      kind: TripKind.trip,
+      colorValue: 0xFF00695C,
+      coverAttachmentId: coverAttachmentId,
+      coverHidden: coverHidden,
+      photosCollapsed: false,
+      createdAt: DateTime(2026, 1, 1),
+    );
+
+    List<GalleryPhoto> gallery() {
+      final entry = place(title: 'Colosseum');
+      return tripGallery(
+        [entry],
+        photos: [
+          photo(name: 'first.jpg', itemId: entry.id, sortOrder: 0),
+          photo(name: 'second.jpg', itemId: entry.id, sortOrder: 1),
+        ],
+      );
+    }
+
+    test('derives the first when nothing has been chosen', () {
+      expect(coverPhoto(trip(), gallery())!.name, 'first.jpg');
+    });
+
+    test('shows the one the trip named', () {
+      final photos = gallery();
+      final chosen = photos.last.attachment.id;
+
+      expect(
+        coverPhoto(trip(coverAttachmentId: chosen), photos)!.name,
+        'second.jpg',
+      );
+    });
+
+    test('shows none when the trip says none, photos or not', () {
+      // The third state, and the reason a nullable id cannot carry this alone:
+      // "nothing chosen" and "nothing wanted" are different statements.
+      expect(coverPhoto(trip(coverHidden: true), gallery()), isNull);
+    });
+
+    test('falls back when the named one has left the plan', () {
+      // Deleted, or in an option nobody chose any more. Showing nothing would
+      // be a statement this trip has not made.
+      expect(
+        coverPhoto(trip(coverAttachmentId: 9999), gallery())!.name,
+        'first.jpg',
+      );
+    });
+
+    test('a trip with no photographs shows none', () {
+      expect(coverPhoto(trip(), const []), isNull);
+    });
+  });
 }

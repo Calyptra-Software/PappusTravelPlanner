@@ -61,6 +61,8 @@ void main() {
     WidgetTester tester, {
     required List<Attachment> photos,
     bool collapsed = false,
+    int? coverAttachmentId,
+    bool coverHidden = false,
   }) async {
     final items = await db.itineraryDao.itemsFor(tripId);
     await tester.pumpWidget(
@@ -88,7 +90,12 @@ void main() {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: TripPhotoStrip(tripId: tripId, collapsed: collapsed),
+            body: TripPhotoStrip(
+              tripId: tripId,
+              collapsed: collapsed,
+              coverAttachmentId: coverAttachmentId,
+              coverHidden: coverHidden,
+            ),
           ),
         ),
       ),
@@ -148,5 +155,78 @@ void main() {
     // with no reason to be tapped.
     expect(find.text('Photos'), findsOneWidget);
     expect(find.text('2 attachments'), findsOneWidget);
+  });
+
+  group('the cover mark', () {
+    testWidgets('is on the chosen thumbnail and on no other', (tester) async {
+      await pumpStrip(
+        tester,
+        photos: [photo(1, 'a.jpg'), photo(2, 'b.jpg'), photo(3, 'c.jpg')],
+        coverAttachmentId: 2,
+      );
+
+      // One star, not three: nineteen empty ones would answer a question
+      // nobody asked, and each would need a target that steals the tap opening
+      // the gallery.
+      expect(find.byIcon(Icons.star), findsOneWidget);
+    });
+
+    testWidgets('is absent while the trip wants no cover', (tester) async {
+      await pumpStrip(
+        tester,
+        photos: [photo(1, 'a.jpg'), photo(2, 'b.jpg')],
+        coverAttachmentId: 2,
+        coverHidden: true,
+      );
+
+      expect(find.byIcon(Icons.star), findsNothing);
+    });
+
+    testWidgets('is absent when nothing has been chosen', (tester) async {
+      // The card derives one, but the strip marks only a *choice* — a star on
+      // the first thumbnail would look like a decision nobody made.
+      await pumpStrip(tester, photos: [photo(1, 'a.jpg')]);
+
+      expect(find.byIcon(Icons.star), findsNothing);
+    });
+
+    testWidgets('"no cover" is written to the trip, and taken back', (
+      tester,
+    ) async {
+      await pumpStrip(tester, photos: [photo(1, 'a.jpg')]);
+
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('No cover photo'));
+      await tester.pumpAndSettle();
+
+      expect((await db.tripDao.findTrip(tripId))!.coverHidden, isTrue);
+
+      await pumpStrip(tester, photos: [photo(1, 'a.jpg')], coverHidden: true);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('No cover photo'));
+      await tester.pumpAndSettle();
+
+      expect((await db.tripDao.findTrip(tripId))!.coverHidden, isFalse);
+    });
+
+    testWidgets('hiding is offered while a picture is marked too', (
+      tester,
+    ) async {
+      // What hiding *does* to the stored choice is the DAO's rule and is tested
+      // there against real rows; here the mark is a stub, and inserting one
+      // just to satisfy the foreign key would be testing the wrong thing.
+      await pumpStrip(
+        tester,
+        photos: [photo(1, 'a.jpg')],
+        coverAttachmentId: 1,
+      );
+
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+      expect(find.text('No cover photo'), findsOneWidget);
+    });
   });
 }

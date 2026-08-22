@@ -157,6 +157,67 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     return (count: row.read(count) ?? 0, bytes: row.read(total)?.toInt() ?? 0);
   }
 
+  /// What every trip's overview card would need to choose a cover from — the
+  /// photos' ids and where each one sits, and **no thumbnails**.
+  ///
+  /// The blob is left out on purpose. There is one query for the whole overview
+  /// (a query per card is the thing `watchPositionedItems` and `watchAllTracks`
+  /// exist to avoid), and a database with two hundred photographs would
+  /// otherwise push three megabytes through it on every tick to pick a dozen
+  /// pictures. The caller works out which ids it wants and then asks for those
+  /// with [thumbnailsFor] — the same metadata-and-payload split
+  /// [AttachmentBlobs] makes, one level up.
+  ///
+  /// Unfiltered by the live rule, as everything here is: the caller holds the
+  /// entries and `tripGallery` applies it.
+  Stream<List<CoverCandidate>> watchCoverCandidates() {
+    final query =
+        select(attachments).join([
+            leftOuterJoin(
+              itineraryItems,
+              itineraryItems.id.equalsExp(attachments.itemId),
+            ),
+            leftOuterJoin(
+              itemGroups,
+              itemGroups.id.equalsExp(attachments.groupId),
+            ),
+          ])
+          ..addColumns([itineraryItems.tripId, itemGroups.tripId])
+          ..where(attachments.kind.equalsValue(AttachmentKind.photo))
+          ..orderBy([
+            OrderingTerm(expression: attachments.sortOrder),
+            OrderingTerm(expression: attachments.id),
+          ]);
+    return query.watch().map((rows) {
+      final out = <CoverCandidate>[];
+      for (final row in rows) {
+        final attachment = row.readTable(attachments);
+        final tripId =
+            attachment.tripId ??
+            row.read(itineraryItems.tripId) ??
+            row.read(itemGroups.tripId);
+        if (tripId == null) continue;
+        out.add(CoverCandidate(tripId: tripId, attachment: attachment));
+      }
+      return out;
+    });
+  }
+
+  /// The thumbnails of exactly [ids] — the second half of [watchCoverCandidates].
+  Future<Map<int, Uint8List>> thumbnailsFor(List<int> ids) async {
+    if (ids.isEmpty) return const {};
+    final rows =
+        await (selectOnly(attachments)
+              ..addColumns([attachments.id, attachments.thumbnail])
+              ..where(attachments.id.isIn(ids)))
+            .get();
+    return {
+      for (final row in rows)
+        if (row.read(attachments.thumbnail) != null)
+          row.read(attachments.id)!: row.read(attachments.thumbnail)!,
+    };
+  }
+
   /// One row, for a viewer that was handed an id rather than the row.
   Future<Attachment?> attachment(int id) =>
       (select(attachments)..where((a) => a.id.equals(id))).getSingleOrNull();
@@ -377,4 +438,16 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
     if (groupId != null) return attachments.groupId.equals(groupId);
     return attachments.tripId.equals(tripId!);
   }
+}
+
+/// A photograph that could be a trip's cover, with the trip it belongs to.
+///
+/// The trip is resolved here because an attachment names one of three owners
+/// and only one of them is the trip directly; the other two reach it through
+/// the entry or the run. Carrying the answer means no screen has to join again.
+final class CoverCandidate {
+  const CoverCandidate({required this.tripId, required this.attachment});
+
+  final int tripId;
+  final Attachment attachment;
 }

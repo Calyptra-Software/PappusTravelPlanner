@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/attachments/attachment_import.dart';
+import 'package:travelplanner/features/attachments/trip_gallery.dart';
 
 /// Storing a file on part of a plan: where it may hang, what happens to it when
 /// that part goes away, and what the timeline is told about it.
@@ -359,6 +360,110 @@ void main() {
             .name,
         'season-ticket.pdf',
       );
+    });
+  });
+
+  group('the overview cover', () {
+    test('a chosen picture is stored, and cleared again', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      final id = await db.attachmentDao.addAttachment(
+        ticket(name: 'view.jpg'),
+        itemId: leg,
+      );
+
+      await db.tripDao.setCover(trip, id);
+      expect((await db.tripDao.findTrip(trip))!.coverAttachmentId, id);
+
+      await db.tripDao.setCover(trip, null);
+      // Back to the derived picture, which is what "no choice" means.
+      expect((await db.tripDao.findTrip(trip))!.coverAttachmentId, isNull);
+      expect((await db.tripDao.findTrip(trip))!.coverHidden, isFalse);
+    });
+
+    test('hiding clears the choice rather than parking it', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      final id = await db.attachmentDao.addAttachment(
+        ticket(name: 'view.jpg'),
+        itemId: leg,
+      );
+      await db.tripDao.setCover(trip, id);
+
+      await db.tripDao.setCoverHidden(trip, true);
+
+      // The invariant: no two columns may disagree about what the card shows,
+      // so un-hiding returns to the derived picture and not to a memory
+      // nothing on screen could have hinted at.
+      final hidden = (await db.tripDao.findTrip(trip))!;
+      expect(hidden.coverHidden, isTrue);
+      expect(hidden.coverAttachmentId, isNull);
+
+      await db.tripDao.setCoverHidden(trip, false);
+      final shown = (await db.tripDao.findTrip(trip))!;
+      expect(shown.coverHidden, isFalse);
+      expect(shown.coverAttachmentId, isNull);
+    });
+
+    test('naming a picture takes back "no cover"', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      await db.tripDao.setCoverHidden(trip, true);
+      final id = await db.attachmentDao.addAttachment(
+        ticket(name: 'view.jpg'),
+        itemId: leg,
+      );
+
+      await db.tripDao.setCover(trip, id);
+
+      // Naming one is a statement that a cover is wanted.
+      final trip1 = (await db.tripDao.findTrip(trip))!;
+      expect(trip1.coverHidden, isFalse);
+      expect(trip1.coverAttachmentId, id);
+    });
+
+    test('deleting the chosen picture leaves an id nothing trusts', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      final id = await db.attachmentDao.addAttachment(
+        ticket(name: 'view.jpg'),
+        itemId: leg,
+      );
+      await db.tripDao.setCover(trip, id);
+
+      await db.attachmentDao.deleteAttachment(id);
+
+      // The column is deliberately *not* a foreign key — declaring the reverse
+      // of `attachments.trip_id` puts the two tables in a cycle, and drift
+      // answers a cycle by silently dropping foreign keys elsewhere until it
+      // can order its CREATE TABLEs. So the id stays, and `coverPhoto` is what
+      // makes it harmless: it looks the id up in the gallery it was handed and
+      // falls back when it is not there.
+      final after = (await db.tripDao.findTrip(trip))!;
+      expect(after.coverAttachmentId, id);
+      expect(coverPhoto(after, const []), isNull);
+
+      // And it can never come to mean a *different* picture: `attachments.id`
+      // is AUTOINCREMENT, so SQLite never reissues the number.
+      final next = await db.attachmentDao.addAttachment(
+        ticket(name: 'other.jpg'),
+        itemId: leg,
+      );
+      expect(next, isNot(id));
+    });
+
+    test('the cascades that cycle would have broken still fire', () async {
+      // Standing guard over the measurement above: adding that foreign key took
+      // the reference off `item_groups.trip_id` and `alternative_sets.trip_id`,
+      // and deleting a trip stopped cascading to either.
+      final trip = await makeTrip();
+      final group = await makeGroup(trip);
+      await makeLeg(trip, groupId: group);
+
+      await db.tripDao.deleteTrip(trip);
+
+      expect(await db.groupDao.watchGroupsForTrip(trip).first, isEmpty);
+      expect(await db.itineraryDao.itemsFor(trip), isEmpty);
     });
   });
 

@@ -21,6 +21,7 @@ void main() {
     destination: '',
     kind: TripKind.trip,
     colorValue: 0xFF112233,
+    coverHidden: false,
     photosCollapsed: false,
     createdAt: DateTime(2026),
   );

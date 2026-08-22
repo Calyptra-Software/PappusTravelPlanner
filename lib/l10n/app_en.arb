@@ -1115,5 +1115,8 @@
   "attachmentSaved": "File saved.",
   "attachmentsTripTitle": "Trip documents",
   "attachmentsTripAdd": "Add trip document",
-  "galleryTitle": "Photos"
+  "galleryTitle": "Photos",
+  "coverSet": "Use as trip cover",
+  "coverRemove": "Remove as trip cover",
+  "coverNone": "No cover photo"
 }

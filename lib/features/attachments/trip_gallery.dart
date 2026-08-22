@@ -95,3 +95,27 @@ String? itemLabel(ItineraryItem item) {
   if ((from ?? '').isEmpty && (to ?? '').isEmpty) return null;
   return '${from ?? '?'} → ${to ?? '?'}';
 }
+
+/// The photograph a trip's overview card shows, or null for none.
+///
+/// The three states in one place, so no screen has to reassemble them:
+///
+/// * the trip says it wants **no** cover — nothing, even though it has photos;
+/// * the trip **names** one — that one, as long as it is still in [gallery]
+///   (a picture in an option nobody chose has left the plan, and a card must
+///   not go on showing it);
+/// * otherwise the **first** in gallery order, which is the trip's own pictures
+///   before its days'. Derived, and stated as such: the first photograph of a
+///   trip is often the platform on day one, which is why naming one is a tap
+///   away rather than something the app pretends to be good at.
+Attachment? coverPhoto(Trip trip, List<GalleryPhoto> gallery) {
+  if (trip.coverHidden || gallery.isEmpty) return null;
+  if (trip.coverAttachmentId case final chosen?) {
+    for (final photo in gallery) {
+      if (photo.attachment.id == chosen) return photo.attachment;
+    }
+    // Named but not here any more: fall through to the derived one rather than
+    // showing nothing, since "nothing" is a statement this trip has not made.
+  }
+  return gallery.first.attachment;
+}

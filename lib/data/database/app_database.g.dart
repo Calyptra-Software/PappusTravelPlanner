@@ -113,6 +113,32 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0xFF00695C),
   );
+  static const VerificationMeta _coverAttachmentIdMeta = const VerificationMeta(
+    'coverAttachmentId',
+  );
+  @override
+  late final GeneratedColumn<int> coverAttachmentId = GeneratedColumn<int>(
+    'cover_attachment_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _coverHiddenMeta = const VerificationMeta(
+    'coverHidden',
+  );
+  @override
+  late final GeneratedColumn<bool> coverHidden = GeneratedColumn<bool>(
+    'cover_hidden',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("cover_hidden" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _photosCollapsedMeta = const VerificationMeta(
     'photosCollapsed',
   );
@@ -151,6 +177,8 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
     kind,
     fromRoutineId,
     colorValue,
+    coverAttachmentId,
+    coverHidden,
     photosCollapsed,
     createdAt,
   ];
@@ -219,6 +247,24 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         colorValue.isAcceptableOrUnknown(data['color_value']!, _colorValueMeta),
       );
     }
+    if (data.containsKey('cover_attachment_id')) {
+      context.handle(
+        _coverAttachmentIdMeta,
+        coverAttachmentId.isAcceptableOrUnknown(
+          data['cover_attachment_id']!,
+          _coverAttachmentIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('cover_hidden')) {
+      context.handle(
+        _coverHiddenMeta,
+        coverHidden.isAcceptableOrUnknown(
+          data['cover_hidden']!,
+          _coverHiddenMeta,
+        ),
+      );
+    }
     if (data.containsKey('photos_collapsed')) {
       context.handle(
         _photosCollapsedMeta,
@@ -281,6 +327,14 @@ class $TripsTable extends Trips with TableInfo<$TripsTable, Trip> {
         DriftSqlType.int,
         data['${effectivePrefix}color_value'],
       )!,
+      coverAttachmentId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}cover_attachment_id'],
+      ),
+      coverHidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}cover_hidden'],
+      )!,
       photosCollapsed: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}photos_collapsed'],
@@ -323,6 +377,41 @@ class Trip extends DataClass implements Insertable<Trip> {
   /// ARGB colour used as the card accent, e.g. 0xFF00695C.
   final int colorValue;
 
+  /// The photograph shown on this trip's overview card, when the user has
+  /// picked one. Null means they have not, and the card falls back to the first
+  /// picture in gallery order — see [coverHidden] for the third state.
+  ///
+  /// **Deliberately not a foreign key.** [Attachments] already references
+  /// [Trips], so declaring the reverse would put the two tables in a *cycle* —
+  /// and drift answers a cycle by silently dropping foreign keys until it can
+  /// order its `CREATE TABLE`s again. Measured: adding it took the reference off
+  /// `item_groups.trip_id` and `alternative_sets.trip_id` among others, so
+  /// deleting a trip stopped cascading to its groups and its decisions. Losing
+  /// half the schema's cascades to gain one `setNull` is not a trade; the
+  /// invariant it would have enforced is cheap to live without instead.
+  ///
+  /// A deleted picture therefore leaves its id behind here, and nothing trusts
+  /// it: `coverPhoto` looks the id up in the gallery it was handed and falls
+  /// back to the derived photograph when it is not there. The id can never come
+  /// to mean a *different* picture either, since `attachments.id` is
+  /// `AUTOINCREMENT` and SQLite never reissues one.
+  final int? coverAttachmentId;
+
+  /// Whether the overview card is to show **no** photograph at all, even though
+  /// the trip has some.
+  ///
+  /// The third state, and the reason [coverAttachmentId] cannot carry this
+  /// alone: null there means "nothing chosen", which is not the same statement
+  /// as "nothing wanted". A trip whose pictures are all of receipts has photos
+  /// and no cover, and deriving one anyway would be the app overruling that.
+  ///
+  /// Invariant, kept by `TripDao`: this being true implies [coverAttachmentId]
+  /// is null. Hiding clears the choice rather than parking it, so no two
+  /// columns can disagree about what the card shows — un-hiding returns to the
+  /// derived picture, not to a remembered one nothing on screen could have
+  /// hinted at.
+  final bool coverHidden;
+
   /// Whether the strip of photographs on the trip screen is shown collapsed.
   ///
   /// A column here rather than a table of its own — the shape [CollapsedDays]
@@ -346,6 +435,8 @@ class Trip extends DataClass implements Insertable<Trip> {
     required this.kind,
     this.fromRoutineId,
     required this.colorValue,
+    this.coverAttachmentId,
+    required this.coverHidden,
     required this.photosCollapsed,
     required this.createdAt,
   });
@@ -371,6 +462,10 @@ class Trip extends DataClass implements Insertable<Trip> {
       map['from_routine_id'] = Variable<int>(fromRoutineId);
     }
     map['color_value'] = Variable<int>(colorValue);
+    if (!nullToAbsent || coverAttachmentId != null) {
+      map['cover_attachment_id'] = Variable<int>(coverAttachmentId);
+    }
+    map['cover_hidden'] = Variable<bool>(coverHidden);
     map['photos_collapsed'] = Variable<bool>(photosCollapsed);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -395,6 +490,10 @@ class Trip extends DataClass implements Insertable<Trip> {
           ? const Value.absent()
           : Value(fromRoutineId),
       colorValue: Value(colorValue),
+      coverAttachmentId: coverAttachmentId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(coverAttachmentId),
+      coverHidden: Value(coverHidden),
       photosCollapsed: Value(photosCollapsed),
       createdAt: Value(createdAt),
     );
@@ -417,6 +516,8 @@ class Trip extends DataClass implements Insertable<Trip> {
       ),
       fromRoutineId: serializer.fromJson<int?>(json['fromRoutineId']),
       colorValue: serializer.fromJson<int>(json['colorValue']),
+      coverAttachmentId: serializer.fromJson<int?>(json['coverAttachmentId']),
+      coverHidden: serializer.fromJson<bool>(json['coverHidden']),
       photosCollapsed: serializer.fromJson<bool>(json['photosCollapsed']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
@@ -434,6 +535,8 @@ class Trip extends DataClass implements Insertable<Trip> {
       'kind': serializer.toJson<int>($TripsTable.$converterkind.toJson(kind)),
       'fromRoutineId': serializer.toJson<int?>(fromRoutineId),
       'colorValue': serializer.toJson<int>(colorValue),
+      'coverAttachmentId': serializer.toJson<int?>(coverAttachmentId),
+      'coverHidden': serializer.toJson<bool>(coverHidden),
       'photosCollapsed': serializer.toJson<bool>(photosCollapsed),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
@@ -449,6 +552,8 @@ class Trip extends DataClass implements Insertable<Trip> {
     TripKind? kind,
     Value<int?> fromRoutineId = const Value.absent(),
     int? colorValue,
+    Value<int?> coverAttachmentId = const Value.absent(),
+    bool? coverHidden,
     bool? photosCollapsed,
     DateTime? createdAt,
   }) => Trip(
@@ -463,6 +568,10 @@ class Trip extends DataClass implements Insertable<Trip> {
         ? fromRoutineId.value
         : this.fromRoutineId,
     colorValue: colorValue ?? this.colorValue,
+    coverAttachmentId: coverAttachmentId.present
+        ? coverAttachmentId.value
+        : this.coverAttachmentId,
+    coverHidden: coverHidden ?? this.coverHidden,
     photosCollapsed: photosCollapsed ?? this.photosCollapsed,
     createdAt: createdAt ?? this.createdAt,
   );
@@ -483,6 +592,12 @@ class Trip extends DataClass implements Insertable<Trip> {
       colorValue: data.colorValue.present
           ? data.colorValue.value
           : this.colorValue,
+      coverAttachmentId: data.coverAttachmentId.present
+          ? data.coverAttachmentId.value
+          : this.coverAttachmentId,
+      coverHidden: data.coverHidden.present
+          ? data.coverHidden.value
+          : this.coverHidden,
       photosCollapsed: data.photosCollapsed.present
           ? data.photosCollapsed.value
           : this.photosCollapsed,
@@ -502,6 +617,8 @@ class Trip extends DataClass implements Insertable<Trip> {
           ..write('kind: $kind, ')
           ..write('fromRoutineId: $fromRoutineId, ')
           ..write('colorValue: $colorValue, ')
+          ..write('coverAttachmentId: $coverAttachmentId, ')
+          ..write('coverHidden: $coverHidden, ')
           ..write('photosCollapsed: $photosCollapsed, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -519,6 +636,8 @@ class Trip extends DataClass implements Insertable<Trip> {
     kind,
     fromRoutineId,
     colorValue,
+    coverAttachmentId,
+    coverHidden,
     photosCollapsed,
     createdAt,
   );
@@ -535,6 +654,8 @@ class Trip extends DataClass implements Insertable<Trip> {
           other.kind == this.kind &&
           other.fromRoutineId == this.fromRoutineId &&
           other.colorValue == this.colorValue &&
+          other.coverAttachmentId == this.coverAttachmentId &&
+          other.coverHidden == this.coverHidden &&
           other.photosCollapsed == this.photosCollapsed &&
           other.createdAt == this.createdAt);
 }
@@ -549,6 +670,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
   final Value<TripKind> kind;
   final Value<int?> fromRoutineId;
   final Value<int> colorValue;
+  final Value<int?> coverAttachmentId;
+  final Value<bool> coverHidden;
   final Value<bool> photosCollapsed;
   final Value<DateTime> createdAt;
   const TripsCompanion({
@@ -561,6 +684,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.kind = const Value.absent(),
     this.fromRoutineId = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.coverAttachmentId = const Value.absent(),
+    this.coverHidden = const Value.absent(),
     this.photosCollapsed = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
@@ -574,6 +699,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     this.kind = const Value.absent(),
     this.fromRoutineId = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.coverAttachmentId = const Value.absent(),
+    this.coverHidden = const Value.absent(),
     this.photosCollapsed = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : title = Value(title);
@@ -587,6 +714,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Expression<int>? kind,
     Expression<int>? fromRoutineId,
     Expression<int>? colorValue,
+    Expression<int>? coverAttachmentId,
+    Expression<bool>? coverHidden,
     Expression<bool>? photosCollapsed,
     Expression<DateTime>? createdAt,
   }) {
@@ -600,6 +729,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       if (kind != null) 'kind': kind,
       if (fromRoutineId != null) 'from_routine_id': fromRoutineId,
       if (colorValue != null) 'color_value': colorValue,
+      if (coverAttachmentId != null) 'cover_attachment_id': coverAttachmentId,
+      if (coverHidden != null) 'cover_hidden': coverHidden,
       if (photosCollapsed != null) 'photos_collapsed': photosCollapsed,
       if (createdAt != null) 'created_at': createdAt,
     });
@@ -615,6 +746,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     Value<TripKind>? kind,
     Value<int?>? fromRoutineId,
     Value<int>? colorValue,
+    Value<int?>? coverAttachmentId,
+    Value<bool>? coverHidden,
     Value<bool>? photosCollapsed,
     Value<DateTime>? createdAt,
   }) {
@@ -628,6 +761,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
       kind: kind ?? this.kind,
       fromRoutineId: fromRoutineId ?? this.fromRoutineId,
       colorValue: colorValue ?? this.colorValue,
+      coverAttachmentId: coverAttachmentId ?? this.coverAttachmentId,
+      coverHidden: coverHidden ?? this.coverHidden,
       photosCollapsed: photosCollapsed ?? this.photosCollapsed,
       createdAt: createdAt ?? this.createdAt,
     );
@@ -663,6 +798,12 @@ class TripsCompanion extends UpdateCompanion<Trip> {
     if (colorValue.present) {
       map['color_value'] = Variable<int>(colorValue.value);
     }
+    if (coverAttachmentId.present) {
+      map['cover_attachment_id'] = Variable<int>(coverAttachmentId.value);
+    }
+    if (coverHidden.present) {
+      map['cover_hidden'] = Variable<bool>(coverHidden.value);
+    }
     if (photosCollapsed.present) {
       map['photos_collapsed'] = Variable<bool>(photosCollapsed.value);
     }
@@ -684,6 +825,8 @@ class TripsCompanion extends UpdateCompanion<Trip> {
           ..write('kind: $kind, ')
           ..write('fromRoutineId: $fromRoutineId, ')
           ..write('colorValue: $colorValue, ')
+          ..write('coverAttachmentId: $coverAttachmentId, ')
+          ..write('coverHidden: $coverHidden, ')
           ..write('photosCollapsed: $photosCollapsed, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
@@ -9343,6 +9486,8 @@ typedef $$TripsTableCreateCompanionBuilder =
       Value<TripKind> kind,
       Value<int?> fromRoutineId,
       Value<int> colorValue,
+      Value<int?> coverAttachmentId,
+      Value<bool> coverHidden,
       Value<bool> photosCollapsed,
       Value<DateTime> createdAt,
     });
@@ -9357,6 +9502,8 @@ typedef $$TripsTableUpdateCompanionBuilder =
       Value<TripKind> kind,
       Value<int?> fromRoutineId,
       Value<int> colorValue,
+      Value<int?> coverAttachmentId,
+      Value<bool> coverHidden,
       Value<bool> photosCollapsed,
       Value<DateTime> createdAt,
     });
@@ -9597,6 +9744,16 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
 
   ColumnFilters<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get coverAttachmentId => $composableBuilder(
+    column: $table.coverAttachmentId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get coverHidden => $composableBuilder(
+    column: $table.coverHidden,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -9908,6 +10065,16 @@ class $$TripsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get coverAttachmentId => $composableBuilder(
+    column: $table.coverAttachmentId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get coverHidden => $composableBuilder(
+    column: $table.coverHidden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get photosCollapsed => $composableBuilder(
     column: $table.photosCollapsed,
     builder: (column) => ColumnOrderings(column),
@@ -9976,6 +10143,16 @@ class $$TripsTableAnnotationComposer
 
   GeneratedColumn<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get coverAttachmentId => $composableBuilder(
+    column: $table.coverAttachmentId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get coverHidden => $composableBuilder(
+    column: $table.coverHidden,
     builder: (column) => column,
   );
 
@@ -10284,6 +10461,8 @@ class $$TripsTableTableManager
                 Value<TripKind> kind = const Value.absent(),
                 Value<int?> fromRoutineId = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
+                Value<int?> coverAttachmentId = const Value.absent(),
+                Value<bool> coverHidden = const Value.absent(),
                 Value<bool> photosCollapsed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion(
@@ -10296,6 +10475,8 @@ class $$TripsTableTableManager
                 kind: kind,
                 fromRoutineId: fromRoutineId,
                 colorValue: colorValue,
+                coverAttachmentId: coverAttachmentId,
+                coverHidden: coverHidden,
                 photosCollapsed: photosCollapsed,
                 createdAt: createdAt,
               ),
@@ -10310,6 +10491,8 @@ class $$TripsTableTableManager
                 Value<TripKind> kind = const Value.absent(),
                 Value<int?> fromRoutineId = const Value.absent(),
                 Value<int> colorValue = const Value.absent(),
+                Value<int?> coverAttachmentId = const Value.absent(),
+                Value<bool> coverHidden = const Value.absent(),
                 Value<bool> photosCollapsed = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => TripsCompanion.insert(
@@ -10322,6 +10505,8 @@ class $$TripsTableTableManager
                 kind: kind,
                 fromRoutineId: fromRoutineId,
                 colorValue: colorValue,
+                coverAttachmentId: coverAttachmentId,
+                coverHidden: coverHidden,
                 photosCollapsed: photosCollapsed,
                 createdAt: createdAt,
               ),

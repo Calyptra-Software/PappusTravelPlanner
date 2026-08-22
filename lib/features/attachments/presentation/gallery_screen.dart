@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../trips/application/trip_providers.dart';
 import '../application/attachment_providers.dart';
+import '../cover_star.dart';
 import '../trip_gallery.dart';
 import 'attachment_sheet.dart';
 
@@ -14,16 +17,26 @@ import 'attachment_sheet.dart';
 /// not a thing to put in a URL. The same shape `pickPointOnMap` has, and for a
 /// related reason: both are screens that answer with something rather than
 /// places one navigates to.
+///
+/// [tripId] is the trip these photographs belong to, when the caller knows it —
+/// which both callers do, the strip from its own screen and an entry's field
+/// from the entry. It is what the cover star writes to; without it the star is
+/// simply not offered, since there is no trip to be the cover *of*.
 Future<void> showGallery(
   BuildContext context, {
   required List<GalleryPhoto> photos,
   int initialIndex = 0,
+  int? tripId,
 }) {
   if (photos.isEmpty) return Future.value();
   return Navigator.of(context).push<void>(
     MaterialPageRoute(
       fullscreenDialog: true,
-      builder: (_) => GalleryScreen(photos: photos, initialIndex: initialIndex),
+      builder: (_) => GalleryScreen(
+        photos: photos,
+        initialIndex: initialIndex,
+        tripId: tripId,
+      ),
     ),
   );
 }
@@ -39,17 +52,26 @@ Future<void> showGallery(
 /// Each page is decoded only as it comes into view, through the `autoDispose`
 /// [attachmentBytesProvider]: a `PageView` builds lazily, so a gallery of two
 /// hundred photographs holds three of them.
-class GalleryScreen extends StatefulWidget {
-  const GalleryScreen({super.key, required this.photos, this.initialIndex = 0});
+class GalleryScreen extends ConsumerStatefulWidget {
+  const GalleryScreen({
+    super.key,
+    required this.photos,
+    this.initialIndex = 0,
+    this.tripId,
+  });
 
   final List<GalleryPhoto> photos;
   final int initialIndex;
 
+  /// The trip whose cover the star sets, or null when the opener did not say —
+  /// in which case there is no star.
+  final int? tripId;
+
   @override
-  State<GalleryScreen> createState() => _GalleryScreenState();
+  ConsumerState<GalleryScreen> createState() => _GalleryScreenState();
 }
 
-class _GalleryScreenState extends State<GalleryScreen> {
+class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   late final PageController _controller = PageController(
     initialPage: widget.initialIndex,
   );
@@ -104,6 +126,13 @@ class _GalleryScreenState extends State<GalleryScreen> {
           ],
         ),
         actions: [
+          // A cover is chosen against the picture, at the size it is actually
+          // looked at — the argument that put `ItemColorField` on the map
+          // rather than in a form. Here rather than on the thumbnails in the
+          // strip, where a real 48dp target would cover half a 72dp tile and
+          // steal the taps meant to open this screen.
+          if (widget.tripId case final tripId?)
+            _CoverStar(tripId: tripId, attachmentId: photo.attachment.id),
           IconButton(
             tooltip: MaterialLocalizations.of(context).showMenuTooltip,
             icon: const Icon(Icons.more_vert),
@@ -133,6 +162,41 @@ class _GalleryScreenState extends State<GalleryScreen> {
           },
         ),
       ),
+    );
+  }
+}
+
+/// Amber when this picture is the trip's cover, an outline when it is not.
+///
+/// Tapping fills it; tapping the filled one empties it and hands the card back
+/// to the derived photograph. The third state — a trip that wants *no* cover
+/// though it has pictures — is not here: it is a statement about the trip and
+/// not about any one photograph, so it lives on the strip's own menu.
+///
+/// Amber because red is the app's one reserved colour ("this is happening") and
+/// the trip's accent would be invisible against half the photographs it is
+/// drawn on. A star that is gold when set is read without a legend.
+class _CoverStar extends ConsumerWidget {
+  const _CoverStar({required this.tripId, required this.attachmentId});
+
+  final int tripId;
+  final int attachmentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final trip = ref.watch(tripProvider(tripId)).value;
+    final isCover = trip?.coverAttachmentId == attachmentId;
+
+    return IconButton(
+      tooltip: isCover ? l10n.coverRemove : l10n.coverSet,
+      icon: Icon(
+        isCover ? Icons.star : Icons.star_border,
+        color: isCover ? kCoverStarColor : Colors.white,
+      ),
+      onPressed: () => ref
+          .read(repositoryProvider)
+          .setTripCover(tripId, isCover ? null : attachmentId),
     );
   }
 }

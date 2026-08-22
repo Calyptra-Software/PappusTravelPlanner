@@ -115,6 +115,7 @@ void main() {
             title: 'Trip',
             destination: '',
             colorValue: 0xFF00695C,
+            coverHidden: false,
             photosCollapsed: false,
             createdAt: DateTime(2026),
             kind: TripKind.trip,

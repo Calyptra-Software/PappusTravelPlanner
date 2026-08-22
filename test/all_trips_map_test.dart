@@ -36,6 +36,7 @@ void main() {
     title: 'Trip $id',
     destination: '',
     colorValue: color,
+    coverHidden: false,
     photosCollapsed: false,
     createdAt: DateTime(2026, 5, 1),
     kind: TripKind.trip,

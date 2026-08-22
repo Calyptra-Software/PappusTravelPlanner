@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/format/money_format.dart';
@@ -6,7 +8,8 @@ import '../../../l10n/app_localizations.dart';
 import 'tag_chip.dart';
 import 'trip_when_line.dart';
 
-/// Overview card summarising a single trip, with a colour accent stripe.
+/// Overview card summarising a single trip: a colour accent stripe on one edge
+/// and, when the trip has a cover photograph, its thumbnail on the other.
 class TripCard extends StatelessWidget {
   const TripCard({
     super.key,
@@ -15,6 +18,7 @@ class TripCard extends StatelessWidget {
     required this.book,
     this.totals = const {},
     this.tags = const [],
+    this.cover,
   });
 
   final Trip trip;
@@ -30,6 +34,12 @@ class TripCard extends StatelessWidget {
   /// Cost totals for this trip in minor units, keyed by currency code. Empty
   /// when the trip has no costs, in which case the total row is hidden.
   final Map<String, int> totals;
+
+  /// The thumbnail of the trip's cover photograph, or null — which is the
+  /// ordinary case, since most trips have no pictures and a trip may say it
+  /// wants no cover at all. Passed in rather than watched, like [book] and
+  /// [totals]: the list screen reads one map for every card.
+  final Uint8List? cover;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +59,12 @@ class TripCard extends StatelessWidget {
               Container(width: 6, color: accent),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    cover == null ? 16 : 8,
+                    16,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -140,6 +155,32 @@ class TripCard extends StatelessWidget {
                   ),
                 ),
               ),
+              // At the **trailing** edge, opposite the accent stripe. Leading
+              // would push the title of every card with a picture to the right
+              // and leave the list a ragged left edge — or force a placeholder,
+              // which is something invented to fill a space rather than
+              // something said. Here a trip without one simply gives its text
+              // the width back, and the edge you scan down never moves.
+              if (cover case final bytes?)
+                // Centred rather than stretched: the row's children are laid
+                // out with `stretch`, so without this the picture would take
+                // the card's whole height — which varies with the tags and the
+                // totals, giving each card a differently proportioned crop.
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        bytes,
+                        width: 72,
+                        height: 72,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

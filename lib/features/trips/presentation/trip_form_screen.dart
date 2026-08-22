@@ -142,9 +142,12 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
           kind: _kind,
           colorValue: _colorValue,
           // Carried over rather than defaulted: this form is about the trip's
-          // identity, and whether its photo strip is folded away is not
-          // something editing the title should undo.
+          // identity, and how its photographs are laid out — folded away, and
+          // which one the overview card shows — is not something editing the
+          // title should undo.
           photosCollapsed: _editing!.photosCollapsed,
+          coverAttachmentId: _editing!.coverAttachmentId,
+          coverHidden: _editing!.coverHidden,
           createdAt: _editing!.createdAt,
         ),
       );

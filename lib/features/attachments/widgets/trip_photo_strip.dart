@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/live_items.dart';
 import '../application/attachment_providers.dart';
+import '../cover_star.dart';
 import '../presentation/gallery_screen.dart';
 import '../trip_gallery.dart';
 
@@ -37,9 +38,16 @@ class TripPhotoStrip extends ConsumerWidget {
     super.key,
     required this.tripId,
     this.collapsed = false,
+    this.coverAttachmentId,
+    this.coverHidden = false,
   });
 
   final int tripId;
+
+  /// Which picture wears the mark, and whether the trip wants one at all —
+  /// handed in with [collapsed], from the trip row the screen already holds.
+  final int? coverAttachmentId;
+  final bool coverHidden;
 
   /// Handed in rather than watched: the screen around this already holds the
   /// trip row, and a second stream for one boolean is a query nobody needs.
@@ -104,6 +112,25 @@ class TripPhotoStrip extends ConsumerWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  // The third state, and the only one that is about the trip
+                  // rather than about a photograph: a trip whose pictures are
+                  // all of receipts has photos and wants no cover, and deriving
+                  // one anyway would be the app overruling that. The other two
+                  // — derived, and a named one — are the star in the gallery.
+                  PopupMenuButton<bool>(
+                    tooltip: l10n.coverNone,
+                    icon: const Icon(Icons.more_vert, size: 18),
+                    onSelected: (hide) => ref
+                        .read(repositoryProvider)
+                        .setTripCoverHidden(tripId, hide),
+                    itemBuilder: (context) => [
+                      CheckedPopupMenuItem(
+                        value: !coverHidden,
+                        checked: coverHidden,
+                        child: Text(l10n.coverNone),
+                      ),
+                    ],
+                  ),
                   Icon(
                     expanded ? Icons.expand_less : Icons.expand_more,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -126,32 +153,55 @@ class TripPhotoStrip extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 6),
                 itemBuilder: (context, index) {
                   final thumbnail = gallery[index].attachment.thumbnail;
+                  final isCover =
+                      !coverHidden &&
+                      gallery[index].attachment.id == coverAttachmentId;
                   return InkWell(
                     onTap: () => showGallery(
                       context,
                       photos: gallery,
                       initialIndex: index,
+                      tripId: tripId,
                     ),
                     borderRadius: BorderRadius.circular(8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SizedBox(
-                        width: _height,
-                        height: _height,
-                        child: thumbnail == null
-                            ? ColoredBox(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                child: Icon(
-                                  Icons.image_outlined,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              )
-                            : Image.memory(
-                                thumbnail,
-                                fit: BoxFit.cover,
-                                gaplessPlayback: true,
-                              ),
+                    child: SizedBox(
+                      width: _height,
+                      height: _height,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: thumbnail == null
+                                ? ColoredBox(
+                                    color: theme
+                                        .colorScheme
+                                        .surfaceContainerHighest,
+                                    child: Icon(
+                                      Icons.image_outlined,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                  )
+                                : Image.memory(
+                                    thumbnail,
+                                    fit: BoxFit.cover,
+                                    gaplessPlayback: true,
+                                  ),
+                          ),
+                          // The mark, and only on the one that carries it — not
+                          // a control. A tappable star on every tile would need
+                          // a 48dp target inside a 72dp thumbnail, taking half
+                          // of it and stealing the taps that open the gallery;
+                          // and nineteen empty stars would answer a question
+                          // nobody asked. Choosing happens where the picture is
+                          // big enough to judge.
+                          if (isCover)
+                            const Positioned(
+                              right: 2,
+                              bottom: 2,
+                              child: _CoverMark(),
+                            ),
+                        ],
                       ),
                     ),
                   );
@@ -161,6 +211,27 @@ class TripPhotoStrip extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The star on the thumbnail that is the trip's cover.
+///
+/// Ink on a halo, the way the map's own marker is drawn: a photograph can be
+/// any colour, so a bare glyph is legible over some of them and gone over the
+/// rest.
+class _CoverMark extends StatelessWidget {
+  const _CoverMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: const BoxDecoration(
+        color: Color(0x99000000),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.star, size: 14, color: kCoverStarColor),
     );
   }
 }

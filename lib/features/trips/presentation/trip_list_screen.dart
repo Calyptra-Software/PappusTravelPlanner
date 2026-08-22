@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +20,7 @@ import 'create_trip_from_routine.dart';
 import '../trip_filter.dart';
 import '../widgets/trip_calendar.dart';
 import '../widgets/tag_filter_bar.dart';
+import '../../attachments/application/cover_providers.dart';
 import '../widgets/trip_card.dart';
 
 /// Actions folded into the overview app bar's overflow menu to keep the title
@@ -180,6 +183,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     required TripQuery query,
     required Map<int, Map<String, int>> totalsByTrip,
     required Map<int, List<Tag>> tagsByTrip,
+    required Map<int, Uint8List> covers,
     required CurrencyBook book,
   }) {
     if (visible.isEmpty) {
@@ -223,6 +227,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
           book: book,
           totals: totalsByTrip[trip.id] ?? const {},
           tags: tagsByTrip[trip.id] ?? const [],
+          cover: covers[trip.id],
           onTap: () => context.push('/trip/${trip.id}'),
         );
       },
@@ -255,6 +260,9 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
     final participantsAsync = ref.watch(allParticipantsProvider);
     final totalsByTrip = ref.watch(tripTotalsProvider).value ?? const {};
     final tagsByTrip = ref.watch(tagsByTripProvider).value ?? const {};
+    // One map for the whole list, like the totals beside it: a query per card
+    // is what `watchPositionedItems` and `watchAllTracks` exist to avoid.
+    final covers = ref.watch(tripCoversProvider).value ?? const {};
     final tagList = ref.watch(tagListProvider).value ?? const <Tag>[];
     // Watched, not read inside the button's callback: the provider is
     // autoDispose, so nothing keeps it alive unless the screen holds it, and a
@@ -401,6 +409,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                   query: query,
                   totalsByTrip: totalsByTrip,
                   tagsByTrip: tagsByTrip,
+                  covers: covers,
                   book: book,
                 ),
               ),

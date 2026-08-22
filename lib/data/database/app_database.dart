@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 35;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -394,6 +394,13 @@ class AppDatabase extends _$AppDatabase {
       // which is what every existing trip has been showing all along.
       if (from < 34) {
         await m.addColumn(trips, trips.photosCollapsed);
+      }
+      // v35 lets a trip carry the photograph its overview card shows, and lets
+      // it say it wants none. Both nullable/defaulted: every existing trip has
+      // chosen nothing, which is what null and false mean.
+      if (from < 35) {
+        await m.addColumn(trips, trips.coverAttachmentId);
+        await m.addColumn(trips, trips.coverHidden);
       }
     },
     beforeOpen: (details) async {

@@ -280,6 +280,7 @@ class BundleTrip {
     this.kind = TripKind.trip,
     required this.colorValue,
     this.photosCollapsed = false,
+    this.coverHidden = false,
     required this.createdAt,
   });
 
@@ -301,6 +302,13 @@ class BundleTrip {
   /// how the sender had the trip laid out is part of the trip they are handing
   /// over. False in bundles written before it existed, which is what they meant.
   final bool photosCollapsed;
+
+  /// Whether the sender's overview card deliberately shows no photograph. Which
+  /// picture *is* the cover rides on the attachment itself
+  /// ([BundleAttachment.isCover]) rather than as an id here: attachments travel
+  /// nested under their owner with no ids of their own, so an id would name
+  /// nothing on the far side.
+  final bool coverHidden;
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -312,6 +320,7 @@ class BundleTrip {
     'kind': kind.name,
     'colorValue': colorValue,
     'photosCollapsed': photosCollapsed,
+    'coverHidden': coverHidden,
     'createdAt': _encodeDate(createdAt),
   };
 
@@ -330,6 +339,7 @@ class BundleTrip {
     ),
     colorValue: json['colorValue'] as int,
     photosCollapsed: json['photosCollapsed'] as bool? ?? false,
+    coverHidden: json['coverHidden'] as bool? ?? false,
     createdAt: _decodeDate(json['createdAt'] as String)!,
   );
 }
@@ -675,6 +685,7 @@ class BundleAttachment {
     this.lon,
     this.positionSource,
     this.sortOrder = 0,
+    this.isCover = false,
   });
 
   final AttachmentKind kind;
@@ -703,6 +714,12 @@ class BundleAttachment {
   final AttachmentPositionSource? positionSource;
   final int sortOrder;
 
+  /// Whether this is the photograph the sender's overview card shows. A flag
+  /// rather than an id on the trip, because an attachment has no id in this
+  /// file: the importer points the trip it has just written at the row it has
+  /// just written, and nothing has to be matched up afterwards.
+  final bool isCover;
+
   Map<String, dynamic> toJson() => {
     'kind': kind.name,
     'mimeType': mimeType,
@@ -715,6 +732,7 @@ class BundleAttachment {
     'lon': lon,
     'positionSource': positionSource?.name,
     'sortOrder': sortOrder,
+    if (isCover) 'isCover': true,
   };
 
   factory BundleAttachment.fromJson(Map<String, dynamic> json) =>
@@ -740,6 +758,7 @@ class BundleAttachment {
             .where((s) => s.name == json['positionSource'])
             .firstOrNull,
         sortOrder: json['sortOrder'] as int? ?? 0,
+        isCover: json['isCover'] as bool? ?? false,
       );
 }
 

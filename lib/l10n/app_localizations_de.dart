@@ -2213,4 +2213,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get galleryTitle => 'Fotos';
+
+  @override
+  String get coverSet => 'Als Titelbild verwenden';
+
+  @override
+  String get coverRemove => 'Titelbild entfernen';
+
+  @override
+  String get coverNone => 'Kein Titelbild';
 }

@@ -135,6 +135,41 @@ class Trips extends Table {
   IntColumn get colorValue =>
       integer().withDefault(const Constant(0xFF00695C))();
 
+  /// The photograph shown on this trip's overview card, when the user has
+  /// picked one. Null means they have not, and the card falls back to the first
+  /// picture in gallery order — see [coverHidden] for the third state.
+  ///
+  /// **Deliberately not a foreign key.** [Attachments] already references
+  /// [Trips], so declaring the reverse would put the two tables in a *cycle* —
+  /// and drift answers a cycle by silently dropping foreign keys until it can
+  /// order its `CREATE TABLE`s again. Measured: adding it took the reference off
+  /// `item_groups.trip_id` and `alternative_sets.trip_id` among others, so
+  /// deleting a trip stopped cascading to its groups and its decisions. Losing
+  /// half the schema's cascades to gain one `setNull` is not a trade; the
+  /// invariant it would have enforced is cheap to live without instead.
+  ///
+  /// A deleted picture therefore leaves its id behind here, and nothing trusts
+  /// it: `coverPhoto` looks the id up in the gallery it was handed and falls
+  /// back to the derived photograph when it is not there. The id can never come
+  /// to mean a *different* picture either, since `attachments.id` is
+  /// `AUTOINCREMENT` and SQLite never reissues one.
+  IntColumn get coverAttachmentId => integer().nullable()();
+
+  /// Whether the overview card is to show **no** photograph at all, even though
+  /// the trip has some.
+  ///
+  /// The third state, and the reason [coverAttachmentId] cannot carry this
+  /// alone: null there means "nothing chosen", which is not the same statement
+  /// as "nothing wanted". A trip whose pictures are all of receipts has photos
+  /// and no cover, and deriving one anyway would be the app overruling that.
+  ///
+  /// Invariant, kept by `TripDao`: this being true implies [coverAttachmentId]
+  /// is null. Hiding clears the choice rather than parking it, so no two
+  /// columns can disagree about what the card shows — un-hiding returns to the
+  /// derived picture, not to a remembered one nothing on screen could have
+  /// hinted at.
+  BoolColumn get coverHidden => boolean().withDefault(const Constant(false))();
+
   /// Whether the strip of photographs on the trip screen is shown collapsed.
   ///
   /// A column here rather than a table of its own — the shape [CollapsedDays]

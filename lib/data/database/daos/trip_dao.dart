@@ -32,6 +32,34 @@ class TripDao extends DatabaseAccessor<AppDatabase> with _$TripDaoMixin {
 
   Future<bool> updateTrip(Trip trip) => update(trips).replace(trip);
 
+  /// Picks the photograph the overview card shows, or goes back to deriving one.
+  ///
+  /// [attachmentId] null clears the choice; the card then falls back to the
+  /// first picture in gallery order. Either way [Trips.coverHidden] is cleared:
+  /// naming a picture — or asking for the derived one back — is a statement
+  /// that a cover is wanted.
+  Future<void> setCover(int tripId, int? attachmentId) =>
+      (update(trips)..where((t) => t.id.equals(tripId))).write(
+        TripsCompanion(
+          coverAttachmentId: Value(attachmentId),
+          coverHidden: const Value(false),
+        ),
+      );
+
+  /// Says the overview card is to show no photograph at all, or takes that back.
+  ///
+  /// Hiding **clears** any chosen picture rather than parking it, which is the
+  /// invariant [Trips.coverHidden] documents: un-hiding then returns to the
+  /// derived photograph, and not to a remembered choice that nothing on screen
+  /// could have hinted at.
+  Future<void> setCoverHidden(int tripId, bool hidden) =>
+      (update(trips)..where((t) => t.id.equals(tripId))).write(
+        TripsCompanion(
+          coverHidden: Value(hidden),
+          coverAttachmentId: hidden ? const Value(null) : const Value.absent(),
+        ),
+      );
+
   /// Collapses or expands the trip's strip of photographs.
   ///
   /// A targeted update rather than `updateTrip`, which replaces the whole row:
