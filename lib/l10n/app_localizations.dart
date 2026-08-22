@@ -3805,6 +3805,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove as trip cover'**
   String get coverRemove;
+
+  /// No description provided for @photosCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String photosCount(int count);
+
+  /// No description provided for @documentsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 document} other{{count} documents}}'**
+  String documentsCount(int count);
+
+  /// No description provided for @documentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents'**
+  String get documentsTitle;
 }
 
 class _AppLocalizationsDelegate

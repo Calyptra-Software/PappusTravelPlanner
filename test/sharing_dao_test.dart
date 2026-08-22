@@ -516,8 +516,8 @@ void main() {
       final counts = await other.attachmentDao
           .watchAttachmentCountsForTrip(newTripId)
           .first;
-      expect(counts.byItem.values.single, 1);
-      expect(counts.byGroup.values.single, 1);
+      expect(counts.byItem.values.single.photos, 1);
+      expect(counts.byGroup.values.single.documents, 1);
 
       final arrived = await other.attachmentDao
           .watchPositionedPhotosForTrip(newTripId)

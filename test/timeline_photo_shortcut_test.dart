@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/daos/attachment_dao.dart'
+    show AttachmentTally;
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
@@ -78,7 +80,7 @@ void main() {
     WidgetTester tester,
     ItineraryItem item, {
     required List<GalleryPhoto> gallery,
-    required int count,
+    required AttachmentTally tally,
   }) async {
     final trip = (await db.tripDao.findTrip(tripId))!;
     await tester.pumpWidget(
@@ -94,9 +96,16 @@ void main() {
           transportModesProvider.overrideWith(
             (ref) => Stream.value(const <TransportModeRow>[]),
           ),
+          // The documents sheet lists this one — a drift stream, and the
+          // teardown timer if it is left live.
+          itemAttachmentsProvider.overrideWith(
+            (ref, id) => Stream.value(const <Attachment>[]),
+          ),
           tripAttachmentCountsProvider.overrideWith(
-            (ref, id) =>
-                Stream.value((byItem: {item.id: count}, byGroup: <int, int>{})),
+            (ref, id) => Stream.value((
+              byItem: {item.id: tally},
+              byGroup: <int, AttachmentTally>{},
+            )),
           ),
         ],
         child: MaterialApp(
@@ -134,7 +143,7 @@ void main() {
           label: 'Kunsthalle',
         ),
       ],
-      count: 1,
+      tally: const AttachmentTally(photos: 1),
     );
 
     expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
@@ -145,30 +154,39 @@ void main() {
     tester,
   ) async {
     final museum = await addPlace('Kunsthalle');
-    await pumpTile(tester, museum, gallery: const [], count: 2);
+    await pumpTile(
+      tester,
+      museum,
+      gallery: const [],
+      tally: const AttachmentTally(documents: 2),
+    );
 
-    // A gallery is of pictures, and a shortcut that opened an empty one would
-    // be worse than none. (The tile itself is an `InkWell`, so what says the
-    // line is inert is that pressing it opens nothing.)
+    // Only the documents line, and it says how many. Pressing it opens the
+    // list of files, never a gallery: a gallery is of pictures.
+    expect(find.text('2 documents'), findsOneWidget);
     expect(find.byIcon(Icons.attach_file), findsOneWidget);
     expect(find.byIcon(Icons.photo_library_outlined), findsNothing);
 
     await tester.tap(find.byIcon(Icons.attach_file));
     await tester.pumpAndSettle();
     expect(find.byType(GalleryScreen), findsNothing);
+    expect(find.text('Documents'), findsOneWidget);
   });
 
   testWidgets('an entry with nothing shows no line at all', (tester) async {
     final museum = await addPlace('Kunsthalle');
-    await pumpTile(tester, museum, gallery: const [], count: 0);
+    await pumpTile(
+      tester,
+      museum,
+      gallery: const [],
+      tally: const AttachmentTally(),
+    );
 
     expect(find.byIcon(Icons.attach_file), findsNothing);
     expect(find.textContaining('attachment'), findsNothing);
   });
 
-  testWidgets('the shortcut opens the trip gallery at this entry\'s first', (
-    tester,
-  ) async {
+  testWidgets('the shortcut opens this entry\'s photographs', (tester) async {
     final breakfast = await addPlace('Breakfast');
     final museum = await addPlace('Kunsthalle', sortOrder: 1);
     await pumpTile(
@@ -185,20 +203,20 @@ void main() {
           label: 'Kunsthalle',
         ),
       ],
-      count: 1,
+      tally: const AttachmentTally(photos: 1),
     );
 
     await tester.tap(find.byIcon(Icons.photo_library_outlined));
     await tester.pumpAndSettle();
 
-    // The trip's gallery, opened at *this* entry — so the neighbours are still
-    // a swipe away, which is what the timeline is a view of.
+    // This entry's photographs, not the trip's: the entry is what you pointed
+    // at. (The strip on the trip's own screen walks the whole trip.)
     expect(find.byType(GalleryScreen), findsOneWidget);
     expect(find.text('Kunsthalle'), findsWidgets);
-    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.textContaining('/'), findsNothing);
   });
 
-  testWidgets('the count still counts documents, not just pictures', (
+  testWidgets('photographs and documents are counted and shown apart', (
     tester,
   ) async {
     final museum = await addPlace('Kunsthalle');
@@ -211,13 +229,14 @@ void main() {
           label: 'Kunsthalle',
         ),
       ],
-      // One picture and two tickets: the line says what is attached, the icon
-      // says what a tap will show.
-      count: 3,
+      // One picture and two tickets — two lines, two counts, two acts.
+      tally: const AttachmentTally(photos: 1, documents: 2),
     );
 
-    expect(find.text('3 attachments'), findsOneWidget);
+    expect(find.text('1 photo'), findsOneWidget);
+    expect(find.text('2 documents'), findsOneWidget);
     expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.attach_file), findsOneWidget);
   });
 
   testWidgets('a transport leg gets the line too, not only a place', (
@@ -243,7 +262,7 @@ void main() {
           label: 'Hamburg → Berlin',
         ),
       ],
-      count: 1,
+      tally: const AttachmentTally(photos: 1),
     );
 
     // The badge was drawn twice on a place and not at all on a leg until these

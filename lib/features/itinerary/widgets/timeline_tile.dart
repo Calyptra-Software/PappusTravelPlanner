@@ -7,10 +7,10 @@ import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../data/database/daos/attachment_dao.dart' show AttachmentTally;
 import '../../attachments/application/attachment_providers.dart';
 import '../../attachments/application/cover_providers.dart';
 import '../../attachments/presentation/gallery_screen.dart';
-import '../../attachments/trip_gallery.dart';
 import '../../attachments/widgets/attachments_field.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
@@ -487,43 +487,47 @@ class _GroupAttachmentBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final counts = ref.watch(tripAttachmentCountsProvider(tripId)).value;
-    final count = counts?.byGroup[groupId] ?? 0;
-    if (count == 0) return const SizedBox.shrink();
+    final tally = counts?.byGroup[groupId] ?? const AttachmentTally();
+    if (tally.total == 0) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context);
-    final gallery = ref.watch(tripGalleryProvider(tripId));
-    final first = gallery.indexWhere((p) => p.attachment.groupId == groupId);
+    final photos = [
+      for (final photo in ref.watch(tripGalleryProvider(tripId)))
+        if (photo.attachment.groupId == groupId) photo,
+    ];
 
-    // A run's photograph goes to the gallery like an entry's; its files go to
-    // the sheet, which is where they can be acted on. The icon says which of
-    // the two the tap will do.
-    return IconButton(
-      tooltip: l10n.attachmentsCount(count),
-      visualDensity: VisualDensity.compact,
-      iconSize: 18,
-      icon: Icon(first >= 0 ? Icons.photo_library_outlined : Icons.attach_file),
-      color: accent,
-      onPressed: () => first >= 0
-          ? showGallery(
-              context,
-              photos: gallery,
-              initialIndex: first,
-              tripId: tripId,
-            )
-          : showGroupAttachmentsSheet(context, groupId),
+    // Icons without counts, unlike an entry's two lines: this band already
+    // carries a label, the journey button, the ⋮ and the drag handle, and two
+    // more numbers would leave a named run nowhere to be read. What the run
+    // holds is one tap away in either case.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (photos.isNotEmpty)
+          IconButton(
+            tooltip: l10n.photosCount(photos.length),
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            icon: const Icon(Icons.photo_library_outlined),
+            color: accent,
+            onPressed: () =>
+                showGallery(context, photos: photos, tripId: tripId),
+          ),
+        if (tally.documents > 0)
+          IconButton(
+            tooltip: l10n.documentsCount(tally.documents),
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            icon: const Icon(Icons.attach_file),
+            color: accent,
+            onPressed: () => showGroupDocumentsSheet(context, groupId),
+          ),
+      ],
     );
   }
 }
 
-/// That an entry carries files, and how many — never what they are.
-///
-/// A count, because the timeline is a reading of the *plan* and a strip of
-/// thumbnails in it would make the photo the entry rather than something hanging
-/// off it. Tapping the entry opens the form, which is where they live.
-///
-/// Reads the whole trip's counts rather than its own: a day draws every entry it
-/// has, and a family keyed by item id would open one query per row. All the
-/// tiles of one trip watch the same family instance, so it is one stream.
+/// The two lines under one entry, when it carries anything.
 class _AttachmentBadge extends ConsumerWidget {
   const _AttachmentBadge({required this.item});
 
@@ -532,94 +536,117 @@ class _AttachmentBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final counts = ref.watch(tripAttachmentCountsProvider(item.tripId)).value;
-    final count = counts?.byItem[item.id] ?? 0;
-    if (count == 0) return const SizedBox.shrink();
+    final tally = counts?.byItem[item.id] ?? const AttachmentTally();
+    if (tally.total == 0) return const SizedBox.shrink();
 
-    return _AttachmentLine(
+    return _AttachmentLines(
       tripId: item.tripId,
-      count: count,
-      belongsHere: (photo) => photo.attachment.itemId == item.id,
+      tally: tally,
+      isMine: (a) => a.itemId == item.id,
+      openDocuments: () => showItemDocumentsSheet(context, item.id),
     );
   }
 }
 
-/// What an entry or a run carries, and — when any of it is a photograph — the
-/// way straight to it.
+/// What an entry carries, said as two lines: the photographs and the documents.
 ///
-/// The count says *that* something is attached; the icon says *what*, and is
-/// the only part that can be pressed. An entry with nothing but a ticket PDF
-/// keeps the paperclip and stays inert: a gallery is of pictures, and a
-/// shortcut that opened an empty one would be worse than none. With a picture
-/// it becomes a photo icon and a tap, because the alternative today is opening
-/// the entry's form and finding the file in a list — two levels down from a
-/// thing you are already looking at.
+/// Apart, because they are two different acts. A photograph is *looked at* — the
+/// gallery, one tap — while a document is *opened*, in a list from which each
+/// one goes to whatever program understands it. One line saying "5 attachments"
+/// answered neither question, and the icon had to guess which of the two a tap
+/// would do.
 ///
-/// The gallery it opens is the **trip's**, positioned at this entry's first
-/// picture, and not just this entry's own. From the timeline you are looking at
-/// the trip and the neighbours are the rest of it; from inside an entry's form
-/// you asked about that entry, which is why the field there stays scoped. The
-/// same question, asked from two places, with two honest answers.
-class _AttachmentLine extends ConsumerWidget {
-  const _AttachmentLine({
+/// The photographs of the **entry**, not of the trip: the entry is what you
+/// pointed at. (The strip on the trip's own screen is where the whole trip's
+/// pictures are walked.) A document that happens to be a picture is *not*
+/// among them — it is under documents, which is exactly where its owner filed
+/// it, and the list there opens it in a gallery of its own.
+class _AttachmentLines extends ConsumerWidget {
+  const _AttachmentLines({
     required this.tripId,
-    required this.count,
-    required this.belongsHere,
+    required this.tally,
+    required this.isMine,
+    required this.openDocuments,
   });
 
   final int tripId;
-  final int count;
+  final AttachmentTally tally;
 
-  /// Whether a picture of the trip hangs on the thing this line is under.
-  final bool Function(GalleryPhoto) belongsHere;
+  /// Whether an attachment of the trip hangs on the thing these lines are under.
+  final bool Function(Attachment) isMine;
+  final VoidCallback openDocuments;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
-    final gallery = ref.watch(tripGalleryProvider(tripId));
-    final first = gallery.indexWhere(belongsHere);
-    final hasPhoto = first >= 0;
-
-    final label = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          hasPhoto ? Icons.photo_library_outlined : Icons.attach_file,
-          size: 14,
-          color: hasPhoto
-              ? theme.colorScheme.primary
-              : theme.colorScheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          l10n.attachmentsCount(count),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
+    final photos = [
+      for (final photo in ref.watch(tripGalleryProvider(tripId)))
+        if (isMine(photo.attachment)) photo,
+    ];
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
-      child: hasPhoto
-          ? InkWell(
-              onTap: () => showGallery(
-                context,
-                photos: gallery,
-                initialIndex: first,
-                tripId: tripId,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (photos.isNotEmpty)
+            _CountChip(
+              icon: Icons.photo_library_outlined,
+              label: l10n.photosCount(photos.length),
+              onTap: () => showGallery(context, photos: photos, tripId: tripId),
+            ),
+          if (photos.isNotEmpty && tally.documents > 0)
+            const SizedBox(width: 4),
+          if (tally.documents > 0)
+            _CountChip(
+              icon: Icons.attach_file,
+              label: l10n.documentsCount(tally.documents),
+              onTap: openDocuments,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One of those two: an icon, a count, and a tap.
+///
+/// Padded well past the 14px glyph it draws — a target inside a timeline tile
+/// competes with the tile's own tap, and losing that race opens the edit form
+/// instead of the pictures.
+class _CountChip extends StatelessWidget {
+  const _CountChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: theme.colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
-              borderRadius: BorderRadius.circular(4),
-              // Room around a target that lives inside a dense tile: the label
-              // is 14px of icon and a line of small text, which is nothing to
-              // aim at on a phone.
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: label,
-              ),
-            )
-          : label,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

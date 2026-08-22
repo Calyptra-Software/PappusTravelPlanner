@@ -65,6 +65,41 @@ void main() {
     expect(await db.attachmentDao.readAttachmentBytes(id), hasLength(64));
   });
 
+  test('the count keeps photographs and documents apart', () async {
+    final trip = await makeTrip();
+    final leg = await makeLeg(trip);
+    await db.attachmentDao.addAttachment(ticket(name: 'a.pdf'), itemId: leg);
+    await db.attachmentDao.addAttachment(
+      ticket(name: 'view.jpg', at: const LatLng(53.55, 9.99)),
+      itemId: leg,
+    );
+
+    final counts = await db.attachmentDao
+        .watchAttachmentCountsForTrip(trip)
+        .first;
+
+    // "2 attachments" told the reader neither what is there nor what a tap
+    // would do with it.
+    expect(counts.byItem[leg]!.photos, 1);
+    expect(counts.byItem[leg]!.documents, 1);
+    expect(counts.byItem[leg]!.total, 2);
+  });
+
+  test('a document is never given a position, whatever is asked', () async {
+    final trip = await makeTrip();
+    final leg = await makeLeg(trip);
+    final id = await db.attachmentDao.addAttachment(
+      ticket(name: 'ticket.pdf'),
+      itemId: leg,
+    );
+
+    await db.attachmentDao.setAttachmentPosition(id, const LatLng(53.55, 9.99));
+
+    // A document is a file, not a place — whatever it is a picture of. The
+    // update passes over one rather than trusting every caller to check.
+    expect((await db.attachmentDao.attachment(id))!.lat, isNull);
+  });
+
   test('a file hangs on a run, where its shared ticket does', () async {
     final trip = await makeTrip();
     final group = await makeGroup(trip);
@@ -228,8 +263,12 @@ void main() {
         .watchAttachmentCountsForTrip(trip)
         .first;
 
-    expect(counts.byGroup, {group: 1});
-    expect(counts.byItem, {leg: 1, other: 2});
+    // Counted by kind, because the timeline shows the two apart. These are all
+    // documents (`ticket()` with no position), so the photograph side is empty.
+    expect(counts.byGroup[group]!.documents, 1);
+    expect(counts.byItem[leg]!.documents, 1);
+    expect(counts.byItem[other]!.documents, 2);
+    expect(counts.byItem[other]!.photos, 0);
   });
 
   test('the count is of this trip only', () async {

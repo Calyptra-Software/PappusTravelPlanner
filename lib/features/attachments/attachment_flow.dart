@@ -20,6 +20,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/format/byte_format.dart';
 import '../../core/providers.dart';
 import '../../data/database/app_database.dart';
+import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
 import 'attachment_import.dart';
 
@@ -29,8 +30,10 @@ typedef PickedAttachment = ({Uint8List bytes, String? name});
 /// Picks files and hangs them on [itemId], [groupId] or [tripId] — exactly one
 /// of the three.
 ///
-/// [photosOnly] narrows the chooser to pictures, which is what the *Add photo*
-/// door asks for; the other door takes anything. [pickFiles] exists so the flow
+/// [kind] is which door this is, and it decides two things: the chooser is
+/// narrowed to pictures for *Add photo*, and — the part that matters — the file
+/// is stored as that kind. The decoder no longer rules on it, so a `.png` ticket
+/// filed through *Add file* stays a document. [pickFiles] exists so the flow
 /// can be driven without a native dialog: the refusals and what is written are
 /// worth a test, and a file chooser in the middle would put them out of reach.
 ///
@@ -43,13 +46,15 @@ Future<int> addAttachments(
   int? itemId,
   int? groupId,
   int? tripId,
-  bool photosOnly = false,
+  AttachmentKind kind = AttachmentKind.document,
   Future<List<PickedAttachment>?> Function()? pickFiles,
 }) async {
   final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
 
-  final picked = await (pickFiles ?? () => _pick(photosOnly: photosOnly))();
+  final picked =
+      await (pickFiles ??
+          () => _pick(photosOnly: kind == AttachmentKind.photo))();
   if (picked == null || picked.isEmpty) return 0;
 
   // Said before the work starts. Picking eight photos takes a moment on any
@@ -76,7 +81,7 @@ Future<int> addAttachments(
   for (final file in picked) {
     final PreparedAttachment prepared;
     try {
-      prepared = await compute(_prepare, file);
+      prepared = await compute(_prepare, (file: file, kind: kind));
     } on AttachmentTooLargeException catch (e) {
       refusal ??= l10n.attachmentTooLarge(
         formatBytes(e.byteSize),
@@ -117,8 +122,8 @@ Future<int> addAttachments(
 }
 
 /// Runs in an isolate — hence top-level, and taking one argument.
-PreparedAttachment _prepare(PickedAttachment file) =>
-    prepareAttachment(file.bytes, name: file.name);
+PreparedAttachment _prepare(({PickedAttachment file, AttachmentKind kind}) a) =>
+    prepareAttachment(a.file.bytes, name: a.file.name, kind: a.kind);
 
 /// Hands one attachment out of the app: to the share sheet, or to a file the
 /// user chooses on desktop, which has no share sheet.

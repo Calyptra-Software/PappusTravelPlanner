@@ -2219,4 +2219,29 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get coverRemove => 'Titelbild entfernen';
+
+  @override
+  String photosCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String documentsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dokumente',
+      one: '1 Dokument',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get documentsTitle => 'Dokumente';
 }

@@ -7,6 +7,11 @@
 ///
 /// Three rules decide what comes out:
 ///
+/// **Which of the two a file becomes is the caller's answer** — the door it came
+/// through — never the decoder's. A train ticket saved as a `.png` belongs under
+/// documents if that is where its owner wants it, and the app has no business
+/// overruling that; see [prepareAttachment].
+///
 /// * **A photo is re-encoded, never stored as it arrived.** The bytes live in
 ///   the database (see [Attachments] for why), and the database is copied whole
 ///   to be exported — on Android and on the web it is read into memory to do
@@ -22,13 +27,14 @@
 ///   and a photo that travels in a `.tpt` bundle or a PDF should not carry it to
 ///   whoever the trip is shared with. The position survives only by being lifted
 ///   into a column of its own, where it is visible and can be cleared.
-/// * **A picture the decoder cannot read is refused, not stored raw.** HEIC/HEIF
-///   is the case that matters — the format an iPhone writes by default, which no
-///   pure-Dart decoder reads. Keeping it as an opaque document would mean an
-///   unbounded size, no thumbnail, EXIF left intact, and a file that displays on
-///   some platforms and not others: every one of the three rules above broken at
-///   once, silently. So it is turned away with the format named. (Android's
-///   picker usually hands back JPEG for a HEIC anyway; usually is not a rule.)
+/// * **A picture the decoder cannot read is refused at the photo door**, and
+///   only there. HEIC/HEIF is the case that matters — the format an iPhone
+///   writes by default, which no pure-Dart decoder reads. Filed as a
+///   *photograph* it would break all three rules above at once and silently:
+///   unbounded, no thumbnail, EXIF intact. So that door turns it away with the
+///   format named. Through *Add file* the same picture is welcome: a document is
+///   kept as it arrived by definition, and the app is then storing and handing
+///   on a file rather than claiming to be able to show it.
 library;
 
 import 'dart:typed_data';
@@ -128,13 +134,20 @@ final class PreparedAttachment {
 
 /// Reads [bytes] into the form they are stored in.
 ///
+/// **[kind] is the caller's answer, not the decoder's** — which door the file
+/// came through, *Add photo* or *Add file*. It used to be read off the bytes:
+/// whatever decoded was a photograph, so a train ticket saved as a `.png` could
+/// not be filed as a document however much the user wanted it there. Deciding
+/// it here would be the app ruling on what a file *means*, which is the one
+/// thing it declines to do about tags, about trip length and about a position.
+///
 /// [name] is the file's own name, kept as it arrived (it is also what the
 /// extension is read off when the decoder cannot identify the data). [mimeType]
 /// is what the picker claimed, used only for a document — a photo's type is
 /// ours, because we wrote it.
 ///
-/// Runs the decoder, two resizes and two encodes, so it belongs in an isolate
-/// for anything but a test; see `attachment_controller.dart`.
+/// Runs the decoder, two resizes and two encodes for a photograph, so it belongs
+/// in an isolate for anything but a test; see `attachment_flow.dart`.
 ///
 /// Throws [AttachmentTooLargeException] for a file over [kMaxAttachmentBytes]
 /// and [UnreadableImageException] for a picture that will not decode. Both are
@@ -144,25 +157,69 @@ PreparedAttachment prepareAttachment(
   Uint8List bytes, {
   String? name,
   String? mimeType,
+  AttachmentKind kind = AttachmentKind.photo,
 }) {
   final decoded = _decodeOrNull(bytes);
-  if (decoded != null) return _photo(decoded, name: name);
-
-  // Nothing here could read it. If it announced itself as a picture, that is a
-  // refusal and not a document — see the library comment.
-  final extension = _extensionOf(name);
-  if (_looksLikeAPicture(extension, mimeType)) {
-    throw UnreadableImageException(extension);
+  if (kind == AttachmentKind.photo) {
+    // At this door everything is a picture, so anything that will not decode is
+    // a refusal — no quiet demotion to "some file", which would put a thing the
+    // user asked to see among the things they asked to keep.
+    if (decoded == null) throw UnreadableImageException(_extensionOf(name));
+    return _photo(decoded, name: name);
   }
+  return _document(bytes, decoded, name: name, mimeType: mimeType);
+}
 
+/// A file kept exactly as it arrived.
+///
+/// **Byte for byte, even when it is a picture**, because that is what filing
+/// something as a document means: the ticket you show at the barrier is the
+/// file you were sent, at its own resolution, with its own QR code, ready to be
+/// handed on unchanged. Two things follow and are meant to:
+///
+/// * It is **not** bounded like a photograph, only by [kMaxAttachmentBytes].
+/// * Its metadata is **not** stripped. A photograph is re-encoded and loses
+///   everything but the position lifted out of it; a document is not touched at
+///   all, so whatever EXIF it carries travels with it. `SECURITY.md` says so.
+///
+/// What is added rather than changed is a **thumbnail**, when the bytes happen
+/// to be a picture — a list of files with one blank row among them is a list
+/// that looks broken. The stored bytes are untouched by making it. There is no
+/// position and no map marker: a document is a file, not a place, whatever it
+/// is a picture of.
+PreparedAttachment _document(
+  Uint8List bytes,
+  img.Image? decoded, {
+  String? name,
+  String? mimeType,
+}) {
   if (bytes.length > kMaxAttachmentBytes) {
     throw AttachmentTooLargeException(bytes.length, kMaxAttachmentBytes);
   }
+  final extension = _extensionOf(name);
+  final format = decoded == null ? null : _mimeForImage(bytes);
+  final thumbnail = decoded == null
+      ? null
+      : img.encodeJpg(
+          _resizedToFit(img.bakeOrientation(decoded), kThumbnailEdge)
+            ..exif = img.ExifData(),
+          quality: kThumbnailQuality,
+        );
   return PreparedAttachment(
     kind: AttachmentKind.document,
-    mimeType: mimeType ?? _mimeForExtension(extension),
+    // What the bytes *are* outranks what the picker said and what the name
+    // suggests: a decoder that read the file knows its format, and the media
+    // type is what the operating system is handed when the file is opened
+    // again. Only when nothing could read it does the extension get a say.
+    mimeType: format ?? mimeType ?? _mimeForExtension(extension),
     bytes: bytes,
     name: name,
+    thumbnail: thumbnail,
+    // Recorded only when the bytes really are a picture, which is what makes
+    // this the app's answer to "can this document be looked at?" — a stored
+    // fact rather than a guess from a media type the picker supplied.
+    width: decoded?.width,
+    height: decoded?.height,
   );
 }
 
@@ -284,25 +341,20 @@ String? _extensionOf(String? name) {
   return name.substring(dot + 1).toLowerCase();
 }
 
-/// Whether something that would not decode was nonetheless offered as a
-/// picture. Kept deliberately narrow: only what is positively known to be an
-/// image format may cost a file its place as a document.
-bool _looksLikeAPicture(String? extension, String? mimeType) =>
-    (mimeType != null && mimeType.startsWith('image/')) ||
-    const {
-      'heic',
-      'heif',
-      'avif',
-      'jxl',
-      'jpg',
-      'jpeg',
-      'png',
-      'gif',
-      'webp',
-      'bmp',
-      'tif',
-      'tiff',
-    }.contains(extension);
+/// The media type of a picture, from the format the decoder recognised.
+///
+/// A fact about the bytes rather than a guess from a name, which is why it wins
+/// over both. Null for a format with no media type worth naming.
+String? _mimeForImage(Uint8List bytes) =>
+    switch (img.findFormatForData(bytes)) {
+      img.ImageFormat.jpg => 'image/jpeg',
+      img.ImageFormat.png => 'image/png',
+      img.ImageFormat.gif => 'image/gif',
+      img.ImageFormat.webp => 'image/webp',
+      img.ImageFormat.bmp => 'image/bmp',
+      img.ImageFormat.tiff => 'image/tiff',
+      _ => null,
+    };
 
 /// A media type for a document, from its extension.
 ///

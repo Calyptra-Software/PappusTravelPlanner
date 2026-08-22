@@ -202,8 +202,8 @@ void main() {
       AttachmentPositionSource.exif,
     );
     final after = await db.attachmentDao.watchAttachmentCountsForTrip(1).first;
-    expect(after.byItem, {items.first.id: 1});
-    expect(after.byGroup, {1: 1});
+    expect(after.byItem[items.first.id]!.photos, 1);
+    expect(after.byGroup[1]!.documents, 1);
     expect(onRun, isNot(onLeg));
   });
 }

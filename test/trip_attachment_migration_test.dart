@@ -179,8 +179,8 @@ void main() {
 
     // What was already filed stays filed where it was.
     final counts = await db.attachmentDao.watchAttachmentCountsForTrip(1).first;
-    expect(counts.byItem, {1: 1});
-    expect(counts.byGroup, {1: 1});
+    expect(counts.byItem[1]!.photos, 1);
+    expect(counts.byGroup[1]!.documents, 1);
     expect(await db.attachmentDao.readAttachmentBytes(1), hasLength(3));
     // And nothing has quietly become the trip's.
     expect(await db.attachmentDao.watchAttachmentsForTrip(1).first, isEmpty);
@@ -205,8 +205,10 @@ void main() {
     expect(own.single.itemId, isNull);
     expect(own.single.groupId, isNull);
     expect(
-      (await db.attachmentDao.watchAttachmentCountsForTrip(1).first).byItem,
-      {1: 1},
+      (await db.attachmentDao.watchAttachmentCountsForTrip(1).first)
+          .byItem[1]!
+          .total,
+      1,
     );
   });
 }

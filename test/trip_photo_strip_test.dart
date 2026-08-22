@@ -125,7 +125,7 @@ void main() {
     await pumpStrip(tester, photos: [photo(1, 'a.jpg'), photo(2, 'b.jpg')]);
 
     expect(find.text('Photos'), findsOneWidget);
-    expect(find.text('2 attachments'), findsOneWidget);
+    expect(find.text('2 photos'), findsOneWidget);
     expect(find.byIcon(Icons.expand_less), findsOneWidget);
   });
 
@@ -162,7 +162,7 @@ void main() {
     // A collapsed section saying nothing about what is inside it would be a row
     // with no reason to be tapped.
     expect(find.text('Photos'), findsOneWidget);
-    expect(find.text('2 attachments'), findsOneWidget);
+    expect(find.text('2 photos'), findsOneWidget);
   });
 
   group('the cover mark', () {

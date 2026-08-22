@@ -4,7 +4,8 @@ import 'package:latlong2/latlong.dart';
 import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
-import '../database/daos/attachment_dao.dart' show CoverCandidate;
+import '../database/daos/attachment_dao.dart'
+    show AttachmentTally, CoverCandidate;
 import '../database/track_points.dart';
 import '../../features/attachments/attachment_import.dart'
     show PreparedAttachment;
@@ -198,7 +199,9 @@ class TripRepository {
 
   /// How much each entry and each run of a trip carries — what the timeline
   /// needs to show that there is something there, without reading it.
-  Stream<({Map<int, int> byItem, Map<int, int> byGroup})>
+  Stream<
+    ({Map<int, AttachmentTally> byItem, Map<int, AttachmentTally> byGroup})
+  >
   watchAttachmentCountsForTrip(int tripId) =>
       _db.attachmentDao.watchAttachmentCountsForTrip(tripId);
 

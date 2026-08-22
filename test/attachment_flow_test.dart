@@ -70,6 +70,7 @@ void main() {
     List<PickedAttachment>? files, {
     int? onItem,
     int? onGroup,
+    AttachmentKind kind = AttachmentKind.photo,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -91,6 +92,7 @@ void main() {
                     ref,
                     itemId: onGroup == null ? (onItem ?? itemId) : null,
                     groupId: onGroup,
+                    kind: kind,
                     pickFiles: () async => files,
                   ),
                   child: const Text('attach'),
@@ -189,12 +191,31 @@ void main() {
     expect(find.textContaining('HEIC'), findsOneWidget);
   });
 
+  testWidgets('the door decides the kind, not the decoder', (tester) async {
+    // A ticket saved as a picture: through *Add file* it stays a document, and
+    // it is stored exactly as it arrived rather than re-encoded.
+    final bytes = png(40, 30);
+    await pumpAdder(tester, [
+      (bytes: bytes, name: 'ticket.png'),
+    ], kind: AttachmentKind.document);
+    await tapAttach(tester);
+
+    final row = (await stored()).single;
+    expect(row.kind, AttachmentKind.document);
+    expect(row.mimeType, 'image/png');
+    expect(row.byteSize, bytes.length);
+    // Still viewable, which is what lets the documents list open it in a
+    // gallery of its own.
+    expect(row.width, 40);
+    expect(row.thumbnail, isNotNull);
+  });
+
   testWidgets('a file over the limit is refused with both figures', (
     tester,
   ) async {
     await pumpAdder(tester, [
       (bytes: Uint8List(kMaxAttachmentBytes + 1), name: 'scan.pdf'),
-    ]);
+    ], kind: AttachmentKind.document);
     await tapAttach(tester);
 
     expect(await stored(), isEmpty);

@@ -58,6 +58,18 @@ Uint8List _photoAt({
   return img.encodeJpg(image);
 }
 
+/// The other door: *Add file*, which keeps what it is given.
+PreparedAttachment document(
+  Uint8List bytes, {
+  String? name,
+  String? mimeType,
+}) => prepareAttachment(
+  bytes,
+  name: name,
+  mimeType: mimeType,
+  kind: AttachmentKind.document,
+);
+
 void main() {
   group('photos', () {
     test('are re-encoded as JPEG with a thumbnail beside them', () {
@@ -198,7 +210,7 @@ void main() {
   group('documents', () {
     test('are stored byte for byte, typed from their extension', () {
       final bytes = Uint8List.fromList('%PDF-1.4 not really'.codeUnits);
-      final prepared = prepareAttachment(bytes, name: 'ticket.pdf');
+      final prepared = document(bytes, name: 'ticket.pdf');
 
       expect(prepared.kind, AttachmentKind.document);
       expect(prepared.mimeType, 'application/pdf');
@@ -208,7 +220,7 @@ void main() {
     });
 
     test('fall back to a type that claims nothing', () {
-      final prepared = prepareAttachment(
+      final prepared = document(
         Uint8List.fromList([1, 2, 3]),
         name: 'booking.xyz',
       );
@@ -217,7 +229,7 @@ void main() {
     });
 
     test('keep the type the picker claimed when it gave one', () {
-      final prepared = prepareAttachment(
+      final prepared = document(
         Uint8List.fromList([1, 2, 3]),
         name: 'note',
         mimeType: 'text/plain',
@@ -230,7 +242,7 @@ void main() {
       final bytes = Uint8List(kMaxAttachmentBytes + 1);
 
       expect(
-        () => prepareAttachment(bytes, name: 'scan.pdf'),
+        () => document(bytes, name: 'scan.pdf'),
         throwsA(
           isA<AttachmentTooLargeException>()
               .having((e) => e.byteSize, 'byteSize', kMaxAttachmentBytes + 1)
@@ -259,26 +271,105 @@ void main() {
       );
     });
 
-    test('is refused on the picker\'s media type too', () {
+    test('is refused whatever it is called, since the door said photo', () {
+      // No sniffing of names or media types any more: at this door everything
+      // is meant to be a picture, so anything that will not decode is refused.
       expect(
         () => prepareAttachment(
           Uint8List.fromList([0, 1, 2, 3]),
-          name: 'photo',
-          mimeType: 'image/heif',
+          name: 'itinerary.docx',
         ),
         throwsA(isA<UnreadableImageException>()),
       );
     });
 
-    test('does not turn an ordinary file away', () {
-      // Only what is positively known to be a picture may cost a file its place
-      // as a document.
-      final prepared = prepareAttachment(
-        Uint8List.fromList([0, 1, 2, 3]),
-        name: 'itinerary.docx',
-      );
+    test('is welcome at the other door, kept exactly as it arrived', () {
+      // The refusal is about calling something a photograph, not about the
+      // file: through *Add file* a HEIC is stored byte for byte, which is what
+      // filing something as a document means anyway.
+      final bytes = Uint8List.fromList([0, 1, 2, 3]);
+      final prepared = document(bytes, name: 'IMG_0042.HEIC');
 
       expect(prepared.kind, AttachmentKind.document);
+      expect(prepared.bytes, bytes);
+      // Nothing here could decode it, so there is nothing to show and nothing
+      // claiming otherwise.
+      expect(prepared.thumbnail, isNull);
+      expect(prepared.width, isNull);
+    });
+  });
+
+  group('a picture filed as a document', () {
+    test('is kept byte for byte, metadata and all', () {
+      // GPS as the witness, because it is the one tag these tests have proven
+      // survives an encode: the photo cases above read it back out.
+      final bytes = _photoAt(
+        latDeg: 53,
+        latMin: 33,
+        latSec: 0,
+        latRef: 'N',
+        lonDeg: 10,
+        lonMin: 0,
+        lonSec: 0,
+        lonRef: 'E',
+      );
+
+      final prepared = document(bytes, name: 'ticket.jpg');
+
+      // The point of filing it here: the ticket you show at the barrier is the
+      // file you were sent, at its own resolution, ready to hand on unchanged.
+      expect(prepared.kind, AttachmentKind.document);
+      expect(prepared.bytes, bytes);
+      // Which is also why its metadata is still in it — a photograph would have
+      // been re-encoded and stripped of everything but its position.
+      expect(
+        img.decodeJpg(prepared.bytes)!.exif.gpsIfd['GPSLatitude'],
+        isNotNull,
+      );
+    });
+
+    test('gets a thumbnail anyway, so a list of files is not blank', () {
+      final prepared = document(
+        img.encodePng(_canvas(64, 48)),
+        name: 'ticket.png',
+      );
+
+      expect(prepared.thumbnail, isNotNull);
+      // Recorded because the bytes really are a picture — the stored fact that
+      // says this document can be looked at.
+      expect(prepared.width, 64);
+      expect(prepared.height, 48);
+    });
+
+    test('never carries a position, whatever its EXIF says', () {
+      final prepared = document(
+        _photoAt(
+          latDeg: 53,
+          latMin: 33,
+          latSec: 0,
+          latRef: 'N',
+          lonDeg: 10,
+          lonMin: 0,
+          lonSec: 0,
+          lonRef: 'E',
+        ),
+        name: 'ticket.jpg',
+      );
+
+      // A document is a file, not a place, whatever it is a picture of.
+      expect(prepared.position, isNull);
+      expect(prepared.positionSource, isNull);
+    });
+
+    test('the same file through the other door is a photograph', () {
+      final bytes = img.encodePng(_canvas(64, 48));
+
+      expect(document(bytes, name: 't.png').kind, AttachmentKind.document);
+      expect(
+        prepareAttachment(bytes, name: 't.png').kind,
+        AttachmentKind.photo,
+      );
+      // Which is the whole change: the door decides, not the decoder.
     });
   });
 }

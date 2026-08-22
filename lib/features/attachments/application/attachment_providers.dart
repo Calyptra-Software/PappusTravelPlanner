@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/daos/attachment_dao.dart' show AttachmentTally;
 
 /// What one entry carries — the reading its own form does.
 final itemAttachmentsProvider = StreamProvider.autoDispose
@@ -34,7 +35,10 @@ final tripAttachmentsProvider = StreamProvider.autoDispose
 /// every entry of every visible day, and a family keyed by item id would open a
 /// query per row.
 final tripAttachmentCountsProvider = StreamProvider.autoDispose
-    .family<({Map<int, int> byItem, Map<int, int> byGroup}), int>(
+    .family<
+      ({Map<int, AttachmentTally> byItem, Map<int, AttachmentTally> byGroup}),
+      int
+    >(
       (ref, tripId) =>
           ref.watch(repositoryProvider).watchAttachmentCountsForTrip(tripId),
     );

@@ -1117,5 +1117,14 @@
   "attachmentsTripAdd": "Add trip document",
   "galleryTitle": "Photos",
   "coverSet": "Use as trip cover",
-  "coverRemove": "Remove as trip cover"
+  "coverRemove": "Remove as trip cover",
+  "photosCount": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@photosCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "documentsCount": "{count, plural, =1{1 document} other{{count} documents}}",
+  "@documentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "documentsTitle": "Documents"
 }

@@ -81,7 +81,13 @@ class AttachmentSheet extends ConsumerWidget {
             else
               _DocumentPlaceholder(mimeType: live.mimeType),
             const SizedBox(height: 12),
-            _PositionRow(attachment: live, position: position),
+            // Photographs only: a document is a file, not a place — whatever
+            // it is a picture of — so a `.png` ticket is offered no position to
+            // put on the map. `AttachmentDao.setAttachmentPosition` refuses one
+            // as well, so this is the visible half of a rule with a floor under
+            // it.
+            if (live.kind == AttachmentKind.photo)
+              _PositionRow(attachment: live, position: position),
             const Divider(height: 24),
             Wrap(
               spacing: 8,

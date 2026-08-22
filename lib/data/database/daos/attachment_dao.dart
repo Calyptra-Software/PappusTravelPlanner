@@ -42,7 +42,13 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   /// `TrackDao.watchTracksForTrip`: an option nobody chose is still drawn in the
   /// timeline, and a badge missing from it would read as "no attachments" rather
   /// than as "not counted".
-  Stream<({Map<int, int> byItem, Map<int, int> byGroup})>
+  ///
+  /// Counted **by kind**: the timeline shows the two apart, because a photograph
+  /// is looked at and a document is opened, and one number covering both answers
+  /// neither question.
+  Stream<
+    ({Map<int, AttachmentTally> byItem, Map<int, AttachmentTally> byGroup})
+  >
   watchAttachmentCountsForTrip(int tripId) {
     final query =
         selectOnly(attachments).join([
@@ -58,22 +64,40 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
           ..addColumns([
             attachments.itemId,
             attachments.groupId,
+            attachments.kind,
             attachments.id.count(),
           ])
           ..where(
             itineraryItems.tripId.equals(tripId) |
                 itemGroups.tripId.equals(tripId),
           )
-          ..groupBy([attachments.itemId, attachments.groupId]);
+          ..groupBy([
+            attachments.itemId,
+            attachments.groupId,
+            attachments.kind,
+          ]);
     return query.watch().map((rows) {
-      final byItem = <int, int>{};
-      final byGroup = <int, int>{};
+      final byItem = <int, AttachmentTally>{};
+      final byGroup = <int, AttachmentTally>{};
       for (final row in rows) {
         final count = row.read(attachments.id.count()) ?? 0;
+        // `selectOnly` hands back the stored integer rather than the enum, so
+        // the comparison is against the index the column holds.
+        final photos = row.read(attachments.kind) == AttachmentKind.photo.index;
         final itemId = row.read(attachments.itemId);
         final groupId = row.read(attachments.groupId);
-        if (itemId != null) byItem[itemId] = count;
-        if (groupId != null) byGroup[groupId] = count;
+        if (itemId != null) {
+          byItem[itemId] = (byItem[itemId] ?? const AttachmentTally()).plus(
+            photos: photos ? count : 0,
+            documents: photos ? 0 : count,
+          );
+        }
+        if (groupId != null) {
+          byGroup[groupId] = (byGroup[groupId] ?? const AttachmentTally()).plus(
+            photos: photos ? count : 0,
+            documents: photos ? 0 : count,
+          );
+        }
       }
       return (byItem: byItem, byGroup: byGroup);
     });
@@ -302,17 +326,25 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   /// The position and its provenance move together and are never half-written:
   /// [at] null clears both, since a source with nothing to describe would go on
   /// claiming the reading came from somewhere.
+  ///
+  /// **Photographs only.** A document is a file, not a place — whatever it is a
+  /// picture of — so the update passes over one rather than trusting every
+  /// caller to check. Nothing offers it either; this is the floor under that.
   Future<void> setAttachmentPosition(
     int id,
     LatLng? at, {
     AttachmentPositionSource source = AttachmentPositionSource.picked,
-  }) => (update(attachments)..where((a) => a.id.equals(id))).write(
-    AttachmentsCompanion(
-      lat: Value(at?.latitude),
-      lon: Value(at?.longitude),
-      positionSource: Value(at == null ? null : source),
-    ),
-  );
+  }) =>
+      (update(attachments)..where(
+            (a) => a.id.equals(id) & a.kind.equalsValue(AttachmentKind.photo),
+          ))
+          .write(
+            AttachmentsCompanion(
+              lat: Value(at?.latitude),
+              lon: Value(at?.longitude),
+              positionSource: Value(at == null ? null : source),
+            ),
+          );
 
   /// Copies the **trip-level** attachments of [fromTripId] onto [toTripId].
   ///
@@ -450,4 +482,23 @@ final class CoverCandidate {
 
   final int tripId;
   final Attachment attachment;
+}
+
+/// How many photographs and how many documents hang on one owner.
+///
+/// Two numbers rather than one, because the timeline shows them apart: a
+/// photograph is looked at and a document is opened, and "5 attachments" tells
+/// the reader neither of those things.
+final class AttachmentTally {
+  const AttachmentTally({this.photos = 0, this.documents = 0});
+
+  final int photos;
+  final int documents;
+
+  AttachmentTally plus({int photos = 0, int documents = 0}) => AttachmentTally(
+    photos: this.photos + photos,
+    documents: this.documents + documents,
+  );
+
+  int get total => photos + documents;
 }

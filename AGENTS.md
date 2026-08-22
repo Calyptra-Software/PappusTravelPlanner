@@ -1209,21 +1209,37 @@ UI (features/*/presentation, *widgets)
   steals the taps that open the gallery. Amber because red is reserved for "happening" and a
   user-chosen accent is invisible against half the photographs it would be drawn on
   (`kCoverStarColor`, defined once so the two cannot drift).
-- **A timeline entry with a photograph is one tap from it.** The attachment line under an
-  entry (and the icon on a run's band) turns into a **photo icon** when any of what it
-  counts is a picture, and pressing it opens the gallery there. The alternative was opening
-  the entry's form and finding the file in a list — two levels down from a thing already on
-  screen. An entry carrying only documents keeps the paperclip and stays inert: a gallery is
-  of pictures, and a shortcut that opened an empty one is worse than none. The count goes on
-  counting *attachments*, so a leg with one photograph and two tickets says "3" and shows
-  one — the line says what is there, the icon says what a tap will do.
-  It opens the **trip's** gallery positioned at this entry's first picture, not a gallery
-  of that entry alone: from the timeline you are looking at the trip and the neighbours are
-  the rest of it, while from inside an entry's form you asked about that entry, which is why
-  the field there stays scoped. Both read `tripGalleryProvider`, which is where the trip's
-  photographs are ordered **once** — the strip draws that list, the star reads which of it
-  is the cover, and "the first photograph of this entry" means an index into it. Three
-  copies of `tripGallery(...)` would be three chances for the order to drift.
+- **Which of the two a file becomes is the door it came through, never the decoder.**
+  `prepareAttachment` takes an `AttachmentKind`. It used to read the answer off the bytes —
+  whatever decoded was a photograph — so a train ticket saved as a `.png` could not be filed
+  under documents however much its owner wanted it there. Deciding that would be the app
+  ruling on what a file *means*, which it declines to do about tags, about trip length and
+  about a position; and it left *Add photo* and *Add file* meaning the same thing for half
+  the files people have. A picture filed as a **document** is kept byte for byte: not
+  bounded like a photograph, **metadata not stripped** (`SECURITY.md` says so), no position
+  and no map marker — a document is a file, not a place, whatever it is a picture of, and
+  `AttachmentDao.setAttachmentPosition` passes over one rather than trusting its callers. A
+  thumbnail *is* made when the bytes decode, without touching them, because a list of files
+  with one blank row looks broken; `Attachment.width` records that they did, which is what
+  `isViewable` reads. One consequence worth having: HEIC is refused at the photo door and
+  welcome at the other, so a format nothing here can decode can still be kept and handed on.
+- **An entry says "3 photos" and "2 documents", apart.** They are two acts: a photograph is
+  *looked at* (the gallery, one tap) and a document is *opened* (a list, from which each
+  goes on to whatever program understands it). One line saying "5 attachments" answered
+  neither, and its icon had to guess which a tap would do. So `AttachmentTally` counts by
+  kind, and the entry draws two `_CountChip`s. The gallery is of **that entry's**
+  photographs, not the trip's — the entry is what you pointed at, and the strip on the trip
+  screen is where the whole trip is walked. A run's band gets the same two acts as bare
+  icons without counts: it already carries a label, the journey button, the ⋮ and the drag
+  handle, and two more numbers would leave a named run nowhere to be read.
+- **A document that is a picture is under documents, and opens in a gallery of its own.**
+  That is the point of having filed it there — a `.png` ticket is not one of the trip's
+  photographs, does not reach the map, the PDF or the cover star (the documents gallery is
+  opened with no `tripId`, so the star is absent), and is still something you can look at
+  when you need to show it. `tripGalleryProvider` orders the trip's photographs **once**;
+  the strip draws that list, the cover star reads which of it is the cover, and an entry's
+  chip filters it. Three copies of `tripGallery(...)` would be three chances for the order
+  to drift.
 - **The card reads one map, not one query per card.** `tripCoversProvider` is the
   `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
   `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and

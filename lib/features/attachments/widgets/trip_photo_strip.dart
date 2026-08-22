@@ -93,7 +93,7 @@ class TripPhotoStrip extends ConsumerWidget {
                   // collapsed section that said nothing about what is inside it
                   // would be a row with no reason to be tapped.
                   Text(
-                    l10n.attachmentsCount(gallery.length),
+                    l10n.photosCount(gallery.length),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),

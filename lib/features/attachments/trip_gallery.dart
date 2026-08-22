@@ -7,6 +7,7 @@
 library;
 
 import '../../data/database/app_database.dart';
+import '../../data/database/tables.dart';
 
 /// One page of the gallery: the picture, and what it is of.
 ///
@@ -118,4 +119,15 @@ Attachment? coverPhoto(Trip trip, List<GalleryPhoto> gallery) {
     // showing nothing, since "nothing" is a statement this trip has not made.
   }
   return gallery.first.attachment;
+}
+
+/// Whether an attachment is something a gallery can show.
+///
+/// A photograph always is. A **document** is when its bytes turned out to be a
+/// picture on the way in — which is what [Attachment.width] records, and why it
+/// is recorded: a stored fact about the file rather than a guess from a media
+/// type the picker supplied. That is how a `.png` ticket filed under documents
+/// can still be looked at without becoming one of the trip's photographs.
+extension AttachmentViewing on Attachment {
+  bool get isViewable => kind == AttachmentKind.photo || width != null;
 }

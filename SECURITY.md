@@ -56,15 +56,24 @@ somewhere it is not escaped — is worth reporting.
 already true of that file is true of them: see *The database is not encrypted*
 below.
 
-**It reads one thing out of a photo, and drops the rest.** A picture's EXIF is
-searched for the position the camera recorded, which is lifted into a field of
-its own — visible in the attachment's sheet, and clearable there. Everything
-else EXIF can hold (the camera body, the serial number, the moment it was taken)
-does not survive the re-encoding and is not stored anywhere. That is a deliberate
-reduction and not an accident of the format: `attachment_import.dart` clears the
-metadata before writing, and there is a test standing on it. A photo that leaves
-the app again — through the share sheet — carries the position only in the sense
-that the app knows it; the bytes handed out are the stripped ones.
+**It reads one thing out of a photo, and drops the rest.** A picture attached
+through *Add photo* has its EXIF searched for the position the camera recorded,
+which is lifted into a field of its own — visible in the attachment's sheet, and
+clearable there. Everything else EXIF can hold (the camera body, the serial
+number, the moment it was taken) does not survive the re-encoding and is not
+stored anywhere. That is a deliberate reduction and not an accident of the
+format: `attachment_import.dart` clears the metadata before writing, and there is
+a test standing on it. Such a photo leaving the app again — through the share
+sheet — carries the position only in the sense that the app knows it; the bytes
+handed out are the stripped ones.
+
+**A file attached through *Add file* is kept exactly as it arrived, metadata and
+all** — including one that happens to be a picture, which is a thing people do
+deliberately with a ticket sent as a `.png`. Nothing is re-encoded there and so
+nothing is stripped: whatever EXIF the file carries stays in it, is stored, and
+travels in a `.tpt` bundle. That is what filing something as a document means,
+and it is the user's choice which of the two doors a file comes through. Such a
+file is never given a position of its own and never appears on the map.
 
 **It opens databases it did not create.** On desktop the settings screen will
 point the app at any `.sqlite` a file picker hands back, and the app writes to

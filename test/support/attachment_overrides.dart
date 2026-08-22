@@ -1,4 +1,6 @@
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/daos/attachment_dao.dart'
+    show AttachmentTally;
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
 import 'package:travelplanner/features/attachments/application/cover_providers.dart';
 import 'package:travelplanner/features/attachments/trip_gallery.dart';
@@ -39,6 +41,9 @@ final attachmentTestOverrides = [
     (ref, id) => Stream.value(const <Attachment>[]),
   ),
   tripAttachmentCountsProvider.overrideWith(
-    (ref, id) => Stream.value((byItem: <int, int>{}, byGroup: <int, int>{})),
+    (ref, id) => Stream.value((
+      byItem: <int, AttachmentTally>{},
+      byGroup: <int, AttachmentTally>{},
+    )),
   ),
 ];
