@@ -697,8 +697,6 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   TripPhotoStrip(
                     tripId: tripId,
                     collapsed: trip.photosCollapsed,
-                    coverAttachmentId: trip.coverAttachmentId,
-                    coverHidden: trip.coverHidden,
                   ),
                   TripAttachmentsSection(tripId: tripId, accent: accent),
                   TripChecklistsSection(tripId: tripId, accent: accent),

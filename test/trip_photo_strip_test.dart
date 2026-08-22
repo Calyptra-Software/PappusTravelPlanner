@@ -11,6 +11,7 @@ import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
 import 'package:travelplanner/features/attachments/widgets/trip_photo_strip.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
+import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 /// The band of thumbnails that leads into the gallery: when it is there, and
@@ -64,6 +65,11 @@ void main() {
     int? coverAttachmentId,
     bool coverHidden = false,
   }) async {
+    await db.tripDao.setCoverHidden(tripId, coverHidden);
+    if (coverAttachmentId != null) {
+      await db.tripDao.setCover(tripId, coverAttachmentId);
+    }
+    final trip = (await db.tripDao.findTrip(tripId))!;
     final items = await db.itineraryDao.itemsFor(tripId);
     await tester.pumpWidget(
       ProviderScope(
@@ -80,6 +86,13 @@ void main() {
           alternativeBranchesProvider.overrideWith(
             (ref, id) => Stream.value(const <int, List<Alternative>>{}),
           ),
+          // The strip resolves the cover through this, which reads the trip
+          // row — a drift stream like the rest, and one the strip now depends
+          // on for its mark.
+          // A snapshot, not `watchTrip`: the strip resolves its mark through
+          // the trip row, and a live drift stream here is the teardown timer
+          // all over again. Every test sets the cover state before pumping.
+          tripProvider.overrideWith((ref, id) => Stream.value(trip)),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -90,12 +103,7 @@ void main() {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: TripPhotoStrip(
-              tripId: tripId,
-              collapsed: collapsed,
-              coverAttachmentId: coverAttachmentId,
-              coverHidden: coverHidden,
-            ),
+            body: TripPhotoStrip(tripId: tripId, collapsed: collapsed),
           ),
         ),
       ),
@@ -158,75 +166,47 @@ void main() {
   });
 
   group('the cover mark', () {
-    testWidgets('is on the chosen thumbnail and on no other', (tester) async {
+    testWidgets('marks the derived cover when nobody has chosen one', (
+      tester,
+    ) async {
+      await pumpStrip(tester, photos: [photo(1, 'a.jpg'), photo(2, 'b.jpg')]);
+
+      // The point of showing it for the derived one: a card with a picture and
+      // no star anywhere reads as the app having picked one on its own.
+      expect(find.byIcon(Icons.star), findsOneWidget);
+    });
+
+    testWidgets('marks the chosen one instead, and only it', (tester) async {
       await pumpStrip(
         tester,
         photos: [photo(1, 'a.jpg'), photo(2, 'b.jpg'), photo(3, 'c.jpg')],
         coverAttachmentId: 2,
       );
 
-      // One star, not three: nineteen empty ones would answer a question
+      // One star, never three: nineteen empty ones would answer a question
       // nobody asked, and each would need a target that steals the tap opening
       // the gallery.
       expect(find.byIcon(Icons.star), findsOneWidget);
     });
 
-    testWidgets('is absent while the trip wants no cover', (tester) async {
+    testWidgets('shows none while the trip wants no cover', (tester) async {
       await pumpStrip(
         tester,
         photos: [photo(1, 'a.jpg'), photo(2, 'b.jpg')],
-        coverAttachmentId: 2,
         coverHidden: true,
       );
 
       expect(find.byIcon(Icons.star), findsNothing);
     });
 
-    testWidgets('is absent when nothing has been chosen', (tester) async {
-      // The card derives one, but the strip marks only a *choice* — a star on
-      // the first thumbnail would look like a decision nobody made.
-      await pumpStrip(tester, photos: [photo(1, 'a.jpg')]);
-
-      expect(find.byIcon(Icons.star), findsNothing);
-    });
-
-    testWidgets('"no cover" is written to the trip, and taken back', (
+    testWidgets('offers no menu — the star is the whole control', (
       tester,
     ) async {
       await pumpStrip(tester, photos: [photo(1, 'a.jpg')]);
 
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('No cover photo'));
-      await tester.pumpAndSettle();
-
-      expect((await db.tripDao.findTrip(tripId))!.coverHidden, isTrue);
-
-      await pumpStrip(tester, photos: [photo(1, 'a.jpg')], coverHidden: true);
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('No cover photo'));
-      await tester.pumpAndSettle();
-
-      expect((await db.tripDao.findTrip(tripId))!.coverHidden, isFalse);
-    });
-
-    testWidgets('hiding is offered while a picture is marked too', (
-      tester,
-    ) async {
-      // What hiding *does* to the stored choice is the DAO's rule and is tested
-      // there against real rows; here the mark is a stub, and inserting one
-      // just to satisfy the foreign key would be testing the wrong thing.
-      await pumpStrip(
-        tester,
-        photos: [photo(1, 'a.jpg')],
-        coverAttachmentId: 1,
-      );
-
-      expect(find.byIcon(Icons.star), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      expect(find.text('No cover photo'), findsOneWidget);
+      // "No cover photo" used to be a checkable item here. Taking the star off
+      // the cover says the same thing with one control instead of two.
+      expect(find.byIcon(Icons.more_vert), findsNothing);
     });
   });
 }

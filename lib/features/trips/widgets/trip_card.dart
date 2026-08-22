@@ -8,6 +8,13 @@ import '../../../l10n/app_localizations.dart';
 import 'tag_chip.dart';
 import 'trip_when_line.dart';
 
+/// How large the cover photograph is drawn on an overview card.
+///
+/// Big enough to be a picture rather than a bullet point, and bounded by what
+/// the text beside it needs: on a 320dp phone this still leaves the title some
+/// 170dp, which is a readable line.
+const double kTripCoverSize = 104;
+
 /// Overview card summarising a single trip: a colour accent stripe on one edge
 /// and, when the trip has a cover photograph, its thumbnail on the other.
 class TripCard extends StatelessWidget {
@@ -173,8 +180,8 @@ class TripCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                       child: Image.memory(
                         bytes,
-                        width: 72,
-                        height: 72,
+                        width: kTripCoverSize,
+                        height: kTripCoverSize,
                         fit: BoxFit.cover,
                         gaplessPlayback: true,
                       ),

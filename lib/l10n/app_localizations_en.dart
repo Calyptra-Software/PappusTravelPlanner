@@ -2207,7 +2207,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get coverRemove => 'Remove as trip cover';
-
-  @override
-  String get coverNone => 'No cover photo';
 }

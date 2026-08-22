@@ -793,6 +793,5 @@
   "attachmentsTripAdd": "Reiseunterlage hinzufügen",
   "galleryTitle": "Fotos",
   "coverSet": "Als Titelbild verwenden",
-  "coverRemove": "Titelbild entfernen",
-  "coverNone": "Kein Titelbild"
+  "coverRemove": "Titelbild entfernen"
 }

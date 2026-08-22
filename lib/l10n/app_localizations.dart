@@ -3805,12 +3805,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove as trip cover'**
   String get coverRemove;
-
-  /// No description provided for @coverNone.
-  ///
-  /// In en, this message translates to:
-  /// **'No cover photo'**
-  String get coverNone;
 }
 
 class _AppLocalizationsDelegate

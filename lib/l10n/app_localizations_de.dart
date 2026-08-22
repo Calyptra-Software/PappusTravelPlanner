@@ -2219,7 +2219,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get coverRemove => 'Titelbild entfernen';
-
-  @override
-  String get coverNone => 'Kein Titelbild';
 }

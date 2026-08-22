@@ -1193,22 +1193,27 @@ UI (features/*/presentation, *widgets)
   not there, and `attachments.id` being `AUTOINCREMENT` means SQLite never reissues the
   number, so it can never come to mean a different picture. `attachment_dao_test.dart`
   stands on both halves.
-- **The cover is chosen where the picture is big.** An amber star in the **gallery's** app
-  bar, filled when this is the cover — the argument that put `ItemColorField` on the map
-  rather than in a form. Deliberately *not* a tappable star on each thumbnail in the strip:
-  a real 48dp target inside a 72dp tile takes half of it and steals the taps that open the
-  gallery, and nineteen empty stars answer a question nobody asked. The strip carries the
-  same star as a **mark** on the one that has it, ink-on-halo like the map's own marker,
-  and not as a control. The third state is not per-photograph, so it is not on the star: it
-  is a checkable *No cover photo* on the strip's ⋮, which is the only control that is about
-  the trip rather than about a picture. Amber because red is reserved for "happening" and a
+- **One star does all three states.** An amber star in the **gallery's** app bar, filled
+  when this picture is the one the card shows — the argument that put `ItemColorField` on
+  the map rather than in a form. Starring an unstarred picture makes it the cover;
+  **unstarring the cover means the trip wants none**. Deriving is never named: it is where a
+  trip starts and it looks exactly like having chosen that picture, which is the point.
+  Crucially the star is filled for the **derived** cover too — an earlier version lit it
+  only for a named one, which left the commonest case a card showing a photograph with no
+  star anywhere, reading as the app having picked one behind the user's back. Resolving
+  which picture that is belongs to `tripCoverIdProvider`, so the strip and the gallery
+  cannot disagree. This replaced a checkable *No cover photo* on a ⋮ in the strip's header:
+  one control with one meaning beats two, and the menu is gone.
+  The strip carries the same star as a **mark**, ink-on-halo like the map's own marker, and
+  deliberately not as a control: a real 48dp target inside a 72dp tile takes half of it and
+  steals the taps that open the gallery. Amber because red is reserved for "happening" and a
   user-chosen accent is invisible against half the photographs it would be drawn on
   (`kCoverStarColor`, defined once so the two cannot drift).
 - **The card reads one map, not one query per card.** `tripCoversProvider` is the
   `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
   `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and
   `thumbnailsFor` then fetches the handful that were chosen. Fetching every thumbnail to
-  pick a dozen would push megabytes through the stream on every tick. The thumbnail sits at
+  pick a dozen would push megabytes through the stream on every tick. The thumbnail is `kTripCoverSize` square at
   the card's **trailing** edge, opposite the accent stripe: leading would shift the title of
   every card that has one and leave the list a ragged left edge, or force a placeholder —
   something invented to fill a space rather than something said. One stated cost: this

@@ -1117,6 +1117,5 @@
   "attachmentsTripAdd": "Add trip document",
   "galleryTitle": "Photos",
   "coverSet": "Use as trip cover",
-  "coverRemove": "Remove as trip cover",
-  "coverNone": "No cover photo"
+  "coverRemove": "Remove as trip cover"
 }

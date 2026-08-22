@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../trips/application/trip_providers.dart';
 import '../application/attachment_providers.dart';
+import '../application/cover_providers.dart';
 import '../cover_star.dart';
 import '../trip_gallery.dart';
 import 'attachment_sheet.dart';
@@ -166,12 +166,19 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   }
 }
 
-/// Amber when this picture is the trip's cover, an outline when it is not.
+/// Amber when this picture is the one the overview card shows, an outline when
+/// it is not.
 ///
-/// Tapping fills it; tapping the filled one empties it and hands the card back
-/// to the derived photograph. The third state — a trip that wants *no* cover
-/// though it has pictures — is not here: it is a statement about the trip and
-/// not about any one photograph, so it lives on the strip's own menu.
+/// **Filled for the derived cover too**, not only for a named one. That is what
+/// makes the star honest: a card showing a photograph while no star exists
+/// anywhere would look like the app had picked one behind the user's back, and
+/// the question "why that one?" would have no answer on screen.
+///
+/// Two taps, three states, and no third control. Starring an unstarred picture
+/// makes it the cover; **unstarring the cover means the trip wants none** — the
+/// card then shows nothing, even though there are photographs. Deriving is not
+/// a state anyone has to name: it is where a trip starts, and it looks exactly
+/// like having chosen that picture, which is the point.
 ///
 /// Amber because red is the app's one reserved colour ("this is happening") and
 /// the trip's accent would be invisible against half the photographs it is
@@ -185,8 +192,7 @@ class _CoverStar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final trip = ref.watch(tripProvider(tripId)).value;
-    final isCover = trip?.coverAttachmentId == attachmentId;
+    final isCover = ref.watch(tripCoverIdProvider(tripId)) == attachmentId;
 
     return IconButton(
       tooltip: isCover ? l10n.coverRemove : l10n.coverSet,
@@ -194,9 +200,12 @@ class _CoverStar extends ConsumerWidget {
         isCover ? Icons.star : Icons.star_border,
         color: isCover ? kCoverStarColor : Colors.white,
       ),
-      onPressed: () => ref
-          .read(repositoryProvider)
-          .setTripCover(tripId, isCover ? null : attachmentId),
+      // Taking the star off the cover is how a trip says it wants none: there
+      // is nothing else the act could mean, since the picture on screen is the
+      // one being shown.
+      onPressed: () => isCover
+          ? ref.read(repositoryProvider).setTripCoverHidden(tripId, true)
+          : ref.read(repositoryProvider).setTripCover(tripId, attachmentId),
     );
   }
 }

@@ -6,6 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/live_items.dart';
 import '../application/attachment_providers.dart';
+import '../application/cover_providers.dart';
 import '../cover_star.dart';
 import '../presentation/gallery_screen.dart';
 import '../trip_gallery.dart';
@@ -21,6 +22,13 @@ import '../trip_gallery.dart';
 /// Absent when the trip has no photographs, which is most routines and many
 /// trips: an empty band would be a permanent advertisement for a feature this
 /// trip is not using.
+///
+/// The picture the overview card shows wears an amber star — **including when
+/// nobody chose it**, since a card showing a photograph while no star existed
+/// anywhere would look like the app had picked one on its own. It is a *mark*
+/// and not a control: a real 48dp target inside a 72dp tile would take half of
+/// it and steal the taps that open the gallery, which is where the star can be
+/// pressed with room to spare.
 ///
 /// **Collapsible**, and remembered, the way a checklist and a day already are.
 /// A band of thumbnails is the heaviest thing on this screen, and a trip with
@@ -38,16 +46,9 @@ class TripPhotoStrip extends ConsumerWidget {
     super.key,
     required this.tripId,
     this.collapsed = false,
-    this.coverAttachmentId,
-    this.coverHidden = false,
   });
 
   final int tripId;
-
-  /// Which picture wears the mark, and whether the trip wants one at all —
-  /// handed in with [collapsed], from the trip row the screen already holds.
-  final int? coverAttachmentId;
-  final bool coverHidden;
 
   /// Handed in rather than watched: the screen around this already holds the
   /// trip row, and a second stream for one boolean is a query nobody needs.
@@ -80,6 +81,10 @@ class TripPhotoStrip extends ConsumerWidget {
     );
     if (gallery.isEmpty) return const SizedBox.shrink();
 
+    // The picture the card actually shows — the named one, or the derived one,
+    // or none. Marked either way: a card showing a photograph while nothing was
+    // starred looked like the app had chosen one behind the user's back.
+    final resolvedCover = ref.watch(tripCoverIdProvider(tripId));
     final expanded = !collapsed;
 
     return Padding(
@@ -112,25 +117,6 @@ class TripPhotoStrip extends ConsumerWidget {
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  // The third state, and the only one that is about the trip
-                  // rather than about a photograph: a trip whose pictures are
-                  // all of receipts has photos and wants no cover, and deriving
-                  // one anyway would be the app overruling that. The other two
-                  // — derived, and a named one — are the star in the gallery.
-                  PopupMenuButton<bool>(
-                    tooltip: l10n.coverNone,
-                    icon: const Icon(Icons.more_vert, size: 18),
-                    onSelected: (hide) => ref
-                        .read(repositoryProvider)
-                        .setTripCoverHidden(tripId, hide),
-                    itemBuilder: (context) => [
-                      CheckedPopupMenuItem(
-                        value: !coverHidden,
-                        checked: coverHidden,
-                        child: Text(l10n.coverNone),
-                      ),
-                    ],
-                  ),
                   Icon(
                     expanded ? Icons.expand_less : Icons.expand_more,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -153,9 +139,7 @@ class TripPhotoStrip extends ConsumerWidget {
                 separatorBuilder: (_, _) => const SizedBox(width: 6),
                 itemBuilder: (context, index) {
                   final thumbnail = gallery[index].attachment.thumbnail;
-                  final isCover =
-                      !coverHidden &&
-                      gallery[index].attachment.id == coverAttachmentId;
+                  final isCover = gallery[index].attachment.id == resolvedCover;
                   return InkWell(
                     onTap: () => showGallery(
                       context,
