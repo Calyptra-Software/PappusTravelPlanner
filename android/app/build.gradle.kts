@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -11,6 +13,26 @@ plugins {
 // how a project property reaches Gradle through a Flutter build that forwards
 // no -P.
 val sideBySide = (project.findProperty("pappusSideBySide") as String?).toBoolean()
+
+// The release signing key, if this machine has one. `android/key.properties`
+// names a keystore that lives *outside* the repository and is never committed
+// (android/.gitignore, and the blanket **/*.jks rule beside it).
+//
+// Optional on purpose. Without it the build falls back to the debug keys, which
+// is what keeps `flutter build apk` working on CI and in a fresh clone -- a
+// contributor must be able to build the app without holding the key that
+// identifies the published one. So the file's absence is a normal state, and
+// only a file that is present but unusable is an error worth stopping for.
+// `rootProject` is android/, not android/app -- Flutter's own signing
+// documentation puts the file a level above this script, and `file(...)` here
+// would look beside build.gradle.kts and quietly find nothing. A missing file
+// is a supported state, so the mistake does not fail the build: it silently
+// signs with the debug keys instead, which `./gradlew :app:signingReport` is
+// the way to catch.
+val keystoreProperties =
+    rootProject.file("key.properties").takeIf { it.exists() }?.let { propertiesFile ->
+        Properties().apply { propertiesFile.inputStream().use { load(it) } }
+    }
 
 android {
     namespace = "dev.calyptra.pappus"
@@ -88,18 +110,57 @@ android {
             keyAlias = "pappus-ci"
             keyPassword = "pappus-ci"
         }
+
+        // The key the published app is signed with. Declared only when
+        // key.properties is there, so `signingConfigs.findByName("release")`
+        // below is the question "does this machine hold the key".
+        //
+        // The passwords are read from that file as plain text, which is what
+        // Flutter's own signing documentation prescribes and is coherent here:
+        // the password is not the defence. Anyone who can read this file can
+        // read the keystore it points at -- same user, same machine -- so what
+        // the password guards is the keystore travelling *without* the file, in
+        // a backup or on a stick. That is why the two are kept apart rather
+        // than why the password is hidden.
+        if (keystoreProperties != null) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig =
-                if (sideBySide) {
-                    signingConfigs.getByName("ci")
-                } else {
-                    signingConfigs.getByName("debug")
-                }
+        if (sideBySide) {
+            // `sideBySide` is not a property of one build type. It renames and
+            // re-icons the app in `defaultConfig`, so *every* variant it
+            // produces -- debug and profile as much as release -- is the CI app
+            // and has to carry the CI app's key. Signing only the release type
+            // left a locally built debug APK calling itself
+            // `dev.calyptra.pappus.ci` while wearing the debug key, which is a
+            // second signature for one applicationId: it could not be installed
+            // over a CI artifact, nor a CI artifact over it. The same conflict
+            // this whole arrangement exists to avoid, one level down.
+            //
+            // `all` rather than naming the types: the container is live, so
+            // this reaches `profile`, which the Flutter Gradle plugin adds.
+            //
+            // It wins over the release key on purpose. The property suffixes
+            // the applicationId in the same breath, so a build taking the
+            // release key here would be signing something that is not the
+            // released app -- and a developer with that key on disk is exactly
+            // who builds the CI variant to test it.
+            all { signingConfig = signingConfigs.getByName("ci") }
+        } else {
+            release {
+                // The published app's key when this machine holds it, and the
+                // debug keys otherwise, so a fresh clone and CI still build.
+                signingConfig =
+                    signingConfigs.findByName("release")
+                        ?: signingConfigs.getByName("debug")
+            }
         }
     }
 }
