@@ -8,6 +8,8 @@ import '../../../l10n/app_localizations.dart';
 import '../application/attachment_providers.dart';
 import '../attachment_flow.dart';
 import '../presentation/attachment_sheet.dart';
+import '../presentation/gallery_screen.dart';
+import '../trip_gallery.dart';
 
 /// Opens what a whole run carries, from the label above it.
 ///
@@ -88,10 +90,28 @@ class AttachmentsField extends ConsumerWidget {
             ),
           )
         else
-          for (final attachment in attachments)
+          for (final (index, attachment) in attachments.indexed)
             AttachmentTile(
               attachment: attachment,
-              onTap: () => showAttachmentSheet(context, attachment),
+              // A **photo opens the gallery**, at itself, over what this owner
+              // carries; a document opens the sheet, there being nothing to
+              // leaf through. The set stops at this owner on purpose: you asked
+              // about this entry, so you get its pictures and not its
+              // neighbours' — the same scope the list above has.
+              onTap: () => attachment.kind == AttachmentKind.photo
+                  ? showGallery(
+                      context,
+                      photos: [
+                        for (final a in attachments)
+                          if (a.kind == AttachmentKind.photo)
+                            GalleryPhoto(attachment: a),
+                      ],
+                      initialIndex: attachments
+                          .take(index)
+                          .where((a) => a.kind == AttachmentKind.photo)
+                          .length,
+                    )
+                  : showAttachmentSheet(context, attachment),
             ),
         const SizedBox(height: 4),
         Wrap(

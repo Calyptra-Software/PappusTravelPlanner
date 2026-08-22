@@ -790,5 +790,6 @@
   "pdfPhotoUnnamed": "Foto",
   "attachmentSaved": "Datei gespeichert.",
   "attachmentsTripTitle": "Reiseunterlagen",
-  "attachmentsTripAdd": "Reiseunterlage hinzufügen"
+  "attachmentsTripAdd": "Reiseunterlage hinzufügen",
+  "galleryTitle": "Fotos"
 }

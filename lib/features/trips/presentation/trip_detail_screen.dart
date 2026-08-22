@@ -17,6 +17,7 @@ import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/track_import_flow.dart';
 import '../../attachments/widgets/trip_attachments_section.dart';
+import '../../attachments/widgets/trip_photo_strip.dart';
 import '../../checklist/presentation/trip_checklists_section.dart';
 import '../../costs/application/cost_display_provider.dart';
 import '../../costs/application/cost_providers.dart';
@@ -690,6 +691,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   // what to pack. It is here at all because a file filed at
                   // this level hangs on no timeline row and so shows nowhere
                   // else — see `TripAttachmentsSection`.
+                  // The way into the gallery, and the only one that costs no
+                  // app-bar space — which this bar has none of, by its own
+                  // comment above. Absent when the trip has no photographs.
+                  TripPhotoStrip(tripId: tripId),
                   TripAttachmentsSection(tripId: tripId, accent: accent),
                   TripChecklistsSection(tripId: tripId, accent: accent),
                   ItineraryTimeline(

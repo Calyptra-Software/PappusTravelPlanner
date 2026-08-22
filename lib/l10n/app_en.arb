@@ -1114,5 +1114,6 @@
   "pdfPhotoUnnamed": "Photo",
   "attachmentSaved": "File saved.",
   "attachmentsTripTitle": "Trip documents",
-  "attachmentsTripAdd": "Add trip document"
+  "attachmentsTripAdd": "Add trip document",
+  "galleryTitle": "Photos"
 }

@@ -89,17 +89,27 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   Stream<List<Attachment>> watchAttachmentsForTrip(int tripId) =>
       _ordered(attachments.tripId.equals(tripId)).watch();
 
-  /// Every photo of one trip that carries a position — what the map draws.
+  /// Every photo of one trip, wherever it hangs — what the gallery reads.
   ///
+  /// Documents are left out: a gallery is of pictures, and a row saying
+  /// `ticket.pdf` between two photographs is a file the reader cannot look at.
+  Stream<List<Attachment>> watchPhotosForTrip(int tripId) =>
+      _photosForTrip(tripId, positionedOnly: false);
+
+  /// The subset of those that carry a position — what the map draws.
+  Stream<List<Attachment>> watchPositionedPhotosForTrip(int tripId) =>
+      _photosForTrip(tripId, positionedOnly: true);
+
   /// Deliberately **not** filtered by the live rule here, unlike
-  /// `TrackDao.watchTracksForTrip`: whether a picture belongs on the map is a
-  /// question about the entry it hangs off, and the screen already holds the
-  /// trip's live entries. Answering it in SQL as well would be a second copy of
-  /// a definition that `live_items.dart` owns — see `_photoMarkers`.
-  ///
-  /// Documents are left out. A file with a position would still only be a dot
-  /// with a paperclip on it, and the reason to be on a map is to be *seen*.
-  Stream<List<Attachment>> watchPositionedPhotosForTrip(int tripId) {
+  /// `TrackDao.watchTracksForTrip`: whether a picture belongs on the map — or in
+  /// the gallery — is a question about the entry it hangs off, and both screens
+  /// already hold the trip's live entries. Answering it in SQL as well would be
+  /// a second copy of a definition that `live_items.dart` owns; see
+  /// `_photoMarkers` and `tripGallery`, which are the two places that apply it.
+  Stream<List<Attachment>> _photosForTrip(
+    int tripId, {
+    required bool positionedOnly,
+  }) {
     final query =
         select(attachments).join([
             leftOuterJoin(
@@ -119,8 +129,9 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
                     itemGroups.tripId.equals(tripId) |
                     attachments.tripId.equals(tripId)) &
                 attachments.kind.equalsValue(AttachmentKind.photo) &
-                attachments.lat.isNotNull() &
-                attachments.lon.isNotNull(),
+                (positionedOnly
+                    ? attachments.lat.isNotNull() & attachments.lon.isNotNull()
+                    : const Constant(true)),
           )
           ..orderBy([
             OrderingTerm(expression: attachments.sortOrder),

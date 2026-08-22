@@ -1133,6 +1133,36 @@ UI (features/*/presentation, *widgets)
   in a catch-all: identifying a format means offering the bytes to every decoder in turn,
   and four bytes of nothing is enough to walk one off the end of its buffer.
 
+- **A trip's photographs are also a set, and the set is read as a gallery.**
+  `tripGallery` (`features/attachments/trip_gallery.dart`, pure — the sibling of
+  `map_features.dart`) orders them: the **trip's own first**, since the insurance and the
+  printed map are about the journey rather than a day of it, which is the order the PDF
+  already prints in, then everything else in timeline order, with a run's own sitting at
+  its first member. The live rule is applied here in Dart against the entries the screen
+  holds, for the reason `_photoMarkers` does it there: `live_items.dart` owns that
+  definition and a query would hold a second copy. Each page carries the **label of the
+  entry it hangs on** — the one thing a single picture never needs and twenty in a row
+  cannot do without, or they are a pile of photographs with a trip somewhere behind them.
+- **The way in is a thumbnail strip, not an app-bar icon.** That bar is three icons and an
+  overflow and says in its own comment that a fourth leaves no room for the title, and the
+  overflow is for what a trip is *done to* rather than a way of looking at it. `TripPhotoStrip`
+  costs no bar space, is visibly there, and hands the gallery the picture that was tapped;
+  it is absent when the trip has none. This is not the rule against thumbnails *in the
+  timeline*: there a picture would displace the entry it hangs on, here the photographs are
+  the subject. Elsewhere the rule is **a photo opens the gallery, a document opens the
+  sheet** — with one deliberate exception, the map, where a marker keeps opening
+  `AttachmentSheet`: you tapped a pin to ask about *that* position, and the position
+  controls live in the sheet, so swiping away to pictures that are not on the map would
+  leave the question behind.
+- **The gallery is a reading.** Swiping browses and writes nothing (the `AlternativeCard`
+  rule), and the four acts stay in `AttachmentSheet` behind the ⋮ — two places holding the
+  delete confirmation means one of them going stale, the same reason `MapItemSheet` hands
+  editing back to the item form. Pages decode through the `autoDispose`
+  `attachmentBytesProvider` and a `PageView` builds lazily, so two hundred photographs cost
+  three in memory. Zoom and page-turn are one gesture, so the page is **locked while
+  magnified** (`_zoomed`, compared against `> 1.01` because a pinch back out settles on
+  1.0000001 and an equality test would lock the page for good).
+
 - **Deleted space comes back by itself, because a user must not have to ask for it.**
   `AppDatabase._enableAutoVacuum` puts every file on `auto_vacuum = FULL`. SQLite otherwise
   keeps freed pages on a free list forever, which is the right trade for a database of text

@@ -3787,6 +3787,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add trip document'**
   String get attachmentsTripAdd;
+
+  /// No description provided for @galleryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get galleryTitle;
 }
 
 class _AppLocalizationsDelegate

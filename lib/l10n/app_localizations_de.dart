@@ -2210,4 +2210,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get attachmentsTripAdd => 'Reiseunterlage hinzufügen';
+
+  @override
+  String get galleryTitle => 'Fotos';
 }

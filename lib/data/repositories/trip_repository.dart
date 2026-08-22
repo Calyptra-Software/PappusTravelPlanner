@@ -201,8 +201,13 @@ class TripRepository {
   watchAttachmentCountsForTrip(int tripId) =>
       _db.attachmentDao.watchAttachmentCountsForTrip(tripId);
 
-  /// The positioned photos of one trip — what the map draws, before the live
-  /// rule is applied to them (see `tripMapFeatures`).
+  /// Every photo of one trip, before the live rule is applied to them — what
+  /// the gallery reads (see `tripGallery`).
+  Stream<List<Attachment>> watchPhotosForTrip(int tripId) =>
+      _db.attachmentDao.watchPhotosForTrip(tripId);
+
+  /// The positioned ones among those — what the map draws (see
+  /// `tripMapFeatures`).
   Stream<List<Attachment>> watchPositionedPhotosForTrip(int tripId) =>
       _db.attachmentDao.watchPositionedPhotosForTrip(tripId);
 

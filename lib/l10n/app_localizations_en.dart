@@ -2198,4 +2198,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attachmentsTripAdd => 'Add trip document';
+
+  @override
+  String get galleryTitle => 'Photos';
 }

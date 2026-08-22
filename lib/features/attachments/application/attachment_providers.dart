@@ -39,6 +39,13 @@ final tripAttachmentCountsProvider = StreamProvider.autoDispose
           ref.watch(repositoryProvider).watchAttachmentCountsForTrip(tripId),
     );
 
+/// Every photo of one trip, for its gallery — including the ones with no
+/// position, which the map has no use for.
+final tripPhotosProvider = StreamProvider.autoDispose
+    .family<List<Attachment>, int>(
+      (ref, tripId) => ref.watch(repositoryProvider).watchPhotosForTrip(tripId),
+    );
+
 /// The positioned photos of one trip, for its map.
 ///
 /// Carries each row's thumbnail, which is what the marker is drawn from — the
