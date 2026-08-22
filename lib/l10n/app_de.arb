@@ -787,5 +787,6 @@
   "@pdfPhotos": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "pdfPhotoUnnamed": "Foto"
+  "pdfPhotoUnnamed": "Foto",
+  "attachmentSaved": "Datei gespeichert."
 }

@@ -2201,4 +2201,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pdfPhotoUnnamed => 'Foto';
+
+  @override
+  String get attachmentSaved => 'Datei gespeichert.';
 }

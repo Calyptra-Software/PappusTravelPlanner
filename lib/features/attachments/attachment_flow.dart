@@ -50,6 +50,24 @@ Future<int> addAttachments(
   final picked = await (pickFiles ?? () => _pick(photosOnly: photosOnly))();
   if (picked == null || picked.isEmpty) return 0;
 
+  // Said before the work starts. Picking eight photos takes a moment on any
+  // platform, and the snack bar is dismissed again below whatever happens.
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(l10n.attachmentsAdding),
+      duration: const Duration(minutes: 1),
+    ),
+  );
+  // On the **web** only, wait for it to actually be painted. `compute` is a
+  // real isolate everywhere else — the interface stays live and this message
+  // appears by itself — but in a browser it runs the callback inline and blocks
+  // the one thread there is, so without yielding a frame first the app looks
+  // frozen instead of busy: the snack bar would be scheduled behind the very
+  // work it is announcing. Guarded rather than unconditional because awaiting a
+  // frame from inside a callback is a thing that can deadlock a widget test,
+  // and there is nothing to gain from it where the work is off-thread anyway.
+  if (kIsWeb) await WidgetsBinding.instance.endOfFrame;
+
   final repo = ref.read(repositoryProvider);
   var added = 0;
   String? refusal;
@@ -78,6 +96,9 @@ Future<int> addAttachments(
     added++;
   }
 
+  // Whatever replaces it, the "reading" message goes: it described work that
+  // has finished, and a queue behind it would leave it on screen after the fact.
+  messenger.hideCurrentSnackBar();
   if (refusal != null) {
     messenger.showSnackBar(SnackBar(content: Text(refusal)));
   } else if (added > 1) {
@@ -117,7 +138,12 @@ Future<void> shareAttachment(
   final fileName = attachment.name ?? _defaultFileName(attachment);
   if (_isDesktop) {
     final location = await getSaveLocation(suggestedName: fileName);
-    if (location != null) await XFile.fromData(bytes).saveTo(location.path);
+    if (location == null) return;
+    await XFile.fromData(bytes).saveTo(location.path);
+    // Saying so, as the `.tpt` export does: a share sheet is its own
+    // confirmation — the file visibly goes somewhere — while a desktop save
+    // closes a dialog and leaves the screen exactly as it was.
+    messenger.showSnackBar(SnackBar(content: Text(l10n.attachmentSaved)));
     return;
   }
   await SharePlus.instance.share(

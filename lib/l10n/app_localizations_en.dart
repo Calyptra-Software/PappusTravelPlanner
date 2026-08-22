@@ -2189,4 +2189,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pdfPhotoUnnamed => 'Photo';
+
+  @override
+  String get attachmentSaved => 'File saved.';
 }

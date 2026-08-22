@@ -1189,6 +1189,17 @@ is that stub for the attachment providers; a new provider watched from the timel
 item form needs the same treatment, and the symptom of forgetting is six unrelated files
 timing out.
 
+A third face, for a flow that hops to an isolate: `compute` runs on a **real** one, which
+the fake clock does not drive, so `pumpAndSettle` returns long before the work is done and
+awaiting the flow's future from the fake zone deadlocks — its continuations need a pump,
+and the pump is what you are waiting to be allowed to do. `test/attachment_flow_test.dart`
+holds the future the tap started and awaits it *with the tap* inside one `tester.runAsync`,
+which is deterministic where sleeping "long enough" is not. The production side of the same
+seam: `addAttachments` takes an injectable `pickFiles`, and its `endOfFrame` await — there
+so the browser can paint the "reading" message before `compute` blocks its one thread — is
+guarded by `kIsWeb`, because awaiting a frame from inside a callback is exactly what
+deadlocks a widget test and there is nothing to gain from it where the work is off-thread.
+
 ## Platform build constraints
 
 - **The build CI hands out installs beside a real one, not over it.** Every

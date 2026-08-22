@@ -3769,6 +3769,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photo'**
   String get pdfPhotoUnnamed;
+
+  /// No description provided for @attachmentSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'File saved.'**
+  String get attachmentSaved;
 }
 
 class _AppLocalizationsDelegate
