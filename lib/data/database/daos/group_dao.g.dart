@@ -12,6 +12,7 @@ mixin _$GroupDaoMixin on DatabaseAccessor<AppDatabase> {
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   $CurrenciesTable get currencies => attachedDatabase.currencies;
   $CostsTable get costs => attachedDatabase.costs;
+  $AttachmentsTable get attachments => attachedDatabase.attachments;
   GroupDaoManager get managers => GroupDaoManager(this);
 }
 
@@ -43,4 +44,6 @@ class GroupDaoManager {
       $$CurrenciesTableTableManager(_db.attachedDatabase, _db.currencies);
   $$CostsTableTableManager get costs =>
       $$CostsTableTableManager(_db.attachedDatabase, _db.costs);
+  $$AttachmentsTableTableManager get attachments =>
+      $$AttachmentsTableTableManager(_db.attachedDatabase, _db.attachments);
 }

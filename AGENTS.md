@@ -1052,7 +1052,12 @@ UI (features/*/presentation, *widgets)
   file hangs off a row. `replaceJourneyLegs` **rescues** them exactly as it rescues the
   fare: parked owner-less for the length of the transaction, then re-homed onto the
   surviving group or the replacement's first leg. Looking a connection up again is not a
-  reason to lose the photo of the ticket.
+  reason to lose the photo of the ticket. **Dissolving** a group rescues them the same way
+  (`GroupDao._preserveSharedThings`, which the degenerate-group tidy-up goes through too):
+  ungrouping is advertised as the harmless half of deleting, so the entries stay and what
+  they paid for stays with them — the fare and the ticket are the same thing said twice,
+  and for a while only one of them was kept. `deleteGroup` is the other way round and
+  deliberately so: nothing survives to carry them.
 - **A photo keeps one thing out of its EXIF and loses the rest.** The position is lifted
   into `Attachments.lat`/`lon` with an `AttachmentPositionSource` beside it, and the
   re-encoding drops everything else — deliberately, with `full.exif = ExifData()` doing

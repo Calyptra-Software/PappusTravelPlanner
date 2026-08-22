@@ -10,7 +10,7 @@ part 'group_dao.g.dart';
 /// single expense (e.g. a train ticket covering several legs). Also owns
 /// [ItineraryItems] and [Costs] so grouping operations that re-point items and
 /// costs run in one transaction.
-@DriftAccessor(tables: [ItemGroups, ItineraryItems, Costs])
+@DriftAccessor(tables: [ItemGroups, ItineraryItems, Costs, Attachments])
 class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   GroupDao(super.db);
 
@@ -82,12 +82,13 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     });
   }
 
-  /// Fully dissolves a group: frees all its members and deletes it. Any shared
-  /// costs are kept, re-pointed to the group's first remaining member so the
-  /// expense isn't lost with the group (they would otherwise cascade-delete).
+  /// Fully dissolves a group: frees all its members and deletes it. Anything
+  /// shared — the fare, and the files hung on the run itself — is kept,
+  /// re-pointed to the group's first remaining member so it isn't lost with the
+  /// group (it would otherwise cascade-delete).
   Future<void> dissolveGroup(int groupId) {
     return transaction(() async {
-      await _preserveCosts(groupId);
+      await _preserveSharedThings(groupId);
       await (update(itineraryItems)..where((i) => i.groupId.equals(groupId)))
           .write(const ItineraryItemsCompanion(groupId: Value(null)));
       await (delete(itemGroups)..where((g) => g.id.equals(groupId))).go();
@@ -98,11 +99,12 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
   /// bundle around it.
   ///
   /// The opposite of [dissolveGroup], which keeps the entries and only drops the
-  /// bundling — so the money is treated the opposite way too. There it is
-  /// rescued onto the first surviving member; here nothing survives to carry it,
-  /// so each member's own costs cascade with it and the shared cost cascades
-  /// with the group. That is the honest reading: a ticket is not still paid for
-  /// once every leg it covered has been deleted.
+  /// bundling — so the money and the files are treated the opposite way too.
+  /// There they are rescued onto the first surviving member; here nothing
+  /// survives to carry them, so each member's own cascade with it and the run's
+  /// shared ones cascade with the group. That is the honest reading: a ticket is
+  /// not still paid for, nor worth keeping a photograph of, once every leg it
+  /// covered has been deleted.
   Future<void> deleteGroup(int groupId) {
     return transaction(() async {
       await (delete(
@@ -114,10 +116,10 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
 
   /// Deletes an itinerary item, then tidies its former group the same way
   /// [removeFromGroup] does: a group left with fewer than two members is
-  /// dissolved, its shared costs preserved on the remaining member (or dropped
-  /// with the group when none remain). Without this, deleting grouped items
-  /// would strand the group and its expenses — counted in the trip total but
-  /// attached to nothing visible.
+  /// dissolved, its shared cost and files preserved on the remaining member (or
+  /// dropped with the group when none remain). Without this, deleting grouped
+  /// items would strand the group and its expenses — counted in the trip total
+  /// but attached to nothing visible.
   Future<void> deleteItem(int itemId) {
     return transaction(() async {
       final item = await (select(
@@ -240,21 +242,34 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
       (select(itemGroups)..where((g) => g.id.equals(id))).getSingle();
 
   /// Dissolves [groupId] when it no longer holds at least two members, so a
-  /// group of one is never left dangling. Preserves its costs first.
+  /// group of one is never left dangling. Preserves what hangs on the run
+  /// itself first — the fare and the shared files alike.
   Future<void> _dissolveIfDegenerate(int groupId) async {
     final members = await _members(groupId);
     if (members.length >= 2) return;
-    await _preserveCosts(groupId, members: members);
+    await _preserveSharedThings(groupId, members: members);
     await (update(itineraryItems)..where((i) => i.groupId.equals(groupId)))
         .write(const ItineraryItemsCompanion(groupId: Value(null)));
     await (delete(itemGroups)..where((g) => g.id.equals(groupId))).go();
   }
 
-  /// Re-points a group's shared costs onto its first member (by day/sort/time)
-  /// so they survive the group's deletion. A no-op when the group has no members
-  /// left — in that case the costs cascade-delete with the group, as there is
-  /// nowhere to attach them.
-  Future<void> _preserveCosts(
+  /// Re-points everything hanging on the group itself — its shared cost and its
+  /// shared files — onto its first member (by day/sort/time), so they survive
+  /// the group's deletion instead of cascading with it.
+  ///
+  /// **The fare and the ticket travel together**, because they are the same
+  /// thing said twice: the price of the journey and the document proving it was
+  /// bought. Ungrouping keeps the entries, so it has to keep what those entries
+  /// paid for — a run whose photographed ticket vanished because somebody
+  /// separated its legs would be the delete this act is advertised as *not*
+  /// being. (Attachments were rescued only after the fact; the costs were right
+  /// from the start, and one of the two being quietly destroyed is exactly the
+  /// kind of inconsistency a comment like this exists to stop happening again.)
+  ///
+  /// A no-op when the group has no members left: there is nowhere to attach
+  /// anything, and both cascade with the group — which is the honest reading,
+  /// and the one [deleteGroup] relies on.
+  Future<void> _preserveSharedThings(
     int groupId, {
     List<ItineraryItem>? members,
   }) async {
@@ -262,6 +277,12 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     if (list.isEmpty) return;
     await (update(costs)..where((c) => c.groupId.equals(groupId))).write(
       CostsCompanion(groupId: const Value(null), itemId: Value(list.first.id)),
+    );
+    await (update(attachments)..where((a) => a.groupId.equals(groupId))).write(
+      AttachmentsCompanion(
+        groupId: const Value(null),
+        itemId: Value(list.first.id),
+      ),
     );
   }
 

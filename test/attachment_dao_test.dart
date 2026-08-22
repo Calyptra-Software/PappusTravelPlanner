@@ -149,7 +149,50 @@ void main() {
     expect(await db.attachmentDao.readAttachmentBytes(id), isNull);
   });
 
-  test('dissolving a group takes its own files, not its members\'', () async {
+  test('dissolving a group rescues its files onto the first member', () async {
+    final trip = await makeTrip();
+    final group = await makeGroup(trip);
+    final first = await makeLeg(trip, groupId: group);
+    final second = await makeLeg(trip, groupId: group);
+    final onRun = await db.attachmentDao.addAttachment(
+      ticket(),
+      groupId: group,
+    );
+    final onLeg = await db.attachmentDao.addAttachment(
+      ticket(name: 'seat.jpg'),
+      itemId: second,
+    );
+
+    await db.groupDao.dissolveGroup(group);
+
+    // Ungrouping is advertised as the harmless half of deleting: the entries
+    // stay, so what they paid for stays with them. The fare has always been
+    // rescued this way and the ticket now travels with it — the two are the
+    // same thing said twice.
+    expect((await db.attachmentDao.attachment(onRun))!.itemId, first);
+    expect((await db.attachmentDao.attachment(onLeg))!.itemId, second);
+  });
+
+  test('a run picked apart leg by leg keeps its ticket', () async {
+    final trip = await makeTrip();
+    final group = await makeGroup(trip);
+    final first = await makeLeg(trip, groupId: group);
+    final second = await makeLeg(trip, groupId: group);
+    final onRun = await db.attachmentDao.addAttachment(
+      ticket(),
+      groupId: group,
+    );
+
+    // Down to one member the group is dissolved as degenerate, which is the
+    // other door into the same rescue.
+    await db.groupDao.deleteItem(second);
+
+    final rescued = (await db.attachmentDao.attachment(onRun))!;
+    expect(rescued.itemId, first);
+    expect(rescued.groupId, isNull);
+  });
+
+  test('deleting a whole run takes its files with it', () async {
     final trip = await makeTrip();
     final group = await makeGroup(trip);
     final leg = await makeLeg(trip, groupId: group);
@@ -162,12 +205,12 @@ void main() {
       itemId: leg,
     );
 
-    await db.groupDao.dissolveGroup(group);
+    await db.groupDao.deleteGroup(group);
 
-    // The entries outlive the group, so what hangs on them does too; the run's
-    // own ticket does not, because there is no run any more.
+    // Nothing survives to carry them: a ticket is not worth keeping a
+    // photograph of once every leg it covered has been deleted.
     expect(await db.attachmentDao.attachment(onRun), isNull);
-    expect(await db.attachmentDao.attachment(onLeg), isNotNull);
+    expect(await db.attachmentDao.attachment(onLeg), isNull);
   });
 
   test('the trip-wide count answers per entry and per run', () async {
