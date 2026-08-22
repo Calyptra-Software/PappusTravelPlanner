@@ -64,6 +64,35 @@ final tripCoversProvider = StreamProvider.autoDispose<Map<int, Uint8List>>((
   }
 });
 
+/// One trip's photographs, ordered and captioned — the list every screen that
+/// shows them works from.
+///
+/// Built once here rather than in each of them: the strip draws it, the timeline
+/// finds an entry's first picture in it, the star reads which one is the cover,
+/// and a gallery opened from any of the three walks the same list in the same
+/// order. Three copies of `tripGallery(...)` would be three chances for the
+/// order to drift, and the order is what "the first photograph of this entry"
+/// means.
+final tripGalleryProvider = Provider.autoDispose
+    .family<List<GalleryPhoto>, int>((ref, tripId) {
+      final photos = ref.watch(tripPhotosProvider(tripId)).value ?? const [];
+      if (photos.isEmpty) return const [];
+      final items = ref.watch(itineraryProvider(tripId)).value ?? const [];
+      final chosen = ref.watch(chosenBranchIdsProvider(tripId));
+      final groups = ref.watch(groupsProvider(tripId)).value ?? const {};
+      return tripGallery(
+        liveItems(items, chosen),
+        photos: photos,
+        // Only the runs the user has named: one going by the default label has
+        // nothing to add to a caption the picture does not already carry.
+        groupLabels: {
+          for (final entry in groups.entries)
+            if ((entry.value.label ?? '').isNotEmpty)
+              entry.key: entry.value.label!,
+        },
+      );
+    });
+
 /// Which of one trip's photographs is its cover *right now* — the named one,
 /// the derived one, or none.
 ///
@@ -82,17 +111,5 @@ final tripCoverIdProvider = Provider.autoDispose.family<int?, int>((
 ) {
   final trip = ref.watch(tripProvider(tripId)).value;
   if (trip == null) return null;
-  final photos = ref.watch(tripPhotosProvider(tripId)).value ?? const [];
-  final items = ref.watch(itineraryProvider(tripId)).value ?? const [];
-  final chosen = ref.watch(chosenBranchIdsProvider(tripId));
-  final groups = ref.watch(groupsProvider(tripId)).value ?? const {};
-  final gallery = tripGallery(
-    liveItems(items, chosen),
-    photos: photos,
-    groupLabels: {
-      for (final entry in groups.entries)
-        if ((entry.value.label ?? '').isNotEmpty) entry.key: entry.value.label!,
-    },
-  );
-  return coverPhoto(trip, gallery)?.id;
+  return coverPhoto(trip, ref.watch(tripGalleryProvider(tripId)))?.id;
 });

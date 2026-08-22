@@ -1209,6 +1209,21 @@ UI (features/*/presentation, *widgets)
   steals the taps that open the gallery. Amber because red is reserved for "happening" and a
   user-chosen accent is invisible against half the photographs it would be drawn on
   (`kCoverStarColor`, defined once so the two cannot drift).
+- **A timeline entry with a photograph is one tap from it.** The attachment line under an
+  entry (and the icon on a run's band) turns into a **photo icon** when any of what it
+  counts is a picture, and pressing it opens the gallery there. The alternative was opening
+  the entry's form and finding the file in a list — two levels down from a thing already on
+  screen. An entry carrying only documents keeps the paperclip and stays inert: a gallery is
+  of pictures, and a shortcut that opened an empty one is worse than none. The count goes on
+  counting *attachments*, so a leg with one photograph and two tickets says "3" and shows
+  one — the line says what is there, the icon says what a tap will do.
+  It opens the **trip's** gallery positioned at this entry's first picture, not a gallery
+  of that entry alone: from the timeline you are looking at the trip and the neighbours are
+  the rest of it, while from inside an entry's form you asked about that entry, which is why
+  the field there stays scoped. Both read `tripGalleryProvider`, which is where the trip's
+  photographs are ordered **once** — the strip draws that list, the star reads which of it
+  is the cover, and "the first photograph of this entry" means an index into it. Three
+  copies of `tripGallery(...)` would be three chances for the order to drift.
 - **The card reads one map, not one query per card.** `tripCoversProvider` is the
   `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
   `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and

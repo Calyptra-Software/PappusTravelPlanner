@@ -8,6 +8,9 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../attachments/application/attachment_providers.dart';
+import '../../attachments/application/cover_providers.dart';
+import '../../attachments/presentation/gallery_screen.dart';
+import '../../attachments/trip_gallery.dart';
 import '../../attachments/widgets/attachments_field.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
@@ -488,13 +491,26 @@ class _GroupAttachmentBadge extends ConsumerWidget {
     if (count == 0) return const SizedBox.shrink();
 
     final l10n = AppLocalizations.of(context);
+    final gallery = ref.watch(tripGalleryProvider(tripId));
+    final first = gallery.indexWhere((p) => p.attachment.groupId == groupId);
+
+    // A run's photograph goes to the gallery like an entry's; its files go to
+    // the sheet, which is where they can be acted on. The icon says which of
+    // the two the tap will do.
     return IconButton(
       tooltip: l10n.attachmentsCount(count),
       visualDensity: VisualDensity.compact,
       iconSize: 18,
-      icon: const Icon(Icons.attach_file),
+      icon: Icon(first >= 0 ? Icons.photo_library_outlined : Icons.attach_file),
       color: accent,
-      onPressed: () => showGroupAttachmentsSheet(context, groupId),
+      onPressed: () => first >= 0
+          ? showGallery(
+              context,
+              photos: gallery,
+              initialIndex: first,
+              tripId: tripId,
+            )
+          : showGroupAttachmentsSheet(context, groupId),
     );
   }
 }
@@ -519,26 +535,91 @@ class _AttachmentBadge extends ConsumerWidget {
     final count = counts?.byItem[item.id] ?? 0;
     if (count == 0) return const SizedBox.shrink();
 
+    return _AttachmentLine(
+      tripId: item.tripId,
+      count: count,
+      belongsHere: (photo) => photo.attachment.itemId == item.id,
+    );
+  }
+}
+
+/// What an entry or a run carries, and — when any of it is a photograph — the
+/// way straight to it.
+///
+/// The count says *that* something is attached; the icon says *what*, and is
+/// the only part that can be pressed. An entry with nothing but a ticket PDF
+/// keeps the paperclip and stays inert: a gallery is of pictures, and a
+/// shortcut that opened an empty one would be worse than none. With a picture
+/// it becomes a photo icon and a tap, because the alternative today is opening
+/// the entry's form and finding the file in a list — two levels down from a
+/// thing you are already looking at.
+///
+/// The gallery it opens is the **trip's**, positioned at this entry's first
+/// picture, and not just this entry's own. From the timeline you are looking at
+/// the trip and the neighbours are the rest of it; from inside an entry's form
+/// you asked about that entry, which is why the field there stays scoped. The
+/// same question, asked from two places, with two honest answers.
+class _AttachmentLine extends ConsumerWidget {
+  const _AttachmentLine({
+    required this.tripId,
+    required this.count,
+    required this.belongsHere,
+  });
+
+  final int tripId;
+  final int count;
+
+  /// Whether a picture of the trip hangs on the thing this line is under.
+  final bool Function(GalleryPhoto) belongsHere;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.attach_file,
-            size: 14,
+    final l10n = AppLocalizations.of(context);
+    final gallery = ref.watch(tripGalleryProvider(tripId));
+    final first = gallery.indexWhere(belongsHere);
+    final hasPhoto = first >= 0;
+
+    final label = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          hasPhoto ? Icons.photo_library_outlined : Icons.attach_file,
+          size: 14,
+          color: hasPhoto
+              ? theme.colorScheme.primary
+              : theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Text(
+          l10n.attachmentsCount(count),
+          style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 4),
-          Text(
-            AppLocalizations.of(context).attachmentsCount(count),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: hasPhoto
+          ? InkWell(
+              onTap: () => showGallery(
+                context,
+                photos: gallery,
+                initialIndex: first,
+                tripId: tripId,
+              ),
+              borderRadius: BorderRadius.circular(4),
+              // Room around a target that lives inside a dense tile: the label
+              // is 14px of icon and a line of small text, which is nothing to
+              // aim at on a phone.
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: label,
+              ),
+            )
+          : label,
     );
   }
 }
@@ -704,7 +785,6 @@ class _PlaceRow extends StatelessWidget {
                                   ),
                                 ),
                               _AttachmentBadge(item: item),
-                              _AttachmentBadge(item: item),
                               costsSection,
                             ],
                           ),
@@ -849,6 +929,7 @@ class _TransportRow extends ConsumerWidget {
                                   ),
                                 ),
                               ),
+                            _AttachmentBadge(item: item),
                             costsSection,
                           ],
                         ),

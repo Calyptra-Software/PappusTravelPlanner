@@ -3,13 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../itinerary/application/itinerary_providers.dart';
-import '../../itinerary/live_items.dart';
-import '../application/attachment_providers.dart';
 import '../application/cover_providers.dart';
 import '../cover_star.dart';
 import '../presentation/gallery_screen.dart';
-import '../trip_gallery.dart';
 
 /// The trip's photographs, as a band of thumbnails that opens the gallery.
 ///
@@ -60,25 +56,10 @@ class TripPhotoStrip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final photos = ref.watch(tripPhotosProvider(tripId)).value;
-    if (photos == null || photos.isEmpty) return const SizedBox.shrink();
-
-    // The same reading the map makes: live entries only, so a picture in an
-    // option nobody chose is no more here than the option is.
-    final items = ref.watch(itineraryProvider(tripId)).value ?? const [];
-    final chosen = ref.watch(chosenBranchIdsProvider(tripId));
-    final groups = ref.watch(groupsProvider(tripId)).value ?? const {};
-    final gallery = tripGallery(
-      liveItems(items, chosen),
-      photos: photos,
-      // Only the runs the user has named: one going by the default label has
-      // nothing to add to a caption the picture does not already carry.
-      groupLabels: {
-        for (final entry in groups.entries)
-          if ((entry.value.label ?? '').isNotEmpty)
-            entry.key: entry.value.label!,
-      },
-    );
+    // The trip's pictures in gallery order, live entries only — the same list
+    // the timeline's shortcuts and the cover star read, so all three agree
+    // about what "the first photograph" is.
+    final gallery = ref.watch(tripGalleryProvider(tripId));
     if (gallery.isEmpty) return const SizedBox.shrink();
 
     // The picture the card actually shows — the named one, or the derived one,
