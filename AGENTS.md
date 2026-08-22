@@ -1103,6 +1103,25 @@ in-memory database.
   when `sideBySide` is on, so the key and the suffixed id always arrive together.
   `android/.gitignore` keeps its blanket `**/*.jks` rule and names this one file
   as the exception, so a real signing key still cannot be committed by accident.
+- **The released app's key is optional to have and impossible to guess at.**
+  `android/key.properties` (never committed; the keystore itself lives outside
+  the repository) names the keystore the published APKs are signed with, and
+  `build.gradle.kts` declares a `release` signingConfig only when that file is
+  there. Its absence is a *supported* state — CI and a fresh clone fall back to
+  the debug keys, because a contributor has to be able to build the app without
+  holding the key that identifies the published one. The file is read with
+  `rootProject.file(...)`: `rootProject` is `android/`, and `file(...)` from the
+  app's own script would look in `android/app/` and quietly find nothing, which
+  costs nothing visible — the build simply signs with the debug keys instead.
+  Neither the resulting APK's fingerprint nor a successful build can tell the
+  two apart here, because the release key *is* the old debug key, moved out of
+  `~/.android/debug.keystore` into a deliberate location so AGP can no longer
+  regenerate the app's identity from under it. `./gradlew :app:signingReport` is
+  therefore the only check that answers which key a variant actually uses, and
+  the one to run after touching any of this. `sideBySide` still wins over the
+  release key: that property suffixes the applicationId in the same breath, so a
+  build taking the release key there would be signing something that is not the
+  released app.
 - **The app says which build it is by looking at its own id.** `isCiBuild`
   (`core/app_info.dart`, pure) reads the `.ci` suffix off `PackageInfo`'s package
   name, resolved once in `main` into `isCiBuildProvider`. Deliberately not a
