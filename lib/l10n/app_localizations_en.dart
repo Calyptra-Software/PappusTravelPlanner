@@ -2085,4 +2085,91 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aboutLicensesSubtitle =>
       'The libraries and fonts this app is built from';
+
+  @override
+  String get attachmentsLabel => 'Attachments';
+
+  @override
+  String get attachmentsNone => 'Nothing attached yet';
+
+  @override
+  String get attachmentsAddPhoto => 'Add photo';
+
+  @override
+  String get attachmentsAddFile => 'Add file';
+
+  @override
+  String get attachmentsAdding => 'Reading the file…';
+
+  @override
+  String get attachmentsAddedOne => 'Attached.';
+
+  @override
+  String attachmentsAddedMany(int count) {
+    return '$count files attached.';
+  }
+
+  @override
+  String attachmentsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attachments',
+      one: '1 attachment',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String attachmentTooLarge(String size, String limit) {
+    return 'That file is $size — the limit is $limit. The whole database is copied when a trip is exported, so a large file can make it impossible to move.';
+  }
+
+  @override
+  String attachmentUnreadableImage(String format) {
+    return 'This picture format ($format) can\'t be read here. Save it as JPEG or PNG first.';
+  }
+
+  @override
+  String get attachmentUnreadable => 'That file could not be read.';
+
+  @override
+  String get attachmentRename => 'Rename';
+
+  @override
+  String get attachmentNameLabel => 'Name';
+
+  @override
+  String get attachmentOpen => 'Open';
+
+  @override
+  String get attachmentShare => 'Share';
+
+  @override
+  String get attachmentDelete => 'Delete';
+
+  @override
+  String get attachmentDeleteQuestion => 'Delete this attachment?';
+
+  @override
+  String get attachmentDeleteBody =>
+      'The file is stored in this database and nowhere else. Deleting it here removes it for good.';
+
+  @override
+  String get attachmentPositionExif => 'Position taken from the photo';
+
+  @override
+  String get attachmentPositionPicked => 'Position chosen on the map';
+
+  @override
+  String get attachmentPositionNone => 'No position';
+
+  @override
+  String get attachmentPositionSet => 'Place on map';
+
+  @override
+  String get attachmentPositionClear => 'Remove position';
+
+  @override
+  String get attachmentPhotoOpenFailed => 'That file could not be opened.';
 }

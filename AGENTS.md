@@ -1029,6 +1029,47 @@ UI (features/*/presentation, *widgets)
   caching stays on flutter_map's default, which honors the server's own headers and is the
   conforming caching the policy requires. `appVersionProvider` now has two callers, not one.
 
+- **An attachment's bytes live in the database, and that is the whole design.**
+  `Attachments` + `AttachmentBlobs` (v32) hold a photo or a file hung on part of a plan.
+  Not a sidecar directory: one portable SQLite file is what the app *is*, and an
+  attachment kept beside it would mean every copy, backup and export that has ever
+  worked silently stops carrying everything — the file would go on claiming to be the
+  whole trip, and on Android and the web there is no second path to point at anyway.
+  The price is paid on the way in: `attachment_import.dart` (pure) re-encodes a photo to
+  `kMaxPhotoEdge`/`kPhotoQuality` with a thumbnail beside it, and caps a document at
+  `kMaxAttachmentBytes`. The ceiling being defended is not disk space — it is that
+  `readDatabaseBytes` reads the *whole* database into memory to export it, so an
+  unbounded photo library costs the user the ability to move their trips off the device.
+  The payload is a **second table** because drift selects every column of the table it
+  is given: listing what a day carries must not be reading it.
+- **It hangs on exactly one of an item or a group**, the way a `Costs` row does and for
+  the same reason — a ticket covers the run, not one leg of it. Both cascade (unlike
+  `ItineraryItems.groupId`, nulled on dissolve: an item outlives its group, an
+  attachment of that group does not), and the invariant lives in `AttachmentDao._owner`
+  since SQL cannot state it. The run's are reached from the ⋮ menu on the group band,
+  where everything whose unit is the run already is; an entry's from its own form, below
+  the note, and — like `TrackField` — only on an entry that **already exists**, since a
+  file hangs off a row. `replaceJourneyLegs` **rescues** them exactly as it rescues the
+  fare: parked owner-less for the length of the transaction, then re-homed onto the
+  surviving group or the replacement's first leg. Looking a connection up again is not a
+  reason to lose the photo of the ticket.
+- **A photo keeps one thing out of its EXIF and loses the rest.** The position is lifted
+  into `Attachments.lat`/`lon` with an `AttachmentPositionSource` beside it, and the
+  re-encoding drops everything else — deliberately, with `full.exif = ExifData()` doing
+  it and a test standing on it, because the resize *copies* the metadata and without that
+  line the camera body and serial number would ride into every `.tpt` and PDF. Reading
+  EXIF is not a breach of *a position is pointed at, never derived*: that rule is about
+  turning a **name** into a place, and nothing is inferred here — the file says where the
+  camera stood. But a camera's fix and a user's tap are not the same claim, so the
+  provenance is stored and shown, `0,0` is refused (a camera with no fix writes zeros),
+  and the position is never inherited from the entry it hangs on — that entry already has
+  a pin, and a second one would be the app claiming to know where a picture was taken.
+- **A picture the decoder cannot read is refused, not stored raw.** HEIC/HEIF is the case
+  that matters, and keeping it as an opaque document would break all three rules above at
+  once — unbounded size, no thumbnail, EXIF intact — silently. The probe itself is wrapped
+  in a catch-all: identifying a format means offering the bytes to every decoder in turn,
+  and four bytes of nothing is enough to walk one off the end of its buffer.
+
 ### Database portability & schema changes
 
 - Data is one SQLite file. Desktop can open/create a DB at any path; Android imports/exports.
@@ -1041,7 +1082,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 30) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 32) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget
@@ -1067,6 +1108,16 @@ widget tests hang if they depend on the real DB stream. Override the feature pro
 plain `Stream.value(...)` instead (see `pumpOverview` in `test/trip_flow_test.dart`). For
 DAO/logic tests, construct `AppDatabase.forTesting(NativeDatabase.memory())` against an
 in-memory database.
+
+The same hazard has a second face, which is worth knowing because it fails *after* the
+assertions pass: cancelling a drift stream schedules a zero-duration timer
+(`StreamQueryStore.markAsClosed`), and a test whose tree is disposed at the end leaves it
+pending — reported as "A Timer is still pending even after the widget tree was disposed".
+Any widget that watches a DB-backed provider therefore has to be stubbed out in every test
+that pumps it, even one that never looks at what it draws. `test/support/attachment_overrides.dart`
+is that stub for the attachment providers; a new provider watched from the timeline or the
+item form needs the same treatment, and the symptom of forgetting is six unrelated files
+timing out.
 
 ## Platform build constraints
 

@@ -22,6 +22,7 @@ import 'package:travelplanner/features/trips/presentation/trip_detail_screen.dar
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
+import 'support/attachment_overrides.dart';
 
 /// Covers the *putting down* half of moving an entry, which only exists on the
 /// trip screen: the chip in each day's and each option's add-row, the bar naming
@@ -140,6 +141,7 @@ void main() {
         overrides: [
           ...currencyOverrides,
           repositoryProvider.overrideWithValue(repo),
+          ...attachmentTestOverrides,
           sharedPreferencesProvider.overrideWithValue(prefs),
           tripProvider(tripId).overrideWith((ref) => Stream.value(trip)),
           itineraryProvider(tripId).overrideWith((ref) => Stream.value(items)),

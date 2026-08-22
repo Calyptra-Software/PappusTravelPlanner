@@ -1069,5 +1069,41 @@
   "aboutReportIssue": "Report a problem",
   "aboutContact": "Contact",
   "aboutLicenses": "Open-source licenses",
-  "aboutLicensesSubtitle": "The libraries and fonts this app is built from"
+  "aboutLicensesSubtitle": "The libraries and fonts this app is built from",
+  "attachmentsLabel": "Attachments",
+  "attachmentsNone": "Nothing attached yet",
+  "attachmentsAddPhoto": "Add photo",
+  "attachmentsAddFile": "Add file",
+  "attachmentsAdding": "Reading the file…",
+  "attachmentsAddedOne": "Attached.",
+  "attachmentsAddedMany": "{count} files attached.",
+  "@attachmentsAddedMany": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentsCount": "{count, plural, =1{1 attachment} other{{count} attachments}}",
+  "@attachmentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentTooLarge": "That file is {size} — the limit is {limit}. The whole database is copied when a trip is exported, so a large file can make it impossible to move.",
+  "@attachmentTooLarge": {
+    "placeholders": { "size": { "type": "String" }, "limit": { "type": "String" } }
+  },
+  "attachmentUnreadableImage": "This picture format ({format}) can't be read here. Save it as JPEG or PNG first.",
+  "@attachmentUnreadableImage": {
+    "placeholders": { "format": { "type": "String" } }
+  },
+  "attachmentUnreadable": "That file could not be read.",
+  "attachmentRename": "Rename",
+  "attachmentNameLabel": "Name",
+  "attachmentOpen": "Open",
+  "attachmentShare": "Share",
+  "attachmentDelete": "Delete",
+  "attachmentDeleteQuestion": "Delete this attachment?",
+  "attachmentDeleteBody": "The file is stored in this database and nowhere else. Deleting it here removes it for good.",
+  "attachmentPositionExif": "Position taken from the photo",
+  "attachmentPositionPicked": "Position chosen on the map",
+  "attachmentPositionNone": "No position",
+  "attachmentPositionSet": "Place on map",
+  "attachmentPositionClear": "Remove position",
+  "attachmentPhotoOpenFailed": "That file could not be opened."
 }

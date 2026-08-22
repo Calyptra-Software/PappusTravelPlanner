@@ -18,6 +18,7 @@ import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
+import 'support/attachment_overrides.dart';
 
 /// Covers which mode the item form opens a transport leg on. Deleting a mode
 /// leaves the legs that used it with no mode at all (the foreign key is set
@@ -49,6 +50,7 @@ void main() {
     overrides: [
       ...currencyOverrides,
       repositoryProvider.overrideWithValue(repo),
+      ...attachmentTestOverrides,
       sharedPreferencesProvider.overrideWithValue(prefs),
       // Every drift-backed stream the sheet touches is stubbed: the real
       // `.watch()` never resolves under fake-async, which hangs the test.

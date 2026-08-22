@@ -21,6 +21,7 @@ import 'package:travelplanner/features/trips/presentation/trip_detail_screen.dar
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
+import 'support/attachment_overrides.dart';
 
 /// Covers dragging where a **group** is involved: a run of entries sharing one
 /// ticket is one block of its day, so it drags as one thing and no drag can
@@ -94,6 +95,7 @@ void main() {
         overrides: [
           ...currencyOverrides,
           repositoryProvider.overrideWithValue(repo),
+          ...attachmentTestOverrides,
           sharedPreferencesProvider.overrideWithValue(prefs),
           tripProvider(tripId).overrideWith((ref) => Stream.value(trip)),
           itineraryProvider(tripId).overrideWith((ref) => Stream.value(items)),

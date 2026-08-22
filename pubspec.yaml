@@ -59,6 +59,11 @@ dependencies:
   # deliberate use rather than a coincidence of the tree — see SECURITY.md.
   xml: ^7.0.1
   latlong2: ^0.10.1 # its coordinate type, shared by the pure map_features.dart
+  # Photos and files hung on part of a plan: decoding, downscaling, re-encoding
+  # to JPEG and reading a picture's own EXIF position. Pure Dart, which is the
+  # same reason flutter_map was chosen — a native codec plugin has no Linux and
+  # no web, and this runs on all six targets. See features/attachments/.
+  image: ^4.5.4
   # Where the device says it is, for the map's "you are here" — the app's first
   # and only runtime permission, asked for on a button press and never at
   # launch. Endorsed on all six targets (Linux goes through GeoClue over D-Bus),

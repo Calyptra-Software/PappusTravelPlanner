@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/database/database_location.dart';
 import 'daos/alternative_dao.dart';
+import 'daos/attachment_dao.dart';
 import 'daos/checklist_dao.dart';
 import 'daos/cost_dao.dart';
 import 'daos/currency_dao.dart';
@@ -51,6 +52,8 @@ const int kApplicationId = 0x5452504C;
     CollapsedDays,
     Tracks,
     VisitedCountries,
+    Attachments,
+    AttachmentBlobs,
   ],
   daos: [
     TripDao,
@@ -62,6 +65,7 @@ const int kApplicationId = 0x5452504C;
     RoutineDao,
     TagDao,
     TrackDao,
+    AttachmentDao,
     VisitedCountryDao,
     SharingDao,
     TransportModeDao,
@@ -77,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 31;
+  int get schemaVersion => 32;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -366,6 +370,15 @@ class AppDatabase extends _$AppDatabase {
       // data, which is why it needed somewhere to live.
       if (from < 31) {
         await m.createTable(visitedCountries);
+      }
+      // v32 lets a file hang on part of the plan: a photo of the place, the
+      // ticket for the run, a booking confirmation. Two new tables and nothing
+      // else — the payload is separated from what a list needs to read, see
+      // [AttachmentBlobs] — and nothing to backfill: the app has never had a
+      // file to store, so there is nothing an existing row could be holding.
+      if (from < 32) {
+        await m.createTable(attachments);
+        await m.createTable(attachmentBlobs);
       }
     },
     beforeOpen: (details) async {

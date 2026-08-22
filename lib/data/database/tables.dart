@@ -735,3 +735,152 @@ class CostBeneficiaries extends Table {
   @override
   Set<Column> get primaryKey => {costId, personId};
 }
+
+/// What the app *does* with an attachment.
+///
+/// Deliberately not derived from [Attachments.mimeType]: that string is what
+/// gets handed back to the operating system when the file is opened or shared,
+/// and it comes from a picker rather than from us. This is the app's own
+/// reading — a photo is shown, thumbnailed, and drawn on the map when it
+/// carries a position; a document is a row with an icon and a way out to
+/// whatever program owns the format.
+///
+/// Persisted by integer index like every other stored enum here, so only ever
+/// append new values at the end.
+enum AttachmentKind {
+  /// A picture, re-encoded on the way in (see `attachment_import.dart`).
+  photo,
+
+  /// Anything else, stored byte for byte: a ticket PDF, a booking confirmation,
+  /// a scan. The app cannot make it smaller and does not pretend to understand
+  /// it.
+  document,
+}
+
+/// Where an attachment's position came from.
+///
+/// A provenance, for the reason [TrackSource] is one: the two answers are not
+/// equally strong. A camera's own reading is a measurement of where the camera
+/// was, which is *near* the subject and may be minutes and metres off; a
+/// position the user pointed at on the map is a statement about where the photo
+/// belongs. Neither is corrected by the other, and the form says which it is
+/// holding rather than presenting both as the same fact.
+///
+/// Null exactly when there is no position. Persisted by integer index, so only
+/// ever append new values at the end.
+enum AttachmentPositionSource {
+  /// Read out of the file's own EXIF on import, and shown as such.
+  exif,
+
+  /// Pointed at on the map, or moved there after an EXIF reading was wrong.
+  picked,
+}
+
+/// A file the user hung on part of their plan: a photo of the place, the ticket
+/// for the run, a booking confirmation.
+///
+/// **The bytes live in the database.** Not beside it: one portable SQLite file
+/// is what the app *is*, and an attachment kept in a sidecar directory would
+/// mean every copy, backup and export that has ever worked silently stops
+/// carrying everything — the file would go on claiming to be the whole trip. The
+/// price is paid on the way in instead: a photo is re-encoded to a bounded size
+/// and a document is capped (see `attachment_import.dart`), because the whole
+/// database is read into memory to be exported on Android and on the web, which
+/// is the real ceiling here and not disk space.
+///
+/// **It belongs to exactly one of an item or a group**, the way a [Costs] row
+/// does and for the same reason: a ticket covers the run, not one leg of it, so
+/// the unit the file belongs to is the unit it hangs off. Both columns cascade —
+/// unlike [ItineraryItems.groupId], which is nulled when a group dissolves,
+/// because an item outlives its group and an attachment of that group does not.
+/// (There is no trip-level attachment yet. It would be a third nullable column
+/// and nothing else, but nothing has asked for one.)
+///
+/// The payload sits in [AttachmentBlobs] rather than here, so that listing what
+/// an entry carries — which the timeline does for every visible day, in a
+/// stream — does not drag the originals off disk with it. What this table holds
+/// is what a list needs: the name, the size, and a [thumbnail] small enough to
+/// ride along.
+class Attachments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// The entry this hangs off, or null when it belongs to a [groupId] instead.
+  IntColumn get itemId => integer().nullable().references(
+    ItineraryItems,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+
+  /// The run this hangs off, or null when it belongs to a single [itemId].
+  IntColumn get groupId => integer().nullable().references(
+    ItemGroups,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
+
+  IntColumn get kind => intEnum<AttachmentKind>()();
+
+  /// The media type, kept to hand the file back to the platform when it is
+  /// opened or shared. Ours for a photo (the app re-encoded it and knows what it
+  /// wrote); the picker's for a document, which is a claim about a file we did
+  /// not write and is treated as one.
+  TextColumn get mimeType => text()();
+
+  /// The name the file arrived under, when it had one — as with [Tracks.name],
+  /// not defaulted to anything, since an unnamed attachment reads as the entry
+  /// it hangs on and that says more than "Attachment 1" would.
+  TextColumn get name => text().nullable()();
+
+  /// The size of what is stored, in bytes. Denormalised from the blob on
+  /// purpose: it is the one number a list has to show, and reading it off the
+  /// payload would mean loading the payload.
+  IntColumn get byteSize => integer()();
+
+  /// Pixel dimensions of a photo, so a viewer can lay out space for it before
+  /// the bytes arrive. Null for a document.
+  IntColumn get width => integer().nullable()();
+  IntColumn get height => integer().nullable()();
+
+  /// Where the photo was taken, when that is known — read from the file's EXIF
+  /// or pointed at on the map, see [positionSource]. Null for everything else,
+  /// and deliberately **not** inherited from the entry it hangs on: the entry
+  /// already has a pin there, and a second one at the same spot would be the app
+  /// claiming to know where a picture was taken.
+  ///
+  /// A pair, like a place's own coordinates: half of one is not half a position,
+  /// so the two are written and cleared together.
+  RealColumn get lat => real().nullable()();
+  RealColumn get lon => real().nullable()();
+
+  /// Which of the two the position above is. Null exactly when there is none.
+  IntColumn get positionSource =>
+      intEnum<AttachmentPositionSource>().nullable()();
+
+  /// A small copy of a photo, for lists and for the map marker. Null for a
+  /// document, which has nothing to show but its icon.
+  ///
+  /// Stored rather than derived: decoding a full-size photo to draw it at 40 px
+  /// is the shape of the pinch freeze this app has already been through, and
+  /// on the web there is no disk cache to fall back on.
+  BlobColumn get thumbnail => blob().nullable()();
+
+  /// Manual ordering among the attachments of one owner, appended at the end.
+  IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// The payload of one [Attachments] row — the only place a full-size file is
+/// held.
+///
+/// A table of its own purely so that reading *about* an attachment is not
+/// reading it: drift selects every column of a table it is asked for, so a
+/// stream over the attachments of a day would otherwise carry every photo in
+/// that day on every rebuild.
+class AttachmentBlobs extends Table {
+  IntColumn get attachmentId =>
+      integer().references(Attachments, #id, onDelete: KeyAction.cascade)();
+  BlobColumn get bytes => blob()();
+
+  @override
+  Set<Column> get primaryKey => {attachmentId};
+}

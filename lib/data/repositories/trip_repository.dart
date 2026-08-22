@@ -5,6 +5,8 @@ import '../../features/sharing/trip_bundle.dart';
 import '../database/app_database.dart';
 import '../database/tables.dart';
 import '../database/track_points.dart';
+import '../../features/attachments/attachment_import.dart'
+    show PreparedAttachment;
 import '../../features/map/track_import_plan.dart' show TrackEnd;
 
 /// Thin wrapper over the Drift DAOs. Keeping the UI behind this interface means
@@ -176,6 +178,55 @@ class TripRepository {
     required List<({int itemId, List<LatLng> points})> pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
   }) => _db.trackDao.importTrackAcross(name: name, pieces: pieces, ends: ends);
+
+  // --- attachments ---
+
+  /// What one entry carries, and what one run does. Two readings rather than
+  /// one, because an attachment belongs to exactly one of the two and the two
+  /// are edited in different places: an entry's in its own form, a run's on the
+  /// label above it, where everything about the run is done.
+  Stream<List<Attachment>> watchAttachmentsForItem(int itemId) =>
+      _db.attachmentDao.watchAttachmentsForItem(itemId);
+
+  Stream<List<Attachment>> watchAttachmentsForGroup(int groupId) =>
+      _db.attachmentDao.watchAttachmentsForGroup(groupId);
+
+  /// How much each entry and each run of a trip carries — what the timeline
+  /// needs to show that there is something there, without reading it.
+  Stream<({Map<int, int> byItem, Map<int, int> byGroup})>
+  watchAttachmentCountsForTrip(int tripId) =>
+      _db.attachmentDao.watchAttachmentCountsForTrip(tripId);
+
+  Future<Attachment?> attachment(int id) => _db.attachmentDao.attachment(id);
+
+  Stream<Attachment?> watchAttachment(int id) =>
+      _db.attachmentDao.watchAttachment(id);
+
+  /// The payload. The one read here that touches a full-size file.
+  Future<Uint8List?> readAttachmentBytes(int id) =>
+      _db.attachmentDao.readAttachmentBytes(id);
+
+  Future<int> addAttachment(
+    PreparedAttachment prepared, {
+    int? itemId,
+    int? groupId,
+  }) => _db.attachmentDao.addAttachment(
+    prepared,
+    itemId: itemId,
+    groupId: groupId,
+  );
+
+  Future<int> deleteAttachment(int id) =>
+      _db.attachmentDao.deleteAttachment(id);
+
+  Future<void> renameAttachment(int id, String? name) =>
+      _db.attachmentDao.renameAttachment(id, name);
+
+  Future<void> setAttachmentPosition(
+    int id,
+    LatLng? at, {
+    AttachmentPositionSource source = AttachmentPositionSource.picked,
+  }) => _db.attachmentDao.setAttachmentPosition(id, at, source: source);
   Future<int> addItem(ItineraryItemsCompanion item) =>
       _db.itineraryDao.addItem(item);
   Future<bool> updateItem(ItineraryItem item) =>

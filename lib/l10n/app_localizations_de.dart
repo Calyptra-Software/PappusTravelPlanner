@@ -2096,4 +2096,92 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get aboutLicensesSubtitle =>
       'Die Bibliotheken und Schriften, aus denen diese App besteht';
+
+  @override
+  String get attachmentsLabel => 'Anhänge';
+
+  @override
+  String get attachmentsNone => 'Noch nichts angehängt';
+
+  @override
+  String get attachmentsAddPhoto => 'Foto hinzufügen';
+
+  @override
+  String get attachmentsAddFile => 'Datei hinzufügen';
+
+  @override
+  String get attachmentsAdding => 'Datei wird gelesen …';
+
+  @override
+  String get attachmentsAddedOne => 'Angehängt.';
+
+  @override
+  String attachmentsAddedMany(int count) {
+    return '$count Dateien angehängt.';
+  }
+
+  @override
+  String attachmentsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Anhänge',
+      one: '1 Anhang',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String attachmentTooLarge(String size, String limit) {
+    return 'Die Datei ist $size groß — erlaubt sind $limit. Beim Export wird die gesamte Datenbank kopiert; eine große Datei kann sie unbeweglich machen.';
+  }
+
+  @override
+  String attachmentUnreadableImage(String format) {
+    return 'Dieses Bildformat ($format) kann hier nicht gelesen werden. Speichere es zuerst als JPEG oder PNG.';
+  }
+
+  @override
+  String get attachmentUnreadable => 'Die Datei konnte nicht gelesen werden.';
+
+  @override
+  String get attachmentRename => 'Umbenennen';
+
+  @override
+  String get attachmentNameLabel => 'Name';
+
+  @override
+  String get attachmentOpen => 'Öffnen';
+
+  @override
+  String get attachmentShare => 'Teilen';
+
+  @override
+  String get attachmentDelete => 'Löschen';
+
+  @override
+  String get attachmentDeleteQuestion => 'Diesen Anhang löschen?';
+
+  @override
+  String get attachmentDeleteBody =>
+      'Die Datei liegt in dieser Datenbank und sonst nirgends. Wer sie hier löscht, löscht sie endgültig.';
+
+  @override
+  String get attachmentPositionExif => 'Position aus dem Foto übernommen';
+
+  @override
+  String get attachmentPositionPicked => 'Position auf der Karte gewählt';
+
+  @override
+  String get attachmentPositionNone => 'Keine Position';
+
+  @override
+  String get attachmentPositionSet => 'Auf Karte setzen';
+
+  @override
+  String get attachmentPositionClear => 'Position entfernen';
+
+  @override
+  String get attachmentPhotoOpenFailed =>
+      'Die Datei konnte nicht geöffnet werden.';
 }

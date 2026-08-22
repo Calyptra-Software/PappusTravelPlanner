@@ -21,6 +21,7 @@ import 'package:travelplanner/features/transport_search/presentation/journey_des
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
+import 'support/attachment_overrides.dart';
 
 /// Covers what an edit must *not* touch. Saving the sheet replaces the whole
 /// row, so every column the form does not show has to be written back — the
@@ -99,6 +100,7 @@ void main() {
     overrides: [
       ...currencyOverrides,
       repositoryProvider.overrideWithValue(repo),
+      ...attachmentTestOverrides,
       sharedPreferencesProvider.overrideWithValue(prefs),
       // Every drift-backed stream the sheet touches is stubbed: the real
       // `.watch()` never resolves under fake-async, which hangs the test.
