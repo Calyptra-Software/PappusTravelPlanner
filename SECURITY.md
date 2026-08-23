@@ -67,6 +67,14 @@ a test standing on it. Such a photo leaving the app again — through the share
 sheet — carries the position only in the sense that the app knows it; the bytes
 handed out are the stripped ones.
 
+On **Android** there is usually nothing to read: since Android 10 the system
+removes the coordinates from a photograph before handing it to an app that does
+not hold `ACCESS_MEDIA_LOCATION`, and this app does not ask for that permission.
+Such a photograph is attached without a position, and the app says so rather
+than leaving it unexplained. Whether to ask for the permission is an open
+question and not an oversight — its scope is every photograph in the shared
+collection, not the one that was picked.
+
 **A file attached through *Add file* is kept exactly as it arrived, metadata and
 all** — including one that happens to be a picture, which is a thing people do
 deliberately with a ticket sent as a `.png`. Nothing is re-encoded there and so

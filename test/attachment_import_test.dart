@@ -58,6 +58,25 @@ Uint8List _photoAt({
   return img.encodeJpg(image);
 }
 
+/// A JPEG as **Android** hands one over to an app without
+/// `ACCESS_MEDIA_LOCATION`: the two coordinates gone, everything else about the
+/// GPS reading left exactly where the camera put it.
+///
+/// Built from the real thing — `IMG_20260823_151148.jpg` off a SHIFTphone 8,
+/// which reached the Linux build with its position and the Android build
+/// without it. `exiftool` on the redacted side shows `GPSLatitudeRef`,
+/// `GPSLongitudeRef`, `GPSTimeStamp` and `GPSDateStamp` and no coordinates,
+/// which is what this reproduces.
+Uint8List _photoWithLocationRedacted() {
+  final image = _canvas(40, 30);
+  final gps = image.exif.gpsIfd;
+  gps['GPSLatitudeRef'] = img.IfdValueAscii('N');
+  gps['GPSLongitudeRef'] = img.IfdValueAscii('E');
+  gps['GPSTimeStamp'] = _dms(13, 11, 48);
+  gps['GPSDateStamp'] = img.IfdValueAscii('2026:08:23');
+  return img.encodeJpg(image);
+}
+
 /// The other door: *Add file*, which keeps what it is given.
 PreparedAttachment document(
   Uint8List bytes, {
@@ -151,6 +170,75 @@ void main() {
       expect(prepared.positionSource, AttachmentPositionSource.exif);
       expect(prepared.position!.latitude, closeTo(53.5510, 0.0001));
       expect(prepared.position!.longitude, closeTo(10.0060, 0.0001));
+    });
+
+    group('taken out on the way in', () {
+      test('is told apart from a photograph that never had one', () {
+        // Android since 10 removes `GPSLatitude` and `GPSLongitude` from a
+        // photograph handed to an app without `ACCESS_MEDIA_LOCATION` — and
+        // only those two, which is what makes the state recognizable instead
+        // of merely absent.
+        final prepared = prepareAttachment(_photoWithLocationRedacted());
+
+        expect(prepared.position, isNull);
+        expect(prepared.locationRedacted, isTrue);
+      });
+
+      test('a photograph with no GPS at all is not redaction', () {
+        final prepared = prepareAttachment(img.encodeJpg(_canvas(40, 30)));
+
+        expect(prepared.position, isNull);
+        // Nothing was withheld: this camera had no fix, and saying otherwise
+        // would send the user after a permission that would change nothing.
+        expect(prepared.locationRedacted, isFalse);
+      });
+
+      test('nor is a photograph that has one', () {
+        final prepared = prepareAttachment(
+          _photoAt(
+            latDeg: 53,
+            latMin: 33,
+            latSec: 3.6,
+            latRef: 'N',
+            lonDeg: 10,
+            lonMin: 0,
+            lonSec: 21.6,
+            lonRef: 'E',
+          ),
+        );
+
+        expect(prepared.locationRedacted, isFalse);
+      });
+
+      test('nor is a reading this app refuses', () {
+        // `0,0` is turned down because a camera with no fix writes zeros, but
+        // the coordinates are *there* — the system withheld nothing, so this
+        // asks after the coordinates rather than after the answer.
+        final prepared = prepareAttachment(
+          _photoAt(
+            latDeg: 0,
+            latMin: 0,
+            latSec: 0,
+            latRef: 'N',
+            lonDeg: 0,
+            lonMin: 0,
+            lonSec: 0,
+            lonRef: 'E',
+          ),
+        );
+
+        expect(prepared.position, isNull);
+        expect(prepared.locationRedacted, isFalse);
+      });
+
+      test('one ref on its own says nothing', () {
+        final image = _canvas(40, 30);
+        image.exif.gpsIfd['GPSLatitudeRef'] = img.IfdValueAscii('N');
+
+        final prepared = prepareAttachment(img.encodeJpg(image));
+
+        expect(prepared.locationRedacted, isFalse);
+      });
     });
 
     test('is negated by the south and west references', () {

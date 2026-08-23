@@ -3662,6 +3662,12 @@ abstract class AppLocalizations {
   /// **'This picture format ({format}) can\'t be read here. Save it as JPEG or PNG first.'**
   String attachmentUnreadableImage(String format);
 
+  /// Shown after adding photos whose EXIF coordinates the system removed before the app saw them. Android does this to apps without ACCESS_MEDIA_LOCATION, and it is worth saying because the alternative is a photo that attaches itself with no place and no reason given.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Android withheld where this photo was taken. You can set the position by hand.} other{Android withheld where these photos were taken. You can set the positions by hand.}}'**
+  String attachmentLocationRedacted(int count);
+
   /// No description provided for @attachmentUnreadable.
   ///
   /// In en, this message translates to:

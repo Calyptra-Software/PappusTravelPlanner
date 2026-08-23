@@ -1091,6 +1091,29 @@ UI (features/*/presentation, *widgets)
   provenance is stored and shown, `0,0` is refused (a camera with no fix writes zeros),
   and the position is never inherited from the entry it hangs on — that entry already has
   a pin, and a second one would be the app claiming to know where a picture was taken.
+- **On Android there is usually no position to read, and the app says so rather than
+  going quiet.** Since Android 10 the system removes `GPSLatitude` and `GPSLongitude`
+  from a photograph handed to an app that does not hold `ACCESS_MEDIA_LOCATION` — which
+  this one does not. `file_picker` asks with `ACTION_GET_CONTENT` and copies the answer
+  through a plain `contentResolver.openInputStream`, so what reaches `prepareAttachment`
+  is already stripped: the same file read on Linux yields a position and on Android
+  yields none, which is exactly how this was found. Nothing in the Dart is wrong, and no
+  amount of testing it would have shown this.
+  What the app can do is tell the two silences apart. Redaction takes **only** those two
+  tags and leaves the refs and the GPS timestamps standing, so a redacted file says
+  north-and-east of nothing at all, while a camera that had no fix writes no such thing:
+  `exifLocationRedacted` reads that fingerprint and `addAttachments` reports it, ahead of
+  the plain "N files attached" and behind a refusal. Saying it matters more than it
+  sounds — the alternative is a holiday photograph attaching itself with no place and no
+  reason given, which reads as the app having lost it. A **refused** reading is
+  deliberately not redaction: `0,0` and anything off the globe do carry coordinates, so
+  the test asks after the coordinates rather than after the answer.
+  Lifting the redaction needs `ACCESS_MEDIA_LOCATION` and probably
+  `MediaStore.setRequireOriginal`, which `file_picker` neither calls nor offers a hook
+  for — and it is a fourth permission whose scope is the *whole* shared collection rather
+  than the one file picked, which is a trade to be made deliberately and written into
+  `SECURITY.md` in the same commit, not slipped in. Until it is, the position is set by
+  hand on Android, which the sheet already offers.
 - **A photo is on the map when it carries a position, and never otherwise.**
   `MapPhoto` (`map_features.dart`) draws the stored **thumbnail**, framed in the owning
   entry's color — which is why one is kept beside every picture. Falling back to the

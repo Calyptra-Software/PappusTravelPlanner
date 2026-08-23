@@ -110,6 +110,7 @@ final class PreparedAttachment {
     this.height,
     this.position,
     this.positionSource,
+    this.locationRedacted = false,
   });
 
   final AttachmentKind kind;
@@ -128,6 +129,13 @@ final class PreparedAttachment {
   /// attachment hangs on.
   final LatLng? position;
   final AttachmentPositionSource? positionSource;
+
+  /// Whether the platform took the coordinates out of this photograph before
+  /// the app ever saw it — see [exifLocationRedacted]. Not stored: it is a fact
+  /// about this import, not about the row, and the row simply has no position.
+  /// It exists so the flow can say what happened instead of attaching a
+  /// photograph that silently lost its place.
+  final bool locationRedacted;
 
   int get byteSize => bytes.length;
 }
@@ -243,6 +251,7 @@ PreparedAttachment _photo(img.Image decoded, {String? name}) {
   // Read before anything else touches the image: the resize below rewrites it,
   // and the position is the one thing that has to survive the re-encoding.
   final position = exifPosition(decoded.exif);
+  final redacted = position == null && exifLocationRedacted(decoded.exif);
 
   // `copyResize` bakes the orientation tag into the pixels, which matters
   // because the re-encoded photo carries no tag for a viewer to apply. A
@@ -278,6 +287,7 @@ PreparedAttachment _photo(img.Image decoded, {String? name}) {
     height: full.height,
     position: position,
     positionSource: position == null ? null : AttachmentPositionSource.exif,
+    locationRedacted: redacted,
   );
 }
 
@@ -318,6 +328,30 @@ LatLng? exifPosition(img.ExifData exif) {
   if (lat.abs() > 90 || lon.abs() > 180) return null;
   if (lat == 0 && lon == 0) return null;
   return LatLng(lat, lon);
+}
+
+/// Whether the coordinates were taken out of this photograph on the way in.
+///
+/// Android has done this since version 10: a photograph handed to an app that
+/// does not hold `ACCESS_MEDIA_LOCATION` arrives with `GPSLatitude` and
+/// `GPSLongitude` removed — and **only** those two. The refs and the GPS
+/// timestamps are left behind, which is what makes the state recognizable
+/// rather than merely absent: a camera that had no fix writes no GPS IFD worth
+/// the name, while a redacted file says north-and-east of nothing at all.
+///
+/// Distinguishing the two is the whole point. Both end with no position, but
+/// one is "this photograph does not know where it was taken" and the other is
+/// "the system knows and would not say" — and only the second is worth
+/// mentioning to the user, who otherwise watches a photograph they took on
+/// holiday attach itself with no place and no reason given.
+///
+/// A refused reading is deliberately *not* redaction: `exifPosition` turns down
+/// `0,0` and anything off the globe, and those files do carry coordinates. So
+/// this asks after the coordinates themselves, not after the answer.
+bool exifLocationRedacted(img.ExifData exif) {
+  final gps = exif.gpsIfd;
+  if (gps['GPSLatitude'] != null || gps['GPSLongitude'] != null) return false;
+  return gps['GPSLatitudeRef'] != null && gps['GPSLongitudeRef'] != null;
 }
 
 /// Degrees, minutes and seconds as EXIF stores them — three rationals — folded

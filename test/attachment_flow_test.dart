@@ -183,6 +183,71 @@ void main() {
     expect(find.textContaining('attached.'), findsNothing);
   });
 
+  group('a photograph whose place the system withheld', () {
+    /// A picture as Android hands one to an app without
+    /// `ACCESS_MEDIA_LOCATION`: `GPSLatitude` and `GPSLongitude` removed, and
+    /// only those — the refs and the timestamps left where the camera put
+    /// them. Taken from a real file that reached the Linux build with its
+    /// position and the Android build without it.
+    Uint8List redactedPhoto() {
+      final image = img.Image(width: 24, height: 18);
+      img.fill(image, color: img.ColorRgb8(90, 140, 190));
+      image.exif.gpsIfd['GPSLatitudeRef'] = img.IfdValueAscii('N');
+      image.exif.gpsIfd['GPSLongitudeRef'] = img.IfdValueAscii('E');
+      return img.encodeJpg(image);
+    }
+
+    testWidgets('is attached, and the reason it has no place is said', (
+      tester,
+    ) async {
+      await pumpAdder(tester, [(bytes: redactedPhoto(), name: 'a.jpg')]);
+      await tapAttach(tester);
+
+      // The picture is kept — nothing is refused here, the app simply cannot
+      // put it on the map — and the sentence is what stops that reading as the
+      // app having lost it.
+      expect((await stored()).single.lat, isNull);
+      expect(find.textContaining('withheld'), findsOneWidget);
+    });
+
+    testWidgets('and the plain count gives way to it', (tester) async {
+      await pumpAdder(tester, [
+        (bytes: redactedPhoto(), name: 'a.jpg'),
+        (bytes: png(20, 20), name: 'b.png'),
+      ]);
+      await tapAttach(tester);
+
+      expect(await stored(), hasLength(2));
+      // One message: "2 files attached" over this would leave a photograph on
+      // the map's doorstep with no explanation.
+      expect(find.textContaining('withheld'), findsOneWidget);
+      expect(find.textContaining('2 files attached'), findsNothing);
+    });
+
+    testWidgets('but a refusal still comes first', (tester) async {
+      await pumpAdder(tester, [
+        (bytes: redactedPhoto(), name: 'a.jpg'),
+        (bytes: Uint8List.fromList([0, 1, 2, 3]), name: 'IMG_1.HEIC'),
+      ]);
+      await tapAttach(tester);
+
+      // A file is missing, which outranks a file that merely arrived without
+      // its place.
+      expect(find.textContaining('HEIC'), findsOneWidget);
+      expect(find.textContaining('withheld'), findsNothing);
+    });
+
+    testWidgets('a photograph that never had a position says nothing', (
+      tester,
+    ) async {
+      await pumpAdder(tester, [(bytes: png(20, 20), name: 'a.png')]);
+      await tapAttach(tester);
+
+      expect(await stored(), hasLength(1));
+      expect(find.textContaining('withheld'), findsNothing);
+    });
+  });
+
   testWidgets('a picture nothing can read is refused by name', (tester) async {
     await pumpAdder(tester, [
       (bytes: Uint8List.fromList([0, 1, 2, 3]), name: 'IMG_1.HEIC'),

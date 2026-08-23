@@ -2139,6 +2139,19 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String attachmentLocationRedacted(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Android hat den Aufnahmeort dieser Fotos zurückgehalten. Du kannst die Positionen von Hand setzen.',
+      one:
+          'Android hat den Aufnahmeort dieses Fotos zurückgehalten. Du kannst die Position von Hand setzen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get attachmentUnreadable => 'Die Datei konnte nicht gelesen werden.';
 
   @override

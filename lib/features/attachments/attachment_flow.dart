@@ -77,6 +77,7 @@ Future<int> addAttachments(
 
   final repo = ref.read(repositoryProvider);
   var added = 0;
+  var redacted = 0;
   String? refusal;
   for (final file in picked) {
     final PreparedAttachment prepared;
@@ -99,6 +100,7 @@ Future<int> addAttachments(
       refusal ??= l10n.attachmentUnreadable;
       continue;
     }
+    if (prepared.locationRedacted) redacted++;
     await repo.addAttachment(
       prepared,
       itemId: itemId,
@@ -111,8 +113,18 @@ Future<int> addAttachments(
   // Whatever replaces it, the "reading" message goes: it described work that
   // has finished, and a queue behind it would leave it on screen after the fact.
   messenger.hideCurrentSnackBar();
+  // One message, in order of what the user most needs to hear. A refusal beats
+  // everything, because a file is missing. A photograph whose place the system
+  // withheld comes next: it is the only one of the three that reports something
+  // the app did not choose and the user can still act on, and saying "3 files
+  // attached" over it would leave a picture sitting on the map's doorstep with
+  // no explanation. The plain count is what is left.
   if (refusal != null) {
     messenger.showSnackBar(SnackBar(content: Text(refusal)));
+  } else if (redacted > 0) {
+    messenger.showSnackBar(
+      SnackBar(content: Text(l10n.attachmentLocationRedacted(redacted))),
+    );
   } else if (added > 1) {
     messenger.showSnackBar(
       SnackBar(content: Text(l10n.attachmentsAddedMany(added))),
