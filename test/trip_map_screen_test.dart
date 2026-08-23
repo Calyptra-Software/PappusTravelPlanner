@@ -35,6 +35,8 @@ void main() {
     title: 'Frankfurt',
     destination: '',
     colorValue: accent,
+    coverHidden: false,
+    photosCollapsed: false,
     createdAt: DateTime(2026, 5, 1),
     kind: TripKind.trip,
   );

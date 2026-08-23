@@ -22,14 +22,15 @@ class PdfSectionsController extends Notifier<Set<PdfSection>> {
   @override
   Set<PdfSection> build() {
     final mask = ref.read(sharedPreferencesProvider).getInt(_key);
-    if (mask == null) return kAllPdfSections;
+    if (mask == null) return kDefaultPdfSections;
     final stored = {
       for (final section in PdfSection.values)
         if (mask & (1 << section.index) != 0) section,
     };
     // An empty mask can only come from a build that knew sections this one
-    // doesn't; falling back to everything beats offering an export of nothing.
-    return stored.isEmpty ? kAllPdfSections : stored;
+    // doesn't; falling back to what a fresh install prints beats offering an
+    // export of nothing.
+    return stored.isEmpty ? kDefaultPdfSections : stored;
   }
 
   Future<void> setSections(Set<PdfSection> sections) async {

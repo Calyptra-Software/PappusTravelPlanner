@@ -2,7 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import '../../core/format/money_format.dart';
-import '../../data/database/tables.dart' show ItemKind, TrackSource, TripKind;
+import '../../data/database/tables.dart'
+    show
+        AttachmentKind,
+        AttachmentPositionSource,
+        ItemKind,
+        TrackSource,
+        TripKind;
 
 /// MIME type used when sharing a trip bundle. Custom (vendor) type so the app's
 /// share-sheet intent filter matches only Pappus trips, not every binary file.
@@ -45,6 +51,7 @@ class TripBundle {
     this.items = const [],
     this.costs = const [],
     this.checklists = const [],
+    this.attachments = const [],
     this.collapsedDays = const [],
     this.participants = const [],
     this.tags = const [],
@@ -116,6 +123,12 @@ class TripBundle {
   final List<BundleCost> costs;
   final List<BundleChecklist> checklists;
 
+  /// The files hanging on the **trip itself** — the insurance, the passport
+  /// scan, a routine's season ticket. The third level of ownership, beside
+  /// [BundleItem.attachments] and [BundleGroup.attachments], and the only one
+  /// with nowhere else to live in this file.
+  final List<BundleAttachment> attachments;
+
   /// Itinerary days (normalized to midnight) the user had collapsed.
   final List<DateTime> collapsedDays;
 
@@ -163,6 +176,8 @@ class TripBundle {
     'items': [for (final i in items) i.toJson()],
     'costs': [for (final c in costs) c.toJson()],
     'checklists': [for (final c in checklists) c.toJson()],
+    if (attachments.isNotEmpty)
+      'attachments': [for (final a in attachments) a.toJson()],
     'collapsedDays': [for (final d in collapsedDays) _encodeDate(d)],
     'participants': participants,
     'reasonIcons': reasonIcons,
@@ -200,6 +215,7 @@ class TripBundle {
         for (final c in (json['checklists'] as List? ?? const []))
           BundleChecklist.fromJson(c as Map<String, dynamic>),
       ],
+      attachments: _decodeAttachments(json['attachments']),
       collapsedDays: [
         for (final d in (json['collapsedDays'] as List? ?? const []))
           _decodeDate(d as String)!,
@@ -263,6 +279,8 @@ class BundleTrip {
     this.notes,
     this.kind = TripKind.trip,
     required this.colorValue,
+    this.photosCollapsed = false,
+    this.coverHidden = false,
     required this.createdAt,
   });
 
@@ -278,6 +296,19 @@ class BundleTrip {
   final TripKind kind;
 
   final int colorValue;
+
+  /// Whether the recipient sees the strip of photographs folded away. Travels
+  /// for the reason a checklist's collapsed state and the collapsed days do:
+  /// how the sender had the trip laid out is part of the trip they are handing
+  /// over. False in bundles written before it existed, which is what they meant.
+  final bool photosCollapsed;
+
+  /// Whether the sender's overview card deliberately shows no photograph. Which
+  /// picture *is* the cover rides on the attachment itself
+  /// ([BundleAttachment.isCover]) rather than as an id here: attachments travel
+  /// nested under their owner with no ids of their own, so an id would name
+  /// nothing on the far side.
+  final bool coverHidden;
   final DateTime createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -288,6 +319,8 @@ class BundleTrip {
     'notes': notes,
     'kind': kind.name,
     'colorValue': colorValue,
+    'photosCollapsed': photosCollapsed,
+    'coverHidden': coverHidden,
     'createdAt': _encodeDate(createdAt),
   };
 
@@ -305,6 +338,8 @@ class BundleTrip {
       orElse: () => TripKind.trip,
     ),
     colorValue: json['colorValue'] as int,
+    photosCollapsed: json['photosCollapsed'] as bool? ?? false,
+    coverHidden: json['coverHidden'] as bool? ?? false,
     createdAt: _decodeDate(json['createdAt'] as String)!,
   );
 }
@@ -316,22 +351,31 @@ class BundleGroup {
     required this.localId,
     this.label,
     this.collapsed = false,
+    this.attachments = const [],
   });
 
   final int localId;
   final String? label;
   final bool collapsed;
 
+  /// The files hanging on the run itself — the shared ticket, the booking for
+  /// the whole journey. On the group and not on one of its legs, exactly as its
+  /// fare is.
+  final List<BundleAttachment> attachments;
+
   Map<String, dynamic> toJson() => {
     'localId': localId,
     'label': label,
     'collapsed': collapsed,
+    if (attachments.isNotEmpty)
+      'attachments': [for (final a in attachments) a.toJson()],
   };
 
   factory BundleGroup.fromJson(Map<String, dynamic> json) => BundleGroup(
     localId: json['localId'] as int,
     label: json['label'] as String?,
     collapsed: json['collapsed'] as bool? ?? false,
+    attachments: _decodeAttachments(json['attachments']),
   );
 }
 
@@ -444,6 +488,7 @@ class BundleItem {
     this.fromPlaceId,
     this.toPlaceId,
     this.tracks = const [],
+    this.attachments = const [],
   });
 
   final int localId;
@@ -520,6 +565,12 @@ class BundleItem {
   /// tracks existed, which is what such a trip had.
   final List<BundleTrack> tracks;
 
+  /// The files hanging on this entry. Content, like the note beside them, so
+  /// they travel and `.tpt` stays the one lossless way out of the app — the
+  /// bytes and all, because there is nowhere else they exist. Empty in bundles
+  /// written before attachments did.
+  final List<BundleAttachment> attachments;
+
   Map<String, dynamic> toJson() => {
     'localId': localId,
     'groupLocalId': groupLocalId,
@@ -552,6 +603,8 @@ class BundleItem {
     // byte-for-byte what it was before tracks existed.
     if (tracks.isNotEmpty)
       'tracks': [for (final track in tracks) track.toJson()],
+    if (attachments.isNotEmpty)
+      'attachments': [for (final a in attachments) a.toJson()],
   };
 
   factory BundleItem.fromJson(Map<String, dynamic> json) => BundleItem(
@@ -589,7 +642,124 @@ class BundleItem {
       for (final track in (json['tracks'] as List<dynamic>? ?? const []))
         BundleTrack.fromJson(track as Map<String, dynamic>),
     ],
+    attachments: _decodeAttachments(json['attachments']),
   );
+}
+
+List<BundleAttachment> _decodeAttachments(Object? json) => [
+  for (final a in (json as List<dynamic>? ?? const []))
+    BundleAttachment.fromJson(a as Map<String, dynamic>),
+];
+
+/// An [Attachments] row and its payload: a photo or a file hung on an entry or
+/// on a run.
+///
+/// **The bytes ride along, Base64-encoded.** They have to: an attachment exists
+/// only inside the database, so a bundle that named one without carrying it
+/// would hand the recipient a reference to a file on somebody else's phone —
+/// and `.tpt` is the one lossless way out of this app, the only export with an
+/// importer. The cost is stated rather than hidden: Base64 is a third larger
+/// than the bytes, and a trip with fifty photos makes a file to match. What is
+/// *not* paid twice is the picture itself — a photo was already re-encoded to a
+/// bounded size on the way in (`attachment_import.dart`), so what travels is
+/// that copy and not a camera original.
+///
+/// No format-version bump, by the rule already stated for coordinates and
+/// tracks: a version marks a shape an importer must *branch* on, and an older
+/// app that ignores `attachments` imports exactly the trip it would have
+/// imported anyway — every entry, every cost, every line, just without the
+/// pictures it has no table for.
+///
+/// [kind] and [positionSource] travel by **name** for the reason [BundleTrack]'s
+/// source does: an index is a promise about the order of a Dart declaration.
+class BundleAttachment {
+  const BundleAttachment({
+    required this.kind,
+    required this.mimeType,
+    required this.bytes,
+    this.name,
+    this.thumbnail,
+    this.width,
+    this.height,
+    this.lat,
+    this.lon,
+    this.positionSource,
+    this.sortOrder = 0,
+    this.isCover = false,
+  });
+
+  final AttachmentKind kind;
+  final String mimeType;
+
+  /// The payload, Base64-encoded.
+  final String bytes;
+  final String? name;
+
+  /// The stored thumbnail, Base64-encoded, or null for a document.
+  ///
+  /// Carried rather than recomputed on import: the importer would have to
+  /// decode and rescale every photo of the trip to rebuild them, on a device
+  /// that has just been handed a file, and a thumbnail is a fraction of the
+  /// picture it sits beside.
+  final String? thumbnail;
+  final int? width;
+  final int? height;
+
+  /// Where the photo was taken, and which kind of claim that is. Both travel:
+  /// a position read from a camera's own EXIF does not become a position
+  /// somebody pointed at by being shared, and the recipient should see the
+  /// difference the sender saw.
+  final double? lat;
+  final double? lon;
+  final AttachmentPositionSource? positionSource;
+  final int sortOrder;
+
+  /// Whether this is the photograph the sender's overview card shows. A flag
+  /// rather than an id on the trip, because an attachment has no id in this
+  /// file: the importer points the trip it has just written at the row it has
+  /// just written, and nothing has to be matched up afterwards.
+  final bool isCover;
+
+  Map<String, dynamic> toJson() => {
+    'kind': kind.name,
+    'mimeType': mimeType,
+    'name': name,
+    'bytes': bytes,
+    'thumbnail': thumbnail,
+    'width': width,
+    'height': height,
+    'lat': lat,
+    'lon': lon,
+    'positionSource': positionSource?.name,
+    'sortOrder': sortOrder,
+    if (isCover) 'isCover': true,
+  };
+
+  factory BundleAttachment.fromJson(Map<String, dynamic> json) =>
+      BundleAttachment(
+        // A kind this app does not know is read as a document: the bytes are
+        // still bytes, and refusing the whole trip over a label would be the
+        // wrong trade — the same reading `BundleTrack` gives an unknown source.
+        kind: AttachmentKind.values.firstWhere(
+          (k) => k.name == json['kind'],
+          orElse: () => AttachmentKind.document,
+        ),
+        mimeType: json['mimeType'] as String? ?? 'application/octet-stream',
+        bytes: json['bytes'] as String? ?? '',
+        name: json['name'] as String?,
+        thumbnail: json['thumbnail'] as String?,
+        width: json['width'] as int?,
+        height: json['height'] as int?,
+        // Read as `num` for the reason a coordinate is everywhere here: another
+        // writer may hand a whole number back as an int.
+        lat: (json['lat'] as num?)?.toDouble(),
+        lon: (json['lon'] as num?)?.toDouble(),
+        positionSource: AttachmentPositionSource.values
+            .where((s) => s.name == json['positionSource'])
+            .firstOrNull,
+        sortOrder: json['sortOrder'] as int? ?? 0,
+        isCover: json['isCover'] as bool? ?? false,
+      );
 }
 
 /// A [Tracks] row: the line an entry followed, with where the line came from.

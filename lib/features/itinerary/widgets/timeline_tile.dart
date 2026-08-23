@@ -7,6 +7,11 @@ import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../data/database/daos/attachment_dao.dart' show AttachmentTally;
+import '../../attachments/application/attachment_providers.dart';
+import '../../attachments/application/cover_providers.dart';
+import '../../attachments/presentation/gallery_screen.dart';
+import '../../attachments/widgets/attachments_field.dart';
 import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../application/item_clipboard.dart';
@@ -226,6 +231,14 @@ class GroupRunTile extends StatelessWidget {
                   ),
                 ),
                 if (isNow) ...[const NowBadge(), const SizedBox(width: 4)],
+                // The run's own files — the shared ticket. On the label for the
+                // reason its fare hangs off the group: it is one ticket for the
+                // journey, not a copy on each leg.
+                _GroupAttachmentBadge(
+                  tripId: items.first.tripId,
+                  groupId: groupId,
+                  accent: accent,
+                ),
                 // A group of legs is a journey — the run added by one import,
                 // sharing one ticket — so the way to read it back sits on the
                 // label that says as much.
@@ -328,7 +341,9 @@ class GroupRunTile extends StatelessWidget {
 /// The member's form keeps exactly what is about that entry's own membership —
 /// group with next, remove from group — and this menu is the only place the run
 /// itself is addressed, the same shape the decision card's menu has for a set
-/// and its options.
+/// and its options. *Attachments* is here by the same rule and not a second
+/// time on each leg: the ticket is one ticket for the journey, exactly as the
+/// fare hanging off the group is one fare.
 ///
 /// Ungrouping sits directly above deleting because it is the harmless half of
 /// the same question, and the delete dialog says so in words ("to keep the
@@ -376,6 +391,14 @@ class _GroupMenu extends ConsumerWidget {
               confirmLabel: l10n.save,
             );
             if (name != null) await repo.setGroupLabel(groupId, name);
+          case _GroupAction.attachments:
+            // The ticket covers the run, so it hangs off the run — and is
+            // reached where everything else about the run is. A member's form
+            // holds that member's own files and cannot speak for the band above
+            // it.
+            if (context.mounted) {
+              showGroupAttachmentsSheet(context, groupId, tripId: tripId);
+            }
           case _GroupAction.ungroup:
             await repo.dissolveGroup(groupId);
           case _GroupAction.move:
@@ -401,6 +424,10 @@ class _GroupMenu extends ConsumerWidget {
         PopupMenuItem(
           value: _GroupAction.rename,
           child: Text(l10n.groupRename),
+        ),
+        PopupMenuItem(
+          value: _GroupAction.attachments,
+          child: Text(l10n.attachmentsLabel),
         ),
         const PopupMenuDivider(),
         PopupMenuItem(value: _GroupAction.move, child: Text(l10n.groupMoveTo)),
@@ -443,7 +470,188 @@ class _GroupMenu extends ConsumerWidget {
   }
 }
 
-enum _GroupAction { rename, ungroup, move, copy, delete }
+enum _GroupAction { rename, attachments, ungroup, move, copy, delete }
+
+/// That a run carries files. A count on the band, opening the same sheet the
+/// group menu does — the icon is quicker than the menu, and the menu is where it
+/// is discovered.
+class _GroupAttachmentBadge extends ConsumerWidget {
+  const _GroupAttachmentBadge({
+    required this.tripId,
+    required this.groupId,
+    required this.accent,
+  });
+
+  final int tripId;
+  final int groupId;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final counts = ref.watch(tripAttachmentCountsProvider(tripId)).value;
+    final tally = counts?.byGroup[groupId] ?? const AttachmentTally();
+    if (tally.total == 0) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context);
+    final photos = [
+      for (final photo in ref.watch(tripGalleryProvider(tripId)))
+        if (photo.attachment.groupId == groupId) photo,
+    ];
+
+    // Icons without counts, unlike an entry's two lines: this band already
+    // carries a label, the journey button, the ⋮ and the drag handle, and two
+    // more numbers would leave a named run nowhere to be read. What the run
+    // holds is one tap away in either case.
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (photos.isNotEmpty)
+          IconButton(
+            tooltip: l10n.photosCount(photos.length),
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            icon: const Icon(Icons.photo_library_outlined),
+            color: accent,
+            onPressed: () =>
+                showGallery(context, photos: photos, tripId: tripId),
+          ),
+        if (tally.documents > 0)
+          IconButton(
+            tooltip: l10n.documentsCount(tally.documents),
+            visualDensity: VisualDensity.compact,
+            iconSize: 18,
+            icon: const Icon(Icons.attach_file),
+            color: accent,
+            onPressed: () => showGroupDocumentsSheet(context, groupId),
+          ),
+      ],
+    );
+  }
+}
+
+/// The two lines under one entry, when it carries anything.
+class _AttachmentBadge extends ConsumerWidget {
+  const _AttachmentBadge({required this.item});
+
+  final ItineraryItem item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final counts = ref.watch(tripAttachmentCountsProvider(item.tripId)).value;
+    final tally = counts?.byItem[item.id] ?? const AttachmentTally();
+    if (tally.total == 0) return const SizedBox.shrink();
+
+    return _AttachmentLines(
+      tripId: item.tripId,
+      tally: tally,
+      isMine: (a) => a.itemId == item.id,
+      openDocuments: () => showItemDocumentsSheet(context, item.id),
+    );
+  }
+}
+
+/// What an entry carries, said as two lines: the photographs and the documents.
+///
+/// Apart, because they are two different acts. A photograph is *looked at* — the
+/// gallery, one tap — while a document is *opened*, in a list from which each
+/// one goes to whatever program understands it. One line saying "5 attachments"
+/// answered neither question, and the icon had to guess which of the two a tap
+/// would do.
+///
+/// The photographs of the **entry**, not of the trip: the entry is what you
+/// pointed at. (The strip on the trip's own screen is where the whole trip's
+/// pictures are walked.) A document that happens to be a picture is *not*
+/// among them — it is under documents, which is exactly where its owner filed
+/// it, and the list there opens it in a gallery of its own.
+class _AttachmentLines extends ConsumerWidget {
+  const _AttachmentLines({
+    required this.tripId,
+    required this.tally,
+    required this.isMine,
+    required this.openDocuments,
+  });
+
+  final int tripId;
+  final AttachmentTally tally;
+
+  /// Whether an attachment of the trip hangs on the thing these lines are under.
+  final bool Function(Attachment) isMine;
+  final VoidCallback openDocuments;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final photos = [
+      for (final photo in ref.watch(tripGalleryProvider(tripId)))
+        if (isMine(photo.attachment)) photo,
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (photos.isNotEmpty)
+            _CountChip(
+              icon: Icons.photo_library_outlined,
+              label: l10n.photosCount(photos.length),
+              onTap: () => showGallery(context, photos: photos, tripId: tripId),
+            ),
+          if (photos.isNotEmpty && tally.documents > 0)
+            const SizedBox(width: 4),
+          if (tally.documents > 0)
+            _CountChip(
+              icon: Icons.attach_file,
+              label: l10n.documentsCount(tally.documents),
+              onTap: openDocuments,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One of those two: an icon, a count, and a tap.
+///
+/// Padded well past the 14px glyph it draws — a target inside a timeline tile
+/// competes with the tile's own tap, and losing that race opens the edit form
+/// instead of the pictures.
+class _CountChip extends StatelessWidget {
+  const _CountChip({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: theme.colorScheme.primary),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Left gutter with a continuous rail line and a node marker.
 class _Gutter extends StatelessWidget {
@@ -605,6 +813,7 @@ class _PlaceRow extends StatelessWidget {
                                     ),
                                   ),
                                 ),
+                              _AttachmentBadge(item: item),
                               costsSection,
                             ],
                           ),
@@ -749,6 +958,7 @@ class _TransportRow extends ConsumerWidget {
                                   ),
                                 ),
                               ),
+                            _AttachmentBadge(item: item),
                             costsSection,
                           ],
                         ),

@@ -1069,5 +1069,67 @@
   "aboutReportIssue": "Report a problem",
   "aboutContact": "Contact",
   "aboutLicenses": "Open-source licenses",
-  "aboutLicensesSubtitle": "The libraries and fonts this app is built from"
+  "aboutLicensesSubtitle": "The libraries and fonts this app is built from",
+  "attachmentsLabel": "Attachments",
+  "attachmentsAddPhoto": "Add photo",
+  "attachmentsAddFile": "Add file",
+  "attachmentsAdding": "Reading the file…",
+  "attachmentsAddedOne": "Attached.",
+  "attachmentsAddedMany": "{count} files attached.",
+  "@attachmentsAddedMany": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentsCount": "{count, plural, =1{1 attachment} other{{count} attachments}}",
+  "@attachmentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentTooLarge": "That file is {size} — the limit is {limit}. The whole database is copied when a trip is exported, so a large file can make it impossible to move.",
+  "@attachmentTooLarge": {
+    "placeholders": { "size": { "type": "String" }, "limit": { "type": "String" } }
+  },
+  "attachmentUnreadableImage": "This picture format ({format}) can't be read here. Save it as JPEG or PNG first.",
+  "@attachmentUnreadableImage": {
+    "placeholders": { "format": { "type": "String" } }
+  },
+  "attachmentLocationRedacted": "{count, plural, =1{Android withheld where this photo was taken. You can set the position by hand.} other{Android withheld where these photos were taken. You can set the positions by hand.}}",
+  "@attachmentLocationRedacted": {
+    "description": "Shown after adding photos whose EXIF coordinates the system removed before the app saw them. Android does this to apps without ACCESS_MEDIA_LOCATION, and it is worth saying because the alternative is a photo that attaches itself with no place and no reason given.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentUnreadable": "That file could not be read.",
+  "attachmentRename": "Rename",
+  "attachmentNameLabel": "Name",
+  "attachmentOpen": "Open",
+  "attachmentShare": "Share",
+  "attachmentDelete": "Delete",
+  "attachmentDeleteQuestion": "Delete this attachment?",
+  "attachmentDeleteBody": "The file is stored in this database and nowhere else. Deleting it here removes it for good.",
+  "attachmentPositionExif": "Position taken from the photo",
+  "attachmentPositionPicked": "Position chosen on the map",
+  "attachmentPositionNone": "No position",
+  "attachmentPositionSet": "Place on map",
+  "attachmentPositionClear": "Remove position",
+  "attachmentPhotoOpenFailed": "That file could not be opened.",
+  "pdfSectionPhotos": "Photos",
+  "pdfPhotos": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@pdfPhotos": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pdfPhotoUnnamed": "Photo",
+  "attachmentSaved": "File saved.",
+  "attachmentsTripTitle": "Trip documents",
+  "attachmentsTripAdd": "Add trip document",
+  "galleryTitle": "Photos",
+  "coverSet": "Use as trip cover",
+  "coverRemove": "Remove as trip cover",
+  "photosCount": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@photosCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "documentsCount": "{count, plural, =1{1 document} other{{count} documents}}",
+  "@documentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "documentsTitle": "Documents",
+  "photosTitle": "Photos"
 }

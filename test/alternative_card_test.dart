@@ -20,6 +20,7 @@ import 'package:travelplanner/features/itinerary/widgets/now_line.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
+import 'support/attachment_overrides.dart';
 
 /// Covers the swipeable decision card: only the option on screen is drawn,
 /// swiping merely browses (it must never move the trip's money), and every
@@ -46,6 +47,7 @@ void main() {
     overrides: [
       ...currencyOverrides,
       repositoryProvider.overrideWithValue(repo),
+      ...attachmentTestOverrides,
       sharedPreferencesProvider.overrideWithValue(prefs),
       reasonRowsProvider.overrideWith((ref) => Stream.value(const [])),
       // The transport tile resolves its mode through this stream; like the

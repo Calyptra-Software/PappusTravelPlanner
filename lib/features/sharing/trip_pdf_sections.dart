@@ -1,4 +1,5 @@
 import '../../core/format/date_format.dart';
+import '../../data/database/tables.dart' show AttachmentKind;
 import 'trip_bundle.dart';
 
 /// A part of the exported PDF the user may include or leave out. The trip's
@@ -10,10 +11,29 @@ import 'trip_bundle.dart';
 ///
 /// Persisted as a bitmask of these indices (see `PdfSectionsController`), so
 /// only ever append new values at the end.
-enum PdfSection { itinerary, expenses, checklists }
+/// [photos] prints the pictures attached to the trip's live entries and runs.
+/// It is the one section a fresh install leaves *off* (see [kDefaultPdfSections]):
+/// every other one costs a few kilobytes of text, and this one can turn a
+/// two-page itinerary into a document too large to mail.
+enum PdfSection { itinerary, expenses, checklists, photos }
 
-/// Every section — what an export includes unless the user says otherwise.
+/// Every section there is.
 const Set<PdfSection> kAllPdfSections = {
+  PdfSection.itinerary,
+  PdfSection.expenses,
+  PdfSection.checklists,
+  PdfSection.photos,
+};
+
+/// What an export includes until the user says otherwise: everything except the
+/// pictures.
+///
+/// Not the same set as [kAllPdfSections], and the difference is the point. A
+/// PDF is the export people hand out and mail, and a section that multiplies
+/// its size by twenty is one to be *asked* for. Someone who has exported before
+/// is unaffected either way — their stored mask predates this value, so photos
+/// are off for them too, which is the same answer.
+const Set<PdfSection> kDefaultPdfSections = {
   PdfSection.itinerary,
   PdfSection.expenses,
   PdfSection.checklists,
@@ -66,6 +86,38 @@ List<BundleCost> bundleTransfers(TripBundle bundle) => [
     if (c.isTransfer) c,
 ];
 
+/// Every picture on the trip, on its live entries and on its runs, in the order
+/// they would be printed.
+///
+/// Documents are left out, and that is not an oversight — a PDF can hold a
+/// picture and cannot hold a PDF. Printing a ticket's *name* under a heading
+/// would be a list of files the reader does not have.
+List<BundleAttachment> printablePhotos(
+  TripBundle bundle, {
+  Set<int>? chosenBranchIds,
+}) {
+  final chosen = chosenBranchIds ?? chosenBranchLocalIds(bundle);
+  final liveGroupIds = {
+    for (final i in bundle.items)
+      if (bundleItemIsLive(i, chosen) && i.groupLocalId != null)
+        i.groupLocalId!,
+  };
+  return [
+    // The trip's own first: they are about the journey rather than about a day
+    // of it, which is the order the document already reads in.
+    for (final a in bundle.attachments)
+      if (a.kind == AttachmentKind.photo) a,
+    for (final i in bundle.items)
+      if (bundleItemIsLive(i, chosen))
+        for (final a in i.attachments)
+          if (a.kind == AttachmentKind.photo) a,
+    for (final g in bundle.groups)
+      if (liveGroupIds.contains(g.localId))
+        for (final a in g.attachments)
+          if (a.kind == AttachmentKind.photo) a,
+  ];
+}
+
 /// The checklists worth printing — an empty list prints as a bare heading —
 /// in the order they appear in the app.
 List<BundleChecklist> printableChecklists(TripBundle bundle) => [
@@ -85,6 +137,8 @@ class PdfSectionSummary {
     required this.transfers,
     required this.checklists,
     required this.checklistItems,
+    required this.photos,
+    required this.photoBytes,
   });
 
   /// Itinerary: days with something on them, and live entries across them.
@@ -103,11 +157,23 @@ class PdfSectionSummary {
   final int checklists;
   final int checklistItems;
 
+  /// Pictures that would be printed, and roughly what they would add to the
+  /// document.
+  ///
+  /// The size is shown because it is the whole reason this section is a choice:
+  /// a row that says "12 photos" invites a tick, and one that says "12 photos ·
+  /// 4.1 MB" invites a decision. Measured from the Base64 the bundle carries, so
+  /// it is an over-estimate of the bytes and an under-estimate of the page count
+  /// — near enough for the only judgement anyone makes with it.
+  final int photos;
+  final int photoBytes;
+
   /// Whether the trip has anything to put in [section].
   bool has(PdfSection section) => switch (section) {
     PdfSection.itinerary => days > 0,
     PdfSection.expenses => expenses > 0 || transfers > 0,
     PdfSection.checklists => checklists > 0,
+    PdfSection.photos => photos > 0,
   };
 
   /// The sections this trip can fill — what the picker offers.
@@ -144,6 +210,7 @@ PdfSectionSummary summarizePdfSections(TripBundle bundle) {
   }
 
   final lists = printableChecklists(bundle);
+  final pictures = printablePhotos(bundle, chosenBranchIds: chosen);
 
   return PdfSectionSummary(
     days: days.length,
@@ -153,5 +220,7 @@ PdfSectionSummary summarizePdfSections(TripBundle bundle) {
     transfers: bundleTransfers(bundle).length,
     checklists: lists.length,
     checklistItems: lists.fold(0, (sum, cl) => sum + cl.items.length),
+    photos: pictures.length,
+    photoBytes: pictures.fold(0, (sum, a) => sum + a.bytes.length),
   );
 }

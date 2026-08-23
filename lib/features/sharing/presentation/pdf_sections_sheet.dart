@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/format/byte_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../l10n/app_localizations.dart';
 import '../trip_pdf_sections.dart';
@@ -69,12 +70,14 @@ class _PdfSectionsSheetState extends State<_PdfSectionsSheet> {
     PdfSection.itinerary => l10n.itineraryTitle,
     PdfSection.expenses => l10n.costs,
     PdfSection.checklists => l10n.checklist,
+    PdfSection.photos => l10n.pdfSectionPhotos,
   };
 
   IconData _icon(PdfSection section) => switch (section) {
     PdfSection.itinerary => Icons.route_outlined,
     PdfSection.expenses => Icons.payments_outlined,
     PdfSection.checklists => Icons.checklist_outlined,
+    PdfSection.photos => Icons.photo_library_outlined,
   };
 
   /// What the section would contain — the reason this is a sheet and not a
@@ -100,6 +103,12 @@ class _PdfSectionsSheetState extends State<_PdfSectionsSheet> {
         if (s.checklists == 0) return null;
         return '${l10n.pdfLists(s.checklists)} · '
             '${l10n.pdfItems(s.checklistItems)}';
+      case PdfSection.photos:
+        if (s.photos == 0) return null;
+        // The size is named because it is the whole reason this one is a
+        // choice: "12 photos" invites a tick, "12 photos · 4.1 MB" invites a
+        // decision.
+        return '${l10n.pdfPhotos(s.photos)} · ${formatBytes(s.photoBytes)}';
     }
   }
 

@@ -63,6 +63,8 @@ Trip _trip({required int id, required String title, String destination = ''}) {
     notes: null,
     kind: TripKind.trip,
     colorValue: 0xFF00695C,
+    coverHidden: false,
+    photosCollapsed: false,
     createdAt: DateTime(2026, 1, 1),
   );
 }

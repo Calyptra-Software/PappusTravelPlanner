@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
@@ -136,6 +137,7 @@ class _TripPdfBuilder {
           ..._costsSection(),
           ..._transfersSection(),
           ..._checklistsSection(),
+          ..._photosSection(),
         ],
       ),
     );
@@ -560,6 +562,87 @@ class _TripPdfBuilder {
               ),
             ],
           ),
+      ],
+    );
+  }
+
+  // --- photos ---
+
+  /// The pictures, two to a row, each captioned with the entry it hangs on.
+  ///
+  /// Last in the document on purpose: the itinerary, the money and the lists are
+  /// what a printed trip is *for*, and a reader flipping to any of them should
+  /// not have to page through the photographs first.
+  ///
+  /// Each is embedded at the size the app stored it — the bounded copy
+  /// `attachment_import.dart` made, not a camera original. Making a third size
+  /// here would mean decoding and rescaling every picture at export time, on a
+  /// phone, to save megabytes in a document the picker has already put a figure
+  /// on; the user has been told what it costs and has said yes.
+  Iterable<pw.Widget> _photosSection() sync* {
+    if (!sections.contains(PdfSection.photos)) return;
+
+    final photos = printablePhotos(bundle);
+    if (photos.isEmpty) return;
+
+    // A picture that will not decode costs its own place and nothing else — it
+    // may have arrived in a bundle from outside, and one bad file must not cost
+    // the reader the whole section. The same trade the map makes with a line.
+    final tiles = <pw.Widget>[];
+    for (final photo in photos) {
+      final image = _photoImage(photo);
+      if (image == null) continue;
+      tiles.add(_photoTile(photo, image));
+    }
+    if (tiles.isEmpty) return;
+
+    yield pw.SizedBox(height: 16);
+    yield _sectionTitle(l10n.pdfSectionPhotos);
+
+    for (var i = 0; i < tiles.length; i += 2) {
+      yield pw.SizedBox(height: 8);
+      yield pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(child: tiles[i]),
+          pw.SizedBox(width: 12),
+          // An odd one out keeps its half of the row rather than stretching
+          // across it: a single wide picture beside nothing reads as a mistake.
+          pw.Expanded(
+            child: i + 1 < tiles.length ? tiles[i + 1] : pw.SizedBox(),
+          ),
+        ],
+      );
+    }
+  }
+
+  pw.MemoryImage? _photoImage(BundleAttachment photo) {
+    try {
+      final bytes = base64Decode(photo.bytes);
+      if (bytes.isEmpty) return null;
+      return pw.MemoryImage(bytes);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  pw.Widget _photoTile(BundleAttachment photo, pw.MemoryImage image) {
+    final caption = photo.name?.trim();
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.ClipRRect(
+          horizontalRadius: 4,
+          verticalRadius: 4,
+          child: pw.Image(image, fit: pw.BoxFit.cover, height: 150),
+        ),
+        pw.SizedBox(height: 3),
+        pw.Text(
+          caption == null || caption.isEmpty ? l10n.pdfPhotoUnnamed : caption,
+          maxLines: 1,
+          overflow: pw.TextOverflow.clip,
+          style: const pw.TextStyle(fontSize: 8, color: _muted),
+        ),
       ],
     );
   }

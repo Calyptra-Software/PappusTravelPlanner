@@ -45,6 +45,12 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// shared ticket, and it hangs off the group. Re-making the bundle would take
   /// the fare with it.
   ///
+  /// A **file** attached to one of the legs is rescued the same way and for the
+  /// same reason: the photo of the ticket is not about the 07:32 in particular,
+  /// and looking the connection up again is not a reason to lose it. One hangs
+  /// off the group where there is one, exactly as its fare does, and survives
+  /// untouched.
+  ///
   /// A cost attached to one of the *legs* is rescued rather than cascaded away:
   /// a single-leg journey has no group to hang its fare on, so letting the leg
   /// take it would mean the price of the ride disappeared the moment its
@@ -131,6 +137,16 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
           CostsCompanion(itemId: const Value(null), tripId: Value(tripId)),
         );
       }
+
+      // The same rescue, for the files hung on the doomed legs — the photo of
+      // the ticket, the booking confirmation. Parked owner-less for the length
+      // of this transaction and re-homed below; nothing outside it sees a row in
+      // that state. Only when there is a replacement to hang them on: with no
+      // legs coming, the entries are simply being removed, and their
+      // attachments go with them as the cascade would take them anyway.
+      final parkedFiles = legs.isEmpty
+          ? const <int>[]
+          : await attachedDatabase.attachmentDao.parkAttachmentsOf(oldLegIds);
 
       for (final id in oldLegIds) {
         // Straight through the table, not GroupDao.deleteItem: that tidies away
@@ -226,6 +242,13 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
         (id) => id != null,
         orElse: () => null,
       );
+      if (parkedFiles.isNotEmpty && ids.isNotEmpty) {
+        await attachedDatabase.attachmentDao.rehomeAttachments(
+          parkedFiles,
+          groupId: home,
+          itemId: home == null ? ids.first : null,
+        );
+      }
       if (rescued.isNotEmpty && (home != null || ids.isNotEmpty)) {
         for (final cost in rescued) {
           await (update(costs)..where((c) => c.id.equals(cost.id))).write(
@@ -600,6 +623,15 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       for (final list in lists) {
         await attachedDatabase.checklistDao.copyChecklist(list.id, newTripId);
       }
+
+      // The routine's own paperwork — the season ticket, the pass — for the same
+      // reason the checklist and the fare travel. Only what hangs on the routine
+      // *itself*: a file on one of its legs is about that leg's occurrences, and
+      // a photograph is a record rather than a plan. See `copyTripAttachments`.
+      await attachedDatabase.attachmentDao.copyTripAttachments(
+        routineId,
+        newTripId,
+      );
       return newTripId;
     });
   }
@@ -717,6 +749,11 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
           reversed: true,
         );
       }
+      // The way home needs the same ticket as the way out.
+      await attachedDatabase.attachmentDao.copyTripAttachments(
+        routineId,
+        newTripId,
+      );
       return newTripId;
     });
   }

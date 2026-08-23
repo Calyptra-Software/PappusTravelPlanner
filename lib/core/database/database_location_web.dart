@@ -80,6 +80,15 @@ void webSetPendingImport(Uint8List? bytes) => _pendingImport = bytes;
 /// No WAL sidecars exist in the browser backend.
 void deleteSidecars(String path) {}
 
+/// Null: there is no file to measure.
+///
+/// The stored bytes could be counted, but only through `WasmDatabase.probe`,
+/// which wants exclusive access and would have to close the live connection —
+/// far too much to do to render a line in the settings screen. So the browser
+/// shows what the attachments weigh and says nothing about the store, which is
+/// honest: it is browser storage, not a file the user can pick up and carry.
+int? databaseFileSize(String path) => null;
+
 Never _unsupported() => throw UnsupportedError(
   'File-path database operations are not available on the web.',
 );

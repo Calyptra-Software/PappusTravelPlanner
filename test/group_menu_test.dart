@@ -10,6 +10,7 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/itinerary/widgets/timeline_tile.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+import 'support/attachment_overrides.dart';
 
 /// Covers the menu on a run's label: what is done to the *run* is offered on
 /// the run. Renaming it and dissolving it used to sit in the grouping section
@@ -67,7 +68,10 @@ void main() {
     final run = await items();
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [repositoryProvider.overrideWithValue(repo)],
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          ...attachmentTestOverrides,
+        ],
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
