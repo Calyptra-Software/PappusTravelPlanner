@@ -426,6 +426,100 @@ tiles again.
 
 ---
 
+## Photos and files
+
+An attachment can hang on a single entry, a group, or the trip itself.
+
+Where to add one:
+
+- **An entry** — in its form, below the note. Only on an entry that already exists, since a
+  file hangs on a row.
+- **A group** — the ⋮ menu on the group's label, where everything that acts on the whole
+  group already lives.
+- **The trip** — a section on the trip screen, above the checklists. A section rather than a
+  menu entry because the trip has no timeline row to carry a badge.
+
+### Photo or file — the door decides
+
+Every one of those places offers **Add photo** and **Add file**, and which one you use is
+what the attachment becomes. The app does not read the bytes and rule on it: a train ticket
+saved as a `.png` is a document if that is where you filed it.
+
+A **photo** is scaled down and re-encoded — at most 2048 px on its long edge — with a
+thumbnail beside it, so a trip's pictures stay small enough to move around. A **file** is
+kept exactly as it arrived, up to 20 MB, and is never parsed: it is handed back to the
+operating system unchanged when you open or share it.
+
+**What a photo brings, and what it loses.** The position the camera recorded is lifted out
+of the EXIF into a field of its own, shown in the attachment's sheet and clearable there.
+Everything else EXIF can hold — the camera body, its serial number, the moment it was taken
+— does not survive the re-encoding and is stored nowhere. A file added as a document keeps
+its metadata, because nothing re-encodes it; that is part of what filing something as a
+document means.
+
+### What an entry says it carries
+
+An entry with attachments shows **"3 photos"** and **"2 documents"** as two counts side by
+side rather than one saying "5 attachments", because they are two different acts: a
+photograph is *looked at*, a document is *opened*. Tapping the first opens that entry's
+photographs as a gallery; tapping the second lists its documents, each going on to whatever
+program understands it. A group's label shows the same two as bare icons — it already
+carries a name, the journey button, the ⋮ and the drag handle.
+
+The lists themselves are under two headings, *Photos* and *Documents*, each with its own
+count and its own **Add** button, so which kind you are adding is chosen where that kind is
+listed. Drag a row to reorder it within its heading.
+
+Each attachment's ⋮ offers **Rename**, **Open**, **Share** and **Delete**, and a photo also
+**Place on map** / **Remove position**.
+
+### The trip's photographs
+
+The trip screen carries a band of thumbnails: every photograph of the trip, in the order
+the plan puts them — the trip's own first, then day by day, a group's before those of the
+entry it begins at. Tap one and the gallery opens there, each page labeled with the entry it
+hangs on. The band folds away and stays folded, the way a checklist or a day does, keeping
+its count in the header.
+
+Swiping through the gallery only browses. The acts stay in the attachment's sheet behind the
+⋮, and pinching to zoom locks the page, so a magnified picture cannot turn into the next one
+under your finger.
+
+### The picture on the overview card
+
+The gallery's app bar carries an **amber star**, and the picture it is filled on is the one
+the trip's card shows in the overview. Star another and the card follows; unstar it and the
+card shows none. Until you say otherwise the card shows the first photograph in gallery
+order. The same star appears as a mark on the strip's thumbnails.
+
+### Photographs on the map
+
+A photograph that carries a position is drawn on the trip's map as its thumbnail, framed in
+the color of the entry it hangs on. Only a stored position puts it there: the entry's own
+coordinates are never borrowed, since the entry already has a pin and the picture was not
+necessarily taken at it.
+
+Pictures that would sit on top of each other are gathered under one thumbnail with a count,
+and come apart again as you zoom in. Tapping a lone picture opens its sheet; tapping a
+gathered one opens them all as a gallery.
+
+### Where they live, and where they go
+
+Inside the database, not beside it — which is what keeps a copy of that one file a copy of
+everything. **Settings → Database** therefore says what the file weighs and how much of it
+the attachments account for. Space freed by a deletion comes back on its own.
+
+A `.tpt` bundle carries the files themselves, which is what keeps that export lossless. The
+PDF has a **Photos** section, off until you tick it, with the size printed beside the
+count. Documents are not printed at all: a PDF cannot hold a PDF, and printing only the
+name would be a list of files the reader does not have.
+
+Stamping a routine out onto a day carries the **trip-level** files across — e.g., the season
+ticket, the pass — and leaves an entry's own behind. Everywhere else a copy takes the plan
+and not the record.
+
+---
+
 ## Money
 
 ### Costs

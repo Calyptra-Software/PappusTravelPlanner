@@ -1097,15 +1097,43 @@ UI (features/*/presentation, *widgets)
   entry's own coordinates was never on: the entry already has a pin there, and a second
   one would be the app claiming to know where the picture was taken, the same rule that
   keeps a one-ended leg off the map. Which photos may be drawn is decided in **Dart**, by
-  `_photoMarkers` against the live entries the screen already holds, and deliberately
-  *not* in SQL as `TrackDao` does it: the answer is "is its owner part of the plan", which
-  `live_items.dart` already owns, and `watchPositionedPhotosForTrip` would only be a second
-  copy of it. A run's photo rides on any live member (a group lies wholly inside one option
-  or wholly outside every one) and takes no color, since a group has none. Photos are framed
+  `_photoMarkers`, and deliberately *not* in SQL as `TrackDao` does it: the answer is "is
+  its owner part of the plan", which `live_items.dart` already owns, and
+  `watchPositionedPhotosForTrip` would only be a second copy of it. It does not own that
+  answer either — it asks `tripGallery` and keeps what has a position, so the **order** and
+  the live rule arrive together from the one place that decides them. Walking the rows as
+  the query returned them (by their own sort order, which is the order they were attached)
+  put a different picture at the front of a cluster than the one the gallery opens on, and
+  those two are meant to be the same photograph — the third time that ordering had been
+  rebuilt elsewhere and drifted. A run's photo rides on any live member (a group lies
+  wholly inside one option or wholly outside every one) and takes no color, since a group
+  has none. Photos are framed
   with everything else by `allPoints` — one taken a valley over is exactly what a viewport
   fitted to the plan would cut off. They sit in a layer **above** the plan and below the
   device's mark, and never wear the reserved red: a photograph records a moment that has
   passed, so it is never "under way". The all-trips map does not draw them.
+- **Photographs that would hide each other are gathered, and gathered in pixels.**
+  `clusterPhotos` / `PhotoCluster` (`features/map/photo_clusters.dart`, pure like everything
+  else the map draws from) groups the markers within `kPhotoClusterRadius` of each other and
+  draws one thumbnail with a count. The distance is measured on the **screen**, through the
+  camera's own projection handed in as a function — not in degrees and not in metres: two
+  pictures taken in the same square metre overlap at every zoom until the map is scaled
+  enough to separate them, so a threshold in metres would either group them forever or never,
+  while this one comes apart as you zoom in. The radius is a little wider than a marker, on
+  the grounds that a picture half behind another is worse than a count.
+  Two properties are load-bearing. The grouping is **greedy from the first photograph
+  onwards** and each candidate is measured against the one that *started* the cluster rather
+  than against whatever joined it last, because chaining would let a line of pictures a
+  screen wide collapse into a single mark. And because the answer depends only on the order
+  it is given, and that order is the gallery's, a cluster keeps the **same face** while the
+  camera moves instead of changing which picture it shows every time the map shifts by a
+  pixel — which is also what makes the front of a cluster the picture the gallery opens on.
+  The mark sits on the representative's **own** position, never the middle of the group:
+  this app does not put a mark where nothing is, and the others are a thumb's width away in
+  any case. A tap answers by size, which is the split `_showPhotos` exists to draw: **one**
+  picture opens `AttachmentSheet` — the same sheet its entry's form opens, and where the
+  position controls live, which is what a pin was tapped to ask about — while **several**
+  open the gallery, since a sheet can only answer for one of them.
 - **A `.tpt` carries the bytes, Base64-encoded, and does not bump the format version.**
   It has to carry them: an attachment exists only inside the database, so naming one
   without it would hand the recipient a reference to a file on somebody else's phone, and

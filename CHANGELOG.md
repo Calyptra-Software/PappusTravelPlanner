@@ -3,6 +3,36 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **Photos and files on a plan.** A photograph or a document can hang on a single
+  entry, on a group, or on the whole trip — the same three things a cost hangs
+  on. They live **in** the database, not beside it, so a copy of that one file is
+  still a copy of everything, and a `.tpt` bundle carries the bytes and stays
+  lossless.
+- **Which of the two a file becomes is the door it came through**, never the
+  decoder: *Add photo* bounds and re-encodes the picture with a thumbnail beside
+  it, *Add file* keeps the bytes exactly as they arrived, up to 20 MB — so a
+  ticket sent as a `.png` can be filed under documents and handed on unchanged.
+- A photo keeps the **position** the camera recorded, lifted into a field of its
+  own and clearable there, and loses the rest of its EXIF to the re-encoding. A
+  document is not re-encoded and so keeps its metadata; `SECURITY.md` says both.
+- An entry counts its **photos and its documents apart**, because they are two
+  acts: the first opens that entry's pictures as a gallery, the second lists its
+  files. A trip's own photographs are a gallery too, reached from a band of
+  thumbnails on the trip screen that folds away and stays folded.
+- **One amber star does the cover.** Star a picture in the gallery and the trip's
+  overview card shows it; unstar it and the card shows none. Until then the card
+  shows the first photograph in gallery order, with the star filled on it.
+- **Photographs are on the map** where they carry a position, drawn as their
+  thumbnail in the color of the entry they hang on; those that would hide each
+  other are gathered under one thumbnail with a count and come apart as you zoom
+  in.
+- The PDF gains a **Photos** section, off until you tick it, with the size beside
+  the count. **Settings → Database** says what the file weighs and how much of it
+  the attachments account for, and space freed by a deletion comes back on its
+  own.
+
 ## 1.8.0 — 2026-08-21
 
 - **Which countries you have been to**, as a third tab of the statistics: the

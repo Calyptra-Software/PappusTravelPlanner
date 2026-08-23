@@ -60,6 +60,10 @@ Every other platform, and Android if you would rather not run a stranger's binar
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
   is under way marked as the timeline marks it. Import a **GPX** track onto a leg and the
   map draws the line you actually followed instead of the straight one.
+- **Photos and files on the plan** — attach a photograph or a document to an entry, to a
+  group, or to the trip itself. They live inside the database, so a copy of that one file
+  is a copy of everything. A photo carrying a position shows up on the map, and one of them
+  can be the cover on the trip's overview card.
 - **Costs in as many currencies as you like** — attached to a place, a leg, a whole shared
   ticket, or the trip, with your own categories and your own exchange rates.
 - **Countries you have been to** — the world drawn from bundled outlines, counted from
@@ -69,8 +73,9 @@ Every other platform, and Android if you would rather not run a stranger's binar
 - **Settle-up** — paid versus fair share, a minimal set of payments to square up, and
   settlements you can book back once they are paid.
 - **Checklists** per trip, movable and copyable to the next one.
-- **Share and export** — a lossless `.tpt` bundle for another user of the app, a printable
-  PDF, or an `.ics` file for whatever calendar you already use.
+- **Share and export** — a lossless `.tpt` bundle for another user of the app (attachments
+  included), a printable PDF with the sections you tick, or an `.ics` file for whatever
+  calendar you already use.
 - **An Android home-screen widget** — your current or next trip, a countdown, and today's
   plan with the same delay marks the timeline uses; tapping a row opens that entry.
 - **English and German**, and a light / dark / system theme.
@@ -167,6 +172,7 @@ lib/
     itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
     map/                    # trip map: pure feature building + the basemap and its screen
+    attachments/            # photos and files on an entry, a group, or the trip; gallery
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies
     checklist/              # per-trip named checklists
     sharing/                # portable trip bundles (.tpt), plus PDF and .ics export
