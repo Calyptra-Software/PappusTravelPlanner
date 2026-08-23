@@ -3614,12 +3614,6 @@ abstract class AppLocalizations {
   /// **'Attachments'**
   String get attachmentsLabel;
 
-  /// No description provided for @attachmentsNone.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing attached yet'**
-  String get attachmentsNone;
-
   /// No description provided for @attachmentsAddPhoto.
   ///
   /// In en, this message translates to:
@@ -3823,6 +3817,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Documents'**
   String get documentsTitle;
+
+  /// No description provided for @photosTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photosTitle;
 }
 
 class _AppLocalizationsDelegate

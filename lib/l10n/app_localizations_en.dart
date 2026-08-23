@@ -2090,9 +2090,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachmentsLabel => 'Attachments';
 
   @override
-  String get attachmentsNone => 'Nothing attached yet';
-
-  @override
   String get attachmentsAddPhoto => 'Add photo';
 
   @override
@@ -2232,4 +2229,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get documentsTitle => 'Documents';
+
+  @override
+  String get photosTitle => 'Photos';
 }

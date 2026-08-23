@@ -100,7 +100,6 @@ class AttachmentsField extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final attachments =
         ref
             .watch(
@@ -112,86 +111,143 @@ class AttachmentsField extends ConsumerWidget {
             )
             .value ??
         const <Attachment>[];
-    final shown = only == null
-        ? attachments
-        : [
-            for (final a in attachments)
-              if (a.kind == only) a,
-          ];
+
+    List<Attachment> of(AttachmentKind kind) => [
+      for (final a in attachments)
+        if (a.kind == kind) a,
+    ];
+
+    // Narrowed to one kind — the documents sheet reached from the timeline —
+    // there is one section and no heading to choose between.
+    if (only case final kind?) {
+      return _Section(
+        title: kind == AttachmentKind.photo
+            ? l10n.photosTitle
+            : l10n.documentsTitle,
+        attachments: of(kind),
+        addLabel: kind == AttachmentKind.photo
+            ? l10n.attachmentsAddPhoto
+            : l10n.attachmentsAddFile,
+        addIcon: kind == AttachmentKind.photo
+            ? Icons.add_photo_alternate_outlined
+            : Icons.attach_file,
+        onAdd: () => _add(context, ref, kind),
+      );
+    }
+
+    // Two headed sections rather than one list under "Attachments". They are
+    // two different things to have — one is looked at, the other is opened —
+    // and a flat list made the reader sort a ticket from a photograph by its
+    // icon. Each carries its own *Add*, so which door a file comes through (and
+    // therefore what it becomes) is chosen where the thing itself is listed.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _Section(
+          title: l10n.photosTitle,
+          attachments: of(AttachmentKind.photo),
+          addLabel: l10n.attachmentsAddPhoto,
+          addIcon: Icons.add_photo_alternate_outlined,
+          onAdd: () => _add(context, ref, AttachmentKind.photo),
+        ),
+        const SizedBox(height: 8),
+        _Section(
+          title: l10n.documentsTitle,
+          attachments: of(AttachmentKind.document),
+          addLabel: l10n.attachmentsAddFile,
+          addIcon: Icons.attach_file,
+          onAdd: () => _add(context, ref, AttachmentKind.document),
+        ),
+      ],
+    );
+  }
+
+  void _add(BuildContext context, WidgetRef ref, AttachmentKind kind) {
+    addAttachments(
+      context,
+      ref,
+      itemId: itemId,
+      groupId: groupId,
+      tripId: tripId,
+      kind: kind,
+    );
+  }
+}
+
+/// One headed list of files, with the button that adds another of its kind.
+///
+/// An empty section is its heading and its button, and nothing else: there is
+/// no line saying "nothing here", because a heading over an invitation already
+/// says it — and two of those, one per kind, would be noise where the point is
+/// to see at a glance what there is.
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.title,
+    required this.attachments,
+    required this.addLabel,
+    required this.addIcon,
+    required this.onAdd,
+  });
+
+  final String title;
+  final List<Attachment> attachments;
+  final String addLabel;
+  final IconData addIcon;
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // What a gallery opened from this section walks: its own pictures, in the
+    // order they are listed. A document that is a picture is here too — filed
+    // under documents, and still something that can be looked at.
+    final viewable = [
+      for (final a in attachments)
+        if (a.isViewable) a,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          only == AttachmentKind.document
-              ? l10n.documentsTitle
-              : l10n.attachmentsLabel,
-          style: theme.textTheme.labelLarge,
-        ),
-        const SizedBox(height: 4),
-        if (shown.isEmpty)
-          Text(
-            l10n.attachmentsNone,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          for (final (index, attachment) in shown.indexed)
-            AttachmentTile(
-              attachment: attachment,
-              // A **photo opens the gallery**, at itself, over what this owner
-              // carries; a document opens the sheet, there being nothing to
-              // leaf through. The set stops at this owner on purpose: you asked
-              // about this entry, so you get its pictures and not its
-              // neighbours' — the same scope the list above has.
-              onTap: () => attachment.isViewable
-                  // No `tripId`, so no cover star: a document is not the trip's
-                  // photograph, and `coverPhoto` resolves against the trip's
-                  // gallery — a document chosen there would be looked up, not
-                  // found, and silently fall back to the derived one.
-                  ? showGallery(
-                      context,
-                      photos: [
-                        for (final a in shown)
-                          if (a.isViewable) GalleryPhoto(attachment: a),
-                      ],
-                      initialIndex: shown
-                          .take(index)
-                          .where((a) => a.isViewable)
-                          .length,
-                    )
-                  : showAttachmentSheet(context, attachment),
-            ),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
+        Row(
           children: [
-            if (only != AttachmentKind.document)
-              TextButton.icon(
-                onPressed: () => addAttachments(
-                  context,
-                  ref,
-                  itemId: itemId,
-                  groupId: groupId,
-                  tripId: tripId,
-                  kind: AttachmentKind.photo,
+            Text(title, style: theme.textTheme.labelLarge),
+            if (attachments.isNotEmpty) ...[
+              const SizedBox(width: 6),
+              Text(
+                '${attachments.length}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: Text(l10n.attachmentsAddPhoto),
               ),
-            TextButton.icon(
-              onPressed: () => addAttachments(
-                context,
-                ref,
-                itemId: itemId,
-                groupId: groupId,
-                tripId: tripId,
-              ),
-              icon: const Icon(Icons.attach_file),
-              label: Text(l10n.attachmentsAddFile),
-            ),
+            ],
           ],
+        ),
+        for (final attachment in attachments)
+          AttachmentTile(
+            attachment: attachment,
+            // A picture opens the gallery of *this section*, at itself; a file
+            // nothing can draw opens the sheet, there being nothing to leaf
+            // through. No `tripId` either way: a gallery opened here is about
+            // one entry's files, and a document is not the trip's photograph,
+            // so the cover star has no business in it.
+            onTap: () => attachment.isViewable
+                ? showGallery(
+                    context,
+                    photos: [
+                      for (final a in viewable) GalleryPhoto(attachment: a),
+                    ],
+                    initialIndex: viewable.indexOf(attachment),
+                  )
+                : showAttachmentSheet(context, attachment),
+          ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: onAdd,
+            icon: Icon(addIcon),
+            label: Text(addLabel),
+          ),
         ),
       ],
     );

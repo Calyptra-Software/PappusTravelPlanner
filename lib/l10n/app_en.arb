@@ -1071,7 +1071,6 @@
   "aboutLicenses": "Open-source licenses",
   "aboutLicensesSubtitle": "The libraries and fonts this app is built from",
   "attachmentsLabel": "Attachments",
-  "attachmentsNone": "Nothing attached yet",
   "attachmentsAddPhoto": "Add photo",
   "attachmentsAddFile": "Add file",
   "attachmentsAdding": "Reading the file…",
@@ -1126,5 +1125,6 @@
   "@documentsCount": {
     "placeholders": { "count": { "type": "int" } }
   },
-  "documentsTitle": "Documents"
+  "documentsTitle": "Documents",
+  "photosTitle": "Photos"
 }

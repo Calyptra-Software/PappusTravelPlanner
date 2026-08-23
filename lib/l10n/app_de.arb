@@ -759,7 +759,6 @@
   "aboutLicenses": "Open-Source-Lizenzen",
   "aboutLicensesSubtitle": "Die Bibliotheken und Schriften, aus denen diese App besteht",
   "attachmentsLabel": "Anhänge",
-  "attachmentsNone": "Noch nichts angehängt",
   "attachmentsAddPhoto": "Foto hinzufügen",
   "attachmentsAddFile": "Datei hinzufügen",
   "attachmentsAdding": "Datei wird gelesen …",
@@ -796,5 +795,6 @@
   "coverRemove": "Titelbild entfernen",
   "photosCount": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
   "documentsCount": "{count, plural, =1{1 Dokument} other{{count} Dokumente}}",
-  "documentsTitle": "Dokumente"
+  "documentsTitle": "Dokumente",
+  "photosTitle": "Fotos"
 }

@@ -309,13 +309,47 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('says so when an entry carries nothing', (tester) async {
+    testWidgets('offers both doors, headed, when an entry carries nothing', (
+      tester,
+    ) async {
       await pumpField(tester, const []);
 
-      expect(find.text('Nothing attached yet'), findsOneWidget);
-      // Both doors are there regardless: attaching is what the field is for.
+      // An empty section is its heading and its button and nothing else: a
+      // line saying "nothing here" under each of two headings would be noise
+      // where the point is to see at a glance what there is.
+      expect(find.text('Photos'), findsOneWidget);
+      expect(find.text('Documents'), findsOneWidget);
       expect(find.text('Add photo'), findsOneWidget);
       expect(find.text('Add file'), findsOneWidget);
+    });
+
+    testWidgets('files each one under its own heading', (tester) async {
+      await pumpField(tester, [
+        row(id: 1, name: 'view.jpg'),
+        row(id: 2, name: 'ticket.png', kind: AttachmentKind.document),
+      ]);
+
+      // A picture filed as a document is under Documents — which is the whole
+      // point of having filed it there.
+      final photos = tester.getRect(find.text('Photos'));
+      final documents = tester.getRect(find.text('Documents'));
+      final view = tester.getRect(find.text('view.jpg'));
+      final ticket = tester.getRect(find.text('ticket.png'));
+
+      expect(view.top, greaterThan(photos.top));
+      expect(view.top, lessThan(documents.top));
+      expect(ticket.top, greaterThan(documents.top));
+    });
+
+    testWidgets('each heading carries its own count', (tester) async {
+      await pumpField(tester, [
+        row(id: 1, name: 'a.jpg'),
+        row(id: 2, name: 'b.jpg'),
+        row(id: 3, name: 'ticket.pdf', kind: AttachmentKind.document),
+      ]);
+
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
     });
 
     testWidgets('lists what is there, by name and size', (tester) async {
@@ -324,7 +358,6 @@ void main() {
         row(id: 2, name: 'ticket.pdf', kind: AttachmentKind.document),
       ]);
 
-      expect(find.text('Nothing attached yet'), findsNothing);
       expect(find.text('view.jpg'), findsOneWidget);
       expect(find.text('ticket.pdf'), findsOneWidget);
       expect(find.text('2 KB'), findsNWidgets(2));

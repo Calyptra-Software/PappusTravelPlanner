@@ -1232,6 +1232,15 @@ UI (features/*/presentation, *widgets)
   screen is where the whole trip is walked. A run's band gets the same two acts as bare
   icons without counts: it already carries a label, the journey button, the ⋮ and the drag
   handle, and two more numbers would leave a named run nowhere to be read.
+- **A form lists them under two headings, never as one pile.** `AttachmentsField` draws a
+  *Photos* section and a *Documents* section, each with its own count and its own **Add**
+  button — so which door a file comes through, and therefore what it becomes, is chosen
+  where that kind is listed. A flat list under "Attachments" made the reader sort a ticket
+  from a photograph by its icon, and it is the same split the timeline shows. An empty
+  section is its heading and its button and nothing else: a "nothing here" line under each
+  of two headings is noise where the point is to see at a glance what there is. Narrowed to
+  one kind (`only`, which the timeline's documents sheet passes) it is one section, since
+  there is then nothing to choose between.
 - **A document that is a picture is under documents, and opens in a gallery of its own.**
   That is the point of having filed it there — a `.png` ticket is not one of the trip's
   photographs, does not reach the map, the PDF or the cover star (the documents gallery is
