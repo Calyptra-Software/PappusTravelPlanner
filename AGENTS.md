@@ -1353,6 +1353,28 @@ so the browser can paint the "reading" message before `compute` blocks its one t
 guarded by `kIsWeb`, because awaiting a frame from inside a callback is exactly what
 deadlocks a widget test and there is nothing to gain from it where the work is off-thread.
 
+Three smaller traps, each found by a test that had to be written twice:
+
+- **A stubbed stream has to replay its last value.** A `StreamController.broadcast` gives a
+  late subscriber nothing, and the widgets here subscribe late by construction: a checklist's
+  entries are first watched on the build *after* its checklist arrives, so a value pushed
+  before that build is simply lost and the card draws as empty. The override therefore yields
+  a snapshot before forwarding the controller
+  (`test/trip_checklists_section_test.dart`) — everything real, only the delivery stubbed.
+- **`ref.read` of a provider nothing watches reads `AsyncLoading`.** `_toAnotherTrip` in
+  `trip_checklists_section.dart` reads `tripListProvider` in a callback, which works in the
+  app only because the overview screen underneath keeps it alive — the trap
+  `TransportSearchController._modes` documents, arriving from the other side. A harness that
+  pumps the section alone gets no trips and the "no other trip" message instead of the
+  picker, so the test watches it too, standing in for the screen beneath. It has to be
+  overridden even where no picker is opened, or that watch opens a real `watchTrips()` and
+  the timer above comes back.
+- **A provider holding a timer must be disposed inside the test body.** The binding checks
+  for pending timers *before* tear-downs run, so `addTearDown(container.dispose)` reports
+  `nowProvider`'s next tick as a leak (`test/clock_test.dart`). Close the subscription,
+  dispose, and pump — which is also the only way to test that it stops ticking at all: the
+  assertion is the absence of a report.
+
 ## Platform build constraints
 
 - **The build CI hands out installs beside a real one, not over it.** Every

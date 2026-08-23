@@ -7,6 +7,10 @@ import 'package:path/path.dart' as p;
 import 'package:travelplanner/core/database/database_location.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:travelplanner/core/providers.dart';
+import 'package:travelplanner/data/repositories/trip_repository.dart';
+import 'package:travelplanner/features/attachments/application/storage_providers.dart';
 import 'package:travelplanner/features/attachments/attachment_import.dart';
 
 /// What deleting an attachment costs, and what the settings screen reports.
@@ -196,6 +200,32 @@ void main() {
 
       expect(storage.count, 0);
       expect(storage.bytes, 0);
+    });
+
+    test('the tile reads both numbers off one file', () async {
+      final db = open();
+      addTearDown(db.close);
+      final trip = await seedTrip(db);
+      await db.attachmentDao.addAttachment(
+        bigPhoto(1),
+        itemId: await addLeg(db, trip),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          bootstrapDbPathProvider.overrideWithValue(path),
+          repositoryProvider.overrideWithValue(TripRepository(db)),
+        ],
+      );
+      addTearDown(container.dispose);
+      final storage = await container.read(databaseStorageProvider.future);
+
+      // The pair is the point: what the attachments account for, and what the
+      // thing anyone copies actually weighs. The file has to be the larger of
+      // the two — it holds the trip and the schema as well.
+      expect(storage.attachmentCount, 1);
+      expect(storage.attachmentBytes, 400 * 1024);
+      expect(storage.fileBytes, greaterThan(storage.attachmentBytes));
     });
   });
 }
