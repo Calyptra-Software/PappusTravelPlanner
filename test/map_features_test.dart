@@ -580,6 +580,37 @@ void main() {
       expect(features.photos, hasLength(1));
     });
 
+    test('they are drawn in gallery order, not the order they were added', () {
+      final first = place(lat: 53.55, lon: 9.99, title: 'Day one');
+      final member = leg(
+        fromLat: 53.5,
+        fromLon: 10.0,
+        toLat: 50.1,
+        toLon: 8.6,
+      ).copyWith(groupId: const Value(7));
+      // Handed over the way the query returns them — by their own sort order
+      // and id, which is the order they were attached.
+      final onLeg = photo(lat: 1, lon: 1, itemId: member.id);
+      final onRun = photo(lat: 2, lon: 2, groupId: 7);
+      final onEntry = photo(lat: 3, lon: 3, itemId: first.id);
+      final onTrip = photo(lat: 4, lon: 4);
+
+      final features = tripMapFeatures(
+        [first, member],
+        photos: [onLeg, onRun, onEntry, onTrip],
+      );
+
+      // The trip's own first, then the plan's, and a run's before those of the
+      // entry it begins at — the same order the gallery opens in, which is what
+      // decides which picture a cluster shows.
+      expect(features.photos.map((p) => p.attachmentId), [
+        onTrip.id,
+        onEntry.id,
+        onRun.id,
+        onLeg.id,
+      ]);
+    });
+
     test('a photo is framed with everything else', () {
       final entry = place(lat: 53.55, lon: 9.99);
       final features = tripMapFeatures(

@@ -21,6 +21,7 @@ import 'dart:math' as math;
 import 'package:latlong2/latlong.dart';
 
 import '../../data/database/app_database.dart';
+import '../attachments/trip_gallery.dart';
 import '../../data/database/tables.dart';
 
 /// A place the trip visits, at a position it actually carries.
@@ -277,50 +278,35 @@ TripMapFeatures tripMapFeatures(
   );
 }
 
-/// The pictures that may be drawn, in the order they were given.
+/// The pictures that may be drawn, **in gallery order**.
 ///
-/// A photo rides on its owner's liveness and on nothing else — it has its own
-/// position, so being drawn is never a question about *where* the entry is, only
-/// about whether that entry is part of the plan as it stands. A group's photo
-/// needs one live member: a run lies entirely inside one option or entirely
-/// outside every one, so any member answers for the whole thing. The trip's own
-/// is always drawn, having no part of the plan to be dropped with.
+/// Both the order and the live rule come from `tripGallery`, which is the one
+/// place either is decided: the trip's own pictures first, then the plan's, a
+/// run's before those of the entry it begins at. Ordering them here as they
+/// arrived — by the order they were *added* — put a different photograph at the
+/// front of a cluster than the one the gallery opens on, and the two are meant
+/// to be the same picture.
+///
+/// Everything else is a filter: a position to draw at, and the owning entry's
+/// colour to frame it in. A picture hung on the **trip** has no entry and takes
+/// the trip's accent.
 List<MapPhoto> _photoMarkers(
   List<ItineraryItem> items,
   List<Attachment> photos,
 ) {
   if (photos.isEmpty) return const [];
-  final liveItems = {for (final item in items) item.id: item};
-  final liveGroups = {
-    for (final item in items)
-      if (item.groupId != null) item.groupId!,
-  };
-
-  final markers = <MapPhoto>[];
-  for (final photo in photos) {
-    final position = _point(photo.lat, photo.lon);
-    if (position == null) continue;
-    final owner = photo.itemId == null ? null : liveItems[photo.itemId];
-    final onLiveItem = owner != null;
-    final onLiveGroup =
-        photo.groupId != null && liveGroups.contains(photo.groupId);
-    // A picture hung on the **trip** has no liveness question to answer: it
-    // belongs to the journey rather than to a part of it, so there is no option
-    // it could sit in and nothing that could stop being chosen. It takes the
-    // trip's accent, having no entry whose color it could wear.
-    final onTrip = photo.itemId == null && photo.groupId == null;
-    if (!onLiveItem && !onLiveGroup && !onTrip) continue;
-    markers.add(
-      MapPhoto(
-        attachmentId: photo.id,
-        position: position,
-        itemId: photo.itemId,
-        groupId: photo.groupId,
-        colorValue: owner?.colorValue,
-      ),
-    );
-  }
-  return markers;
+  final byId = {for (final item in items) item.id: item};
+  return [
+    for (final entry in tripGallery(items, photos: photos))
+      if (_point(entry.attachment.lat, entry.attachment.lon) case final at?)
+        MapPhoto(
+          attachmentId: entry.attachment.id,
+          position: at,
+          itemId: entry.attachment.itemId,
+          groupId: entry.attachment.groupId,
+          colorValue: byId[entry.attachment.itemId]?.colorValue,
+        ),
+  ];
 }
 
 LatLng? _point(double? lat, double? lon) =>
