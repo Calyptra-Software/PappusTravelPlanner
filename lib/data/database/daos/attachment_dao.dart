@@ -316,6 +316,28 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteAttachment(int id) =>
       (delete(attachments)..where((a) => a.id.equals(id))).go();
 
+  /// Writes [orderedIds] as the order they are listed in.
+  ///
+  /// Numbered **per kind**, because that is how they are read: the field shows
+  /// photographs and documents as two lists, and nothing anywhere compares a
+  /// photograph's place against a document's. So reordering one leaves the
+  /// other exactly as it was, and two attachments of one entry may share a
+  /// sort order without meaning anything by it.
+  ///
+  /// The order is not only a list's: it decides which picture a gallery opens
+  /// on, in which order the PDF prints them, and — where nobody has chosen a
+  /// cover — which one the trip's card shows. Dragging a photograph to the
+  /// front of a trip's own is therefore a way of making it the cover, and reads
+  /// as one.
+  Future<void> reorderAttachments(List<int> orderedIds) {
+    return transaction(() async {
+      for (var i = 0; i < orderedIds.length; i++) {
+        await (update(attachments)..where((a) => a.id.equals(orderedIds[i])))
+            .write(AttachmentsCompanion(sortOrder: Value(i)));
+      }
+    });
+  }
+
   Future<void> renameAttachment(int id, String? name) =>
       (update(attachments)..where((a) => a.id.equals(id))).write(
         AttachmentsCompanion(name: Value(name)),

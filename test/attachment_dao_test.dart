@@ -402,6 +402,96 @@ void main() {
     });
   });
 
+  group('reordering', () {
+    test('writes the order it is given', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      final first = await db.attachmentDao.addAttachment(
+        ticket(name: 'a.pdf'),
+        itemId: leg,
+      );
+      final second = await db.attachmentDao.addAttachment(
+        ticket(name: 'b.pdf'),
+        itemId: leg,
+      );
+
+      await db.attachmentDao.reorderAttachments([second, first]);
+
+      expect(
+        (await db.attachmentDao.watchAttachmentsForItem(leg).first).map(
+          (a) => a.name,
+        ),
+        ['b.pdf', 'a.pdf'],
+      );
+    });
+
+    test('one kind is renumbered without touching the other', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      final photo1 = await db.attachmentDao.addAttachment(
+        ticket(name: 'p1.jpg', at: const LatLng(1, 1)),
+        itemId: leg,
+      );
+      final photo2 = await db.attachmentDao.addAttachment(
+        ticket(name: 'p2.jpg', at: const LatLng(2, 2)),
+        itemId: leg,
+      );
+      final doc1 = await db.attachmentDao.addAttachment(
+        ticket(name: 'd1.pdf'),
+        itemId: leg,
+      );
+      final doc2 = await db.attachmentDao.addAttachment(
+        ticket(name: 'd2.pdf'),
+        itemId: leg,
+      );
+
+      await db.attachmentDao.reorderAttachments([photo2, photo1]);
+
+      // Numbered per kind, because that is how they are read — two lists, and
+      // nothing anywhere compares a photograph's place against a document's.
+      final rows = await db.attachmentDao.watchAttachmentsForItem(leg).first;
+      final photos = [
+        for (final a in rows)
+          if (a.kind == AttachmentKind.photo) a.name,
+      ];
+      final documents = [
+        for (final a in rows)
+          if (a.kind == AttachmentKind.document) a.name,
+      ];
+      expect(photos, ['p2.jpg', 'p1.jpg']);
+      expect(documents, ['d1.pdf', 'd2.pdf']);
+      expect(doc1, isNot(doc2));
+    });
+
+    test(
+      'the derived cover follows the photograph dragged to the front',
+      () async {
+        final trip = await makeTrip();
+        final leg = await makeLeg(trip);
+        final first = await db.attachmentDao.addAttachment(
+          ticket(name: 'first.jpg', at: const LatLng(1, 1)),
+          itemId: leg,
+        );
+        final second = await db.attachmentDao.addAttachment(
+          ticket(name: 'second.jpg', at: const LatLng(2, 2)),
+          itemId: leg,
+        );
+        final items = await db.itineraryDao.itemsFor(trip);
+
+        await db.attachmentDao.reorderAttachments([second, first]);
+
+        final photos = await db.attachmentDao.watchPhotosForTrip(trip).first;
+        final ordered = tripGallery(items, photos: photos);
+        // Dragging one to the front of the list is a way of making it the cover,
+        // and reads as one — where nobody has named a cover outright.
+        expect(
+          coverPhoto((await db.tripDao.findTrip(trip))!, ordered)!.name,
+          'second.jpg',
+        );
+      },
+    );
+  });
+
   group('the overview cover', () {
     test('a chosen picture is stored, and cleared again', () async {
       final trip = await makeTrip();

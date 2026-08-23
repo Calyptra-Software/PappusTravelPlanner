@@ -429,5 +429,89 @@ void main() {
       expect(find.byIcon(Icons.star_border), findsNothing);
       expect(find.byIcon(Icons.star), findsNothing);
     });
+
+    testWidgets('a photograph is dragged into place, and only its own list '
+        'is renumbered', (tester) async {
+      final leg = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          kind: ItemKind.transport,
+        ),
+      );
+      final first = await db.attachmentDao.addAttachment(
+        prepareAttachment(png(16, 16), name: 'first.jpg'),
+        itemId: leg,
+      );
+      final second = await db.attachmentDao.addAttachment(
+        prepareAttachment(png(16, 16), name: 'second.jpg'),
+        itemId: leg,
+      );
+      final ticket = await db.attachmentDao.addAttachment(
+        prepareAttachment(
+          Uint8List.fromList('%PDF'.codeUnits),
+          name: 'ticket.pdf',
+          kind: AttachmentKind.document,
+        ),
+        itemId: leg,
+      );
+      final rows = await (db.select(
+        db.attachments,
+      )..where((a) => a.itemId.equals(leg))).get();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            repositoryProvider.overrideWithValue(repo),
+            itemAttachmentsProvider.overrideWith(
+              (ref, id) => Stream.value(rows),
+            ),
+            tripCoverIdProvider.overrideWith((ref, id) => null),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: AttachmentsField(itemId: leg, coverTripId: tripId),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The second photograph's grip, dragged above the first. A step at a
+      // time: a single `drag` is one synthetic move, which a reorderable list
+      // does not follow.
+      final grips = find.byIcon(Icons.drag_indicator);
+      final gesture = await tester.startGesture(tester.getCenter(grips.at(1)));
+      await tester.pump(const Duration(milliseconds: 600));
+      for (var i = 0; i < 6; i++) {
+        await gesture.moveBy(const Offset(0, -15));
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      final after =
+          await (db.select(db.attachments)
+                ..where((a) => a.itemId.equals(leg))
+                ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
+              .get();
+      final photos = [
+        for (final a in after)
+          if (a.kind == AttachmentKind.photo) a.name,
+      ];
+      expect(photos, ['second.jpg', 'first.jpg']);
+      expect(first, isNot(second));
+
+      // The documents list is numbered on its own and was not touched.
+      final document = after.firstWhere((a) => a.id == ticket);
+      expect(document.sortOrder, 2);
+    });
   });
 }

@@ -262,6 +262,10 @@ class TripRepository {
   Future<int> deleteAttachment(int id) =>
       _db.attachmentDao.deleteAttachment(id);
 
+  /// The order one entry's photographs — or its documents — are listed in.
+  Future<void> reorderAttachments(List<int> orderedIds) =>
+      _db.attachmentDao.reorderAttachments(orderedIds);
+
   Future<void> renameAttachment(int id, String? name) =>
       _db.attachmentDao.renameAttachment(id, name);
 

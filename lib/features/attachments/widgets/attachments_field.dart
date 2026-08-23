@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/byte_format.dart';
+import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
@@ -141,6 +142,7 @@ class AttachmentsField extends ConsumerWidget {
             ? l10n.photosTitle
             : l10n.documentsTitle,
         attachments: of(kind),
+        onReorder: (ids) => _reorder(ref, ids),
         coverTripId: kind == AttachmentKind.photo
             ? (coverTripId ?? tripId)
             : null,
@@ -165,6 +167,7 @@ class AttachmentsField extends ConsumerWidget {
         _Section(
           title: l10n.photosTitle,
           attachments: of(AttachmentKind.photo),
+          onReorder: (ids) => _reorder(ref, ids),
           // Only here. A document is not the trip's photograph, so a gallery of
           // documents offers no star: `coverPhoto` resolves against the trip's
           // photographs, and one chosen there would be looked up, not found,
@@ -178,12 +181,17 @@ class AttachmentsField extends ConsumerWidget {
         _Section(
           title: l10n.documentsTitle,
           attachments: of(AttachmentKind.document),
+          onReorder: (ids) => _reorder(ref, ids),
           addLabel: l10n.attachmentsAddFile,
           addIcon: Icons.attach_file,
           onAdd: () => _add(context, ref, AttachmentKind.document),
         ),
       ],
     );
+  }
+
+  void _reorder(WidgetRef ref, List<int> orderedIds) {
+    ref.read(repositoryProvider).reorderAttachments(orderedIds);
   }
 
   void _add(BuildContext context, WidgetRef ref, AttachmentKind kind) {
@@ -211,11 +219,15 @@ class _Section extends StatelessWidget {
     required this.addLabel,
     required this.addIcon,
     required this.onAdd,
+    required this.onReorder,
     this.coverTripId,
   });
 
   final String title;
   final List<Attachment> attachments;
+
+  /// Called with this section's ids in their new order.
+  final ValueChanged<List<int>> onReorder;
 
   /// The trip whose cover a picture here may become, or null for no star.
   final int? coverTripId;
@@ -251,23 +263,53 @@ class _Section extends StatelessWidget {
             ],
           ],
         ),
-        for (final attachment in attachments)
-          AttachmentTile(
-            attachment: attachment,
-            // A picture opens the gallery of *this section*, at itself; a file
-            // nothing can draw opens the sheet, there being nothing to leaf
-            // through.
-            onTap: () => attachment.isViewable
-                ? showGallery(
-                    context,
-                    photos: [
-                      for (final a in viewable) GalleryPhoto(attachment: a),
-                    ],
-                    initialIndex: viewable.indexOf(attachment),
-                    tripId: coverTripId,
-                  )
-                : showAttachmentSheet(context, attachment),
-          ),
+        // Draggable, because the order is the user's and it is read in several
+        // places: which picture a gallery opens on, what the PDF prints first,
+        // and — where nobody has chosen one — which photograph the trip's card
+        // shows. An explicit handle rather than a long press on the row: the
+        // row's own tap opens the picture, and the two gestures would race.
+        ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          buildDefaultDragHandles: false,
+          itemCount: attachments.length,
+          // `newIndex` already accounts for the removal at `oldIndex`.
+          onReorderItem: (oldIndex, newIndex) {
+            final ids = [for (final a in attachments) a.id];
+            ids.insert(newIndex, ids.removeAt(oldIndex));
+            onReorder(ids);
+          },
+          itemBuilder: (context, index) {
+            final attachment = attachments[index];
+            return AttachmentTile(
+              key: ValueKey(attachment.id),
+              attachment: attachment,
+              // A picture opens the gallery of *this section*, at itself; a
+              // file nothing can draw opens the sheet, there being nothing to
+              // leaf through.
+              onTap: () => attachment.isViewable
+                  ? showGallery(
+                      context,
+                      photos: [
+                        for (final a in viewable) GalleryPhoto(attachment: a),
+                      ],
+                      initialIndex: viewable.indexOf(attachment),
+                      tripId: coverTripId,
+                    )
+                  : showAttachmentSheet(context, attachment),
+              dragHandle: ReorderableDragStartListener(
+                index: index,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Icon(
+                    Icons.drag_indicator,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
         Align(
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
@@ -287,10 +329,18 @@ class _Section extends StatelessWidget {
 /// whole reason one is kept beside it — and a document shows an icon, because
 /// there is nothing else it can honestly show.
 class AttachmentTile extends StatelessWidget {
-  const AttachmentTile({super.key, required this.attachment, this.onTap});
+  const AttachmentTile({
+    super.key,
+    required this.attachment,
+    this.onTap,
+    this.dragHandle,
+  });
 
   final Attachment attachment;
   final VoidCallback? onTap;
+
+  /// The grip that reorders this row, when the list it is in can be reordered.
+  final Widget? dragHandle;
 
   @override
   Widget build(BuildContext context) {
@@ -329,13 +379,18 @@ class AttachmentTile extends StatelessWidget {
       ),
       // A pin and nothing more: that the photo has a position is worth showing
       // in a list, where it came from is not — that is a question for the sheet.
-      trailing: positioned
-          ? Icon(
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (positioned)
+            Icon(
               Icons.place_outlined,
               size: 18,
               color: theme.colorScheme.onSurfaceVariant,
-            )
-          : null,
+            ),
+          ?dragHandle,
+        ],
+      ),
       onTap: onTap,
     );
   }
