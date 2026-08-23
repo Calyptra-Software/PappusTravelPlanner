@@ -251,6 +251,7 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
           attachment: attachment,
           ownerDate: item?.date,
           ownerSortOrder: item?.sortOrder ?? 0,
+          viaGroup: attachment.groupId != null,
         );
         final held = best[attachment.id];
         if (held == null || candidate.compareTo(held) < 0) {
@@ -545,6 +546,7 @@ final class CoverCandidate implements Comparable<CoverCandidate> {
     required this.attachment,
     this.ownerDate,
     this.ownerSortOrder = 0,
+    this.viaGroup = false,
   });
 
   final int tripId;
@@ -552,10 +554,14 @@ final class CoverCandidate implements Comparable<CoverCandidate> {
   final DateTime? ownerDate;
   final int ownerSortOrder;
 
+  /// Whether this hangs on the **run** rather than on the entry, which decides
+  /// the order between the two where they meet — see [compareTo].
+  final bool viaGroup;
+
   /// The order `tripGallery` would list these in: the trip's own first, then by
-  /// the day and place of the entry they hang on, then by their own order
-  /// within it. Ties fall back to the id, so the answer never depends on the
-  /// order rows happened to come back in.
+  /// the day and place of the entry they hang on, a run's before that entry's
+  /// own, then by their order within their owner. Ties fall back to the id, so
+  /// the answer never depends on the order rows happened to come back in.
   @override
   int compareTo(CoverCandidate other) {
     if (tripId != other.tripId) return tripId.compareTo(other.tripId);
@@ -567,6 +573,13 @@ final class CoverCandidate implements Comparable<CoverCandidate> {
       if (byDay != 0) return byDay;
       final byPlace = ownerSortOrder.compareTo(other.ownerSortOrder);
       if (byPlace != 0) return byPlace;
+      // A run's own photographs come before those of the entry it begins at,
+      // which is where `tripGallery` puts them: it lists the run when it
+      // reaches its first member, and that member's own afterwards. The two
+      // meet at exactly one position and nowhere else, which is why this looks
+      // like a detail and is not — with a picture on a leg and a picture on the
+      // run it belongs to, it is the whole difference between two answers.
+      if (viaGroup != other.viaGroup) return viaGroup ? -1 : 1;
     }
     final byOwn = attachment.sortOrder.compareTo(other.attachment.sortOrder);
     return byOwn != 0 ? byOwn : attachment.id.compareTo(other.attachment.id);
