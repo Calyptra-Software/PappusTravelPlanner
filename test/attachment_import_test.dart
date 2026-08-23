@@ -59,23 +59,34 @@ Uint8List _photoAt({
 }
 
 /// A JPEG as **Android** hands one over to an app without
-/// `ACCESS_MEDIA_LOCATION`: the two coordinates gone, everything else about the
-/// GPS reading left exactly where the camera put it.
+/// `ACCESS_MEDIA_LOCATION`: every GPS tag still in place, every value zeroed.
 ///
-/// Built from the real thing — `IMG_20260823_151148.jpg` off a SHIFTphone 8,
-/// which reached the Linux build with its position and the Android build
-/// without it. `exiftool` on the redacted side shows `GPSLatitudeRef`,
-/// `GPSLongitudeRef`, `GPSTimeStamp` and `GPSDateStamp` and no coordinates,
-/// which is what this reproduces.
+/// Built from the real thing. `IMG_20260823_151148.jpg` off a SHIFTphone 8
+/// reached the Linux build with its position and the Android build without it;
+/// the copy that came back through the app is byte-for-byte the same length as
+/// the original and differs in exactly 32 bytes. `exiftool` reads the GPS
+/// group as present and empty: the coordinates read as `0, 0` and the
+/// hemisphere refs are a NUL byte where the letter was. That pair is what this
+/// reproduces, and what tells it from a camera that really stood on Null
+/// Island — which writes the letter.
 Uint8List _photoWithLocationRedacted() {
   final image = _canvas(40, 30);
   final gps = image.exif.gpsIfd;
-  gps['GPSLatitudeRef'] = img.IfdValueAscii('N');
-  gps['GPSLongitudeRef'] = img.IfdValueAscii('E');
-  gps['GPSTimeStamp'] = _dms(13, 11, 48);
-  gps['GPSDateStamp'] = img.IfdValueAscii('2026:08:23');
+  gps['GPSLatitudeRef'] = img.IfdValueAscii('\u0000');
+  gps['GPSLatitude'] = _zeroed();
+  gps['GPSLongitudeRef'] = img.IfdValueAscii('\u0000');
+  gps['GPSLongitude'] = _zeroed();
+  gps['GPSTimeStamp'] = _zeroed();
   return img.encodeJpg(image);
 }
+
+/// Three rationals of `0/0` — eight zero bytes each, which is all redaction
+/// leaves behind and something no camera writes.
+img.IfdValueRational _zeroed() => _rationals([
+  [0, 0],
+  [0, 0],
+  [0, 0],
+]);
 
 /// The other door: *Add file*, which keeps what it is given.
 PreparedAttachment document(
@@ -210,10 +221,10 @@ void main() {
         expect(prepared.locationRedacted, isFalse);
       });
 
-      test('nor is a reading this app refuses', () {
-        // `0,0` is turned down because a camera with no fix writes zeros, but
-        // the coordinates are *there* — the system withheld nothing, so this
-        // asks after the coordinates rather than after the answer.
+      test('nor is a genuine reading of zero, which is a different zero', () {
+        // `0/1` is a real coordinate that happens to be a lie, and
+        // `exifPosition` refuses it on its own account. Redaction leaves `0/0`
+        // — not a number at all — which is what tells the two apart.
         final prepared = prepareAttachment(
           _photoAt(
             latDeg: 0,

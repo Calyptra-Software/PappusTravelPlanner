@@ -333,25 +333,50 @@ LatLng? exifPosition(img.ExifData exif) {
 /// Whether the coordinates were taken out of this photograph on the way in.
 ///
 /// Android has done this since version 10: a photograph handed to an app that
-/// does not hold `ACCESS_MEDIA_LOCATION` arrives with `GPSLatitude` and
-/// `GPSLongitude` removed — and **only** those two. The refs and the GPS
-/// timestamps are left behind, which is what makes the state recognizable
-/// rather than merely absent: a camera that had no fix writes no GPS IFD worth
-/// the name, while a redacted file says north-and-east of nothing at all.
+/// does not hold `ACCESS_MEDIA_LOCATION` arrives without its position. What it
+/// does *not* do is rewrite the file — measured on a real one, the redacted
+/// copy is byte-for-byte the same length as the original and differs in exactly
+/// **32 bytes**. The GPS tags all survive; their values are overwritten with
+/// zeros in place, which for a coordinate means three rationals of `0/0`.
 ///
-/// Distinguishing the two is the whole point. Both end with no position, but
-/// one is "this photograph does not know where it was taken" and the other is
-/// "the system knows and would not say" — and only the second is worth
-/// mentioning to the user, who otherwise watches a photograph they took on
-/// holiday attach itself with no place and no reason given.
+/// So the state to recognize is not an absence but a **zero that is too
+/// complete**: coordinates that are there and read as `0, 0`, next to
+/// hemisphere refs that are there and say nothing. A camera writes the letter
+/// even when it has nothing else — see [_blankRef], which is the part of the
+/// signature that survives the decoder.
 ///
-/// A refused reading is deliberately *not* redaction: `exifPosition` turns down
-/// `0,0` and anything off the globe, and those files do carry coordinates. So
-/// this asks after the coordinates themselves, not after the answer.
+/// Distinguishing this from "this photograph never knew" is the whole point.
+/// Both end with no position, but one is a fact about the picture and the other
+/// is the system declining to say — and only the second is worth telling the
+/// user, who otherwise watches a holiday photograph attach itself with no place
+/// and no reason given, and goes looking for the bug in the app.
 bool exifLocationRedacted(img.ExifData exif) {
   final gps = exif.gpsIfd;
-  if (gps['GPSLatitude'] != null || gps['GPSLongitude'] != null) return false;
-  return gps['GPSLatitudeRef'] != null && gps['GPSLongitudeRef'] != null;
+  final latitude = _degrees(gps['GPSLatitude']);
+  final longitude = _degrees(gps['GPSLongitude']);
+  // No coordinates at all is a photograph that never knew, not one that was
+  // emptied: redaction overwrites what is there and adds nothing.
+  if (latitude == null || longitude == null) return false;
+  if (latitude != 0 || longitude != 0) return false;
+  return _blankRef(gps['GPSLatitudeRef']) && _blankRef(gps['GPSLongitudeRef']);
+}
+
+/// Whether a hemisphere reference has been emptied.
+///
+/// This is what separates redaction from a camera that really did stand on
+/// Null Island: the coordinates read as zero either way — `exifPosition`
+/// refuses both, and rightly — but a camera always writes `N` or `S`, and the
+/// zeroing leaves a NUL byte where the letter was.
+///
+/// The letter is read rather than the rationals' denominators, which would say
+/// it more directly (`0/0` against `0/1`): the decoder hands GPS coordinates
+/// back as `IfdValueSRational`, which does not override `toRational`, so the
+/// base class answers a flat `0/1` for every part and the distinction is gone
+/// before it can be read. `toDouble` flattens it the same way. What survives
+/// the decoder intact is the ref.
+bool _blankRef(img.IfdValue? ref) {
+  final text = ref?.toString().replaceAll('\u0000', '').trim();
+  return text == null || text.isEmpty;
 }
 
 /// Degrees, minutes and seconds as EXIF stores them — three rationals — folded

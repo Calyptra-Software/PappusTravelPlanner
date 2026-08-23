@@ -68,8 +68,9 @@ sheet — carries the position only in the sense that the app knows it; the byte
 handed out are the stripped ones.
 
 On **Android** there is usually nothing to read: since Android 10 the system
-removes the coordinates from a photograph before handing it to an app that does
+zeroes the coordinates in a photograph before handing it to an app that does
 not hold `ACCESS_MEDIA_LOCATION`, and this app does not ask for that permission.
+It applies to both ways of attaching a file, so there is no route around it here.
 Such a photograph is attached without a position, and the app says so rather
 than leaving it unexplained. Whether to ask for the permission is an open
 question and not an oversight — its scope is every photograph in the shared

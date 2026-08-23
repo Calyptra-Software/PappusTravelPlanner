@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -189,11 +191,28 @@ void main() {
     /// only those — the refs and the timestamps left where the camera put
     /// them. Taken from a real file that reached the Linux build with its
     /// position and the Android build without it.
+    /// Three EXIF rationals of zero, which is what the zeroing leaves where a
+    /// coordinate was. Built as bytes because `IfdDirectory`'s convenience
+    /// setter resolves a GPS tag name against the *image* tag table and drops
+    /// the value — the same reason `attachment_import_test.dart` does it here.
+    img.IfdValueRational zeroed() {
+      final data = ByteData(24);
+      return img.IfdValueRational.data(
+        img.InputBuffer(data.buffer.asUint8List()),
+        3,
+      );
+    }
+
     Uint8List redactedPhoto() {
       final image = img.Image(width: 24, height: 18);
       img.fill(image, color: img.ColorRgb8(90, 140, 190));
-      image.exif.gpsIfd['GPSLatitudeRef'] = img.IfdValueAscii('N');
-      image.exif.gpsIfd['GPSLongitudeRef'] = img.IfdValueAscii('E');
+      final gps = image.exif.gpsIfd;
+      // The tags survive and their values do not: coordinates reading `0, 0`
+      // beside refs that are a NUL byte where `N` and `E` were.
+      gps['GPSLatitudeRef'] = img.IfdValueAscii('\u0000');
+      gps['GPSLatitude'] = zeroed();
+      gps['GPSLongitudeRef'] = img.IfdValueAscii('\u0000');
+      gps['GPSLongitude'] = zeroed();
       return img.encodeJpg(image);
     }
 

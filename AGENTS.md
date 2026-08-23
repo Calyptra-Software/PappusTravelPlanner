@@ -1099,15 +1099,28 @@ UI (features/*/presentation, *widgets)
   is already stripped: the same file read on Linux yields a position and on Android
   yields none, which is exactly how this was found. Nothing in the Dart is wrong, and no
   amount of testing it would have shown this.
-  What the app can do is tell the two silences apart. Redaction takes **only** those two
-  tags and leaves the refs and the GPS timestamps standing, so a redacted file says
-  north-and-east of nothing at all, while a camera that had no fix writes no such thing:
-  `exifLocationRedacted` reads that fingerprint and `addAttachments` reports it, ahead of
-  the plain "N files attached" and behind a refusal. Saying it matters more than it
-  sounds — the alternative is a holiday photograph attaching itself with no place and no
-  reason given, which reads as the app having lost it. A **refused** reading is
-  deliberately not redaction: `0,0` and anything off the globe do carry coordinates, so
-  the test asks after the coordinates rather than after the answer.
+  What the app can do is tell the two silences apart, and **how** is worth writing down
+  because two plausible guesses about it were both wrong before the bytes were looked at.
+  Android does not rewrite the file and does not remove the tags: measured on a real
+  photograph, the copy that comes back is byte-for-byte the same length as the original
+  and differs in exactly **32 bytes**. Every GPS tag survives with its value overwritten
+  by zeros. So the state to recognize is not an absence but a zero that is too complete —
+  coordinates that are present and read as `0, 0`, beside hemisphere refs that are present
+  and say nothing. `exifLocationRedacted` tests exactly that pair, and `addAttachments`
+  reports it, ahead of the plain "N files attached" and behind a refusal.
+  The **ref** is what carries the signature, not the coordinates, and that is forced
+  rather than chosen: zeroed bytes read back as rationals of `0/0`, which would say it
+  directly against a camera's `0/1` — but the decoder hands GPS coordinates back as
+  `IfdValueSRational`, which does not override `toRational`, so the base class answers a
+  flat `0/1` for every part and the distinction is gone before any of our code sees it.
+  `toDouble` flattens it the same way. The letter a camera always writes, and the zeroing
+  always takes, is what survives intact. A camera that genuinely stood on Null Island is
+  therefore still not redaction: `exifPosition` refuses its `0, 0` on its own account,
+  and its refs still say `N` and `E`.
+  Both doors redact, so there is no picker to switch to: *Add photo* goes out as
+  `ACTION_GET_CONTENT` and *Add file* as `ACTION_OPEN_DOCUMENT`, and the round trip
+  through the second is how the bytes above were obtained — SAF returned them zeroed
+  too.
   Lifting the redaction needs `ACCESS_MEDIA_LOCATION` and probably
   `MediaStore.setRequireOriginal`, which `file_picker` neither calls nor offers a hook
   for — and it is a fourth permission whose scope is the *whole* shared collection rather
