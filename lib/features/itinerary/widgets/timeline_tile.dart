@@ -396,7 +396,9 @@ class _GroupMenu extends ConsumerWidget {
             // reached where everything else about the run is. A member's form
             // holds that member's own files and cannot speak for the band above
             // it.
-            if (context.mounted) showGroupAttachmentsSheet(context, groupId);
+            if (context.mounted) {
+              showGroupAttachmentsSheet(context, groupId, tripId: tripId);
+            }
           case _GroupAction.ungroup:
             await repo.dissolveGroup(groupId);
           case _GroupAction.move:

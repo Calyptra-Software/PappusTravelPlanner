@@ -11,8 +11,10 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
+import 'package:travelplanner/features/attachments/application/cover_providers.dart';
 import 'package:travelplanner/features/attachments/attachment_flow.dart';
 import 'package:travelplanner/features/attachments/attachment_import.dart';
+import 'package:travelplanner/features/attachments/presentation/gallery_screen.dart';
 import 'package:travelplanner/features/attachments/widgets/attachments_field.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -268,6 +270,7 @@ void main() {
       required String name,
       AttachmentKind kind = AttachmentKind.photo,
       LatLng? at,
+      bool image = false,
     }) => Attachment(
       id: id,
       itemId: itemId,
@@ -275,6 +278,8 @@ void main() {
       mimeType: kind == AttachmentKind.photo ? 'image/jpeg' : 'application/pdf',
       name: name,
       byteSize: 2048,
+      // What says a document can be looked at: the bytes decoded on the way in.
+      width: kind == AttachmentKind.photo || image ? 40 : null,
       lat: at?.latitude,
       lon: at?.longitude,
       positionSource: at == null ? null : AttachmentPositionSource.exif,
@@ -293,6 +298,9 @@ void main() {
             itemAttachmentsProvider.overrideWith(
               (ref, id) => Stream.value(attachments),
             ),
+            // The gallery's star resolves the trip's current cover, which walks
+            // three drift streams to get there — the teardown timer again.
+            tripCoverIdProvider.overrideWith((ref, id) => null),
           ],
           child: MaterialApp(
             localizationsDelegates: const [
@@ -302,7 +310,9 @@ void main() {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(body: AttachmentsField(itemId: itemId)),
+            home: Scaffold(
+              body: AttachmentsField(itemId: itemId, coverTripId: tripId),
+            ),
           ),
         ),
       );
@@ -382,6 +392,42 @@ void main() {
       ]);
 
       expect(find.byIcon(Icons.insert_drive_file_outlined), findsOneWidget);
+    });
+
+    testWidgets('a photograph here can still be made the trip cover', (
+      tester,
+    ) async {
+      await pumpField(tester, [row(id: 1, name: 'view.jpg')]);
+
+      await tester.tap(find.text('view.jpg'));
+      await tester.pumpAndSettle();
+
+      // The star needs to know *which* trip, and an attachment names one of
+      // three owners — only one of which is the trip. The form hands it in.
+      expect(find.byIcon(Icons.star_border), findsOneWidget);
+    });
+
+    testWidgets('a picture filed as a document cannot be, and shows no star', (
+      tester,
+    ) async {
+      await pumpField(tester, [
+        row(
+          id: 1,
+          name: 'ticket.png',
+          kind: AttachmentKind.document,
+          image: true,
+        ),
+      ]);
+
+      await tester.tap(find.text('ticket.png'));
+      await tester.pumpAndSettle();
+
+      // It opens — a picture filed as a document is still something to look at
+      // — but it is not one of the trip's photographs, and `coverPhoto` would
+      // never find it again.
+      expect(find.byType(GalleryScreen), findsOneWidget);
+      expect(find.byIcon(Icons.star_border), findsNothing);
+      expect(find.byIcon(Icons.star), findsNothing);
     });
   });
 }

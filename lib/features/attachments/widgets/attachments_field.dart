@@ -37,8 +37,14 @@ Future<void> showGroupDocumentsSheet(BuildContext context, int groupId) =>
 /// A sheet of its own rather than a section of some member's form: a run has no
 /// form, and picking one of its legs to hold the shared ticket would be the same
 /// accident the group menu exists to undo.
-Future<void> showGroupAttachmentsSheet(BuildContext context, int groupId) =>
-    _showAttachmentsSheet(context, AttachmentsField(groupId: groupId));
+Future<void> showGroupAttachmentsSheet(
+  BuildContext context,
+  int groupId, {
+  int? tripId,
+}) => _showAttachmentsSheet(
+  context,
+  AttachmentsField(groupId: groupId, coverTripId: tripId),
+);
 
 /// The frame all three share: a scrolling sheet holding one field.
 Future<void> _showAttachmentsSheet(BuildContext context, Widget field) {
@@ -79,6 +85,7 @@ class AttachmentsField extends ConsumerWidget {
     this.groupId,
     this.tripId,
     this.only,
+    this.coverTripId,
   }) : assert(
          (itemId == null ? 0 : 1) +
                  (groupId == null ? 0 : 1) +
@@ -96,6 +103,15 @@ class AttachmentsField extends ConsumerWidget {
   /// from the timeline sets it, since the photographs there are already one tap
   /// away in the gallery beside it.
   final AttachmentKind? only;
+
+  /// The trip a gallery opened from the **Photos** section belongs to, so it
+  /// can offer the cover star. Null leaves the star off.
+  ///
+  /// It has to be handed in because an attachment names one of three owners and
+  /// only one of them is the trip: an entry or a run knows its trip, this widget
+  /// does not. A trip-level field needs no argument — it *is* the trip, and
+  /// [tripId] answers.
+  final int? coverTripId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,6 +141,9 @@ class AttachmentsField extends ConsumerWidget {
             ? l10n.photosTitle
             : l10n.documentsTitle,
         attachments: of(kind),
+        coverTripId: kind == AttachmentKind.photo
+            ? (coverTripId ?? tripId)
+            : null,
         addLabel: kind == AttachmentKind.photo
             ? l10n.attachmentsAddPhoto
             : l10n.attachmentsAddFile,
@@ -146,6 +165,11 @@ class AttachmentsField extends ConsumerWidget {
         _Section(
           title: l10n.photosTitle,
           attachments: of(AttachmentKind.photo),
+          // Only here. A document is not the trip's photograph, so a gallery of
+          // documents offers no star: `coverPhoto` resolves against the trip's
+          // photographs, and one chosen there would be looked up, not found,
+          // and silently fall back to the derived picture.
+          coverTripId: coverTripId ?? tripId,
           addLabel: l10n.attachmentsAddPhoto,
           addIcon: Icons.add_photo_alternate_outlined,
           onAdd: () => _add(context, ref, AttachmentKind.photo),
@@ -187,10 +211,14 @@ class _Section extends StatelessWidget {
     required this.addLabel,
     required this.addIcon,
     required this.onAdd,
+    this.coverTripId,
   });
 
   final String title;
   final List<Attachment> attachments;
+
+  /// The trip whose cover a picture here may become, or null for no star.
+  final int? coverTripId;
   final String addLabel;
   final IconData addIcon;
   final VoidCallback onAdd;
@@ -228,9 +256,7 @@ class _Section extends StatelessWidget {
             attachment: attachment,
             // A picture opens the gallery of *this section*, at itself; a file
             // nothing can draw opens the sheet, there being nothing to leaf
-            // through. No `tripId` either way: a gallery opened here is about
-            // one entry's files, and a document is not the trip's photograph,
-            // so the cover star has no business in it.
+            // through.
             onTap: () => attachment.isViewable
                 ? showGallery(
                     context,
@@ -238,6 +264,7 @@ class _Section extends StatelessWidget {
                       for (final a in viewable) GalleryPhoto(attachment: a),
                     ],
                     initialIndex: viewable.indexOf(attachment),
+                    tripId: coverTripId,
                   )
                 : showAttachmentSheet(context, attachment),
           ),

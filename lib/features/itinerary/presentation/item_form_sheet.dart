@@ -735,18 +735,26 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     prefixIcon: const Icon(Icons.notes),
                   ),
                 ),
-                // After the note, because it is the same kind of thing: what
-                // this entry carries beyond the plan itself. On an existing
-                // entry only, for the reason the track field is — a file hangs
-                // off a row, and a form being filled in has none yet.
                 if (_isEditing) ...[
-                  const SizedBox(height: 20),
-                  AttachmentsField(itemId: widget.existing!.id),
                   const SizedBox(height: 20),
                   _GroupingAndCosts(
                     tripId: widget.tripId,
                     itemId: widget.existing!.id,
                     localeName: localeName,
+                  ),
+                  // Last, below the money: the fields above are the plan and
+                  // what it cost, which is what this form is opened to change.
+                  // Files are what has accumulated *around* the entry, and two
+                  // headed sections of them between the note and the expenses
+                  // pushed the latter off the screen. On an existing entry
+                  // only, for the reason the track field is — a file hangs off
+                  // a row, and a form being filled in has none yet.
+                  const SizedBox(height: 20),
+                  AttachmentsField(
+                    itemId: widget.existing!.id,
+                    // So the gallery opened from here can offer the cover star:
+                    // an entry knows its trip, the field does not.
+                    coverTripId: widget.tripId,
                   ),
                 ],
                 const SizedBox(height: 20),
