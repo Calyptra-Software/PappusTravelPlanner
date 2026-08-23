@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.9.0 — 2026-08-23
 
 - **Photos and files on a plan.** A photograph or a document can hang on a single
   entry, on a group, or on the whole trip — the same three things a cost hangs
