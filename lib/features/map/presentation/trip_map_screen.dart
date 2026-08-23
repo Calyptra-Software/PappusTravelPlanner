@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +12,9 @@ import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../attachments/application/attachment_providers.dart';
 import '../../attachments/presentation/attachment_sheet.dart';
+import '../../attachments/presentation/gallery_screen.dart';
+import '../../attachments/trip_gallery.dart';
+import '../photo_clusters.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/live_items.dart';
@@ -170,16 +175,28 @@ class _MapViewState extends ConsumerState<_MapView> {
     );
   }
 
-  /// What a photo marker is for: the picture itself, at the size the app kept
-  /// it, with its name, its position and the ways to change either.
+  /// What a photo marker is for.
   ///
-  /// The same sheet the entry's form opens. A photo is one thing wherever it is
-  /// reached from, and a second, map-only viewer would be a second place to keep
-  /// the delete confirmation right.
-  void _showPhoto(int attachmentId) {
-    final photo = widget.photosById[attachmentId];
-    if (photo == null) return;
-    showAttachmentSheet(context, photo);
+  /// One picture opens the sheet that owns the acts on it — the same one the
+  /// entry's form opens, since a photograph is one thing wherever it is reached
+  /// from, and the position controls live there, which is what a pin was tapped
+  /// to ask about. Several, gathered under one thumbnail, open the gallery
+  /// instead: the question there is "what are these", and a sheet can only
+  /// answer for one of them.
+  void _showPhotos(PhotoCluster cluster) {
+    final rows = [
+      for (final photo in cluster.photos)
+        ?widget.photosById[photo.attachmentId],
+    ];
+    if (rows.isEmpty) return;
+    if (rows.length == 1) {
+      showAttachmentSheet(context, rows.single);
+      return;
+    }
+    showGallery(
+      context,
+      photos: [for (final row in rows) GalleryPhoto(attachment: row)],
+    );
   }
 
   @override
@@ -329,26 +346,11 @@ class _MapViewState extends ConsumerState<_MapView> {
             // among it: a picture is bigger than a pin and would cover the
             // entry it is about if the two were interleaved by list order.
             // Still below the device's mark, which has to stay findable.
-            MarkerLayer(
-              markers: [
-                for (final photo in features.photos)
-                  Marker(
-                    point: photo.position,
-                    width: 44,
-                    height: 44,
-                    child: _Tappable(
-                      onTap: () => _showPhoto(photo.attachmentId),
-                      child: MapPhotoMarker(
-                        thumbnail:
-                            widget.photosById[photo.attachmentId]?.thumbnail,
-                        // A photo is never "under way": it records a moment
-                        // that has passed, so it takes its entry's color or the
-                        // trip's and never the reserved red.
-                        color: colorOf(photo.colorValue, happening: false),
-                      ),
-                    ),
-                  ),
-              ],
+            _PhotoMarkers(
+              photos: features.photos,
+              photosById: widget.photosById,
+              colorOf: colorOf,
+              onTap: _showPhotos,
             ),
             // Above the plan's own marks: the question it answers ("where am I
             // in all this") is asked *of* them, so it must not end up under one.
@@ -470,4 +472,69 @@ class _Tappable extends StatelessWidget {
     behavior: HitTestBehavior.opaque,
     child: child,
   );
+}
+
+/// The trip's photographs, gathered so that none hides another.
+///
+/// A layer of its own rather than markers in the one above, because it has to
+/// be rebuilt whenever the camera moves: `MapCamera.of(context)` is what makes
+/// that happen, and reading it here keeps the rest of the map from rebuilding
+/// with it.
+///
+/// Which pictures fall together is `clusterPhotos`, measured in screen pixels
+/// through the camera's own projection — so zooming in pulls a cluster apart on
+/// its own, with no threshold in metres to be wrong at some scale.
+class _PhotoMarkers extends StatelessWidget {
+  const _PhotoMarkers({
+    required this.photos,
+    required this.photosById,
+    required this.colorOf,
+    required this.onTap,
+  });
+
+  final List<MapPhoto> photos;
+  final Map<int, Attachment> photosById;
+  final Color Function(int? colorValue, {required bool happening}) colorOf;
+  final ValueChanged<PhotoCluster> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (photos.isEmpty) return const SizedBox.shrink();
+    final camera = MapCamera.of(context);
+    final clusters = clusterPhotos(
+      photos,
+      project: (photo) {
+        final offset = camera.latLngToScreenOffset(photo.position);
+        return math.Point<double>(offset.dx, offset.dy);
+      },
+    );
+
+    return MarkerLayer(
+      markers: [
+        for (final cluster in clusters)
+          Marker(
+            point: cluster.representative.position,
+            width: kPhotoMarkerSize + 8,
+            height: kPhotoMarkerSize + 8,
+            child: _Tappable(
+              onTap: () => onTap(cluster),
+              child: Center(
+                child: MapPhotoMarker(
+                  thumbnail: photosById[cluster.representative.attachmentId]
+                      ?.thumbnail,
+                  // A photo is never "under way": it records a moment that has
+                  // passed, so it takes its entry's color or the trip's and
+                  // never the reserved red.
+                  color: colorOf(
+                    cluster.representative.colorValue,
+                    happening: false,
+                  ),
+                  count: cluster.count,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }

@@ -292,6 +292,13 @@ class MapPlacePin extends StatelessWidget {
   );
 }
 
+/// How large a photograph is drawn on the map.
+///
+/// Bigger than a pin, because it is a picture and has to be recognisable at a
+/// glance; small enough that a day's worth of them does not bury the plan they
+/// are pinned to.
+const double kPhotoMarkerSize = 56;
+
 /// A photo, as a marker: the thumbnail the import stored, framed.
 ///
 /// The frame is what makes it a mark rather than a picture lying on the map —
@@ -309,7 +316,8 @@ class MapPhotoMarker extends StatelessWidget {
     super.key,
     required this.thumbnail,
     required this.color,
-    this.size = 40,
+    this.size = kPhotoMarkerSize,
+    this.count = 1,
   });
 
   /// The stored thumbnail, or null for a photo that somehow has none — drawn as
@@ -318,11 +326,15 @@ class MapPhotoMarker extends StatelessWidget {
   final Color color;
   final double size;
 
+  /// How many photographs this one thumbnail stands for. One draws no badge:
+  /// a "1" beside a picture answers a question nobody asked.
+  final int count;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final bytes = thumbnail;
-    return Container(
+    final frame = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
@@ -346,5 +358,41 @@ class MapPhotoMarker extends StatelessWidget {
             : Image.memory(bytes, fit: BoxFit.cover, gaplessPlayback: true),
       ),
     );
+    if (count < 2) return frame;
+
+    // The count sits on the frame rather than beside it: the mark is already
+    // as wide as it should be for a fingertip, and a badge outside it would
+    // move where the picture appears to be.
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        frame,
+        Positioned(
+          top: -4,
+          right: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: theme.colorScheme.surface, width: 1.5),
+            ),
+            child: Text(
+              '$count',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: _readableOn(color),
+                fontWeight: FontWeight.w700,
+                height: 1.1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
+
+  /// Black or white, whichever the badge's own colour can be read against — the
+  /// frame takes the entry's colour, and that is the user's to pick.
+  Color _readableOn(Color background) =>
+      background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 }
