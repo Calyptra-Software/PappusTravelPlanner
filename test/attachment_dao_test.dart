@@ -492,6 +492,147 @@ void main() {
     );
   });
 
+  group('what the overview card derives', () {
+    Future<int> makePlace(
+      int tripId, {
+      required int sortOrder,
+      DateTime? day,
+    }) => db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day ?? DateTime(2026, 5, 1),
+        kind: ItemKind.place,
+        sortOrder: Value(sortOrder),
+      ),
+    );
+
+    Future<Attachment?> cardCover(int tripId) async {
+      final candidates = await db.attachmentDao.watchCoverCandidates().first;
+      final trip = (await db.tripDao.findTrip(tripId))!;
+      return coverPhoto(trip, [
+        for (final c in candidates)
+          if (c.tripId == tripId) GalleryPhoto(attachment: c.attachment),
+      ]);
+    }
+
+    Future<Attachment?> stripCover(int tripId) async {
+      final trip = (await db.tripDao.findTrip(tripId))!;
+      final photos = await db.attachmentDao.watchPhotosForTrip(tripId).first;
+      // The live rule, which the strip applies in Dart before handing the
+      // entries to `tripGallery` — the card's query states it in SQL instead,
+      // and the point of these tests is that the two agree.
+      final chosen = {
+        for (final branch in await db.select(db.alternatives).get())
+          if (branch.chosen) branch.id,
+      };
+      final items = [
+        for (final item in await db.itineraryDao.itemsFor(tripId))
+          if (item.alternativeId == null || chosen.contains(item.alternativeId))
+            item,
+      ];
+      return coverPhoto(trip, tripGallery(items, photos: photos));
+    }
+
+    test('is the plan\'s first picture, not the one added first', () async {
+      final trip = await makeTrip();
+      final first = await makePlace(trip, sortOrder: 0);
+      final second = await makePlace(trip, sortOrder: 1);
+      // Attached to the *later* entry first, which is what used to decide it.
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'later.jpg', at: const LatLng(2, 2)),
+        itemId: second,
+      );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'earlier.jpg', at: const LatLng(1, 1)),
+        itemId: first,
+      );
+
+      expect((await cardCover(trip))!.name, 'earlier.jpg');
+      // And the card and the star agree, which is the whole point: they used
+      // to derive from two different orders and only said so out loud when a
+      // named cover was deleted.
+      expect((await stripCover(trip))!.name, 'earlier.jpg');
+    });
+
+    test("the trip's own picture comes before its days'", () async {
+      final trip = await makeTrip();
+      final place = await makePlace(trip, sortOrder: 0);
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'day-one.jpg', at: const LatLng(1, 1)),
+        itemId: place,
+      );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'the-trip.jpg', at: const LatLng(2, 2)),
+        tripId: trip,
+      );
+
+      expect((await cardCover(trip))!.name, 'the-trip.jpg');
+      expect((await stripCover(trip))!.name, 'the-trip.jpg');
+    });
+
+    test('a picture in an option nobody chose never reaches a card', () async {
+      final trip = await makeTrip();
+      final set = await db
+          .into(db.alternativeSets)
+          .insert(
+            AlternativeSetsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+            ),
+          );
+      final branch = await db
+          .into(db.alternatives)
+          .insert(AlternativesCompanion.insert(setId: set));
+      final inBranch = await db
+          .into(db.itineraryItems)
+          .insert(
+            ItineraryItemsCompanion.insert(
+              tripId: trip,
+              date: DateTime(2026, 5, 1),
+              kind: ItemKind.place,
+              alternativeId: Value(branch),
+            ),
+          );
+      await db.attachmentDao.addAttachment(
+        ticket(name: 'not-taken.jpg', at: const LatLng(1, 1)),
+        itemId: inBranch,
+      );
+
+      // The live rule is stated in SQL here, unlike everywhere else in the DAO:
+      // this is an all-trips query and no caller holds the entries to check.
+      expect(await cardCover(trip), isNull);
+      expect(await stripCover(trip), isNull);
+    });
+
+    test(
+      'after the named cover is deleted, both fall back to the same one',
+      () async {
+        final trip = await makeTrip();
+        final first = await makePlace(trip, sortOrder: 0);
+        final second = await makePlace(trip, sortOrder: 1);
+        await db.attachmentDao.addAttachment(
+          ticket(name: 'later.jpg', at: const LatLng(2, 2)),
+          itemId: second,
+        );
+        await db.attachmentDao.addAttachment(
+          ticket(name: 'earlier.jpg', at: const LatLng(1, 1)),
+          itemId: first,
+        );
+        final chosen = await db.attachmentDao.addAttachment(
+          ticket(name: 'chosen.jpg', at: const LatLng(3, 3)),
+          itemId: second,
+        );
+        await db.tripDao.setCover(trip, chosen);
+        expect((await cardCover(trip))!.name, 'chosen.jpg');
+
+        await db.attachmentDao.deleteAttachment(chosen);
+
+        expect((await cardCover(trip))!.name, 'earlier.jpg');
+        expect((await stripCover(trip))!.name, 'earlier.jpg');
+      },
+    );
+  });
+
   group('the overview cover', () {
     test('a chosen picture is stored, and cleared again', () async {
       final trip = await makeTrip();

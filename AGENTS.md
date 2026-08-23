@@ -1253,13 +1253,16 @@ UI (features/*/presentation, *widgets)
   `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
   `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and
   `thumbnailsFor` then fetches the handful that were chosen. Fetching every thumbnail to
-  pick a dozen would push megabytes through the stream on every tick. The thumbnail is `kTripCoverSize` square at
+  pick a dozen would push megabytes through the stream on every tick. That query carries
+  each photograph's **place in the plan** and applies the **live rule in SQL**, so the card
+  derives the same picture the strip's star sits on. It did not once: the card ordered by
+  when a photograph was *added* while the strip ordered by where the plan puts it, and the
+  two only said so out loud when a named cover was deleted and both fell back — to
+  different pictures. Stating the rule in SQL here is the `TrackDao._liveTracks` precedent,
+  not a departure: an all-trips query has no caller holding the entries to check against. The thumbnail is `kTripCoverSize` square at
   the card's **trailing** edge, opposite the accent stripe: leading would shift the title of
   every card that has one and leave the list a ragged left edge, or force a placeholder —
-  something invented to fill a space rather than something said. One stated cost: this
-  provider does **not** apply the live rule, since that would mean holding every trip's
-  entries for a picture the size of a fingernail, so a photograph in an unchosen option can
-  reach a card where it reaches no export and no map.
+  something invented to fill a space rather than something said.
 
 - **Deleted space comes back by itself, because a user must not have to ask for it.**
   `AppDatabase._enableAutoVacuum` puts every file on `auto_vacuum = FULL`. SQLite otherwise

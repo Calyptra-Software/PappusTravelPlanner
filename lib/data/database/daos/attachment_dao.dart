@@ -18,7 +18,14 @@ part 'attachment_dao.g.dart';
 /// invariant with no way to express it in the schema, so every write here goes
 /// through [_owner] and no caller assembles a companion of its own.
 @DriftAccessor(
-  tables: [Attachments, AttachmentBlobs, ItineraryItems, ItemGroups, Trips],
+  tables: [
+    Attachments,
+    AttachmentBlobs,
+    ItineraryItems,
+    ItemGroups,
+    Alternatives,
+    Trips,
+  ],
 )
 class AttachmentDao extends DatabaseAccessor<AppDatabase>
     with _$AttachmentDaoMixin {
@@ -182,7 +189,7 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// What every trip's overview card would need to choose a cover from — the
-  /// photos' ids and where each one sits, and **no thumbnails**.
+  /// photographs, where each one sits in its trip's plan, and **no thumbnails**.
   ///
   /// The blob is left out on purpose. There is one query for the whole overview
   /// (a query per card is the thing `watchPositionedItems` and `watchAllTracks`
@@ -192,37 +199,65 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   /// with [thumbnailsFor] — the same metadata-and-payload split
   /// [AttachmentBlobs] makes, one level up.
   ///
-  /// Unfiltered by the live rule, as everything here is: the caller holds the
-  /// entries and `tripGallery` applies it.
+  /// Each row carries the **sort keys of the entry it hangs on**, so the caller
+  /// can put them in the order `tripGallery` would and pick the same first one.
+  /// Without them the card derived its cover from the order photographs were
+  /// *added*, while the strip's star derived it from the order the plan reads
+  /// in — so the two disagreed about which picture the trip's own is, and said
+  /// so out loud the moment a named cover was deleted and both fell back.
+  ///
+  /// The **live rule is applied here**, in SQL, unlike everywhere else in this
+  /// file: this is an all-trips query and the caller has no entries to check
+  /// against. That is the same reason `TrackDao._liveTracks` and
+  /// `CostDao._countsTowardTotals` state it in SQL too.
   Stream<List<CoverCandidate>> watchCoverCandidates() {
     final query =
         select(attachments).join([
-            leftOuterJoin(
-              itineraryItems,
-              itineraryItems.id.equalsExp(attachments.itemId),
-            ),
-            leftOuterJoin(
-              itemGroups,
-              itemGroups.id.equalsExp(attachments.groupId),
-            ),
-          ])
-          ..addColumns([itineraryItems.tripId, itemGroups.tripId])
-          ..where(attachments.kind.equalsValue(AttachmentKind.photo))
-          ..orderBy([
-            OrderingTerm(expression: attachments.sortOrder),
-            OrderingTerm(expression: attachments.id),
-          ]);
+          // A photograph hangs on an entry, on a run, or on the trip. The
+          // first two both resolve to an entry here — a run's through any of
+          // its members, of which the earliest is the one the gallery puts it
+          // beside — so one join answers for both.
+          leftOuterJoin(
+            itineraryItems,
+            itineraryItems.id.equalsExp(attachments.itemId) |
+                itineraryItems.groupId.equalsExp(attachments.groupId),
+          ),
+          leftOuterJoin(
+            itemGroups,
+            itemGroups.id.equalsExp(attachments.groupId),
+          ),
+          leftOuterJoin(
+            alternatives,
+            alternatives.id.equalsExp(itineraryItems.alternativeId),
+          ),
+        ])..where(
+          attachments.kind.equalsValue(AttachmentKind.photo) &
+              (attachments.tripId.isNotNull() |
+                  itineraryItems.alternativeId.isNull() |
+                  alternatives.chosen.equals(true)),
+        );
     return query.watch().map((rows) {
-      final out = <CoverCandidate>[];
+      // A run's photograph comes back once per member; the earliest member is
+      // the place the gallery gives it, so the smallest key wins.
+      final best = <int, CoverCandidate>{};
       for (final row in rows) {
         final attachment = row.readTable(attachments);
+        final item = row.readTableOrNull(itineraryItems);
         final tripId =
-            attachment.tripId ??
-            row.read(itineraryItems.tripId) ??
-            row.read(itemGroups.tripId);
+            attachment.tripId ?? item?.tripId ?? row.read(itemGroups.tripId);
         if (tripId == null) continue;
-        out.add(CoverCandidate(tripId: tripId, attachment: attachment));
+        final candidate = CoverCandidate(
+          tripId: tripId,
+          attachment: attachment,
+          ownerDate: item?.date,
+          ownerSortOrder: item?.sortOrder ?? 0,
+        );
+        final held = best[attachment.id];
+        if (held == null || candidate.compareTo(held) < 0) {
+          best[attachment.id] = candidate;
+        }
       }
+      final out = best.values.toList()..sort();
       return out;
     });
   }
@@ -494,16 +529,48 @@ class AttachmentDao extends DatabaseAccessor<AppDatabase>
   }
 }
 
-/// A photograph that could be a trip's cover, with the trip it belongs to.
+/// A photograph that could be a trip's cover, with the trip it belongs to and
+/// where it sits in that trip's plan.
 ///
 /// The trip is resolved here because an attachment names one of three owners
 /// and only one of them is the trip directly; the other two reach it through
 /// the entry or the run. Carrying the answer means no screen has to join again.
-final class CoverCandidate {
-  const CoverCandidate({required this.tripId, required this.attachment});
+///
+/// [ownerDate] is null for a photograph hanging on the **trip itself**, which
+/// is what sorts it first — the same place `tripGallery` gives it, since the
+/// insurance and the printed map are about the journey rather than a day of it.
+final class CoverCandidate implements Comparable<CoverCandidate> {
+  const CoverCandidate({
+    required this.tripId,
+    required this.attachment,
+    this.ownerDate,
+    this.ownerSortOrder = 0,
+  });
 
   final int tripId;
   final Attachment attachment;
+  final DateTime? ownerDate;
+  final int ownerSortOrder;
+
+  /// The order `tripGallery` would list these in: the trip's own first, then by
+  /// the day and place of the entry they hang on, then by their own order
+  /// within it. Ties fall back to the id, so the answer never depends on the
+  /// order rows happened to come back in.
+  @override
+  int compareTo(CoverCandidate other) {
+    if (tripId != other.tripId) return tripId.compareTo(other.tripId);
+    if ((ownerDate == null) != (other.ownerDate == null)) {
+      return ownerDate == null ? -1 : 1;
+    }
+    if (ownerDate != null) {
+      final byDay = ownerDate!.compareTo(other.ownerDate!);
+      if (byDay != 0) return byDay;
+      final byPlace = ownerSortOrder.compareTo(other.ownerSortOrder);
+      if (byPlace != 0) return byPlace;
+    }
+    final byOwn = attachment.sortOrder.compareTo(other.attachment.sortOrder);
+    return byOwn != 0 ? byOwn : attachment.id.compareTo(other.attachment.id);
+  }
 }
 
 /// How many photographs and how many documents hang on one owner.

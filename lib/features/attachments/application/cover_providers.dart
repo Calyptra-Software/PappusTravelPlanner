@@ -22,13 +22,13 @@ import '../trip_gallery.dart';
 /// of exactly those, a handful of rows. Fetching every thumbnail to choose a
 /// dozen would push megabytes through the stream on every tick.
 ///
-/// The live rule is not applied here, and that is a stated cost: doing it
-/// properly would mean holding every trip's entries, which is a second
-/// all-trips query for a picture the size of a fingernail. A photograph
-/// attached to an option nobody chose can therefore reach a card, where it
-/// would reach no export and no map. If that turns out to matter, the fix is to
-/// read `watchPositionedItems`' sibling rather than to loosen the rule
-/// elsewhere.
+/// The candidates arrive in the order `tripGallery` would list them —
+/// the query carries each photograph's place in the plan for exactly that —
+/// and with the live rule already applied, so the picture a card derives is the
+/// same one the strip's star sits on. It was not, once: the card ordered by
+/// when a photograph was *added* and the strip by where the plan puts it, which
+/// only showed when a named cover was deleted and the two fell back to
+/// different pictures.
 final tripCoversProvider = StreamProvider.autoDispose<Map<int, Uint8List>>((
   ref,
 ) async* {
@@ -41,6 +41,7 @@ final tripCoversProvider = StreamProvider.autoDispose<Map<int, Uint8List>>((
   final byId = {for (final trip in trips) trip.id: trip};
 
   await for (final candidates in repo.watchCoverCandidates()) {
+    // Already in gallery order, so appending keeps it.
     final byTrip = <int, List<GalleryPhoto>>{};
     for (final candidate in candidates) {
       if (!byId.containsKey(candidate.tripId)) continue;
