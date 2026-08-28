@@ -368,6 +368,8 @@
   "trackInvalidFile": "Diese Datei ist kein lesbares GPX",
   "mapZoomIn": "Vergrößern",
   "mapZoomOut": "Verkleinern",
+  "mapFullscreen": "Karte im Vollbild",
+  "mapExitFullscreen": "Vollbild beenden",
   "mapMyLocationShow": "Meine Position anzeigen",
   "mapMyLocationHide": "Meine Position ausblenden",
   "mapUseMyLocation": "Meine Position übernehmen",

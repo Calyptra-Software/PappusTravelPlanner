@@ -1034,6 +1034,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapZoomOut => 'Verkleinern';
 
   @override
+  String get mapFullscreen => 'Karte im Vollbild';
+
+  @override
+  String get mapExitFullscreen => 'Vollbild beenden';
+
+  @override
   String get mapMyLocationShow => 'Meine Position anzeigen';
 
   @override

@@ -1026,6 +1026,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapZoomOut => 'Zoom out';
 
   @override
+  String get mapFullscreen => 'Fullscreen map';
+
+  @override
+  String get mapExitFullscreen => 'Leave fullscreen';
+
+  @override
   String get mapMyLocationShow => 'Show my position';
 
   @override

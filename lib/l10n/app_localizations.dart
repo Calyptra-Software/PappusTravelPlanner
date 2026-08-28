@@ -1820,6 +1820,18 @@ abstract class AppLocalizations {
   /// **'Zoom out'**
   String get mapZoomOut;
 
+  /// Tooltip of the country map's button that opens the map on the whole screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Fullscreen map'**
+  String get mapFullscreen;
+
+  /// Tooltip of the button that closes the fullscreen country map.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave fullscreen'**
+  String get mapExitFullscreen;
+
   /// Tooltip of the map button that switches the device's own position on.
   ///
   /// In en, this message translates to:
