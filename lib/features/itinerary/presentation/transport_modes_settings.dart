@@ -95,15 +95,17 @@ class TransportModesSettings extends ConsumerWidget {
           ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-          child: Row(
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 4,
             children: [
               TextButton.icon(
                 icon: const Icon(Icons.add),
                 label: Text(l10n.transportModeAdd),
                 onPressed: () => _addMode(context, ref),
               ),
-              if (missingBuiltins.isNotEmpty) ...[
-                const Spacer(),
+              if (missingBuiltins.isNotEmpty)
                 PopupMenuButton<TransportMode>(
                   tooltip: l10n.transportModeRestoreBuiltin,
                   onSelected: (mode) => ref
@@ -132,12 +134,11 @@ class TransportModesSettings extends ConsumerWidget {
                       children: [
                         const Icon(Icons.restore, size: 18),
                         const SizedBox(width: 4),
-                        Text(l10n.transportModeRestoreBuiltin),
+                        Flexible(child: Text(l10n.transportModeRestoreBuiltin)),
                       ],
                     ),
                   ),
                 ),
-              ],
             ],
           ),
         ),
