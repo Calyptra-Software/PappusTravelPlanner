@@ -88,6 +88,24 @@ UI (features/*/presentation, *widgets)
   tag/participant ids name rows in *this* database: point the app at another file and a
   stored filter may match nothing, which the filter badge and "clear filters" are the way
   back out of.
+- **The routine list is read the same way, by a query of its own.** `RoutineQuery` /
+  `applyRoutineQuery` (`features/trips/routine_filter.dart`, pure) and the persisted
+  `routineQueryProvider` are the overview's pattern applied to the other half of the same
+  table: text, tags and participants any-of, sort — everything but the text remembered,
+  under **separate** preference keys, since narrowing the templates is not a statement
+  about the trips. Deliberately *not* a widened `TripQuery`: a routine has no dates and is
+  never stamped out of a routine, so statuses, the date range and `routineIds` could only be
+  dead controls on it, and `TripSort`'s date and expense orders would be ordering templates
+  by nothing (a routine's costs are prices that count toward no total). What the two lists
+  genuinely share is shared as code — `tripMatchesText` is the one definition of which
+  words a row is looked for by, so the two searches cannot drift apart in the fields they
+  read — and each function drops what the other one lists (`applyTripQuery` drops routines,
+  `applyRoutineQuery` drops trips) rather than trusting whichever query fed it. The tag bar
+  sits above both lists for the same reason it sits above the first: a routine's tags are
+  what its trips are stamped out wearing, so the filing that files the trips files the
+  templates. The participant filter's candidates come from the **routines**, not from every
+  trip — offering somebody who has only ever been on a holiday is offering a filter that can
+  only empty the list.
 - **A routine is a template, and its occurrences are virtual.** Nothing is written for a
   day that simply went as the routine says. `RoutineDao.materializeRoutine` copies the
   plan onto real dates as an ordinary trip, on **any** start date — tomorrow's commute

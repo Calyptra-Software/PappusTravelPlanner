@@ -1934,6 +1934,23 @@ class AppLocalizationsEn extends AppLocalizations {
       'A routine is a plan you take again and again — the commute, the Saturday ride. Make one, then stamp a trip out of it whenever you travel it.';
 
   @override
+  String get noRoutinesFoundTitle => 'No matching routines';
+
+  @override
+  String noRoutinesFoundBody(String query) {
+    return 'No routines match “$query”.';
+  }
+
+  @override
+  String get searchRoutines => 'Search routines';
+
+  @override
+  String get searchRoutinesHint => 'Title, destination or notes';
+
+  @override
+  String get filterRoutines => 'Filter and sort';
+
+  @override
   String get routineNoDates => 'No dates';
 
   @override

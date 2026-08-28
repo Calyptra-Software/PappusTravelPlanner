@@ -121,7 +121,13 @@ class TripQuery {
   TripQuery clearedFilters() => TripQuery(text: text, sort: sort);
 }
 
-bool _matchesText(Trip trip, String needle) {
+/// Whether [trip] matches the already-lowercased [needle] in its title,
+/// destination or notes — the three fields a trip is searched by.
+///
+/// Shared with the routine list (`routine_filter.dart`): a routine is a `Trips`
+/// row and is looked for by the same words, so the two searches must not drift
+/// apart in which fields they read.
+bool tripMatchesText(Trip trip, String needle) {
   return trip.title.toLowerCase().contains(needle) ||
       trip.destination.toLowerCase().contains(needle) ||
       (trip.notes?.toLowerCase().contains(needle) ?? false);
@@ -199,7 +205,7 @@ List<Trip> applyTripQuery(
   final needle = query.text.trim().toLowerCase();
   final result = trips.where((trip) {
     if (trip.kind != TripKind.trip) return false;
-    if (needle.isNotEmpty && !_matchesText(trip, needle)) return false;
+    if (needle.isNotEmpty && !tripMatchesText(trip, needle)) return false;
     if (query.statuses.isNotEmpty &&
         !query.statuses.contains(tripStatus(trip, today))) {
       return false;

@@ -96,6 +96,10 @@ costs count toward no total, or the same fare would be charged twice.
 A trip remembers which routine it came from: enough to ask before recording the same
 routine twice on one day, and to filter the overview down to what a routine has produced.
 
+The routine list is searched and filtered like the overview: search by text, filter by tag
+or participant, sort by name or by when you made it. Statuses and date ranges are missing
+because a routine has no dates. Everything except the text search is remembered.
+
 ### Finding and filtering trips
 
 Search by text, and filter by status (upcoming / ongoing / past / undated), by tag, by
