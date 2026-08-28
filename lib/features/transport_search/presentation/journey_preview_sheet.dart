@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_sheet.dart';
 import '../domain/journey.dart';
 import '../journey_view.dart';
 import 'journey_sheet.dart';
@@ -28,11 +29,8 @@ Future<bool> showJourneyPreviewSheet(
   String? confirmLabel,
   String? cancelLabel,
 }) async {
-  final confirmed = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  final confirmed = await showAppSheet<bool>(
+    context,
     builder: (sheetContext) => JourneySheet(
       view: journeyViewFromOption(option),
       title: title,

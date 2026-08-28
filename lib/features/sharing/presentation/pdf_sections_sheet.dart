@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/format/byte_format.dart';
 import '../../../core/format/money_format.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../l10n/app_localizations.dart';
 import '../trip_pdf_sections.dart';
 
@@ -19,10 +20,8 @@ Future<Set<PdfSection>?> showPdfSectionsSheet(
   required CurrencyBook book,
   required Set<PdfSection> initial,
 }) {
-  return showModalBottomSheet<Set<PdfSection>>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showAppSheet<Set<PdfSection>>(
+    context,
     builder: (_) =>
         _PdfSectionsSheet(summary: summary, book: book, initial: initial),
   );

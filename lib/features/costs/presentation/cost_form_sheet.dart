@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/money_format.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/search_picker.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
@@ -28,11 +29,8 @@ Future<void> showCostFormSheet(
     existing != null || itemId != null || groupId != null || tripId != null,
     'A new cost must be attached to an item, a group or a trip',
   );
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (context) => CostFormSheet(
       itemId: itemId,
       groupId: groupId,
@@ -56,11 +54,8 @@ Future<void> showTransferFormSheet(
   String? from,
   String? to,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (context) => CostFormSheet(
       tripId: tripId,
       transfer: true,

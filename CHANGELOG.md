@@ -5,6 +5,12 @@ exact commits.
 
 ## Unreleased
 
+- **A sheet no longer reaches the top of the screen.** The big ones — filter and
+  sort in the trip overview, the connection search and its options — used to put
+  their drag handle in the strip Android pulls the notification shade down from,
+  so the only way back was the back button. Every sheet in the app now stops
+  below the status bar and leaves a strip of scrim above itself: the handle can
+  be dragged, and a tap beside the sheet closes it.
 - **The countries map opens on the whole screen.** A button on the map puts it
   there with the list out of the way; the same button, the back button and the
   back gesture all bring the list back. The camera travels in both directions,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/byte_format.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
@@ -49,10 +50,8 @@ Future<void> showGroupAttachmentsSheet(
 
 /// The frame all three share: a scrolling sheet holding one field.
 Future<void> _showAttachmentsSheet(BuildContext context, Widget field) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (_) => SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../core/format/date_format.dart';
@@ -39,10 +40,8 @@ Future<List<ItineraryItem>?> showTrackEntryPicker(
   required Map<int, AlternativeSet> sets,
   required Map<int, List<Alternative>> branchesBySet,
   required List<int> preselected,
-}) => showModalBottomSheet<List<ItineraryItem>>(
-  context: context,
-  showDragHandle: true,
-  isScrollControlled: true,
+}) => showAppSheet<List<ItineraryItem>>(
+  context,
   builder: (_) => _TrackEntryPicker(
     items: items,
     sets: sets,

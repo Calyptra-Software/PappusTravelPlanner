@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../calendar_layout.dart';
@@ -137,10 +138,8 @@ class _TripCalendarState extends State<TripCalendar> {
     required String title,
     required List<Trip> trips,
   }) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
+    showAppSheet<void>(
+      context,
       builder: (sheetContext) => SafeArea(
         child: ListView(
           shrinkWrap: true,

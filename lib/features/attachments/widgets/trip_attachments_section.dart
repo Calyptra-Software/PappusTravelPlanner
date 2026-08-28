@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/app_sheet.dart';
 import '../../../l10n/app_localizations.dart';
 import '../application/attachment_providers.dart';
 import 'attachments_field.dart';
@@ -94,10 +95,8 @@ class TripAttachmentsSection extends ConsumerWidget {
 /// The trip's own files, in the same field an entry and a run use — one list,
 /// one set of acts, wherever it was opened from.
 Future<void> showTripAttachmentsSheet(BuildContext context, int tripId) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (_) => SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(

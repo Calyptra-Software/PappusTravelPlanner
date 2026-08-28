@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
+import 'app_sheet.dart';
 
 /// One row of a search picker: the value it yields — which is also the text it
 /// is shown and matched by — and an optional leading icon.
@@ -58,13 +59,7 @@ Future<SearchPickerResult?> showSearchPickerSheet(
   BuildContext context,
   WidgetBuilder builder,
 ) {
-  return showModalBottomSheet<SearchPickerResult>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
-    builder: builder,
-  );
+  return showAppSheet<SearchPickerResult>(context, builder: builder);
 }
 
 class SearchPickerSheet extends StatefulWidget {
