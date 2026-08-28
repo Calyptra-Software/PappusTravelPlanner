@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/format/money_format.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
@@ -118,12 +119,8 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
   void _showTrips(List<Trip> trips) {
     if (trips.isEmpty) return;
     final l10n = AppLocalizations.of(context);
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      // A tangle can hold more trips than fit on screen, so the sheet is allowed
-      // to grow and the list inside it scrolls.
-      isScrollControlled: true,
+    showAppSheet<void>(
+      context,
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),

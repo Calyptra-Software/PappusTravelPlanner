@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
@@ -38,11 +39,8 @@ Future<void> showItemFormSheet(
   int? alternativeId,
   bool intoRoutine = false,
 }) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  return showAppSheet<void>(
+    context,
     builder: (context) => ItemFormSheet(
       tripId: tripId,
       kind: existing?.kind ?? kind,

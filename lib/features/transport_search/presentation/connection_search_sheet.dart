@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/attribution.dart';
 import '../../../data/database/app_database.dart' show Trip;
 import '../../../data/database/tables.dart' show TripKind;
@@ -30,11 +31,8 @@ Future<bool> showConnectionSearchSheet(
   BuildContext context, {
   required JourneyDestination destination,
 }) async {
-  final imported = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    showDragHandle: true,
+  final imported = await showAppSheet<bool>(
+    context,
     builder: (_) => ConnectionSearchSheet(destination: destination),
   );
   return imported ?? false;
@@ -161,11 +159,8 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     bool stopsOnly = false,
     String? initialQuery,
   }) async {
-    final place = await showModalBottomSheet<TransportPlace>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      showDragHandle: true,
+    final place = await showAppSheet<TransportPlace>(
+      context,
       builder: (_) =>
           _PlacePickerSheet(stopsOnly: stopsOnly, initialQuery: initialQuery),
     );

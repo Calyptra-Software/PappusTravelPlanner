@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/clock.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
@@ -164,15 +165,7 @@ class _MapViewState extends ConsumerState<_MapView> {
   void _showItem(int itemId) {
     final item = widget.itemsById[itemId];
     if (item == null) return;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      // Free to be taller than the default nine-sixteenths: a leg with both ends
-      // placed, a note and the color row needs the room, and the sheet scrolls
-      // rather than being clipped when it still does not fit.
-      isScrollControlled: true,
-      builder: (_) => MapItemSheet(item: item),
-    );
+    showAppSheet<void>(context, builder: (_) => MapItemSheet(item: item));
   }
 
   /// What a photo marker is for.

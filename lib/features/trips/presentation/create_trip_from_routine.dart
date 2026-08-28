@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../transport_search/domain/journey.dart';
@@ -22,10 +23,8 @@ Future<int?> createTripFromRoutine(
   Trip routine,
 ) async {
   final l10n = AppLocalizations.of(context);
-  final choice = await showModalBottomSheet<_RoutineRunChoice>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final choice = await showAppSheet<_RoutineRunChoice>(
+    context,
     builder: (_) => _RoutineRunSheet(routine: routine),
   );
   if (choice == null || !context.mounted) return null;

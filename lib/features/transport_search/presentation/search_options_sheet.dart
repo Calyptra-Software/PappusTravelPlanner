@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_sheet.dart';
 import '../../../l10n/app_localizations.dart';
 import '../domain/journey_options.dart';
 import '../domain/transit_filter.dart';
@@ -17,10 +18,8 @@ Future<JourneySearchOptions?> showSearchOptionsSheet(
   BuildContext context, {
   required JourneySearchOptions initial,
 }) {
-  return showModalBottomSheet<JourneySearchOptions>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  return showAppSheet<JourneySearchOptions>(
+    context,
     builder: (_) => _SearchOptionsSheet(initial: initial),
   );
 }

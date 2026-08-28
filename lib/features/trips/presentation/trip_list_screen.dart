@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
@@ -78,10 +79,8 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   }
 
   Future<void> _openFilters(List<Person> people, List<Tag> tags) async {
-    final updated = await showModalBottomSheet<TripQuery>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+    final updated = await showAppSheet<TripQuery>(
+      context,
       builder: (_) => _TripFilterSheet(
         query: ref.read(tripQueryProvider),
         people: people,
@@ -101,9 +100,8 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   Future<void> _pickNewTripKind() async {
     final l10n = AppLocalizations.of(context);
     final routines = _routines;
-    final action = await showModalBottomSheet<_NewAction>(
-      context: context,
-      showDragHandle: true,
+    final action = await showAppSheet<_NewAction>(
+      context,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -149,9 +147,8 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
   Future<void> _runRoutine(List<Trip> routines) async {
     final routine = routines.length == 1
         ? routines.single
-        : await showModalBottomSheet<Trip>(
-            context: context,
-            showDragHandle: true,
+        : await showAppSheet<Trip>(
+            context,
             builder: (context) => SafeArea(
               child: ListView(
                 shrinkWrap: true,
