@@ -1945,6 +1945,23 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine Routine ist ein Plan, den du immer wieder nimmst — der Arbeitsweg, die Samstagsrunde. Lege eine an und erzeuge daraus eine Reise, wann immer du sie fährst.';
 
   @override
+  String get noRoutinesFoundTitle => 'Keine passenden Routinen';
+
+  @override
+  String noRoutinesFoundBody(String query) {
+    return 'Keine Routinen passen zu „$query“.';
+  }
+
+  @override
+  String get searchRoutines => 'Routinen suchen';
+
+  @override
+  String get searchRoutinesHint => 'Titel, Ziel oder Notizen';
+
+  @override
+  String get filterRoutines => 'Filtern und sortieren';
+
+  @override
   String get routineNoDates => 'Kein Datum';
 
   @override

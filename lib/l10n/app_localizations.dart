@@ -3332,6 +3332,36 @@ abstract class AppLocalizations {
   /// **'A routine is a plan you take again and again — the commute, the Saturday ride. Make one, then stamp a trip out of it whenever you travel it.'**
   String get noRoutinesBody;
 
+  /// No description provided for @noRoutinesFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching routines'**
+  String get noRoutinesFoundTitle;
+
+  /// No description provided for @noRoutinesFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No routines match “{query}”.'**
+  String noRoutinesFoundBody(String query);
+
+  /// No description provided for @searchRoutines.
+  ///
+  /// In en, this message translates to:
+  /// **'Search routines'**
+  String get searchRoutines;
+
+  /// No description provided for @searchRoutinesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Title, destination or notes'**
+  String get searchRoutinesHint;
+
+  /// No description provided for @filterRoutines.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter and sort'**
+  String get filterRoutines;
+
   /// No description provided for @routineNoDates.
   ///
   /// In en, this message translates to:

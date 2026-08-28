@@ -5,6 +5,13 @@ exact commits.
 
 ## Unreleased
 
+- **The routines can be searched and filtered too.** The routine list now
+  carries the overview's own controls: search by title, destination or notes, a
+  tag bar above the list, a filter sheet for tags and participants, and a sort by
+  name or by when you made it. Not statuses or a date range — a routine has no
+  dates. As on the overview, everything but the text search is remembered across
+  launches, and the two lists are filtered apart: narrowing the routines never
+  moves the trips.
 - **A sheet no longer reaches the top of the screen.** The big ones — filter and
   sort in the trip overview, the connection search and its options — used to put
   their drag handle in the strip Android pulls the notification shade down from,

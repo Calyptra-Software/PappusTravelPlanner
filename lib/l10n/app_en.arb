@@ -1015,6 +1015,14 @@
   "routinesTitle": "Routines",
   "noRoutinesTitle": "No routines yet",
   "noRoutinesBody": "A routine is a plan you take again and again — the commute, the Saturday ride. Make one, then stamp a trip out of it whenever you travel it.",
+  "noRoutinesFoundTitle": "No matching routines",
+  "noRoutinesFoundBody": "No routines match \u201c{query}\u201d.",
+  "@noRoutinesFoundBody": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "searchRoutines": "Search routines",
+  "searchRoutinesHint": "Title, destination or notes",
+  "filterRoutines": "Filter and sort",
   "routineNoDates": "No dates",
   "routineFromRoutine": "From routine…",
   "routineCreateTrip": "Create trip",

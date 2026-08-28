@@ -697,6 +697,14 @@
   "routinesTitle": "Routinen",
   "noRoutinesTitle": "Noch keine Routinen",
   "noRoutinesBody": "Eine Routine ist ein Plan, den du immer wieder nimmst — der Arbeitsweg, die Samstagsrunde. Lege eine an und erzeuge daraus eine Reise, wann immer du sie fährst.",
+  "noRoutinesFoundTitle": "Keine passenden Routinen",
+  "noRoutinesFoundBody": "Keine Routinen passen zu \u201e{query}\u201c.",
+  "@noRoutinesFoundBody": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "searchRoutines": "Routinen suchen",
+  "searchRoutinesHint": "Titel, Ziel oder Notizen",
+  "filterRoutines": "Filtern und sortieren",
   "routineNoDates": "Kein Datum",
   "routineFromRoutine": "Aus Routine…",
   "routineCreateTrip": "Reise erzeugen",
