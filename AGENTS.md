@@ -784,6 +784,25 @@ UI (features/*/presentation, *widgets)
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
+- **Several rows on one entry are the ordinary case, so the form lists them rather than
+  counting them.** A leg carries more than one line routinely — the `<trkseg>` split above,
+  a second import onto the same leg, a connection's computed route left standing beside a
+  recording — and `TrackField` used to fold all of that into "3 lines" over a single
+  *Remove* that took every one of them. So it is a list now, one row per row of the table,
+  each carrying its own delete, which is the rule the group band already follows: the unit
+  an act applies to is the unit it is offered on. *Remove all* survives only from two lines
+  up, where it says something the row's own button cannot.
+  What a row shows is what actually tells two of them apart: the name the **file** gave it
+  (still never invented — the table's rule stands, and a nameless line simply has no name in
+  its row), where it came from, and **how far it runs** (`TrackSummary` / `summarizeTracks`,
+  pure, over `lineLength`). The length and not the point count, which is the number the
+  table already refuses to print: how finely a recorder sampled invites tuning something
+  that has no dial, while a length describes the line. Decoding happens in
+  `itemTrackSummariesProvider` and not in `build`, for the reason `tripTracksProvider`
+  exists — a form rebuilds on every keystroke. A row whose points will not decode, or that
+  holds fewer than two of them, is listed with **no** length rather than dropped as the map
+  drops it: the map's reader wants nothing drawn for it, and this reader wants the one thing
+  that makes the row worth having — a way to delete exactly it.
 - **One recording is divided among the entries it covered.** A file is made in one go and
   the plan is not, so `splitTrack` / `splitTracks` (pure, `track_split.dart`) cut the line
   where one entry handed over to the next, and `trackImportPlan` reads a selected run:

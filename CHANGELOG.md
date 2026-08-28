@@ -5,6 +5,12 @@ exact commits.
 
 ## Unreleased
 
+- **The lines on a leg can be removed one at a time.** An entry often carries several — a
+  recording that stopped and started again arrives as one line per segment, a second import
+  adds to them, and a connection from the search brings its computed route. The entry's form
+  used to say only how many there were, over a single *Remove* that took all of them. Now
+  each line is a row of its own, saying its name, where it came from and how far it runs,
+  with its own remove button beside it; *Remove all* is still there once there are two.
 - **The routines can be searched and filtered too.** The routine list now
   carries the overview's own controls: search by title, destination or notes, a
   tag bar above the list, a filter sheet for tags and participants, and a sort by

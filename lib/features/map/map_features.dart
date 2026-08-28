@@ -107,8 +107,9 @@ final class MapPath {
   /// while a long train ride wore it in the middle. It also picks the longer
   /// piece of a split leg by how far it runs rather than by how finely it
   /// happens to be interpolated.
-  LatLng get anchor =>
-      midpointOf(segments.reduce((a, b) => _length(b) > _length(a) ? b : a));
+  LatLng get anchor => midpointOf(
+    segments.reduce((a, b) => lineLength(b) > lineLength(a) ? b : a),
+  );
 }
 
 /// A photo, at the position it carries.
@@ -406,7 +407,11 @@ List<List<LatLng>> splitAtAntimeridian(List<LatLng> points) {
 const Distance _distance = Distance(calculator: Haversine());
 
 /// How far [points] runs, end to end, in meters.
-double _length(List<LatLng> points) {
+///
+/// Public because the item form asks the same question for a different reason:
+/// there the length is what tells one stored line from another, where here it
+/// picks the longest piece of a split leg to hang the mode's icon on.
+double lineLength(List<LatLng> points) {
   var total = 0.0;
   for (var i = 1; i < points.length; i++) {
     total += _distance.as(LengthUnit.Meter, points[i - 1], points[i]);

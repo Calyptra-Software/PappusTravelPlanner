@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/track_points.dart';
 import '../../map/map_features.dart';
+import '../../map/track_summary.dart';
 import '../../../data/database/app_database.dart';
 import '../../trips/application/trip_providers.dart';
 import '../live_items.dart';
@@ -60,6 +61,17 @@ final itemTracksProvider = StreamProvider.autoDispose.family<List<Track>, int>((
 ) {
   return ref.watch(repositoryProvider).watchTracksForItem(itemId);
 });
+
+/// The same rows, read as the form lists them — one summary per line.
+///
+/// Derived rather than a second stream, so the decoding runs once per change of
+/// the rows and not on every rebuild of the form around it: an entry's form
+/// rebuilds on every keystroke, and unpacking a dense recording there is the
+/// shape of the freeze the map has already been through once.
+final itemTrackSummariesProvider = Provider.autoDispose
+    .family<AsyncValue<List<TrackSummary>>, int>((ref, itemId) {
+      return ref.watch(itemTracksProvider(itemId)).whenData(summarizeTracks);
+    });
 
 /// Rows to points, grouped by the entry they belong to.
 ///

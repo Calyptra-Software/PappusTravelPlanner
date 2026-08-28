@@ -1706,11 +1706,41 @@ abstract class AppLocalizations {
   /// **'Import GPX…'**
   String get trackImport;
 
-  /// Button that deletes every line stored on this entry.
+  /// Tooltip of the button that deletes one of the lines stored on this entry.
   ///
   /// In en, this message translates to:
   /// **'Remove'**
   String get trackRemove;
+
+  /// Button that deletes every line stored on this entry at once. Offered only when there are several.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove all'**
+  String get trackRemoveAll;
+
+  /// A line somebody actually travelled, as opposed to one a router proposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get trackSourceRecorded;
+
+  /// A line that came out of a GPX file.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get trackSourceImported;
+
+  /// A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it.
+  ///
+  /// In en, this message translates to:
+  /// **'Computed route'**
+  String get trackSourceRouted;
+
+  /// Stands where a line's length would, when the stored line cannot be read or holds fewer than two points — the map draws nothing for it either way.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to draw'**
+  String get trackNotDrawable;
 
   /// Shown when an entry has no recorded line.
   ///
