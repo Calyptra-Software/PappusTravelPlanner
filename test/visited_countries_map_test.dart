@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -302,6 +304,145 @@ void main() {
 
       final rows = await db.select(db.visitedCountries).get();
       expect(rows.map((r) => r.code), ['GRL']);
+    });
+  });
+
+  group('the map on the whole screen', () {
+    // The zoom that fits one world across a map of that width — what both maps
+    // compute for themselves, and the reason the two floors differ: the tab's
+    // map is 600 wide (half of 600 tall, doubled), the fullscreen one 800.
+    double fit(double width) => math.log(width / 256) / math.ln2;
+
+    testWidgets('is one tap away, and the list is not in it', (tester) async {
+      await pump(tester, items: [place(1, 53.5511, 9.9937)]);
+      expect(find.text('Worldwide'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.fullscreen));
+      await tester.pumpAndSettle();
+
+      // Nothing but the map: no tally, no rows, and a way back out.
+      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(find.text('Worldwide'), findsNothing);
+      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(find.byIcon(Icons.fullscreen_exit), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.fullscreen_exit));
+      await tester.pumpAndSettle();
+      expect(find.text('Worldwide'), findsOneWidget);
+    });
+
+    testWidgets('opens where the small one was looking', (tester) async {
+      await pump(tester, items: const []);
+      // Zoom the small map in one step, so its camera is worth carrying.
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.fullscreen));
+      await tester.pumpAndSettle();
+
+      final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
+      expect(map.options.initialCenter, const LatLng(20, 0));
+      expect(map.options.initialZoom, moreOrLessEquals(fit(600) + 1));
+    });
+
+    testWidgets('never below its own floor, which is the higher of the two', (
+      tester,
+    ) async {
+      // A wider map needs more zoom to fill itself with one world, so the
+      // camera handed over can sit under the floor here.
+      await pump(tester, items: const []);
+      await tester.tap(find.byIcon(Icons.fullscreen));
+      await tester.pumpAndSettle();
+
+      final map = tester.widget<FlutterMap>(find.byType(FlutterMap));
+      expect(map.options.initialZoom, moreOrLessEquals(fit(800)));
+      expect(fit(800), greaterThan(fit(600)));
+    });
+
+    testWidgets('and the small one picks up where it ended', (tester) async {
+      // However it was left — this taps the button, but the back gesture and
+      // the back button leave the camera behind in the same place.
+      await pump(tester, items: const []);
+      await tester.tap(find.byIcon(Icons.fullscreen));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+
+      final ended = tester
+          .widget<FlutterMap>(find.byType(FlutterMap))
+          .mapController!
+          .camera;
+      final zoom = ended.zoom;
+      final center = ended.center;
+
+      await tester.tap(find.byIcon(Icons.fullscreen_exit));
+      await tester.pumpAndSettle();
+
+      final back = tester
+          .widget<FlutterMap>(find.byType(FlutterMap))
+          .mapController!
+          .camera;
+      expect(back.zoom, moreOrLessEquals(zoom));
+      expect(back.center.latitude, moreOrLessEquals(center.latitude));
+      expect(back.center.longitude, moreOrLessEquals(center.longitude));
+    });
+
+    testWidgets('reads the marks itself, so one made here fills here', (
+      tester,
+    ) async {
+      // Not the snapshot the tab was drawing: a country ticked fullscreen has
+      // to fill fullscreen, not on the way back.
+      final marks = StreamController<Set<String>>();
+      addTearDown(marks.close);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            countryOutlinesProvider.overrideWith((ref) async => outlines),
+            markedCountriesProvider.overrideWith((ref) => marks.stream),
+            positionedItemsProvider.overrideWith(
+              (ref) => Stream.value(const []),
+            ),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(body: VisitedCountriesMap(tripId: null)),
+          ),
+        ),
+      );
+      marks.add(const {});
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.fullscreen));
+      await tester.pumpAndSettle();
+
+      Color? japan() => tester
+          .widget<PolygonLayer<String>>(find.byType(PolygonLayer<String>))
+          .polygons
+          .firstWhere((p) => p.hitValue == 'JPN')
+          .color;
+      final unvisited = japan();
+
+      marks.add(const {'JP'});
+      await tester.pumpAndSettle();
+      expect(japan(), isNot(unvisited));
+    });
+
+    testWidgets('answers no taps where marking is not offered', (tester) async {
+      // One trip's own tab: a mark is a statement about a life, and the rule
+      // does not change because the map got bigger.
+      await pump(tester, items: [place(1, 53.5511, 9.9937)]);
+      await tester.tap(find.byIcon(Icons.fullscreen));
+      await tester.pumpAndSettle();
+
+      final layer = tester.widget<PolygonLayer<String>>(
+        find.byType(PolygonLayer<String>),
+      );
+      expect(layer.hitNotifier, isNull);
     });
   });
 }

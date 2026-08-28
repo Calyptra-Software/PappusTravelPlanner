@@ -3,6 +3,14 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **The countries map opens on the whole screen.** A button on the map puts it
+  there with the list out of the way; the same button, the back button and the
+  back gesture all bring the list back. The camera travels in both directions,
+  so a region you zoomed in on fullscreen is where the small map is looking when
+  you return.
+
 ## 1.9.0 — 2026-08-23
 
 - **Photos and files on a plan.** A photograph or a document can hang on a single

@@ -396,6 +396,10 @@ between its ends without anybody setting foot in them, and a line on a map is no
 about the ground under it. A position that falls in no country at all is left uncounted
 rather than given to the nearest one.
 
+The map's ⛶ button opens it on the whole screen, without the list; the same button closes
+it again, as does the back button. It keeps the camera in both directions, so zooming in on
+a region and coming back leaves the map where you left it.
+
 Under the map the countries are listed by continent, each with how many of them you have been to
 and the share as a percentage, plus a worldwide total. What is counted is the **195 states of
 the United Nations** — its members and the two observer states. A dependency is drawn and counts

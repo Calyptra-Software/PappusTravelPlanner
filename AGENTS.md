@@ -1016,7 +1016,19 @@ UI (features/*/presentation, *widgets)
   what a world view needs, since Liechtenstein and Monaco are a few pixels across at any zoom
   showing a continent and a country nobody can see is one nobody can tap, and no further,
   because the rings are stored to three decimals and simplified on top of that: past there the
-  map would be promising a coastline it does not have.
+  map would be promising a coastline it does not have. The map is also one tap from the
+  **whole screen** — a full-screen route, for the reason `pickPointOnMap` is one: a map is
+  dragged, and a sheet, a scroll or a growing box all answer a vertical drag as well. Once
+  the map filled the viewport there would be nothing left to drag the list back with, since
+  the map swallows the gesture; and growing it inside the tab leaves the app bar and the tab
+  bar standing on exactly the height the map wants. The camera travels in both directions
+  (`_CameraHandover`, mutable and passed by reference rather than returned by
+  `Navigator.pop`, since the route can also be left by the back button and the back gesture,
+  which carry no result) and is clamped on the way in: a wider map needs *more* zoom to fill
+  itself with one world, so the floor the handed-over camera has to clear is the one this
+  map computed for itself. The fullscreen map watches the providers itself rather than being
+  handed the tab's snapshot — a country ticked there has to fill there, not on the way
+  back — and the marking rule is the same function on both (`_markOnTap`).
 - **A basemap is a sealed type with a list behind it, switched and never mixed.** Stacking
   raster under vector would show a seam, disagree about zoom depth, and keep fetching tiles
   hidden under an opaque layer — traffic taken from a donated server for pixels nobody sees.

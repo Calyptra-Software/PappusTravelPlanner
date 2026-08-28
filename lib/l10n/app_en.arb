@@ -484,6 +484,14 @@
   "@mapZoomOut": {
     "description": "Tooltip of the map's zoom-out button."
   },
+  "mapFullscreen": "Fullscreen map",
+  "@mapFullscreen": {
+    "description": "Tooltip of the country map's button that opens the map on the whole screen."
+  },
+  "mapExitFullscreen": "Leave fullscreen",
+  "@mapExitFullscreen": {
+    "description": "Tooltip of the button that closes the fullscreen country map."
+  },
   "mapMyLocationShow": "Show my position",
   "@mapMyLocationShow": {
     "description": "Tooltip of the map button that switches the device's own position on."

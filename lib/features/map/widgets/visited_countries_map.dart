@@ -90,22 +90,21 @@ class VisitedCountriesMap extends ConsumerWidget {
                       countries: countries,
                       visited: visited.areas,
                       fill: fill,
-                      // Tapping a country is how a territory is ticked at all:
-                      // the list is of states, so Greenland has no row of its
-                      // own, and it is on the map in front of you.
-                      onTapCountry: _canMark
-                          ? (country) {
-                              if (visited.derivedAreas.contains(country.code)) {
-                                return;
-                              }
-                              ref
-                                  .read(repositoryProvider)
-                                  .setCountryMarked(
-                                    country.markKey,
-                                    !marked.contains(country.markKey),
-                                  );
-                            }
-                          : null,
+                      onTapCountry: _markOnTap(
+                        ref,
+                        canMark: _canMark,
+                        visited: visited,
+                        marked: marked,
+                      ),
+                      // The list is what the map cannot say, so it is never
+                      // worth being in the map's way: the whole screen is one
+                      // tap off, and the camera travels in both directions.
+                      onFullscreen: (handover) => _showFullscreenMap(
+                        context,
+                        tripId: tripId,
+                        accent: fill,
+                        handover: handover,
+                      ),
                     ),
                   ),
                 );
@@ -150,6 +149,115 @@ class VisitedCountriesMap extends ConsumerWidget {
   }
 }
 
+/// What a tap on an area does, or null where marking is not offered.
+///
+/// Shared by the tab's map and the fullscreen one, because ticking a country
+/// has to mean the same thing on both — and a rule written out twice is a rule
+/// that drifts.
+void Function(CountryOutline country)? _markOnTap(
+  WidgetRef ref, {
+  required bool canMark,
+  required VisitedWorld visited,
+  required Set<String> marked,
+}) {
+  if (!canMark) return null;
+  return (country) {
+    // A country a trip put here is not the user's to take back — the same rule
+    // the greyed-out checkbox rows below state.
+    if (visited.derivedAreas.contains(country.code)) return;
+    ref
+        .read(repositoryProvider)
+        .setCountryMarked(country.markKey, !marked.contains(country.markKey));
+  };
+}
+
+/// Where a map is looking, carried into the fullscreen route and back out.
+///
+/// Mutable and handed over by reference rather than returned by
+/// `Navigator.pop`, because the fullscreen map can be left three ways — its own
+/// button, the system back button, and the back gesture — and only the first of
+/// them can carry a result. Somebody who pans to Patagonia and swipes back
+/// should not find themselves where they were before they zoomed in.
+class _CameraHandover {
+  _CameraHandover({required this.center, required this.zoom});
+
+  LatLng center;
+  double zoom;
+}
+
+/// Opens the world map on the whole screen, and completes when it is closed.
+///
+/// A **full screen route**, for the reason `pickPointOnMap` is one: a map is
+/// dragged, and everything that could give the list back — a sheet, a scroll —
+/// answers a vertical drag as well. Growing the map inside the tab would also
+/// leave the app bar and the tab bar standing, which is exactly the height the
+/// map wants; and once it filled the viewport there would be nothing left to
+/// drag the list back with, since the map swallows the gesture.
+Future<void> _showFullscreenMap(
+  BuildContext context, {
+  required int? tripId,
+  required Color accent,
+  required _CameraHandover handover,
+}) {
+  return Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => _FullscreenWorldMap(
+        tripId: tripId,
+        accent: accent,
+        handover: handover,
+      ),
+    ),
+  );
+}
+
+/// The same map, with nothing else on the screen.
+///
+/// It watches the providers itself rather than being handed the snapshot the
+/// tab was drawing: a country ticked here has to fill here, not on the way
+/// back.
+class _FullscreenWorldMap extends ConsumerWidget {
+  const _FullscreenWorldMap({
+    required this.tripId,
+    required this.accent,
+    required this.handover,
+  });
+
+  final int? tripId;
+  final Color accent;
+  final _CameraHandover handover;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final outlines = ref.watch(countryOutlinesProvider);
+    final visited = ref.watch(allVisitedCountriesProvider(tripId));
+    final marked = ref.watch(markedCountriesProvider).value ?? const <String>{};
+
+    return Scaffold(
+      body: outlines.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text(l10n.genericError('$error'))),
+        data: (countries) => _WorldMap(
+          countries: countries,
+          visited: visited.areas,
+          fill: accent,
+          onTapCountry: _markOnTap(
+            ref,
+            // The same rule as the tab's: a mark is a statement about a life,
+            // so it is offered only where the question is about every trip.
+            canMark: tripId == null,
+            visited: visited,
+            marked: marked,
+          ),
+          camera: handover,
+          onExitFullscreen: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
+}
+
 /// The outlines, with the visited ones filled.
 class _WorldMap extends StatefulWidget {
   const _WorldMap({
@@ -157,6 +265,9 @@ class _WorldMap extends StatefulWidget {
     required this.visited,
     required this.fill,
     this.onTapCountry,
+    this.camera,
+    this.onFullscreen,
+    this.onExitFullscreen,
   });
 
   final List<CountryOutline> countries;
@@ -167,6 +278,19 @@ class _WorldMap extends StatefulWidget {
 
   /// What a tap on an area means, or null where marking is not offered.
   final void Function(CountryOutline country)? onTapCountry;
+
+  /// The camera this map takes over: it opens on it and writes every move back
+  /// into it. Set on the fullscreen map, null on the one in the tab, which
+  /// keeps its own camera in its controller.
+  final _CameraHandover? camera;
+
+  /// Opens the fullscreen map on the camera it is handed, and completes when
+  /// that map is closed. Null on the fullscreen map itself, which offers
+  /// [onExitFullscreen] instead.
+  final Future<void> Function(_CameraHandover handover)? onFullscreen;
+
+  /// Closes the fullscreen map. Null on every other one.
+  final VoidCallback? onExitFullscreen;
 
   @override
   State<_WorldMap> createState() => _WorldMapState();
@@ -184,6 +308,18 @@ class _WorldMapState extends State<_WorldMap> {
   void dispose() {
     _hits.dispose();
     super.dispose();
+  }
+
+  /// Hands the fullscreen map this camera, and picks up the one it ends on.
+  Future<void> _openFullscreen() async {
+    final camera = _controller.camera;
+    final handover = _CameraHandover(center: camera.center, zoom: camera.zoom);
+    await widget.onFullscreen!(handover);
+    if (!mounted) return;
+    // No clamping needed on the way back: `move` clamps to this map's own zoom
+    // floor, and that floor is the lower of the two — a narrower map fits the
+    // whole world at a smaller zoom.
+    _controller.move(handover.center, handover.zoom);
   }
 
   void _onTap() {
@@ -223,8 +359,17 @@ class _WorldMapState extends State<_WorldMap> {
               options: MapOptions(
                 minZoom: fit,
                 maxZoom: kCountryMapMaxZoom,
-                initialZoom: fit,
-                initialCenter: const LatLng(20, 0),
+                // Taking over from another map means opening where it was —
+                // but its zoom floor is its own, and a wider map needs more
+                // zoom to fill itself with one world.
+                initialZoom: math.max(widget.camera?.zoom ?? fit, fit),
+                initialCenter: widget.camera?.center ?? const LatLng(20, 0),
+                onPositionChanged: (position, _) {
+                  final handover = widget.camera;
+                  if (handover == null) return;
+                  handover.center = position.center;
+                  handover.zoom = position.zoom;
+                },
                 // Latitude only: the zoom floor above already rules out a
                 // second world sideways, and constraining longitude as well
                 // would refuse the very camera the map opens with.
@@ -275,10 +420,26 @@ class _WorldMapState extends State<_WorldMap> {
                 ),
               ],
             ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: _ZoomButtons(controller: _controller, minZoom: fit),
+            // Aligned rather than inset by a fixed amount, and inside a
+            // `SafeArea`: the fullscreen map has no app bar over it, so the top
+            // of the screen is the status bar.
+            Positioned.fill(
+              child: SafeArea(
+                child: Align(
+                  alignment: Alignment.topRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: _ZoomButtons(
+                      controller: _controller,
+                      minZoom: fit,
+                      onFullscreen: widget.onFullscreen == null
+                          ? null
+                          : _openFullscreen,
+                      onExitFullscreen: widget.onExitFullscreen,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         );
@@ -314,10 +475,22 @@ class _WorldMapState extends State<_WorldMap> {
 /// Its own rather than the shared `MapZoomButtons`, which clamps to the app's
 /// tile zoom range; here the floor is whatever puts one world on screen.
 class _ZoomButtons extends StatelessWidget {
-  const _ZoomButtons({required this.controller, required this.minZoom});
+  const _ZoomButtons({
+    required this.controller,
+    required this.minZoom,
+    this.onFullscreen,
+    this.onExitFullscreen,
+  });
 
   final MapController controller;
   final double minZoom;
+
+  /// Opens the fullscreen map, where that is a way out of here.
+  final VoidCallback? onFullscreen;
+
+  /// Closes it. Exactly one of the two is set, and neither is on a map that
+  /// already fills what it can fill.
+  final VoidCallback? onExitFullscreen;
 
   void _by(double delta) {
     final camera = controller.camera;
@@ -344,6 +517,26 @@ class _ZoomButtons extends StatelessWidget {
           tooltip: l10n.mapZoomOut,
           onPressed: () => _by(-1),
         ),
+        // Under the zoom pair rather than beside it: it is the same question
+        // asked at the coarsest end — how much of the world can be seen at
+        // once — and the answer the two buttons cannot give, since the width is
+        // what fixes the zoom floor.
+        if (onFullscreen case final open?) ...[
+          const SizedBox(height: 6),
+          _ZoomButton(
+            icon: Icons.fullscreen,
+            tooltip: l10n.mapFullscreen,
+            onPressed: open,
+          ),
+        ],
+        if (onExitFullscreen case final close?) ...[
+          const SizedBox(height: 6),
+          _ZoomButton(
+            icon: Icons.fullscreen_exit,
+            tooltip: l10n.mapExitFullscreen,
+            onPressed: close,
+          ),
+        ],
       ],
     );
   }
