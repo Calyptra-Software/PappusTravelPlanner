@@ -73,7 +73,7 @@ jobs:
 
       # Not just for Gradle: `cache: gradle` is what keeps the wrapper from
       # re-downloading the ~200 MB distribution on every run.
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
