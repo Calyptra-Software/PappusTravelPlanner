@@ -407,9 +407,7 @@ that export lossless.
 
 **Getting the lines out again:** the trip's ⋮ menu has *Export lines (GPX)…*, which writes every
 line the trip's entries carry into one `.gpx` — recordings as tracks, the routes the connection
-search computed as routes. That is the way to open them in a mapping tool, and the only way to
-get at the pieces one recording was cut into or a computed route, neither of which exists as a
-file anywhere else. A line you have hidden is exported too: hiding is about the map, and this is
+search computed as routes. A line you have hidden is exported too: hiding is about the map, and this is
 the record.
 
 It is **not the file you imported**. Elevation and timestamps are dropped when a GPX comes in and
