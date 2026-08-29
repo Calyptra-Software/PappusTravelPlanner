@@ -379,10 +379,8 @@ how you get rid of it.
 
 Each row also says whether that line is **on the map**, and the eye beside it switches that:
 by default a recording (or an import) is drawn and a route the search computed is not, and
-you can overrule it either way. That is what to reach for when a tunnel or a lost fix spoiled
-part of a recording and the computed route is the better drawing of that stretch — put the
-recording away and it is still there, in the list, in every copy and in a shared trip. Hide
-every line of a leg and the map draws the straight segment between its ends again.
+you can overrule it either way. Hide every line of a leg and the map draws the straight segment
+between its ends again.
 
 On the map, **tapping a line** says which one it is: the entry opens with its lines listed
 and the one you touched marked. Where two entries run over the same ground — a walk out and
