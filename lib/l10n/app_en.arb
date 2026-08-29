@@ -414,6 +414,14 @@
   "@trackRemove": {
     "description": "Tooltip of the button that deletes one of the lines stored on this entry."
   },
+  "trackShow": "Draw on the map",
+  "@trackShow": {
+    "description": "Tooltip of the eye button on a line the map is not drawing; pressing it draws this one."
+  },
+  "trackHide": "Do not draw",
+  "@trackHide": {
+    "description": "Tooltip of the eye button on a line the map is drawing; pressing it stops drawing this one, without deleting it."
+  },
   "trackRemoveAll": "Remove all",
   "@trackRemoveAll": {
     "description": "Button that deletes every line stored on this entry at once. Offered only when there are several."

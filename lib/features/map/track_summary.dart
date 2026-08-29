@@ -18,10 +18,21 @@ final class TrackSummary {
     required this.source,
     required this.name,
     required this.meters,
+    this.display = TrackDisplay.auto,
+    this.drawn = true,
   });
 
   final int id;
   final TrackSource source;
+
+  /// What the user has said about drawing this line, if anything.
+  final TrackDisplay display;
+
+  /// Whether the map is drawing it *now* — the default and the overrides
+  /// together, answered by `drawnTrackIds` and never worked out again here. A
+  /// list that says a line is drawn while the map does not draw it is worse
+  /// than a list that says nothing.
+  final bool drawn;
 
   /// The name the file gave the line, or null — never filled in with anything.
   final String? name;
@@ -40,15 +51,26 @@ final class TrackSummary {
 /// Decoding is the only expensive thing a track does, which is why this is
 /// called from a provider and not from `build` — the same rule
 /// `groupTrackPoints` follows for the map.
-List<TrackSummary> summarizeTracks(List<Track> rows) => [
-  for (final row in rows)
-    TrackSummary(
-      id: row.id,
-      source: row.source,
-      name: row.name,
-      meters: _lengthOf(row.points),
-    ),
-];
+List<TrackSummary> summarizeTracks(List<Track> rows) {
+  // Asked of the whole entry at once, because that is the unit the question has
+  // an answer for: whether a routed line is drawn depends on what the rows
+  // beside it are doing.
+  final drawn = drawnTrackIds([
+    for (final row in rows)
+      (id: row.id, source: row.source, display: row.display),
+  ]);
+  return [
+    for (final row in rows)
+      TrackSummary(
+        id: row.id,
+        source: row.source,
+        name: row.name,
+        meters: _lengthOf(row.points),
+        display: row.display,
+        drawn: drawn.contains(row.id),
+      ),
+  ];
+}
 
 double? _lengthOf(String packed) {
   try {

@@ -210,12 +210,17 @@ void main() {
       toLon: 10.0100,
     );
 
-    Track row(int id, {required String name}) => Track(
+    Track row(
+      int id, {
+      required String name,
+      TrackSource source = TrackSource.imported,
+    }) => Track(
       id: id,
       itemId: 3,
-      source: TrackSource.imported,
+      source: source,
       name: name,
       points: 'x',
+      display: TrackDisplay.auto,
       sortOrder: id,
     );
 
@@ -266,6 +271,49 @@ void main() {
         layer.minimumHitbox,
         greaterThan(layer.polylines.first.strokeWidth),
       );
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('the sheet can put a line away, against the picture', (
+      tester,
+    ) async {
+      // The second thing on that sheet that is about the drawing rather than
+      // the plan, and it is there for the reason the color is: you notice you
+      // are looking at the wrong line while looking at it.
+      await pumpMap(
+        tester,
+        items: [leg()],
+        tracks: {
+          3: [
+            const TrackLine(
+              id: 11,
+              points: whole,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+        trackRows: {
+          3: [
+            row(11, name: 'Tunnel'),
+            row(12, name: 'Route', source: TrackSource.routed),
+          ],
+        },
+      );
+      await tester.pump();
+
+      await tester.tapAt(
+        tester.getCenter(find.byType(FlutterMap)) + const Offset(44, -40),
+      );
+      await tester.pumpAndSettle();
+
+      // The recording is drawn, the computed route beside it is not — and each
+      // row carries the switch, where removing is deliberately absent.
+      final rows = tester.widgetList<TrackRow>(find.byType(TrackRow)).toList();
+      expect(rows.map((r) => r.track.drawn), [true, false]);
+      expect(rows.every((r) => r.onSetDisplay != null), isTrue);
+      expect(rows.every((r) => r.onRemove == null), isTrue);
 
       await tester.pump(kTileUpdateThrottle);
       await tester.pump(kTileUpdateThrottle);

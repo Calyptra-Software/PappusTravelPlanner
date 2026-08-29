@@ -351,6 +351,8 @@
   "trackSection": "Aufgezeichnete Linie",
   "trackImport": "GPX importieren\u2026",
   "trackRemove": "Entfernen",
+  "trackShow": "Auf der Karte zeichnen",
+  "trackHide": "Nicht zeichnen",
   "trackRemoveAll": "Alle entfernen",
   "trackSourceRecorded": "Aufgezeichnet",
   "trackSourceImported": "Importiert",

@@ -430,6 +430,132 @@ void main() {
     });
   });
 
+  group('which of an entry\'s lines the map draws', () {
+    ({int id, TrackSource source, TrackDisplay display}) line(
+      int id,
+      TrackSource source, [
+      TrackDisplay display = TrackDisplay.auto,
+    ]) => (id: id, source: source, display: display);
+
+    test('what was followed supersedes what was proposed', () {
+      // The default, unchanged: a recording is drawn and the router's guess
+      // beside it is not.
+      expect(
+        drawnTrackIds([
+          line(1, TrackSource.routed),
+          line(2, TrackSource.imported),
+        ]),
+        {2},
+      );
+    });
+
+    test('a routed line alone is drawn', () {
+      expect(drawnTrackIds([line(1, TrackSource.routed)]), {1});
+    });
+
+    test('hiding the recording brings the computed route forward', () {
+      // The case the override exists for: the trace is wrong in the tunnel, so
+      // it is put away — and nothing has to be deleted to see the route.
+      expect(
+        drawnTrackIds([
+          line(1, TrackSource.routed),
+          line(2, TrackSource.imported, TrackDisplay.hidden),
+        ]),
+        {1},
+      );
+    });
+
+    test('a routed line asked for is drawn beside the recording', () {
+      // A trace broken in two by that tunnel plus the route that bridges it is
+      // one picture of one journey, and only the user can say so.
+      expect(
+        drawnTrackIds([
+          line(1, TrackSource.routed, TrackDisplay.shown),
+          line(2, TrackSource.imported),
+          line(3, TrackSource.imported),
+        ]),
+        {1, 2, 3},
+      );
+    });
+
+    test('hidden outranks everything, including being asked for', () {
+      expect(
+        drawnTrackIds([line(1, TrackSource.imported, TrackDisplay.hidden)]),
+        isEmpty,
+      );
+    });
+
+    test('a followed line the user asked for still suppresses the route', () {
+      // `shown` on a recording says nothing the default did not, so it must not
+      // quietly stop counting as a recording.
+      expect(
+        drawnTrackIds([
+          line(1, TrackSource.routed),
+          line(2, TrackSource.recorded, TrackDisplay.shown),
+        ]),
+        {2},
+      );
+    });
+  });
+
+  group('an entry with every line hidden falls back to the chord', () {
+    ItineraryItem leg() => ItineraryItem(
+      id: 1,
+      tripId: 1,
+      date: DateTime(2026, 5, 1),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      spansNextDay: false,
+      fromLat: 53.5511,
+      fromLon: 9.9937,
+      toLat: 53.5600,
+      toLon: 10.0100,
+    );
+
+    const walked = [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)];
+
+    test('the straight segment comes back, as on an entry with no line', () {
+      // What the plan itself says about the leg. A leg vanishing from the map
+      // because of a decision about *how* to draw it would be the bigger
+      // surprise.
+      final features = tripMapFeatures(
+        [leg()],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: walked,
+              source: TrackSource.imported,
+              display: TrackDisplay.hidden,
+            ),
+          ],
+        },
+      );
+
+      expect(features.paths.single.trackId, isNull);
+      expect(features.paths.single.segments.single, hasLength(2));
+    });
+
+    test('a hidden line is not drawn even when it is the only one', () {
+      // And an entry with no ends to fall back on simply is not on the map.
+      final features = tripMapFeatures(
+        [leg().copyWith(fromLat: const Value(null))],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: walked,
+              source: TrackSource.imported,
+              display: TrackDisplay.hidden,
+            ),
+          ],
+        },
+      );
+
+      expect(features.paths, isEmpty);
+    });
+  });
+
   group('a line is a thing that can be pointed at', () {
     ItineraryItem leg(int id) => ItineraryItem(
       id: id,

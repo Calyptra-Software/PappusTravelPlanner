@@ -564,6 +564,35 @@ enum TrackSource {
   routed,
 }
 
+/// Whether a stored line is drawn on the map, when the default is not what the
+/// user wants.
+///
+/// Three states in one column, the arrangement `Trips.coverAttachmentId` /
+/// `coverHidden` makes for the cover photo: [auto] is where every line starts
+/// and is what every row written before this meant, and the other two are the
+/// user overruling it. Persisted by **index**, so only ever append.
+///
+/// The default ([auto]) is the rule the map has always followed — what was
+/// followed supersedes what a router proposed — and it is right nearly always.
+/// What it cannot know is that a recording is wrong *here*: a tunnel takes the
+/// fix, the trace jumps the block, and the computed route beside it is the
+/// better drawing of that stretch. Deleting the recording to get at it would
+/// throw away the thing that actually happened, so the line is [hidden] instead
+/// and stays in the row, in every copy and in the bundle. [shown] is the other
+/// direction: a routed line drawn *beside* a recording, which the default
+/// suppresses — a trace broken in two by that same tunnel plus the route that
+/// bridges it is one picture of one journey, and only the user can say so.
+enum TrackDisplay {
+  /// The map decides, by the rule it has always used.
+  auto,
+
+  /// Drawn, whatever the other lines on the entry are doing.
+  shown,
+
+  /// Not drawn, whatever it is.
+  hidden,
+}
+
 /// The actual line an itinerary entry followed, as opposed to the straight
 /// segment the map otherwise draws between its ends.
 ///
@@ -603,6 +632,11 @@ class Tracks extends Table {
   /// transport, and keeping it would mean re-parsing foreign markup on every
   /// draw.
   TextColumn get points => text()();
+
+  /// Whether the map draws this line — see [TrackDisplay]. Defaults to
+  /// [TrackDisplay.auto], which is what every row written before v36 means.
+  IntColumn get display =>
+      intEnum<TrackDisplay>().withDefault(const Constant(0))();
 
   /// Manual ordering among the tracks of one item, appended at the end — a leg
   /// can carry the walk out of the station and the walk into the next one.

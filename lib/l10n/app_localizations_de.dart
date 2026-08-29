@@ -962,6 +962,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trackRemove => 'Entfernen';
 
   @override
+  String get trackShow => 'Auf der Karte zeichnen';
+
+  @override
+  String get trackHide => 'Nicht zeichnen';
+
+  @override
   String get trackRemoveAll => 'Alle entfernen';
 
   @override

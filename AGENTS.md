@@ -901,12 +901,33 @@ UI (features/*/presentation, *widgets)
   search form: the switch would have to be set before the user knows whether they will
   import this connection, it would guard the cheap call while the repeated one stays off
   anyway, and one screen of map tiles already costs several times more without being asked.
-- **What was followed supersedes what was proposed.** A leg carrying both a recording and a
-  routed shape draws the recording, solid; a routed one alone draws dashed
-  (`MapPath.dashed`). Both stay stored and the entry's own form lists both — only the map
-  picks, because a second line beside the first says nothing a reader wants. The dash is the
-  honest part: a map can only draw a line, and whether that line is a record or a proposal
-  is exactly the difference a reader needs.
+- **What was followed supersedes what was proposed — by default, which the user may
+  overrule.** A leg carrying both a recording and a routed shape draws the recording, solid;
+  a routed one alone draws dashed (`MapPath.dashed`). Both stay stored and the entry's own
+  form lists both. The dash is the honest part: a map can only draw a line, and whether that
+  line is a record or a proposal is exactly the difference a reader needs.
+  What the default cannot know is that a recording is wrong *here*: a tunnel takes the fix,
+  the trace jumps the block, and the computed route is the better drawing of that stretch.
+  Hence `TrackDisplay` (v36) — `auto` / `shown` / `hidden` on the row, three states in one
+  column, the arrangement the cover photo makes with two. Deleting the recording to get at
+  the route would throw away **what actually happened**, which is the one thing that table
+  exists to hold; hiding it keeps the row, and the copies and the bundle keep it too. `shown`
+  is the other direction, and it is why this is not a `hidden` bool: a trace broken in two by
+  that tunnel *plus* the route bridging it is one picture of one journey, and no rule can
+  derive that. The decision lives once, in the pure `drawnTrackIds` — hidden never, shown
+  always, and the rest by the old rule, counting a forced-`shown` recording as a recording —
+  read by `tripMapFeatures` **and** by `summarizeTracks`, so a list saying a line is drawn
+  cannot disagree with the map about the same picture. An entry whose lines are *all* hidden
+  falls back to the **chord**, as an entry with no lines does: a leg vanishing because of a
+  decision about how to draw it would be the bigger surprise. The control is an eye on each
+  row of the form's list *and* of `MapItemSheet` — the second property on that sheet that is
+  about the picture rather than the plan, there for the reason the color is: you notice you
+  are looking at the wrong line while looking at it. Removing stays out of the sheet, being
+  an act on the record rather than on the drawing. There is no way back to `auto` and none is
+  wanted: deriving is never named, exactly as the cover star never names it. Being a
+  statement about the line, it travels — `copyItemTracks` (a hidden trace would otherwise
+  come back every morning a routine is stamped out) and the `.tpt`, written only when it says
+  something and read as `auto` when absent, so no format version moves.
 - **A color is a property of the entry, not of the line it happens to be drawn as.**
   `ItineraryItems.colorValue` (nullable, v30) colors an entry on the map — a leg's line or a
   place's pin — and null means the trip's accent, which is what every row written before it
@@ -1463,7 +1484,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 35) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 36) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

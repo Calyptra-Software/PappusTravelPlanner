@@ -7494,6 +7494,16 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<TrackDisplay, int> display =
+      GeneratedColumn<int>(
+        'display',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<TrackDisplay>($TracksTable.$converterdisplay);
   static const VerificationMeta _sortOrderMeta = const VerificationMeta(
     'sortOrder',
   );
@@ -7513,6 +7523,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     source,
     name,
     points,
+    display,
     sortOrder,
   ];
   @override
@@ -7589,6 +7600,12 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         DriftSqlType.string,
         data['${effectivePrefix}points'],
       )!,
+      display: $TracksTable.$converterdisplay.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}display'],
+        )!,
+      ),
       sortOrder: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
@@ -7603,6 +7620,8 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
 
   static JsonTypeConverter2<TrackSource, int, int> $convertersource =
       const EnumIndexConverter<TrackSource>(TrackSource.values);
+  static JsonTypeConverter2<TrackDisplay, int, int> $converterdisplay =
+      const EnumIndexConverter<TrackDisplay>(TrackDisplay.values);
 }
 
 class Track extends DataClass implements Insertable<Track> {
@@ -7623,6 +7642,10 @@ class Track extends DataClass implements Insertable<Track> {
   /// draw.
   final String points;
 
+  /// Whether the map draws this line — see [TrackDisplay]. Defaults to
+  /// [TrackDisplay.auto], which is what every row written before v36 means.
+  final TrackDisplay display;
+
   /// Manual ordering among the tracks of one item, appended at the end — a leg
   /// can carry the walk out of the station and the walk into the next one.
   final int sortOrder;
@@ -7632,6 +7655,7 @@ class Track extends DataClass implements Insertable<Track> {
     required this.source,
     this.name,
     required this.points,
+    required this.display,
     required this.sortOrder,
   });
   @override
@@ -7648,6 +7672,11 @@ class Track extends DataClass implements Insertable<Track> {
       map['name'] = Variable<String>(name);
     }
     map['points'] = Variable<String>(points);
+    {
+      map['display'] = Variable<int>(
+        $TracksTable.$converterdisplay.toSql(display),
+      );
+    }
     map['sort_order'] = Variable<int>(sortOrder);
     return map;
   }
@@ -7659,6 +7688,7 @@ class Track extends DataClass implements Insertable<Track> {
       source: Value(source),
       name: name == null && nullToAbsent ? const Value.absent() : Value(name),
       points: Value(points),
+      display: Value(display),
       sortOrder: Value(sortOrder),
     );
   }
@@ -7676,6 +7706,9 @@ class Track extends DataClass implements Insertable<Track> {
       ),
       name: serializer.fromJson<String?>(json['name']),
       points: serializer.fromJson<String>(json['points']),
+      display: $TracksTable.$converterdisplay.fromJson(
+        serializer.fromJson<int>(json['display']),
+      ),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
     );
   }
@@ -7690,6 +7723,9 @@ class Track extends DataClass implements Insertable<Track> {
       ),
       'name': serializer.toJson<String?>(name),
       'points': serializer.toJson<String>(points),
+      'display': serializer.toJson<int>(
+        $TracksTable.$converterdisplay.toJson(display),
+      ),
       'sortOrder': serializer.toJson<int>(sortOrder),
     };
   }
@@ -7700,6 +7736,7 @@ class Track extends DataClass implements Insertable<Track> {
     TrackSource? source,
     Value<String?> name = const Value.absent(),
     String? points,
+    TrackDisplay? display,
     int? sortOrder,
   }) => Track(
     id: id ?? this.id,
@@ -7707,6 +7744,7 @@ class Track extends DataClass implements Insertable<Track> {
     source: source ?? this.source,
     name: name.present ? name.value : this.name,
     points: points ?? this.points,
+    display: display ?? this.display,
     sortOrder: sortOrder ?? this.sortOrder,
   );
   Track copyWithCompanion(TracksCompanion data) {
@@ -7716,6 +7754,7 @@ class Track extends DataClass implements Insertable<Track> {
       source: data.source.present ? data.source.value : this.source,
       name: data.name.present ? data.name.value : this.name,
       points: data.points.present ? data.points.value : this.points,
+      display: data.display.present ? data.display.value : this.display,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
     );
   }
@@ -7728,13 +7767,15 @@ class Track extends DataClass implements Insertable<Track> {
           ..write('source: $source, ')
           ..write('name: $name, ')
           ..write('points: $points, ')
+          ..write('display: $display, ')
           ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, itemId, source, name, points, sortOrder);
+  int get hashCode =>
+      Object.hash(id, itemId, source, name, points, display, sortOrder);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7744,6 +7785,7 @@ class Track extends DataClass implements Insertable<Track> {
           other.source == this.source &&
           other.name == this.name &&
           other.points == this.points &&
+          other.display == this.display &&
           other.sortOrder == this.sortOrder);
 }
 
@@ -7753,6 +7795,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
   final Value<TrackSource> source;
   final Value<String?> name;
   final Value<String> points;
+  final Value<TrackDisplay> display;
   final Value<int> sortOrder;
   const TracksCompanion({
     this.id = const Value.absent(),
@@ -7760,6 +7803,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.source = const Value.absent(),
     this.name = const Value.absent(),
     this.points = const Value.absent(),
+    this.display = const Value.absent(),
     this.sortOrder = const Value.absent(),
   });
   TracksCompanion.insert({
@@ -7768,6 +7812,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.source = const Value.absent(),
     this.name = const Value.absent(),
     required String points,
+    this.display = const Value.absent(),
     this.sortOrder = const Value.absent(),
   }) : itemId = Value(itemId),
        points = Value(points);
@@ -7777,6 +7822,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Expression<int>? source,
     Expression<String>? name,
     Expression<String>? points,
+    Expression<int>? display,
     Expression<int>? sortOrder,
   }) {
     return RawValuesInsertable({
@@ -7785,6 +7831,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       if (source != null) 'source': source,
       if (name != null) 'name': name,
       if (points != null) 'points': points,
+      if (display != null) 'display': display,
       if (sortOrder != null) 'sort_order': sortOrder,
     });
   }
@@ -7795,6 +7842,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Value<TrackSource>? source,
     Value<String?>? name,
     Value<String>? points,
+    Value<TrackDisplay>? display,
     Value<int>? sortOrder,
   }) {
     return TracksCompanion(
@@ -7803,6 +7851,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       source: source ?? this.source,
       name: name ?? this.name,
       points: points ?? this.points,
+      display: display ?? this.display,
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
@@ -7827,6 +7876,11 @@ class TracksCompanion extends UpdateCompanion<Track> {
     if (points.present) {
       map['points'] = Variable<String>(points.value);
     }
+    if (display.present) {
+      map['display'] = Variable<int>(
+        $TracksTable.$converterdisplay.toSql(display.value),
+      );
+    }
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
@@ -7841,6 +7895,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
           ..write('source: $source, ')
           ..write('name: $name, ')
           ..write('points: $points, ')
+          ..write('display: $display, ')
           ..write('sortOrder: $sortOrder')
           ..write(')'))
         .toString();
@@ -17820,6 +17875,7 @@ typedef $$TracksTableCreateCompanionBuilder =
       Value<TrackSource> source,
       Value<String?> name,
       required String points,
+      Value<TrackDisplay> display,
       Value<int> sortOrder,
     });
 typedef $$TracksTableUpdateCompanionBuilder =
@@ -17829,6 +17885,7 @@ typedef $$TracksTableUpdateCompanionBuilder =
       Value<TrackSource> source,
       Value<String?> name,
       Value<String> points,
+      Value<TrackDisplay> display,
       Value<int> sortOrder,
     });
 
@@ -17883,6 +17940,12 @@ class $$TracksTableFilterComposer
     column: $table.points,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<TrackDisplay, TrackDisplay, int> get display =>
+      $composableBuilder(
+        column: $table.display,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
@@ -17942,6 +18005,11 @@ class $$TracksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get display => $composableBuilder(
+    column: $table.display,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
     builder: (column) => ColumnOrderings(column),
@@ -17991,6 +18059,9 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumn<String> get points =>
       $composableBuilder(column: $table.points, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TrackDisplay, int> get display =>
+      $composableBuilder(column: $table.display, builder: (column) => column);
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
@@ -18052,6 +18123,7 @@ class $$TracksTableTableManager
                 Value<TrackSource> source = const Value.absent(),
                 Value<String?> name = const Value.absent(),
                 Value<String> points = const Value.absent(),
+                Value<TrackDisplay> display = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
               }) => TracksCompanion(
                 id: id,
@@ -18059,6 +18131,7 @@ class $$TracksTableTableManager
                 source: source,
                 name: name,
                 points: points,
+                display: display,
                 sortOrder: sortOrder,
               ),
           createCompanionCallback:
@@ -18068,6 +18141,7 @@ class $$TracksTableTableManager
                 Value<TrackSource> source = const Value.absent(),
                 Value<String?> name = const Value.absent(),
                 required String points,
+                Value<TrackDisplay> display = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
               }) => TracksCompanion.insert(
                 id: id,
@@ -18075,6 +18149,7 @@ class $$TracksTableTableManager
                 source: source,
                 name: name,
                 points: points,
+                display: display,
                 sortOrder: sortOrder,
               ),
           withReferenceMapper: (p0) => p0

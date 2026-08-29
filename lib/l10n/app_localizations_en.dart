@@ -955,6 +955,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackRemove => 'Remove';
 
   @override
+  String get trackShow => 'Draw on the map';
+
+  @override
+  String get trackHide => 'Do not draw';
+
+  @override
   String get trackRemoveAll => 'Remove all';
 
   @override

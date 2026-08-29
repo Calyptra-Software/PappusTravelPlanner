@@ -377,9 +377,18 @@ can throw away the detour and keep the walk. *Remove all* is there from two line
 line that cannot be drawn is listed too, with nothing where its length would be, which is
 how you get rid of it.
 
+Each row also says whether that line is **on the map**, and the eye beside it switches that:
+by default a recording (or an import) is drawn and a route the search computed is not, and
+you can overrule it either way. That is what to reach for when a tunnel or a lost fix spoiled
+part of a recording and the computed route is the better drawing of that stretch — put the
+recording away and it is still there, in the list, in every copy and in a shared trip. Hide
+every line of a leg and the map draws the straight segment between its ends again.
+
 On the map, **tapping a line** says which one it is: the entry opens with its lines listed
 and the one you touched marked. Where two entries run over the same ground — a walk out and
-back, two legs along one road — the tap lists both and lets you pick.
+back, two legs along one road — the tap lists both and lets you pick. The same eye is there
+too, because which line you want to see is something you notice while looking at the wrong
+one.
 
 A recording usually covers more than one entry — a walk, a bus, another walk. Import it from the
 trip's ⋮ menu (or from any leg's form), tick the run of entries it covers, and the line is

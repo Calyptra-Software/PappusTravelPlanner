@@ -5,6 +5,12 @@ exact commits.
 
 ## Unreleased
 
+- **A line can be put away instead of deleted.** Every line on an entry now carries an eye:
+  by default a recording is drawn and a route the search computed is not, and either can be
+  overruled. It is what to reach for when a tunnel spoiled part of a recording and the
+  computed route is the better drawing of that stretch — the recording stays in the list, in
+  every copy and in a shared trip, rather than having to be deleted to get it off the map.
+  Each row also says whether its line is being drawn at all.
 - **Tapping a line on the map says which line it is.** A leg that carries several — a
   recording in two segments, a route beside a recording — now draws each of them as itself,
   and a tap opens the entry with its lines listed and the one you touched marked. Where two

@@ -7,6 +7,7 @@ import '../../data/database/tables.dart'
         AttachmentKind,
         AttachmentPositionSource,
         ItemKind,
+        TrackDisplay,
         TrackSource,
         TripKind;
 
@@ -769,25 +770,34 @@ class BundleAttachment {
 /// into a JSON array would quadruple the bundle to say the same thing. The
 /// source travels by **name**, not index, for the reason every portable enum
 /// here does: an index is a promise about the order of a Dart declaration, and
-/// a name survives one being inserted.
+/// a name survives one being inserted. So does [display], which is a statement
+/// about this line and travels with it for the same reason an entry's color
+/// does; an older app that ignores the field imports the trip it would have
+/// imported anyway, which is why this bumps no format version either.
 class BundleTrack {
   const BundleTrack({
     required this.points,
     required this.source,
     this.name,
     this.sortOrder = 0,
+    this.display = TrackDisplay.auto,
   });
 
   final String points;
   final TrackSource source;
   final String? name;
   final int sortOrder;
+  final TrackDisplay display;
 
   Map<String, dynamic> toJson() => {
     'points': points,
     'source': source.name,
     'name': name,
     'sortOrder': sortOrder,
+    // Only when it says something: a bundle from before this field, and the
+    // great majority of lines after it, mean `auto`, and writing it out would
+    // grow every bundle to state the default.
+    if (display != TrackDisplay.auto) 'display': display.name,
   };
 
   factory BundleTrack.fromJson(Map<String, dynamic> json) => BundleTrack(
@@ -800,6 +810,12 @@ class BundleTrack {
     ),
     name: json['name'] as String?,
     sortOrder: json['sortOrder'] as int? ?? 0,
+    // Absent, or a word this app does not know, both mean "no override" — which
+    // is what every line meant before the field existed.
+    display: TrackDisplay.values.firstWhere(
+      (d) => d.name == json['display'],
+      orElse: () => TrackDisplay.auto,
+    ),
   );
 }
 

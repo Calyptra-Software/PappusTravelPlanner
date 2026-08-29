@@ -91,7 +91,14 @@ Map<int, List<TrackLine>> groupTrackPoints(List<Track> rows) {
     if (points.length < 2) continue;
     byItem
         .putIfAbsent(row.itemId, () => [])
-        .add(TrackLine(id: row.id, points: points, source: row.source));
+        .add(
+          TrackLine(
+            id: row.id,
+            points: points,
+            source: row.source,
+            display: row.display,
+          ),
+        );
   }
   return byItem;
 }

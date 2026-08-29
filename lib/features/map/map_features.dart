@@ -58,6 +58,7 @@ final class TrackLine {
     required this.id,
     required this.points,
     required this.source,
+    this.display = TrackDisplay.auto,
   });
 
   /// The row this was decoded from — what a tap on the line names. An entry
@@ -68,6 +69,10 @@ final class TrackLine {
 
   final List<LatLng> points;
   final TrackSource source;
+
+  /// What the user has said about drawing this one, if anything — see
+  /// [drawnTrackIds], which is the only thing that reads it.
+  final TrackDisplay display;
 }
 
 final class MapPath {
@@ -264,25 +269,27 @@ TripMapFeatures tripMapFeatures(
         // with the leg — and each is still split at the antimeridian, since a
         // track may cross it exactly as a flight may.
         final lines = tracks[item.id] ?? const <TrackLine>[];
-        // What was actually followed supersedes what a router proposed: once a
-        // recording of the leg exists, the computed route adds nothing but a
-        // second line beside it. Both stay stored, and the entry's own form
-        // lists both — only the map picks.
-        final followed = [
+        // Which of them are drawn is `drawnTrackIds`, and only there: the
+        // default (what was followed supersedes what a router proposed) and the
+        // user's overrides are one question, asked once, so the map and the
+        // lists that say "this one is drawn" cannot answer it differently.
+        final visible = drawnTrackIds([
           for (final line in lines)
-            if (line.source != TrackSource.routed) line,
+            (id: line.id, source: line.source, display: line.display),
+        ]);
+        final drawn = [
+          for (final line in lines)
+            if (visible.contains(line.id)) line,
         ];
-        final drawn = followed.isNotEmpty ? followed : lines;
         final pieces =
             <({int? trackId, bool dashed, List<List<LatLng>> segments})>[];
         if (drawn.isNotEmpty) {
           for (final line in drawn) {
             pieces.add((
               trackId: line.id,
-              // Per line now, where it used to be per entry: a set that holds
-              // both kinds never reaches here (the recorded ones supersede),
-              // so the drawing is unchanged and the rule is stated where it
-              // belongs — on the line making the claim.
+              // On the line making the claim, not on the entry: a routed line
+              // the user has asked to see may now stand beside a recording, and
+              // the dash is what says which is which.
               dashed: line.source == TrackSource.routed,
               segments: splitAtAntimeridian(line.points),
             ));
@@ -446,6 +453,49 @@ List<List<LatLng>> splitAtAntimeridian(List<LatLng> points) {
   }
   segments.add(current);
   return segments;
+}
+
+/// Which of one entry's lines the map draws.
+///
+/// The one place this is decided, for the map *and* for the lists that say
+/// whether a line is drawn (`summarizeTracks`) — a second copy of the rule is a
+/// second chance for the two to disagree about the same picture.
+///
+/// Three sentences, in order:
+///
+/// * a [TrackDisplay.hidden] line is never drawn, and
+/// * a [TrackDisplay.shown] one always is — those are the user overruling the
+///   default, and nothing may overrule them back;
+/// * everything left is the rule the map has always followed: **what was
+///   followed supersedes what was proposed**. A recording (or an import) is
+///   drawn, and a routed line only when no followed line is being drawn at all —
+///   counting the ones forced [TrackDisplay.shown], since a line the user asked
+///   for is a line that is there.
+///
+/// The answer may be **empty**, which is new: with every line hidden the entry
+/// falls back to the straight segment between its ends, exactly as an entry with
+/// no lines at all does. That is the plan's own statement about the leg, and a
+/// leg vanishing from the map because of a decision about *how* to draw it would
+/// be a bigger surprise than the chord.
+Set<int> drawnTrackIds(
+  Iterable<({int id, TrackSource source, TrackDisplay display})> lines,
+) {
+  final drawn = <int>{};
+  var followedDrawn = false;
+  for (final line in lines) {
+    if (line.display == TrackDisplay.hidden) continue;
+    if (line.display == TrackDisplay.shown ||
+        line.source != TrackSource.routed) {
+      drawn.add(line.id);
+      if (line.source != TrackSource.routed) followedDrawn = true;
+    }
+  }
+  if (followedDrawn) return drawn;
+  for (final line in lines) {
+    if (line.display == TrackDisplay.hidden) continue;
+    if (line.source == TrackSource.routed) drawn.add(line.id);
+  }
+  return drawn;
 }
 
 /// The lines under one tap, folded to **one per entry**, in the order the plan

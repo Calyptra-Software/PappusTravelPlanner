@@ -169,6 +169,73 @@ void main() {
     expect(b.collapsedDays, [DateTime(2026, 5, 3)]);
   });
 
+  group('the lines an entry followed', () {
+    /// A leg carrying both kinds: the route the search computed, and the
+    /// recording made while travelling it — with the recording put away,
+    /// because it is wrong in the tunnel.
+    Future<int> seed(AppDatabase into) async {
+      final tripId = await into.tripDao.createTrip(
+        TripsCompanion.insert(title: 'Hamburg', destination: const Value('')),
+      );
+      final leg = await into.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          kind: ItemKind.transport,
+        ),
+      );
+      await into.trackDao.addTracks(leg, [
+        (points: const [LatLng(53.55, 9.99), LatLng(53.56, 10.01)], name: null),
+      ], source: TrackSource.routed);
+      await into.trackDao.addTracks(leg, [
+        (
+          points: const [LatLng(53.55, 9.99), LatLng(53.56, 10.01)],
+          name: 'tunnel.gpx',
+        ),
+      ]);
+      final rows = await into.trackDao.watchTracksForItem(leg).first;
+      await into.trackDao.setTrackDisplay(rows.last.id, TrackDisplay.hidden);
+      return tripId;
+    }
+
+    test('travel with the trip, and are drawn as they were', () async {
+      // A bundle is the lossless export, so a trip that arrives drawing
+      // something other than what was sent is not the same trip.
+      final source = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(source.close);
+      final sourceId = await seed(source);
+
+      final bytes = (await source.sharingDao.exportTrip(sourceId))!.encode();
+      final newId = await db.sharingDao.importTrip(TripBundle.decode(bytes));
+
+      final imported = await db.trackDao.watchTracksForTrip(newId).first;
+      expect(imported.map((t) => t.name), [null, 'tunnel.gpx']);
+      expect(imported.map((t) => t.source), [
+        TrackSource.routed,
+        TrackSource.imported,
+      ]);
+      expect(imported.map((t) => t.display), [
+        TrackDisplay.auto,
+        TrackDisplay.hidden,
+      ]);
+    });
+
+    test('a bundle written before the field reads as no override', () async {
+      // Which is what every line meant then, and what an older app reading a
+      // bundle written now goes on meaning.
+      final track = BundleTrack.fromJson({
+        'points': '_p~iF~ps|U_ulLnnqC',
+        'source': 'imported',
+        'name': 'alster.gpx',
+        'sortOrder': 0,
+      });
+
+      expect(track.display, TrackDisplay.auto);
+      // And a line under the default says nothing about it on the way out.
+      expect(track.toJson().containsKey('display'), isFalse);
+    });
+  });
+
   test('importTrip rejects a bundle from a newer app version', () async {
     final bundle = TripBundle(
       formatVersion: TripBundle.currentFormatVersion + 1,

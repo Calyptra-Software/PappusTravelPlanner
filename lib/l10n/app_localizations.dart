@@ -1718,6 +1718,18 @@ abstract class AppLocalizations {
   /// **'Remove'**
   String get trackRemove;
 
+  /// Tooltip of the eye button on a line the map is not drawing; pressing it draws this one.
+  ///
+  /// In en, this message translates to:
+  /// **'Draw on the map'**
+  String get trackShow;
+
+  /// Tooltip of the eye button on a line the map is drawing; pressing it stops drawing this one, without deleting it.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not draw'**
+  String get trackHide;
+
   /// Button that deletes every line stored on this entry at once. Offered only when there are several.
   ///
   /// In en, this message translates to:

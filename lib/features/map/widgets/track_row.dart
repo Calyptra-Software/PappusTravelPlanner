@@ -20,11 +20,25 @@ class TrackRow extends StatelessWidget {
   const TrackRow({
     super.key,
     required this.track,
+    this.onSetDisplay,
     this.onRemove,
     this.highlighted = false,
   });
 
   final TrackSummary track;
+
+  /// Draws this line, or stops drawing it — the one act both screens offer,
+  /// because *whether a line is drawn* is a question about the picture and is
+  /// answered while looking at it, which is the argument that put the entry's
+  /// color on the map's own sheet.
+  ///
+  /// Two states under a three-state model: the eye writes
+  /// [TrackDisplay.shown] or [TrackDisplay.hidden], and [TrackDisplay.auto] is
+  /// where every line starts. Deriving is never named — a line the default
+  /// draws looks exactly like one the user asked for, which is the point — so
+  /// there is no third position on the control and no way back to `auto`,
+  /// exactly as the cover photo's star has none.
+  final ValueChanged<TrackDisplay>? onSetDisplay;
 
   /// Removes this line, where removing one is something the screen offers. Null
   /// on a reading, which is not the place an act lives.
@@ -79,11 +93,27 @@ class TrackRow extends StatelessWidget {
               style: theme.textTheme.bodySmall?.copyWith(
                 color: highlighted
                     ? theme.colorScheme.onSecondaryContainer
-                    : null,
+                    // A line the map is not drawing is written in the muted
+                    // color the rest of the app uses for what is off: the row
+                    // is still there to be read and switched back on, and the
+                    // eye beside it is the control, not the statement.
+                    : (track.drawn ? null : theme.colorScheme.onSurfaceVariant),
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          if (onSetDisplay != null)
+            IconButton(
+              onPressed: () => onSetDisplay!(
+                track.drawn ? TrackDisplay.hidden : TrackDisplay.shown,
+              ),
+              tooltip: track.drawn ? l10n.trackHide : l10n.trackShow,
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                track.drawn ? Icons.visibility : Icons.visibility_off,
+                size: 18,
+              ),
+            ),
           if (onRemove != null)
             IconButton(
               onPressed: onRemove,

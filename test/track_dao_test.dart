@@ -109,6 +109,50 @@ void main() {
     expect(await db.trackDao.watchTracksForItem(notTaken).first, hasLength(1));
   });
 
+  group('whether the map draws a line', () {
+    test('every line starts under the map\'s own rule', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      await db.trackDao.addTracks(leg, [(points: line, name: 'Walk')]);
+
+      final stored = await db.trackDao.watchTracksForItem(leg).first;
+      expect(stored.single.display, TrackDisplay.auto);
+    });
+
+    test('an override is written on its own, and the line stays', () async {
+      // Hiding is not deleting: the recording of the tunnel is still what
+      // happened, and the row keeps everything it said.
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+      await db.trackDao.addTracks(leg, [(points: line, name: 'Walk')]);
+      final id = (await db.trackDao.watchTracksForItem(leg).first).single.id;
+
+      await db.trackDao.setTrackDisplay(id, TrackDisplay.hidden);
+
+      final stored = (await db.trackDao.watchTracksForItem(leg).first).single;
+      expect(stored.display, TrackDisplay.hidden);
+      expect(stored.name, 'Walk');
+      expect(stored.points, isNotEmpty);
+    });
+
+    test(
+      'a hidden line is still the entry\'s, and still the trip\'s',
+      () async {
+        // Both readings hand it over: the map decides what to draw with
+        // `drawnTrackIds`, and a query that dropped the row would take the way
+        // back out with it.
+        final trip = await makeTrip();
+        final leg = await makeLeg(trip);
+        await db.trackDao.addTracks(leg, [(points: line, name: 'Walk')]);
+        final id = (await db.trackDao.watchTracksForItem(leg).first).single.id;
+        await db.trackDao.setTrackDisplay(id, TrackDisplay.hidden);
+
+        expect(await db.trackDao.watchTracksForItem(leg).first, hasLength(1));
+        expect(await db.trackDao.watchTracksForTrip(trip).first, hasLength(1));
+      },
+    );
+  });
+
   group('a line travels with a copy', () {
     test('duplicating an entry brings it', () async {
       final trip = await makeTrip();
@@ -139,6 +183,26 @@ void main() {
 
       final drawn = await db.trackDao.watchTracksForTrip(trip).first;
       expect(drawn.map((t) => t.name), ['To the S-Bahn']);
+    });
+
+    test('and the copy is drawn as the original was', () async {
+      // Whether a line is drawn is a statement about that line, not about one
+      // occurrence of the plan — the same reason an entry's color travels. A
+      // commute whose broken trace was hidden would otherwise draw it again
+      // every morning it is stamped out.
+      final routine = await makeTrip(kind: TripKind.routine);
+      final leg = await makeLeg(routine, date: kRoutineAnchorDay);
+      await db.trackDao.addTracks(leg, [(points: line, name: 'Tunnel')]);
+      final id = (await db.trackDao.watchTracksForItem(leg).first).single.id;
+      await db.trackDao.setTrackDisplay(id, TrackDisplay.hidden);
+
+      final trip = await db.routineDao.materializeRoutine(
+        routine,
+        startDate: DateTime(2026, 6, 1),
+      );
+
+      final copied = await db.trackDao.watchTracksForTrip(trip).first;
+      expect(copied.single.display, TrackDisplay.hidden);
     });
 
     test('a copy of the line, not a second reference to it', () async {

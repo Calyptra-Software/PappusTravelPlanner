@@ -93,6 +93,9 @@ class TrackField extends ConsumerWidget {
           for (final track in tracks)
             TrackRow(
               track: track,
+              onSetDisplay: (display) => ref
+                  .read(repositoryProvider)
+                  .setTrackDisplay(track.id, display),
               onRemove: () =>
                   ref.read(repositoryProvider).deleteTrack(track.id),
             ),

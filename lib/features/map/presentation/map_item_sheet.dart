@@ -162,6 +162,16 @@ class MapItemSheet extends ConsumerWidget {
                 for (final track in tracks)
                   TrackRow(
                     track: track,
+                    // The second thing on this sheet that is about the picture
+                    // and not about the plan, and it is here for the reason the
+                    // color is: which of two lines to draw is a question you
+                    // have while looking at the wrong one, and the map redraws
+                    // underneath as it is answered. Removing is still not
+                    // offered — that is an act on the record, not on the
+                    // drawing, and it lives in the form the button below opens.
+                    onSetDisplay: (display) => ref
+                        .read(repositoryProvider)
+                        .setTrackDisplay(track.id, display),
                     highlighted: track.id == highlightTrackId,
                   ),
                 const SizedBox(height: 12),
