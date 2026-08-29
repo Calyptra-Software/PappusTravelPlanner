@@ -602,10 +602,11 @@ UI (features/*/presentation, *widgets)
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
-- **A trip leaves the app in three shapes, all built from one `TripBundle`** (`features/sharing/`,
+- **A trip leaves the app in four shapes, all built from one `TripBundle`** (`features/sharing/`,
   all pure so they test without a database): the `.tpt` bundle itself — the only *lossless*,
-  round-tripping one, and the only one with an importer — plus two one-way views, `trip_pdf.dart`
-  and `trip_ics.dart`. All three read the plan the same way the timeline does: only *live* entries
+  round-tripping one, and the only one with an importer — plus three one-way views,
+  `trip_pdf.dart`, `trip_ics.dart` and `trip_gpx.dart`. All four read the plan the same way the
+  timeline does: only *live* entries
   (loose ones and the chosen option of each decision), so the road not taken never leaves either.
   The `.ics` export leans on the fact that the app stores **no timezone at all** — a day plus
   minutes since midnight — which is exactly iCalendar's *floating* time (`DTSTART` with neither a
@@ -615,6 +616,26 @@ UI (features/*/presentation, *widgets)
   participants, and actual times have no mapping (costs ride along as description text, readable
   but not counted). Import of `.ics` is deliberately **not** built — a calendar event routinely
   spans days, which an item (one day, strictly) cannot represent.
+- **The `.gpx` export exists because half the lines have no original anywhere else.** Importing
+  one recording across several entries *cuts* it, and those pieces live only here, as do the
+  routes the connection search computed; the packed column was chosen so that a line could
+  leave this app "without a decoder being written first", which was true only for somebody
+  willing to write the decoder. `buildTripGpx` returns **null** rather than an empty document
+  when a trip holds no line, and the caller says so — the menu entry cannot know in advance
+  without decoding every point of the trip, which is the one expensive thing a track does.
+  Three decisions in it are worth keeping: a recording is a **`<trk>`** and a routed shape an
+  **`<rte>`**, which is the distinction GPX itself draws (where something went, against how it
+  could go) and the one the map dashes — and the routes are written **before** the tracks
+  because the schema fixes that order, not because the plan does. A line the map is **not**
+  drawing is exported all the same: `TrackDisplay` is a statement about the picture and a GPX
+  is the record, so an eye must not quietly change what a file contains. And nothing is
+  invented to fill the format's other fields — no `<ele>`, no per-point `<time>` (the import
+  dropped both on purpose), coordinates at the five decimals the column actually holds, and on
+  a **routine** not even the day, since its entries sit on `kRoutineAnchorDay`, which is a sort
+  origin and not a date anybody travelled. That is also why a routine *is* offered this export
+  while paper and the calendar are not: a line needs no dates to be a line. So the file is not
+  the file that was imported, and `docs/features.md` says so where a user might otherwise
+  delete the original.
 - **A bundle stamps only the format version the trip actually needs**, so an older app keeps
   reading what it can: v2 for a trip with decisions, v3 for one using a currency the old
   four-value enum never had. That is why a cost's currency is written under the *old enum name*

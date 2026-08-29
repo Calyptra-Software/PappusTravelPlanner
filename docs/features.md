@@ -405,6 +405,16 @@ A line is part of the plan, so it **travels with a copy** — duplicate the leg,
 routine, share the trip, and it comes along. A `.tpt` bundle carries it, which is what keeps
 that export lossless.
 
+**Getting the lines out again:** the trip's ⋮ menu has *Export lines (GPX)…*, which writes every
+line the trip's entries carry into one `.gpx` — recordings as tracks, the routes the connection
+search computed as routes. A line you have hidden is exported too: hiding is about the map, and this is
+the record.
+
+It is **not the file you imported**. Elevation and timestamps are dropped when a GPX comes in and
+cannot be invented on the way out, so what you get is the geometry (to about a metre), the day
+and the mode — keep your original if you want the rest. Routines can be exported as well, without
+a day, since their entries have none.
+
 ### Which countries you have been to
 
 The statistics have a **Countries** tab: the world drawn from bundled outlines, with the
