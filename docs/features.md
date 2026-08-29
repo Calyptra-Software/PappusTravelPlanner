@@ -127,6 +127,11 @@ Where several routes lie on top of each other or run side by side — the same c
 once per day you made it, or two trips sharing a stretch of road — the tap lists **all** of
 them and you pick.
 
+Places that would sit on top of each other are gathered under one pin with a count, and come
+apart again as you zoom in. A gathered pin keeps the color every place under it would have
+had — the trip's, here — and turns grey only where they differ; tapping it lists the trips
+under it.
+
 ---
 
 ## The itinerary
@@ -300,6 +305,11 @@ pins and transport legs as lines between their ends.
 Two things it deliberately does not do: a leg is drawn **only when both of its ends have a
 position**, and nothing is drawn between one place and the next. On today, the entry that
 is under way is marked.
+
+Places on the same spot are gathered under one pin with a count and come apart again as
+you zoom in. The pin keeps the color every entry under it would have had and turns grey
+only where they differ; an entry that is under way still turns it red. Tapping a gathered
+pin lists what it holds.
 
 ### Where the positions come from
 

@@ -792,6 +792,36 @@ UI (features/*/presentation, *widgets)
   one trip opens its card as before, several are listed to choose from. `kLineHitbox` widens
   the hit test past the 3px stroke for the same reason — what "on this line" means has to be
   a fingertip, and a shared stretch that reads as one line should be one tap.
+- **The same overlap buries the pins, so they are gathered rather than hit-tested.** A line
+  under another can still be reached by widening the hitbox; a pin under another cannot be
+  reached at all, since a marker wins the hit test against everything beneath it — twenty
+  identical commutes put twenty marks on one platform and nineteen of them are taps nobody
+  can aim. `clusterPins` (`features/map/pin_clusters.dart`) is therefore `clusterPhotos`
+  applied to the pins: the greedy, order-dependent rule now lives once in `map_clusters.dart`
+  and both call it, since *which* marks fall together is one question and two answers to it
+  would drift. Measured in **screen pixels** through the camera's own projection, so a
+  cluster comes apart as you zoom in — which is why the pins are a layer of their own
+  (`_PinMarkers` reads `MapCamera.of(context)`, the arrangement `_PhotoMarkers` already has)
+  rather than markers among the rest, which would then rebuild on every pan. It applies to
+  **both** maps, since the pile-up is not peculiar to the all-trips one: a hotel returned to
+  every evening and a station passed through twice put two pins on one spot, and at a zoom
+  showing the country a city's worth of entries is one blob. `PinCluster<T>` is generic in
+  what a place *belongs to* for exactly that reason — the trip map gathers `MapPin`s and
+  answers with the entry (`_showPins`, one opens directly and several name themselves,
+  through the same `_showChoice` sheet the lines use), the all-trips map gathers `TripPin`s
+  and answers with the trip. A gathered mark sits on the **representative's own position**
+  and keeps the order it was handed, so its face and its list are stable as the camera moves.
+  Its color is `gatheredPinColor`: the one every place under it would have worn, else
+  `kMixedPinColor`. **Agreement, not identity** — two trips that happen to share an accent,
+  or two entries given the same color, keep it, because drawing it says nothing about them
+  that was not already true; the neutral is only for a mark that would otherwise have to
+  *pick* one of several, which on either map is a false statement about the rest. Being
+  **under way still outranks it**, exactly as it outranks an entry's own color: a mark that
+  gathered the entry you are in the middle of must not be the thing that hides the reserved
+  red. The badge is `MapPlacePin`'s `count`, the same `_CountBadge` the photo marker draws —
+  and it makes room for itself *inside* the marker's box (`pinBoxFor`, symmetric in width and
+  taller only upwards), because `MarkerLayer` lays its children out in a `Stack` that clips,
+  and because the tip is the pin's whole claim and a badge may not move it.
 - **A track is a line with a provenance, not "the GPX file".** `Tracks` (v29) holds the
   line an entry *actually* followed — packed by `track_points.dart` into the encoded-polyline
   format every mapping tool reads, so a dense recording costs a fraction of its point count

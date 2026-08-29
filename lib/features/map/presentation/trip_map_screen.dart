@@ -16,6 +16,7 @@ import '../../attachments/presentation/attachment_sheet.dart';
 import '../../attachments/presentation/gallery_screen.dart';
 import '../../attachments/trip_gallery.dart';
 import '../photo_clusters.dart';
+import '../pin_clusters.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/live_items.dart';
@@ -198,6 +199,65 @@ class _MapViewState extends ConsumerState<_MapView> {
     }
     final l10n = AppLocalizations.of(context);
     final modes = ref.read(transportModesByIdProvider);
+    _showChoice(
+      heading: l10n.mapEntriesHere(hits.length),
+      rows: [
+        for (final (hit, ends) in [for (final hit in hits) (hit, _endsOf(hit))])
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(modes[hit.modeId]?.icon ?? kDefaultTransportModeIcon),
+            // Named as the sheet behind this one names it, so the row and what
+            // it opens read the same.
+            title: Text(_labelOf(hit, l10n)),
+            subtitle: ends == null ? null : Text(ends),
+            onTap: () {
+              Navigator.of(context).pop();
+              _showItem(hit.itemId, trackId: hit.trackId);
+            },
+          ),
+      ],
+    );
+  }
+
+  /// What a tap on a place mark is for: the entry it stands for — or, where the
+  /// mark gathers several, which of them was meant.
+  ///
+  /// The rule the lines already follow, arrived at from the other side. A pin is
+  /// one entry's mark, but a mark is not always one pin: places at the same spot
+  /// are gathered so that the ones underneath are reachable at all, and a
+  /// gathered mark can only answer by naming what it holds.
+  void _showPins(List<MapPin> pins) {
+    if (pins.isEmpty) return;
+    if (pins.length == 1) {
+      _showItem(pins.single.itemId);
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    _showChoice(
+      heading: l10n.mapEntriesHere(pins.length),
+      rows: [
+        for (final pin in pins)
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.place_outlined),
+            // Its own name, and the placeholder the sheet behind this one uses
+            // for an entry that has none.
+            title: Text(pin.label ?? l10n.coordinatesNone),
+            onTap: () {
+              Navigator.of(context).pop();
+              _showItem(pin.itemId);
+            },
+          ),
+      ],
+    );
+  }
+
+  /// The sheet that finishes a tap several things answered to.
+  ///
+  /// One shape for lines and for places, because it is one question — "which of
+  /// these did you mean" — and two sheets asking it differently would read as
+  /// two different questions.
+  void _showChoice({required String heading, required List<Widget> rows}) {
     showAppSheet<void>(
       context,
       builder: (_) => SafeArea(
@@ -207,28 +267,9 @@ class _MapViewState extends ConsumerState<_MapView> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                l10n.mapEntriesHere(hits.length),
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
+              Text(heading, style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 8),
-              for (final (hit, ends) in [
-                for (final hit in hits) (hit, _endsOf(hit)),
-              ])
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    modes[hit.modeId]?.icon ?? kDefaultTransportModeIcon,
-                  ),
-                  // Named as the sheet behind this one names it, so the row and
-                  // what it opens read the same.
-                  title: Text(_labelOf(hit, l10n)),
-                  subtitle: ends == null ? null : Text(ends),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _showItem(hit.itemId, trackId: hit.trackId);
-                  },
-                ),
+              ...rows,
             ],
           ),
         ),
@@ -427,25 +468,14 @@ class _MapViewState extends ConsumerState<_MapView> {
                         ),
                       ),
                     ),
-                for (final pin in features.pins)
-                  Marker(
-                    point: pin.position,
-                    // Aligned above the point so the pin's tip — its whole
-                    // claim — lands on it.
-                    width: 34,
-                    height: 34,
-                    alignment: Alignment.topCenter,
-                    child: _Tappable(
-                      onTap: () => _showItem(pin.itemId),
-                      child: MapPlacePin(
-                        color: colorOf(
-                          pin.colorValue,
-                          happening: pin.happening,
-                        ),
-                      ),
-                    ),
-                  ),
               ],
+            ),
+            // The places, in a layer of their own so that they can be gathered
+            // against the camera — see `_PinMarkers`.
+            _PinMarkers(
+              pins: features.pins,
+              colorOf: colorOf,
+              onTap: _showPins,
             ),
             // Photos in a layer of their own, above the plan rather than
             // among it: a picture is bigger than a pin and would cover the
@@ -577,6 +607,91 @@ class _Tappable extends StatelessWidget {
     behavior: HitTestBehavior.opaque,
     child: child,
   );
+}
+
+/// The trip's places, gathered so that none hides another.
+///
+/// A layer of its own for the reason the photographs are one: which pins fall
+/// together is measured in screen pixels through the camera's own projection,
+/// so this has to rebuild whenever the camera moves — and reading
+/// `MapCamera.of(context)` here keeps the rest of the map from rebuilding with
+/// it. A cluster therefore comes apart on its own as you zoom in, with no
+/// threshold in metres to be wrong at some scale.
+///
+/// Places pile up on a single trip's map as readily as on the all-trips one: a
+/// hotel returned to every evening, a station passed through twice, or simply a
+/// city's worth of entries at a zoom showing the country. A pin under another
+/// cannot be tapped at all, since a marker wins the hit test against everything
+/// beneath it.
+class _PinMarkers extends StatelessWidget {
+  const _PinMarkers({
+    required this.pins,
+    required this.colorOf,
+    required this.onTap,
+  });
+
+  final List<MapPin> pins;
+  final Color Function(int? colorValue, {required bool happening}) colorOf;
+
+  /// Handed every entry under the mark, in the order they were drawn: one opens
+  /// directly, several name themselves.
+  final ValueChanged<List<MapPin>> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (pins.isEmpty) return const SizedBox.shrink();
+    final camera = MapCamera.of(context);
+    final clusters = clusterPins(
+      pins,
+      project: (pin) {
+        final offset = camera.latLngToScreenOffset(pin.position);
+        return math.Point<double>(offset.dx, offset.dy);
+      },
+    );
+
+    const size = 32.0;
+    final box = pinBoxFor(size);
+
+    return MarkerLayer(
+      markers: [
+        for (final cluster in clusters)
+          Marker(
+            point: cluster.representative.position,
+            // Aligned above the point so the pin's tip — its whole claim —
+            // lands on it, gathered or not.
+            width: cluster.count > 1 ? box.width : 34,
+            height: cluster.count > 1 ? box.height : 34,
+            alignment: Alignment.topCenter,
+            child: _Tappable(
+              onTap: () => onTap(cluster.members),
+              child: MapPlacePin(
+                color: _colorFor(cluster),
+                size: size,
+                count: cluster.count,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// What a gathered mark is drawn in: the color every entry under it would
+  /// have worn, else the neutral — the same rule everywhere pins are gathered.
+  ///
+  /// Being *under way* outranks it, as it outranks an entry's own color: red is
+  /// the app's one reserved color, and a mark that gathered the entry you are
+  /// in the middle of must not be the thing that hides it. It says "something
+  /// here is under way", which is true of the mark; the count says there are
+  /// others, and the tap names them.
+  Color _colorFor(PinCluster<MapPin> cluster) {
+    if (cluster.members.any((pin) => pin.happening)) {
+      return colorOf(null, happening: true);
+    }
+    return gatheredPinColor([
+      for (final pin in cluster.members)
+        colorOf(pin.colorValue, happening: false),
+    ]);
+  }
 }
 
 /// The trip's photographs, gathered so that none hides another.
