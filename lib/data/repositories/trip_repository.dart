@@ -170,6 +170,11 @@ class TripRepository {
     List<({List<LatLng> points, String? name})> lines,
   ) => _db.trackDao.addTracks(itemId, lines);
 
+  /// One stored line, by id — a recording that stopped and started again
+  /// arrives as several, and only the user knows which of them is the detour
+  /// they did not mean to keep.
+  Future<void> deleteTrack(int id) => _db.trackDao.deleteTrack(id);
+
   Future<void> deleteTracksForItem(int itemId) =>
       _db.trackDao.deleteTracksForItem(itemId);
 

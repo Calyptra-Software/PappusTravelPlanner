@@ -369,6 +369,14 @@ along its line and the walk around the corner, rather than a straight line betwe
 Those are drawn **dashed**, because they are what the router computed and not what you recorded.
 Importing a GPX onto the same leg shows only the imported track.
 
+An entry often ends up carrying **several** lines: a recording that stopped and started
+again arrives as one per segment, a second import adds to what is there, and a connection
+brings its computed route. The form lists them one per row — the name the file gave it,
+where it came from, and how far it runs — and each row has its own remove button, so you
+can throw away the detour and keep the walk. *Remove all* is there from two lines up. A
+line that cannot be drawn is listed too, with nothing where its length would be, which is
+how you get rid of it.
+
 A recording usually covers more than one entry — a walk, a bus, another walk. Import it from the
 trip's ⋮ menu (or from any leg's form), tick the run of entries it covers, and the line is
 divided between them. Where an entry has no coordinates, the map asks you to tap the spot where

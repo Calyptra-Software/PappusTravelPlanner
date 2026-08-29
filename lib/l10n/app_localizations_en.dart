@@ -944,6 +944,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackRemove => 'Remove';
 
   @override
+  String get trackRemoveAll => 'Remove all';
+
+  @override
+  String get trackSourceRecorded => 'Recorded';
+
+  @override
+  String get trackSourceImported => 'Imported';
+
+  @override
+  String get trackSourceRouted => 'Computed route';
+
+  @override
+  String get trackNotDrawable => 'Nothing to draw';
+
+  @override
   String get trackNone =>
       'None — the map draws the straight line between the ends.';
 

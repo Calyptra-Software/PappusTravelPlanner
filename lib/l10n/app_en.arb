@@ -407,7 +407,27 @@
   },
   "trackRemove": "Remove",
   "@trackRemove": {
-    "description": "Button that deletes every line stored on this entry."
+    "description": "Tooltip of the button that deletes one of the lines stored on this entry."
+  },
+  "trackRemoveAll": "Remove all",
+  "@trackRemoveAll": {
+    "description": "Button that deletes every line stored on this entry at once. Offered only when there are several."
+  },
+  "trackSourceRecorded": "Recorded",
+  "@trackSourceRecorded": {
+    "description": "A line somebody actually travelled, as opposed to one a router proposed."
+  },
+  "trackSourceImported": "Imported",
+  "@trackSourceImported": {
+    "description": "A line that came out of a GPX file."
+  },
+  "trackSourceRouted": "Computed route",
+  "@trackSourceRouted": {
+    "description": "A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it."
+  },
+  "trackNotDrawable": "Nothing to draw",
+  "@trackNotDrawable": {
+    "description": "Stands where a line's length would, when the stored line cannot be read or holds fewer than two points \u2014 the map draws nothing for it either way."
   },
   "trackNone": "None \u2014 the map draws the straight line between the ends.",
   "@trackNone": {

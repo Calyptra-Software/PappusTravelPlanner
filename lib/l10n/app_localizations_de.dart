@@ -951,6 +951,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trackRemove => 'Entfernen';
 
   @override
+  String get trackRemoveAll => 'Alle entfernen';
+
+  @override
+  String get trackSourceRecorded => 'Aufgezeichnet';
+
+  @override
+  String get trackSourceImported => 'Importiert';
+
+  @override
+  String get trackSourceRouted => 'Berechnete Route';
+
+  @override
+  String get trackNotDrawable => 'Nichts zu zeichnen';
+
+  @override
   String get trackNone =>
       'Keine — die Karte zeichnet die Luftlinie zwischen den Enden.';
 
