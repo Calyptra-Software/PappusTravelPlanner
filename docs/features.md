@@ -128,8 +128,9 @@ once per day you made it, or two trips sharing a stretch of road — the tap lis
 them and you pick.
 
 Places that would sit on top of each other are gathered under one pin with a count, and come
-apart again as you zoom in. A gathered pin keeps the trip's color while every place under it
-belongs to that trip, and turns grey once it stands for several; tapping it lists them all.
+apart again as you zoom in. A gathered pin keeps the color every place under it would have
+had — the trip's, here — and turns grey only where they differ; tapping it lists the trips
+under it.
 
 ---
 
@@ -304,6 +305,12 @@ pins and transport legs as lines between their ends.
 Two things it deliberately does not do: a leg is drawn **only when both of its ends have a
 position**, and nothing is drawn between one place and the next. On today, the entry that
 is under way is marked.
+
+Places on the same spot — a hotel returned to every evening, a station passed through
+twice — are gathered under one pin with a count and come apart again as you zoom in. The
+pin keeps the color every entry under it would have had and turns grey only where they
+differ; an entry that is under way still turns it red. Tapping a gathered pin lists what
+it holds.
 
 ### Where the positions come from
 

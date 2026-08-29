@@ -1,11 +1,13 @@
 import 'dart:math' as math;
 
+import 'package:flutter/painting.dart' show Color;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/map/map_features.dart';
 import 'package:travelplanner/features/map/pin_clusters.dart';
+import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 
 /// Gathering the place marks on the all-trips map, where a commute drawn once
 /// per day it was made puts twenty pins on one spot.
@@ -69,7 +71,7 @@ void main() {
     expect(clusterPins(pins, project: at(1000)), hasLength(2));
   });
 
-  test('a mark of one trip wears that trip, however many places', () {
+  test('a mark of one trip names just that trip, however many places', () {
     final one = trip(1);
     final clusters = clusterPins([
       pin(one, 0, 0),
@@ -77,20 +79,8 @@ void main() {
       pin(one, 0, 0),
     ], project: at(100));
 
-    expect(clusters.single.onlyTrip?.id, 1);
+    expect(clusters.single.count, 3);
     expect(clusters.single.trips.map((t) => t.id), [1]);
-  });
-
-  test('a mark of several trips belongs to none of them', () {
-    // Wearing the first one's accent would say the other's place is that
-    // trip's, which on this map is exactly what a colour means.
-    final clusters = clusterPins([
-      pin(trip(1), 0, 0),
-      pin(trip(2), 0, 0),
-    ], project: at(100));
-
-    expect(clusters.single.onlyTrip, isNull);
-    expect(clusters.single.trips.map((t) => t.id), [1, 2]);
   });
 
   test('the trips under a mark are named once each, in the order given', () {
@@ -117,11 +107,35 @@ void main() {
     final clusters = clusterPins(pins, project: at(100));
     final seen = [
       for (final c in clusters)
-        for (final p in c.pins) p.pin.itemId,
+        for (final p in c.members) p.pin.itemId,
     ];
 
     expect(seen.toSet(), pins.map((p) => p.pin.itemId).toSet());
     expect(seen.length, pins.length);
+  });
+
+  group('what a gathered mark is drawn in', () {
+    const teal = Color(0xFF00695C);
+    const orange = Color(0xFFEF6C00);
+
+    test('the color they all agree on', () {
+      expect(gatheredPinColor([teal, teal, teal]), teal);
+    });
+
+    test('agreement, not identity', () {
+      // Two trips that happen to share an accent, or two entries given the same
+      // color: drawing the mark in it says nothing that was not already true,
+      // so the neutral would only be throwing information away.
+      expect(gatheredPinColor([teal, teal]), teal);
+    });
+
+    test('the neutral once it would have to pick one of several', () {
+      expect(gatheredPinColor([teal, orange]), kMixedPinColor);
+    });
+
+    test('one color is that color', () {
+      expect(gatheredPinColor([orange]), orange);
+    });
   });
 
   test('one place needs no projection at all', () {

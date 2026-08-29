@@ -328,6 +328,38 @@ class MapPlacePin extends StatelessWidget {
   }
 }
 
+/// The color a mark gathering places of **different** colors is drawn in.
+///
+/// A color on a map is a statement about what is under it: whose trip it is on
+/// the all-trips map, which entry it is on a trip's own. A mark standing for
+/// places that disagree may therefore wear none of them — it would be saying
+/// something false about the rest — so it says only "several", which is what
+/// the count beside it says too, and the tap says the rest.
+///
+/// In map colours rather than theme ones, like the picker's mark and for the
+/// same reason: raster tiles are pale in both themes, so a mark tinted by the
+/// theme is a road.
+const Color kMixedPinColor = Color(0xFF424242);
+
+/// What a gathered pin is drawn in, given what each place under it would have
+/// worn on its own: the one color they agree on, else [kMixedPinColor].
+///
+/// Agreement and not identity — two trips that happen to share an accent, or
+/// two entries given the same color, are gathered into a mark of that color,
+/// because drawing it says nothing about them that was not already true. The
+/// neutral is for a mark that would otherwise have to *pick* one of several.
+Color gatheredPinColor(Iterable<Color> colors) {
+  Color? agreed;
+  for (final color in colors) {
+    if (agreed == null) {
+      agreed = color;
+    } else if (color != agreed) {
+      return kMixedPinColor;
+    }
+  }
+  return agreed ?? kMixedPinColor;
+}
+
 /// How far a count badge reaches past the pin's glyph, sideways and upwards.
 ///
 /// Room made *inside* the marker's own box rather than an overhang: a marker is

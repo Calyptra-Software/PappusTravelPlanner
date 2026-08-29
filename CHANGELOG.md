@@ -5,13 +5,14 @@ exact commits.
 
 ## Unreleased
 
-- **Places that hide each other on the all-trips map are gathered.** The same commute drawn
-  once per day you made it put twenty pins on one spot, nineteen of them impossible to tap.
-  They now come up as one pin with a count and come apart again as you zoom in — the rule
-  the photographs on a trip's map already follow. A gathered pin keeps the trip's color
-  while every place under it is that trip's, and turns grey once it stands for several,
-  since a color there says *which* trip. Tapping it lists them all, as tapping shared lines
-  does.
+- **Places that hide each other are gathered, on both maps.** The same commute drawn once
+  per day you made it put twenty pins on one spot of the all-trips map, and a hotel returned
+  to every evening puts two on a trip's own — all but the top one impossible to tap, since a
+  pin covers whatever is beneath it. They now come up as one pin with a count and come apart
+  again as you zoom in, the rule the photographs already follow. Tapping a gathered pin lists
+  what it holds — the trips on the overview's map, the entries on a trip's — and you pick.
+  The pin keeps the color every place under it would have had and turns grey only where they
+  differ; an entry that is under way still turns it red.
 - **A trip's lines can be saved as a `.gpx`.** The trip's ⋮ menu writes every line its entries
   carry in the format every mapping tool reads — recordings as tracks, the routes the
   connection search computed as routes — so the pieces one import was cut into, and the routes

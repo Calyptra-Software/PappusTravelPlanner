@@ -585,6 +585,171 @@ void main() {
     await tester.pump(kTileUpdateThrottle);
   });
 
+  group('places that would hide each other', () {
+    testWidgets('are gathered under one mark that says how many', (
+      tester,
+    ) async {
+      // A hotel returned to every evening, a station passed through twice: a pin
+      // under another cannot be tapped at all, since a marker wins the hit test
+      // against everything beneath it.
+      await pumpMap(
+        tester,
+        items: [
+          place(id: 1, lat: 50.1109, lon: 8.6821),
+          place(id: 2, lat: 50.1109, lon: 8.6821),
+          place(id: 3, lat: 50.0, lon: 8.6821),
+        ],
+      );
+
+      // A frame more than the others need: the marks are gathered against the
+      // camera, and the camera fits itself to the trip during the first frame's
+      // layout — so the first frame's marks were measured through the map's
+      // opening view rather than the one it settles on.
+      await tester.pump();
+
+      final pins = tester
+          .widgetList<MapPlacePin>(find.byType(MapPlacePin))
+          .toList();
+      expect(pins, hasLength(2), reason: 'the far one keeps its own mark');
+      expect(pins.map((p) => p.count).toList()..sort(), [1, 2]);
+      // Every entry here is the trip's own, and nothing was given a color of
+      // its own, so the mark still says which trip it belongs to.
+      expect(pins.first.color, const Color(accent));
+
+      // Tile loading is throttled, so a timer outlives the last pump. It runs on
+      // once after firing (the trailing call), hence twice — otherwise the tree
+      // is disposed with a timer still pending.
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a gathered mark names what it holds, and opens one', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        items: [
+          place(id: 1, lat: 50.1109, lon: 8.6821),
+          place(id: 2, lat: 50.1109, lon: 8.6821),
+        ],
+      );
+
+      await tester.tap(find.byType(MapPlacePin));
+      await tester.pumpAndSettle();
+
+      // The rule the lines already follow: several under the finger name
+      // themselves and let the tap be finished deliberately.
+      expect(find.text('2 entries here'), findsOneWidget);
+      expect(find.text('Place 1'), findsOneWidget);
+      expect(find.text('Place 2'), findsOneWidget);
+
+      await tester.tap(find.text('Place 2'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MapItemSheet), findsOneWidget);
+      expect(find.text('Edit place'), findsOneWidget);
+
+      // Tile loading is throttled, so a timer outlives the last pump. It runs on
+      // once after firing (the trailing call), hence twice — otherwise the tree
+      // is disposed with a timer still pending.
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a mark of entries with different colors wears neither', (
+      tester,
+    ) async {
+      // A color here is a statement about the entry under it, so a mark holding
+      // two of them may not pick one — it would be saying something false about
+      // the other.
+      await pumpMap(
+        tester,
+        items: [
+          place(
+            id: 1,
+            lat: 50.1109,
+            lon: 8.6821,
+          ).copyWith(colorValue: const Value(0xFF1B5E20)),
+          place(
+            id: 2,
+            lat: 50.1109,
+            lon: 8.6821,
+          ).copyWith(colorValue: const Value(0xFFEF6C00)),
+        ],
+      );
+
+      expect(
+        tester.widget<MapPlacePin>(find.byType(MapPlacePin)).color,
+        kMixedPinColor,
+      );
+
+      // Tile loading is throttled, so a timer outlives the last pump. It runs on
+      // once after firing (the trailing call), hence twice — otherwise the tree
+      // is disposed with a timer still pending.
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a mark keeps a color both entries were given', (tester) async {
+      const own = 0xFF1B5E20;
+      await pumpMap(
+        tester,
+        items: [
+          place(
+            id: 1,
+            lat: 50.1109,
+            lon: 8.6821,
+          ).copyWith(colorValue: const Value(own)),
+          place(
+            id: 2,
+            lat: 50.1109,
+            lon: 8.6821,
+          ).copyWith(colorValue: const Value(own)),
+        ],
+      );
+
+      expect(
+        tester.widget<MapPlacePin>(find.byType(MapPlacePin)).color,
+        const Color(own),
+      );
+
+      // Tile loading is throttled, so a timer outlives the last pump. It runs on
+      // once after firing (the trailing call), hence twice — otherwise the tree
+      // is disposed with a timer still pending.
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('the entry under way still turns the mark red', (tester) async {
+      // Red is reserved, and gathering is a decision about drawing: it must not
+      // be the thing that hides where you are.
+      await pumpMap(
+        tester,
+        items: [
+          place(
+            id: 1,
+            lat: 50.1109,
+            lon: 8.6821,
+            startMinutes: 9 * 60,
+            endMinutes: 11 * 60,
+          ),
+          place(id: 2, lat: 50.1109, lon: 8.6821),
+        ],
+        now: DateTime(2026, 5, 1, 10),
+      );
+
+      final pin = tester.widget<MapPlacePin>(find.byType(MapPlacePin));
+      expect(pin.count, 2);
+      expect(pin.color, isNot(const Color(accent)));
+      expect(pin.color, isNot(kMixedPinColor));
+
+      // Tile loading is throttled, so a timer outlives the last pump. It runs on
+      // once after firing (the trailing call), hence twice — otherwise the tree
+      // is disposed with a timer still pending.
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+  });
+
   testWidgets('tapping a leg badge names the leg, not a place', (tester) async {
     await pumpMap(
       tester,

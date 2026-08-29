@@ -337,7 +337,7 @@ void main() {
 
     final pin = tester.widget<MapPlacePin>(find.byType(MapPlacePin));
     expect(pin.count, 2);
-    expect(pin.color, kMixedTripPinColor);
+    expect(pin.color, kMixedPinColor);
 
     // And the tap answers with both, as a tap on lines running together does.
     await tester.tap(find.byType(MapPlacePin));
@@ -345,6 +345,29 @@ void main() {
     expect(find.text('2 trips here'), findsOneWidget);
     expect(find.text('Trip 1'), findsOneWidget);
     expect(find.text('Trip 2'), findsOneWidget);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('a mark keeps an accent two trips happen to share', (
+    tester,
+  ) async {
+    // The neutral is for a mark that would otherwise have to *pick* one of
+    // several colors. Where they agree there is nothing to pick, and drawing it
+    // says nothing about either trip that was not already true.
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip), trip(2, tealTrip)],
+      items: [place(12, 1, 50.1), place(13, 2, 50.1)],
+    );
+
+    final pin = tester.widget<MapPlacePin>(find.byType(MapPlacePin));
+    expect(pin.count, 2);
+    expect(pin.color, const Color(tealTrip));
 
     // Tile loading is throttled, so a timer outlives the last pump. It runs on
     // once after firing (the trailing call), hence twice — otherwise the tree is

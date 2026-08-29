@@ -797,22 +797,31 @@ UI (features/*/presentation, *widgets)
   reached at all, since a marker wins the hit test against everything beneath it — twenty
   identical commutes put twenty marks on one platform and nineteen of them are taps nobody
   can aim. `clusterPins` (`features/map/pin_clusters.dart`) is therefore `clusterPhotos`
-  applied to the other map: the greedy, order-dependent rule now lives once in
-  `map_clusters.dart` and both call it, since *which* marks fall together is one question
-  and two answers to it would drift. Measured in **screen pixels** through the camera's own
-  projection, so a cluster comes apart as you zoom in — which is why the pins are a layer of
-  their own (`_PinMarkers` reads `MapCamera.of(context)`, the arrangement `_PhotoMarkers`
-  already has) rather than markers among the rest, which would then rebuild on every pan.
-  A gathered mark sits on the **representative's own position** and takes the overview's
-  order for its face, exactly as a photo cluster does; the tap hands the sheet every trip
-  under it, once each, in that same order — a pin hides its neighbours precisely as a line
-  lies on one, so the two must answer alike. What it may **not** inherit from the photo rule
-  is the color: an accent here is the statement "that is trip A's", so a mark holding B as
-  well wears `kMixedTripPinColor`, a neutral in map colours, and lets the count and the tap
-  say the rest. The badge is `MapPlacePin`'s `count`, the same `_CountBadge` the photo marker
-  draws — and it makes room for itself *inside* the marker's box (`pinBoxFor`, symmetric in
-  width and taller only upwards), because `MarkerLayer` lays its children out in a `Stack`
-  that clips, and because the tip is the pin's whole claim and a badge may not move it.
+  applied to the pins: the greedy, order-dependent rule now lives once in `map_clusters.dart`
+  and both call it, since *which* marks fall together is one question and two answers to it
+  would drift. Measured in **screen pixels** through the camera's own projection, so a
+  cluster comes apart as you zoom in — which is why the pins are a layer of their own
+  (`_PinMarkers` reads `MapCamera.of(context)`, the arrangement `_PhotoMarkers` already has)
+  rather than markers among the rest, which would then rebuild on every pan. It applies to
+  **both** maps, since the pile-up is not peculiar to the all-trips one: a hotel returned to
+  every evening and a station passed through twice put two pins on one spot, and at a zoom
+  showing the country a city's worth of entries is one blob. `PinCluster<T>` is generic in
+  what a place *belongs to* for exactly that reason — the trip map gathers `MapPin`s and
+  answers with the entry (`_showPins`, one opens directly and several name themselves,
+  through the same `_showChoice` sheet the lines use), the all-trips map gathers `TripPin`s
+  and answers with the trip. A gathered mark sits on the **representative's own position**
+  and keeps the order it was handed, so its face and its list are stable as the camera moves.
+  Its color is `gatheredPinColor`: the one every place under it would have worn, else
+  `kMixedPinColor`. **Agreement, not identity** — two trips that happen to share an accent,
+  or two entries given the same color, keep it, because drawing it says nothing about them
+  that was not already true; the neutral is only for a mark that would otherwise have to
+  *pick* one of several, which on either map is a false statement about the rest. Being
+  **under way still outranks it**, exactly as it outranks an entry's own color: a mark that
+  gathered the entry you are in the middle of must not be the thing that hides the reserved
+  red. The badge is `MapPlacePin`'s `count`, the same `_CountBadge` the photo marker draws —
+  and it makes room for itself *inside* the marker's box (`pinBoxFor`, symmetric in width and
+  taller only upwards), because `MarkerLayer` lays its children out in a `Stack` that clips,
+  and because the tip is the pin's whole claim and a badge may not move it.
 - **A track is a line with a provenance, not "the GPX file".** `Tracks` (v29) holds the
   line an entry *actually* followed — packed by `track_points.dart` into the encoded-polyline
   format every mapping tool reads, so a dense recording costs a fraction of its point count

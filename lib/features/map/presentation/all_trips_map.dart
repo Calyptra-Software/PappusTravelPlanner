@@ -376,19 +376,6 @@ class _NothingToPlace extends StatelessWidget {
   }
 }
 
-/// The color a mark gathering *several* trips is drawn in.
-///
-/// Not one of their accents: on this map a color is the statement "that is
-/// trip A's", so wearing A's accent over a mark holding B and C as well would
-/// be saying something false about two of them — and the color is the whole
-/// reason a tangle of trips is readable here. A neutral says only "several",
-/// which is what the count beside it says too, and the tap says the rest.
-///
-/// In map colours rather than theme ones, like the picker's mark and for the
-/// same reason: raster tiles are pale in both themes, so a mark tinted by the
-/// theme is a road.
-const Color kMixedTripPinColor = Color(0xFF424242);
-
 /// Every visible trip's places, gathered so that none hides another.
 ///
 /// A layer of its own rather than markers among the rest, because it has to be
@@ -439,14 +426,16 @@ class _PinMarkers extends StatelessWidget {
               behavior: HitTestBehavior.opaque,
               onTap: () => onTap(cluster.trips),
               child: MapPlacePin(
-                // A trip's accent while every place here is that trip's; a
-                // neutral once the mark stands for several. Never the entry's
-                // own color: on this map the color answers "which trip", which
-                // is what makes it readable at all.
-                color: switch (cluster.onlyTrip) {
-                  final trip? => Color(trip.colorValue),
-                  null => kMixedTripPinColor,
-                },
+                // The accent every place under the mark would have worn, which
+                // for one trip is that trip's — and stays that color where two
+                // trips happen to share an accent, since drawing it says
+                // nothing about them that was not already true. Never the
+                // entry's own color: here a color answers "which trip", which
+                // is what makes this map readable at all.
+                color: gatheredPinColor([
+                  for (final entry in cluster.members)
+                    Color(entry.trip.colorValue),
+                ]),
                 size: size,
                 count: cluster.count,
               ),
