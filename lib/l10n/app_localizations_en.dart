@@ -139,6 +139,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get exportPdfFailed => 'Could not export this trip as PDF.';
 
   @override
+  String get exportGpx => 'Export lines (GPX)…';
+
+  @override
+  String get exportGpxEmpty => 'This trip has no lines to export';
+
+  @override
+  String get exportGpxFailed => 'Could not export the lines';
+
+  @override
   String get exportIcs => 'Export to calendar';
 
   @override

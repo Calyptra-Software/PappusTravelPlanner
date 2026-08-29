@@ -5,6 +5,12 @@ exact commits.
 
 ## Unreleased
 
+- **A trip's lines can be saved as a `.gpx`.** The trip's ⋮ menu writes every line its entries
+  carry in the format every mapping tool reads — recordings as tracks, the routes the
+  connection search computed as routes — so the pieces one import was cut into, and the routes
+  that exist nowhere else, can be opened somewhere other than here. It is not the file you
+  imported: elevation and timestamps were dropped on the way in and cannot be invented, so
+  what comes out is the geometry, the day, and the mode. Routines can be exported too.
 - **A line can be put away instead of deleted.** Every line on an entry now carries an eye:
   by default a recording is drawn and a route the search computed is not, and either can be
   overruled
