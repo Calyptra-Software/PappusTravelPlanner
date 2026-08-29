@@ -54,24 +54,52 @@ final class MapPin {
 /// from. A line somebody walked and a line a router computed are drawn
 /// differently, because they claim different things.
 final class TrackLine {
-  const TrackLine({required this.points, required this.source});
+  const TrackLine({
+    required this.id,
+    required this.points,
+    required this.source,
+    this.display = TrackDisplay.auto,
+  });
+
+  /// The row this was decoded from — what a tap on the line names. An entry
+  /// carries several routinely (a recording that stopped and started again, a
+  /// second import, a route the search computed), and without the id the map
+  /// could say which *entry* was tapped but not which of its lines.
+  final int id;
 
   final List<LatLng> points;
   final TrackSource source;
+
+  /// What the user has said about drawing this one, if anything — see
+  /// [drawnTrackIds], which is the only thing that reads it.
+  final TrackDisplay display;
 }
 
 final class MapPath {
   const MapPath({
     required this.itemId,
     required this.segments,
+    this.trackId,
     this.modeId,
     this.label,
     this.happening = false,
     this.dashed = false,
+    this.badged = true,
     this.colorValue,
   });
 
   final int itemId;
+
+  /// The stored line this path *is*, or null when it is the straight segment
+  /// between the entry's ends — which is a drawing of the plan and not a row
+  /// anybody can point at.
+  ///
+  /// One path per stored line rather than one per entry, so that a tap can be
+  /// answered with the line under the finger instead of with "one of this leg's
+  /// three". It costs nothing on the way in: the pieces were already drawn
+  /// separately, since a recording that stopped and started again must keep its
+  /// gap.
+  final int? trackId;
 
   /// The line, split into the pieces that can be drawn without wrapping the
   /// world: normally one, and two for a leg crossing the antimeridian — a
@@ -91,6 +119,15 @@ final class MapPath {
   /// is a record or a proposal is exactly the difference a reader needs, and a
   /// dash is how every paper map has said it.
   final bool dashed;
+
+  /// Whether this path carries the entry's mode badge.
+  ///
+  /// Exactly one path of an entry does — the one holding its longest piece,
+  /// which is where the badge sat when a leg was one path — so a walk recorded
+  /// in four segments still wears one icon rather than four. Decided here and
+  /// not in the widget, because it is a statement about the entry as a whole and
+  /// the widget draws paths one at a time.
+  final bool badged;
 
   /// The ARGB color the entry carries, or null to be drawn in the trip's
   /// accent. It colors *whichever* line this path turned out to be — the
@@ -226,49 +263,63 @@ TripMapFeatures tripMapFeatures(
         );
       case ItemKind.transport:
         // A recorded line answers where the leg went; the ends only ever
-        // approximated it. Each of its own segments is a separate piece —
-        // a recording that stopped and started again leaves a gap that must
-        // stay a gap — and each is still split at the antimeridian, since a
+        // approximated it. Each stored line is a path of its own — a recording
+        // that stopped and started again leaves a gap that must stay a gap, and
+        // a tap has to be answerable with the line under the finger rather than
+        // with the leg — and each is still split at the antimeridian, since a
         // track may cross it exactly as a flight may.
         final lines = tracks[item.id] ?? const <TrackLine>[];
-        // What was actually followed supersedes what a router proposed: once a
-        // recording of the leg exists, the computed route adds nothing but a
-        // second line beside it. Both stay stored, and the entry's own form
-        // lists both — only the map picks.
-        final followed = [
+        // Which of them are drawn is `drawnTrackIds`, and only there: the
+        // default (what was followed supersedes what a router proposed) and the
+        // user's overrides are one question, asked once, so the map and the
+        // lists that say "this one is drawn" cannot answer it differently.
+        final visible = drawnTrackIds([
           for (final line in lines)
-            if (line.source != TrackSource.routed) line,
+            (id: line.id, source: line.source, display: line.display),
+        ]);
+        final drawn = [
+          for (final line in lines)
+            if (visible.contains(line.id)) line,
         ];
-        final drawn = followed.isNotEmpty ? followed : lines;
+        final pieces =
+            <({int? trackId, bool dashed, List<List<LatLng>> segments})>[];
         if (drawn.isNotEmpty) {
+          for (final line in drawn) {
+            pieces.add((
+              trackId: line.id,
+              // On the line making the claim, not on the entry: a routed line
+              // the user has asked to see may now stand beside a recording, and
+              // the dash is what says which is which.
+              dashed: line.source == TrackSource.routed,
+              segments: splitAtAntimeridian(line.points),
+            ));
+          }
+        } else {
+          final from = _point(item.fromLat, item.fromLon);
+          final to = _point(item.toLat, item.toLon);
+          if (from == null || to == null) continue;
+          pieces.add((
+            trackId: null,
+            dashed: false,
+            segments: splitAtAntimeridian(greatCircle(from, to)),
+          ));
+        }
+        final badge = _badgeIndex(pieces);
+        for (var i = 0; i < pieces.length; i++) {
           paths.add(
             MapPath(
               itemId: item.id,
-              segments: [
-                for (final line in drawn) ...splitAtAntimeridian(line.points),
-              ],
+              trackId: pieces[i].trackId,
+              segments: pieces[i].segments,
               modeId: item.mode,
               label: item.title,
               happening: happening,
-              dashed: followed.isEmpty,
+              dashed: pieces[i].dashed,
+              badged: i == badge,
               colorValue: item.colorValue,
             ),
           );
-          continue;
         }
-        final from = _point(item.fromLat, item.fromLon);
-        final to = _point(item.toLat, item.toLon);
-        if (from == null || to == null) continue;
-        paths.add(
-          MapPath(
-            itemId: item.id,
-            segments: splitAtAntimeridian(greatCircle(from, to)),
-            modeId: item.mode,
-            label: item.title,
-            happening: happening,
-            colorValue: item.colorValue,
-          ),
-        );
     }
   }
 
@@ -402,6 +453,103 @@ List<List<LatLng>> splitAtAntimeridian(List<LatLng> points) {
   }
   segments.add(current);
   return segments;
+}
+
+/// Which of one entry's lines the map draws.
+///
+/// The one place this is decided, for the map *and* for the lists that say
+/// whether a line is drawn (`summarizeTracks`) — a second copy of the rule is a
+/// second chance for the two to disagree about the same picture.
+///
+/// Three sentences, in order:
+///
+/// * a [TrackDisplay.hidden] line is never drawn, and
+/// * a [TrackDisplay.shown] one always is — those are the user overruling the
+///   default, and nothing may overrule them back;
+/// * everything left is the rule the map has always followed: **what was
+///   followed supersedes what was proposed**. A recording (or an import) is
+///   drawn, and a routed line only when no followed line is being drawn at all —
+///   counting the ones forced [TrackDisplay.shown], since a line the user asked
+///   for is a line that is there.
+///
+/// The answer may be **empty**, which is new: with every line hidden the entry
+/// falls back to the straight segment between its ends, exactly as an entry with
+/// no lines at all does. That is the plan's own statement about the leg, and a
+/// leg vanishing from the map because of a decision about *how* to draw it would
+/// be a bigger surprise than the chord.
+Set<int> drawnTrackIds(
+  Iterable<({int id, TrackSource source, TrackDisplay display})> lines,
+) {
+  final drawn = <int>{};
+  var followedDrawn = false;
+  for (final line in lines) {
+    if (line.display == TrackDisplay.hidden) continue;
+    if (line.display == TrackDisplay.shown ||
+        line.source != TrackSource.routed) {
+      drawn.add(line.id);
+      if (line.source != TrackSource.routed) followedDrawn = true;
+    }
+  }
+  if (followedDrawn) return drawn;
+  for (final line in lines) {
+    if (line.display == TrackDisplay.hidden) continue;
+    if (line.source == TrackSource.routed) drawn.add(line.id);
+  }
+  return drawn;
+}
+
+/// The lines under one tap, folded to **one per entry**, in the order the plan
+/// draws them.
+///
+/// Overlap is normal on a single trip's map as well as on the all-trips one: a
+/// walk out and back lies exactly on itself, and a leg recorded in pieces draws
+/// several lines a fingertip apart. Answering with whichever line happened to be
+/// drawn last would be a coin toss the user cannot see and cannot re-roll — the
+/// same reason the all-trips map lists every trip under the finger rather than
+/// picking one.
+///
+/// Two entries under the finger are two answers; two *lines of one entry* are
+/// one, because the sheet that opens lists that entry's lines anyway and marks
+/// the one that was tapped. So each entry keeps its **first** hit — the line
+/// nearest the top of the draw order, which is the one the finger landed on —
+/// while the entries themselves come back in [drawn] order, since a stable order
+/// is one the user can learn.
+List<MapPath> pathsUnderTap(Iterable<MapPath> hits, List<MapPath> drawn) {
+  final firstHit = <int, MapPath>{};
+  for (final hit in hits) {
+    firstHit.putIfAbsent(hit.itemId, () => hit);
+  }
+  final ordered = <MapPath>[];
+  final seen = <int>{};
+  for (final path in drawn) {
+    final hit = firstHit[path.itemId];
+    if (hit == null || !seen.add(path.itemId)) continue;
+    ordered.add(hit);
+  }
+  return ordered;
+}
+
+/// Which of one entry's paths carries its mode badge: the one holding the
+/// longest single piece.
+///
+/// The longest *piece* rather than the longest total, because that is where the
+/// badge sat when a leg was a single path — [MapPath.anchor] hangs it half way
+/// along the longest segment — so splitting the paths apart moves no icon.
+int _badgeIndex(
+  List<({int? trackId, bool dashed, List<List<LatLng>> segments})> pieces,
+) {
+  var best = 0;
+  var longest = -1.0;
+  for (var i = 0; i < pieces.length; i++) {
+    for (final segment in pieces[i].segments) {
+      final length = lineLength(segment);
+      if (length > longest) {
+        longest = length;
+        best = i;
+      }
+    }
+  }
+  return best;
 }
 
 const Distance _distance = Distance(calculator: Haversine());

@@ -170,6 +170,11 @@ class TripRepository {
     List<({List<LatLng> points, String? name})> lines,
   ) => _db.trackDao.addTracks(itemId, lines);
 
+  /// Whether the map draws one stored line — the user overruling the default,
+  /// or putting it back. See [TrackDisplay].
+  Future<void> setTrackDisplay(int id, TrackDisplay display) =>
+      _db.trackDao.setTrackDisplay(id, display);
+
   /// One stored line, by id — a recording that stopped and started again
   /// arrives as several, and only the user knows which of them is the detour
   /// they did not mean to keep.

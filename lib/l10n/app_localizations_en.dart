@@ -925,6 +925,17 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String mapEntriesHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries here',
+      one: '1 entry here',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get mapColor => 'Color on the map';
 
   @override
@@ -942,6 +953,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trackRemove => 'Remove';
+
+  @override
+  String get trackShow => 'Draw on the map';
+
+  @override
+  String get trackHide => 'Do not draw';
 
   @override
   String get trackRemoveAll => 'Remove all';

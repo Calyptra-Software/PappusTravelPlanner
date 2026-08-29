@@ -385,6 +385,11 @@
     "description": "Title of the sheet listing the trips a tapped line belongs to, when more than one runs under the finger.",
     "placeholders": { "count": { "type": "int" } }
   },
+  "mapEntriesHere": "{count, plural, =1{1 entry here} other{{count} entries here}}",
+  "@mapEntriesHere": {
+    "description": "Title of the sheet listing the entries whose lines lie under one tap on a trip's map, when several do.",
+    "placeholders": { "count": { "type": "int" } }
+  },
   "mapColor": "Color on the map",
   "@mapColor": {
     "description": "Heading of the control choosing the color one itinerary entry is drawn in on the map."
@@ -408,6 +413,14 @@
   "trackRemove": "Remove",
   "@trackRemove": {
     "description": "Tooltip of the button that deletes one of the lines stored on this entry."
+  },
+  "trackShow": "Draw on the map",
+  "@trackShow": {
+    "description": "Tooltip of the eye button on a line the map is not drawing; pressing it draws this one."
+  },
+  "trackHide": "Do not draw",
+  "@trackHide": {
+    "description": "Tooltip of the eye button on a line the map is drawing; pressing it stops drawing this one, without deleting it."
   },
   "trackRemoveAll": "Remove all",
   "@trackRemoveAll": {

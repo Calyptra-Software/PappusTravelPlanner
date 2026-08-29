@@ -30,6 +30,7 @@ void main() {
     String? name,
     double north = 0.01,
     TrackSource source = TrackSource.imported,
+    TrackDisplay display = TrackDisplay.auto,
   }) => Track(
     id: id,
     itemId: itemId,
@@ -39,6 +40,7 @@ void main() {
       const LatLng(53.55, 9.99),
       LatLng(53.55 + north, 9.99),
     ]),
+    display: display,
     sortOrder: id,
   );
 
@@ -133,12 +135,40 @@ void main() {
         source: TrackSource.imported,
         name: null,
         points: 'not a polyline at all ~~~',
+        display: TrackDisplay.auto,
         sortOrder: 1,
       ),
     ]);
 
     expect(find.text('Imported · Nothing to draw'), findsOneWidget);
     expect(find.byIcon(Icons.close), findsOneWidget);
+  });
+
+  group('whether the map draws a line', () {
+    testWidgets('each row says whether its line is on the map', (tester) async {
+      // The default: the recording is drawn, the route the router proposed is
+      // not — and the list says which, from the same rule the map reads.
+      await pump(tester, [
+        track(1, source: TrackSource.routed),
+        track(2, name: 'Morning walk'),
+      ]);
+
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+    });
+
+    testWidgets('a hidden line is still listed, and says it is off', (
+      tester,
+    ) async {
+      // Hiding is not deleting: the row is there to be read and switched back
+      // on, which is the whole difference.
+      await pump(tester, [
+        track(1, name: 'Tunnel', display: TrackDisplay.hidden),
+      ]);
+
+      expect(find.text('Tunnel · Imported · 1.1 km'), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+    });
   });
 
   group('against a real database', () {
@@ -209,6 +239,23 @@ void main() {
 
       final left = await db.select(db.tracks).get();
       expect(left.map((t) => t.name), ['B']);
+    });
+
+    testWidgets('putting a line away leaves it in the database', (
+      tester,
+    ) async {
+      // The case the switch exists for: the trace is wrong in the tunnel, so
+      // it is put away and the computed route beside it comes forward —
+      // without the recording being deleted to get at it.
+      await pumpAgainstDb(tester);
+
+      await tester.tap(find.byIcon(Icons.visibility).first);
+      await tester.pump();
+
+      final stored = await db.select(db.tracks).get();
+      expect(stored, hasLength(2));
+      expect(stored.first.display, TrackDisplay.hidden);
+      expect(stored.first.name, 'A');
     });
 
     testWidgets('removing all takes every line off the entry', (tester) async {

@@ -155,6 +155,17 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
     });
   }
 
+  /// Overrules — or stops overruling — the map's own rule for one line.
+  ///
+  /// A targeted write, like `setItemColor`: the caller is holding a summary of
+  /// the row from when it was drawn, and replacing the row would put back
+  /// whatever else has changed since. What it means is [TrackDisplay]; who reads
+  /// it is `drawnTrackIds`, and nothing else.
+  Future<void> setTrackDisplay(int id, TrackDisplay display) =>
+      (update(tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(display: Value(display)),
+      );
+
   Future<void> deleteTrack(int id) =>
       (delete(tracks)..where((t) => t.id.equals(id))).go();
 
@@ -200,6 +211,12 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
             itemId: toItemId,
             source: Value(track.source),
             name: Value(track.name),
+            // The copy is drawn as the original was. Whether a line is drawn is
+            // a statement about *that line*, not about one occurrence of the
+            // plan, so it travels exactly as the color of an entry does — a
+            // commute whose broken trace was hidden would otherwise draw it
+            // again every morning it is stamped out.
+            display: Value(track.display),
             points: reversed
                 ? encodeTrackPoints(
                     decodeTrackPoints(track.points).reversed.toList(),

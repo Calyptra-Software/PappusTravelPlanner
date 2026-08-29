@@ -11,7 +11,9 @@ import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/item_times.dart';
 import '../../itinerary/widgets/transport_mode.dart';
+import '../track_summary.dart';
 import '../widgets/item_color_field.dart';
+import '../widgets/track_row.dart';
 import 'map_picker_screen.dart';
 
 /// What a marker stands for, opened by tapping it.
@@ -32,9 +34,21 @@ import 'map_picker_screen.dart';
 /// follow, which two run together — so it is set where that is answered, and the
 /// map redraws under the sheet as it is chosen.
 class MapItemSheet extends ConsumerWidget {
-  const MapItemSheet({super.key, required this.item});
+  const MapItemSheet({super.key, required this.item, this.highlightTrackId});
 
   final ItineraryItem item;
+
+  /// The stored line the tap landed on, when it landed on one rather than on a
+  /// marker.
+  ///
+  /// A leg draws one line per stored track, so "which entry is this" was only
+  /// half the question a tap asks — the other half is which of that entry's
+  /// lines, and the answer cannot be given on the map itself, where every line
+  /// of an entry is the same color by design. So the sheet lists them and marks
+  /// the one that was tapped. Null when a marker was tapped, or when the line is
+  /// the straight segment between the ends, which is a drawing of the plan and
+  /// not a row to point at.
+  final int? highlightTrackId;
 
   /// Writes the entry's map color, and nothing else.
   ///
@@ -67,6 +81,14 @@ class MapItemSheet extends ConsumerWidget {
     final mode = isTransport
         ? ref.watch(transportModesByIdProvider)[item.mode]
         : null;
+    // The lines this entry carries, read the same way the form reads them. A
+    // *reading*, like the times above it: removing one is an act, and acts live
+    // in the form the button below opens. What this answers is the question the
+    // tap asked — which of these lines is the one under my finger.
+    final tracks = isTransport
+        ? (ref.watch(itemTrackSummariesProvider(item.id)).value ??
+              const <TrackSummary>[])
+        : const <TrackSummary>[];
 
     final title = isTransport
         ? (item.title ?? mode?.label(l10n) ?? '')
@@ -134,6 +156,26 @@ class MapItemSheet extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: 12),
+              if (tracks.isNotEmpty) ...[
+                Text(l10n.trackSection, style: theme.textTheme.labelLarge),
+                const SizedBox(height: 4),
+                for (final track in tracks)
+                  TrackRow(
+                    track: track,
+                    // The second thing on this sheet that is about the picture
+                    // and not about the plan, and it is here for the reason the
+                    // color is: which of two lines to draw is a question you
+                    // have while looking at the wrong one, and the map redraws
+                    // underneath as it is answered. Removing is still not
+                    // offered — that is an act on the record, not on the
+                    // drawing, and it lives in the form the button below opens.
+                    onSetDisplay: (display) => ref
+                        .read(repositoryProvider)
+                        .setTrackDisplay(track.id, display),
+                    highlighted: track.id == highlightTrackId,
+                  ),
+                const SizedBox(height: 12),
+              ],
               // The one control here, for the one property that is about this
               // screen. Written as it is picked — there is nothing to confirm,
               // and the map behind redraws to show what was chosen.

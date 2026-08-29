@@ -5,6 +5,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/clock.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
@@ -13,7 +14,10 @@ import 'package:travelplanner/features/itinerary/application/itinerary_providers
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
+import 'package:travelplanner/features/map/map_features.dart';
+import 'package:travelplanner/features/map/presentation/map_item_sheet.dart';
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
+import 'package:travelplanner/features/map/widgets/track_row.dart';
 import 'package:travelplanner/features/map/presentation/trip_map_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -25,6 +29,11 @@ import 'location_fixture.dart';
 /// schedules a timer onto the next minute boundary and would outlive the test.
 void main() {
   const tripId = 7;
+
+  // `PolylineLayer` is generic in its hit value, so `byType(PolylineLayer)` —
+  // which means `PolylineLayer<dynamic>` — matches nothing now that the lines
+  // carry one. The same finder the all-trips map's test uses.
+  final polylineLayer = find.byWidgetPredicate((w) => w is PolylineLayer);
 
   /// The trip's accent. Deliberately not one of the theme's colors, so a test
   /// asserting on it cannot pass by coincidence.
@@ -66,6 +75,8 @@ void main() {
     required List<ItineraryItem> items,
     DateTime? now,
     EdgeInsets systemInsets = EdgeInsets.zero,
+    Map<int, List<TrackLine>> tracks = const {},
+    Map<int, List<Track>> trackRows = const {},
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -83,6 +94,16 @@ void main() {
           nowProvider.overrideWith(
             (ref) => Stream.value(now ?? DateTime(2026, 5, 1, 3)),
           ),
+          tripTracksProvider(
+            tripId,
+          ).overrideWith((ref) => Stream.value(tracks)),
+          // What the sheet a tapped line opens reads: the rows themselves,
+          // which it summarizes. Overridden per entry, as the app asks for
+          // them.
+          for (final entry in trackRows.entries)
+            itemTracksProvider(
+              entry.key,
+            ).overrideWith((ref) => Stream.value(entry.value)),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -160,7 +181,7 @@ void main() {
       ],
     );
 
-    final layer = tester.widget<PolylineLayer>(find.byType(PolylineLayer));
+    final layer = tester.widget<PolylineLayer>(polylineLayer);
     final polyline = layer.polylines.single;
     expect(polyline.color, const Color(accent));
     // And a casing under it, so a user-chosen color stays legible over whatever
@@ -172,6 +193,265 @@ void main() {
     // disposed with a timer still pending.
     await tester.pump(kTileUpdateThrottle);
     await tester.pump(kTileUpdateThrottle);
+  });
+
+  group('a line can be pointed at', () {
+    ItineraryItem leg() => ItineraryItem(
+      id: 3,
+      tripId: tripId,
+      date: DateTime(2026, 5, 1),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      spansNextDay: false,
+      title: 'To the station',
+      fromLat: 53.5511,
+      fromLon: 9.9937,
+      toLat: 53.5600,
+      toLon: 10.0100,
+    );
+
+    Track row(
+      int id, {
+      required String name,
+      TrackSource source = TrackSource.imported,
+    }) => Track(
+      id: id,
+      itemId: 3,
+      source: source,
+      name: name,
+      points: 'x',
+      display: TrackDisplay.auto,
+      sortOrder: id,
+    );
+
+    const first = [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)];
+    const second = [LatLng(53.5570, 10.0050), LatLng(53.5600, 10.0100)];
+
+    /// A line running the leg's whole length, so that the camera — framed on
+    /// the first build, when the tracks had not arrived yet, and never re-fitted
+    /// — is centred on it and a tap in the middle of the map lands on it.
+    const whole = [LatLng(53.5511, 9.9937), LatLng(53.5600, 10.0100)];
+
+    testWidgets('every stored line is drawn as itself and can be hit', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        items: [leg()],
+        tracks: {
+          3: [
+            const TrackLine(
+              id: 11,
+              points: first,
+              source: TrackSource.imported,
+            ),
+            const TrackLine(
+              id: 12,
+              points: second,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+
+      // A second frame: the tracks are watched for the first time *during* the
+      // build the items arrive on, so their own value lands one pump later.
+      await tester.pump();
+
+      final layer = tester.widget<PolylineLayer>(polylineLayer);
+      expect(layer.polylines, hasLength(2));
+      // Each polyline names the row it was drawn from, so a tap can answer with
+      // the line rather than with the leg.
+      expect(layer.polylines.map((p) => (p.hitValue! as MapPath).trackId), [
+        11,
+        12,
+      ]);
+      // And the hitbox is a fingertip, not the 3.5px stroke.
+      expect(
+        layer.minimumHitbox,
+        greaterThan(layer.polylines.first.strokeWidth),
+      );
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('the sheet can put a line away, against the picture', (
+      tester,
+    ) async {
+      // The second thing on that sheet that is about the drawing rather than
+      // the plan, and it is there for the reason the color is: you notice you
+      // are looking at the wrong line while looking at it.
+      await pumpMap(
+        tester,
+        items: [leg()],
+        tracks: {
+          3: [
+            const TrackLine(
+              id: 11,
+              points: whole,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+        trackRows: {
+          3: [
+            row(11, name: 'Tunnel'),
+            row(12, name: 'Route', source: TrackSource.routed),
+          ],
+        },
+      );
+      await tester.pump();
+
+      await tester.tapAt(
+        tester.getCenter(find.byType(FlutterMap)) + const Offset(44, -40),
+      );
+      await tester.pumpAndSettle();
+
+      // The recording is drawn, the computed route beside it is not — and each
+      // row carries the switch, where removing is deliberately absent.
+      final rows = tester.widgetList<TrackRow>(find.byType(TrackRow)).toList();
+      expect(rows.map((r) => r.track.drawn), [true, false]);
+      expect(rows.every((r) => r.onSetDisplay != null), isTrue);
+      expect(rows.every((r) => r.onRemove == null), isTrue);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a leg wears one mode badge, however many lines it has', (
+      tester,
+    ) async {
+      // One badge per entry, not per line. Three icons on one leg would claim
+      // three legs — and each of them takes the taps of the line under it,
+      // which is what made the middle of a line the one place tapping it said
+      // nothing about which line it was.
+      await pumpMap(
+        tester,
+        items: [leg()],
+        tracks: {
+          3: [
+            const TrackLine(
+              id: 11,
+              points: first,
+              source: TrackSource.imported,
+            ),
+            const TrackLine(
+              id: 12,
+              points: second,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+      await tester.pump();
+
+      // The modes are overridden away, so every leg wears the default icon and
+      // counting it counts the badges.
+      expect(find.byIcon(kDefaultTransportModeIcon), findsOneWidget);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a tap where two legs run together lists them both', (
+      tester,
+    ) async {
+      // Overlap is normal on one trip's map as well: a walk out and back lies
+      // exactly on itself. Answering with whichever line was drawn last would
+      // be a coin toss the user cannot see — the rule the all-trips map already
+      // follows for trips.
+      await pumpMap(
+        tester,
+        items: [
+          leg(),
+          leg().copyWith(id: 4, title: const Value('And back again')),
+        ],
+        tracks: {
+          3: [
+            const TrackLine(
+              id: 11,
+              points: whole,
+              source: TrackSource.imported,
+            ),
+          ],
+          4: [
+            const TrackLine(
+              id: 12,
+              points: whole,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+      await tester.pump();
+
+      await tester.tapAt(
+        tester.getCenter(find.byType(FlutterMap)) + const Offset(44, -40),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 entries here'), findsOneWidget);
+      expect(find.text('To the station'), findsOneWidget);
+      expect(find.text('And back again'), findsOneWidget);
+      // Looking is not opening: the entry's own sheet comes after the choice.
+      expect(find.byType(MapItemSheet), findsNothing);
+
+      await tester.tap(find.text('And back again'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MapItemSheet), findsOneWidget);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('tapping one opens its entry with that line marked', (
+      tester,
+    ) async {
+      // One line, down the middle of the map — which is where the tap lands.
+      await pumpMap(
+        tester,
+        items: [leg()],
+        tracks: {
+          3: [
+            const TrackLine(
+              id: 11,
+              points: whole,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+        trackRows: {
+          3: [row(11, name: 'Morning walk'), row(12, name: 'The way back')],
+        },
+      );
+
+      // The line is drawn a frame after the entries — see above — and the tap
+      // has to land on it.
+      await tester.pump();
+
+      // Beside the middle, not on it: the mode badge sits half way along the
+      // longest piece — which is the middle of the map here — and it is a
+      // marker, so it wins the hit test over the line under it. The offset runs
+      // along the line's own screen slope (its ends differ by 0.0163° of
+      // longitude and 0.0089° of latitude, which at this latitude is about the
+      // same distance), far enough out to clear the 28px badge.
+      await tester.tapAt(
+        tester.getCenter(find.byType(FlutterMap)) + const Offset(44, -40),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MapItemSheet), findsOneWidget);
+      // Both of the entry\'s lines are listed — the comparison is the point —
+      // and the one under the finger is the one marked.
+      final rows = tester.widgetList<TrackRow>(find.byType(TrackRow)).toList();
+      expect(rows, hasLength(2));
+      expect(rows.map((r) => r.track.id), [11, 12]);
+      expect(rows.map((r) => r.highlighted), [true, false]);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
   });
 
   testWidgets("an entry's own color outranks the trip's accent", (
@@ -202,7 +482,7 @@ void main() {
       ],
     );
 
-    final layer = tester.widget<PolylineLayer>(find.byType(PolylineLayer));
+    final layer = tester.widget<PolylineLayer>(polylineLayer);
     expect(layer.polylines.single.color, const Color(own));
     // The pin follows: a color is a statement about the entry, not about which
     // kind of mark it happens to be drawn as.

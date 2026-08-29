@@ -901,12 +901,33 @@ UI (features/*/presentation, *widgets)
   search form: the switch would have to be set before the user knows whether they will
   import this connection, it would guard the cheap call while the repeated one stays off
   anyway, and one screen of map tiles already costs several times more without being asked.
-- **What was followed supersedes what was proposed.** A leg carrying both a recording and a
-  routed shape draws the recording, solid; a routed one alone draws dashed
-  (`MapPath.dashed`). Both stay stored and the entry's own form lists both — only the map
-  picks, because a second line beside the first says nothing a reader wants. The dash is the
-  honest part: a map can only draw a line, and whether that line is a record or a proposal
-  is exactly the difference a reader needs.
+- **What was followed supersedes what was proposed — by default, which the user may
+  overrule.** A leg carrying both a recording and a routed shape draws the recording, solid;
+  a routed one alone draws dashed (`MapPath.dashed`). Both stay stored and the entry's own
+  form lists both. The dash is the honest part: a map can only draw a line, and whether that
+  line is a record or a proposal is exactly the difference a reader needs.
+  What the default cannot know is that a recording is wrong *here*: a tunnel takes the fix,
+  the trace jumps the block, and the computed route is the better drawing of that stretch.
+  Hence `TrackDisplay` (v36) — `auto` / `shown` / `hidden` on the row, three states in one
+  column, the arrangement the cover photo makes with two. Deleting the recording to get at
+  the route would throw away **what actually happened**, which is the one thing that table
+  exists to hold; hiding it keeps the row, and the copies and the bundle keep it too. `shown`
+  is the other direction, and it is why this is not a `hidden` bool: a trace broken in two by
+  that tunnel *plus* the route bridging it is one picture of one journey, and no rule can
+  derive that. The decision lives once, in the pure `drawnTrackIds` — hidden never, shown
+  always, and the rest by the old rule, counting a forced-`shown` recording as a recording —
+  read by `tripMapFeatures` **and** by `summarizeTracks`, so a list saying a line is drawn
+  cannot disagree with the map about the same picture. An entry whose lines are *all* hidden
+  falls back to the **chord**, as an entry with no lines does: a leg vanishing because of a
+  decision about how to draw it would be the bigger surprise. The control is an eye on each
+  row of the form's list *and* of `MapItemSheet` — the second property on that sheet that is
+  about the picture rather than the plan, there for the reason the color is: you notice you
+  are looking at the wrong line while looking at it. Removing stays out of the sheet, being
+  an act on the record rather than on the drawing. There is no way back to `auto` and none is
+  wanted: deriving is never named, exactly as the cover star never names it. Being a
+  statement about the line, it travels — `copyItemTracks` (a hidden trace would otherwise
+  come back every morning a routine is stamped out) and the `.tpt`, written only when it says
+  something and read as `auto` when absent, so no format version moves.
 - **A color is a property of the entry, not of the line it happens to be drawn as.**
   `ItineraryItems.colorValue` (nullable, v30) colors an entry on the map — a leg's line or a
   place's pin — and null means the trip's accent, which is what every row written before it
@@ -936,6 +957,33 @@ UI (features/*/presentation, *widgets)
   per camera tick is the shape of the pinch freeze this map has already been through. A row
   whose string does not decode is **dropped rather than thrown on**: it may have come from a
   shared bundle, and one unreadable line must not blank the map for a whole trip.
+- **A drawn line is one stored line, so it can be pointed at.** `tripMapFeatures` emits one
+  `MapPath` per track rather than one per entry, each carrying the `trackId` it was drawn
+  from (null for the straight segment between the ends, which is a drawing of the plan and
+  not a row anybody can point at) — the pieces were already drawn separately, since a
+  recording that stopped and started again has to keep its gap, so this costs nothing and
+  buys the finer answer. `dashed` moves with it, from the entry to the line making the claim;
+  the drawing is unchanged, because a set holding both kinds never reaches the map (the
+  recorded ones supersede). What one path per line would otherwise break is the **mode
+  badge**: `badged` marks exactly one path of an entry — the one holding its longest piece,
+  which is where `MapPath.anchor` already put the icon — so a walk recorded in four segments
+  still wears one icon, in the place it wore it before — and the marker layer draws a badge
+  for that path **only**, since a marker wins the hit test against the line beneath it, so an
+  icon on every path would take the taps of every line it sits on.
+  The trip map then hit-tests its lines the way the all-trips map does (`hitNotifier`,
+  `kLineHitbox` — "on this line" has to be a fingertip), and `pathsUnderTap` folds the hits
+  to **one per entry, in draw order**: overlap is normal here too — a walk out and back lies
+  on itself, neighbouring legs share a road at any zoom showing a city — and picking the
+  last-drawn line would be the coin toss that map already refuses. Two entries are listed to
+  choose from; two lines of *one* entry are one answer, because the sheet that opens lists
+  that entry's lines anyway. Which is the other half of the tap: `MapItemSheet` takes a
+  `highlightTrackId` and marks the row the finger landed on, since a map cannot say which
+  line is which — every line of an entry is the same color by design. The **badge** marks no
+  line: it is the entry's mark and not a line's, so a leg's lines listed unmarked is what
+  "you tapped the icon" looks like. The rows are the item form's own `TrackRow`, so the words
+  that tell two lines apart cannot come out differently in the two places; the sheet passes
+  no `onRemove`, because it is a reading and removing is an act, which lives in the form its
+  button opens.
 - **The bundle carries tracks and stays lossless**, as `BundleTrack` on the item, with the
   points as the packed string rather than a JSON array of coordinates — the string is the
   storage format on both sides, so a round trip through pairs of doubles would quadruple the
@@ -1436,7 +1484,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 35) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 36) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

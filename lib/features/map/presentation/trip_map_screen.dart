@@ -157,15 +157,83 @@ class _MapView extends ConsumerStatefulWidget {
 class _MapViewState extends ConsumerState<_MapView> {
   final MapController _controller = MapController();
 
+  /// Which line the last tap landed on, filled in by `PolylineLayer` before the
+  /// gesture around it reads it — the same arrangement the all-trips map uses.
+  final _lineHits = ValueNotifier<LayerHitResult<MapPath>?>(null);
+
+  @override
+  void dispose() {
+    _lineHits.dispose();
+    super.dispose();
+  }
+
   /// What a marker is for: the entry behind it, in words.
   ///
   /// A map can only say *where* — the name, the times and the delay marks all
   /// live in the row it was drawn from, and a pin with no way to ask about it is
   /// a dot on a picture.
-  void _showItem(int itemId) {
+  void _showItem(int itemId, {int? trackId}) {
     final item = widget.itemsById[itemId];
     if (item == null) return;
-    showAppSheet<void>(context, builder: (_) => MapItemSheet(item: item));
+    showAppSheet<void>(
+      context,
+      builder: (_) => MapItemSheet(item: item, highlightTrackId: trackId),
+    );
+  }
+
+  /// What a tap on a *line* is for: the entry it belongs to, and — since a leg
+  /// draws one line per stored track — which of that entry's lines it was.
+  ///
+  /// A marker answers for one entry because it is one entry's mark. A line is
+  /// not: an out-and-back walk lies on itself, and neighbouring legs share their
+  /// stretch of road at any zoom that shows a city. So every entry under the
+  /// finger is offered (`pathsUnderTap`), one opens directly, and several name
+  /// themselves and let the tap be finished deliberately — the rule the
+  /// all-trips map already follows for trips.
+  void _showLines(List<MapPath> hits) {
+    if (hits.isEmpty) return;
+    if (hits.length == 1) {
+      _showItem(hits.single.itemId, trackId: hits.single.trackId);
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final modes = ref.read(transportModesByIdProvider);
+    showAppSheet<void>(
+      context,
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.mapEntriesHere(hits.length),
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              for (final (hit, ends) in [
+                for (final hit in hits) (hit, _endsOf(hit)),
+              ])
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    modes[hit.modeId]?.icon ?? kDefaultTransportModeIcon,
+                  ),
+                  // Named as the sheet behind this one names it, so the row and
+                  // what it opens read the same.
+                  title: Text(_labelOf(hit, l10n)),
+                  subtitle: ends == null ? null : Text(ends),
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    _showItem(hit.itemId, trackId: hit.trackId);
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// What a photo marker is for.
@@ -190,6 +258,22 @@ class _MapViewState extends ConsumerState<_MapView> {
       context,
       photos: [for (final row in rows) GalleryPhoto(attachment: row)],
     );
+  }
+
+  /// What to call the entry a hit belongs to: its own label, else its mode,
+  /// else the placeholder the sheet uses when an entry has nothing to be called.
+  String _labelOf(MapPath hit, AppLocalizations l10n) {
+    final mode = ref.read(transportModesByIdProvider)[hit.modeId];
+    return hit.label ?? mode?.label(l10n) ?? l10n.coordinatesNone;
+  }
+
+  /// The leg's two ends, where it has them — what tells two unlabeled legs of
+  /// one trip apart when both are under the finger.
+  String? _endsOf(MapPath hit) {
+    final item = widget.itemsById[hit.itemId];
+    if (item == null) return null;
+    if (item.fromLocation == null && item.toLocation == null) return null;
+    return '${item.fromLocation ?? '?'} → ${item.toLocation ?? '?'}';
   }
 
   @override
@@ -262,59 +346,87 @@ class _MapViewState extends ConsumerState<_MapView> {
           ),
           children: [
             basemapTileLayer(basemap, ref.watch(appVersionProvider)),
-            PolylineLayer(
-              polylines: [
-                for (final path in features.paths)
-                  for (final segment in path.segments)
-                    Polyline(
-                      points: segment,
-                      strokeWidth: path.happening ? 5 : 3.5,
-                      // Broken for a line the router computed rather than one
-                      // anybody followed — see `MapPath.dashed`.
-                      pattern: path.dashed
-                          ? StrokePattern.dashed(segments: const [7, 5])
-                          : const StrokePattern.solid(),
+            GestureDetector(
+              onTap: () {
+                final hit = _lineHits.value;
+                if (hit == null) return;
+                _showLines(pathsUnderTap(hit.hitValues, features.paths));
+              },
+              child: PolylineLayer(
+                hitNotifier: _lineHits,
+                // Wider than the line is drawn: what "on this line" means has
+                // to be a fingertip, and flutter_map's default hitbox is the
+                // stroke itself. The same constant the all-trips map uses, for
+                // the same reason.
+                minimumHitbox: kLineHitbox,
+                polylines: [
+                  for (final path in features.paths)
+                    for (final segment in path.segments)
+                      Polyline(
+                        points: segment,
+                        strokeWidth: path.happening ? 5 : 3.5,
+                        // Broken for a line the router computed rather than one
+                        // anybody followed — see `MapPath.dashed`.
+                        pattern: path.dashed
+                            ? StrokePattern.dashed(segments: const [7, 5])
+                            : const StrokePattern.solid(),
 
-                      // Red for the leg under way, as everywhere else in the
-                      // app; the entry's own color, or the trip's, for the rest.
-                      color: colorOf(
-                        path.colorValue,
-                        happening: path.happening,
-                      ),
-                      borderStrokeWidth: 2,
-                      borderColor: casing,
-                      // Simplification is flutter_map's own, per frame: a
-                      // great-circle arc carries vertices that are invisible at
-                      // low zoom and matter when zoomed in.
-                      useStrokeWidthInMeter: false,
-                    ),
-              ],
-            ),
-            MarkerLayer(
-              markers: [
-                for (final path in features.paths)
-                  Marker(
-                    point: path.anchor,
-                    width: 28,
-                    height: 28,
-                    child: _Tappable(
-                      onTap: () => _showItem(path.itemId),
-                      child: _ModeBadge(
+                        // Red for the leg under way, as everywhere else in the
+                        // app; the entry's own color, or the trip's, for the rest.
                         color: colorOf(
                           path.colorValue,
                           happening: path.happening,
                         ),
-                        // The row's own icon, which for a built-in falls back to
-                        // that built-in's default — the same resolution the
-                        // timeline tile uses. Reading `iconId` directly instead
-                        // gives every built-in the generic three dots, since a
-                        // seeded row carries no id of its own.
-                        icon:
-                            modes[path.modeId]?.icon ??
-                            kDefaultTransportModeIcon,
+                        borderStrokeWidth: 2,
+                        borderColor: casing,
+                        // Simplification is flutter_map's own, per frame: a
+                        // great-circle arc carries vertices that are invisible at
+                        // low zoom and matter when zoomed in.
+                        useStrokeWidthInMeter: false,
+                        // What a tap on this line means: this entry, and this
+                        // one of its lines. A path is one stored line (or the
+                        // straight segment where there is none), so the answer
+                        // is as fine as what was drawn.
+                        hitValue: path,
+                      ),
+                ],
+              ),
+            ),
+            MarkerLayer(
+              markers: [
+                // One badge per entry, not per line: a leg recorded in three
+                // segments is one leg, and it is `badged` that says which of
+                // its paths wears the icon — the longest, where the icon sat
+                // when a leg was a single path. Every path wearing one also
+                // costs the line its taps, since a marker wins the hit test
+                // against the line under it.
+                for (final path in features.paths)
+                  if (path.badged)
+                    Marker(
+                      point: path.anchor,
+                      width: 28,
+                      height: 28,
+                      child: _Tappable(
+                        // The badge is the *entry's* mark, so it answers for
+                        // the entry and marks no line — which is exactly what
+                        // it means when a leg's lines are listed unmarked.
+                        onTap: () => _showItem(path.itemId),
+                        child: _ModeBadge(
+                          color: colorOf(
+                            path.colorValue,
+                            happening: path.happening,
+                          ),
+                          // The row's own icon, which for a built-in falls back
+                          // to that built-in's default — the same resolution
+                          // the timeline tile uses. Reading `iconId` directly
+                          // instead gives every built-in the generic three
+                          // dots, since a seeded row carries no id of its own.
+                          icon:
+                              modes[path.modeId]?.icon ??
+                              kDefaultTransportModeIcon,
+                        ),
                       ),
                     ),
-                  ),
                 for (final pin in features.pins)
                   Marker(
                     point: pin.position,

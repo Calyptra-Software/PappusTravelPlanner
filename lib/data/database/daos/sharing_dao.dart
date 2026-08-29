@@ -291,6 +291,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
                   source: t.source,
                   name: t.name,
                   sortOrder: t.sortOrder,
+                  display: t.display,
                 ),
             ],
             attachments: attachmentsOf(itemId: i.id),
@@ -493,6 +494,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
               // belongs — an unreadable line must not cost the whole import.
               points: t.points,
               sortOrder: Value(t.sortOrder),
+              display: Value(t.display),
             ),
           );
         }

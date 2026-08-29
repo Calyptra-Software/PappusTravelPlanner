@@ -16,12 +16,14 @@ void main() {
     required List<LatLng> points,
     String? name,
     TrackSource source = TrackSource.imported,
+    TrackDisplay display = TrackDisplay.auto,
   }) => Track(
     id: id,
     itemId: 7,
     source: source,
     name: name,
     points: encodeTrackPoints(points),
+    display: display,
     sortOrder: id,
   );
 
@@ -69,6 +71,48 @@ void main() {
     );
   });
 
+  test('a summary says whether the map is drawing that line', () {
+    // Read from `drawnTrackIds` and never worked out again here: a list saying
+    // a line is drawn while the map does not draw it is worse than one saying
+    // nothing.
+    final summaries = summarizeTracks([
+      row(
+        1,
+        source: TrackSource.routed,
+        points: const [LatLng(53.55, 9.99), LatLng(53.56, 9.99)],
+      ),
+      row(
+        2,
+        name: 'Morning walk',
+        points: const [LatLng(53.55, 9.99), LatLng(53.56, 9.99)],
+      ),
+    ]);
+
+    expect(summaries.map((s) => s.drawn), [false, true]);
+    expect(summaries.map((s) => s.display), [
+      TrackDisplay.auto,
+      TrackDisplay.auto,
+    ]);
+  });
+
+  test('and it follows the override rather than the default', () {
+    final summaries = summarizeTracks([
+      row(
+        1,
+        source: TrackSource.routed,
+        points: const [LatLng(53.55, 9.99), LatLng(53.56, 9.99)],
+      ),
+      row(
+        2,
+        name: 'Morning walk',
+        display: TrackDisplay.hidden,
+        points: const [LatLng(53.55, 9.99), LatLng(53.56, 9.99)],
+      ),
+    ]);
+
+    expect(summaries.map((s) => s.drawn), [true, false]);
+  });
+
   test('a row the map cannot draw is listed with no length', () {
     // Both cases are the same fact to a reader deciding whether to keep it, and
     // a row that draws nothing is exactly the one worth being able to delete —
@@ -81,6 +125,7 @@ void main() {
         source: TrackSource.imported,
         name: null,
         points: 'not a polyline at all ~~~',
+        display: TrackDisplay.auto,
         sortOrder: 2,
       ),
     ]);

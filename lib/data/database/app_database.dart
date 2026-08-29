@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 35;
+  int get schemaVersion => 36;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -401,6 +401,15 @@ class AppDatabase extends _$AppDatabase {
       if (from < 35) {
         await m.addColumn(trips, trips.coverAttachmentId);
         await m.addColumn(trips, trips.coverHidden);
+      }
+      // v36 lets the user say whether a stored line is drawn — the recording
+      // that a tunnel broke, put away without being deleted, so the computed
+      // route beside it can be seen. Defaulted to `auto`, which is the rule the
+      // map has always followed and therefore what every existing line means.
+      // Skipped when the table was created above, since it is built from the
+      // current schema and already has the column — the same guard v33 needs.
+      if (from < 36 && from >= 29) {
+        await m.addColumn(tracks, tracks.display);
       }
     },
     beforeOpen: (details) async {
