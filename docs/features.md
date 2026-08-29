@@ -306,10 +306,10 @@ Two things it deliberately does not do: a leg is drawn **only when both of its e
 position**, and nothing is drawn between one place and the next. On today, the entry that
 is under way is marked.
 
-Places on the same spot are gathered under one pin with a count and come apart again as you zoom in. The
-pin keeps the color every entry under it would have had and turns grey only where they
-differ; an entry that is under way still turns it red. Tapping a gathered pin lists what
-it holds.
+Places on the same spot are gathered under one pin with a count and come apart again as
+you zoom in. The pin keeps the color every entry under it would have had and turns grey
+only where they differ; an entry that is under way still turns it red. Tapping a gathered
+pin lists what it holds.
 
 ### Where the positions come from
 
