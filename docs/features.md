@@ -383,10 +383,8 @@ you can overrule it either way. Hide every line of a leg and the map draws the s
 between its ends again.
 
 On the map, **tapping a line** says which one it is: the entry opens with its lines listed
-and the one you touched marked. Where two entries run over the same ground — a walk out and
-back, two legs along one road — the tap lists both and lets you pick. The same eye is there
-too, because which line you want to see is something you notice while looking at the wrong
-one.
+and the one you touched marked. Where two entries run over the same ground  the tap lists
+both and lets you pick.
 
 A recording usually covers more than one entry — a walk, a bus, another walk. Import it from the
 trip's ⋮ menu (or from any leg's form), tick the run of entries it covers, and the line is
