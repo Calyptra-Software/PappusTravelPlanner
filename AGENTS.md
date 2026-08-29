@@ -792,6 +792,27 @@ UI (features/*/presentation, *widgets)
   one trip opens its card as before, several are listed to choose from. `kLineHitbox` widens
   the hit test past the 3px stroke for the same reason — what "on this line" means has to be
   a fingertip, and a shared stretch that reads as one line should be one tap.
+- **The same overlap buries the pins, so they are gathered rather than hit-tested.** A line
+  under another can still be reached by widening the hitbox; a pin under another cannot be
+  reached at all, since a marker wins the hit test against everything beneath it — twenty
+  identical commutes put twenty marks on one platform and nineteen of them are taps nobody
+  can aim. `clusterPins` (`features/map/pin_clusters.dart`) is therefore `clusterPhotos`
+  applied to the other map: the greedy, order-dependent rule now lives once in
+  `map_clusters.dart` and both call it, since *which* marks fall together is one question
+  and two answers to it would drift. Measured in **screen pixels** through the camera's own
+  projection, so a cluster comes apart as you zoom in — which is why the pins are a layer of
+  their own (`_PinMarkers` reads `MapCamera.of(context)`, the arrangement `_PhotoMarkers`
+  already has) rather than markers among the rest, which would then rebuild on every pan.
+  A gathered mark sits on the **representative's own position** and takes the overview's
+  order for its face, exactly as a photo cluster does; the tap hands the sheet every trip
+  under it, once each, in that same order — a pin hides its neighbours precisely as a line
+  lies on one, so the two must answer alike. What it may **not** inherit from the photo rule
+  is the color: an accent here is the statement "that is trip A's", so a mark holding B as
+  well wears `kMixedTripPinColor`, a neutral in map colours, and lets the count and the tap
+  say the rest. The badge is `MapPlacePin`'s `count`, the same `_CountBadge` the photo marker
+  draws — and it makes room for itself *inside* the marker's box (`pinBoxFor`, symmetric in
+  width and taller only upwards), because `MarkerLayer` lays its children out in a `Stack`
+  that clips, and because the tip is the pin's whole claim and a badge may not move it.
 - **A track is a line with a provenance, not "the GPX file".** `Tracks` (v29) holds the
   line an entry *actually* followed — packed by `track_points.dart` into the encoded-polyline
   format every mapping tool reads, so a dense recording costs a fraction of its point count

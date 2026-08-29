@@ -127,6 +127,10 @@ Where several routes lie on top of each other or run side by side — the same c
 once per day you made it, or two trips sharing a stretch of road — the tap lists **all** of
 them and you pick.
 
+Places that would sit on top of each other are gathered under one pin with a count, and come
+apart again as you zoom in. A gathered pin keeps the trip's color while every place under it
+belongs to that trip, and turns grey once it stands for several; tapping it lists them all.
+
 ---
 
 ## The itinerary

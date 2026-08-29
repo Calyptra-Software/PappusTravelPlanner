@@ -255,10 +255,24 @@ class MapAttributionBar extends StatelessWidget {
 /// pin-shaped smudge behind while the real pin pans away. A hard edge cannot
 /// smear.
 class MapPlacePin extends StatelessWidget {
-  const MapPlacePin({super.key, required this.color, this.size = 32});
+  const MapPlacePin({
+    super.key,
+    required this.color,
+    this.size = 32,
+    this.count = 1,
+  });
 
   final Color color;
   final double size;
+
+  /// How many places this one pin stands for. One draws no badge: a "1" beside
+  /// a mark answers a question nobody asked.
+  ///
+  /// A count widens the box by [kPinBadgeOverhang] on **both** sides and raises
+  /// it by [kPinBadgeRise], so the glyph stays centered in it and the tip goes
+  /// on landing where the marker says it does. See [pinBoxFor], which is what
+  /// the layer sizes its markers with.
+  final int count;
 
   Widget _glyph({Color? fill, Paint? outline}) => Text(
     String.fromCharCode(Icons.place.codePoint),
@@ -273,23 +287,100 @@ class MapPlacePin extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    // The glyph is a private-use code point: read aloud it is noise, and unlike
-    // an `Icon` a `Text` does not hide itself from the semantics tree.
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        _glyph(
-          outline: Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.5
-            ..strokeJoin = StrokeJoin.round
-            ..color = const Color(0xFFFFFFFF),
+  Widget build(BuildContext context) {
+    final pin = ExcludeSemantics(
+      // The glyph is a private-use code point: read aloud it is noise, and
+      // unlike an `Icon` a `Text` does not hide itself from the semantics tree.
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          _glyph(
+            outline: Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = 2.5
+              ..strokeJoin = StrokeJoin.round
+              ..color = const Color(0xFFFFFFFF),
+          ),
+          _glyph(fill: color),
+        ],
+      ),
+    );
+    if (count < 2) return pin;
+
+    final box = pinBoxFor(size);
+    return SizedBox(
+      width: box.width,
+      height: box.height,
+      child: Stack(
+        children: [
+          // Bottom-*center* of the widened box, which is where the marker's
+          // alignment puts the position: the badge may not move the tip, since
+          // the tip is the pin's whole claim.
+          Align(alignment: Alignment.bottomCenter, child: pin),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: _CountBadge(count: count, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// How far a count badge reaches past the pin's glyph, sideways and upwards.
+///
+/// Room made *inside* the marker's own box rather than an overhang: a marker is
+/// laid out by `MarkerLayer` in a `Stack` that clips, so a badge hanging off the
+/// side would be cut in half on some frames and not others.
+const double kPinBadgeOverhang = 11;
+const double kPinBadgeRise = 7;
+
+/// The box a [MapPlacePin] of [size] with a count needs.
+///
+/// Symmetric in width so the glyph — and with it the tip — stays on the
+/// position; taller only upwards, away from it.
+Size pinBoxFor(double size) =>
+    Size(size + 2 * kPinBadgeOverhang, size + kPinBadgeRise);
+
+/// How many of something one mark stands for.
+///
+/// The same badge on a gathered photograph and on a gathered pin: two marks
+/// saying the same thing in two shapes would read as two different statements.
+/// It sits *on* the mark rather than beside it — the mark is already as wide as
+/// a fingertip wants, and a badge outside it would move where the thing appears
+/// to be.
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.count, required this.color});
+
+  final int count;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: theme.colorScheme.surface, width: 1.5),
+      ),
+      child: Text(
+        '$count',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: _readableOn(color),
+          fontWeight: FontWeight.w700,
+          height: 1.1,
         ),
-        _glyph(fill: color),
-      ],
-    ),
-  );
+      ),
+    );
+  }
+
+  /// Black or white, whichever the badge's own colour can be read against — it
+  /// takes the mark's colour, and that is the user's to pick.
+  Color _readableOn(Color background) =>
+      background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 }
 
 /// How large a photograph is drawn on the map.
@@ -370,29 +461,9 @@ class MapPhotoMarker extends StatelessWidget {
         Positioned(
           top: -4,
           right: -4,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: theme.colorScheme.surface, width: 1.5),
-            ),
-            child: Text(
-              '$count',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: _readableOn(color),
-                fontWeight: FontWeight.w700,
-                height: 1.1,
-              ),
-            ),
-          ),
+          child: _CountBadge(count: count, color: color),
         ),
       ],
     );
   }
-
-  /// Black or white, whichever the badge's own colour can be read against — the
-  /// frame takes the entry's colour, and that is the user's to pick.
-  Color _readableOn(Color background) =>
-      background.computeLuminance() > 0.5 ? Colors.black : Colors.white;
 }

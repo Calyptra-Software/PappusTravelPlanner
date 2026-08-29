@@ -299,6 +299,81 @@ void main() {
     await tester.pump(kTileUpdateThrottle);
   });
 
+  testWidgets('places on one spot become one mark that says how many', (
+    tester,
+  ) async {
+    // The ordinary case here, not the awkward one: a commute is drawn once per
+    // day it was made, so the same platform carries twenty identical pins —
+    // nineteen of them taps nobody can aim, since a marker wins the hit test
+    // against everything under it.
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip)],
+      items: [place(12, 1, 50.1), place(13, 1, 50.1), place(14, 1, 50.1)],
+    );
+
+    final pin = tester.widget<MapPlacePin>(find.byType(MapPlacePin));
+    expect(pin.count, 3);
+    // Every place here is that trip's, so the mark still says which trip.
+    expect(pin.color, const Color(tealTrip));
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('a mark of several trips wears none of their accents', (
+    tester,
+  ) async {
+    // A colour on this map means "that is trip A's", so a mark holding B as
+    // well may not wear A's — it would be saying something false about B.
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip), trip(2, orangeTrip)],
+      items: [place(12, 1, 50.1), place(13, 2, 50.1)],
+    );
+
+    final pin = tester.widget<MapPlacePin>(find.byType(MapPlacePin));
+    expect(pin.count, 2);
+    expect(pin.color, kMixedTripPinColor);
+
+    // And the tap answers with both, as a tap on lines running together does.
+    await tester.tap(find.byType(MapPlacePin));
+    await tester.pumpAndSettle();
+    expect(find.text('2 trips here'), findsOneWidget);
+    expect(find.text('Trip 1'), findsOneWidget);
+    expect(find.text('Trip 2'), findsOneWidget);
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('places far apart keep their own marks', (tester) async {
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip)],
+      items: [place(12, 1, 53.5), place(13, 1, 45.0)],
+    );
+
+    expect(find.byType(MapPlacePin), findsNWidgets(2));
+    for (final pin in tester.widgetList<MapPlacePin>(
+      find.byType(MapPlacePin),
+    )) {
+      expect(pin.count, 1, reason: 'nothing to count where nothing is hidden');
+    }
+
+    // Tile loading is throttled, so a timer outlives the last pump. It runs on
+    // once after firing (the trailing call), hence twice — otherwise the tree is
+    // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
   group('the view is a setting', () {
     test('an unknown stored value falls back to the list', () async {
       SharedPreferences.setMockInitialValues({'flutter.trips_view': 99});

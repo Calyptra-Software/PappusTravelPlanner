@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -13,6 +15,7 @@ import '../../itinerary/application/itinerary_providers.dart';
 import '../basemap.dart';
 import '../finite_camera.dart';
 import '../map_features.dart';
+import '../pin_clusters.dart';
 import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
 import '../../trips/widgets/trip_card.dart';
@@ -286,25 +289,15 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
                 ],
               ),
             ),
-            MarkerLayer(
-              markers: [
+            // The places, gathered so that none hides another — the same rule
+            // the lines are hit-tested under, applied before they are drawn.
+            _PinMarkers(
+              pins: [
                 for (final (trip, features) in drawn)
                   for (final pin in features.pins)
-                    Marker(
-                      point: pin.position,
-                      width: 30,
-                      height: 30,
-                      alignment: Alignment.topCenter,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _showTrips([trip]),
-                        child: MapPlacePin(
-                          color: Color(trip.colorValue),
-                          size: 28,
-                        ),
-                      ),
-                    ),
+                    TripPin(trip: trip, pin: pin),
               ],
+              onTap: _showTrips,
             ),
             // Above every trip's own marks: "where am I in all this" is asked
             // *of* them, so it must not end up under one.
@@ -379,6 +372,87 @@ class _NothingToPlace extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The color a mark gathering *several* trips is drawn in.
+///
+/// Not one of their accents: on this map a color is the statement "that is
+/// trip A's", so wearing A's accent over a mark holding B and C as well would
+/// be saying something false about two of them — and the color is the whole
+/// reason a tangle of trips is readable here. A neutral says only "several",
+/// which is what the count beside it says too, and the tap says the rest.
+///
+/// In map colours rather than theme ones, like the picker's mark and for the
+/// same reason: raster tiles are pale in both themes, so a mark tinted by the
+/// theme is a road.
+const Color kMixedTripPinColor = Color(0xFF424242);
+
+/// Every visible trip's places, gathered so that none hides another.
+///
+/// A layer of its own rather than markers among the rest, because it has to be
+/// rebuilt whenever the camera moves: `MapCamera.of(context)` is what makes
+/// that happen, and reading it here keeps the rest of the map from rebuilding
+/// with it. The trip map's `_PhotoMarkers` is the same arrangement.
+///
+/// Which pins fall together is `clusterPins`, measured in screen pixels through
+/// the camera's own projection — so zooming in pulls a cluster apart on its
+/// own, with no threshold in metres to be wrong at some scale.
+class _PinMarkers extends StatelessWidget {
+  const _PinMarkers({required this.pins, required this.onTap});
+
+  /// In the overview's order of trips, which is what makes a cluster keep the
+  /// same face — and name its trips in the same order — as the map moves.
+  final List<TripPin> pins;
+
+  /// Handed every trip under the mark, once each: the same answer the lines
+  /// give, since a pin hides its neighbours exactly as a line lies on one.
+  final ValueChanged<List<Trip>> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (pins.isEmpty) return const SizedBox.shrink();
+    final camera = MapCamera.of(context);
+    final clusters = clusterPins(
+      pins,
+      project: (entry) {
+        final offset = camera.latLngToScreenOffset(entry.pin.position);
+        return math.Point<double>(offset.dx, offset.dy);
+      },
+    );
+
+    const size = 28.0;
+    final box = pinBoxFor(size);
+
+    return MarkerLayer(
+      markers: [
+        for (final cluster in clusters)
+          Marker(
+            point: cluster.representative.pin.position,
+            width: cluster.count > 1 ? box.width : 30,
+            height: cluster.count > 1 ? box.height : 30,
+            // Aligned above the point so the pin's tip — its whole claim —
+            // lands on it, gathered or not.
+            alignment: Alignment.topCenter,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => onTap(cluster.trips),
+              child: MapPlacePin(
+                // A trip's accent while every place here is that trip's; a
+                // neutral once the mark stands for several. Never the entry's
+                // own color: on this map the color answers "which trip", which
+                // is what makes it readable at all.
+                color: switch (cluster.onlyTrip) {
+                  final trip? => Color(trip.colorValue),
+                  null => kMixedTripPinColor,
+                },
+                size: size,
+                count: cluster.count,
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

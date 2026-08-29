@@ -1,18 +1,14 @@
 /// Gathering the photographs that would otherwise sit on top of each other.
 ///
-/// Pure, like the rest of what the map draws from: clustering is a rule about
-/// distances on a screen, and a rule is worth testing without a tile server
-/// under it.
-///
-/// The distance is measured in **pixels, not degrees**, which is the whole
-/// point: two pictures taken in the same square metre overlap at every zoom
-/// until the map is scaled enough to separate them, and a threshold in metres
-/// would either group them forever or never. Zoom in and the same photographs
-/// come apart, because the projection they are measured through has changed.
+/// The gathering itself is `map_clusters.dart` — pixels on a screen, measured
+/// through the camera's own projection. What is here is what a gathered
+/// photograph *is*: the picture whose thumbnail is drawn, and how many others
+/// it stands for.
 library;
 
 import 'dart:math' as math;
 
+import 'map_clusters.dart';
 import 'map_features.dart';
 
 /// How close two photographs must be on screen before one hides the other.
@@ -41,47 +37,18 @@ final class PhotoCluster {
 
 /// Groups [photos] that land within [radius] pixels of each other.
 ///
-/// [project] turns a position into screen coordinates — the camera's job, and
-/// the reason this takes a function rather than a zoom level: what "close"
-/// means is whatever the map is currently doing, including a rotation this app
-/// does not allow and a projection it might change.
-///
-/// Greedy from the first photograph onwards, so the answer depends only on the
-/// order it is given — which is gallery order. A cluster therefore keeps the
-/// same face while the map moves, instead of changing which picture it shows
-/// every time the camera shifts by a pixel.
+/// Handed over in gallery order, so a cluster keeps the same face while the map
+/// moves — and so the front of a cluster is the picture the gallery opens on.
+/// See [clusterOnScreen] for the rest of the rule.
 List<PhotoCluster> clusterPhotos(
   List<MapPhoto> photos, {
   required math.Point<double> Function(MapPhoto) project,
   double radius = kPhotoClusterRadius,
-}) {
-  if (photos.length < 2) {
-    return [
-      for (final photo in photos) PhotoCluster([photo]),
-    ];
-  }
-  final points = [for (final photo in photos) project(photo)];
-  final taken = List<bool>.filled(photos.length, false);
-  final clusters = <PhotoCluster>[];
-  final radiusSquared = radius * radius;
-
-  for (var i = 0; i < photos.length; i++) {
-    if (taken[i]) continue;
-    taken[i] = true;
-    final members = <MapPhoto>[photos[i]];
-    for (var j = i + 1; j < photos.length; j++) {
-      if (taken[j]) continue;
-      final dx = points[j].x - points[i].x;
-      final dy = points[j].y - points[i].y;
-      // Measured against the one that started the cluster, not against whatever
-      // joined it last: chaining would let a line of pictures a screen wide
-      // collapse into one mark, each within a thumb of its neighbour.
-      if (dx * dx + dy * dy <= radiusSquared) {
-        taken[j] = true;
-        members.add(photos[j]);
-      }
-    }
-    clusters.add(PhotoCluster(members));
-  }
-  return clusters;
-}
+}) => [
+  for (final members in clusterOnScreen(
+    photos,
+    project: project,
+    radius: radius,
+  ))
+    PhotoCluster(members),
+];
