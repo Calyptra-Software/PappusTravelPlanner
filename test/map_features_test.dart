@@ -307,6 +307,7 @@ void main() {
         tracks: {
           1: [
             const TrackLine(
+              id: 1,
               points: [
                 LatLng(53.5511, 9.9937),
                 LatLng(53.5540, 9.9990),
@@ -327,10 +328,12 @@ void main() {
         tracks: {
           1: [
             const TrackLine(
+              id: 2,
               points: [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)],
               source: TrackSource.imported,
             ),
             const TrackLine(
+              id: 3,
               points: [LatLng(53.5570, 10.0050), LatLng(53.5600, 10.0100)],
               source: TrackSource.imported,
             ),
@@ -338,7 +341,10 @@ void main() {
         },
       );
 
-      expect(features.paths.single.segments, hasLength(2));
+      // Two rows, so two paths: each is a line somebody can point at, and the
+      // gap between them is not a line at all.
+      expect(features.paths, hasLength(2));
+      expect(features.paths.map((p) => p.segments.length), [1, 1]);
     });
 
     test('an entry with no track still gets the great circle', () {
@@ -368,7 +374,13 @@ void main() {
       final features = tripMapFeatures(
         [leg(1)],
         tracks: {
-          1: [const TrackLine(points: computed, source: TrackSource.routed)],
+          1: [
+            const TrackLine(
+              id: 4,
+              points: computed,
+              source: TrackSource.routed,
+            ),
+          ],
         },
       );
       expect(features.paths.single.dashed, isTrue);
@@ -378,7 +390,13 @@ void main() {
       final features = tripMapFeatures(
         [leg(1)],
         tracks: {
-          1: [const TrackLine(points: walked, source: TrackSource.recorded)],
+          1: [
+            const TrackLine(
+              id: 5,
+              points: walked,
+              source: TrackSource.recorded,
+            ),
+          ],
         },
       );
       expect(features.paths.single.dashed, isFalse);
@@ -391,14 +409,151 @@ void main() {
         [leg(1)],
         tracks: {
           1: [
-            const TrackLine(points: computed, source: TrackSource.routed),
-            const TrackLine(points: walked, source: TrackSource.imported),
+            const TrackLine(
+              id: 6,
+              points: computed,
+              source: TrackSource.routed,
+            ),
+            const TrackLine(
+              id: 7,
+              points: walked,
+              source: TrackSource.imported,
+            ),
           ],
         },
       );
       expect(features.paths.single.segments, hasLength(1));
       expect(features.paths.single.segments.single, walked);
       expect(features.paths.single.dashed, isFalse);
+      // And it is the *recorded* row that is drawn, by its id.
+      expect(features.paths.single.trackId, isNotNull);
+    });
+  });
+
+  group('a line is a thing that can be pointed at', () {
+    ItineraryItem leg(int id) => ItineraryItem(
+      id: id,
+      tripId: 1,
+      date: DateTime(2026, 5, 1),
+      sortOrder: id,
+      kind: ItemKind.transport,
+      spansNextDay: false,
+      fromLat: 53.5511,
+      fromLon: 9.9937,
+      toLat: 53.5600,
+      toLon: 10.0100,
+    );
+
+    const short = [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)];
+    const long = [LatLng(53.5511, 9.9937), LatLng(53.6200, 10.1000)];
+
+    test('each stored line is a path of its own, named by its row', () {
+      // Without the row id the map could say which entry was tapped but not
+      // which of its lines, which is the half of the question the sheet
+      // answers.
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: short,
+              source: TrackSource.imported,
+            ),
+            const TrackLine(id: 12, points: long, source: TrackSource.imported),
+          ],
+        },
+      );
+
+      expect(features.paths.map((p) => p.trackId), [11, 12]);
+    });
+
+    test('the straight segment between the ends carries no track id', () {
+      // It is a drawing of the plan, not a row anybody can point at.
+      expect(tripMapFeatures([leg(1)]).paths.single.trackId, isNull);
+    });
+
+    test('one path of an entry wears the badge, and it is the longest', () {
+      // A walk recorded in four segments still wears one mode icon, where the
+      // single path used to wear it: half way along the longest piece.
+      final features = tripMapFeatures(
+        [leg(1)],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: short,
+              source: TrackSource.imported,
+            ),
+            const TrackLine(id: 12, points: long, source: TrackSource.imported),
+            const TrackLine(
+              id: 13,
+              points: short,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+
+      expect(features.paths.map((p) => p.badged), [false, true, false]);
+      expect(
+        features.paths.singleWhere((p) => p.badged).anchor,
+        midpointOf(long),
+      );
+    });
+
+    test('an entry drawn as one line still wears its badge', () {
+      expect(tripMapFeatures([leg(1)]).paths.single.badged, isTrue);
+    });
+
+    group('what one tap answers for', () {
+      test('two lines of one entry are one answer', () {
+        // The sheet lists that entry's lines and marks the one tapped, so a
+        // chooser would be asking a question it is about to answer itself.
+        final features = tripMapFeatures(
+          [leg(1)],
+          tracks: {
+            1: [
+              const TrackLine(
+                id: 11,
+                points: short,
+                source: TrackSource.imported,
+              ),
+              const TrackLine(
+                id: 12,
+                points: long,
+                source: TrackSource.imported,
+              ),
+            ],
+          },
+        );
+
+        final hit = pathsUnderTap(features.paths.reversed, features.paths);
+        expect(hit, hasLength(1));
+        // The first hit is the line the finger landed on.
+        expect(hit.single.trackId, 12);
+      });
+
+      test('two entries are two, in the order the plan draws them', () {
+        // Never in the order they were hit: a stable order is one the user can
+        // learn, and which line was drawn last is not something they can see.
+        final features = tripMapFeatures([leg(1), leg(2)]);
+
+        expect(
+          pathsUnderTap(
+            features.paths.reversed,
+            features.paths,
+          ).map((p) => p.itemId),
+          [1, 2],
+        );
+      });
+
+      test('a tap that landed on nothing answers nothing', () {
+        expect(
+          pathsUnderTap(const [], tripMapFeatures([leg(1)]).paths),
+          isEmpty,
+        );
+      });
     });
   });
 
@@ -436,6 +591,7 @@ void main() {
         tracks: {
           item.id: [
             const TrackLine(
+              id: 8,
               points: [LatLng(53.5511, 9.9937), LatLng(53.5600, 10.0100)],
               source: TrackSource.imported,
             ),

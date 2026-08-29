@@ -1676,6 +1676,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 trip here} other{{count} trips here}}'**
   String mapTripsHere(int count);
 
+  /// Title of the sheet listing the entries whose lines lie under one tap on a trip's map, when several do.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry here} other{{count} entries here}}'**
+  String mapEntriesHere(int count);
+
   /// Heading of the control choosing the color one itinerary entry is drawn in on the map.
   ///
   /// In en, this message translates to:

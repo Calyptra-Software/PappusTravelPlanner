@@ -932,6 +932,17 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String mapEntriesHere(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge hier',
+      one: '1 Eintrag hier',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get mapColor => 'Farbe auf der Karte';
 
   @override

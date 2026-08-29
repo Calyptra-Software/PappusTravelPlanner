@@ -377,6 +377,10 @@ can throw away the detour and keep the walk. *Remove all* is there from two line
 line that cannot be drawn is listed too, with nothing where its length would be, which is
 how you get rid of it.
 
+On the map, **tapping a line** says which one it is: the entry opens with its lines listed
+and the one you touched marked. Where two entries run over the same ground — a walk out and
+back, two legs along one road — the tap lists both and lets you pick.
+
 A recording usually covers more than one entry — a walk, a bus, another walk. Import it from the
 trip's ⋮ menu (or from any leg's form), tick the run of entries it covers, and the line is
 divided between them. Where an entry has no coordinates, the map asks you to tap the spot where

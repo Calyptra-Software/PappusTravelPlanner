@@ -936,6 +936,33 @@ UI (features/*/presentation, *widgets)
   per camera tick is the shape of the pinch freeze this map has already been through. A row
   whose string does not decode is **dropped rather than thrown on**: it may have come from a
   shared bundle, and one unreadable line must not blank the map for a whole trip.
+- **A drawn line is one stored line, so it can be pointed at.** `tripMapFeatures` emits one
+  `MapPath` per track rather than one per entry, each carrying the `trackId` it was drawn
+  from (null for the straight segment between the ends, which is a drawing of the plan and
+  not a row anybody can point at) — the pieces were already drawn separately, since a
+  recording that stopped and started again has to keep its gap, so this costs nothing and
+  buys the finer answer. `dashed` moves with it, from the entry to the line making the claim;
+  the drawing is unchanged, because a set holding both kinds never reaches the map (the
+  recorded ones supersede). What one path per line would otherwise break is the **mode
+  badge**: `badged` marks exactly one path of an entry — the one holding its longest piece,
+  which is where `MapPath.anchor` already put the icon — so a walk recorded in four segments
+  still wears one icon, in the place it wore it before — and the marker layer draws a badge
+  for that path **only**, since a marker wins the hit test against the line beneath it, so an
+  icon on every path would take the taps of every line it sits on.
+  The trip map then hit-tests its lines the way the all-trips map does (`hitNotifier`,
+  `kLineHitbox` — "on this line" has to be a fingertip), and `pathsUnderTap` folds the hits
+  to **one per entry, in draw order**: overlap is normal here too — a walk out and back lies
+  on itself, neighbouring legs share a road at any zoom showing a city — and picking the
+  last-drawn line would be the coin toss that map already refuses. Two entries are listed to
+  choose from; two lines of *one* entry are one answer, because the sheet that opens lists
+  that entry's lines anyway. Which is the other half of the tap: `MapItemSheet` takes a
+  `highlightTrackId` and marks the row the finger landed on, since a map cannot say which
+  line is which — every line of an entry is the same color by design. The **badge** marks no
+  line: it is the entry's mark and not a line's, so a leg's lines listed unmarked is what
+  "you tapped the icon" looks like. The rows are the item form's own `TrackRow`, so the words
+  that tell two lines apart cannot come out differently in the two places; the sheet passes
+  no `onRemove`, because it is a reading and removing is an act, which lives in the form its
+  button opens.
 - **The bundle carries tracks and stays lossless**, as `BundleTrack` on the item, with the
   points as the packed string rather than a JSON array of coordinates — the string is the
   storage format on both sides, so a round trip through pairs of doubles would quadruple the

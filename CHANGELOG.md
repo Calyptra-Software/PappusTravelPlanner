@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **Tapping a line on the map says which line it is.** A leg that carries several — a
+  recording in two segments, a route beside a recording — now draws each of them as itself,
+  and a tap opens the entry with its lines listed and the one you touched marked. Where two
+  entries run over the same ground, the tap lists both rather than picking one for you.
 - **The lines on a leg can be removed one at a time.** An entry often carries several — a
   recording that stopped and started again arrives as one line per segment, a second import
   adds to them, and a connection from the search brings its computed route. The entry's form
