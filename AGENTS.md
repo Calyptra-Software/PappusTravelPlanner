@@ -1709,24 +1709,29 @@ compiled, so `analyze` and `test` are blind to it and a breaking bump used to me
 
 What is deliberate is `android.builtInKotlin=false` in `android/gradle.properties`. AGP 9
 compiles Kotlin itself by default; the Flutter scaffold writes `false` to keep the old
-arrangement where the **Kotlin Gradle Plugin** does it, and that is the only mode that
-builds. `flutter build apk` prints a `[!] Flutter Fix` box recommending the migration —
-**taking that advice breaks the build**, and no plugin upgrade will change that, because
-the blocker is Flutter itself. `FlutterPluginUtils.kt` walks the subprojects, and for
-every one that applies AGP but does *not* itself apply KGP it calls
-`pluginManager.apply("kotlin-android")` — without consulting `android.builtInKotlin`. AGP 9
-with built-in Kotlin then aborts on exactly those projects, because KGP is present after
-all. The irony is that this hits the plugins that have *already* migrated:
-`file_selector_android` correctly applies AGP and no KGP, so Flutter re-applies it and the
-build dies there. Its companion `android.newDsl=true` is no escape either — Flutter's Gradle
-plugin throws a `NullPointerException` before it gets as far as Kotlin.
+arrangement where the **Kotlin Gradle Plugin** does it. Under Flutter 3.44 that was the only
+mode that built at all, and the mechanism is worth keeping written down because it is the
+shape such a break takes — it happens in *somebody else's* plugin, over a flag it never
+reads. `FlutterPluginUtils.kt` walks the subprojects, and for every one that applies AGP but
+does *not* itself apply KGP it called `pluginManager.apply("kotlin-android")` — without
+consulting `android.builtInKotlin`. AGP 9 with built-in Kotlin then aborted on exactly those
+projects, because KGP was present after all. The irony was that this hit the plugins that had
+*already* migrated: `file_selector_android` correctly applies AGP and no KGP, so Flutter
+re-applied it and the build died there. Its companion `android.newDsl=true` was no escape
+either — Flutter's Gradle plugin threw a `NullPointerException` before it got as far as
+Kotlin.
 
-None of this is a defect to chase: Flutter's own documentation states that **enabling
-built-in Kotlin requires Flutter 3.47 or later**, and the pinned toolchain here is 3.44.
-The flag simply is not supported yet, and the call site above is the shape that takes.
-Flutter deliberately ships both properties as `false` for the duration of the ecosystem's
-migration (flutter/flutter#183910); the escape hatch is documented as going away before
-AGP 10.
+**That ceiling is gone, and the flag is still `false` on purpose.** Flutter's own
+documentation puts built-in Kotlin at **3.47 or later**, and the toolchain here is now
+3.47.2, where `ORG_GRADLE_PROJECT_pappusSideBySide=true flutter build apk --split-per-abi`
+was measured to run through to all three APKs with `android.builtInKotlin=true`. What that
+measurement does *not* cover is the half that matters most here: the native Kotlin in this
+repository is the home-screen widget, and a widget that stopped updating would build
+perfectly. So flipping it is a change to how every Kotlin source in the tree is compiled,
+worth making on its own — with the APK on a phone and the widget watched through a trip
+change — rather than as a side effect of a version bump. Flutter ships both properties as
+`false` for the duration of the ecosystem's migration (flutter/flutter#183910); the escape
+hatch is documented as going away before AGP 10, which is the deadline this is against.
 
 So the warning that survives a good build — "Your app uses the following plugins that apply
 Kotlin Gradle Plugin (KGP): home_widget" — is expected, and should be neither chased nor
@@ -1736,9 +1741,10 @@ consults `android.builtInKotlin` — so it applies KGP here precisely because we
 legacy mode, and it cannot drop the line without breaking AGP 8 users. It is named only
 because Flutter matches a **textual** regex against the build script, which cannot see the
 `if` guarding it; the other plugins receive KGP just as surely, from Flutter, and go
-unmentioned. There is no plugin upgrade to wait for. The warning clears when Flutter 3.47
-lands and `android.builtInKotlin=true` becomes possible — that upgrade, not a dependency
-bump, is the thing to revisit.
+unmentioned. There is no plugin upgrade to wait for — and, measured on 3.47.2, no
+`android.builtInKotlin=true` to wait for either: the warning is printed just the same in
+that mode, for exactly the reason above. A regex over a build script cannot know which
+branch Gradle took, so nothing about switching the flag will silence it.
 
 ### Web
 

@@ -118,11 +118,9 @@ void main() {
     expect(find.text('Nothing planned in this option yet.'), findsOneWidget);
     expect(find.text('Use this option'), findsOneWidget);
     var branches = await db.select(db.alternatives).get();
-    expect(
-      branches.where((b) => b.chosen).map((b) => b.sortOrder),
-      [0],
-      reason: 'swiping browses; it must not move the choice',
-    );
+    expect(branches.where((b) => b.chosen).map((b) => b.sortOrder), [
+      0,
+    ], reason: 'swiping browses; it must not move the choice');
     await Future<void>.delayed(const Duration(milliseconds: 2500));
 
     // Commit the empty option: the museum leaves the plan, and its €15 with it.
