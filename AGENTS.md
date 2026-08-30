@@ -703,7 +703,16 @@ UI (features/*/presentation, *widgets)
   because asking the geocoder what is there would put a name on a choice the user did not
   make. Not offered for a **via** stop: only stop ids are allowed there, so a coordinate
   would be a choice that could only fail, which is the same reason that list is filtered to
-  stations.
+  stations. It opens where the search is *happening*, not on the whole globe: the trip's own
+  positions, read the way the item form's position fields read them (`itemPositions`, the one
+  definition of which points an entry carries), plus whatever ends the form has already been
+  given — which say it more precisely, the two ends of a journey generally being a short way
+  apart, and which are the only answer a `JourneyLookup` has, having no trip. `ref.read` of an
+  autoDispose provider, on the same guarantee the item form relies on: the trip screen this
+  sheet was opened over is watching those entries. Where nothing is — and nothing can be, for
+  a lookup with neither end named — the list is empty, which is a wider map and not a wrong
+  one. The geocoder is deliberately *not* biased by any of it: a name is looked up the same
+  way wherever the trip is.
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what

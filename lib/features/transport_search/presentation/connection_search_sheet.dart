@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/attribution.dart';
 import '../../../data/database/app_database.dart' show Trip;
 import '../../../data/database/tables.dart' show TripKind;
 import '../../../l10n/app_localizations.dart';
+import '../../itinerary/application/itinerary_providers.dart';
+import '../../map/map_features.dart';
 import '../../map/presentation/map_picker_screen.dart';
 import '../../trips/application/trip_providers.dart';
 import '../../trips/widgets/trip_picker.dart';
@@ -161,10 +164,41 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   }) async {
     final place = await showAppSheet<TransportPlace>(
       context,
-      builder: (_) =>
-          _PlacePickerSheet(stopsOnly: stopsOnly, initialQuery: initialQuery),
+      builder: (_) => _PlacePickerSheet(
+        stopsOnly: stopsOnly,
+        initialQuery: initialQuery,
+        nearby: _nearby,
+      ),
     );
     if (place != null && mounted) setState(() => onPicked(place));
+  }
+
+  /// Where in the world this search is happening, so *Choose on map* opens on
+  /// that part of it rather than on the whole globe.
+  ///
+  /// The trip's own positions, read exactly as the item form's position fields
+  /// read them ([itemPositions]) — a connection is planned into a trip that is
+  /// usually already somewhere — plus whatever ends this form has been given
+  /// already, which say it far more precisely: the two ends of a journey are
+  /// generally a short way apart, and the second is being picked next to the
+  /// first. For a [JourneyLookup] the ends are the whole answer, there being no
+  /// trip; before either has been named the map opens as it always has, on the
+  /// world.
+  ///
+  /// `ref.read` of an autoDispose provider, the same reading the item form makes
+  /// and for the same reason: the screen this sheet was opened over is watching
+  /// the trip's entries. Where nothing is — and nothing can be, for a lookup —
+  /// the list is empty, which is a wider map and not a wrong one.
+  List<LatLng> get _nearby {
+    final trip = _destinationTrip;
+    return [
+      if (trip != null)
+        ...itemPositions(
+          ref.read(itineraryProvider(trip.tripId)).value ?? const [],
+        ),
+      for (final place in [_from, _to, ..._vias.map((via) => via.place)])
+        ?_placePoint(place),
+    ];
   }
 
   /// Adds a via stop — by picking it, so the row appears already holding one.
@@ -916,9 +950,21 @@ class _ErrorRow extends StatelessWidget {
   }
 }
 
+/// A place already named on the form, as a point — null for a stop the router
+/// answered without coordinates, which is nothing to open a map on.
+LatLng? _placePoint(TransportPlace? place) {
+  final lat = place?.lat;
+  final lon = place?.lon;
+  return lat == null || lon == null ? null : LatLng(lat, lon);
+}
+
 /// A place picker: a search field over live geocode suggestions.
 class _PlacePickerSheet extends ConsumerStatefulWidget {
-  const _PlacePickerSheet({this.stopsOnly = false, this.initialQuery});
+  const _PlacePickerSheet({
+    this.stopsOnly = false,
+    this.initialQuery,
+    this.nearby = const [],
+  });
 
   /// Whether addresses and points of interest are dropped from the suggestions,
   /// leaving stations alone. Set for a via stop, which the routing service
@@ -929,6 +975,11 @@ class _PlacePickerSheet extends ConsumerStatefulWidget {
   /// What to search for on opening — the name a leg being replaced gives this
   /// end. The field is editable as ever: it is a starting point, not an answer.
   final String? initialQuery;
+
+  /// Where this search is happening, for *Choose on map* to open on. Context
+  /// only, and passed straight through to [pickPointOnMap]; the geocoder is not
+  /// biased by it, since a name is looked up the same way wherever the trip is.
+  final List<LatLng> nearby;
 
   @override
   ConsumerState<_PlacePickerSheet> createState() => _PlacePickerSheetState();
@@ -955,7 +1006,11 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
   /// that would be putting a name on the user's choice that they did not make.
   Future<void> _pickOnMap(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-    final point = await pickPointOnMap(context, title: l10n.mapPickTitlePlace);
+    final point = await pickPointOnMap(
+      context,
+      title: l10n.mapPickTitlePlace,
+      nearby: widget.nearby,
+    );
     if (point == null || !context.mounted) return;
     Navigator.of(context).pop(
       TransportPlace(
