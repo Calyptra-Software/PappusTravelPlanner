@@ -4,7 +4,7 @@
 
 # Pappus Travel Planner
 
-[![Flutter 3.44+](https://img.shields.io/badge/Flutter-3.44%2B-blue)](https://flutter.dev)
+[![Flutter 3.47+](https://img.shields.io/badge/Flutter-3.47%2B-blue)](https://flutter.dev)
 [![Dart 3.12+](https://img.shields.io/badge/Dart-3.12%2B-blue)](https://dart.dev)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![CI](https://github.com/Calyptra-Software/PappusTravelPlanner/actions/workflows/ci.yml/badge.svg)](https://github.com/Calyptra-Software/PappusTravelPlanner/actions/workflows/ci.yml)
@@ -122,7 +122,7 @@ that makes requests.
 
 ## Build from source
 
-You need the **Flutter SDK, stable channel, 3.44 or newer** on your `PATH` (check with
+You need the **Flutter SDK, stable channel, 3.47 or newer** on your `PATH` (check with
 `flutter doctor`), plus a target to run on — an Android device or emulator, Chrome, or a
 desktop OS. Android builds additionally need the Android SDK, most easily via Android
 Studio.

@@ -127,6 +127,11 @@ Where several routes lie on top of each other or run side by side — the same c
 once per day you made it, or two trips sharing a stretch of road — the tap lists **all** of
 them and you pick.
 
+Places that would sit on top of each other are gathered under one pin with a count, and come
+apart again as you zoom in. A gathered pin keeps the color every place under it would have
+had — the trip's, here — and turns grey only where they differ; tapping it lists the trips
+under it.
+
 ---
 
 ## The itinerary
@@ -301,6 +306,11 @@ Two things it deliberately does not do: a leg is drawn **only when both of its e
 position**, and nothing is drawn between one place and the next. On today, the entry that
 is under way is marked.
 
+Places on the same spot are gathered under one pin with a count and come apart again as
+you zoom in. The pin keeps the color every entry under it would have had and turns grey
+only where they differ; an entry that is under way still turns it red. Tapping a gathered
+pin lists what it holds.
+
 ### Where the positions come from
 
 An imported connection brings the coordinates of its stations with it, so a trip planned
@@ -404,6 +414,16 @@ and a row pointing at an option the trip does not follow says so.
 A line is part of the plan, so it **travels with a copy** — duplicate the leg, stamp out the
 routine, share the trip, and it comes along. A `.tpt` bundle carries it, which is what keeps
 that export lossless.
+
+**Getting the lines out again:** the trip's ⋮ menu has *Export lines (GPX)…*, which writes every
+line the trip's entries carry into one `.gpx` — recordings as tracks, the routes the connection
+search computed as routes. A line you have hidden is exported too: hiding is about the map, and this is
+the record.
+
+It is **not the file you imported**. Elevation and timestamps are dropped when a GPX comes in and
+cannot be invented on the way out, so what you get is the geometry (to about a metre), the day
+and the mode — keep your original if you want the rest. Routines can be exported as well, without
+a day, since their entries have none.
 
 ### Which countries you have been to
 

@@ -602,10 +602,11 @@ UI (features/*/presentation, *widgets)
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
-- **A trip leaves the app in three shapes, all built from one `TripBundle`** (`features/sharing/`,
+- **A trip leaves the app in four shapes, all built from one `TripBundle`** (`features/sharing/`,
   all pure so they test without a database): the `.tpt` bundle itself — the only *lossless*,
-  round-tripping one, and the only one with an importer — plus two one-way views, `trip_pdf.dart`
-  and `trip_ics.dart`. All three read the plan the same way the timeline does: only *live* entries
+  round-tripping one, and the only one with an importer — plus three one-way views,
+  `trip_pdf.dart`, `trip_ics.dart` and `trip_gpx.dart`. All four read the plan the same way the
+  timeline does: only *live* entries
   (loose ones and the chosen option of each decision), so the road not taken never leaves either.
   The `.ics` export leans on the fact that the app stores **no timezone at all** — a day plus
   minutes since midnight — which is exactly iCalendar's *floating* time (`DTSTART` with neither a
@@ -615,6 +616,26 @@ UI (features/*/presentation, *widgets)
   participants, and actual times have no mapping (costs ride along as description text, readable
   but not counted). Import of `.ics` is deliberately **not** built — a calendar event routinely
   spans days, which an item (one day, strictly) cannot represent.
+- **The `.gpx` export exists because half the lines have no original anywhere else.** Importing
+  one recording across several entries *cuts* it, and those pieces live only here, as do the
+  routes the connection search computed; the packed column was chosen so that a line could
+  leave this app "without a decoder being written first", which was true only for somebody
+  willing to write the decoder. `buildTripGpx` returns **null** rather than an empty document
+  when a trip holds no line, and the caller says so — the menu entry cannot know in advance
+  without decoding every point of the trip, which is the one expensive thing a track does.
+  Three decisions in it are worth keeping: a recording is a **`<trk>`** and a routed shape an
+  **`<rte>`**, which is the distinction GPX itself draws (where something went, against how it
+  could go) and the one the map dashes — and the routes are written **before** the tracks
+  because the schema fixes that order, not because the plan does. A line the map is **not**
+  drawing is exported all the same: `TrackDisplay` is a statement about the picture and a GPX
+  is the record, so an eye must not quietly change what a file contains. And nothing is
+  invented to fill the format's other fields — no `<ele>`, no per-point `<time>` (the import
+  dropped both on purpose), coordinates at the five decimals the column actually holds, and on
+  a **routine** not even the day, since its entries sit on `kRoutineAnchorDay`, which is a sort
+  origin and not a date anybody travelled. That is also why a routine *is* offered this export
+  while paper and the calendar are not: a line needs no dates to be a line. So the file is not
+  the file that was imported, and `docs/features.md` says so where a user might otherwise
+  delete the original.
 - **A bundle stamps only the format version the trip actually needs**, so an older app keeps
   reading what it can: v2 for a trip with decisions, v3 for one using a currency the old
   four-value enum never had. That is why a cost's currency is written under the *old enum name*
@@ -673,7 +694,15 @@ UI (features/*/presentation, *widgets)
   moving under it was tried first — a fingertip does cover the point it is placing — but
   tapping won on being the more obvious of the two: the mark appears where you pointed.) The
   marker is drawn ink-on-halo in **map** colours, not theme colours: raster tiles are pale in
-  both themes and full of thin red lines, so a mark tinted by the theme is a road.
+  both themes and full of thin red lines, so a mark tinted by the theme is a road. That rule
+  covers **every** mark on this map, the trip's other positions included: they are context, so
+  they are quieter — a grey *dot* rather than a red pin, since a pin claims the point under
+  its tip and exactly one thing here is being chosen — but opaque and ringed in white all the
+  same. They were a 50%-alpha `onSurfaceVariant`, which is *dark* in a light theme and *light*
+  in a dark one; blended onto ordinary land the dark theme's came out at a contrast ratio of
+  1.21, which is not a faint mark but no mark at all, so the layer read as broken on whichever
+  theme the user happened to be running. Quiet is a matter of size and colour, never of alpha
+  over something you do not control.
 - **The search can be pointed at the map too.** The place picker in `connection_search_sheet.dart`
   offers *Choose on map* above the geocoder's answers, for an address it does not know, a
   trailhead with no name, or simply "from here". What comes back is a `TransportPlace` of
@@ -682,7 +711,16 @@ UI (features/*/presentation, *widgets)
   because asking the geocoder what is there would put a name on a choice the user did not
   make. Not offered for a **via** stop: only stop ids are allowed there, so a coordinate
   would be a choice that could only fail, which is the same reason that list is filtered to
-  stations.
+  stations. It opens where the search is *happening*, not on the whole globe: the trip's own
+  positions, read the way the item form's position fields read them (`itemPositions`, the one
+  definition of which points an entry carries), plus whatever ends the form has already been
+  given — which say it more precisely, the two ends of a journey generally being a short way
+  apart, and which are the only answer a `JourneyLookup` has, having no trip. `ref.read` of an
+  autoDispose provider, on the same guarantee the item form relies on: the trip screen this
+  sheet was opened over is watching those entries. Where nothing is — and nothing can be, for
+  a lookup with neither end named — the list is empty, which is a wider map and not a wrong
+  one. The geocoder is deliberately *not* biased by any of it: a name is looked up the same
+  way wherever the trip is.
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
@@ -771,6 +809,36 @@ UI (features/*/presentation, *widgets)
   one trip opens its card as before, several are listed to choose from. `kLineHitbox` widens
   the hit test past the 3px stroke for the same reason — what "on this line" means has to be
   a fingertip, and a shared stretch that reads as one line should be one tap.
+- **The same overlap buries the pins, so they are gathered rather than hit-tested.** A line
+  under another can still be reached by widening the hitbox; a pin under another cannot be
+  reached at all, since a marker wins the hit test against everything beneath it — twenty
+  identical commutes put twenty marks on one platform and nineteen of them are taps nobody
+  can aim. `clusterPins` (`features/map/pin_clusters.dart`) is therefore `clusterPhotos`
+  applied to the pins: the greedy, order-dependent rule now lives once in `map_clusters.dart`
+  and both call it, since *which* marks fall together is one question and two answers to it
+  would drift. Measured in **screen pixels** through the camera's own projection, so a
+  cluster comes apart as you zoom in — which is why the pins are a layer of their own
+  (`_PinMarkers` reads `MapCamera.of(context)`, the arrangement `_PhotoMarkers` already has)
+  rather than markers among the rest, which would then rebuild on every pan. It applies to
+  **both** maps, since the pile-up is not peculiar to the all-trips one: a hotel returned to
+  every evening and a station passed through twice put two pins on one spot, and at a zoom
+  showing the country a city's worth of entries is one blob. `PinCluster<T>` is generic in
+  what a place *belongs to* for exactly that reason — the trip map gathers `MapPin`s and
+  answers with the entry (`_showPins`, one opens directly and several name themselves,
+  through the same `_showChoice` sheet the lines use), the all-trips map gathers `TripPin`s
+  and answers with the trip. A gathered mark sits on the **representative's own position**
+  and keeps the order it was handed, so its face and its list are stable as the camera moves.
+  Its color is `gatheredPinColor`: the one every place under it would have worn, else
+  `kMixedPinColor`. **Agreement, not identity** — two trips that happen to share an accent,
+  or two entries given the same color, keep it, because drawing it says nothing about them
+  that was not already true; the neutral is only for a mark that would otherwise have to
+  *pick* one of several, which on either map is a false statement about the rest. Being
+  **under way still outranks it**, exactly as it outranks an entry's own color: a mark that
+  gathered the entry you are in the middle of must not be the thing that hides the reserved
+  red. The badge is `MapPlacePin`'s `count`, the same `_CountBadge` the photo marker draws —
+  and it makes room for itself *inside* the marker's box (`pinBoxFor`, symmetric in width and
+  taller only upwards), because `MarkerLayer` lays its children out in a `Stack` that clips,
+  and because the tip is the pin's whole claim and a badge may not move it.
 - **A track is a line with a provenance, not "the GPX file".** `Tracks` (v29) holds the
   line an entry *actually* followed — packed by `track_points.dart` into the encoded-polyline
   format every mapping tool reads, so a dense recording costs a fraction of its point count
@@ -1641,24 +1709,29 @@ compiled, so `analyze` and `test` are blind to it and a breaking bump used to me
 
 What is deliberate is `android.builtInKotlin=false` in `android/gradle.properties`. AGP 9
 compiles Kotlin itself by default; the Flutter scaffold writes `false` to keep the old
-arrangement where the **Kotlin Gradle Plugin** does it, and that is the only mode that
-builds. `flutter build apk` prints a `[!] Flutter Fix` box recommending the migration —
-**taking that advice breaks the build**, and no plugin upgrade will change that, because
-the blocker is Flutter itself. `FlutterPluginUtils.kt` walks the subprojects, and for
-every one that applies AGP but does *not* itself apply KGP it calls
-`pluginManager.apply("kotlin-android")` — without consulting `android.builtInKotlin`. AGP 9
-with built-in Kotlin then aborts on exactly those projects, because KGP is present after
-all. The irony is that this hits the plugins that have *already* migrated:
-`file_selector_android` correctly applies AGP and no KGP, so Flutter re-applies it and the
-build dies there. Its companion `android.newDsl=true` is no escape either — Flutter's Gradle
-plugin throws a `NullPointerException` before it gets as far as Kotlin.
+arrangement where the **Kotlin Gradle Plugin** does it. Under Flutter 3.44 that was the only
+mode that built at all, and the mechanism is worth keeping written down because it is the
+shape such a break takes — it happens in *somebody else's* plugin, over a flag it never
+reads. `FlutterPluginUtils.kt` walks the subprojects, and for every one that applies AGP but
+does *not* itself apply KGP it called `pluginManager.apply("kotlin-android")` — without
+consulting `android.builtInKotlin`. AGP 9 with built-in Kotlin then aborted on exactly those
+projects, because KGP was present after all. The irony was that this hit the plugins that had
+*already* migrated: `file_selector_android` correctly applies AGP and no KGP, so Flutter
+re-applied it and the build died there. Its companion `android.newDsl=true` was no escape
+either — Flutter's Gradle plugin threw a `NullPointerException` before it got as far as
+Kotlin.
 
-None of this is a defect to chase: Flutter's own documentation states that **enabling
-built-in Kotlin requires Flutter 3.47 or later**, and the pinned toolchain here is 3.44.
-The flag simply is not supported yet, and the call site above is the shape that takes.
-Flutter deliberately ships both properties as `false` for the duration of the ecosystem's
-migration (flutter/flutter#183910); the escape hatch is documented as going away before
-AGP 10.
+**That ceiling is gone, and the flag is still `false` on purpose.** Flutter's own
+documentation puts built-in Kotlin at **3.47 or later**, and the toolchain here is now
+3.47.2, where `ORG_GRADLE_PROJECT_pappusSideBySide=true flutter build apk --split-per-abi`
+was measured to run through to all three APKs with `android.builtInKotlin=true`. What that
+measurement does *not* cover is the half that matters most here: the native Kotlin in this
+repository is the home-screen widget, and a widget that stopped updating would build
+perfectly. So flipping it is a change to how every Kotlin source in the tree is compiled,
+worth making on its own — with the APK on a phone and the widget watched through a trip
+change — rather than as a side effect of a version bump. Flutter ships both properties as
+`false` for the duration of the ecosystem's migration (flutter/flutter#183910); the escape
+hatch is documented as going away before AGP 10, which is the deadline this is against.
 
 So the warning that survives a good build — "Your app uses the following plugins that apply
 Kotlin Gradle Plugin (KGP): home_widget" — is expected, and should be neither chased nor
@@ -1668,9 +1741,10 @@ consults `android.builtInKotlin` — so it applies KGP here precisely because we
 legacy mode, and it cannot drop the line without breaking AGP 8 users. It is named only
 because Flutter matches a **textual** regex against the build script, which cannot see the
 `if` guarding it; the other plugins receive KGP just as surely, from Flutter, and go
-unmentioned. There is no plugin upgrade to wait for. The warning clears when Flutter 3.47
-lands and `android.builtInKotlin=true` becomes possible — that upgrade, not a dependency
-bump, is the thing to revisit.
+unmentioned. There is no plugin upgrade to wait for — and, measured on 3.47.2, no
+`android.builtInKotlin=true` to wait for either: the warning is printed just the same in
+that mode, for exactly the reason above. A regex over a build script cannot know which
+branch Gradle took, so nothing about switching the flag will silence it.
 
 ### Web
 

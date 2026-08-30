@@ -12,6 +12,7 @@ import '../../../data/database/tables.dart';
 import '../../../data/repositories/trip_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../attachments/widgets/attachments_field.dart';
+import '../../map/map_features.dart';
 import '../../map/widgets/item_color_field.dart';
 import '../../map/widgets/track_field.dart';
 import '../../map/presentation/map_picker_screen.dart';
@@ -416,20 +417,10 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
 
   /// The positions this trip already holds, so the picker opens in the right
   /// part of the world rather than on the null island.
-  List<LatLng> _tripPoints() {
-    final items = ref.read(itineraryProvider(widget.tripId)).value ?? const [];
-    return [
-      for (final item in items)
-        if (item.id != widget.existing?.id) ...[
-          if (item.lat != null && item.lon != null)
-            LatLng(item.lat!, item.lon!),
-          if (item.fromLat != null && item.fromLon != null)
-            LatLng(item.fromLat!, item.fromLon!),
-          if (item.toLat != null && item.toLon != null)
-            LatLng(item.toLat!, item.toLon!),
-        ],
-    ];
-  }
+  List<LatLng> _tripPoints() => itemPositions(
+    ref.read(itineraryProvider(widget.tripId)).value ?? const [],
+    excludingId: widget.existing?.id,
+  );
 
   /// One position, as a row: what it is, a button to set it on the map, and —
   /// once there is one — a button to take it away again.

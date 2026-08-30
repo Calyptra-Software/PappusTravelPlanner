@@ -51,6 +51,18 @@
   "shareTripFailed": "Could not share this trip.",
   "exportPdf": "Export as PDF",
   "exportPdfFailed": "Could not export this trip as PDF.",
+  "exportGpx": "Export lines (GPX)\u2026",
+  "@exportGpx": {
+    "description": "Menu entry that writes the lines the trip's entries carry as a GPX file, for opening in a mapping tool."
+  },
+  "exportGpxEmpty": "This trip has no lines to export",
+  "@exportGpxEmpty": {
+    "description": "Shown when the GPX export was asked for on a trip whose entries carry no recorded or computed line."
+  },
+  "exportGpxFailed": "Could not export the lines",
+  "@exportGpxFailed": {
+    "description": "Shown when writing the GPX file failed."
+  },
   "exportIcs": "Export to calendar",
   "exportIcsFailed": "Could not export this trip to a calendar.",
   "exportAction": "Export",

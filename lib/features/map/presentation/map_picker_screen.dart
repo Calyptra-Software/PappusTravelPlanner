@@ -102,7 +102,6 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     const basemap = kDefaultBasemap;
     final location = ref.watch(deviceLocationProvider);
 
@@ -180,8 +179,10 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
             children: [
               basemapTileLayer(basemap, ref.watch(appVersionProvider)),
               // The trip's other points, so the user can see what they are
-              // placing this one relative to. Deliberately faint: they are
-              // context, not the thing being chosen.
+              // placing this one relative to. Quieter than the mark being
+              // chosen — a dot rather than a pin, and grey rather than red —
+              // but drawn to be *seen*: they are context only if they are
+              // legible, and an invisible dot is the same as no dot.
               if (widget.nearby.isNotEmpty)
                 MarkerLayer(
                   markers: [
@@ -190,13 +191,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                         point: point,
                         width: 20,
                         height: 20,
-                        child: Icon(
-                          Icons.circle,
-                          size: 10,
-                          color: theme.colorScheme.onSurfaceVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
+                        child: const _NearbyDot(),
                       ),
                   ],
                 ),
@@ -311,6 +306,39 @@ class _PickedReadout extends StatelessWidget {
       ],
     );
   }
+}
+
+/// One position the trip already holds, drawn as context for the one being
+/// picked.
+///
+/// **Ink on a halo, in map colours** — the rule the red pin above states and
+/// this layer used to break. It was a 50%-alpha `onSurfaceVariant`, which is a
+/// *dark* grey in a light theme and a *light* one in a dark theme, while the
+/// raster tiles under it are pale in both: blended onto ordinary land the dark
+/// theme's dot came out at a contrast ratio of 1.21, which is not a faint mark
+/// but no mark at all. So the fill is fixed and the white ring is what makes it
+/// readable over a road, a park or a lake alike.
+///
+/// A **dot**, centered on its position, for the reason the device's mark is one:
+/// a pin claims the point under its tip and reads as a place somebody chose,
+/// which these are — but not here, where exactly one thing is being chosen and
+/// it is red. Smaller and greyer than either, since it is what the choice is
+/// being made *relative to*.
+class _NearbyDot extends StatelessWidget {
+  const _NearbyDot();
+
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: const Color(0xFF5F6368),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFFFFFFF), width: 2),
+      ),
+    ),
+  );
 }
 
 /// A coordinate as the app writes it: latitude then longitude, five decimals.

@@ -141,6 +141,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Diese Reise konnte nicht als PDF exportiert werden.';
 
   @override
+  String get exportGpx => 'Linien exportieren (GPX)…';
+
+  @override
+  String get exportGpxEmpty => 'Diese Reise hat keine Linien zum Exportieren';
+
+  @override
+  String get exportGpxFailed => 'Die Linien konnten nicht exportiert werden';
+
+  @override
   String get exportIcs => 'In Kalender exportieren';
 
   @override

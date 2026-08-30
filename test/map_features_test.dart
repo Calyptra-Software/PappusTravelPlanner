@@ -918,4 +918,32 @@ void main() {
       expect(features.isEmpty, isFalse);
     });
   });
+
+  group('itemPositions', () {
+    test('takes a place, both ends of a leg, and nothing unplaced', () {
+      final points = itemPositions([
+        place(lat: 53.55, lon: 9.99),
+        place(),
+        leg(fromLat: 53.5, fromLon: 10.0, toLat: 52.5, toLon: 13.4),
+        leg(fromLat: 48.1, fromLon: 11.6),
+      ]);
+
+      expect(points, hasLength(4));
+      expect(points, contains(const LatLng(53.55, 9.99)));
+      expect(points, contains(const LatLng(52.5, 13.4)));
+      // Half a leg is still a point somebody stood on, even though it is not a
+      // line the map would draw.
+      expect(points, contains(const LatLng(48.1, 11.6)));
+    });
+
+    test('leaves out the entry being edited', () {
+      final edited = place(lat: 1.0, lon: 2.0);
+      final points = itemPositions([
+        edited,
+        place(lat: 3.0, lon: 4.0),
+      ], excludingId: edited.id);
+
+      expect(points, [const LatLng(3.0, 4.0)]);
+    });
+  });
 }

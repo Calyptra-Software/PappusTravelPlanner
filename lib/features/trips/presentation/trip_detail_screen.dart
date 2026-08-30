@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../../core/app_info.dart';
 import '../../../core/clock.dart';
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
@@ -33,6 +34,7 @@ import '../../itinerary/widgets/itinerary_timeline.dart';
 import '../../sharing/application/pdf_sections_provider.dart';
 import '../../sharing/presentation/pdf_sections_sheet.dart';
 import '../../sharing/trip_bundle.dart';
+import '../../sharing/trip_gpx.dart';
 import '../../sharing/trip_ics.dart';
 import '../../sharing/trip_pdf.dart';
 import '../../sharing/trip_pdf_sections.dart';
@@ -46,7 +48,15 @@ import '../widgets/trip_when_line.dart';
 /// the app's own re-importable `.tpt` bundle, exported as a printable PDF or an
 /// `.ics` for a calendar, reversed into a return journey (routines only), or
 /// deleted.
-enum _TripAction { importTrack, duplicateReversed, share, pdf, ics, delete }
+enum _TripAction {
+  importTrack,
+  duplicateReversed,
+  share,
+  pdf,
+  ics,
+  gpx,
+  delete,
+}
 
 /// One entry of that menu. Written once so the five cannot drift apart in
 /// padding or density, which is the usual way a menu ends up looking assembled.
@@ -336,6 +346,44 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
+  /// Exports the lines the trip's entries carry as a `.gpx`: shared via the OS
+  /// share sheet on mobile/web, saved to a file on desktop. [title] names the
+  /// file.
+  ///
+  /// One-way and partial like the `.ics` — see `buildTripGpx` for what a GPX
+  /// can and cannot hold, and why this is not the file that was imported. A
+  /// trip with no lines says so rather than handing over an empty document:
+  /// the menu entry cannot know in advance without decoding every point of the
+  /// trip, which is the one expensive thing a track does.
+  Future<void> _exportGpx(
+    BuildContext context,
+    WidgetRef ref,
+    String title,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final version = ref.read(appVersionProvider);
+    try {
+      final bundle = await ref.read(repositoryProvider).tripBundle(tripId);
+      if (bundle == null) return;
+      final gpx = buildTripGpx(bundle: bundle, creator: '$kAppName/$version');
+      if (gpx == null) {
+        messenger.showSnackBar(SnackBar(content: Text(l10n.exportGpxEmpty)));
+        return;
+      }
+      await _shareBytes(
+        messenger,
+        bytes: Uint8List.fromList(utf8.encode(gpx)),
+        fileName: '${_fileBase(title)}.$tripGpxExtension',
+        mimeType: tripGpxMimeType,
+        subject: title,
+        savedMessage: l10n.shareTripSaved,
+      );
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(l10n.exportGpxFailed)));
+    }
+  }
+
   /// Reorders a list of blocks — a day, or one option of a decision. A day's
   /// ordering space is shared by its loose items and its decisions, so the
   /// renumbering writes to both tables; an option holds only entries.
@@ -591,6 +639,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   _exportPdf(context, ref, title);
                 case _TripAction.ics:
                   _exportIcs(context, ref, title);
+                case _TripAction.gpx:
+                  _exportGpx(context, ref, title);
                 case _TripAction.delete:
                   _confirmDelete(context, ref);
               }
@@ -622,6 +672,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   l10n.exportIcs,
                 ),
               ],
+              // Offered on a routine too, unlike paper and the calendar: a
+              // line needs no dates to be a line, and a commute's route is
+              // exactly the kind of thing worth opening somewhere else.
+              _menuItem(_TripAction.gpx, Icons.timeline, l10n.exportGpx),
               _menuItem(
                 _TripAction.delete,
                 Icons.delete_outline,
