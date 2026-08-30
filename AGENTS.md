@@ -1721,24 +1721,36 @@ re-applied it and the build died there. Its companion `android.newDsl=true` was 
 either — Flutter's Gradle plugin threw a `NullPointerException` before it got as far as
 Kotlin.
 
-**That ceiling is gone, and the flag is still `false` on purpose.** Flutter's own
-documentation puts built-in Kotlin at **3.47 or later**, and the toolchain here is now
-3.47.2, where `ORG_GRADLE_PROJECT_pappusSideBySide=true flutter build apk --split-per-abi`
-was measured to run through to all three APKs with `android.builtInKotlin=true`. What that
-measurement does *not* cover is the half that matters most here: the native Kotlin in this
-repository is the home-screen widget, and a widget that stopped updating would build
-perfectly. So flipping it is a change to how every Kotlin source in the tree is compiled,
-worth making on its own — with the APK on a phone and the widget watched through a trip
-change — rather than as a side effect of a version bump. Flutter ships both properties as
-`false` for the duration of the ecosystem's migration (flutter/flutter#183910); the escape
-hatch is documented as going away before AGP 10, which is the deadline this is against.
+**That ceiling is gone, and `android.builtInKotlin` is now `true`.** Flutter's own
+documentation puts built-in Kotlin at **3.47 or later**, and the toolchain here is 3.47.2.
+The move was made while it is still optional — Flutter ships both properties as `false` for
+the duration of the ecosystem's migration (flutter/flutter#183910) and documents the escape
+hatch as going away before AGP 10 — on the grounds that a switch which can be undone by
+editing one line is better thrown early than under a deadline, and that the failure mode is
+loud: this is the change that used to abort the build outright.
+
+**It is not a per-module setting, which is the thing to know before touching it.** Measured
+rather than assumed: with the flag on, KGP is applied to **no** project — not `:app`, not
+any of the eleven plugin modules — so every Kotlin source in the build changes compiler in
+one step. Two things that could have gone silently wrong did not. The `kotlin { }` block in
+`app/build.gradle.kts` is KGP DSL and the app never applies KGP itself (Flutter does), yet
+it still resolves and `jvmTarget` still reads `JVM_17` under built-in Kotlin. And
+`kotlin-stdlib` resolves to the same 2.4.10 either way, so the compiler changed and the
+runtime library did not.
+
+What the build cannot tell you is the half that matters most here: the native Kotlin in this
+repository is the **home-screen widget**, and a widget that stopped updating would compile
+perfectly. So this is verified on a phone — the widget added, a trip changed, the payload
+seen to follow, and a widget tap seen to deep-link into the trip — and not on a green CI run
+alone. `newDsl` stays `false`: it is a separate flag with a separate failure, and Flutter's
+Gradle plugin threw a `NullPointerException` on it under 3.44.
 
 So the warning that survives a good build — "Your app uses the following plugins that apply
 Kotlin Gradle Plugin (KGP): home_widget" — is expected, and should be neither chased nor
 silenced. `home_widget` is **already migrated**: 0.9.3 carries "Apply kotlin plugin when
 not built in" (ABausG/home_widget#425, closing #421), which is the two-condition check that
-consults `android.builtInKotlin` — so it applies KGP here precisely because we asked for
-legacy mode, and it cannot drop the line without breaking AGP 8 users. It is named only
+consults `android.builtInKotlin` — so with the flag now on it does *not* apply KGP, and it
+cannot drop the line either way without breaking AGP 8 users. It is named only
 because Flutter matches a **textual** regex against the build script, which cannot see the
 `if` guarding it; the other plugins receive KGP just as surely, from Flutter, and go
 unmentioned. There is no plugin upgrade to wait for — and, measured on 3.47.2, no
