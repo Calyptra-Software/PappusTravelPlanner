@@ -5,6 +5,12 @@ exact commits.
 
 ## Unreleased
 
+- **Picking more than one file no longer breaks an import.** Marking two files at once
+  in the database import, the trip import or the track import crashed instead of importing
+  one of them: the dialogs let you select several while the code behind them expected
+  exactly one. They ask for a single file now, which is what they always meant. Attaching
+  photos and documents is unaffected — taking several at once is the point there.
+
 - **The map picker's grey dots can be seen in a dark theme.** The dots marking where the
   trip's other positions already are were tinted by the app's theme and half transparent,
   which over the map's pale tiles left them all but invisible in dark mode — the layer read
