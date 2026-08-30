@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.10.0 — 2026-08-30
 
 - **Picking more than one file no longer breaks an import.** Marking two files at once
   in the database import, the trip import or the track import crashed instead of importing
