@@ -5,6 +5,17 @@ exact commits.
 
 ## Unreleased
 
+- **The map picker's grey dots can be seen in a dark theme.** The dots marking where the
+  trip's other positions already are were tinted by the app's theme and half transparent,
+  which over the map's pale tiles left them all but invisible in dark mode — the layer read
+  as missing rather than as faint. They are drawn in the map's own colors now, opaque and
+  ringed in white, like every other mark on that map.
+- **Choosing a point on the map for a connection opens where the trip is.** *Choose on map*
+  in the connection search used to start fully zoomed out, on the whole world, even for a
+  trip whose entries already say which part of it you are traveling in — while the position
+  fields in an entry's own form have always opened on those entries. Now both do. Once one
+  end of the journey has been named, the map opens on that end as well, which is also what a
+  search made from the overview, with no trip behind it, has to go on.
 - **Places that hide each other are gathered, on both maps.** The same commute drawn once
   per day you made it put twenty pins on one spot of the all-trips map, and a hotel returned
   to every evening puts two on a trip's own — all but the top one impossible to tap, since a
