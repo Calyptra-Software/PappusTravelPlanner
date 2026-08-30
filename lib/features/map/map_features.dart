@@ -604,3 +604,24 @@ LatLng midpointOf(List<LatLng> points) {
 
 double _rad(double degrees) => degrees * math.pi / 180;
 double _deg(double radians) => radians * 180 / math.pi;
+
+/// Every position the entries of [items] carry — a place's own, and both ends of
+/// a leg — with [excludingId]'s left out.
+///
+/// What the map picker opens on. It is deliberately *not* [MapFeatures.allPoints]:
+/// that reads the plan as it stands (live entries only, tracks instead of chords)
+/// because it decides what is *drawn*, while this only has to answer "which part
+/// of the world is this trip in" — an option nobody chose is still in the right
+/// city, and starting the hunt there beats starting on the null island.
+/// [excludingId] is the entry being edited, whose own position is handed to the
+/// picker as its `initial` and would otherwise pull the frame toward the point
+/// that is being moved away from.
+List<LatLng> itemPositions(Iterable<ItineraryItem> items, {int? excludingId}) =>
+    [
+      for (final item in items)
+        if (item.id != excludingId) ...[
+          ?_point(item.lat, item.lon),
+          ?_point(item.fromLat, item.fromLon),
+          ?_point(item.toLat, item.toLon),
+        ],
+    ];

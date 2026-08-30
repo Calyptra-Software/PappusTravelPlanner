@@ -314,6 +314,24 @@ abstract class AppLocalizations {
   /// **'Could not export this trip as PDF.'**
   String get exportPdfFailed;
 
+  /// Menu entry that writes the lines the trip's entries carry as a GPX file, for opening in a mapping tool.
+  ///
+  /// In en, this message translates to:
+  /// **'Export lines (GPX)…'**
+  String get exportGpx;
+
+  /// Shown when the GPX export was asked for on a trip whose entries carry no recorded or computed line.
+  ///
+  /// In en, this message translates to:
+  /// **'This trip has no lines to export'**
+  String get exportGpxEmpty;
+
+  /// Shown when writing the GPX file failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export the lines'**
+  String get exportGpxFailed;
+
   /// No description provided for @exportIcs.
   ///
   /// In en, this message translates to:

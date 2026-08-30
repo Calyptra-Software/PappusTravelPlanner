@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
+import 'package:travelplanner/core/theme/app_theme.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
@@ -24,22 +25,24 @@ void main() {
   setUp(() => db = AppDatabase.forTesting(NativeDatabase.memory()));
   tearDown(() => db.close());
 
-  Widget host(Widget child, {AppDatabase? database}) => ProviderScope(
-    overrides: [
-      appVersionProvider.overrideWithValue('0.0.0-test'),
-      if (database != null) databaseProvider.overrideWithValue(database),
-    ],
-    child: MaterialApp(
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    ),
-  );
+  Widget host(Widget child, {AppDatabase? database, ThemeData? theme}) =>
+      ProviderScope(
+        overrides: [
+          appVersionProvider.overrideWithValue('0.0.0-test'),
+          if (database != null) databaseProvider.overrideWithValue(database),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: theme,
+          home: child,
+        ),
+      );
 
   group('the picker itself', () {
     testWidgets('an edit starts on the point it is editing', (tester) async {
@@ -137,6 +140,77 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(picked, isNotNull);
+    });
+
+    testWidgets("the trip's other points are drawn, in map colours", (
+      tester,
+    ) async {
+      // In a **dark** theme, which is where this went wrong: the dots were a
+      // 50%-alpha `onSurfaceVariant`, a light grey there, over raster tiles
+      // that are pale in every theme — a contrast ratio of 1.21, which is not
+      // a faint mark but no mark at all. The rule the red pin already states.
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => pickPointOnMap(
+                  context,
+                  title: 'Pick',
+                  nearby: const [LatLng(53.55, 9.99), LatLng(48.14, 11.58)],
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+          theme: AppTheme.dark(),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final dots = [
+        for (final container in tester.widgetList<Container>(
+          find.byType(Container),
+        ))
+          if (container.decoration case final BoxDecoration d
+              when d.shape == BoxShape.circle)
+            d,
+      ];
+      expect(dots, hasLength(2));
+      // Fixed ink and a white ring, not a theme colour and not translucent.
+      expect(dots.first.color, const Color(0xFF5F6368));
+      expect(dots.first.color!.a, 1.0);
+      expect(dots.first.border?.top.color, const Color(0xFFFFFFFF));
+    });
+
+    testWidgets('nothing is drawn where the trip knows no positions', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(
+          Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => pickPointOnMap(context, title: 'Pick'),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widgetList<Container>(find.byType(Container)).where((c) {
+          final d = c.decoration;
+          return d is BoxDecoration && d.shape == BoxShape.circle;
+        }),
+        isEmpty,
+      );
     });
 
     testWidgets('backing out picks nothing', (tester) async {

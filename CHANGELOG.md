@@ -5,6 +5,31 @@ exact commits.
 
 ## Unreleased
 
+- **The map picker's grey dots can be seen in a dark theme.** The dots marking where the
+  trip's other positions already are were tinted by the app's theme and half transparent,
+  which over the map's pale tiles left them all but invisible in dark mode — the layer read
+  as missing rather than as faint. They are drawn in the map's own colors now, opaque and
+  ringed in white, like every other mark on that map.
+- **Choosing a point on the map for a connection opens where the trip is.** *Choose on map*
+  in the connection search used to start fully zoomed out, on the whole world, even for a
+  trip whose entries already say which part of it you are traveling in — while the position
+  fields in an entry's own form have always opened on those entries. Now both do. Once one
+  end of the journey has been named, the map opens on that end as well, which is also what a
+  search made from the overview, with no trip behind it, has to go on.
+- **Places that hide each other are gathered, on both maps.** The same commute drawn once
+  per day you made it put twenty pins on one spot of the all-trips map, and a hotel returned
+  to every evening puts two on a trip's own — all but the top one impossible to tap, since a
+  pin covers whatever is beneath it. They now come up as one pin with a count and come apart
+  again as you zoom in, the rule the photographs already follow. Tapping a gathered pin lists
+  what it holds — the trips on the overview's map, the entries on a trip's — and you pick.
+  The pin keeps the color every place under it would have had and turns grey only where they
+  differ; an entry that is under way still turns it red.
+- **A trip's lines can be saved as a `.gpx`.** The trip's ⋮ menu writes every line its entries
+  carry in the format every mapping tool reads — recordings as tracks, the routes the
+  connection search computed as routes — so the pieces one import was cut into, and the routes
+  that exist nowhere else, can be opened somewhere other than here. It is not the file you
+  imported: elevation and timestamps were dropped on the way in and cannot be invented, so
+  what comes out is the geometry, the day, and the mode. Routines can be exported too.
 - **A line can be put away instead of deleted.** Every line on an entry now carries an eye:
   by default a recording is drawn and a route the search computed is not, and either can be
   overruled
