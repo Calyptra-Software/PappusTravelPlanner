@@ -213,13 +213,14 @@ Future<List<PickedAttachment>?> _pick({required bool photosOnly}) async {
   }
   // Read through the picked file rather than off a path, so the one branch
   // works on web and native alike.
-  // `pickFiles` is the multi-file call and takes several by default.
-  final result = await FilePicker.pickFiles(
+  // `pickFiles` is the multi-file call and takes several by default. A
+  // dismissed picker comes back as an empty list rather than as nothing, which
+  // the caller already reads the same way it reads "none picked".
+  final files = await FilePicker.pickFiles(
     type: photosOnly ? FileType.image : FileType.any,
   );
-  if (result == null) return null;
   return [
-    for (final file in result.files)
+    for (final file in files)
       (bytes: await file.readAsBytes(), name: file.name),
   ];
 }

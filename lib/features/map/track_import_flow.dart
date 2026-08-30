@@ -87,8 +87,8 @@ Future<String?> _pickGpx() async {
   }
   // Read through the picked file rather than off a path, so the one branch works
   // on web and native alike — the same choice the trip import makes.
-  final result = await FilePicker.pickFiles();
-  final bytes = await result?.files.single.readAsBytes();
+  final file = await FilePicker.pickFile();
+  final bytes = await file?.readAsBytes();
   return bytes == null ? null : _utf8OrLatin1(bytes);
 }
 

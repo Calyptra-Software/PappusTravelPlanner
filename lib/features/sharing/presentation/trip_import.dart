@@ -32,8 +32,8 @@ Future<void> pickAndImportTrip(BuildContext context, WidgetRef ref) async {
   } else {
     // Read through the picked file rather than off a path, so the one branch
     // works on web and native alike.
-    final result = await FilePicker.pickFiles();
-    bytes = await result?.files.single.readAsBytes();
+    final file = await FilePicker.pickFile();
+    bytes = await file?.readAsBytes();
   }
   if (bytes == null || !context.mounted) return;
   await importTripBytes(context, ref, bytes);
