@@ -58,14 +58,15 @@ jobs:
 
   # The Android toolchain is the part nothing else checks. No version is pinned
   # any more — AGP is on 9.x, the wrapper on 9.6.x — so what this job guards is
-  # not a ceiling but a mode: `android.builtInKotlin=false` in
-  # android/gradle.properties leaves Kotlin to the Kotlin Gradle Plugin, which
-  # is the arrangement this repository is on (see AGENTS.md, "Platform build
-  # constraints" — under Flutter 3.44 it was the only one that built at all).
-  # Every failure here happens while Gradle
+  # not a ceiling but a mode: `android.builtInKotlin=true` in
+  # android/gradle.properties has AGP compile every Kotlin source in the build —
+  # ours and all eleven plugin modules' — instead of the Kotlin Gradle Plugin
+  # (see AGENTS.md, "Platform build constraints"; under Flutter 3.44 only the
+  # other setting built at all). Every failure here happens while Gradle
   # applies its plugins, long before a line of Dart or Kotlin is compiled, so
   # they are invisible to `analyze` and `test` — a breaking bump merged green
-  # until this job existed.
+  # until this job existed. What it still cannot see is the widget: native
+  # Kotlin that compiles and then quietly stops updating is a phone's job.
   android:
     name: Build Android APK
     runs-on: ubuntu-latest
