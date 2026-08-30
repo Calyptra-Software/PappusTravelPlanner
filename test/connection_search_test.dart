@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,8 +9,11 @@ import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
-import 'package:travelplanner/data/database/app_database.dart' show Trip;
-import 'package:travelplanner/data/database/tables.dart' show TripKind;
+import 'package:travelplanner/data/database/app_database.dart'
+    show ItineraryItem, Trip;
+import 'package:travelplanner/data/database/tables.dart'
+    show ItemKind, TripKind;
+import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_controller.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
@@ -24,6 +28,7 @@ import 'package:travelplanner/features/transport_search/domain/transit_mode.dart
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
+import 'package:travelplanner/features/map/presentation/map_picker_screen.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -258,6 +263,7 @@ void main() {
     int? alternativeId,
     JourneyDestination? destination,
     List<Trip> trips = const [],
+    List<ItineraryItem> items = const [],
   }) async {
     // A tall surface so the whole results list — both paging rows included —
     // is laid out; the default test window is shorter than the sheet.
@@ -274,6 +280,9 @@ void main() {
           // The real one is a drift stream, which never resolves under
           // fake-async; only the lookup reads it at all.
           tripListProvider.overrideWith((ref) => Stream.value(trips)),
+          // Where the map picker opens. The real one is a drift stream, which
+          // never resolves under fake-async.
+          itineraryProvider(1).overrideWith((ref) => Stream.value(items)),
           geocodeProvider.overrideWith((ref, query) async => suggestions),
           transportSearchProvider.overrideWithValue(search),
           transportSearchControllerProvider.overrideWith(
@@ -289,23 +298,29 @@ void main() {
           ],
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showConnectionSearchSheet(
-                  context,
-                  destination:
-                      destination ??
-                      AddToDay(
-                        tripId: 1,
-                        day: intoRoutine
-                            ? DateTime(1970, 1, 1)
-                            : DateTime(2026, 7, 27),
-                        intoRoutine: intoRoutine,
-                        alternativeId: alternativeId,
-                      ),
-                ),
-                child: const Text('open'),
-              ),
+            // Watching the trip's entries as the trip screen underneath does:
+            // the sheet reads them for the map picker, and `ref.read` of an
+            // autoDispose provider nothing watches is `AsyncLoading`.
+            body: Consumer(
+              builder: (context, ref, _) {
+                ref.watch(itineraryProvider(1));
+                return ElevatedButton(
+                  onPressed: () => showConnectionSearchSheet(
+                    context,
+                    destination:
+                        destination ??
+                        AddToDay(
+                          tripId: 1,
+                          day: intoRoutine
+                              ? DateTime(1970, 1, 1)
+                              : DateTime(2026, 7, 27),
+                          intoRoutine: intoRoutine,
+                          alternativeId: alternativeId,
+                        ),
+                  ),
+                  child: const Text('open'),
+                );
+              },
             ),
           ),
         ),
@@ -1238,6 +1253,61 @@ void main() {
       find.textContaining(RegExp(r'-?\d+\.\d+, -?\d+\.\d+')),
       findsWidgets,
     );
+  });
+
+  testWidgets('the map opens on the part of the world the trip is in', (
+    tester,
+  ) async {
+    // The complaint this answers: the picker opened fully zoomed out even on a
+    // trip that already knows where it is happening, while the item form's own
+    // position fields have always opened on the trip's other entries.
+    ItineraryItem place(int id, double lat, double lon) => ItineraryItem(
+      id: id,
+      tripId: 1,
+      date: DateTime(2026, 7, 27),
+      sortOrder: 0,
+      kind: ItemKind.place,
+      spansNextDay: false,
+      lat: lat,
+      lon: lon,
+    );
+    await pump(tester, items: [place(1, 53.55, 9.99), place(2, 53.46, 9.98)]);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('From'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose on map'));
+    await tester.pumpAndSettle();
+
+    final picker = tester.widget<MapPickerScreen>(find.byType(MapPickerScreen));
+    expect(picker.nearby, [
+      const LatLng(53.55, 9.99),
+      const LatLng(53.46, 9.98),
+    ]);
+  });
+
+  testWidgets('an end already named is what the second one opens on', (
+    tester,
+  ) async {
+    // The only answer a lookup has — it has no trip — and the better one
+    // anywhere: the two ends of a journey are generally a short way apart.
+    await pump(tester, destination: const JourneyLookup());
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    // An address, since it is a place that carries coordinates: a stop the
+    // router answers by id alone has no point to open a map on, which is what
+    // makes this a `nearby` entry rather than an assumption.
+    suggestions = const [_address];
+    await pickInto(tester, 'From', pick: 'Rathausmarkt 1');
+    await tester.tap(find.text('To'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose on map'));
+    await tester.pumpAndSettle();
+
+    final picker = tester.widget<MapPickerScreen>(find.byType(MapPickerScreen));
+    expect(picker.nearby, [LatLng(_address.lat!, _address.lon!)]);
   });
 
   testWidgets('a via stop is not offered the map', (tester) async {
