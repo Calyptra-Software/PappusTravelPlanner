@@ -694,7 +694,15 @@ UI (features/*/presentation, *widgets)
   moving under it was tried first — a fingertip does cover the point it is placing — but
   tapping won on being the more obvious of the two: the mark appears where you pointed.) The
   marker is drawn ink-on-halo in **map** colours, not theme colours: raster tiles are pale in
-  both themes and full of thin red lines, so a mark tinted by the theme is a road.
+  both themes and full of thin red lines, so a mark tinted by the theme is a road. That rule
+  covers **every** mark on this map, the trip's other positions included: they are context, so
+  they are quieter — a grey *dot* rather than a red pin, since a pin claims the point under
+  its tip and exactly one thing here is being chosen — but opaque and ringed in white all the
+  same. They were a 50%-alpha `onSurfaceVariant`, which is *dark* in a light theme and *light*
+  in a dark one; blended onto ordinary land the dark theme's came out at a contrast ratio of
+  1.21, which is not a faint mark but no mark at all, so the layer read as broken on whichever
+  theme the user happened to be running. Quiet is a matter of size and colour, never of alpha
+  over something you do not control.
 - **The search can be pointed at the map too.** The place picker in `connection_search_sheet.dart`
   offers *Choose on map* above the geocoder's answers, for an address it does not know, a
   trailhead with no name, or simply "from here". What comes back is a `TransportPlace` of
