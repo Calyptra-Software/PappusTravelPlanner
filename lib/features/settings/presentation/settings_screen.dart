@@ -235,8 +235,7 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _import(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final result = await FilePicker.pickFiles();
-    final file = result?.files.single;
+    final file = await FilePicker.pickFile();
     if (file == null || !context.mounted) return;
 
     final confirmed = await _confirm(

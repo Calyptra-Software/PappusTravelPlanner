@@ -33,7 +33,7 @@ dependencies:
   shared_preferences: ^2.5.5
 
   # Opening / importing / exporting the database file.
-  file_picker: ^12.0.0-beta.7
+  file_picker: ^12.1.2
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   path: ^1.9.1
