@@ -10,6 +10,7 @@
 /// enough to drop frames, and picking several at once multiplies it.
 library;
 
+import 'package:android_file_picker/android_file_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
@@ -22,10 +23,27 @@ import '../../core/providers.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
+import 'application/media_location.dart';
 import 'attachment_import.dart';
 
-/// A file as it comes back from a picker: the bytes, and the name it had.
-typedef PickedAttachment = ({Uint8List bytes, String? name});
+/// A file as it comes back from a picker: the bytes, the name it had, and — on
+/// Android alone — the URI it was handed over as.
+///
+/// A class and not a record because [mediaUri] is absent for almost everything
+/// (every desktop pick, every file that did not come from the shared
+/// collection) and a record has no optional field to leave out.
+final class PickedAttachment {
+  const PickedAttachment({required this.bytes, this.name, this.mediaUri});
+
+  final Uint8List bytes;
+  final String? name;
+
+  /// What the Storage Access Framework called this file, kept only long enough
+  /// to ask the platform where the photograph was taken — the picker's own copy
+  /// of the bytes has that zeroed out. See `media_location.dart`. Null
+  /// everywhere the question cannot be asked.
+  final String? mediaUri;
+}
 
 /// Picks files and hangs them on [itemId], [groupId] or [tripId] — exactly one
 /// of the three.
@@ -40,6 +58,16 @@ typedef PickedAttachment = ({Uint8List bytes, String? name});
 /// Returns how many were attached. A file that is turned away does not stop the
 /// others — a refusal is about one file — and the first refusal's reason is what
 /// gets said, since three snack bars in a row say nothing.
+///
+/// **On Android the photo door has two shapes, and the switch in settings picks
+/// between them** (see `media_location.dart`). Off — the default — is exactly
+/// what it always was. On, two things change together, because neither is any
+/// use alone: the chooser becomes the file browser rather than the system's
+/// photo picker, which strips a picture's coordinates whatever permission the
+/// app holds; and every photograph that still arrives without a position is
+/// asked about again, by URI, against the original the picker only ever handed
+/// over a redacted copy of. Nothing more of the file crosses back — the picture
+/// that is stored is still the re-encoded, EXIF-stripped one.
 Future<int> addAttachments(
   BuildContext context,
   WidgetRef ref, {
@@ -52,9 +80,21 @@ Future<int> addAttachments(
   final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
 
+  // Asked before the chooser opens, because it decides which chooser opens.
+  // Freshly checked rather than read off the switch: the permission can be
+  // taken away in the system settings between one photograph and the next.
+  final locator = ref.read(mediaLocationProvider);
+  final withLocation =
+      kind == AttachmentKind.photo &&
+      await ref.read(photoLocationProvider.notifier).activeNow();
+  if (!context.mounted) return 0;
+
   final picked =
       await (pickFiles ??
-          () => _pick(photosOnly: kind == AttachmentKind.photo))();
+          () => _pick(
+            photosOnly: kind == AttachmentKind.photo,
+            withLocation: withLocation,
+          ))();
   if (picked == null || picked.isEmpty) return 0;
 
   // Said before the work starts. Picking eight photos takes a moment on any
@@ -80,7 +120,7 @@ Future<int> addAttachments(
   var redacted = 0;
   String? refusal;
   for (final file in picked) {
-    final PreparedAttachment prepared;
+    PreparedAttachment prepared;
     try {
       prepared = await compute(_prepare, (file: file, kind: kind));
     } on AttachmentTooLargeException catch (e) {
@@ -99,6 +139,17 @@ Future<int> addAttachments(
       // refusal and nothing else is what it is owed.
       refusal ??= l10n.attachmentUnreadable;
       continue;
+    }
+    // The second reading, and the only one that can answer: what came back
+    // from the picker is a copy Android made with a plain stream, and its GPS
+    // tags are zeroed in that copy however much this process is allowed to
+    // know. Asked only when the first reading found nothing — a photograph that
+    // arrived with its place needs no second opinion, and one that never had a
+    // fix costs a header read to say so.
+    final mediaUri = file.mediaUri;
+    if (withLocation && prepared.position == null && mediaUri != null) {
+      final position = await locator.readLocation(mediaUri);
+      if (position != null) prepared = prepared.withExifPosition(position);
     }
     if (prepared.locationRedacted) redacted++;
     await repo.addAttachment(
@@ -192,7 +243,17 @@ String _defaultFileName(Attachment attachment) {
   return 'attachment-${attachment.id}.$extension';
 }
 
-Future<List<PickedAttachment>?> _pick({required bool photosOnly}) async {
+/// The file extensions the photo door offers.
+///
+/// One list, used by both choosers that can be narrowed by extension: the
+/// desktop's type group, and — when a position is wanted — Android's document
+/// browser, which takes media types derived from exactly these.
+const _photoExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
+
+Future<List<PickedAttachment>?> _pick({
+  required bool photosOnly,
+  bool withLocation = false,
+}) async {
   if (_isDesktop) {
     // file_selector on desktop, matching the GPX import and the database
     // export: its native chooser parents to the app window on Linux instead of
@@ -200,15 +261,12 @@ Future<List<PickedAttachment>?> _pick({required bool photosOnly}) async {
     final files = await openFiles(
       acceptedTypeGroups: [
         if (photosOnly)
-          const XTypeGroup(
-            label: 'Images',
-            extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'],
-          ),
+          const XTypeGroup(label: 'Images', extensions: _photoExtensions),
       ],
     );
     return [
       for (final file in files)
-        (bytes: await file.readAsBytes(), name: file.name),
+        PickedAttachment(bytes: await file.readAsBytes(), name: file.name),
     ];
   }
   // Read through the picked file rather than off a path, so the one branch
@@ -216,14 +274,51 @@ Future<List<PickedAttachment>?> _pick({required bool photosOnly}) async {
   // `pickFiles` is the multi-file call and takes several by default. A
   // dismissed picker comes back as an empty list rather than as nothing, which
   // the caller already reads the same way it reads "none picked".
+  //
+  // **`FileType.custom` and not `FileType.image` when a position is wanted**,
+  // which is the one thing on this path that is not a detail. `image` goes out
+  // as `ACTION_GET_CONTENT`, and Android has taken that over with its own photo
+  // picker, which strips a picture's coordinates *unconditionally* — the
+  // permission does not reach it, so the nicer chooser is the one chooser that
+  // can never answer. A list of extensions goes out as `ACTION_OPEN_DOCUMENT`
+  // instead: the file browser, filtered to the same pictures, whose answer
+  // still names a row the platform will serve the original of. That is why the
+  // feature is a switch and not simply the behaviour — it trades the picker
+  // people know for the one that knows where the photograph was taken.
+  //
+  // The SAF options are there for the URI alone. `transient`, because the grant
+  // is wanted for the length of this import and not beyond it: what is read
+  // through it is two numbers, and an app holding a lifetime grant on somebody's
+  // photo library is not what was asked for.
   final files = await FilePicker.pickFiles(
-    type: photosOnly ? FileType.image : FileType.any,
+    type: withLocation
+        ? FileType.custom
+        : (photosOnly ? FileType.image : FileType.any),
+    allowedExtensions: withLocation ? _photoExtensions : null,
+    androidOptions: withLocation
+        ? const FilePickerAndroidOptions(
+            safOptions: AndroidSAFOptions(
+              grant: AndroidSAFGrant.transient,
+              persistGrant: false,
+            ),
+          )
+        : const AndroidOptions(),
   );
   return [
     for (final file in files)
-      (bytes: await file.readAsBytes(), name: file.name),
+      PickedAttachment(
+        bytes: await file.readAsBytes(),
+        name: file.name,
+        mediaUri: withLocation ? _mediaUriOf(file) : null,
+      ),
   ];
 }
+
+/// What the Storage Access Framework called a picked file, when this platform
+/// has such a thing. Null everywhere else, which is every platform where
+/// nothing was taken out of the file in the first place.
+String? _mediaUriOf(PlatformFile file) =>
+    file is AndroidPlatformFile ? file.safHandle?.uri.toString() : null;
 
 bool get _isDesktop =>
     !kIsWeb &&

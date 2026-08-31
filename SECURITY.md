@@ -67,14 +67,31 @@ a test standing on it. Such a photo leaving the app again — through the share
 sheet — carries the position only in the sense that the app knows it; the bytes
 handed out are the stripped ones.
 
-On **Android** there is usually nothing to read: since Android 10 the system
-zeroes the coordinates in a photograph before handing it to an app that does
-not hold `ACCESS_MEDIA_LOCATION`, and this app does not ask for that permission.
-It applies to both ways of attaching a file, so there is no route around it here.
-Such a photograph is attached without a position, and the app says so rather
-than leaving it unexplained. Whether to ask for the permission is an open
-question and not an oversight — its scope is every photograph in the shared
-collection, not the one that was picked.
+On **Android** there is usually nothing to read, and putting it back is a switch
+the user throws. Since Android 10 the system zeroes the coordinates in a
+photograph before handing it to an app that does not hold
+`ACCESS_MEDIA_LOCATION`. That permission is now declared, and *Read where a photo
+was taken* in settings is the only thing that ever asks for it — off on a fresh
+install, and off is exactly the behavior described above: the photograph is
+attached without a position, and the app says so rather than leaving it
+unexplained.
+
+With the switch on, two things change and nothing else does. Photos are chosen
+through the system's file browser rather than its photo picker, because that
+picker strips the coordinates whatever permission the app holds. And a photograph
+that still arrives without a position is asked about a second time, by the URI
+the picker handed over, against the original the system will now serve
+(`MediaStore.setRequireOriginal`, in `MediaLocationBridge.kt`). Two numbers come
+back across that channel and nothing else: the picture that is stored is still
+the re-encoded, EXIF-stripped copy, and the position still lands in the column it
+has always landed in, visible in the attachment's sheet and clearable there.
+
+What the permission is **not** used for is worth saying, because its name is
+broader than this use of it. The app does not enumerate the shared collection —
+that would be `READ_MEDIA_IMAGES`, which is deliberately not declared — and asks
+only about a file the user has just picked, one at a time, while the import is
+running. The grant taken on that file is transient and never persisted, so the
+app holds no standing access to anyone's photo library.
 
 **A file attached through *Add file* is kept exactly as it arrived, metadata and
 all** — including one that happens to be a picture, which is a thing people do
@@ -154,17 +171,21 @@ the same tiles as panning there by hand would. Nothing on the device is followed
 in the background either: the request has no `ACCESS_BACKGROUND_LOCATION` behind
 it, and the receiver is released when the map goes away.
 
-**Attaching a file asks for no permission.** The picker runs in the system's own
-process (the Storage Access Framework on Android, the platform file chooser
-elsewhere) and hands back one file the user chose. The app never enumerates a
-gallery or a directory, and there is no camera capture.
+**Attaching a file asks for no permission** — with the one exception above, and
+only once it has been switched on. The picker runs in the system's own process
+(the Storage Access Framework on Android, the platform file chooser elsewhere)
+and hands back one file the user chose. The app never enumerates a gallery or a
+directory, and there is no camera capture.
 
 **Nothing else leaves the device.** There is no analytics, no crash reporting,
-and no telemetry of any kind, and the Android build asks for three permissions:
-`INTERNET`, and — only when the locate button is pressed —
-`ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`. Both of the latter are
-declared so that the system dialog can offer the choice between an exact and an
-approximate position; the app works either way.
+and no telemetry of any kind, and the Android build declares four permissions:
+`INTERNET`; `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`, asked for only
+when the locate button is pressed; and `ACCESS_MEDIA_LOCATION`, asked for only
+when *Read where a photo was taken* is switched on in settings. The two location
+permissions are both declared so that the system dialog can offer the choice
+between an exact and an approximate position; the app works either way. The media
+one is granted to nobody until it is asked for, and the app works without it — a
+photograph simply attaches without the place it was taken.
 
 ## What happens after a report
 

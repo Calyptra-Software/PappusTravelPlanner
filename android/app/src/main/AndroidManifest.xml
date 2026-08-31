@@ -13,6 +13,15 @@
          is open, and there is no feature here that follows anyone. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Where a photograph was taken. Since Android 10 the system zeroes the
+         GPS tags of a picture handed to an app without this, so a holiday photo
+         attaches itself with no place and no reason given. It is **off until
+         the user switches it on** in settings, which is the only moment it is
+         ever requested, and the app reads nothing else out of the shared
+         collection: it never enumerates a gallery (that would be
+         READ_MEDIA_IMAGES, which is deliberately not here) and asks only about
+         the one file the picker just handed over. -->
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
     <application
         android:label="${appLabel}"
         android:name="${applicationName}"

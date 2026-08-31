@@ -502,6 +502,14 @@ Everything else EXIF can hold — the camera body, its serial number, the moment
 its metadata, because nothing re-encodes it; that is part of what filing something as a
 document means.
 
+**On Android that position has to be switched on.** Android removes a photo's coordinates
+before handing it to an app, and *Settings → Photos → Read where a photo was taken* is what
+asks for permission to see them. It is off until you turn it on, and the app says so when a
+photo arrives without its place. With it on, photos are chosen through the file browser
+rather than the photo picker — the photo picker removes the position whatever the app is
+allowed to read. Nothing else changes: the picture stored is still the re-encoded one, with
+the position in a field you can see and clear.
+
 ### What an entry says it carries
 
 An entry with attachments shows **"3 photos"** and **"2 documents"** as two counts side by

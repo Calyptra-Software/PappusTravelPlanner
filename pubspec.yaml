@@ -34,6 +34,13 @@ dependencies:
 
   # Opening / importing / exporting the database file.
   file_picker: ^12.1.2
+  # Already resolved beneath file_picker (it is its Android implementation, and
+  # file_picker imports it on every platform). Named here because this app uses
+  # it directly and deliberately: the URI the Storage Access Framework handed a
+  # picked photo over as reaches Dart only through `AndroidPlatformFile`, and
+  # that URI is the one thing that can be asked where the photograph was taken.
+  # See features/attachments/attachment_flow.dart.
+  android_file_picker: ^1.0.0
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   path: ^1.9.1

@@ -23,6 +23,9 @@ class MainActivity : FlutterActivity() {
     /** Bytes from a launch intent, waiting for Dart to request them. */
     private var pendingTrip: String? = null
 
+    /** ACCESS_MEDIA_LOCATION: asking for it, and reading a photo's original. */
+    private var mediaLocation: MediaLocationBridge? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
@@ -34,6 +37,7 @@ class MainActivity : FlutterActivity() {
                 result.notImplemented()
             }
         }
+        mediaLocation = MediaLocationBridge(this, flutterEngine.dartExecutor.binaryMessenger)
         // The intent that launched us (cold start): buffer it — Dart isn't
         // listening for pushes yet, so it will pull via getInitialTrip.
         pendingTrip = readTrip(intent)
@@ -51,6 +55,20 @@ class MainActivity : FlutterActivity() {
         } else {
             pendingTrip = encoded
         }
+    }
+
+    /**
+     * `super` first, so the plugins that asked for a permission of their own
+     * (the map's location, for one) still get their answer: ours is one request
+     * code among several, and the bridge says whether the result was its.
+     */
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        mediaLocation?.onRequestPermissionsResult(requestCode, grantResults)
     }
 
     /** Reads the trip file referenced by [intent], as Base64, or null. */

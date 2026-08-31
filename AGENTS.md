@@ -1300,16 +1300,47 @@ UI (features/*/presentation, *widgets)
   always takes, is what survives intact. A camera that genuinely stood on Null Island is
   therefore still not redaction: `exifPosition` refuses its `0, 0` on its own account,
   and its refs still say `N` and `E`.
-  Both doors redact, so there is no picker to switch to: *Add photo* goes out as
+  Both doors redact, so no *picker* fixes this by itself: *Add photo* goes out as
   `ACTION_GET_CONTENT` and *Add file* as `ACTION_OPEN_DOCUMENT`, and the round trip
   through the second is how the bytes above were obtained — SAF returned them zeroed
-  too.
-  Lifting the redaction needs `ACCESS_MEDIA_LOCATION` and probably
-  `MediaStore.setRequireOriginal`, which `file_picker` neither calls nor offers a hook
-  for — and it is a fourth permission whose scope is the *whole* shared collection rather
-  than the one file picked, which is a trade to be made deliberately and written into
-  `SECURITY.md` in the same commit, not slipped in. Until it is, the position is set by
-  hand on Android, which the sheet already offers.
+  too. What lifts it is the permission below, and the choice of door then matters for a
+  different reason.
+- **Lifting the redaction is a switch, and it costs the picker people know.**
+  `ACCESS_MEDIA_LOCATION` is declared and asked for at exactly one moment — *Read where a
+  photo was taken* in settings — which is the arrangement `device_location.dart` already
+  has for the locate button. Two facts are deliberately kept apart in
+  `media_location.dart`: the **permission**, which is the system's to grant and to take
+  back, and the **switch**, which is persisted and is the whole of the opt-in. Neither
+  alone is the answer — a grant cannot be handed back from inside an app, so a control
+  reading only the platform would have no off position short of the system settings; and a
+  stored bool alone would go on claiming the feature runs after the permission was revoked,
+  which is why the tile shows `active` (both halves) and why `activeNow()` re-asks the
+  platform before every import rather than trusting what was stored.
+  What it buys is two readings, and **both are needed**, which is the part that is not
+  obvious. The permission alone does not do it: `FileType.image` goes out as
+  `ACTION_GET_CONTENT`, which Android has *taken over* with its own photo picker, and that
+  picker strips a picture's coordinates unconditionally — the permission does not reach it,
+  so the nicest chooser is the one chooser that can never answer. With the switch on the
+  door therefore becomes `FileType.custom` over `_photoExtensions`, which goes out as
+  `ACTION_OPEN_DOCUMENT`: the file browser, filtered to the same pictures, whose answer
+  names a row the platform will serve an original of. And the picker's *copy* of the bytes
+  is redacted whatever this process holds, so a photograph that still arrives without a
+  position is asked about a second time by URI — `MediaStore.getMediaUri` then
+  `setRequireOriginal`, in `MediaLocationBridge.kt`. The trade is stated in the tile's own
+  subtitle rather than hidden, because giving up the familiar picker is exactly the kind of
+  thing an app must not do on somebody's behalf.
+  Three boundaries hold it to the one file: the URI reaches Dart only as
+  `AndroidPlatformFile.safHandle` (hence `android_file_picker` as a direct dependency, and
+  hence `PickedAttachment` being a class — a record has no field to leave out), the grant
+  is `transient` and never persisted, and **only two numbers come back** — the stored
+  picture is still the re-encoded, EXIF-stripped one, so what the permission changes is
+  what the app *knows* and not what it keeps. `READ_MEDIA_IMAGES` is deliberately not
+  declared: the app has never enumerated a gallery and this does not start. The second
+  reading is asked only when the first found nothing, which also means a photograph that
+  genuinely never had a fix costs one header read to say so. Everything about this is off
+  on a fresh install and absent entirely below Android 10 (`PhotoLocationState.supported`),
+  where nothing was taken out of the file in the first place — a switch offering to turn on
+  what is already on is a control that does nothing.
 - **A photo is on the map when it carries a position, and never otherwise.**
   `MapPhoto` (`map_features.dart`) draws the stored **thumbnail**, framed in the owning
   entry's color — which is why one is kept beside every picture. Falling back to the

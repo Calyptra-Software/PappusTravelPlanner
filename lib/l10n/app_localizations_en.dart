@@ -2245,6 +2245,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachmentPositionClear => 'Remove position';
 
   @override
+  String get photosSection => 'Photos';
+
+  @override
+  String get photoLocationTitle => 'Read where a photo was taken';
+
+  @override
+  String get photoLocationSubtitle =>
+      'Off, a photo is attached with no place. On, Pappus asks Android for permission to read the position out of the picture, and photos are then chosen through the file browser — the photo picker removes the position before the app sees it.';
+
+  @override
+  String get photoLocationDenied =>
+      'Android did not allow it. Photos are attached with no place, and you can set the position by hand.';
+
+  @override
+  String get photoLocationBlocked =>
+      'Android will not ask again. It can still be allowed on this app\'s page in the system settings.';
+
+  @override
+  String get photoLocationOpenSettings => 'Open settings';
+
+  @override
   String get attachmentPhotoOpenFailed => 'That file could not be opened.';
 
   @override

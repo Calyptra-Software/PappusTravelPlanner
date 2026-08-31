@@ -3854,6 +3854,42 @@ abstract class AppLocalizations {
   /// **'Remove position'**
   String get attachmentPositionClear;
 
+  /// No description provided for @photosSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photosSection;
+
+  /// No description provided for @photoLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read where a photo was taken'**
+  String get photoLocationTitle;
+
+  /// Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. It names the trade honestly: the feature costs the familiar photo picker, because that picker strips the coordinates whatever permission the app holds.
+  ///
+  /// In en, this message translates to:
+  /// **'Off, a photo is attached with no place. On, Pappus asks Android for permission to read the position out of the picture, and photos are then chosen through the file browser — the photo picker removes the position before the app sees it.'**
+  String get photoLocationSubtitle;
+
+  /// No description provided for @photoLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Android did not allow it. Photos are attached with no place, and you can set the position by hand.'**
+  String get photoLocationDenied;
+
+  /// No description provided for @photoLocationBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Android will not ask again. It can still be allowed on this app\'s page in the system settings.'**
+  String get photoLocationBlocked;
+
+  /// No description provided for @photoLocationOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get photoLocationOpenSettings;
+
   /// No description provided for @attachmentPhotoOpenFailed.
   ///
   /// In en, this message translates to:

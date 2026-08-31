@@ -11,7 +11,9 @@ import '../../../core/settings/language_dialog.dart';
 import '../../../core/settings/theme_mode_dialog.dart';
 import '../../../core/widgets/attribution.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../attachments/application/media_location.dart';
 import '../../attachments/application/storage_providers.dart';
+import '../../attachments/widgets/photo_location_setting.dart';
 import '../../costs/presentation/cost_reasons_settings.dart';
 import '../../costs/presentation/currencies_settings.dart';
 import '../../costs/presentation/people_settings.dart';
@@ -122,6 +124,16 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _SectionHeader(title: l10n.peopleSection),
           const PeopleSettings(),
+          // Only where there is something to decide: Android 10 and later,
+          // which is the only place a photograph arrives with its coordinates
+          // taken out. Elsewhere the position is simply read, as it always was,
+          // and a switch offering to turn on what is already on would be a
+          // control that does nothing.
+          if (ref.watch(photoLocationProvider).supported) ...[
+            const Divider(),
+            _SectionHeader(title: l10n.photosSection),
+            const PhotoLocationSetting(),
+          ],
           const Divider(),
           _SectionHeader(title: l10n.databaseSection),
           const _DatabaseTile(),
