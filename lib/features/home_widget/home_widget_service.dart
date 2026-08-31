@@ -15,6 +15,7 @@ import '../itinerary/application/itinerary_providers.dart';
 import '../itinerary/day_blocks.dart';
 import '../itinerary/widgets/transport_mode.dart';
 import '../trips/application/trip_providers.dart';
+import 'widget_deep_link.dart';
 import 'widget_payload.dart';
 
 /// Native provider class, named in full (matches the Kotlin
@@ -125,22 +126,11 @@ Future<void> _save(WidgetPayload p) async {
 
 // --- deep-link click handling ---
 
-/// Routes a widget-launch [uri] into the app. The whole widget links to the
-/// trip (`pappus://trip?id=N`); a tapped item row adds `&item=M` to open
-/// that item's editor.
+/// Routes a widget-launch [uri] into the app. Which location that is lives in
+/// the pure `widgetLaunchLocation`; all this adds is the going.
 void _navigate(GoRouter router, Uri? uri) {
-  if (uri == null) return;
-  final id = uri.queryParameters['id'];
-  if (uri.host == 'trip' && id != null && id != '-1') {
-    final item = uri.queryParameters['item'];
-    if (item != null && item.isNotEmpty && item != '-1') {
-      router.go('/trip/$id?item=$item');
-    } else {
-      router.go('/trip/$id');
-    }
-  } else {
-    router.go('/');
-  }
+  final location = widgetLaunchLocation(uri);
+  if (location != null) router.go(location);
 }
 
 /// Handles a cold start triggered by tapping the widget.
