@@ -42,9 +42,8 @@ class _DatabaseTile extends ConsumerWidget {
     final dbPath = ref.watch(activeDbPathProvider);
     final storage = ref.watch(databaseStorageProvider).value;
 
-    // Absent until the numbers arrive, and absent on the web for the file size
-    // — a line that flickered in with a placeholder would be worse than one
-    // that simply appears.
+    // Absent until the numbers arrive — a line that flickered in with a
+    // placeholder would be worse than one that simply appears.
     final size = storage == null
         ? null
         : [
@@ -54,6 +53,18 @@ class _DatabaseTile extends ConsumerWidget {
                   '(${formatBytes(storage.attachmentBytes)})',
           ].join(' · ');
 
+    // The line's *space* is kept from the first frame all the same, which is
+    // not the same thing as a placeholder: nothing is drawn in it, and nothing
+    // moves when the figures land. A tile that grows a line half a second after
+    // the screen opens pushes everything below it down, under a finger that is
+    // very likely already scrolling — the settings list is long enough that
+    // nobody arrives and waits. Reserved only where a figure is going to
+    // appear: every platform with a file has a size to print, and the web has
+    // none (`databaseFileSize` is null there), so it reserves nothing rather
+    // than carrying a permanent gap.
+    final expectsSize = !kIsWeb;
+    final shownSize = size != null && size.isNotEmpty ? size : null;
+
     return ListTile(
       leading: const Icon(Icons.storage_outlined),
       title: Text(l10n.currentDatabase),
@@ -61,16 +72,19 @@ class _DatabaseTile extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(dbPath, style: theme.textTheme.bodySmall),
-          if (size != null && size.isNotEmpty)
+          if (expectsSize || shownSize != null)
             Text(
-              size,
+              // A space and not the empty string: an empty paragraph is what
+              // gets laid out at no height on some platforms, which would give
+              // back the shift this is here to remove.
+              shownSize ?? ' ',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
         ],
       ),
-      isThreeLine: size != null && size.isNotEmpty,
+      isThreeLine: expectsSize || shownSize != null,
     );
   }
 }
