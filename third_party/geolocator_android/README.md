@@ -56,11 +56,18 @@ is untouched, as is `android/src/test/`.
 ## What this costs
 
 `LocationManagerClient` is upstream's own code and needs no Play Services: it
-prefers `LocationManager.FUSED_PROVIDER` on Android 12 and later, then
-`GPS_PROVIDER`, then `NETWORK_PROVIDER`, and requests updates through
-`androidx.core.location.LocationManagerCompat`. Below Android 12 there is no
-fused provider on a device without Play Services, so a first fix can be slower
-and costs more battery. The foreground-service machinery
+prefers `LocationManager.FUSED_PROVIDER` on Android 12 and later — when the
+system actually offers it, which is a lookup in `getProviders(true)` and not a
+guarantee — then `GPS_PROVIDER`, then `NETWORK_PROVIDER`, and requests updates
+through `androidx.core.location.LocationManagerCompat`. Where the fused
+provider is taken, the request this app makes maps one to one onto what the
+Play Services client used to send: `QUALITY_HIGH_ACCURACY` against
+`PRIORITY_HIGH_ACCURACY`, the same zero interval, the same five-metre minimum
+displacement. Worth stating plainly: on a Play-certified phone that framework
+provider *is* implemented by Google Play Services, so what this removes is
+Google code from the APK, not Google code from the fix. Where there is no fused
+provider — Android 11 and older, and systems that ship none — the position
+comes from GPS alone, so a first fix can be slower and costs more battery. The foreground-service machinery
 (`GeolocatorLocationService`, `BackgroundNotification`) is untouched and works
 on this path, so recording a track later needs nothing from Google either.
 
