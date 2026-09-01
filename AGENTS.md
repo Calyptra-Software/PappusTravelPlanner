@@ -1654,6 +1654,22 @@ Three smaller traps, each found by a test that had to be written twice:
   picker, so the test watches it too, standing in for the screen beneath. It has to be
   overridden even where no picker is opened, or that watch opens a real `watchTrips()` and
   the timer above comes back.
+- **A long screen must hold what its sections read, or scrolling disposes them.**
+  `SettingsScreen` watches `reasonRowsProvider`, `currenciesProvider`,
+  `currencyCostCountsProvider`, `transportModesProvider`, `peopleRowsProvider` and
+  `databaseStorageProvider` itself (`_keepSectionsAlive`), though it draws none of them: a
+  `ListView` unmounts a child it has scrolled far enough past, which drops the last listener
+  on an `autoDispose` stream and disposes it. Coming back, the section rebuilds from
+  `AsyncLoading`, draws its "nothing here" row, and grows to its real height a frame later.
+  Below the viewport nobody sees that; **above** it, the scroll offset is a number, so
+  content over it getting taller means the same number points further up the list — a jump
+  of half a screen, only ever felt scrolling *upwards*, and always in the same place. That
+  is the same fact `trip_checklists_section.dart` records from the other side (its picker
+  works "only because the overview screen underneath keeps it alive") and
+  `TransportSearchController._modes` records from the third: a provider is alive because
+  something is watching it, and *what* is watching must outlive the scrolling. Held by the
+  screen rather than by keep-alives, since the screen is the thing that outlives it.
+  `settings_sections_alive_test.dart` asserts the subscription rather than the pixels.
 - **A provider holding a timer must be disposed inside the test body.** The binding checks
   for pending timers *before* tear-downs run, so `addTearDown(container.dispose)` reports
   `nowProvider`'s next tick as a leak (`test/clock_test.dart`). Close the subscription,

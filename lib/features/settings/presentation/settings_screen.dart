@@ -14,9 +14,12 @@ import '../../../l10n/app_localizations.dart';
 import '../../attachments/application/media_location.dart';
 import '../../attachments/application/storage_providers.dart';
 import '../../attachments/widgets/photo_location_setting.dart';
+import '../../costs/application/cost_providers.dart';
+import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_reasons_settings.dart';
 import '../../costs/presentation/currencies_settings.dart';
 import '../../costs/presentation/people_settings.dart';
+import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/presentation/transport_modes_settings.dart';
 import '../application/database_providers.dart';
 import 'about_settings.dart';
@@ -106,6 +109,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    _keepSectionsAlive(ref);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -206,6 +210,39 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Holds on to what the sections below read, for as long as the screen is
+  /// open.
+  ///
+  /// Every one of them watches an `autoDispose` stream, and a `ListView`
+  /// unmounts a child once it has scrolled far enough past it — which drops the
+  /// last listener, disposes the stream, and rebuilds that section from
+  /// `AsyncLoading` when it comes back. Each section draws its "nothing here"
+  /// row while loading, so six people collapse to one line and grow again a
+  /// frame later.
+  ///
+  /// Below the viewport that is invisible. *Above* it, it is a jump of half a
+  /// screen: the scroll offset is a number, so content above it getting taller
+  /// means the same number now points further up the list — which is why this
+  /// was only ever felt scrolling upwards, and always at the same place, where
+  /// the four managed lists sit.
+  ///
+  /// Watching them here is the fix because the screen outlives its own
+  /// scrolling: nothing a section needs can be disposed while the screen is on
+  /// display. It is the arrangement `trip_checklists_section.dart` already
+  /// leans on from the overview beneath it, done deliberately rather than by
+  /// luck. The rebuild it costs is one the section was doing anyway.
+  void _keepSectionsAlive(WidgetRef ref) {
+    ref.watch(reasonRowsProvider);
+    ref.watch(currenciesProvider);
+    ref.watch(currencyCostCountsProvider);
+    ref.watch(transportModesProvider);
+    ref.watch(peopleRowsProvider);
+    // Not a height any more — `_DatabaseTile` keeps its line's space — but
+    // re-running a file stat and a count every time the tile is scrolled back
+    // to is work for nothing.
+    ref.watch(databaseStorageProvider);
   }
 
   // --- desktop: open / create in place ---
