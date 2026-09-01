@@ -144,23 +144,41 @@ final mediaLocationProvider = Provider<MediaLocationChannel>(
   (ref) => const MediaLocationChannel(),
 );
 
+/// What the platform said at startup.
+///
+/// Resolved once in `main` and overridden into the scope, the arrangement
+/// `bootstrapDbPathProvider` and `appVersionProvider` already have — and here it
+/// is not a convenience but the difference between a settings screen that stands
+/// still and one that does not. The answer decides whether a whole section is
+/// drawn, so fetching it *after* the first frame inserts a section into a list
+/// somebody may already be scrolling, and everything below it jumps. A
+/// `checkSelfPermission` is a microsecond of work behind one channel hop; paying
+/// it before the first frame costs nothing anybody can see.
+///
+/// Defaults to [MediaLocationAccess.unsupported] rather than throwing, unlike
+/// `bootstrapDbPathProvider`: a scope that never said otherwise gets no switch,
+/// which is the right answer for every test that merely pumps a settings screen
+/// on its way to something else.
+final bootstrapMediaLocationProvider = Provider<MediaLocationAccess>(
+  (ref) => MediaLocationAccess.unsupported,
+);
+
 /// The switch and the permission, side by side.
 final class PhotoLocationState {
-  const PhotoLocationState({required this.enabled, this.access});
+  const PhotoLocationState({required this.enabled, required this.access});
 
   /// What the user asked for, remembered across launches.
   final bool enabled;
 
-  /// What the platform says, or null while the answer is still on its way —
-  /// which is not the same as "no": a control drawn on a guess would flip under
-  /// the finger a moment later.
-  final MediaLocationAccess? access;
+  /// What the platform says. Known from the first frame — see
+  /// [bootstrapMediaLocationProvider] — and re-read whenever it matters, since
+  /// a permission can be taken away while the app is running.
+  final MediaLocationAccess access;
 
   /// Whether this platform has the question at all, so the settings screen knows
   /// whether to draw a switch. False on the desktop, on the web, and on Android
   /// 9 and older, where a photograph arrives intact and always did.
   bool get supported =>
-      access != null &&
       access != MediaLocationAccess.notNeeded &&
       access != MediaLocationAccess.unsupported;
 
@@ -186,11 +204,14 @@ class PhotoLocationController extends Notifier<PhotoLocationState> {
 
   @override
   PhotoLocationState build() {
-    // The switch is known synchronously (it is ours); the permission is not, so
-    // it arrives a frame or two later and the settings tile waits for it.
-    final enabled = ref.read(sharedPreferencesProvider).getBool(_key) ?? false;
-    Future.microtask(refresh);
-    return PhotoLocationState(enabled: enabled);
+    // Both halves synchronously: the switch is ours, and the permission was
+    // asked about before the first frame. Nothing about this control arrives
+    // late, which is what keeps the settings list from growing a section under
+    // a finger already scrolling it.
+    return PhotoLocationState(
+      enabled: ref.read(sharedPreferencesProvider).getBool(_key) ?? false,
+      access: ref.read(bootstrapMediaLocationProvider),
+    );
   }
 
   /// Re-reads the permission. Worth doing before it matters as well as on

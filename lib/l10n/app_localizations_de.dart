@@ -2263,7 +2263,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get photoLocationSubtitle =>
-      'Aus wird ein Foto ohne Ort angehängt. An fragt Pappus Android um die Berechtigung, die Position aus dem Bild zu lesen; Fotos werden dann über den Dateibrowser ausgewählt — die Fotoauswahl entfernt die Position, bevor die App sie sieht.';
+      'Android verbirgt den Aufnahmeort eines Fotos, solange du es nicht erlaubst. Beim Einschalten fragt Pappus nach dieser Berechtigung; Fotos werden dann über den Dateibrowser ausgewählt, denn die Fotoauswahl entfernt die Position, bevor die App sie sehen kann.';
 
   @override
   String get photoLocationDenied =>

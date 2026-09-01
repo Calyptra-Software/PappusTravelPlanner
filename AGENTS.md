@@ -1340,7 +1340,14 @@ UI (features/*/presentation, *widgets)
   genuinely never had a fix costs one header read to say so. Everything about this is off
   on a fresh install and absent entirely below Android 10 (`PhotoLocationState.supported`),
   where nothing was taken out of the file in the first place — a switch offering to turn on
-  what is already on is a control that does nothing.
+  what is already on is a control that does nothing. That last answer is resolved in `main`
+  and overridden in (`bootstrapMediaLocationProvider`), beside the database path and the
+  version, and here the reason is visible rather than merely tidy: it decides whether a
+  whole **section** of the settings list is drawn, so fetching it a few frames in inserts
+  that section into a list somebody is already scrolling and everything below it jumps. A
+  `checkSelfPermission` before the first frame costs nothing anyone can see. `activeNow()`
+  still re-asks the platform before every import, because a grant can be taken away while
+  the app is running — what is bootstrapped is the *first* answer, not the only one.
 - **A photo is on the map when it carries a position, and never otherwise.**
   `MapPhoto` (`map_features.dart`) draws the stored **thumbnail**, framed in the owning
   entry's color — which is why one is kept beside every picture. Falling back to the

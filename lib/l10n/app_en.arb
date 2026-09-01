@@ -1172,7 +1172,7 @@
   "attachmentPositionClear": "Remove position",
   "photosSection": "Photos",
   "photoLocationTitle": "Read where a photo was taken",
-  "photoLocationSubtitle": "Off, a photo is attached with no place. On, Pappus asks Android for permission to read the position out of the picture, and photos are then chosen through the file browser — the photo picker removes the position before the app sees it.",
+  "photoLocationSubtitle": "Android hides where a photo was taken unless you allow it. Turning this on asks for that permission, and photos are then chosen through the file browser — the photo picker removes the position before the app can see it.",
   "@photoLocationSubtitle": {
     "description": "Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. It names the trade honestly: the feature costs the familiar photo picker, because that picker strips the coordinates whatever permission the app holds."
   },

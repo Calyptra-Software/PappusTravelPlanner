@@ -17,12 +17,22 @@ void main() {
     prefs = await SharedPreferences.getInstance();
   });
 
-  /// A container with the platform standing still.
-  ProviderContainer containerWith(FakePlatform platform) {
+  /// A container with the platform standing still — [startup] being what it
+  /// said before the first frame (which `main` resolves and overrides in), and
+  /// [now] what it would say if asked again, which is how a permission revoked
+  /// while the app runs is modelled.
+  ProviderContainer containerWith(
+    MediaLocationAccess startup, {
+    MediaLocationAccess? now,
+    LatLng? position,
+  }) {
     final container = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
-        mediaLocationProvider.overrideWithValue(platform),
+        bootstrapMediaLocationProvider.overrideWithValue(startup),
+        mediaLocationProvider.overrideWithValue(
+          FakePlatform(now ?? startup, position: position),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -30,9 +40,8 @@ void main() {
   }
 
   test('a fresh install is off, whatever the platform would say', () async {
-    final container = containerWith(FakePlatform(MediaLocationAccess.granted));
+    final container = containerWith(MediaLocationAccess.granted);
     final controller = container.read(photoLocationProvider.notifier);
-    await controller.refresh();
 
     // Granted and still off: the permission may be left over from another
     // feature, or from an install before this one. The switch is the answer to
@@ -45,7 +54,7 @@ void main() {
   test(
     'turning it on remembers it only when the permission is given',
     () async {
-      final container = containerWith(FakePlatform(MediaLocationAccess.denied));
+      final container = containerWith(MediaLocationAccess.denied);
       final controller = container.read(photoLocationProvider.notifier);
 
       expect(await controller.enable(), MediaLocationAccess.denied);
@@ -57,7 +66,7 @@ void main() {
   );
 
   test('turning it on and being allowed survives a relaunch', () async {
-    final first = containerWith(FakePlatform(MediaLocationAccess.granted));
+    final first = containerWith(MediaLocationAccess.granted);
     expect(
       await first.read(photoLocationProvider.notifier).enable(),
       MediaLocationAccess.granted,
@@ -66,15 +75,17 @@ void main() {
 
     // A second container is the next launch: nothing but the stored bool
     // crosses over, and the permission is asked about again.
-    final next = containerWith(FakePlatform(MediaLocationAccess.granted));
+    final next = containerWith(MediaLocationAccess.granted);
     expect(next.read(photoLocationProvider).enabled, isTrue);
     expect(await next.read(photoLocationProvider.notifier).activeNow(), isTrue);
   });
 
   test('a permission taken away since leaves the switch inactive', () async {
     await prefs.setBool('photo_location_enabled', true);
+    // Granted when the app started, gone by the time a photograph is picked.
     final container = containerWith(
-      FakePlatform(MediaLocationAccess.deniedForever),
+      MediaLocationAccess.granted,
+      now: MediaLocationAccess.deniedForever,
     );
     final controller = container.read(photoLocationProvider.notifier);
 
@@ -87,9 +98,8 @@ void main() {
 
   test('turning it off is the switch alone', () async {
     await prefs.setBool('photo_location_enabled', true);
-    final container = containerWith(FakePlatform(MediaLocationAccess.granted));
+    final container = containerWith(MediaLocationAccess.granted);
     final controller = container.read(photoLocationProvider.notifier);
-    await controller.refresh();
     expect(container.read(photoLocationProvider).active, isTrue);
 
     await controller.disable();
@@ -111,8 +121,7 @@ void main() {
         MediaLocationAccess.denied,
         MediaLocationAccess.deniedForever,
       ]) {
-        final container = containerWith(FakePlatform(access));
-        await container.read(photoLocationProvider.notifier).refresh();
+        final container = containerWith(access);
         expect(container.read(photoLocationProvider).supported, isTrue);
       }
     });
@@ -122,21 +131,23 @@ void main() {
         MediaLocationAccess.notNeeded,
         MediaLocationAccess.unsupported,
       ]) {
-        final container = containerWith(FakePlatform(access));
-        await container.read(photoLocationProvider.notifier).refresh();
+        final container = containerWith(access);
         // No switch is drawn: one offering to turn on what is already on would
         // be a control that does nothing.
         expect(container.read(photoLocationProvider).supported, isFalse);
       }
     });
 
-    test('and not before the platform has answered', () {
-      final container = containerWith(FakePlatform(MediaLocationAccess.denied));
-      // Read before the refresh has come back: still unknown, which is not the
-      // same as "no", and a control drawn on the guess would flip under the
-      // finger a moment later.
-      expect(container.read(photoLocationProvider).access, isNull);
-      expect(container.read(photoLocationProvider).supported, isFalse);
+    test('and it is known on the very first read', () {
+      final container = containerWith(MediaLocationAccess.denied);
+      // No await anywhere. The answer was fetched before the first frame, so
+      // the settings list cannot grow a section under a finger already
+      // scrolling it.
+      expect(container.read(photoLocationProvider).supported, isTrue);
+      expect(
+        container.read(photoLocationProvider).access,
+        MediaLocationAccess.denied,
+      );
     });
   });
 }

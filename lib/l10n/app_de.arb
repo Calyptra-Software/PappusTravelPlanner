@@ -804,7 +804,7 @@
   "attachmentPositionClear": "Position entfernen",
   "photosSection": "Fotos",
   "photoLocationTitle": "Aufnahmeort von Fotos lesen",
-  "photoLocationSubtitle": "Aus wird ein Foto ohne Ort angehängt. An fragt Pappus Android um die Berechtigung, die Position aus dem Bild zu lesen; Fotos werden dann über den Dateibrowser ausgewählt — die Fotoauswahl entfernt die Position, bevor die App sie sieht.",
+  "photoLocationSubtitle": "Android verbirgt den Aufnahmeort eines Fotos, solange du es nicht erlaubst. Beim Einschalten fragt Pappus nach dieser Berechtigung; Fotos werden dann über den Dateibrowser ausgewählt, denn die Fotoauswahl entfernt die Position, bevor die App sie sehen kann.",
   "photoLocationDenied": "Android hat es nicht erlaubt. Fotos werden ohne Ort angehängt; du kannst die Position von Hand setzen.",
   "photoLocationBlocked": "Android fragt nicht noch einmal. In den Systemeinstellungen kann es auf der Seite dieser App weiterhin erlaubt werden.",
   "photoLocationOpenSettings": "Einstellungen öffnen",
