@@ -2245,6 +2245,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attachmentPositionClear => 'Remove position';
 
   @override
+  String get photosSection => 'Photos';
+
+  @override
+  String get photoLocationTitle => 'Read where a photo was taken';
+
+  @override
+  String get photoLocationSubtitle =>
+      'Android hides where a photo was taken unless you allow it. Turning this on asks for that permission; with it off, a photo is attached without its place even where Android would hand it over.';
+
+  @override
+  String get photoLocationStillGranted =>
+      'Photos will be attached without their place. Android keeps the permission until you revoke it in the system settings.';
+
+  @override
+  String get photoLocationDenied =>
+      'Android did not allow it. Photos are attached with no place, and you can set the position by hand.';
+
+  @override
+  String get photoLocationBlocked =>
+      'Android will not ask again. It can still be allowed on this app\'s page in the system settings.';
+
+  @override
+  String get photoLocationOpenSettings => 'Open settings';
+
+  @override
   String get attachmentPhotoOpenFailed => 'That file could not be opened.';
 
   @override

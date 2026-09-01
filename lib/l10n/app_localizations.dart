@@ -3854,6 +3854,48 @@ abstract class AppLocalizations {
   /// **'Remove position'**
   String get attachmentPositionClear;
 
+  /// No description provided for @photosSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get photosSection;
+
+  /// No description provided for @photoLocationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read where a photo was taken'**
+  String get photoLocationTitle;
+
+  /// Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. The second half is not belt and braces: a granted permission cannot be handed back from inside an app, so with the switch off the position still arrives and the app drops it.
+  ///
+  /// In en, this message translates to:
+  /// **'Android hides where a photo was taken unless you allow it. Turning this on asks for that permission; with it off, a photo is attached without its place even where Android would hand it over.'**
+  String get photoLocationSubtitle;
+
+  /// Shown when the switch is turned off while the Android permission is still granted — an app cannot revoke its own, so the system screen is the only way, and it is offered beside this.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos will be attached without their place. Android keeps the permission until you revoke it in the system settings.'**
+  String get photoLocationStillGranted;
+
+  /// No description provided for @photoLocationDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Android did not allow it. Photos are attached with no place, and you can set the position by hand.'**
+  String get photoLocationDenied;
+
+  /// No description provided for @photoLocationBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Android will not ask again. It can still be allowed on this app\'s page in the system settings.'**
+  String get photoLocationBlocked;
+
+  /// No description provided for @photoLocationOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get photoLocationOpenSettings;
+
   /// No description provided for @attachmentPhotoOpenFailed.
   ///
   /// In en, this message translates to:

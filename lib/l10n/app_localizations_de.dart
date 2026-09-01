@@ -2256,6 +2256,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attachmentPositionClear => 'Position entfernen';
 
   @override
+  String get photosSection => 'Fotos';
+
+  @override
+  String get photoLocationTitle => 'Aufnahmeort von Fotos lesen';
+
+  @override
+  String get photoLocationSubtitle =>
+      'Android verbirgt den Aufnahmeort eines Fotos, solange du es nicht erlaubst. Beim Einschalten fragt Pappus nach dieser Berechtigung; ausgeschaltet wird ein Foto ohne Ort angehängt, auch wenn Android ihn herausgeben würde.';
+
+  @override
+  String get photoLocationStillGranted =>
+      'Fotos werden ohne Ort angehängt. Android behält die Berechtigung, bis du sie in den Systemeinstellungen entziehst.';
+
+  @override
+  String get photoLocationDenied =>
+      'Android hat es nicht erlaubt. Fotos werden ohne Ort angehängt; du kannst die Position von Hand setzen.';
+
+  @override
+  String get photoLocationBlocked =>
+      'Android fragt nicht noch einmal. In den Systemeinstellungen kann es auf der Seite dieser App weiterhin erlaubt werden.';
+
+  @override
+  String get photoLocationOpenSettings => 'Einstellungen öffnen';
+
+  @override
   String get attachmentPhotoOpenFailed =>
       'Die Datei konnte nicht geöffnet werden.';
 

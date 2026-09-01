@@ -34,6 +34,13 @@ dependencies:
 
   # Opening / importing / exporting the database file.
   file_picker: ^12.1.2
+  # Already resolved beneath file_picker (it is its Android implementation, and
+  # file_picker imports it on every platform). Named here because this app uses
+  # it directly and deliberately: the URI the Storage Access Framework handed a
+  # picked photo over as reaches Dart only through `AndroidPlatformFile`, and
+  # that URI is the one thing that can be asked where the photograph was taken.
+  # See features/attachments/attachment_flow.dart.
+  android_file_picker: ^1.0.0
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   path: ^1.9.1
@@ -91,6 +98,11 @@ dev_dependencies:
   # Lets a test stand in for the location plugin (`MockPlatformInterfaceMixin`),
   # so the permission-and-fix state machine can be exercised without a receiver.
   plugin_platform_interface: ^2.1.8
+  # The same trick for the two file choosers, which the photo door picks between
+  # by platform and by whether a position is wanted — the one decision on that
+  # path that is not a detail (see attachment_flow.dart). `file_picker` exports
+  # its own interface; `file_selector` does not, hence this one by name.
+  file_selector_platform_interface: ^2.7.0
 
 flutter:
   uses-material-design: true

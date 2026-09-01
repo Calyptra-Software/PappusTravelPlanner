@@ -26,7 +26,7 @@ packages:
     source: hosted
     version: "0.3.4"
   android_file_picker:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: android_file_picker
       sha256: "1f111ed6bb33724ba782cc86357e3fd97f57051d55fc61adf33dcfc5049a1581"
@@ -418,7 +418,7 @@ packages:
     source: hosted
     version: "0.9.5+1"
   file_selector_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: file_selector_platform_interface
       sha256: "35e0bd61ebcdb91a3505813b055b09b79dfdc7d0aee9c09a7ba59ae4bb13dc85"

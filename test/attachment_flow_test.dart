@@ -8,12 +8,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/providers.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
 import 'package:travelplanner/features/attachments/application/cover_providers.dart';
+import 'package:travelplanner/features/attachments/application/media_location.dart';
 import 'package:travelplanner/features/attachments/attachment_flow.dart';
 import 'package:travelplanner/features/attachments/attachment_import.dart';
 import 'package:travelplanner/features/attachments/presentation/gallery_screen.dart';
@@ -29,10 +33,15 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 void main() {
   late AppDatabase db;
   late TripRepository repo;
+  late SharedPreferences prefs;
   late int tripId;
   late int itemId;
 
   setUp(() async {
+    // The flow asks whether photographs should bring their position, which is a
+    // stored setting; off on a fresh install, which is what an empty store is.
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = TripRepository(db);
     tripId = await db.tripDao.createTrip(
@@ -75,10 +84,17 @@ void main() {
     int? onItem,
     int? onGroup,
     AttachmentKind kind = AttachmentKind.photo,
+    MediaLocationChannel? locator,
+    MediaLocationAccess startup = MediaLocationAccess.granted,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [repositoryProvider.overrideWithValue(repo)],
+        overrides: [
+          repositoryProvider.overrideWithValue(repo),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          bootstrapMediaLocationProvider.overrideWithValue(startup),
+          if (locator != null) mediaLocationProvider.overrideWithValue(locator),
+        ],
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -138,7 +154,9 @@ void main() {
   testWidgets('a picked photo is re-encoded and written to its entry', (
     tester,
   ) async {
-    await pumpAdder(tester, [(bytes: png(64, 48), name: 'view.png')]);
+    await pumpAdder(tester, [
+      PickedAttachment(bytes: png(64, 48), name: 'view.png'),
+    ]);
     await tapAttach(tester);
 
     final rows = await stored();
@@ -165,9 +183,9 @@ void main() {
     tester,
   ) async {
     await pumpAdder(tester, [
-      (bytes: png(20, 20), name: 'a.png'),
-      (bytes: png(20, 20), name: 'b.png'),
-      (bytes: png(20, 20), name: 'c.png'),
+      PickedAttachment(bytes: png(20, 20), name: 'a.png'),
+      PickedAttachment(bytes: png(20, 20), name: 'b.png'),
+      PickedAttachment(bytes: png(20, 20), name: 'c.png'),
     ]);
     await tapAttach(tester);
 
@@ -178,7 +196,9 @@ void main() {
   testWidgets('one file says nothing — the row appearing is the message', (
     tester,
   ) async {
-    await pumpAdder(tester, [(bytes: png(20, 20), name: 'a.png')]);
+    await pumpAdder(tester, [
+      PickedAttachment(bytes: png(20, 20), name: 'a.png'),
+    ]);
     await tapAttach(tester);
 
     expect(await stored(), hasLength(1));
@@ -219,7 +239,9 @@ void main() {
     testWidgets('is attached, and the reason it has no place is said', (
       tester,
     ) async {
-      await pumpAdder(tester, [(bytes: redactedPhoto(), name: 'a.jpg')]);
+      await pumpAdder(tester, [
+        PickedAttachment(bytes: redactedPhoto(), name: 'a.jpg'),
+      ]);
       await tapAttach(tester);
 
       // The picture is kept — nothing is refused here, the app simply cannot
@@ -231,8 +253,8 @@ void main() {
 
     testWidgets('and the plain count gives way to it', (tester) async {
       await pumpAdder(tester, [
-        (bytes: redactedPhoto(), name: 'a.jpg'),
-        (bytes: png(20, 20), name: 'b.png'),
+        PickedAttachment(bytes: redactedPhoto(), name: 'a.jpg'),
+        PickedAttachment(bytes: png(20, 20), name: 'b.png'),
       ]);
       await tapAttach(tester);
 
@@ -245,8 +267,11 @@ void main() {
 
     testWidgets('but a refusal still comes first', (tester) async {
       await pumpAdder(tester, [
-        (bytes: redactedPhoto(), name: 'a.jpg'),
-        (bytes: Uint8List.fromList([0, 1, 2, 3]), name: 'IMG_1.HEIC'),
+        PickedAttachment(bytes: redactedPhoto(), name: 'a.jpg'),
+        PickedAttachment(
+          bytes: Uint8List.fromList([0, 1, 2, 3]),
+          name: 'IMG_1.HEIC',
+        ),
       ]);
       await tapAttach(tester);
 
@@ -259,7 +284,9 @@ void main() {
     testWidgets('a photograph that never had a position says nothing', (
       tester,
     ) async {
-      await pumpAdder(tester, [(bytes: png(20, 20), name: 'a.png')]);
+      await pumpAdder(tester, [
+        PickedAttachment(bytes: png(20, 20), name: 'a.png'),
+      ]);
       await tapAttach(tester);
 
       expect(await stored(), hasLength(1));
@@ -267,9 +294,195 @@ void main() {
     });
   });
 
+  /// What the switch does to a photograph that arrives **with** its place.
+  ///
+  /// Not a hypothetical: an Android permission cannot be handed back from
+  /// inside an app, so once *Read where a photo was taken* has been switched on
+  /// once, the system goes on handing over unredacted photographs however the
+  /// switch is set afterwards. Found on a phone, where the coordinates went on
+  /// being stored with the switch visibly off — which made the switch a
+  /// statement about what the app *asked* for rather than about what it kept.
+  group('a photograph that arrives with its place', () {
+    /// A JPEG with GPS in it, as a camera writes one. The rationals are built
+    /// by hand because `IfdDirectory`'s convenience setter resolves a GPS tag
+    /// name against the *image* tag table and drops the value — the same reason
+    /// `attachment_import_test.dart` builds one this way.
+    img.IfdValueRational dms(int degrees, int minutes, double seconds) {
+      final pairs = [
+        [degrees, 1],
+        [minutes, 1],
+        [(seconds * 1000).round(), 1000],
+      ];
+      final data = ByteData(pairs.length * 8);
+      for (var i = 0; i < pairs.length; i++) {
+        data.setUint32(i * 8, pairs[i][0], Endian.little);
+        data.setUint32(i * 8 + 4, pairs[i][1], Endian.little);
+      }
+      return img.IfdValueRational.data(
+        img.InputBuffer(data.buffer.asUint8List()),
+        pairs.length,
+      );
+    }
+
+    Uint8List photoWithPlace() {
+      final image = img.Image(width: 24, height: 18);
+      img.fill(image, color: img.ColorRgb8(90, 140, 190));
+      final gps = image.exif.gpsIfd;
+      gps['GPSLatitude'] = dms(53, 33, 0);
+      gps['GPSLatitudeRef'] = img.IfdValueAscii('N');
+      gps['GPSLongitude'] = dms(10, 0, 0);
+      gps['GPSLongitudeRef'] = img.IfdValueAscii('E');
+      return img.encodeJpg(image);
+    }
+
+    testWidgets('keeps it while the switch is on', (tester) async {
+      await prefs.setBool('photo_location_enabled', true);
+      await pumpAdder(tester, [
+        PickedAttachment(bytes: photoWithPlace(), name: 'a.jpg'),
+      ], locator: FakeMediaLocation());
+      await tapAttach(tester);
+
+      final photo = (await stored()).single;
+      expect(photo.lat, closeTo(53.55, 0.0001));
+      expect(photo.positionSource, AttachmentPositionSource.exif);
+    });
+
+    testWidgets('and loses it while the switch is off', (tester) async {
+      // The permission is standing — granted once and never revoked, which an
+      // app cannot do for itself — so the bytes carry the place regardless.
+      await pumpAdder(tester, [
+        PickedAttachment(bytes: photoWithPlace(), name: 'a.jpg'),
+      ], locator: FakeMediaLocation());
+      await tapAttach(tester);
+
+      final photo = (await stored()).single;
+      expect(photo.lat, isNull);
+      expect(photo.lon, isNull);
+      expect(photo.positionSource, isNull);
+      // Nothing was withheld by anybody but the app itself, so there is no
+      // sentence about Android to show.
+      expect(find.textContaining('withheld'), findsNothing);
+    });
+
+    testWidgets('and is kept where there is no switch at all', (tester) async {
+      // The desktop, the web, Android 9 and older: nothing was ever taken out
+      // of the file, so the switch that is not drawn may not withhold either.
+      await pumpAdder(
+        tester,
+        [PickedAttachment(bytes: photoWithPlace(), name: 'a.jpg')],
+        locator: FakeMediaLocation(access: MediaLocationAccess.notNeeded),
+        startup: MediaLocationAccess.notNeeded,
+      );
+      await tapAttach(tester);
+
+      expect((await stored()).single.lat, closeTo(53.55, 0.0001));
+    });
+  });
+
+  /// The other half of the story above: with the permission held, the place a
+  /// redaction took out can be asked for again, by URI, against the original
+  /// the picker only ever handed over a copy of.
+  group('the permission that puts the place back', () {
+    /// A picture as Android hands one to an app without
+    /// `ACCESS_MEDIA_LOCATION` — see the group above for how it is built.
+    img.IfdValueRational zeroed() {
+      final data = ByteData(24);
+      return img.IfdValueRational.data(
+        img.InputBuffer(data.buffer.asUint8List()),
+        3,
+      );
+    }
+
+    Uint8List redactedPhoto() {
+      final image = img.Image(width: 24, height: 18);
+      img.fill(image, color: img.ColorRgb8(90, 140, 190));
+      final gps = image.exif.gpsIfd;
+      gps['GPSLatitudeRef'] = img.IfdValueAscii('\u0000');
+      gps['GPSLatitude'] = zeroed();
+      gps['GPSLongitudeRef'] = img.IfdValueAscii('\u0000');
+      gps['GPSLongitude'] = zeroed();
+      return img.encodeJpg(image);
+    }
+
+    /// One photograph, picked with the URI the Storage Access Framework named
+    /// it by — which only the Android path ever carries.
+    List<PickedAttachment> picked() => [
+      PickedAttachment(
+        bytes: redactedPhoto(),
+        name: 'a.jpg',
+        mediaUri: 'content://media/external/images/media/42',
+      ),
+    ];
+
+    testWidgets('is not asked for while the switch is off', (tester) async {
+      final locator = FakeMediaLocation(position: const LatLng(53.55, 10.0));
+      await pumpAdder(tester, picked(), locator: locator);
+      await tapAttach(tester);
+
+      // The switch is the opt-in, and a granted permission is not one: nothing
+      // is asked, the picture keeps no place, and the sentence explains it.
+      expect(locator.asked, isEmpty);
+      expect((await stored()).single.lat, isNull);
+      expect(find.textContaining('withheld'), findsOneWidget);
+    });
+
+    testWidgets('is read from the original when the switch is on', (
+      tester,
+    ) async {
+      await prefs.setBool('photo_location_enabled', true);
+      final locator = FakeMediaLocation(position: const LatLng(53.55, 10.0));
+      await pumpAdder(tester, picked(), locator: locator);
+      await tapAttach(tester);
+
+      expect(locator.asked, ['content://media/external/images/media/42']);
+      final photo = (await stored()).single;
+      expect(photo.lat, closeTo(53.55, 0.0001));
+      expect(photo.lon, closeTo(10.0, 0.0001));
+      expect(photo.positionSource, AttachmentPositionSource.exif);
+      // There is nothing left to explain: the place is on the picture.
+      expect(find.textContaining('withheld'), findsNothing);
+    });
+
+    testWidgets('is not asked for when the permission has gone', (
+      tester,
+    ) async {
+      await prefs.setBool('photo_location_enabled', true);
+      final locator = FakeMediaLocation(
+        access: MediaLocationAccess.denied,
+        position: const LatLng(53.55, 10.0),
+      );
+      await pumpAdder(tester, picked(), locator: locator);
+      await tapAttach(tester);
+
+      // Revoked in the system settings since the switch was set. The stored
+      // switch is not the authority — the platform is, and it is asked afresh.
+      expect(locator.asked, isEmpty);
+      expect((await stored()).single.lat, isNull);
+      expect(find.textContaining('withheld'), findsOneWidget);
+    });
+
+    testWidgets('leaves the picture alone when the original says nothing', (
+      tester,
+    ) async {
+      await prefs.setBool('photo_location_enabled', true);
+      final locator = FakeMediaLocation();
+      await pumpAdder(tester, picked(), locator: locator);
+      await tapAttach(tester);
+
+      // A photograph the platform will not serve an original for, or one that
+      // never had a fix: asked, unanswered, and still worth saying so.
+      expect(locator.asked, hasLength(1));
+      expect((await stored()).single.lat, isNull);
+      expect(find.textContaining('withheld'), findsOneWidget);
+    });
+  });
+
   testWidgets('a picture nothing can read is refused by name', (tester) async {
     await pumpAdder(tester, [
-      (bytes: Uint8List.fromList([0, 1, 2, 3]), name: 'IMG_1.HEIC'),
+      PickedAttachment(
+        bytes: Uint8List.fromList([0, 1, 2, 3]),
+        name: 'IMG_1.HEIC',
+      ),
     ]);
     await tapAttach(tester);
 
@@ -282,7 +495,7 @@ void main() {
     // it is stored exactly as it arrived rather than re-encoded.
     final bytes = png(40, 30);
     await pumpAdder(tester, [
-      (bytes: bytes, name: 'ticket.png'),
+      PickedAttachment(bytes: bytes, name: 'ticket.png'),
     ], kind: AttachmentKind.document);
     await tapAttach(tester);
 
@@ -300,7 +513,10 @@ void main() {
     tester,
   ) async {
     await pumpAdder(tester, [
-      (bytes: Uint8List(kMaxAttachmentBytes + 1), name: 'scan.pdf'),
+      PickedAttachment(
+        bytes: Uint8List(kMaxAttachmentBytes + 1),
+        name: 'scan.pdf',
+      ),
     ], kind: AttachmentKind.document);
     await tapAttach(tester);
 
@@ -310,9 +526,12 @@ void main() {
 
   testWidgets('a refusal costs its own file and no others', (tester) async {
     await pumpAdder(tester, [
-      (bytes: png(20, 20), name: 'good.png'),
-      (bytes: Uint8List.fromList([0, 1, 2, 3]), name: 'bad.heic'),
-      (bytes: png(20, 20), name: 'also-good.png'),
+      PickedAttachment(bytes: png(20, 20), name: 'good.png'),
+      PickedAttachment(
+        bytes: Uint8List.fromList([0, 1, 2, 3]),
+        name: 'bad.heic',
+      ),
+      PickedAttachment(bytes: png(20, 20), name: 'also-good.png'),
     ]);
     await tapAttach(tester);
 
@@ -335,7 +554,7 @@ void main() {
     final groupId = await db.groupDao.groupItems(itemId, second);
 
     await pumpAdder(tester, [
-      (bytes: png(20, 20), name: 'ticket.png'),
+      PickedAttachment(bytes: png(20, 20), name: 'ticket.png'),
     ], onGroup: groupId);
     await tapAttach(tester);
 
@@ -379,6 +598,7 @@ void main() {
         ProviderScope(
           overrides: [
             repositoryProvider.overrideWithValue(repo),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             itemAttachmentsProvider.overrideWith(
               (ref, id) => Stream.value(attachments),
             ),
@@ -547,6 +767,7 @@ void main() {
         ProviderScope(
           overrides: [
             repositoryProvider.overrideWithValue(repo),
+            sharedPreferencesProvider.overrideWithValue(prefs),
             itemAttachmentsProvider.overrideWith(
               (ref, id) => Stream.value(rows),
             ),
@@ -598,4 +819,30 @@ void main() {
       expect(document.sortOrder, 2);
     });
   });
+}
+
+/// The platform, standing still: what it grants, what it would answer, and what
+/// it was asked about. The real one is a method channel into
+/// `MediaLocationBridge.kt`, which no test can reach.
+class FakeMediaLocation extends MediaLocationChannel {
+  FakeMediaLocation({this.access = MediaLocationAccess.granted, this.position});
+
+  final MediaLocationAccess access;
+  final LatLng? position;
+
+  /// Every URI the flow asked about, in order — the assertion that the app is
+  /// not quietly reading originals it was not told to.
+  final List<String> asked = [];
+
+  @override
+  Future<MediaLocationAccess> status() async => access;
+
+  @override
+  Future<MediaLocationAccess> request() async => access;
+
+  @override
+  Future<LatLng?> readLocation(String uri) async {
+    asked.add(uri);
+    return access == MediaLocationAccess.granted ? position : null;
+  }
 }

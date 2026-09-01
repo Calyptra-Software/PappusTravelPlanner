@@ -10,6 +10,7 @@ import 'core/licenses.dart';
 import 'core/app_info.dart';
 import 'core/providers.dart';
 import 'core/settings/locale_provider.dart';
+import 'features/attachments/application/media_location.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +28,13 @@ Future<void> main() async {
   // policy requires. Read here, once, so the request that needs it can read it
   // synchronously (see [appVersionProvider]).
   final packageInfo = await PackageInfo.fromPlatform();
+  // Whether Android will let this build read where a photograph was taken.
+  // Asked here, once, for the same reason the two above are: the settings
+  // screen draws a whole section on the answer, and one that arrived a few
+  // frames in would insert that section into a list already being scrolled.
+  // Nothing is *requested* here — this only reads what has already been
+  // granted, and the dialog still belongs to the switch alone.
+  final mediaLocation = await const MediaLocationChannel().status();
 
   runApp(
     ProviderScope(
@@ -37,6 +45,7 @@ Future<void> main() async {
           '${packageInfo.version}+${packageInfo.buildNumber}',
         ),
         isCiBuildProvider.overrideWithValue(isCiBuild(packageInfo.packageName)),
+        bootstrapMediaLocationProvider.overrideWithValue(mediaLocation),
       ],
       child: const PappusApp(),
     ),

@@ -11,10 +11,15 @@ import '../../../core/settings/language_dialog.dart';
 import '../../../core/settings/theme_mode_dialog.dart';
 import '../../../core/widgets/attribution.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../attachments/application/media_location.dart';
 import '../../attachments/application/storage_providers.dart';
+import '../../attachments/widgets/photo_location_setting.dart';
+import '../../costs/application/cost_providers.dart';
+import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_reasons_settings.dart';
 import '../../costs/presentation/currencies_settings.dart';
 import '../../costs/presentation/people_settings.dart';
+import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/presentation/transport_modes_settings.dart';
 import '../application/database_providers.dart';
 import 'about_settings.dart';
@@ -40,9 +45,8 @@ class _DatabaseTile extends ConsumerWidget {
     final dbPath = ref.watch(activeDbPathProvider);
     final storage = ref.watch(databaseStorageProvider).value;
 
-    // Absent until the numbers arrive, and absent on the web for the file size
-    // — a line that flickered in with a placeholder would be worse than one
-    // that simply appears.
+    // Absent until the numbers arrive — a line that flickered in with a
+    // placeholder would be worse than one that simply appears.
     final size = storage == null
         ? null
         : [
@@ -52,6 +56,18 @@ class _DatabaseTile extends ConsumerWidget {
                   '(${formatBytes(storage.attachmentBytes)})',
           ].join(' · ');
 
+    // The line's *space* is kept from the first frame all the same, which is
+    // not the same thing as a placeholder: nothing is drawn in it, and nothing
+    // moves when the figures land. A tile that grows a line half a second after
+    // the screen opens pushes everything below it down, under a finger that is
+    // very likely already scrolling — the settings list is long enough that
+    // nobody arrives and waits. Reserved only where a figure is going to
+    // appear: every platform with a file has a size to print, and the web has
+    // none (`databaseFileSize` is null there), so it reserves nothing rather
+    // than carrying a permanent gap.
+    final expectsSize = !kIsWeb;
+    final shownSize = size != null && size.isNotEmpty ? size : null;
+
     return ListTile(
       leading: const Icon(Icons.storage_outlined),
       title: Text(l10n.currentDatabase),
@@ -59,16 +75,19 @@ class _DatabaseTile extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(dbPath, style: theme.textTheme.bodySmall),
-          if (size != null && size.isNotEmpty)
+          if (expectsSize || shownSize != null)
             Text(
-              size,
+              // A space and not the empty string: an empty paragraph is what
+              // gets laid out at no height on some platforms, which would give
+              // back the shift this is here to remove.
+              shownSize ?? ' ',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
         ],
       ),
-      isThreeLine: size != null && size.isNotEmpty,
+      isThreeLine: expectsSize || shownSize != null,
     );
   }
 }
@@ -90,6 +109,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    _keepSectionsAlive(ref);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTitle)),
@@ -122,6 +142,16 @@ class SettingsScreen extends ConsumerWidget {
           const Divider(),
           _SectionHeader(title: l10n.peopleSection),
           const PeopleSettings(),
+          // Only where there is something to decide: Android 10 and later,
+          // which is the only place a photograph arrives with its coordinates
+          // taken out. Elsewhere the position is simply read, as it always was,
+          // and a switch offering to turn on what is already on would be a
+          // control that does nothing.
+          if (ref.watch(photoLocationProvider).supported) ...[
+            const Divider(),
+            _SectionHeader(title: l10n.photosSection),
+            const PhotoLocationSetting(),
+          ],
           const Divider(),
           _SectionHeader(title: l10n.databaseSection),
           const _DatabaseTile(),
@@ -180,6 +210,39 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  /// Holds on to what the sections below read, for as long as the screen is
+  /// open.
+  ///
+  /// Every one of them watches an `autoDispose` stream, and a `ListView`
+  /// unmounts a child once it has scrolled far enough past it — which drops the
+  /// last listener, disposes the stream, and rebuilds that section from
+  /// `AsyncLoading` when it comes back. Each section draws its "nothing here"
+  /// row while loading, so six people collapse to one line and grow again a
+  /// frame later.
+  ///
+  /// Below the viewport that is invisible. *Above* it, it is a jump of half a
+  /// screen: the scroll offset is a number, so content above it getting taller
+  /// means the same number now points further up the list — which is why this
+  /// was only ever felt scrolling upwards, and always at the same place, where
+  /// the four managed lists sit.
+  ///
+  /// Watching them here is the fix because the screen outlives its own
+  /// scrolling: nothing a section needs can be disposed while the screen is on
+  /// display. It is the arrangement `trip_checklists_section.dart` already
+  /// leans on from the overview beneath it, done deliberately rather than by
+  /// luck. The rebuild it costs is one the section was doing anyway.
+  void _keepSectionsAlive(WidgetRef ref) {
+    ref.watch(reasonRowsProvider);
+    ref.watch(currenciesProvider);
+    ref.watch(currencyCostCountsProvider);
+    ref.watch(transportModesProvider);
+    ref.watch(peopleRowsProvider);
+    // Not a height any more — `_DatabaseTile` keeps its line's space — but
+    // re-running a file stat and a count every time the tile is scrolled back
+    // to is work for nothing.
+    ref.watch(databaseStorageProvider);
   }
 
   // --- desktop: open / create in place ---

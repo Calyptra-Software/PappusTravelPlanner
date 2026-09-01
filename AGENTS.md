@@ -1300,16 +1300,65 @@ UI (features/*/presentation, *widgets)
   always takes, is what survives intact. A camera that genuinely stood on Null Island is
   therefore still not redaction: `exifPosition` refuses its `0, 0` on its own account,
   and its refs still say `N` and `E`.
-  Both doors redact, so there is no picker to switch to: *Add photo* goes out as
+  Both doors redact, so no *picker* fixes this by itself: *Add photo* goes out as
   `ACTION_GET_CONTENT` and *Add file* as `ACTION_OPEN_DOCUMENT`, and the round trip
   through the second is how the bytes above were obtained — SAF returned them zeroed
-  too.
-  Lifting the redaction needs `ACCESS_MEDIA_LOCATION` and probably
-  `MediaStore.setRequireOriginal`, which `file_picker` neither calls nor offers a hook
-  for — and it is a fourth permission whose scope is the *whole* shared collection rather
-  than the one file picked, which is a trade to be made deliberately and written into
-  `SECURITY.md` in the same commit, not slipped in. Until it is, the position is set by
-  hand on Android, which the sheet already offers.
+  too. What lifts it is the permission below, and the choice of door then matters for a
+  different reason.
+- **Lifting the redaction is a switch, and it costs the picker people know.**
+  `ACCESS_MEDIA_LOCATION` is declared and asked for at exactly one moment — *Read where a
+  photo was taken* in settings — which is the arrangement `device_location.dart` already
+  has for the locate button. Two facts are deliberately kept apart in
+  `media_location.dart`: the **permission**, which is the system's to grant and to take
+  back, and the **switch**, which is persisted and is the whole of the opt-in. Neither
+  alone is the answer — a grant cannot be handed back from inside an app, so a control
+  reading only the platform would have no off position short of the system settings; and a
+  stored bool alone would go on claiming the feature runs after the permission was revoked,
+  which is why the tile shows `active` (both halves) and why `activeNow()` re-asks the
+  platform before every import rather than trusting what was stored.
+  **Off is enforced on what is kept, not on what is asked for**, and that is the part that
+  is not obvious. A permission cannot be handed back from inside an app: once granted it
+  stays granted, Android goes on handing over unredacted photographs, and the switch would
+  read "off" while the coordinates went on arriving — measured on a phone, which is how it
+  was found. So `useForImport` answers with three states rather than a bool
+  (`PhotoPlaceUse`): `allowed` keeps the position and asks for one that is missing,
+  `withheld` **drops** whatever the bytes turn out to carry, and `unguarded` is every
+  platform where nothing was taken out of the file in the first place and the switch that
+  does not exist may not withhold anything either. `PreparedAttachment.withoutPosition` is
+  where the user's "no" actually lands. The tile says as much in its subtitle, and switching
+  off offers the system screen, since the grant itself can only be revoked there.
+  The **chooser does not change**, and the history is worth keeping because the reasoning
+  was good and the fact was wrong. `FileType.image` goes out as `ACTION_GET_CONTENT`, which
+  Android has taken over with its own photo picker, and that picker was reported to strip a
+  picture's coordinates unconditionally; the door therefore switched to `FileType.custom`
+  over `_photoExtensions` (`ACTION_OPEN_DOCUMENT`, the file browser) whenever a position was
+  wanted. On a real device with the permission granted, a photograph picked through the
+  *photo picker* arrives with its place on it — so that trade gave up the familiar chooser
+  for nothing, and is not made. A report is not a measurement. Where a device does redact
+  anyway, the second reading answers: the picker's copy of the bytes carries no coordinates,
+  so the URI is asked about again — `MediaStore.getMediaUri` (a SAF document URI) else the
+  URI itself (the photo picker's own, already MediaProvider's), then `setRequireOriginal`,
+  in `MediaLocationBridge.kt`. Where that fails too, the app says the position was withheld,
+  which is the honest end of it.
+  Three boundaries hold the second reading to the one file: the URI reaches Dart only as
+  `AndroidPlatformFile.safHandle` (hence `android_file_picker` as a direct dependency, and
+  hence `PickedAttachment` being a class — a record has no field to leave out), the grant
+  is `transient` and never persisted, and **only two numbers come back** — the stored
+  picture is still the re-encoded, EXIF-stripped one, so what the permission changes is
+  what the app *knows* and not what it keeps. `READ_MEDIA_IMAGES` is deliberately not
+  declared: the app has never enumerated a gallery and this does not start. The second
+  reading is asked only when the first found nothing, which also means a photograph that
+  genuinely never had a fix costs one header read to say so. Everything about this is off
+  on a fresh install and absent entirely below Android 10 (`PhotoLocationState.supported`),
+  where nothing was taken out of the file in the first place — a switch offering to turn on
+  what is already on is a control that does nothing. That last answer is resolved in `main`
+  and overridden in (`bootstrapMediaLocationProvider`), beside the database path and the
+  version, and here the reason is visible rather than merely tidy: it decides whether a
+  whole **section** of the settings list is drawn, so fetching it a few frames in inserts
+  that section into a list somebody is already scrolling and everything below it jumps. A
+  `checkSelfPermission` before the first frame costs nothing anyone can see. `activeNow()`
+  still re-asks the platform before every import, because a grant can be taken away while
+  the app is running — what is bootstrapped is the *first* answer, not the only one.
 - **A photo is on the map when it carries a position, and never otherwise.**
   `MapPhoto` (`map_features.dart`) draws the stored **thumbnail**, framed in the owning
   entry's color — which is why one is kept beside every picture. Falling back to the
@@ -1616,6 +1665,22 @@ Three smaller traps, each found by a test that had to be written twice:
   picker, so the test watches it too, standing in for the screen beneath. It has to be
   overridden even where no picker is opened, or that watch opens a real `watchTrips()` and
   the timer above comes back.
+- **A long screen must hold what its sections read, or scrolling disposes them.**
+  `SettingsScreen` watches `reasonRowsProvider`, `currenciesProvider`,
+  `currencyCostCountsProvider`, `transportModesProvider`, `peopleRowsProvider` and
+  `databaseStorageProvider` itself (`_keepSectionsAlive`), though it draws none of them: a
+  `ListView` unmounts a child it has scrolled far enough past, which drops the last listener
+  on an `autoDispose` stream and disposes it. Coming back, the section rebuilds from
+  `AsyncLoading`, draws its "nothing here" row, and grows to its real height a frame later.
+  Below the viewport nobody sees that; **above** it, the scroll offset is a number, so
+  content over it getting taller means the same number points further up the list — a jump
+  of half a screen, only ever felt scrolling *upwards*, and always in the same place. That
+  is the same fact `trip_checklists_section.dart` records from the other side (its picker
+  works "only because the overview screen underneath keeps it alive") and
+  `TransportSearchController._modes` records from the third: a provider is alive because
+  something is watching it, and *what* is watching must outlive the scrolling. Held by the
+  screen rather than by keep-alives, since the screen is the thing that outlives it.
+  `settings_sections_alive_test.dart` asserts the subscription rather than the pixels.
 - **A provider holding a timer must be disposed inside the test body.** The binding checks
   for pending timers *before* tear-downs run, so `addTearDown(container.dispose)` reports
   `nowProvider`'s next tick as a leak (`test/clock_test.dart`). Close the subscription,

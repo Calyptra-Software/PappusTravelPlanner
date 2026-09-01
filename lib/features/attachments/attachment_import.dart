@@ -138,6 +138,53 @@ final class PreparedAttachment {
   final bool locationRedacted;
 
   int get byteSize => bytes.length;
+
+  /// The same photograph, with the place its own EXIF gave up only on a second
+  /// reading.
+  ///
+  /// Android hands a picked picture over with its coordinates zeroed unless the
+  /// app holds `ACCESS_MEDIA_LOCATION`, and even then only the *original* behind
+  /// the picker's copy carries them — see `media_location.dart`. So the position
+  /// can arrive after the bytes have been read, from the platform rather than
+  /// from them, and it is still [AttachmentPositionSource.exif]: it is the same
+  /// number the same file was written with, fetched by a different route.
+  ///
+  /// [locationRedacted] goes false with it. The flag exists to explain a missing
+  /// position, and there is no longer one to explain.
+  PreparedAttachment withExifPosition(LatLng position) => PreparedAttachment(
+    kind: kind,
+    mimeType: mimeType,
+    bytes: bytes,
+    name: name,
+    thumbnail: thumbnail,
+    width: width,
+    height: height,
+    position: position,
+    positionSource: AttachmentPositionSource.exif,
+  );
+
+  /// The same photograph with no place on it.
+  ///
+  /// Not a refusal to *look* — by the time this is called the bytes have been
+  /// read and the position is either in them or it is not. It is a refusal to
+  /// **keep**, and that is where the switch in settings has to act: an Android
+  /// permission cannot be handed back from inside an app, so once it has been
+  /// granted a photograph arrives unredacted whether the app still wants it to
+  /// or not. Dropping it here is the only place a user's "no" can be honoured.
+  ///
+  /// [locationRedacted] is left alone: it records what the *platform* did on
+  /// the way in, which is still true, and the app declining to keep a position
+  /// does not make one having been withheld untrue.
+  PreparedAttachment withoutPosition() => PreparedAttachment(
+    kind: kind,
+    mimeType: mimeType,
+    bytes: bytes,
+    name: name,
+    thumbnail: thumbnail,
+    width: width,
+    height: height,
+    locationRedacted: locationRedacted,
+  );
 }
 
 /// Reads [bytes] into the form they are stored in.
