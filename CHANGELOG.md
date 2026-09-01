@@ -16,7 +16,7 @@ exact commits.
   of its metadata. Desktop, the web and Android 9 and older never lost the position and
   have no such setting.
 - **The settings screen stays still while you scroll it.** Scrolling back up through it
-  jumped by about half a screen: the managed lists — cost reasons, currencies, transport
+  jumped up: the managed lists — cost reasons, currencies, transport
   modes, people — were thrown away once you had scrolled past them and drew themselves
   empty for a moment on the way back. The line saying what the database weighs no longer
   grows into place after the screen has opened, either.
