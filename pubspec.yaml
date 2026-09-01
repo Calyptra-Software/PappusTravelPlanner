@@ -98,6 +98,11 @@ dev_dependencies:
   # Lets a test stand in for the location plugin (`MockPlatformInterfaceMixin`),
   # so the permission-and-fix state machine can be exercised without a receiver.
   plugin_platform_interface: ^2.1.8
+  # The same trick for the two file choosers, which the photo door picks between
+  # by platform and by whether a position is wanted — the one decision on that
+  # path that is not a detail (see attachment_flow.dart). `file_picker` exports
+  # its own interface; `file_selector` does not, hence this one by name.
+  file_selector_platform_interface: ^2.7.0
 
 flutter:
   uses-material-design: true

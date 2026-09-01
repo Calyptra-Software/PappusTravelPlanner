@@ -11,12 +11,15 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/features/attachments/application/storage_providers.dart';
 import 'package:travelplanner/features/costs/application/cost_providers.dart';
+import 'package:travelplanner/features/attachments/application/media_location.dart';
+import 'package:travelplanner/features/attachments/widgets/photo_location_setting.dart';
 import 'package:travelplanner/features/costs/application/currency_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/settings/presentation/settings_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
-/// A settings screen that does not change height while it is being scrolled.
+/// The settings screen: the section that is only there on Android, and a list
+/// that does not change height while it is being scrolled.
 ///
 /// Every section there reads an `autoDispose` stream, and a `ListView` unmounts
 /// a child once it has scrolled far enough past it — which drops the last
@@ -57,20 +60,16 @@ void main() {
     return (stream: stream, listeners: () => listeners);
   }
 
-  testWidgets('a section scrolled past and back is still subscribed', (
-    tester,
-  ) async {
-    // Enough of them that the section is taller than a screen either way — a
-    // list of six collapsing to one "no people" row is the half-screen jump.
-    final people = counted<List<Person>>([
-      for (var i = 1; i <= 6; i++)
-        Person(id: i, name: 'Person $i', isMe: false),
-    ]);
-    final modes = counted<List<TransportModeRow>>(const []);
-    final reasons = counted<List<CostReason>>(const []);
-    final currencies = counted<List<CurrencyRow>>(const []);
-    final counts = counted<Map<int, int>>(const {});
-
+  /// The screen, with every section's stream handed to it.
+  Future<void> pumpSettings(
+    WidgetTester tester, {
+    Stream<List<Person>> people = const Stream.empty(),
+    Stream<List<TransportModeRow>> modes = const Stream.empty(),
+    Stream<List<CostReason>> reasons = const Stream.empty(),
+    Stream<List<CurrencyRow>> currencies = const Stream.empty(),
+    Stream<Map<int, int>> counts = const Stream.empty(),
+    MediaLocationAccess mediaLocation = MediaLocationAccess.unsupported,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -78,11 +77,12 @@ void main() {
           bootstrapDbPathProvider.overrideWithValue('/tmp/pappus.sqlite'),
           appVersionProvider.overrideWithValue('1.0.0+1'),
           isCiBuildProvider.overrideWithValue(false),
-          peopleRowsProvider.overrideWith((ref) => people.stream),
-          transportModesProvider.overrideWith((ref) => modes.stream),
-          reasonRowsProvider.overrideWith((ref) => reasons.stream),
-          currenciesProvider.overrideWith((ref) => currencies.stream),
-          currencyCostCountsProvider.overrideWith((ref) => counts.stream),
+          bootstrapMediaLocationProvider.overrideWithValue(mediaLocation),
+          peopleRowsProvider.overrideWith((ref) => people),
+          transportModesProvider.overrideWith((ref) => modes),
+          reasonRowsProvider.overrideWith((ref) => reasons),
+          currenciesProvider.overrideWith((ref) => currencies),
+          currencyCostCountsProvider.overrideWith((ref) => counts),
           // Reads the database file and counts its attachments; neither exists
           // here, and neither is what this test is about.
           databaseStorageProvider.overrideWith(
@@ -103,6 +103,29 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('a section scrolled past and back is still subscribed', (
+    tester,
+  ) async {
+    // Enough of them that the section is taller than a screen either way — a
+    // list of six collapsing to one "no people" row is the half-screen jump.
+    final people = counted<List<Person>>([
+      for (var i = 1; i <= 6; i++)
+        Person(id: i, name: 'Person $i', isMe: false),
+    ]);
+    final modes = counted<List<TransportModeRow>>(const []);
+    final reasons = counted<List<CostReason>>(const []);
+    final currencies = counted<List<CurrencyRow>>(const []);
+    final counts = counted<Map<int, int>>(const {});
+    await pumpSettings(
+      tester,
+      people: people.stream,
+      modes: modes.stream,
+      reasons: reasons.stream,
+      currencies: currencies.stream,
+      counts: counts.stream,
+    );
 
     // Subscribed from the first build — the screen asks for them itself, not
     // through whichever section happens to be on screen.
@@ -148,5 +171,32 @@ void main() {
 
     expect(find.text('Person 6'), findsOneWidget);
     expect(people.listeners(), 1);
+  });
+
+  group('the photos section', () {
+    testWidgets('is there once the platform has the question', (tester) async {
+      await pumpSettings(tester, mediaLocation: MediaLocationAccess.denied);
+
+      // Denied, not granted: the switch is drawn wherever the question exists,
+      // which is what makes it a way *in* to the permission rather than a
+      // readout of one already held.
+      await tester.scrollUntilVisible(
+        find.text('Read where a photo was taken'),
+        200,
+        scrollable: null,
+      );
+      expect(find.byType(PhotoLocationSetting), findsOneWidget);
+      expect(find.text('Photos'), findsOneWidget);
+    });
+
+    testWidgets('and nowhere a photograph arrives intact', (tester) async {
+      await pumpSettings(tester, mediaLocation: MediaLocationAccess.notNeeded);
+
+      // Android 9 and older, the desktop and the web: nothing was taken out of
+      // the file, so a switch offering to turn on what is already on would be a
+      // control that does nothing — header and all.
+      expect(find.byType(PhotoLocationSetting), findsNothing);
+      expect(find.text('Photos'), findsNothing);
+    });
   });
 }

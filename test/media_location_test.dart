@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -6,10 +8,14 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import 'package:travelplanner/features/attachments/application/media_location.dart';
 
+import 'support/fake_media_location.dart';
+
 /// The switch that lets a photograph bring its place, and the permission behind
 /// it — two facts that are deliberately not one, which is exactly what these
 /// stand on.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late SharedPreferences prefs;
 
   setUp(() async {
@@ -31,7 +37,7 @@ void main() {
         sharedPreferencesProvider.overrideWithValue(prefs),
         bootstrapMediaLocationProvider.overrideWithValue(startup),
         mediaLocationProvider.overrideWithValue(
-          FakePlatform(now ?? startup, position: position),
+          FakeMediaLocation(access: now ?? startup, position: position),
         ),
       ],
     );
@@ -150,23 +156,128 @@ void main() {
       );
     });
   });
-}
 
-/// The platform with one fixed answer. The real one is a method channel into
-/// `MediaLocationBridge.kt`, which no test can reach.
-class FakePlatform extends MediaLocationChannel {
-  FakePlatform(this.access, {this.position});
+  /// The channel itself, against a messenger standing in for Android.
+  ///
+  /// Everything above stubs [MediaLocationChannel] out; this is the one place
+  /// its own two jobs are exercised — turning the bridge's four words into an
+  /// answer, and turning a pair of numbers into a position — including every way
+  /// the platform can decline to say anything, each of which has to come back as
+  /// an answer rather than as an exception in the middle of an import.
+  group('the channel into the platform', () {
+    const channel = MethodChannel('dev.calyptra.pappus/media_location');
+    const platform = MediaLocationChannel();
+    late List<MethodCall> calls;
 
-  final MediaLocationAccess access;
-  final LatLng? position;
+    /// Answers every call with [reply], recording what was asked. Not calling
+    /// this at all is itself a case: an unanswered channel is what a build
+    /// without the bridge looks like.
+    void answering(Object? Function(MethodCall call) reply) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            calls.add(call);
+            return reply(call);
+          });
+    }
 
-  @override
-  Future<MediaLocationAccess> status() async => access;
+    setUp(() {
+      calls = [];
+      // flutter_test reports Android by default, which is the platform this
+      // whole file is about; named rather than assumed, since every branch
+      // below turns on it.
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    });
 
-  @override
-  Future<MediaLocationAccess> request() async => access;
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+      debugDefaultTargetPlatformOverride = null;
+    });
 
-  @override
-  Future<LatLng?> readLocation(String uri) async =>
-      access == MediaLocationAccess.granted ? position : null;
+    test('reads the four words the bridge can say', () async {
+      const words = {
+        'granted': MediaLocationAccess.granted,
+        'denied': MediaLocationAccess.denied,
+        'deniedForever': MediaLocationAccess.deniedForever,
+        'notNeeded': MediaLocationAccess.notNeeded,
+      };
+      for (final entry in words.entries) {
+        answering((_) => entry.key);
+        expect(await platform.status(), entry.value);
+        expect(await platform.request(), entry.value);
+      }
+      expect(calls.map((c) => c.method), contains('status'));
+      expect(calls.map((c) => c.method), contains('request'));
+    });
+
+    test('anything else it might say is no answer', () async {
+      answering((_) => 'perhaps');
+      expect(await platform.status(), MediaLocationAccess.unsupported);
+      answering((_) => null);
+      expect(await platform.status(), MediaLocationAccess.unsupported);
+    });
+
+    test('a refusal from the platform is an answer, not a crash', () async {
+      answering((_) => throw PlatformException(code: 'no'));
+      expect(await platform.status(), MediaLocationAccess.unsupported);
+      expect(await platform.readLocation('content://x'), isNull);
+      // Nothing to open and nothing to say about it.
+      await expectLater(platform.openSettings(), completes);
+    });
+
+    test('no bridge at all is an answer too', () async {
+      // No handler registered: the build this app runs in on every platform
+      // but Android, and the state a stale engine leaves behind.
+      expect(await platform.status(), MediaLocationAccess.unsupported);
+      expect(await platform.readLocation('content://x'), isNull);
+    });
+
+    test('the way out of a permanent refusal is one call', () async {
+      answering((_) => null);
+      await platform.openSettings();
+      expect(calls.single.method, 'openSettings');
+    });
+
+    test('a position comes back as one, and is asked for by URI', () async {
+      answering((_) => {'lat': 53.55, 'lon': 10.0});
+      expect(
+        await platform.readLocation('content://media/external/images/media/7'),
+        const LatLng(53.55, 10.0),
+      );
+      expect(calls.single.method, 'readLocation');
+      expect(calls.single.arguments, {
+        'uri': 'content://media/external/images/media/7',
+      });
+    });
+
+    test('and a reading that is not a place does not', () async {
+      // Every one of these refused for the reason `exifPosition` refuses it:
+      // nothing said, something that is not a number, somewhere off the world,
+      // and Null Island — which is what a camera with no fix writes and what a
+      // redaction leaves behind.
+      final refused = <Object?>[
+        null,
+        {'lat': '53.55', 'lon': '10.0'},
+        {'lat': 91.0, 'lon': 10.0},
+        {'lat': 53.55, 'lon': 181.0},
+        {'lat': 0.0, 'lon': 0.0},
+      ];
+      for (final answer in refused) {
+        answering((_) => answer);
+        expect(await platform.readLocation('content://x'), isNull);
+      }
+    });
+
+    test('and off Android nothing is asked at all', () async {
+      answering((_) => 'granted');
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+
+      // The desktop and the web never had anything taken out of a photograph,
+      // so there is no bridge, no permission, and nothing to ask about.
+      expect(await platform.status(), MediaLocationAccess.notNeeded);
+      expect(await platform.readLocation('content://x'), isNull);
+      await platform.openSettings();
+      expect(calls, isEmpty);
+    });
+  });
 }
