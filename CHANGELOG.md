@@ -5,6 +5,16 @@ exact commits.
 
 ## Unreleased
 
+- **The Android app no longer contains any Google Play Services code.** Where the device
+  is now comes from Android itself rather than from Google's location library, which was
+  being linked in by the plugin the app uses for it. Nothing about the locate button
+  changes, and nothing is asked of you that was not asked before — the same two location
+  permissions, still only when you press it. On a phone running Android 11 or older with
+  Play Services installed, the first fix can take a moment longer than it used to; from
+  Android 12 onwards the system's own combined provider is used and there is no
+  difference. It is also what makes a listing on F-Droid possible, which does not accept
+  apps carrying proprietary code.
+
 - **A photo can bring the place it was taken, on Android too.** Android takes a photo's
   coordinates out before handing it to an app, so one attached here arrived with no place
   and a note saying why. *Settings → Photos → Read where a photo was taken* asks for the

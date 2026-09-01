@@ -76,6 +76,8 @@ dependencies:
   # launch. Endorsed on all six targets (Linux goes through GeoClue over D-Bus),
   # so the map keeps the platform coverage flutter_map was chosen for. Nothing
   # of what it answers is stored or sent anywhere; see features/map/location/.
+  # Its Android half comes from third_party/, not from pub.dev — see the
+  # dependency_overrides below.
   geolocator: ^14.0.3
 
 dev_dependencies:
@@ -103,6 +105,20 @@ dev_dependencies:
   # path that is not a detail (see attachment_flow.dart). `file_picker` exports
   # its own interface; `file_selector` does not, hence this one by name.
   file_selector_platform_interface: ^2.7.0
+
+# The Android half of `geolocator` is taken from a copy in this repository
+# rather than from pub.dev. The published package depends unconditionally on
+# `com.google.android.gms:play-services-location`, so every APK built from it
+# carries proprietary Google code -- which F-Droid refuses, and which this app
+# has no use for: it asks for a position on a button press and draws a mark on
+# a map, and `LocationManagerClient` (upstream's own, Play-Services-free code
+# path) does that through Android's LocationManager. There is no Play Store
+# build to keep GMS for, so the swap is unconditional rather than a variant.
+# third_party/geolocator_android/README.md documents the three edits, what they
+# cost, and how to rebase them onto a new release.
+dependency_overrides:
+  geolocator_android:
+    path: third_party/geolocator_android
 
 flutter:
   uses-material-design: true

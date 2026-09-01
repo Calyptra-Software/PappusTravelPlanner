@@ -18,6 +18,9 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - build/**
+    # Somebody else's code, kept verbatim on purpose (see the README beside it),
+    # so this project's lints are not about it either.
+    - third_party/**
     - android/**
     - ios/**
     - web/**

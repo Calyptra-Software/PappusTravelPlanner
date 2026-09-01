@@ -195,6 +195,13 @@ between an exact and an approximate position; the app works either way. The medi
 one is granted to nobody until it is asked for, and the app works without it — a
 photograph simply attaches without the place it was taken.
 
+The Android build also links **no Google Play Services code at all**. Positioning
+goes through Android's own `LocationManager`, using a copy of the `geolocator`
+Android plugin with the Play Services client removed
+(`third_party/geolocator_android`). It is checkable rather than a claim: the
+release APK's dex holds no reference to `com/google/android/gms`, and the
+resolved Gradle runtime classpath names no `play-services` artifact.
+
 ## What happens after a report
 
 I will confirm what you found, or explain why I think it does not hold. If it

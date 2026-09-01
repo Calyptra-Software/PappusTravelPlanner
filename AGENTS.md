@@ -763,6 +763,30 @@ UI (features/*/presentation, *widgets)
   is still a pointing act — but only the reading the press was waiting for is
   taken, and a map tap made while waiting wins, or a choice made at a doorway
   would follow its owner down the street.
+- **The Android half of `geolocator` is a copy in this repository, without Google
+  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with three
+  edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,
+  and the branch in `GeolocationManager` that chose between them — and `dependency_overrides`
+  in `pubspec.yaml` puts it in place of the pub.dev package for **every** build, not for a
+  variant: there is no Play Store listing to keep GMS for, and one artifact per release is
+  what leaves the door open to reproducible builds later. The reason is F-Droid, which
+  refuses proprietary code on two independent counts — its source scanner matches the Gradle
+  line against a non-free list, and its APK scanner runs `dexdump` and matches
+  `com/google/android/gms` against the *whole* output, which is why upstream's documented
+  `exclude group:` is not enough: that removes the class definitions and leaves the
+  references in the dex. What is given up is the Play Services dialog that switches location
+  on without leaving the app, which this app never used — `device_location.dart` answers
+  those three states itself — and, below Android 12, the fused provider:
+  `LocationManagerClient` prefers `LocationManager.FUSED_PROVIDER` from 12 onwards and falls
+  back to GPS. Everything else is upstream's own code, the foreground service included, so
+  recording a track later needs nothing from Google either. The copy carries no permissions
+  of its own; the four in `SECURITY.md` are still the app's own statement. Keep the edits
+  minimal and the version equal to the upstream release they were taken from — the copy is
+  meant to stay a diff that can be rebased, forked, or offered upstream, where the
+  maintainer has said he would take a Play-Services-free path as long as GMS stays the
+  default (Baseflow/flutter-geolocator#841). `third_party/geolocator_android/README.md`
+  holds the details; `analysis_options.yaml` excludes the directory, because this project's
+  lints are not about somebody else's code.
 - **Every modal sheet is opened by `showAppSheet`** (`core/widgets/app_sheet.dart`),
   which is where four settings that belong together now live. A sheet is `useSafeArea`
   and capped at the screen less the status bar less one touch target, so it stops below
