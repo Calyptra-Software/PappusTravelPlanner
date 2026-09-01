@@ -3,6 +3,24 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **A photo can bring the place it was taken, on Android too.** Android takes a photo's
+  coordinates out before handing it to an app, so one attached here arrived with no place
+  and a note saying why. *Settings → Photos → Read where a photo was taken* asks for the
+  permission to read them, and it is off until you turn it on. Turn it off again and photos
+  go back to arriving without their place at once — Android itself keeps the permission
+  until you revoke it on the app's own page in the system settings, and the app offers you
+  that screen when you switch off. Nothing else about attaching a photo changes: the same
+  picker, and the picture that is stored is still the scaled copy with everything else out
+  of its metadata. Desktop, the web and Android 9 and older never lost the position and
+  have no such setting.
+- **The settings screen stays still while you scroll it.** Scrolling back up through it
+  jumped by about half a screen: the managed lists — cost reasons, currencies, transport
+  modes, people — were thrown away once you had scrolled past them and drew themselves
+  empty for a moment on the way back. The line saying what the database weighs no longer
+  grows into place after the screen has opened, either.
+
 ## 1.10.0 — 2026-08-30
 
 - **Picking more than one file no longer breaks an import.** Marking two files at once
