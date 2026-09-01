@@ -2252,7 +2252,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoLocationSubtitle =>
-      'Android hides where a photo was taken unless you allow it. Turning this on asks for that permission, and photos are then chosen through the file browser — the photo picker removes the position before the app can see it.';
+      'Android hides where a photo was taken unless you allow it. Turning this on asks for that permission; with it off, a photo is attached without its place even where Android would hand it over.';
+
+  @override
+  String get photoLocationStillGranted =>
+      'Photos will be attached without their place. Android keeps the permission until you revoke it in the system settings.';
 
   @override
   String get photoLocationDenied =>

@@ -27,6 +27,35 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 
+/// What one import may do with the place a photograph carries.
+///
+/// Three answers and not a bool, because "the switch is off" and "there is no
+/// switch" are different states that must behave differently — and because the
+/// switch has to be able to say *no* to a position the file is carrying, which
+/// is the one thing a bool named "should we try harder" could not express.
+enum PhotoPlaceUse {
+  /// Nothing on this platform takes a photograph's place out of it and nothing
+  /// has to be allowed to read one: the desktop, the web, Android 9 and older.
+  /// Whatever the file says is kept, as it always was.
+  unguarded,
+
+  /// Allowed and asked for. The position in the file is kept, and one the
+  /// picker's copy came without is asked for again by URI.
+  allowed,
+
+  /// The switch is off where the switch exists, so **any** position the bytes
+  /// turn out to carry is dropped.
+  ///
+  /// This is the whole of the opt-in, and it has to live here rather than in
+  /// what the app asks the platform for. A permission cannot be handed back
+  /// from inside an app: once granted it stays granted, and Android then hands
+  /// over an unredacted photograph whether or not this app still wants one. So
+  /// the switch that reads "off" and a picture that arrives with its place on
+  /// it are perfectly compatible — and the only place the user's "no" can be
+  /// honoured is the moment the app decides what to keep.
+  withheld,
+}
+
 /// Where the permission stands, as the platform sees it.
 enum MediaLocationAccess {
   /// Not Android, or Android 9 and older: nothing is redacted, so there is
@@ -251,10 +280,14 @@ class PhotoLocationController extends Notifier<PhotoLocationState> {
 
   /// The answer the attachment flow needs, freshly checked.
   ///
-  /// Not `state.active` read straight off: the permission may have been revoked
-  /// since the last look, and the picker this decides between is about to open.
-  Future<bool> activeNow() async {
-    if (!state.enabled) return false;
-    return await refresh() == MediaLocationAccess.granted;
+  /// Not read straight off the state: the permission may have been revoked in
+  /// the system settings since the last look, and an import is about to start.
+  /// The platform is asked again unless the answer cannot depend on it.
+  Future<PhotoPlaceUse> useForImport() async {
+    if (!state.supported) return PhotoPlaceUse.unguarded;
+    if (!state.enabled) return PhotoPlaceUse.withheld;
+    return await refresh() == MediaLocationAccess.granted
+        ? PhotoPlaceUse.allowed
+        : PhotoPlaceUse.withheld;
   }
 }

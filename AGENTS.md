@@ -1316,20 +1316,31 @@ UI (features/*/presentation, *widgets)
   stored bool alone would go on claiming the feature runs after the permission was revoked,
   which is why the tile shows `active` (both halves) and why `activeNow()` re-asks the
   platform before every import rather than trusting what was stored.
-  What it buys is two readings, and **both are needed**, which is the part that is not
-  obvious. The permission alone does not do it: `FileType.image` goes out as
-  `ACTION_GET_CONTENT`, which Android has *taken over* with its own photo picker, and that
-  picker strips a picture's coordinates unconditionally — the permission does not reach it,
-  so the nicest chooser is the one chooser that can never answer. With the switch on the
-  door therefore becomes `FileType.custom` over `_photoExtensions`, which goes out as
-  `ACTION_OPEN_DOCUMENT`: the file browser, filtered to the same pictures, whose answer
-  names a row the platform will serve an original of. And the picker's *copy* of the bytes
-  is redacted whatever this process holds, so a photograph that still arrives without a
-  position is asked about a second time by URI — `MediaStore.getMediaUri` then
-  `setRequireOriginal`, in `MediaLocationBridge.kt`. The trade is stated in the tile's own
-  subtitle rather than hidden, because giving up the familiar picker is exactly the kind of
-  thing an app must not do on somebody's behalf.
-  Three boundaries hold it to the one file: the URI reaches Dart only as
+  **Off is enforced on what is kept, not on what is asked for**, and that is the part that
+  is not obvious. A permission cannot be handed back from inside an app: once granted it
+  stays granted, Android goes on handing over unredacted photographs, and the switch would
+  read "off" while the coordinates went on arriving — measured on a phone, which is how it
+  was found. So `useForImport` answers with three states rather than a bool
+  (`PhotoPlaceUse`): `allowed` keeps the position and asks for one that is missing,
+  `withheld` **drops** whatever the bytes turn out to carry, and `unguarded` is every
+  platform where nothing was taken out of the file in the first place and the switch that
+  does not exist may not withhold anything either. `PreparedAttachment.withoutPosition` is
+  where the user's "no" actually lands. The tile says as much in its subtitle, and switching
+  off offers the system screen, since the grant itself can only be revoked there.
+  The **chooser does not change**, and the history is worth keeping because the reasoning
+  was good and the fact was wrong. `FileType.image` goes out as `ACTION_GET_CONTENT`, which
+  Android has taken over with its own photo picker, and that picker was reported to strip a
+  picture's coordinates unconditionally; the door therefore switched to `FileType.custom`
+  over `_photoExtensions` (`ACTION_OPEN_DOCUMENT`, the file browser) whenever a position was
+  wanted. On a real device with the permission granted, a photograph picked through the
+  *photo picker* arrives with its place on it — so that trade gave up the familiar chooser
+  for nothing, and is not made. A report is not a measurement. Where a device does redact
+  anyway, the second reading answers: the picker's copy of the bytes carries no coordinates,
+  so the URI is asked about again — `MediaStore.getMediaUri` (a SAF document URI) else the
+  URI itself (the photo picker's own, already MediaProvider's), then `setRequireOriginal`,
+  in `MediaLocationBridge.kt`. Where that fails too, the app says the position was withheld,
+  which is the honest end of it.
+  Three boundaries hold the second reading to the one file: the URI reaches Dart only as
   `AndroidPlatformFile.safHandle` (hence `android_file_picker` as a direct dependency, and
   hence `PickedAttachment` being a class — a record has no field to leave out), the grant
   is `transient` and never persisted, and **only two numbers come back** — the stored

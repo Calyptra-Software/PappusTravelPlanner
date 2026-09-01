@@ -59,15 +59,19 @@ final class PickedAttachment {
 /// others — a refusal is about one file — and the first refusal's reason is what
 /// gets said, since three snack bars in a row say nothing.
 ///
-/// **On Android the photo door has two shapes, and the switch in settings picks
-/// between them** (see `media_location.dart`). Off — the default — is exactly
-/// what it always was. On, two things change together, because neither is any
-/// use alone: the chooser becomes the file browser rather than the system's
-/// photo picker, which strips a picture's coordinates whatever permission the
-/// app holds; and every photograph that still arrives without a position is
-/// asked about again, by URI, against the original the picker only ever handed
-/// over a redacted copy of. Nothing more of the file crosses back — the picture
-/// that is stored is still the re-encoded, EXIF-stripped one.
+/// **On Android the switch in settings decides what becomes of a photograph's
+/// place** (see [PhotoPlaceUse]). On, it is kept — and one the picker's copy
+/// came without is asked for again by URI, against the original the system will
+/// serve to a process holding `ACCESS_MEDIA_LOCATION`. Two numbers cross back
+/// and nothing else; the picture that is stored is still the re-encoded,
+/// EXIF-stripped one.
+///
+/// Off, any position the bytes turn out to carry is **dropped**, and that is
+/// the part worth stating because it looks like belt and braces and is not. A
+/// permission cannot be handed back from inside an app: once granted it stays
+/// granted, Android goes on handing over unredacted photographs, and a switch
+/// that only decided what to *ask* for would read "off" while the coordinates
+/// went on arriving. Measured on a phone, which is how this was found.
 Future<int> addAttachments(
   BuildContext context,
   WidgetRef ref, {
@@ -80,20 +84,22 @@ Future<int> addAttachments(
   final l10n = AppLocalizations.of(context);
   final messenger = ScaffoldMessenger.of(context);
 
-  // Asked before the chooser opens, because it decides which chooser opens.
-  // Freshly checked rather than read off the switch: the permission can be
-  // taken away in the system settings between one photograph and the next.
+  // Asked before the chooser opens, because it decides what the chooser is
+  // asked for. Freshly checked rather than read off the switch: the permission
+  // can be taken away in the system settings between one photograph and the
+  // next. A document has no position either way, so the question is a
+  // photograph's alone.
   final locator = ref.read(mediaLocationProvider);
-  final withLocation =
-      kind == AttachmentKind.photo &&
-      await ref.read(photoLocationProvider.notifier).activeNow();
+  final place = kind == AttachmentKind.photo
+      ? await ref.read(photoLocationProvider.notifier).useForImport()
+      : PhotoPlaceUse.unguarded;
   if (!context.mounted) return 0;
 
   final picked =
       await (pickFiles ??
           () => _pick(
             photosOnly: kind == AttachmentKind.photo,
-            withLocation: withLocation,
+            withLocation: place == PhotoPlaceUse.allowed,
           ))();
   if (picked == null || picked.isEmpty) return 0;
 
@@ -140,14 +146,19 @@ Future<int> addAttachments(
       refusal ??= l10n.attachmentUnreadable;
       continue;
     }
-    // The second reading, and the only one that can answer: what came back
-    // from the picker is a copy Android made with a plain stream, and its GPS
-    // tags are zeroed in that copy however much this process is allowed to
-    // know. Asked only when the first reading found nothing — a photograph that
-    // arrived with its place needs no second opinion, and one that never had a
-    // fix costs a header read to say so.
+    // What becomes of the place. Withholding it is a decision about what to
+    // *keep*, so it happens here, after the bytes have been read, and not by
+    // asking the platform for less — see [PhotoPlaceUse.withheld].
     final mediaUri = file.mediaUri;
-    if (withLocation && prepared.position == null && mediaUri != null) {
+    if (place == PhotoPlaceUse.withheld) {
+      prepared = prepared.withoutPosition();
+    } else if (place == PhotoPlaceUse.allowed &&
+        prepared.position == null &&
+        mediaUri != null) {
+      // The second reading, for a picker whose copy came redacted anyway. Asked
+      // only when the first found nothing: a photograph that arrived with its
+      // place needs no second opinion, and one that never had a fix costs a
+      // header read to say so.
       final position = await locator.readLocation(mediaUri);
       if (position != null) prepared = prepared.withExifPosition(position);
     }
@@ -275,26 +286,24 @@ Future<List<PickedAttachment>?> _pick({
   // dismissed picker comes back as an empty list rather than as nothing, which
   // the caller already reads the same way it reads "none picked".
   //
-  // **`FileType.custom` and not `FileType.image` when a position is wanted**,
-  // which is the one thing on this path that is not a detail. `image` goes out
-  // as `ACTION_GET_CONTENT`, and Android has taken that over with its own photo
-  // picker, which strips a picture's coordinates *unconditionally* — the
-  // permission does not reach it, so the nicer chooser is the one chooser that
-  // can never answer. A list of extensions goes out as `ACTION_OPEN_DOCUMENT`
-  // instead: the file browser, filtered to the same pictures, whose answer
-  // still names a row the platform will serve the original of. That is why the
-  // feature is a switch and not simply the behaviour — it trades the picker
-  // people know for the one that knows where the photograph was taken.
+  // **The chooser is the same one either way** — `FileType.image` for the photo
+  // door, which goes out as `ACTION_GET_CONTENT` and is taken over by Android's
+  // own photo picker. This once switched to `FileType.custom` over the photo
+  // extensions when a position was wanted, so as to reach `ACTION_OPEN_DOCUMENT`
+  // and the file browser, on a report that the photo picker strips coordinates
+  // whatever permission an app holds. Measured on a phone, it does not: with
+  // `ACCESS_MEDIA_LOCATION` granted, a picture picked through the photo picker
+  // arrives with its place on it. So the trade was a familiar chooser given up
+  // for nothing, and it is not made. Where a device *does* redact anyway the
+  // second reading below is what answers, and where that fails too the app says
+  // the position was withheld, which is the honest end of it.
   //
-  // The SAF options are there for the URI alone. `transient`, because the grant
-  // is wanted for the length of this import and not beyond it: what is read
-  // through it is two numbers, and an app holding a lifetime grant on somebody's
-  // photo library is not what was asked for.
+  // The SAF options are there for the URI alone, and only when it can be used.
+  // `transient`, because the grant is wanted for the length of this import and
+  // not beyond it: what is read through it is two numbers, and an app holding a
+  // lifetime grant on somebody's photo library is not what was asked for.
   final files = await FilePicker.pickFiles(
-    type: withLocation
-        ? FileType.custom
-        : (photosOnly ? FileType.image : FileType.any),
-    allowedExtensions: withLocation ? _photoExtensions : null,
+    type: photosOnly ? FileType.image : FileType.any,
     androidOptions: withLocation
         ? const FilePickerAndroidOptions(
             safOptions: AndroidSAFOptions(

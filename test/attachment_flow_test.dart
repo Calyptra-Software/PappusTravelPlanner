@@ -85,12 +85,14 @@ void main() {
     int? onGroup,
     AttachmentKind kind = AttachmentKind.photo,
     MediaLocationChannel? locator,
+    MediaLocationAccess startup = MediaLocationAccess.granted,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(repo),
           sharedPreferencesProvider.overrideWithValue(prefs),
+          bootstrapMediaLocationProvider.overrideWithValue(startup),
           if (locator != null) mediaLocationProvider.overrideWithValue(locator),
         ],
         child: MaterialApp(
@@ -289,6 +291,91 @@ void main() {
 
       expect(await stored(), hasLength(1));
       expect(find.textContaining('withheld'), findsNothing);
+    });
+  });
+
+  /// What the switch does to a photograph that arrives **with** its place.
+  ///
+  /// Not a hypothetical: an Android permission cannot be handed back from
+  /// inside an app, so once *Read where a photo was taken* has been switched on
+  /// once, the system goes on handing over unredacted photographs however the
+  /// switch is set afterwards. Found on a phone, where the coordinates went on
+  /// being stored with the switch visibly off — which made the switch a
+  /// statement about what the app *asked* for rather than about what it kept.
+  group('a photograph that arrives with its place', () {
+    /// A JPEG with GPS in it, as a camera writes one. The rationals are built
+    /// by hand because `IfdDirectory`'s convenience setter resolves a GPS tag
+    /// name against the *image* tag table and drops the value — the same reason
+    /// `attachment_import_test.dart` builds one this way.
+    img.IfdValueRational dms(int degrees, int minutes, double seconds) {
+      final pairs = [
+        [degrees, 1],
+        [minutes, 1],
+        [(seconds * 1000).round(), 1000],
+      ];
+      final data = ByteData(pairs.length * 8);
+      for (var i = 0; i < pairs.length; i++) {
+        data.setUint32(i * 8, pairs[i][0], Endian.little);
+        data.setUint32(i * 8 + 4, pairs[i][1], Endian.little);
+      }
+      return img.IfdValueRational.data(
+        img.InputBuffer(data.buffer.asUint8List()),
+        pairs.length,
+      );
+    }
+
+    Uint8List photoWithPlace() {
+      final image = img.Image(width: 24, height: 18);
+      img.fill(image, color: img.ColorRgb8(90, 140, 190));
+      final gps = image.exif.gpsIfd;
+      gps['GPSLatitude'] = dms(53, 33, 0);
+      gps['GPSLatitudeRef'] = img.IfdValueAscii('N');
+      gps['GPSLongitude'] = dms(10, 0, 0);
+      gps['GPSLongitudeRef'] = img.IfdValueAscii('E');
+      return img.encodeJpg(image);
+    }
+
+    testWidgets('keeps it while the switch is on', (tester) async {
+      await prefs.setBool('photo_location_enabled', true);
+      await pumpAdder(tester, [
+        PickedAttachment(bytes: photoWithPlace(), name: 'a.jpg'),
+      ], locator: FakeMediaLocation());
+      await tapAttach(tester);
+
+      final photo = (await stored()).single;
+      expect(photo.lat, closeTo(53.55, 0.0001));
+      expect(photo.positionSource, AttachmentPositionSource.exif);
+    });
+
+    testWidgets('and loses it while the switch is off', (tester) async {
+      // The permission is standing — granted once and never revoked, which an
+      // app cannot do for itself — so the bytes carry the place regardless.
+      await pumpAdder(tester, [
+        PickedAttachment(bytes: photoWithPlace(), name: 'a.jpg'),
+      ], locator: FakeMediaLocation());
+      await tapAttach(tester);
+
+      final photo = (await stored()).single;
+      expect(photo.lat, isNull);
+      expect(photo.lon, isNull);
+      expect(photo.positionSource, isNull);
+      // Nothing was withheld by anybody but the app itself, so there is no
+      // sentence about Android to show.
+      expect(find.textContaining('withheld'), findsNothing);
+    });
+
+    testWidgets('and is kept where there is no switch at all', (tester) async {
+      // The desktop, the web, Android 9 and older: nothing was ever taken out
+      // of the file, so the switch that is not drawn may not withhold either.
+      await pumpAdder(
+        tester,
+        [PickedAttachment(bytes: photoWithPlace(), name: 'a.jpg')],
+        locator: FakeMediaLocation(access: MediaLocationAccess.notNeeded),
+        startup: MediaLocationAccess.notNeeded,
+      );
+      await tapAttach(tester);
+
+      expect((await stored()).single.lat, closeTo(53.55, 0.0001));
     });
   });
 

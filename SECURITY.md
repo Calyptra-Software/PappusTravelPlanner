@@ -76,15 +76,23 @@ install, and off is exactly the behavior described above: the photograph is
 attached without a position, and the app says so rather than leaving it
 unexplained.
 
-With the switch on, two things change and nothing else does. Photos are chosen
-through the system's file browser rather than its photo picker, because that
-picker strips the coordinates whatever permission the app holds. And a photograph
-that still arrives without a position is asked about a second time, by the URI
-the picker handed over, against the original the system will now serve
-(`MediaStore.setRequireOriginal`, in `MediaLocationBridge.kt`). Two numbers come
-back across that channel and nothing else: the picture that is stored is still
-the re-encoded, EXIF-stripped copy, and the position still lands in the column it
-has always landed in, visible in the attachment's sheet and clearable there.
+With the switch on, the position the file carries is kept — and a photograph
+that arrives without one is asked about a second time, by the URI the picker
+handed over, against the original the system will serve to a process holding the
+permission (`MediaStore.setRequireOriginal`, in `MediaLocationBridge.kt`). Two
+numbers come back across that channel and nothing else: the picture that is
+stored is still the re-encoded, EXIF-stripped copy, and the position still lands
+in the column it has always landed in, visible in the attachment's sheet and
+clearable there. The file chooser is the same one either way.
+
+**Switching it off again is enforced by the app, because it cannot be enforced
+by the system.** An Android permission cannot be handed back from inside an app:
+once granted it stays granted until it is revoked in the system settings, and
+the system goes on handing over unredacted photographs in the meantime. So with
+the switch off the app **drops** whatever position the bytes turn out to carry,
+rather than merely declining to ask for it — otherwise the control would read
+"off" while the coordinates went on being stored. Switching off says this, and
+offers the system screen where the grant itself can be taken away.
 
 What the permission is **not** used for is worth saying, because its name is
 broader than this use of it. The app does not enumerate the shared collection —

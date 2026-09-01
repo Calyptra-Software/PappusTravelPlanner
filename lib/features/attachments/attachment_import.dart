@@ -162,6 +162,29 @@ final class PreparedAttachment {
     position: position,
     positionSource: AttachmentPositionSource.exif,
   );
+
+  /// The same photograph with no place on it.
+  ///
+  /// Not a refusal to *look* — by the time this is called the bytes have been
+  /// read and the position is either in them or it is not. It is a refusal to
+  /// **keep**, and that is where the switch in settings has to act: an Android
+  /// permission cannot be handed back from inside an app, so once it has been
+  /// granted a photograph arrives unredacted whether the app still wants it to
+  /// or not. Dropping it here is the only place a user's "no" can be honoured.
+  ///
+  /// [locationRedacted] is left alone: it records what the *platform* did on
+  /// the way in, which is still true, and the app declining to keep a position
+  /// does not make one having been withheld untrue.
+  PreparedAttachment withoutPosition() => PreparedAttachment(
+    kind: kind,
+    mimeType: mimeType,
+    bytes: bytes,
+    name: name,
+    thumbnail: thumbnail,
+    width: width,
+    height: height,
+    locationRedacted: locationRedacted,
+  );
 }
 
 /// Reads [bytes] into the form they are stored in.

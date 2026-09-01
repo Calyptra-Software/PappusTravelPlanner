@@ -6,13 +6,16 @@ import '../application/media_location.dart';
 
 /// The switch that lets a photograph bring the place it was taken.
 ///
-/// It is a switch and not a behavior for two reasons, and the second is the one
-/// worth stating: it costs an Android permission the app otherwise does not
-/// hold, and it costs the photo picker — the chooser people know — because that
-/// picker strips a picture's coordinates whatever the app is allowed to read
-/// (see `attachment_flow.dart`). Neither is a trade to make on somebody's
-/// behalf, so the app makes it only when asked, and the subtitle says both
-/// halves out loud rather than presenting this as free.
+/// It is a switch and not a behavior because it costs an Android permission the
+/// app otherwise does not hold, which is not a thing to take on somebody's
+/// behalf.
+///
+/// The half that is not obvious is what *off* means. A permission cannot be
+/// handed back from inside an app: once granted it stays granted, and Android
+/// goes on handing over unredacted photographs whatever this switch says. So
+/// off is enforced where the app decides what to **keep** — see
+/// [PhotoPlaceUse.withheld] — and switching off says as much, with the system
+/// screen beside it, since that is the only place the grant itself can go.
 ///
 /// Drawn only where the question exists at all — the settings screen asks
 /// [PhotoLocationState.supported] first, which is false on the desktop, on the
@@ -36,9 +39,31 @@ class PhotoLocationSetting extends ConsumerWidget {
       title: Text(l10n.photoLocationTitle),
       subtitle: Text(l10n.photoLocationSubtitle),
       value: state.active,
-      onChanged: (wanted) => wanted
-          ? _enable(context, ref)
-          : ref.read(photoLocationProvider.notifier).disable(),
+      onChanged: (wanted) =>
+          wanted ? _enable(context, ref) : _disable(context, ref),
+    );
+  }
+
+  /// Turns it off, and says what that does and does not do.
+  ///
+  /// Only where the grant is actually still standing: with the permission
+  /// refused or never given there is nothing outliving the switch, and a
+  /// sentence about revoking something nobody granted would be noise.
+  Future<void> _disable(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final granted =
+        ref.read(photoLocationProvider).access == MediaLocationAccess.granted;
+    await ref.read(photoLocationProvider.notifier).disable();
+    if (!granted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(l10n.photoLocationStillGranted),
+        action: SnackBarAction(
+          label: l10n.photoLocationOpenSettings,
+          onPressed: ref.read(mediaLocationProvider).openSettings,
+        ),
+      ),
     );
   }
 

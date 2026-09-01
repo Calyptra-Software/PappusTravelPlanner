@@ -14,9 +14,11 @@ import 'support/fake_media_location.dart';
 /// The one control the feature has.
 ///
 /// What it shows is [PhotoLocationState.active] — both halves, the switch and
-/// the permission — and what it does on a refusal is the rest: the switch
-/// springs back, which needs a sentence, and a *permanent* refusal needs the way
-/// out with it, since the app can no longer show the dialog itself.
+/// the permission — and what it says is the rest: a refusal springs the switch
+/// back, which needs a sentence; a *permanent* refusal needs the way out with
+/// it, since the app can no longer show the dialog itself; and switching **off**
+/// needs one too, because the grant outlives it and only the system screen can
+/// take it away.
 void main() {
   late SharedPreferences prefs;
 
@@ -55,13 +57,17 @@ void main() {
   bool switchIsOn(WidgetTester tester) =>
       tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value;
 
-  testWidgets('is off, and says what turning it on costs', (tester) async {
+  testWidgets('is off, and says what off means', (tester) async {
     await pumpTile(tester, FakeMediaLocation());
 
     expect(switchIsOn(tester), isFalse);
-    // The trade is on the tile rather than hidden: the feature costs the
-    // picker people know, which is not a thing to do on somebody's behalf.
-    expect(find.textContaining('file browser'), findsOneWidget);
+    // Not belt and braces: a granted permission cannot be handed back from
+    // inside an app, so off has to be a statement about what is kept rather
+    // than about what is asked for — and the tile says so.
+    expect(
+      find.textContaining('even where Android would hand it over'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('turning it on and being allowed leaves it on, quietly', (
@@ -110,23 +116,46 @@ void main() {
     expect(platform.settingsOpened, 1);
   });
 
-  testWidgets('turning it off is the switch alone', (tester) async {
+  testWidgets('turning it off says what it does and does not do', (
+    tester,
+  ) async {
     await prefs.setBool('photo_location_enabled', true);
-    await pumpTile(
-      tester,
-      FakeMediaLocation(),
-      startup: MediaLocationAccess.granted,
-    );
+    final platform = FakeMediaLocation();
+    await pumpTile(tester, platform, startup: MediaLocationAccess.granted);
     expect(switchIsOn(tester), isTrue);
 
     await tester.tap(find.byType(SwitchListTile));
     await tester.pumpAndSettle();
 
-    // The grant stays — an app cannot hand one back without killing its own
-    // process — and what stops is the app asking.
     expect(switchIsOn(tester), isFalse);
     expect(prefs.getBool('photo_location_enabled'), isFalse);
-    expect(find.byType(SnackBar), findsNothing);
+    // The grant outlives the switch — an app cannot hand one back without
+    // killing its own process — which is surprising enough to be worth saying,
+    // with the one screen that can undo it beside the sentence.
+    expect(find.textContaining('keeps the permission'), findsOneWidget);
+    await tester.tap(find.text('Open settings'));
+    await tester.pumpAndSettle();
+    expect(platform.settingsOpened, 1);
+  });
+
+  testWidgets('and says nothing when there was no grant to outlive it', (
+    tester,
+  ) async {
+    await prefs.setBool('photo_location_enabled', true);
+    // Switched on once and refused, or revoked since: nothing is standing, so
+    // a sentence about revoking it would be noise.
+    await pumpTile(
+      tester,
+      FakeMediaLocation(access: MediaLocationAccess.denied),
+      startup: MediaLocationAccess.denied,
+    );
+
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('keeps the permission'), findsNothing);
   });
 
   testWidgets('a permission revoked since reads as off, and can be re-asked', (

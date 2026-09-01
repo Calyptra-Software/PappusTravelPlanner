@@ -27,13 +27,10 @@ import 'support/fake_media_location.dart';
 /// Which chooser the photo door opens, and what it asks it for.
 ///
 /// `attachment_flow_test.dart` injects the picked files and tests everything
-/// after the picking; this is the half before it, which is where the one
-/// decision on that path that is not a detail lives. `FileType.image` goes out
-/// as `ACTION_GET_CONTENT`, which Android has taken over with its own photo
-/// picker — and that picker strips a photograph's coordinates whatever
-/// permission the app holds, so it is the one chooser that can never answer the
-/// question this feature exists to ask. With the switch on the door therefore
-/// becomes a list of extensions, which goes out as `ACTION_OPEN_DOCUMENT`.
+/// after the picking; this is the half before it. The chooser itself is the
+/// **same** either way — the switch buys a permission, not a different picker —
+/// and what changes with it is only whether the Storage Access Framework handle
+/// is asked for, since that URI is the one route a second reading has.
 ///
 /// None of that is visible from outside except in what the picker is *asked*,
 /// which is what these assert, against a chooser standing in for the platform.
@@ -144,25 +141,27 @@ void main() {
   Future<List<Attachment>> stored() =>
       (db.select(db.attachments)..where((a) => a.itemId.equals(itemId))).get();
 
-  testWidgets('with the switch off it is the photo picker, and nothing else', (
+  testWidgets('with the switch off it asks for pictures and nothing more', (
     tester,
   ) async {
-    final picker = useFilePicker(_FakeFilePicker([_androidFile(jpeg())]));
+    final picker = useFilePicker(
+      _FakeFilePicker([
+        _androidFile(jpeg(), uri: 'content://media/external/images/media/7'),
+      ]),
+    );
     final platform = FakeMediaLocation(position: const LatLng(53.55, 10.0));
     await pumpAdder(tester, platform: platform);
     await tapAttach(tester);
 
-    // The chooser people know, asked for pictures and for nothing more: no
-    // extension list, so no `ACTION_OPEN_DOCUMENT`, and no SAF options, so no
-    // URI to ask about. Off is exactly what it always was.
+    // The chooser people know, and no SAF options, so no URI comes back and
+    // nothing is asked about — even though the permission is standing.
     expect(picker.type, FileType.image);
-    expect(picker.allowedExtensions, isNull);
     expect(picker.androidOptions, isNot(isA<FilePickerAndroidOptions>()));
     expect(platform.asked, isEmpty);
     expect((await stored()).single.lat, isNull);
   });
 
-  testWidgets('with it on it is the file browser, and the URI comes back', (
+  testWidgets('with it on it is the same chooser, and the URI comes back', (
     tester,
   ) async {
     await prefs.setBool('photo_location_enabled', true);
@@ -175,10 +174,11 @@ void main() {
     await pumpAdder(tester, platform: platform);
     await tapAttach(tester);
 
-    // A list of extensions rather than a media type, which is what makes this
-    // the file browser and not the picker that always redacts.
-    expect(picker.type, FileType.custom);
-    expect(picker.allowedExtensions, contains('jpg'));
+    // The same picker as above: this once switched to the file browser, on a
+    // report that the photo picker strips coordinates whatever permission an
+    // app holds. Measured on a phone it does not, so the familiar chooser is
+    // not given up for it.
+    expect(picker.type, FileType.image);
     // The SAF handle is the only route the URI has into Dart, and the grant
     // taken on it lasts this import and no longer.
     final options = picker.androidOptions;

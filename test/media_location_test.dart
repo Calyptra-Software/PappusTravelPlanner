@@ -54,7 +54,9 @@ void main() {
     // "should the app read this", and only the user writes it.
     expect(container.read(photoLocationProvider).enabled, isFalse);
     expect(container.read(photoLocationProvider).active, isFalse);
-    expect(await controller.activeNow(), isFalse);
+    // Granted and off is not "nothing happens": Android hands over the place
+    // regardless, so an import has to drop it.
+    expect(await controller.useForImport(), PhotoPlaceUse.withheld);
   });
 
   test(
@@ -83,7 +85,10 @@ void main() {
     // crosses over, and the permission is asked about again.
     final next = containerWith(MediaLocationAccess.granted);
     expect(next.read(photoLocationProvider).enabled, isTrue);
-    expect(await next.read(photoLocationProvider.notifier).activeNow(), isTrue);
+    expect(
+      await next.read(photoLocationProvider.notifier).useForImport(),
+      PhotoPlaceUse.allowed,
+    );
   });
 
   test('a permission taken away since leaves the switch inactive', () async {
@@ -95,7 +100,7 @@ void main() {
     );
     final controller = container.read(photoLocationProvider.notifier);
 
-    expect(await controller.activeNow(), isFalse);
+    expect(await controller.useForImport(), PhotoPlaceUse.withheld);
     // The stored switch is untouched — the user did not change their mind, the
     // system did — but nothing reads it on its own.
     expect(container.read(photoLocationProvider).enabled, isTrue);
@@ -113,11 +118,27 @@ void main() {
     // The grant stays — an app cannot hand one back without killing its own
     // process — and what stops is the app asking.
     expect(container.read(photoLocationProvider).active, isFalse);
-    expect(await controller.activeNow(), isFalse);
+    expect(await controller.useForImport(), PhotoPlaceUse.withheld);
     expect(
       container.read(photoLocationProvider).access,
       MediaLocationAccess.granted,
     );
+  });
+
+  test('and where there is no switch, the file is simply read', () async {
+    for (final access in [
+      MediaLocationAccess.notNeeded,
+      MediaLocationAccess.unsupported,
+    ]) {
+      final container = containerWith(access);
+      // The desktop, the web, Android 9 and older: nothing was taken out of
+      // the photograph and nothing has to be allowed to read it, so the switch
+      // that does not exist may not withhold anything either.
+      expect(
+        await container.read(photoLocationProvider.notifier).useForImport(),
+        PhotoPlaceUse.unguarded,
+      );
+    }
   });
 
   group('where the question exists at all', () {
@@ -142,6 +163,21 @@ void main() {
         // be a control that does nothing.
         expect(container.read(photoLocationProvider).supported, isFalse);
       }
+    });
+
+    test('and a scope that was told nothing draws no switch', () {
+      // The bootstrap provider's own default, which is what a test harness that
+      // never overrode it gets — and the honest answer for one: no bridge was
+      // asked, so there is no question to put on screen.
+      final container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(container.dispose);
+      expect(
+        container.read(photoLocationProvider).access,
+        MediaLocationAccess.unsupported,
+      );
+      expect(container.read(photoLocationProvider).supported, isFalse);
     });
 
     test('and it is known on the very first read', () {

@@ -3866,11 +3866,17 @@ abstract class AppLocalizations {
   /// **'Read where a photo was taken'**
   String get photoLocationTitle;
 
-  /// Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. It names the trade honestly: the feature costs the familiar photo picker, because that picker strips the coordinates whatever permission the app holds.
+  /// Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. The second half is not belt and braces: a granted permission cannot be handed back from inside an app, so with the switch off the position still arrives and the app drops it.
   ///
   /// In en, this message translates to:
-  /// **'Android hides where a photo was taken unless you allow it. Turning this on asks for that permission, and photos are then chosen through the file browser — the photo picker removes the position before the app can see it.'**
+  /// **'Android hides where a photo was taken unless you allow it. Turning this on asks for that permission; with it off, a photo is attached without its place even where Android would hand it over.'**
   String get photoLocationSubtitle;
+
+  /// Shown when the switch is turned off while the Android permission is still granted — an app cannot revoke its own, so the system screen is the only way, and it is offered beside this.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos will be attached without their place. Android keeps the permission until you revoke it in the system settings.'**
+  String get photoLocationStillGranted;
 
   /// No description provided for @photoLocationDenied.
   ///

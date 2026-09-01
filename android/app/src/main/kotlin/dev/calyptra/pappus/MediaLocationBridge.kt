@@ -161,12 +161,30 @@ class MediaLocationBridge(private val activity: Activity, messenger: BinaryMesse
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return null
         if (uriString == null || status() != GRANTED) return null
         val uri = runCatching { Uri.parse(uriString) }.getOrNull() ?: return null
-        val media = runCatching {
-            MediaStore.getMediaUri(activity, uri)
-        }.getOrNull() ?: return null
-        val original = runCatching {
-            MediaStore.setRequireOriginal(media)
-        }.getOrNull() ?: return null
+        // Two ways to name the same picture, tried in order because neither
+        // works everywhere. `getMediaUri` turns a Storage Access Framework
+        // document URI into the MediaStore row behind it, which is what the
+        // file browser hands back; it has nothing to say about the photo
+        // picker's own `content://media/picker/...`, which is already served by
+        // MediaProvider and takes the parameter directly. Both are just a query
+        // parameter on a URI, so an attempt that misses costs one failed open.
+        val candidates = listOfNotNull(
+            runCatching {
+                // Nullable in the SDK's own annotations, so it cannot be handed
+                // straight on: no MediaStore row behind this document is one of
+                // the ordinary answers here.
+                MediaStore.getMediaUri(activity, uri)?.let(MediaStore::setRequireOriginal)
+            }.getOrNull(),
+            runCatching { MediaStore.setRequireOriginal(uri) }.getOrNull(),
+        )
+        for (original in candidates) {
+            readLocationFrom(original)?.let { return it }
+        }
+        return null
+    }
+
+    /** The GPS pair in the file behind [original], or null for every failure. */
+    private fun readLocationFrom(original: Uri): Map<String, Double>? {
         return try {
             activity.contentResolver.openInputStream(original)?.use { stream ->
                 // The framework's reader, not the AndroidX one: it has read EXIF
@@ -189,7 +207,7 @@ class MediaLocationBridge(private val activity: Activity, messenger: BinaryMesse
         } catch (e: Exception) {
             // Includes the SecurityException a provider throws when it will not
             // serve the original, which is an answer and not a crash.
-            Log.w(TAG, "Could not read the original of $uriString", e)
+            Log.w(TAG, "Could not read the original at $original", e)
             null
         }
     }

@@ -1172,9 +1172,13 @@
   "attachmentPositionClear": "Remove position",
   "photosSection": "Photos",
   "photoLocationTitle": "Read where a photo was taken",
-  "photoLocationSubtitle": "Android hides where a photo was taken unless you allow it. Turning this on asks for that permission, and photos are then chosen through the file browser — the photo picker removes the position before the app can see it.",
+  "photoLocationSubtitle": "Android hides where a photo was taken unless you allow it. Turning this on asks for that permission; with it off, a photo is attached without its place even where Android would hand it over.",
   "@photoLocationSubtitle": {
-    "description": "Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. It names the trade honestly: the feature costs the familiar photo picker, because that picker strips the coordinates whatever permission the app holds."
+    "description": "Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. The second half is not belt and braces: a granted permission cannot be handed back from inside an app, so with the switch off the position still arrives and the app drops it."
+  },
+  "photoLocationStillGranted": "Photos will be attached without their place. Android keeps the permission until you revoke it in the system settings.",
+  "@photoLocationStillGranted": {
+    "description": "Shown when the switch is turned off while the Android permission is still granted — an app cannot revoke its own, so the system screen is the only way, and it is offered beside this."
   },
   "photoLocationDenied": "Android did not allow it. Photos are attached with no place, and you can set the position by hand.",
   "photoLocationBlocked": "Android will not ask again. It can still be allowed on this app's page in the system settings.",
