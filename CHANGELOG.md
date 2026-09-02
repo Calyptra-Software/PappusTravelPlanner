@@ -11,9 +11,13 @@ exact commits.
   changes, and nothing is asked of you that was not asked before — the same two location
   permissions, still only when you press it. From Android 12 onwards the system's own
   combined provider is asked instead, with the same accuracy and the same distance filter
-  as before, so you should not be able to tell the difference; on Android 11 and older,
-  and on any phone whose system offers no combined provider of its own, the position now
-  comes from GPS alone and a first fix can take longer than it used to. It is also what
+  as before, and a position takes as long to arrive as it did — measured on a phone, four
+  runs, the same eight to eleven seconds either way. What you may notice is that the mark
+  now appears only once there is a real measurement: where Play Services or microG are
+  installed, they used to draw a remembered position first and correct it a second later,
+  which was sometimes a hundred metres out. On Android 11 and older, and on any phone
+  whose system offers no combined provider of its own, the position now comes from GPS
+  alone and a first fix can take longer than it used to. It is also what
   makes a listing on F-Droid possible, which does not accept apps carrying proprietary
   code.
 
