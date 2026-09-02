@@ -116,6 +116,21 @@ dev_dependencies:
 # build to keep GMS for, so the swap is unconditional rather than a variant.
 # third_party/geolocator_android/README.md documents the three edits, what they
 # cost, and how to rebase them onto a new release.
+# SQLite is compiled from the copy in third_party/, not downloaded. Left to
+# itself, `package:sqlite3` fetches a ready-made `libsqlite3.so` per ABI from
+# its own GitHub releases during the build, and that binary is what ships --
+# public domain and built from upstream sources, but not built *here*, which is
+# what F-Droid requires and what reproducible builds would need. `path` is
+# relative to the workspace root; `default_options` stays on, so the compile-time
+# flags are the ones package:sqlite3 uses for its own binaries and nothing about
+# SQLite's behaviour changes. third_party/sqlite3/README.md holds the provenance,
+# the hashes, and what updating it involves.
+hooks:
+  user_defines:
+    sqlite3:
+      source: source
+      path: third_party/sqlite3/sqlite3.c
+
 dependency_overrides:
   geolocator_android:
     path: third_party/geolocator_android

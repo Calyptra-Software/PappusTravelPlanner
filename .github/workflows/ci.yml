@@ -46,6 +46,23 @@ jobs:
       - name: Test
         run: flutter test --coverage
 
+      # The other half of "no binary enters the app that was not built from
+      # source here" (SECURITY.md). `package:sqlite3` downloads a prebuilt
+      # library unless `hooks.user_defines` in pubspec.yaml points it at
+      # third_party/sqlite3 -- and a build that has quietly gone back to
+      # downloading looks exactly like one that has not, only faster. The tests
+      # above are what built the host library, so the evidence is on disk by
+      # now: the hook runner puts a fetched binary in a `download-*` directory
+      # and a compiled one in a directory named after the build's hash.
+      - name: Check SQLite was compiled, not downloaded
+        run: |
+          if find .dart_tool/hooks_runner -type d -name 'download-*' | grep -q .; then
+            echo "::error::package:sqlite3 downloaded a prebuilt library — see AGENTS.md on third_party/sqlite3"
+            find .dart_tool/hooks_runner -type d -name 'download-*'
+            exit 1
+          fi
+          echo "No prebuilt SQLite was fetched."
+
       - name: Upload coverage to Codecov
         # Secrets are unavailable to pull requests from forks; Codecov's
         # tokenless path is unreliable, so skip rather than fail the run.

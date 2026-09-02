@@ -787,6 +787,25 @@ UI (features/*/presentation, *widgets)
   default (Baseflow/flutter-geolocator#841). `third_party/geolocator_android/README.md`
   holds the details; `analysis_options.yaml` excludes the directory, because this project's
   lints are not about somebody else's code.
+- **SQLite is compiled from a copy in this repository, not downloaded.**
+  `package:sqlite3` resolves its native library through a Dart build hook whose default
+  fetches a ready-made `libsqlite3.so` per ABI from the package's own GitHub releases, and
+  that binary is what ships. Nothing about it is proprietary — SQLite is public domain and
+  those binaries are built from upstream sources with pinned hashes — but F-Droid builds
+  from source what it distributes, and a binary fetched mid-build is not that; it also puts
+  GitHub's availability in the path of every build and is what would block a reproducible
+  one. So `hooks.user_defines` in `pubspec.yaml` points the hook at
+  `third_party/sqlite3/sqlite3.c`, the unmodified 3.53.4 amalgamation, with
+  `default_options` left on so the compile-time flags stay the ones upstream uses (FTS5,
+  RTREE, math functions, `SQLITE_DQS=0`, the session and preupdate hooks) — drift relies on
+  several of them, and the change is meant to alter *how* SQLite is built, not what it can
+  do. Unlike `third_party/geolocator_android` **nothing here is patched**, and nothing
+  should be: the value of this copy is that it is byte-for-byte sqlite.org's. The
+  consequence to remember is that upgrading `package:sqlite3` no longer moves the SQLite
+  version with it — the version is that directory, and keeping it current is this project's
+  job now. Measured: +21 KB in the APK, and about 35 s per ABI on a cold build, since the
+  amalgamation is one translation unit and cannot be parallelised.
+  `third_party/sqlite3/README.md` holds the provenance and the hashes.
 - **Every modal sheet is opened by `showAppSheet`** (`core/widgets/app_sheet.dart`),
   which is where four settings that belong together now live. A sheet is `useSafeArea`
   and capped at the screen less the status bar less one touch target, so it stops below

@@ -200,7 +200,10 @@ goes through Android's own `LocationManager`, using a copy of the `geolocator`
 Android plugin with the Play Services client removed
 (`third_party/geolocator_android`). It is checkable rather than a claim: the
 release APK's dex holds no reference to `com/google/android/gms`, and the
-resolved Gradle runtime classpath names no `play-services` artifact.
+resolved Gradle runtime classpath names no `play-services` artifact. SQLite is
+compiled during the build from the amalgamation in `third_party/sqlite3`, whose
+hashes are recorded beside it, rather than downloaded as a prebuilt library, so
+no binary enters the app that was not built from source in this repository.
 
 ## What happens after a report
 
