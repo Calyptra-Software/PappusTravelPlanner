@@ -45,3 +45,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# The vendored package under third_party/ is a path dependency, not a project of
+# its own: an editor or analysis server that runs `pub get` inside it leaves a
+# lockfile there describing nothing anybody builds. The root pubspec.lock is the
+# one that matters, and it is committed.
+/third_party/*/pubspec.lock

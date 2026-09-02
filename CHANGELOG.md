@@ -5,6 +5,22 @@ exact commits.
 
 ## Unreleased
 
+- **The Android app no longer contains any Google Play Services code.** Where the device
+  is now comes from Android itself rather than from Google's location library, which was
+  being linked in by the plugin the app uses for it. Nothing about the locate button
+  changes, and nothing is asked of you that was not asked before — the same two location
+  permissions, still only when you press it. From Android 12 onwards the system's own
+  combined provider is asked instead, with the same accuracy and the same distance filter
+  as before, and a position takes as long to arrive as it did — measured on a phone, four
+  runs, the same eight to eleven seconds either way. What you may notice is that the mark
+  now appears only once there is a real measurement: where Play Services or microG are
+  installed, they used to draw a remembered position first and correct it a second later,
+  which was sometimes a hundred metres out. On Android 11 and older, and on any phone
+  whose system offers no combined provider of its own, the position now comes from GPS
+  alone and a first fix can take longer than it used to. It is also what
+  makes a listing on F-Droid possible, which does not accept apps carrying proprietary
+  code.
+
 - **A photo can bring the place it was taken, on Android too.** Android takes a photo's
   coordinates out before handing it to an app, so one attached here arrived with no place
   and a note saying why. *Settings → Photos → Read where a photo was taken* asks for the
