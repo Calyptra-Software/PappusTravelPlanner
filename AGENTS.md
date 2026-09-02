@@ -791,10 +791,14 @@ UI (features/*/presentation, *widgets)
   `package:sqlite3` resolves its native library through a Dart build hook whose default
   fetches a ready-made `libsqlite3.so` per ABI from the package's own GitHub releases, and
   that binary is what ships. Nothing about it is proprietary — SQLite is public domain and
-  those binaries are built from upstream sources with pinned hashes — but F-Droid builds
-  from source what it distributes, and a binary fetched mid-build is not that; it also puts
-  GitHub's availability in the path of every build and is what would block a reproducible
-  one. So `hooks.user_defines` in `pubspec.yaml` points the hook at
+  those binaries are built from upstream sources with pinned hashes — but a binary fetched
+  mid-build is not built from source here. How much F-Droid minds is unsettled and should
+  not be overstated: nothing automated catches it (the scanner constrains Maven repos and
+  reads dex class names; a `.so` is never examined), the ecosystem's previous answer
+  shipped a prebuilt AAR from Maven Central, and pinned prebuilts are no obstacle to
+  reproducible builds. What compiling here buys is narrower — no binary in the app that
+  this repository did not build, and no build depending on a GitHub release staying
+  reachable — and that is the case for it. So `hooks.user_defines` in `pubspec.yaml` points the hook at
   `third_party/sqlite3/sqlite3.c`, the unmodified 3.53.4 amalgamation, with
   `default_options` left on so the compile-time flags stay the ones upstream uses (FTS5,
   RTREE, math functions, `SQLITE_DQS=0`, the session and preupdate hooks) — drift relies on

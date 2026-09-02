@@ -13,10 +13,20 @@ default is `PrecompiledFromGithubAssets`: it downloads a ready-made
 `libsqlite3.so` per ABI from the package's own GitHub releases, and that binary
 is what ends up in the APK. Nothing about it is proprietary — SQLite is public
 domain and those binaries are built from upstream sources in GitHub Actions
-with pinned hashes — but F-Droid builds everything it ships from source, and a
-binary fetched during the build is not that. It also makes every build depend
-on GitHub being reachable, and it is the one thing standing between this
-project and reproducible builds.
+with pinned hashes — but a binary fetched during the build is not built from
+source here.
+
+How much F-Droid minds is genuinely unsettled, and worth writing down so nobody
+re-derives it: their automated checks do not catch this. The scanner constrains
+which Maven repositories a Gradle dependency may come from, and the APK scan
+reads class names out of `dexdump`, so a `.so` is never examined. The Flutter
+ecosystem's previous answer, `sqlite3_flutter_libs` 0.5.x, pulled a prebuilt
+`eu.simonbinder:sqlite3-native-library` AAR from Maven Central and passed
+everything. Nor is a pinned prebuilt an obstacle to reproducible builds; apps
+doing exactly that are verified against their upstream APKs today. What
+compiling here does buy is narrower and still worth having: no binary enters
+this app that this repository did not build, and no build depends on a GitHub
+release staying reachable and unchanged.
 
 ## Provenance
 

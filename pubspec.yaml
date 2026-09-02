@@ -119,8 +119,10 @@ dev_dependencies:
 # SQLite is compiled from the copy in third_party/, not downloaded. Left to
 # itself, `package:sqlite3` fetches a ready-made `libsqlite3.so` per ABI from
 # its own GitHub releases during the build, and that binary is what ships --
-# public domain and built from upstream sources, but not built *here*, which is
-# what F-Droid requires and what reproducible builds would need. `path` is
+# public domain and built from upstream sources, but not built *here*. Nothing in
+# F-Droid's automated checks catches that, and the case for compiling it is the
+# narrower one: no binary in the app this repository did not build, and no build
+# depending on a GitHub release staying reachable. `path` is
 # relative to the workspace root; `default_options` stays on, so the compile-time
 # flags are the ones package:sqlite3 uses for its own binaries and nothing about
 # SQLite's behaviour changes. third_party/sqlite3/README.md holds the provenance,
