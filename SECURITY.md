@@ -130,6 +130,39 @@ the database, does not go into a `.tpt` bundle or any other export, and is not
 sent anywhere. See *What is deliberately not a vulnerability* below for what the
 tile server does and does not learn from it.
 
+## Verifying a release
+
+Every APK released here is signed, and the SHA-256 fingerprint of the signing
+certificate is what identifies it as one of ours:
+
+    1.11.0 and later      5bb5d79192cca90b847d80924e859762fc269f7e1e9fd35d5f71c398ec355fcb
+    1.10.0 and earlier    a2568e7004c1c365c7dfeba050112f3ecf844de4c1973806653f3d5790d70e44
+
+To check a file against one of them:
+
+    apksigner verify --print-certs app-arm64-v8a-release.apk
+
+Look for the line ending in `certificate SHA-256 digest`; what precedes it
+differs between versions of the tool.
+
+There are two fingerprints because the key was changed once, deliberately, with
+1.11.0 — which is why that release had to be installed fresh rather than over
+its predecessor. The older certificate is named `CN=Android Debug`, and that is
+not what it looks like: it was the key Android generates for debug builds, kept
+and used for release builds from the app's first day. Replacing it is what the
+change was for. It says nothing about how those APKs were built, and they are
+what they claim to be.
+
+Android enforces the fingerprint by itself on every update — a build signed with
+a different key is refused rather than installed — so checking it by hand is for
+the *first* install, and for any copy that did not come from this repository's
+releases page.
+
+It is not the same number as the file hashes published alongside a release in
+`SHA256SUMS.txt`. Those are hashes of the APK files: they differ from release to
+release and answer whether a download arrived intact. The fingerprints above do
+not change, and answer who signed it.
+
 ## What is deliberately not a vulnerability
 
 **The database is not encrypted.** It is an ordinary SQLite file, and being able
