@@ -1,0 +1,187 @@
+# Cutting a release. Tag the commit `v<version>` and push the tag; everything
+# below then happens on a machine whose state is written down rather than on
+# somebody's laptop.
+#
+# That is the point of this file, and it is worth stating because the app was
+# released by hand until now: a build nobody can reproduce is one nobody can
+# check. It also makes the step to F-Droid's *verified* builds a small one --
+# there, F-Droid rebuilds the release from source and compares it byte for byte
+# with the APK published here, which is only possible if the environment that
+# produced it is knowable. Comparable apps that do this either pin the Flutter
+# version in a workflow like this one (Ciyue, Timety) or vendor Flutter as a
+# submodule and rebuild the maintainer's own path (Daily_You).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # A dry run: same build, same signing, no tag and no release. It is how the
+  # signing secrets get checked without inventing a version to throw away
+  # afterwards -- the tag check below would reject one anyway -- and how a
+  # Flutter bump can be tried before it is tagged. The APKs come out as an
+  # artifact; what to look at is the certificate in the job summary.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and draft the release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      # Exact, unlike the `3.47.x` the CI job uses. A range is right there --
+      # it should catch a breaking patch release early -- and wrong here: the
+      # published APK has to be reproducible, so the toolchain that built it
+      # must be a fact and not whatever was newest that morning. Bump it
+      # deliberately, and expect an F-Droid recipe to read this very line.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      # A tag that disagrees with the pubspec is the one mistake that survives
+      # every other check here: the APK would carry a versionName nobody
+      # released, and F-Droid's `UpdateCheckMode: Tags` reads the pubspec.
+      - name: Check the tag matches pubspec.yaml
+        if: github.ref_type == 'tag'
+        run: |
+          set -euo pipefail
+          pubspec_version="$(sed -n -E 's/^version: ([^+]+)\+.*/\1/p' pubspec.yaml)"
+          tag_version="${GITHUB_REF_NAME#v}"
+          echo "pubspec: $pubspec_version   tag: $tag_version"
+          if [ "$pubspec_version" != "$tag_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match pubspec version $pubspec_version"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # Signing is optional on purpose, exactly as android/app/build.gradle.kts
+      # already treats a missing key.properties: without the secrets this job
+      # still produces installable APKs, signed with the debug keys, which is
+      # what a fork or a dry run wants. With them it produces the real thing.
+      # Deciding whether the release key should live in GitHub's secrets is a
+      # separate question from having a reproducible build, and this leaves it
+      # open: `secrets` cannot be read in an `if:`, hence the detour through an
+      # output.
+      - name: Look for signing secrets
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo '::warning::No signing secrets — the APKs will carry the debug key and must not be published as a release.'
+          fi
+
+      - name: Write the signing configuration
+        if: steps.signing.outputs.available == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Outside the checkout, with an absolute storeFile -- the same rule
+          # the maintainer's own key.properties states and gives the reason
+          # for: a relative path is resolved against android/app, which is
+          # where the *CI* key lives, and the release key must not be there.
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/pappus-release.jks"
+          cat > android/key.properties <<EOF
+          storeFile=$RUNNER_TEMP/pappus-release.jks
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      # Deliberately without ORG_GRADLE_PROJECT_pappusSideBySide: that property
+      # suffixes the applicationId and swaps in the committed CI key, which is
+      # the opposite of what a release is.
+      - name: Build the APKs
+        run: flutter build apk --release --split-per-abi
+
+      # What a release is easiest to get wrong about is which key signed it,
+      # and the answer is invisible in the file name. Printing it puts it in
+      # the job summary, where it can be compared against the fingerprint the
+      # published app is known by.
+      # Reporting only, so it must not be what fails a release: a missing
+      # apksigner says nothing about the APKs themselves.
+      - name: Report what signed them
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          apksigner="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name apksigner 2>/dev/null | sort | tail -1)"
+          if [ -z "$apksigner" ]; then
+            echo '::warning::apksigner not found — skipping the certificate report.'
+            exit 0
+          fi
+          {
+            echo '## Signing certificates'
+            echo '```'
+            for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+              echo "$(basename "$apk")"
+              "$apksigner" verify --print-certs "$apk" | grep -i 'SHA-256 digest' || true
+            done
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checksums
+        working-directory: build/app/outputs/flutter-apk
+        run: sha256sum app-*-release.apk | tee SHA256SUMS.txt
+
+      # Uploaded as an artifact as well as attached to the release: the release
+      # is a draft and may yet be discarded or re-signed by hand, while the
+      # artifact is what a maintainer downloads to do exactly that.
+      - name: Upload the APKs as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-${{ github.ref_name }}
+          path: |
+            build/app/outputs/flutter-apk/app-*-release.apk
+            build/app/outputs/flutter-apk/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      # A draft, never a published release. Two reasons: the APKs are unsigned
+      # in the sense that matters whenever the secrets are absent, and even
+      # when they are present a human should look at the notes before this
+      # becomes the thing people install. Publishing is one click.
+      - name: Draft the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          # GitHub writes the notes: the merged pull requests, which is what
+          # somebody reading a release page is usually after. Passing --notes
+          # alongside --generate-notes is not a conflict -- the API puts a
+          # supplied body *above* the generated part -- so this one line lands
+          # over the list. It points at the changelog as of this tag rather
+          # than at main, so it goes on describing this release after the next
+          # one has been written.
+          gh release create "$GITHUB_REF_NAME" \
+            --draft \
+            --title "$version" \
+            --generate-notes \
+            --notes "See the [changelog]($SERVER_URL/$REPOSITORY/blob/$GITHUB_REF_NAME/CHANGELOG.md) for more details." \
+            build/app/outputs/flutter-apk/app-*-release.apk \
+            build/app/outputs/flutter-apk/SHA256SUMS.txt
