@@ -5,6 +5,19 @@ exact commits.
 
 ## Unreleased
 
+- **This version installs fresh rather than as an update, and you should export your data
+  before you install it.** From this release on the app is signed with a new key, and
+  Android identifies an app by the key that signed it — so it refuses to install this
+  version over the one you already have, reporting a conflicting package rather than
+  anything wrong with the download.
+
+  In order: *Settings → Database → Export database…*, and save the file somewhere you will
+  find it again — it is a single file and it holds your photographs, so it may be large.
+  Check that it is really there before going on. Then uninstall the app, install this
+  version, and *Settings → Database → Import database…* to bring everything back.
+  Home-screen widgets have to be added again afterwards. Nothing on Linux, Windows, macOS
+  or the web is affected — this is an Android install mechanism and nothing else.
+
 - **The Android app no longer contains any Google Play Services code.** Where the device
   is now comes from Android itself rather than from Google's location library, which was
   being linked in by the plugin the app uses for it. Nothing about the locate button
