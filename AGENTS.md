@@ -1713,6 +1713,13 @@ Three smaller traps, each found by a test that had to be written twice:
 
 ## Platform build constraints
 
+- **A release is a tag, not a build somebody ran.** Pushing `v<version>` to `main` runs
+  `.github/workflows/release.yml`: it checks the tag against `pubspec.yaml`, builds the
+  three per-ABI APKs signed from repository secrets, and opens a **draft** release for a
+  human to check the signing fingerprint before publishing. So never build and upload a
+  release artifact by hand — the point of the workflow is that the environment which
+  produced a published APK is knowable, which is also what a later move to F-Droid's
+  verified builds would need. `CONTRIBUTING.md` has the steps.
 - **The build CI hands out installs beside a real one, not over it.** Every
   pull request's `Build Android APK` job uploads the arm64-v8a APK as an
   artifact, so a change can be installed rather than only read. It is built with

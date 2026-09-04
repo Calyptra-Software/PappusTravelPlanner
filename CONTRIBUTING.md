@@ -93,6 +93,37 @@ To try it against realistic data, use *Export database…* in the real app and *
 database…* in Pappus CI. Don't uninstall the real app to make room — that takes its
 database with it.
 
+## Cutting a release
+
+Maintainers only, and it is a tag rather than a build: nothing is compiled on anybody's
+laptop, so what was released can be traced to a machine whose state is written down.
+
+Prepare in an ordinary pull request — rename `## Unreleased` in
+[CHANGELOG.md](CHANGELOG.md) to the version and its date, and set `version:` in
+`pubspec.yaml`. The build number after the `+` has to *increase*: it becomes the Android
+versionCode, and Android refuses to install a lower one over a higher one. Then, on `main`:
+
+```bash
+git tag v1.11.0 && git push origin v1.11.0
+```
+
+`.github/workflows/release.yml` takes it from there. It refuses outright if the tag and
+`pubspec.yaml` disagree, builds the three per-ABI APKs signed with the release key from
+the repository secrets, writes `SHA256SUMS.txt`, prints the signing certificate into the
+job summary, and opens a **draft** release with notes GitHub generates from the merged
+pull requests.
+
+The draft is the point at which a human looks. Check that the fingerprint in the job
+summary is the one [SECURITY.md](SECURITY.md) names — a mistyped secret produces perfectly
+good APKs signed with the wrong key, and that is not something to discover after
+publishing — then press *Publish release*. Nothing is public until you do, so a bad run is
+undone by deleting the draft and the tag.
+
+Without the signing secrets the same workflow still runs and warns; it then produces
+debug-signed APKs, which are fine for a fork and must not be published. That is also what
+*Run workflow* on the Actions tab is for: the same build with no tag and no release, which
+is how the signing setup is checked without inventing a version to throw away.
+
 ## How the code is arranged
 
 [AGENTS.md](AGENTS.md) is the long version — the layering, why a trip and a routine are one
