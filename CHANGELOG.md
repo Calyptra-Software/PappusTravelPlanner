@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.11.0 — 2026-09-04
 
 - **This version installs fresh rather than as an update, and you should export your data
   before you install it.** From this release on the app is signed with a new key, and
