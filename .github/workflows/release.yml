@@ -126,7 +126,10 @@ jobs:
         continue-on-error: true
         run: |
           set -uo pipefail
-          apksigner="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name apksigner 2>/dev/null | sort | tail -1)"
+          # -V, not a plain sort: lexicographically "9.0.0" comes after
+          # "36.1.0", so a runner image that still carried a single-digit
+          # build-tools would pick the oldest one.
+          apksigner="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -name apksigner 2>/dev/null | sort -V | tail -1)"
           if [ -z "$apksigner" ]; then
             echo '::warning::apksigner not found — skipping the certificate report.'
             exit 0
