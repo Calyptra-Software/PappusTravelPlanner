@@ -1,0 +1,20 @@
+Eine Reise Tag für Tag planen — wohin, womit, und was es kostet — und das Ganze in einer SQLite-Datei behalten, die dir gehört. Kein Konto, kein Server, nichts wird hochgeladen.
+
+Eine Reise ist eine Reise, wie lange sie auch dauert: der Weg zum Einkaufen, eine mehrtägige Wanderung und zwei Wochen Rom sind dasselbe mit anderen Daten. Wonach du sie einsortierst, entscheidest du — eigene Etiketten, eigene Farben.
+
+Die App funktioniert mit abgeschaltetem Netz. Es gibt genau zwei Ausnahmen, und beide startest du selbst: eine optionale Verbindungssuche, die echte Fahrpläne beim Transitous-Dienst abfragt und die Antwort in deinen lokalen Plan schreibt, und die Karte, deren Hintergrundkacheln von OpenStreetMap geladen werden, während du sie ansiehst.
+
+Was sie kann:
+
+* Ein Tagesablauf aus Orten und Verkehrsabschnitten, mit geplanten und tatsächlichen Zeiten
+* Alternativen — zwei Möglichkeiten für den Nachmittag, mit Preisen nebeneinander, eine davon gewählt
+* Kosten in mehreren Währungen, aufgeteilt unter den Mitreisenden, mit einem Ausgleich aus möglichst wenigen Zahlungen
+* Routinen: ein Plan, den du immer wieder fährst, auf echte Daten übertragen, wann immer du ihn brauchst
+* Checklisten je Reise, dazu Fotos und Dokumente an einem Abschnitt, einer ganzen Fahrt oder der Reise
+* Eine Karte des Plans, mit aufgezeichneten GPX-Linien und den Routen aus dem Fahrplan
+* Auswertungen: Ausgaben nach Kategorie und Person, Zeit je Verkehrsmittel, und die Länder, in denen du warst
+* Export als PDF, in den Kalender, als GPX oder als portable Datei, die eine andere Kopie der App einlesen kann
+
+Die Ortung läuft über Androids eigenen Standortdienst — die App enthält keinen Code von Google Play Services und fragt nur dann nach dem Standort, wenn du den Knopf drückst.
+
+Freie Software unter der GPL-3.0-or-later. Dieselbe Codebasis läuft auch auf Linux, Windows, macOS, im Browser und auf iOS.

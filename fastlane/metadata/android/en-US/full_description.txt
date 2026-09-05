@@ -1,0 +1,20 @@
+Plan a trip day by day — where you go, how you get there, and what it costs — and keep the whole thing in one SQLite file that belongs to you. No account, no server, nothing uploaded.
+
+A trip is a trip however long it lasts: a walk to the shops, a multi-day hike and a fortnight in Rome are the same kind of thing with different dates. What you file them under is yours to invent — your own tags, your own colors.
+
+The app works with the network switched off. There are exactly two exceptions, both of which you start yourself: an optional connection search that reads real timetables from the Transitous service and writes the answer into your local plan, and the map, whose background tiles are fetched from OpenStreetMap while you look at them.
+
+What it does:
+
+* A day-by-day timeline of places and transport legs, with planned and actual times
+* Alternatives — two ways the afternoon could go, priced side by side, one of them chosen
+* Costs in several currencies, split among the people coming along, with a settle-up that names the fewest payments
+* Routines: a plan you travel again and again, stamped out onto real dates whenever you need it
+* Checklists per trip, and photos or documents attached to a leg, a whole journey or the trip
+* A map of the plan, with recorded GPX lines and the routes a timetable returned
+* Statistics: expenses by category and person, time per transport mode, and the countries you have been to
+* Export as PDF, to a calendar, as GPX, or as a portable file another copy of the app can import
+
+Positioning uses Android's own location service — the app contains no Google Play Services code, and asks for location only when you press the locate button.
+
+Free software under the GPL-3.0-or-later. The same code base also runs on Linux, Windows, macOS, the web and iOS.
