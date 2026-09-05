@@ -44,6 +44,17 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // AGP otherwise writes the dependency tree into the APK's signing block,
+    // compressed and encrypted with a Google Play signing key -- a blob that
+    // only Google can read, in an app whose whole point is that anyone can
+    // check what is in it. F-Droid's APK scanner refuses it outright ("found
+    // extra signing block 'Dependency metadata'", id 0x504B4453), and there is
+    // no Play listing here that would ever consume it.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     defaultConfig {
         applicationId = "dev.calyptra.pappus"
         // You can update the following values to match your application needs.

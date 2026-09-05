@@ -1723,6 +1723,22 @@ Three smaller traps, each found by a test that had to be written twice:
   `android/build.gradle.kts` passes `-Wl,--build-id=none` to `jni`'s CMake: that build ID
   was the only thing making two builds of one tag differ, and the comment there says how
   it was measured.
+- **An APK's signing block carries more than signatures, and one of the passengers is
+  not ours.** AGP writes the resolved dependency tree into it by default — compressed and
+  **encrypted with a Google Play signing key**, so nobody but Google can read it — and
+  F-Droid's APK scanner rejects the block on sight (`found extra signing block 'Dependency
+  metadata'`, id `0x504B4453`). `dependenciesInfo { includeInApk = false }` in
+  `android/app/build.gradle.kts` is what turns it off; there is no Play listing here that
+  would ever have consumed it. Two things about how this was found are worth keeping.
+  It is invisible to everything else: the app runs, `flutter build` is silent, the APK
+  verifies, two builds of one tag are still byte-identical — and `fdroid build` says
+  nothing either, because reproducibility is a question about *whether two builds agree*
+  and this is a question about *what is inside one*. Only F-Droid's separate `check apk`
+  job looks. So a released APK is worth scanning for signing blocks as its own step; the
+  scanner is `fdroidserver.scanner.APK_SIGNING_BLOCK_IDS` against
+  `common.get_androguard_APK(f)._v2_blocks`, and everything in that dict is a rejection
+  while `0x7109871A` (signature scheme v2) and `0x42726577` (verity padding) are the two
+  that belong there.
 - **The build CI hands out installs beside a real one, not over it.** Every
   pull request's `Build Android APK` job uploads the arm64-v8a APK as an
   artifact, so a change can be installed rather than only read. It is built with
