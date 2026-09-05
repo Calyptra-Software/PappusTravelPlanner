@@ -1,1 +1,1 @@
-1.11.1 ändert nichts Sichtbares. Es ist die Version, ab der zwei Builds desselben Quelltextes Byte für Byte gleich ausfallen — damit sich prüfen lässt, ob das installierte APK wirklich aus dem veröffentlichten Code entstanden ist.
+1.11.2 ändert nichts Sichtbares. Diese Version existiert, damit die bei F-Droid gezeigte Beschreibung und die Screenshots Teil eines getaggten Releases sind.

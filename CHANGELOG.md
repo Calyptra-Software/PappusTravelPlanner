@@ -3,6 +3,12 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.11.2 — 2026-09-05
+
+- **Nothing changes in the app.** F-Droid reads a listing — the description, the
+  screenshots, the icon — out of the source tree of the release it builds, and 1.11.1 was
+  tagged before that listing existed in this repository. This release carries it.
+
 ## 1.11.1 — 2026-09-05
 
 - **Nothing changes in the app.** This release exists so that two builds of the same source
