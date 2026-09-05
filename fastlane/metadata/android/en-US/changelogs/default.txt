@@ -1,1 +1,1 @@
-1.11.2 changes nothing you can see. It exists so that the description and screenshots shown on F-Droid are part of a tagged release.
+1.11.3 changes nothing you can see. The APK no longer carries a block of Gradle dependency data that only Google could read; nothing in the app ever used it.

@@ -3,6 +3,15 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.11.3 — 2026-09-05
+
+- **Nothing changes in the app.** The Android build no longer writes Gradle's dependency
+  tree into the APK's signing block, where it sat compressed and encrypted with a Google
+  Play signing key — data nobody but Google could read, inside an app whose whole point is
+  that anyone can check what is in it. Nothing ever consumed it; there is no Play Store
+  listing here. F-Droid's APK scanner refuses such a block outright, which is how it was
+  found.
+
 ## 1.11.2 — 2026-09-05
 
 - **Nothing changes in the app.** F-Droid reads a listing — the description, the
