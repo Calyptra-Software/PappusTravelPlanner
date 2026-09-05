@@ -3,6 +3,12 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.11.1 — 2026-09-05
+
+- **Nothing changes in the app.** This release exists so that two builds of the same source
+  come out byte for byte identical, which is what lets somebody else check that a published
+  APK really was built from the code in this repository.
+
 ## 1.11.0 — 2026-09-04
 
 - **This version installs fresh rather than as an update, and you should export your data
