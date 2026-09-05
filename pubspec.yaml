@@ -24,7 +24,7 @@ dependencies:
   # State management and routing.
   flutter_riverpod: ^3.4.2
   riverpod_annotation: ^4.0.3
-  go_router: ^18.0.0
+  go_router: ^18.0.1
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
   drift: ^2.34.3
@@ -33,14 +33,14 @@ dependencies:
   shared_preferences: ^2.5.5
 
   # Opening / importing / exporting the database file.
-  file_picker: ^12.1.2
+  file_picker: ^12.2.0
   # Already resolved beneath file_picker (it is its Android implementation, and
   # file_picker imports it on every platform). Named here because this app uses
   # it directly and deliberately: the URI the Storage Access Framework handed a
   # picked photo over as reaches Dart only through `AndroidPlatformFile`, and
   # that URI is the one thing that can be asked where the photograph was taken.
   # See features/attachments/attachment_flow.dart.
-  android_file_picker: ^1.0.0
+  android_file_picker: ^1.1.0
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   path: ^1.9.1
@@ -90,7 +90,7 @@ dev_dependencies:
   sqlite3: ^3.5.2 # used by tests to build an old-schema DB for migration checks
 
   # Code generation: `dart run build_runner build --delete-conflicting-outputs`.
-  build_runner: ^2.16.0
+  build_runner: ^2.16.1
   drift_dev: ^2.34.5
   riverpod_generator: ^4.0.4
 
