@@ -35,11 +35,11 @@ What hangs off a trip is the rest of this page: a **day-by-day itinerary** of pl
 transport legs, the **costs** those come to and how they divide among the people on it,
 and any number of **checklists**.
 
-A walk to the shops, a commute, a multi-day hike, and a fortnight in Rome are the same kind
-of thing with different dates. Everything the app can do is open to all of them: the
-twenty-minute errand gets the same itinerary, the same costs, and the same checklists as
-the fortnight abroad, and you start planning straight away instead of first declaring what
-sort of thing this is going to be. If you do want to tell a commute from a holiday,
+An afternoon out, the daily commute, and two weeks abroad are the same kind of thing with
+different dates. Everything the app can do is open to all of them: the twenty-minute
+errand gets the same itinerary, the same costs, and the same checklists as the two weeks
+abroad, and you start planning straight away instead of first declaring what sort of thing
+this is going to be. If you do want to tell a commute from a holiday,
 [tags](#tags-are-your-filing) are how — in your own words, applied whenever
 you feel like it, and only ever for your own sorting.
 

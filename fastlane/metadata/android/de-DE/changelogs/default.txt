@@ -1,0 +1,1 @@
+1.11.1 ändert nichts Sichtbares. Es ist die Version, ab der zwei Builds desselben Quelltextes Byte für Byte gleich ausfallen — damit sich prüfen lässt, ob das installierte APK wirklich aus dem veröffentlichten Code entstanden ist.

@@ -1,0 +1,24 @@
+Eine Reise Tag für Tag planen — wohin, womit, und was es kostet, aufgeschlüsselt nach Kategorie und nach Person — und die ganze Datenbank in einer portablen SQLite-Datei behalten, die dir gehört. Kein Konto, kein Server, nichts wird hochgeladen. Die App funktioniert ohne Internetverbindung; die Ausnahmen sind eine optionale Verbindungssuche, die echte Fahrpläne abfragt und die Antwort in deinen lokalen Plan schreibt, und die Karte, deren Hintergrundkacheln geladen werden, während du sie ansiehst.
+
+Du kannst alle Arten von Reisen planen: Ein Nachmittag unterwegs, der tägliche Arbeitsweg und zwei Wochen im Ausland werden gleich geplant und unterscheiden sich nur in den Daten.
+
+<b>Funktionen</b>
+
+• Reisen, sortiert wie du sie einsortierst — Daten, Notizen, Mitreisende, eine eigene Farbe und Etiketten, die du selbst erfindest. Die Übersicht lässt sich durchsuchen, filtern und sortieren oder auf einen Monatskalender umschalten.
+• Routinen — den Arbeitsweg oder die wöchentliche Runde als Vorlage ohne Datum behalten und auf jeden beliebigen Tag übertragen, vorher oder hinterher.
+• Ein Tagesablauf aus Orten und Verkehrsabschnitten, mit optionalen Zeiten, Bündelung für ein gemeinsames Ticket und Umsortieren per Ziehen.
+• Alternativen — verschiedene Möglichkeiten für einen Tag planen und später eine wählen; nur die gewählte zählt für die Kosten der Reise.
+• Geplante gegen tatsächliche Zeiten, mit einem grünen oder roten +/− an jedem Ende, und einer „du bist hier"-Marke im heutigen Plan.
+• Echte Verbindungen — einen offenen Routing-Dienst (Transitous) durchsuchen, der Nahverkehr, Fernzüge, Busse und mehr von Betreibern weltweit abdeckt, Ergebnisse vergleichen, eines als Abschnitte des Tages übernehmen und später die Echtzeiten aktualisieren.
+• Eine Karte — Orte und Abschnitte einer Reise auf OpenStreetMap-Grund, mit dem laufenden Eintrag so markiert, wie der Tagesablauf ihn markiert. Ein GPX-Track auf einem Abschnitt lässt die Karte die tatsächlich gefahrene Linie zeichnen statt der geraden.
+• Fotos und Dateien am Plan — ein Foto oder ein Dokument an einen Eintrag, eine Gruppe oder die Reise selbst hängen. Sie liegen in der Datenbank, eine Kopie dieser einen Datei ist also eine Kopie von allem. Ein Foto mit Position erscheint auf der Karte, und eines davon kann das Titelbild auf der Übersichtskarte sein.
+• Kosten in beliebig vielen Währungen — an einem Ort, einem Abschnitt, einem ganzen gemeinsamen Ticket oder der Reise, mit eigenen Kategorien und eigenen Wechselkursen.
+• Länder, in denen du warst — die Welt aus mitgelieferten Umrissen gezeichnet, aus deinen Reisen ermittelt oder von Hand eingetragen.
+• Auswertungen — Ausgaben nach Kategorie und Person, und wie du tatsächlich unterwegs warst: Abschnitte und Zeit je Verkehrsmittel, Plan gegen Wirklichkeit.
+• Ausgleich — gezahlt gegen fairen Anteil, möglichst wenige Zahlungen zum Ausgleichen, und Rückzahlungen, die sich verbuchen lassen.
+• Checklisten je Reise, verschiebbar und in die nächste kopierbar.
+• Teilen und exportieren — ein verlustfreies .tpt-Bündel für eine andere Kopie der App (Anhänge inbegriffen), ein druckbares PDF mit den Abschnitten, die du ankreuzt, oder eine .ics-Datei für den Kalender, den du ohnehin benutzt.
+• Ein Android-Widget für den Startbildschirm — die laufende oder nächste Reise, ein Countdown und der heutige Plan mit denselben Verspätungsmarken wie im Tagesablauf; ein Tippen öffnet den Eintrag.
+• Englisch und Deutsch, dazu ein helles, dunkles oder dem System folgendes Erscheinungsbild.
+
+Freie und offene Software unter der GPL-3.0-or-later. Dieselbe Codebasis läuft auch auf Linux, Windows, macOS, im Browser und auf iOS.
