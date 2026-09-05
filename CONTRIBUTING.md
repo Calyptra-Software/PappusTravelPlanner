@@ -125,7 +125,7 @@ debug-signed APKs, which are fine for a fork and must not be published. That is 
 is how the signing setup is checked without inventing a version to throw away.
 
 Getting the app onto F-Droid, and what each release needs once it is there, is
-[docs/fdroid.md](docs/fdroid.md).
+described in [docs/fdroid.md](docs/fdroid.md).
 
 ## How the code is arranged
 

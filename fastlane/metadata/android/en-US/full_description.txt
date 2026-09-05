@@ -21,4 +21,4 @@ You can plan all kinds of trips: an afternoon out, the daily commute, and two we
 • An Android home-screen widget — your current or next trip, a countdown, and today's plan with the same delay marks the timeline uses; tapping a row opens that entry.
 • English and German, and a light / dark / system theme.
 
-Free and open software under the GPL-3.0-or-later. The same code base also runs on Linux, Windows, macOS, the web and iOS.
+Free and open software under the GPL-3.0-or-later. The same code base also runs on Linux, Windows, macOS, the web, and iOS.
