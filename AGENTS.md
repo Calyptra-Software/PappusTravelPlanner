@@ -1719,7 +1719,10 @@ Three smaller traps, each found by a test that had to be written twice:
   human to check the signing fingerprint before publishing. So never build and upload a
   release artifact by hand — the point of the workflow is that the environment which
   produced a published APK is knowable, which is also what a later move to F-Droid's
-  verified builds would need. `CONTRIBUTING.md` has the steps.
+  verified builds would need. `CONTRIBUTING.md` has the steps. The same goal is why
+  `android/build.gradle.kts` passes `-Wl,--build-id=none` to `jni`'s CMake: that build ID
+  was the only thing making two builds of one tag differ, and the comment there says how
+  it was measured.
 - **The build CI hands out installs beside a real one, not over it.** Every
   pull request's `Build Android APK` job uploads the arm64-v8a APK as an
   artifact, so a change can be installed rather than only read. It is built with
