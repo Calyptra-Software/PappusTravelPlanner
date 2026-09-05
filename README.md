@@ -11,14 +11,14 @@
 [![codecov](https://codecov.io/gh/Calyptra-Software/PappusTravelPlanner/branch/main/graph/badge.svg)](https://codecov.io/gh/Calyptra-Software/PappusTravelPlanner)
 
 Plan a trip day by day — where you go, how you get there, and what it costs, broken down by
-category and by person — and keep the whole thing in **one SQLite file that belongs to
+category and by person — and keep the whole database in **one portable SQLite file that belongs to
 you**. No account, no server, nothing uploaded. The app works with the network switched
 off; the exceptions are an optional connection search that looks up real timetables and
 writes the answer into your local plan, and the map, whose background tiles are fetched
 while you look at them.
 
-A trip is a trip however long it lasts: a walk to the shops, a multi-day hike, and a
-fortnight in Rome are the same kind of thing with different dates. The primary target is
+You can plan all kinds of trips: an afternoon out, the daily commute, and two weeks abroad
+are planned the same way, and differ only in their dates. The primary target is
 **Android**, but the same code base runs on Web, Linux, Windows, macOS, and iOS.
 
 ## Screenshots
@@ -52,11 +52,11 @@ Every other platform, and Android if you would rather not run a stranger's binar
   onto any day, before or after the fact.
 - **A day-by-day itinerary** of places and transport legs, with optional times, grouping for
   a shared ticket, and drag-to-reorder.
-- **Alternatives** — plan two ways an afternoon could go and pick one later; only the chosen
+- **Alternatives** — plan different ways a day could go and pick one later; only the chosen
   option counts toward the trip's money.
 - **Planned versus actual times**, with a green or red `+/−` on each end, and a "you are
   here" mark on today's plan.
-- **Real connections** — search an open routing service covering public transport,
+- **Real connections** — search an open routing service (Transitous) covering public transport,
   long-distance trains, buses, and more from operators around the world, compare the results,
   import one as that day's legs, and refresh its live times later.
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
