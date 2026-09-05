@@ -14,9 +14,9 @@ RepoType: git
 Repo: https://github.com/Calyptra-Software/PappusTravelPlanner.git
 
 Builds:
-  - versionName: 1.11.2
-    versionCode: 1014
-    commit: 762a2209d64bbfa408ad24401b479e3b49471994
+  - versionName: 1.11.3
+    versionCode: 1015
+    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -57,9 +57,9 @@ Builds:
       - mv $repo dev.calyptra.pappus
     ndk: r28c
 
-  - versionName: 1.11.2
-    versionCode: 2014
-    commit: 762a2209d64bbfa408ad24401b479e3b49471994
+  - versionName: 1.11.3
+    versionCode: 2015
+    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -100,9 +100,9 @@ Builds:
       - mv $repo dev.calyptra.pappus
     ndk: r28c
 
-  - versionName: 1.11.2
-    versionCode: 4014
-    commit: 762a2209d64bbfa408ad24401b479e3b49471994
+  - versionName: 1.11.3
+    versionCode: 4015
+    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -152,5 +152,5 @@ VercodeOperation:
   - '%c + 2000'
   - '%c + 4000'
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
-CurrentVersion: 1.11.2
-CurrentVersionCode: 4014
+CurrentVersion: 1.11.3
+CurrentVersionCode: 4015
