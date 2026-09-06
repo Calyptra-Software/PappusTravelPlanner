@@ -1,3 +1,9 @@
+AntiFeatures:
+  TetheredNet:
+    en-US: Journey planning always goes to api.transitous.org, and map tiles always
+      come from tile.openstreetmap.org. Neither can be pointed at a different instance
+      from within the app. Both are contacted only when a search is run or the map
+      is opened; the app is otherwise offline.
 Categories:
   - Finance Manager
   - Navigation
