@@ -34,13 +34,24 @@ Regenerate code after editing anything under generation:
   the template; every key added there must also be added to `app_de.arb`.
 
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
-without touching it: that exactly one host is contacted (`api.transitous.org`), that the
-Android build asks for one permission (`INTERNET`), that there is no telemetry of any kind,
-and the list of foreign files the app parses. A second host — a map's tile server is the
-obvious one — a new permission, an analytics or crash-reporting dependency, or another
-format read from outside all turn a sentence there into a false claim about what the app
-does with someone's data. Correct it in the same commit; a security policy that has drifted
-is worse than none, because people rely on it.
+without touching it: which hosts are contacted (`api.transitous.org` for a connection
+search, `tile.openstreetmap.org` while a map is open, and nothing else), which permissions
+the app asks for and which its libraries merge in, that there is no telemetry of any kind,
+and the list of foreign files the app parses. A third host, a new permission, an analytics
+or crash-reporting dependency, or another format read from outside all turn a sentence
+there into a false claim about what the app does with someone's data. Correct it in the
+same commit; a security policy that has drifted is worse than none, because people rely
+on it.
+
+Both of those first two facts have already drifted once, which is why they are named as
+a pair. The tile server arrived with the map and left a file still saying one host; the
+five permissions androidx `work-runtime` merges in through `home_widget`'s Glance
+dependency left it saying four, and neither was noticed here: the second surfaced only
+when **F-Droid's code-quality report printed the list off the built APK**, which is what
+their store page publishes too — so what the manifest merger produces is on show whether
+or not this repository mentions it. The number to check is therefore the one in the APK (`androguard axml`, or the merger's own report under
+`build/app/outputs/logs/`), never the count of `uses-permission` lines in
+`android/app/src/main/AndroidManifest.xml`.
 
 ## Architecture
 
