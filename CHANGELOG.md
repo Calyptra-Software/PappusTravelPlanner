@@ -3,6 +3,15 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.11.4 — 2026-09-06
+
+- **Nothing changes in the app.** The three per-ABI builds are numbered by a different
+  scheme, at F-Droid's request: `10 × build number + 1|2|3` rather than Flutter's own
+  `1000|2000|4000 + build number`. Android will not install a build whose number is lower
+  than the installed one, and the new scheme counts smaller — so the build number jumps
+  from 15 to 402, which is the first value that leaves every one of the three above what
+  1.11.3 published. The version you see is unaffected.
+
 ## 1.11.3 — 2026-09-05
 
 - **Nothing changes in the app.** The Android build no longer writes Gradle's dependency

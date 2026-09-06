@@ -1,1 +1,1 @@
-1.11.3 ändert nichts Sichtbares. Die APK enthält keinen Block mit Gradle-Abhängigkeitsdaten mehr, den ohnehin nur Google lesen konnte; gebraucht wurde er in der App nie.
+1.11.4 ändert nichts Sichtbares. Die drei Downloads sind intern anders nummeriert, auf Wunsch von F-Droid; an der angezeigten Version ändert das nichts.
