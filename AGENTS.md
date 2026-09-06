@@ -1739,6 +1739,19 @@ Three smaller traps, each found by a test that had to be written twice:
   `common.get_androguard_APK(f)._v2_blocks`, and everything in that dict is a rejection
   while `0x7109871A` (signature scheme v2) and `0x42726577` (verity padding) are the two
   that belong there.
+- **The three per-ABI APKs are numbered by this repository, not by Flutter.** `abiCodes`
+  in `android/app/build.gradle.kts` overrides each split's `versionCodeOverride` to
+  `build number × 10 + 1|2|3` (armeabi-v7a, arm64-v8a, x86_64), which is the scheme F-Droid
+  asks Flutter apps for and which `VercodeOperation: 10 * %c + N` in the recipe mirrors.
+  Flutter's own scheme is `1|2|4 × 1000 + build number`; ours wins because this block runs
+  after the plugin's, which was measured rather than assumed. Two things about it are sharp.
+  It **counts smaller** than what it replaced — at build 15 it gives 151/152/153 where the
+  released APKs are 1015/2015/4015 — and Android refuses an update whose number is lower, so
+  the switch cost a jump of the build number to **402**, the first value leaving all three
+  above their predecessors. And a version code is forever: it may only ever grow, so any
+  further change of scheme has the same arithmetic to satisfy. Flutter's scheme also had a
+  ceiling this one does not — at build 1000 its armeabi code (2000) collides with arm64's at
+  build 0.
 - **The build CI hands out installs beside a real one, not over it.** Every
   pull request's `Build Android APK` job uploads the arm64-v8a APK as an
   artifact, so a change can be installed rather than only read. It is built with

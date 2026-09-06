@@ -2,8 +2,10 @@ Categories:
   - Finance Manager
   - Navigation
   - Public Transport
-  - Schedule
 License: GPL-3.0-or-later
+AuthorName: Calyptra Software
+AuthorEmail: calyptra-software@proton.me
+AuthorWebSite: https://github.com/Calyptra-Software
 SourceCode: https://github.com/Calyptra-Software/PappusTravelPlanner
 IssueTracker: https://github.com/Calyptra-Software/PappusTravelPlanner/issues
 Changelog: https://github.com/Calyptra-Software/PappusTravelPlanner/blob/HEAD/CHANGELOG.md
@@ -14,9 +16,9 @@ RepoType: git
 Repo: https://github.com/Calyptra-Software/PappusTravelPlanner.git
 
 Builds:
-  - versionName: 1.11.2
-    versionCode: 1014
-    commit: 762a2209d64bbfa408ad24401b479e3b49471994
+  - versionName: 1.11.4
+    versionCode: 4021
+    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -57,9 +59,9 @@ Builds:
       - mv $repo dev.calyptra.pappus
     ndk: r28c
 
-  - versionName: 1.11.2
-    versionCode: 2014
-    commit: 762a2209d64bbfa408ad24401b479e3b49471994
+  - versionName: 1.11.4
+    versionCode: 4022
+    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -100,9 +102,9 @@ Builds:
       - mv $repo dev.calyptra.pappus
     ndk: r28c
 
-  - versionName: 1.11.2
-    versionCode: 4014
-    commit: 762a2209d64bbfa408ad24401b479e3b49471994
+  - versionName: 1.11.4
+    versionCode: 4023
+    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -148,9 +150,9 @@ AllowedAPKSigningKeys: 5bb5d79192cca90b847d80924e859762fc269f7e1e9fd35d5f71c398e
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[\d.]+$
 VercodeOperation:
-  - '%c + 1000'
-  - '%c + 2000'
-  - '%c + 4000'
+  - 10 * %c + 1
+  - 10 * %c + 2
+  - 10 * %c + 3
 UpdateCheckData: pubspec.yaml|version:\s.+\+(\d+)|.|version:\s(.+)\+
-CurrentVersion: 1.11.2
-CurrentVersionCode: 4014
+CurrentVersion: 1.11.4
+CurrentVersionCode: 4023
