@@ -18,7 +18,7 @@ Repo: https://github.com/Calyptra-Software/PappusTravelPlanner.git
 Builds:
   - versionName: 1.11.4
     versionCode: 4021
-    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
+    commit: f5e0604134d7d8ae665cd18c1180a13b16915c55
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -61,7 +61,7 @@ Builds:
 
   - versionName: 1.11.4
     versionCode: 4022
-    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
+    commit: f5e0604134d7d8ae665cd18c1180a13b16915c55
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
@@ -104,7 +104,7 @@ Builds:
 
   - versionName: 1.11.4
     versionCode: 4023
-    commit: 63ee5ac35f0645d2e6b4162f341c1930ee070cf3
+    commit: f5e0604134d7d8ae665cd18c1180a13b16915c55
     sudo:
       - mkdir -p /home/runner/work/PappusTravelPlanner
       - chown -R vagrant /home/runner
