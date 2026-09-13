@@ -158,6 +158,18 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get clearFilters;
 
+  /// No description provided for @tripsMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, =1{{shown} of 1 trip} other{{shown} of {total} trips}}'**
+  String tripsMatching(int shown, int total);
+
+  /// No description provided for @routinesMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, =1{{shown} of 1 routine} other{{shown} of {total} routines}}'**
+  String routinesMatching(int shown, int total);
+
   /// No description provided for @statusLabel.
   ///
   /// In en, this message translates to:

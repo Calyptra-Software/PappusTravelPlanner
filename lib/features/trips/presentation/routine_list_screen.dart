@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../application/routine_query_provider.dart';
 import '../application/trip_providers.dart';
 import '../routine_filter.dart';
+import '../widgets/query_result_line.dart';
 import '../widgets/tag_chip.dart';
 import '../widgets/tag_filter_bar.dart';
 import 'create_trip_from_routine.dart';
@@ -167,11 +168,21 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
                     .setQuery(query.copyWith(tagIds: ids)),
                 onManage: () => context.push('/tags'),
               ),
+              // The overview's count line, counted against the routines alone
+              // (the stream holds nothing else).
+              QueryResultLine(
+                label: l10n.routinesMatching(visible.length, list.length),
+                onClear: query.hasActiveFilters
+                    ? () => ref
+                          .read(routineQueryProvider.notifier)
+                          .setQuery(query.clearedFilters())
+                    : null,
+              ),
               Expanded(
                 child: visible.isEmpty
                     ? _NoResults(query: query.text.trim())
                     : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                        padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
                         itemCount: visible.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {

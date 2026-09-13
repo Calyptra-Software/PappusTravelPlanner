@@ -20,6 +20,7 @@ import '../application/trip_query_provider.dart';
 import 'create_trip_from_routine.dart';
 import '../trip_filter.dart';
 import '../widgets/trip_calendar.dart';
+import '../widgets/query_result_line.dart';
 import '../widgets/tag_filter_bar.dart';
 import '../../attachments/application/cover_providers.dart';
 import '../widgets/trip_card.dart';
@@ -214,7 +215,9 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
         break;
     }
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+      // Less at the top than at the sides: the count line above already
+      // leaves room.
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 96),
       itemCount: visible.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -377,6 +380,7 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
             for (final entry in participantsByTrip.entries)
               entry.key: {for (final p in entry.value) p.id},
           };
+          final today = DateTime.now();
           final visible = applyTripQuery(
             trips,
             query: query,
@@ -385,9 +389,18 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
               for (final entry in tagsByTrip.entries)
                 entry.key: {for (final tag in entry.value) tag.id},
             },
-            today: DateTime.now(),
+            today: today,
             totalsByTrip: totalsByTrip,
           );
+          // The same function with nothing asked of it, not `trips.length`: the
+          // stream holds the routines too, and "3 of 45" must not be counting
+          // templates the list could never show.
+          final total = applyTripQuery(
+            trips,
+            query: const TripQuery(),
+            participantsByTrip: const {},
+            today: today,
+          ).length;
           return Column(
             children: [
               // The tags in the open, not buried in the filter sheet: filing is
@@ -399,6 +412,14 @@ class _TripListScreenState extends ConsumerState<TripListScreen> {
                     .read(tripQueryProvider.notifier)
                     .setQuery(query.copyWith(tagIds: ids)),
                 onManage: () => context.push('/tags'),
+              ),
+              QueryResultLine(
+                label: l10n.tripsMatching(visible.length, total),
+                onClear: query.hasActiveFilters
+                    ? () => ref
+                          .read(tripQueryProvider.notifier)
+                          .setQuery(query.clearedFilters())
+                    : null,
               ),
               Expanded(
                 child: _buildList(

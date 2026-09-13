@@ -10,6 +10,14 @@
   "filterTrips": "Filter and sort",
   "filterAndSort": "Filter & sort",
   "clearFilters": "Clear",
+  "tripsMatching": "{total, plural, =1{{shown} of 1 trip} other{{shown} of {total} trips}}",
+  "@tripsMatching": {
+    "placeholders": { "shown": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "routinesMatching": "{total, plural, =1{{shown} of 1 routine} other{{shown} of {total} routines}}",
+  "@routinesMatching": {
+    "placeholders": { "shown": { "type": "int" }, "total": { "type": "int" } }
+  },
   "statusLabel": "Status",
   "tripStatusUpcoming": "Upcoming",
   "tripStatusOngoing": "Ongoing",

@@ -192,7 +192,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Clear'));
+    // The sheet's own button; the count line behind it carries one too.
+    await tester.tap(
+      find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text('Clear'),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
@@ -251,5 +257,48 @@ void main() {
 
     expect(find.text('Ada'), findsOneWidget);
     expect(find.text('Grace'), findsNothing);
+  });
+
+  group('the count line', () {
+    testWidgets('counts every routine when nothing is narrowed', (
+      tester,
+    ) async {
+      await pumpRoutines(tester, [
+        _routine(id: 1, title: 'Morning commute'),
+        _routine(id: 2, title: 'Saturday ride'),
+      ]);
+
+      expect(find.text('2 of 2 routines'), findsOneWidget);
+      expect(find.text('Clear'), findsNothing);
+    });
+
+    testWidgets('follows the tag bar and clears it again', (tester) async {
+      final commute = _tag(id: 10, name: 'commute');
+      await pumpRoutines(
+        tester,
+        [
+          _routine(id: 1, title: 'Morning commute'),
+          _routine(id: 2, title: 'Saturday ride'),
+        ],
+        tags: [commute],
+        tagsByTrip: {
+          1: [commute],
+        },
+      );
+
+      await tester.tap(
+        find.descendant(
+          of: find.byType(TagFilterBar),
+          matching: find.text('commute'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('1 of 2 routines'), findsOneWidget);
+
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 of 2 routines'), findsOneWidget);
+      expect(find.text('Saturday ride'), findsOneWidget);
+    });
   });
 }

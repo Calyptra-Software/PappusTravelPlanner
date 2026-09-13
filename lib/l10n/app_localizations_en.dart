@@ -39,6 +39,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearFilters => 'Clear';
 
   @override
+  String tripsMatching(int shown, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$shown of $total trips',
+      one: '$shown of 1 trip',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String routinesMatching(int shown, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$shown of $total routines',
+      one: '$shown of 1 routine',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get statusLabel => 'Status';
 
   @override
