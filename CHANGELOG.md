@@ -3,6 +3,21 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **The trip list says how many trips match the search and filters**, e.g. "12 of 40
+  trips", with a button to clear the filters while any is active. The routine list has the
+  same line.
+- **The overall statistics can be narrowed to some of the trips** — by status, dates, tag,
+  routine, or participant. The filter is separate from the trip list's and starts over each
+  time the statistics are opened.
+- **Routines no longer count twice in the overall statistics.** The transport tab counted a
+  routine's legs on top of the trips made from it, and the countries tab its places; the
+  expenses already left routines out.
+- **The Android app declares five fewer permissions.** A library behind the home-screen
+  widget added a wake lock, network state, start at boot, a foreground service, and one
+  internal permission. The app used none of them, and they are now removed.
+
 ## 1.11.4 — 2026-09-06
 
 - **Nothing changes in the app.** The three per-ABI builds are numbered by a different

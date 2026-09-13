@@ -33,6 +33,14 @@ Regenerate code after editing anything under generation:
 - **`flutter gen-l10n`** after editing `lib/l10n/app_en.arb` / `app_de.arb`. `app_en.arb` is
   the template; every key added there must also be added to `app_de.arb`.
 
+**A change a user can notice gets a `CHANGELOG.md` entry in the same pull request**, under
+`## Unreleased` at the top (create the heading if the last release took it). That covers
+features, fixed behavior, and what the installed app declares or contacts; not refactors,
+tests, CI, or dependency bumps that change nothing visible. One or two short sentences per
+entry, saying what changed for the user rather than how: the release step in
+`CONTRIBUTING.md` only renames the heading, so an entry that was not written with its
+change is not written at all.
+
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
 without touching it: which hosts are contacted (`api.transitous.org` for a connection
 search, `tile.openstreetmap.org` while a map is open, and nothing else), which permissions
@@ -113,6 +121,25 @@ UI (features/*/presentation, *widgets)
   while one is active: the search text belongs to the app bar's close button. With filters
   remembered across launches, this line is the plainest statement that the list is not
   everything.
+- **The all-trips statistics have a filter, and it is theirs.** `statsTripQueryProvider`
+  (`features/trips/application/stats_trips_provider.dart`) is a `TripQuery` read through the
+  same `applyTripQuery`, and `statsTripsProvider` is the one answer to "which trips count"
+  that the expenses, transport and countries tabs all read — they once each walked the trip
+  list, and only the expenses skipped routines. It is **not** the overview's query: the rule
+  that a statistic must not move because a chip was tapped elsewhere still stands, and what
+  it forbids is narrowing *unnoticed* — so the filter is set on the statistics screen, and
+  the `QueryResultLine` above the tabs says how many trips are counted. It is **not
+  remembered** either (`autoDispose`, no preferences): the overview's filter is a way of
+  reading a list used daily, a statistic is one question, and a subset left standing from
+  last time reads as the whole record. The sheet is the overview's `TripFilterSheet` with
+  `showSort: false`. A trip counts whole or not at all, by the overview's overlap rule — a
+  cost carries no date of its own, so dividing a New Year trip's spending between the two
+  years would be invented. Participants select *trips*, not *people's* spending: the per-person
+  figures still show everyone on those trips. Hand marks join the countries only while the
+  reading is unfiltered (`canMarkCountriesProvider`) — a filtered set asks about journeys, and
+  a mark is not about one — and cannot be made there, or a tick would vanish as it was made.
+  The tag and participant maps are watched only while a facet needs them, so the unfiltered
+  screen opens no stream it has no use for.
 - **The routine list is read the same way, by a query of its own.** `RoutineQuery` /
   `applyRoutineQuery` (`features/trips/routine_filter.dart`, pure) and the persisted
   `routineQueryProvider` are the overview's pattern applied to the other half of the same
@@ -160,9 +187,12 @@ UI (features/*/presentation, *widgets)
   *price*, "what this ride costs", which is the only reason to put one on a template. So it
   travels, **unpaid** (paying is what an occurrence does, as a copied checklist arrives
   unticked), with its split; a settlement never travels, since a template cannot be owed.
-  The corollary is that a routine's own costs count toward **no** total: `allTripsStatsProvider`
-  drops routines, or the same fare would be charged both to the plan and to every trip made
-  from it. Groups and decisions are cloned into fresh ones. Participants travel,
+  The corollary is that a routine's own costs count toward **no** total: the all-trips
+  statistics read their trips from `statsTripsProvider`, which drops routines, or the same
+  fare would be charged both to the plan and to every trip made from it — and the same leg
+  counted twice in the transport tab, and its positions in the countries tab. All three tabs
+  read that one provider because they once each walked the trip list themselves, and only
+  the expenses remembered to skip the templates. Groups and decisions are cloned into fresh ones. Participants travel,
   and so do the routine's **tags** — a tag the user must re-add every morning is missing by
   Thursday, and auto-filing the trips stamped out of routines is what makes tags carry the
   crowding they were introduced for. Its **checklists** travel for the same reason and by the
@@ -1115,8 +1145,8 @@ UI (features/*/presentation, *widgets)
   trip touched are a third tab of `TripStatsScreen`, not a layer on the all-trips map: the
   map answers "where did I go" and this answers "how much have I seen", and the two sit on
   opposite sides of the filter split — the map draws what `applyTripQuery` left visible,
-  while the statistics read the whole record, which is why an answer here must not move when
-  a tag chip is tapped. It is a `FlutterMap` with **no tiles at all**, only a `PolygonLayer`
+  while the statistics read through a filter of their own (`statsTripQueryProvider`, below),
+  which is why an answer here must not move when a tag chip on the overview is tapped. It is a `FlutterMap` with **no tiles at all**, only a `PolygonLayer`
   over `assets/geo/countries.json`, so it costs nobody's donated server, works offline, and
   worked on the web from its first day. A street map under it would answer a question nobody
   asked and make the fills harder to read.
