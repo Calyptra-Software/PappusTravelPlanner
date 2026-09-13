@@ -101,6 +101,18 @@ UI (features/*/presentation, *widgets)
   tag/participant ids name rows in *this* database: point the app at another file and a
   stored filter may match nothing, which the filter badge and "clear filters" are the way
   back out of.
+- **The count above the overview says what matches, and says it always.** `QueryResultLine`
+  (`features/trips/widgets/`) sits under the tag bar on both lists and reads "12 of 40
+  trips", also as "40 of 40" when nothing is narrowed: the two readings share one shape, the
+  total is worth having on its own, and a line that appeared with the first tapped chip would
+  shove the list down under the finger. It counts **matches**, not what is on screen — above
+  the calendar a month shows only some of them, and the map cannot draw a trip without
+  positions — hence "of" and never "shown". The denominator is `applyTripQuery` with an empty
+  query rather than `trips.length`, because `tripListProvider` holds the routines too. Its
+  *Clear* clears the filter facets only, the scope of the sheet's own button, and appears only
+  while one is active: the search text belongs to the app bar's close button. With filters
+  remembered across launches, this line is the plainest statement that the list is not
+  everything.
 - **The routine list is read the same way, by a query of its own.** `RoutineQuery` /
   `applyRoutineQuery` (`features/trips/routine_filter.dart`, pure) and the persisted
   `routineQueryProvider` are the overview's pattern applied to the other half of the same

@@ -104,7 +104,9 @@ because a routine has no dates. Everything except the text search is remembered.
 
 Search by text, and filter by status (upcoming / ongoing / past / undated), by tag, by
 participant, by originating routine, or by date range. Sort by date, name, creation, or
-total expenses. The search and filter buttons are in the main menu bar.
+total expenses. The search and filter buttons are in the main menu bar. A line above the
+list says how many trips match ("12 of 40 trips"), with a button to clear the filters.
+The routine list has the same line.
 
 Every part of that except the text search is remembered across launches, so "only my
 walks, newest first" survives closing the app. The text search deliberately is not: a

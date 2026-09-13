@@ -40,6 +40,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get clearFilters => 'Zurücksetzen';
 
   @override
+  String tripsMatching(int shown, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$shown von $total Reisen',
+      one: '$shown von 1 Reise',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String routinesMatching(int shown, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$shown von $total Routinen',
+      one: '$shown von 1 Routine',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get statusLabel => 'Status';
 
   @override

@@ -10,6 +10,14 @@
   "filterTrips": "Filtern und sortieren",
   "filterAndSort": "Filtern & sortieren",
   "clearFilters": "Zurücksetzen",
+  "tripsMatching": "{total, plural, =1{{shown} von 1 Reise} other{{shown} von {total} Reisen}}",
+  "@tripsMatching": {
+    "placeholders": { "shown": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "routinesMatching": "{total, plural, =1{{shown} von 1 Routine} other{{shown} von {total} Routinen}}",
+  "@routinesMatching": {
+    "placeholders": { "shown": { "type": "int" }, "total": { "type": "int" } }
+  },
   "statusLabel": "Status",
   "tripStatusUpcoming": "Bevorstehend",
   "tripStatusOngoing": "Laufend",

@@ -225,4 +225,72 @@ void main() {
       expect(sheet.destination, isA<JourneyLookup>());
     });
   });
+
+  group('the count line', () {
+    testWidgets('counts every trip when nothing is narrowed', (tester) async {
+      await pumpOverview(tester, [
+        _trip(id: 1, title: 'Zermatt'),
+        _trip(id: 2, title: 'Aachen'),
+      ]);
+
+      expect(find.text('2 of 2 trips'), findsOneWidget);
+      expect(find.text('Clear'), findsNothing);
+    });
+
+    testWidgets('does not count the routines the stream also holds', (
+      tester,
+    ) async {
+      await pumpOverview(tester, [
+        _trip(id: 1, title: 'Zermatt'),
+        _trip(id: 2, title: 'Commute').copyWith(kind: TripKind.routine),
+      ]);
+
+      expect(find.text('1 of 1 trip'), findsOneWidget);
+    });
+
+    testWidgets('a search narrows the count but offers nothing to clear', (
+      tester,
+    ) async {
+      await pumpOverview(tester, [
+        _trip(id: 1, title: 'Zermatt'),
+        _trip(id: 2, title: 'Aachen'),
+      ]);
+
+      await tester.tap(find.byIcon(Icons.search));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'zer');
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 of 2 trips'), findsOneWidget);
+      // The search is thrown away by the app bar's close button instead.
+      expect(find.text('Clear'), findsNothing);
+    });
+
+    testWidgets('a remembered filter is counted, and cleared from the line', (
+      tester,
+    ) async {
+      await pumpOverview(
+        tester,
+        [_trip(id: 1, title: 'Zermatt')],
+        prefs: {'trips_filter_statuses': 1 << TripStatus.past.index},
+      );
+
+      expect(find.text('0 of 1 trip'), findsOneWidget);
+
+      await tester.tap(find.text('Clear'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 of 1 trip'), findsOneWidget);
+      expect(find.text('Zermatt'), findsOneWidget);
+    });
+
+    testWidgets('reads in German', (tester) async {
+      await pumpOverview(tester, [
+        _trip(id: 1, title: 'Zermatt'),
+        _trip(id: 2, title: 'Aachen'),
+      ], locale: const Locale('de'));
+
+      expect(find.text('2 von 2 Reisen'), findsOneWidget);
+    });
+  });
 }
