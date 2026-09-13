@@ -10567,8 +10567,10 @@ class $$TripsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$TripsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$TripsTable, Trip>(table),
+                  $$TripsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -11271,7 +11273,7 @@ class $$ItemGroupsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ItemGroupsTable, ItemGroup>(table),
                   $$ItemGroupsTableReferences(db, table, e),
                 ),
               )
@@ -11737,7 +11739,7 @@ class $$AlternativeSetsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AlternativeSetsTable, AlternativeSet>(table),
                   $$AlternativeSetsTableReferences(db, table, e),
                 ),
               )
@@ -12139,7 +12141,7 @@ class $$AlternativesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AlternativesTable, Alternative>(table),
                   $$AlternativesTableReferences(db, table, e),
                 ),
               )
@@ -12478,7 +12480,7 @@ class $$TransportModesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TransportModesTable, TransportModeRow>(table),
                   $$TransportModesTableReferences(db, table, e),
                 ),
               )
@@ -13697,7 +13699,7 @@ class $$ItineraryItemsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ItineraryItemsTable, ItineraryItem>(table),
                   $$ItineraryItemsTableReferences(db, table, e),
                 ),
               )
@@ -14157,7 +14159,7 @@ class $$CurrenciesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CurrenciesTable, CurrencyRow>(table),
                   $$CurrenciesTableReferences(db, table, e),
                 ),
               )
@@ -14866,8 +14868,10 @@ class $$CostsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$CostsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$CostsTable, Cost>(table),
+                  $$CostsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -15133,7 +15137,16 @@ class $$CostReasonsTableTableManager
                 iconId: iconId,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$CostReasonsTable, CostReason>(table),
+                  BaseReferences<_$AppDatabase, $CostReasonsTable, CostReason>(
+                    db,
+                    table,
+                    e,
+                  ),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -15380,8 +15393,10 @@ class $$TagsTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$TagsTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$TagsTable, Tag>(table),
+                  $$TagsTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({tripTagsRefs = false}) {
@@ -15691,7 +15706,7 @@ class $$TripTagsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TripTagsTable, TripTag>(table),
                   $$TripTagsTableReferences(db, table, e),
                 ),
               )
@@ -16040,8 +16055,10 @@ class $$PeopleTableTableManager
               }) => PeopleCompanion.insert(id: id, name: name, isMe: isMe),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$PeopleTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$PeopleTable, Person>(table),
+                  $$PeopleTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback:
@@ -16398,7 +16415,7 @@ class $$TripParticipantsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$TripParticipantsTable, TripParticipant>(table),
                   $$TripParticipantsTableReferences(db, table, e),
                 ),
               )
@@ -16762,7 +16779,7 @@ class $$CostBeneficiariesTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CostBeneficiariesTable, CostBeneficiary>(table),
                   $$CostBeneficiariesTableReferences(db, table, e),
                 ),
               )
@@ -17177,7 +17194,7 @@ class $$ChecklistsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ChecklistsTable, Checklist>(table),
                   $$ChecklistsTableReferences(db, table, e),
                 ),
               )
@@ -17539,7 +17556,7 @@ class $$ChecklistItemsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$ChecklistItemsTable, ChecklistItem>(table),
                   $$ChecklistItemsTableReferences(db, table, e),
                 ),
               )
@@ -17804,7 +17821,7 @@ class $$CollapsedDaysTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$CollapsedDaysTable, CollapsedDay>(table),
                   $$CollapsedDaysTableReferences(db, table, e),
                 ),
               )
@@ -18154,8 +18171,10 @@ class $$TracksTableTableManager
               ),
           withReferenceMapper: (p0) => p0
               .map(
-                (e) =>
-                    (e.readTable(table), $$TracksTableReferences(db, table, e)),
+                (e) => (
+                  e.readTable<$TracksTable, Track>(table),
+                  $$TracksTableReferences(db, table, e),
+                ),
               )
               .toList(),
           prefetchHooksCallback: ({itemId = false}) {
@@ -18342,7 +18361,16 @@ class $$VisitedCountriesTableTableManager
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .map(
+                (e) => (
+                  e.readTable<$VisitedCountriesTable, VisitedCountry>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $VisitedCountriesTable,
+                    VisitedCountry
+                  >(db, table, e),
+                ),
+              )
               .toList(),
           prefetchHooksCallback: null,
         ),
@@ -19055,7 +19083,7 @@ class $$AttachmentsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AttachmentsTable, Attachment>(table),
                   $$AttachmentsTableReferences(db, table, e),
                 ),
               )
@@ -19384,7 +19412,7 @@ class $$AttachmentBlobsTableTableManager
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable(table),
+                  e.readTable<$AttachmentBlobsTable, AttachmentBlob>(table),
                   $$AttachmentBlobsTableReferences(db, table, e),
                 ),
               )
