@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
+import '../../trips/application/stats_trips_provider.dart';
 import '../../trips/application/trip_providers.dart';
 import '../trip_stats.dart';
 import 'currency_providers.dart';
@@ -117,18 +118,19 @@ final tripStatsProvider = Provider.autoDispose.family<TripStats, int>((
   ], book);
 });
 
-/// Expense statistics pooled across **all** trips — the overall overview. Each
-/// trip is computed on its own (so costs still fall back to their own trip's
-/// participants) and the results are merged; see [mergeTripStats].
+/// Expense statistics pooled across the trips the statistics count — the
+/// overall overview. Each trip is computed on its own (so costs still fall back
+/// to their own trip's participants) and the results are merged; see
+/// [mergeTripStats].
+///
+/// Routines are never among them ([statsTripsProvider]): a routine's costs are
+/// a *fare*, the price this ride costs, not money that was spent. They are
+/// copied onto each trip stamped out of it, and counting the template as well
+/// would charge the user for a journey they had merely described.
 final allTripsStatsProvider = Provider.autoDispose<TripStats>((ref) {
-  final trips = ref.watch(tripListProvider).value ?? const <Trip>[];
   return mergeTripStats([
-    // Routines are left out: a routine's costs are a *fare*, the price this
-    // ride costs, not money that was spent. They are copied onto each trip
-    // stamped out of it, and counting the template as well would charge the
-    // user for a journey they had merely described.
-    for (final trip in trips)
-      if (trip.kind != TripKind.routine) ref.watch(tripStatsProvider(trip.id)),
+    for (final trip in ref.watch(statsTripsProvider))
+      ref.watch(tripStatsProvider(trip.id)),
   ], ref.watch(currencyBookProvider));
 });
 

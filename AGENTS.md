@@ -160,9 +160,12 @@ UI (features/*/presentation, *widgets)
   *price*, "what this ride costs", which is the only reason to put one on a template. So it
   travels, **unpaid** (paying is what an occurrence does, as a copied checklist arrives
   unticked), with its split; a settlement never travels, since a template cannot be owed.
-  The corollary is that a routine's own costs count toward **no** total: `allTripsStatsProvider`
-  drops routines, or the same fare would be charged both to the plan and to every trip made
-  from it. Groups and decisions are cloned into fresh ones. Participants travel,
+  The corollary is that a routine's own costs count toward **no** total: the all-trips
+  statistics read their trips from `statsTripsProvider`, which drops routines, or the same
+  fare would be charged both to the plan and to every trip made from it — and the same leg
+  counted twice in the transport tab, and its positions in the countries tab. All three tabs
+  read that one provider because they once each walked the trip list themselves, and only
+  the expenses remembered to skip the templates. Groups and decisions are cloned into fresh ones. Participants travel,
   and so do the routine's **tags** — a tag the user must re-add every morning is missing by
   Thursday, and auto-filing the trips stamped out of routines is what makes tags carry the
   crowding they were introduced for. Its **checklists** travel for the same reason and by the

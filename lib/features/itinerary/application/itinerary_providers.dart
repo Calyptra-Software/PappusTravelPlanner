@@ -6,7 +6,7 @@ import '../../../data/database/track_points.dart';
 import '../../map/map_features.dart';
 import '../../map/track_summary.dart';
 import '../../../data/database/app_database.dart';
-import '../../trips/application/trip_providers.dart';
+import '../../trips/application/stats_trips_provider.dart';
 import '../live_items.dart';
 import '../transport_stats.dart';
 
@@ -153,14 +153,17 @@ final transportStatsProvider = Provider.autoDispose.family<TransportStats, int>(
   },
 );
 
-/// Transport statistics pooled across **all** trips — the overall overview. Each
-/// trip is aggregated (and time-balanced) on its own and the results are summed
-/// per mode; see [mergeTransportStats].
+/// Transport statistics pooled across the trips the statistics count — the
+/// overall overview. Each trip is aggregated (and time-balanced) on its own and
+/// the results are summed per mode; see [mergeTransportStats].
 final allTripsTransportStatsProvider = Provider.autoDispose<TransportStats>((
   ref,
 ) {
-  final trips = ref.watch(tripListProvider).value ?? const <Trip>[];
+  // The trips the statistics count, which leaves the routines out: a template's
+  // legs are traveled by the trips stamped out of it, and counting them on the
+  // template as well added every commute once more than it was made.
   return mergeTransportStats([
-    for (final trip in trips) ref.watch(transportStatsProvider(trip.id)),
+    for (final trip in ref.watch(statsTripsProvider))
+      ref.watch(transportStatsProvider(trip.id)),
   ]);
 });

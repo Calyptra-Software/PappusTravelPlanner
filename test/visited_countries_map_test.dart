@@ -17,6 +17,7 @@ import 'package:travelplanner/features/itinerary/application/itinerary_providers
 import 'package:travelplanner/features/map/application/visited_countries_providers.dart';
 import 'package:travelplanner/features/map/visited_countries.dart';
 import 'package:travelplanner/features/map/widgets/visited_countries_map.dart';
+import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 /// The world with the countries a trip touched filled in.
@@ -198,6 +199,8 @@ void main() {
     Future<void> pumpAllTrips(
       WidgetTester tester, {
       Set<String> marked = const {},
+      List<Trip> trips = const [],
+      List<ItineraryItem> items = const [],
       AppDatabase? writingTo,
     }) async {
       await tester.pumpWidget(
@@ -205,9 +208,8 @@ void main() {
           overrides: [
             countryOutlinesProvider.overrideWith((ref) async => outlines),
             markedCountriesProvider.overrideWith((ref) => Stream.value(marked)),
-            positionedItemsProvider.overrideWith(
-              (ref) => Stream.value(const []),
-            ),
+            tripListProvider.overrideWith((ref) => Stream.value(trips)),
+            positionedItemsProvider.overrideWith((ref) => Stream.value(items)),
             // Only where a test wants to see what a tap writes: the marks the
             // screen *reads* are stubbed above, since a drift stream never
             // resolves under fake-async.
@@ -237,6 +239,35 @@ void main() {
       await pumpAllTrips(tester, marked: {'JP', 'NZ'});
 
       expect(find.textContaining('2 of'), findsWidgets);
+    });
+
+    testWidgets('a routine\'s positions are not a visit', (tester) async {
+      // A template is traveled by the trips stamped out of it; counting its
+      // own entries too would credit a country nobody went to on that plan.
+      Trip row(int id, TripKind kind) => Trip(
+        id: id,
+        title: 'Trip $id',
+        destination: '',
+        kind: kind,
+        colorValue: 0xFF112233,
+        coverHidden: false,
+        photosCollapsed: false,
+        createdAt: DateTime(2026),
+      );
+      await pumpAllTrips(
+        tester,
+        trips: [row(tripId, TripKind.trip), row(9, TripKind.routine)],
+        items: [
+          place(1, 53.5511, 9.9937), // Hamburg, on the trip
+          place(
+            2,
+            48.8566,
+            2.3522,
+          ).copyWith(tripId: 9), // Paris, on the routine
+        ],
+      );
+
+      expect(find.textContaining('1 of'), findsWidgets);
     });
 
     testWidgets('the list says a mark can be taken back and a trip cannot', (
@@ -399,6 +430,7 @@ void main() {
           overrides: [
             countryOutlinesProvider.overrideWith((ref) async => outlines),
             markedCountriesProvider.overrideWith((ref) => marks.stream),
+            tripListProvider.overrideWith((ref) => Stream.value(const [])),
             positionedItemsProvider.overrideWith(
               (ref) => Stream.value(const []),
             ),

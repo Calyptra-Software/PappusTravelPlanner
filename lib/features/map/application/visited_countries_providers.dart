@@ -5,6 +5,7 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/live_items.dart';
+import '../../trips/application/stats_trips_provider.dart';
 import '../visited_countries.dart';
 
 /// The world's country outlines, read from the bundle once.
@@ -32,11 +33,12 @@ final markedCountriesProvider = StreamProvider.autoDispose<Set<String>>(
 /// Areas rather than states: this is where somebody stood, and Greenland is not
 /// Denmark to a map even though it is to a tally.
 ///
-/// The all-trips reading is the **whole record**, not what the overview happens
-/// to be filtered to: the map answers "where did I go", this answers "how much
-/// have I seen", and an aggregate that moved when a tag chip was tapped would be
-/// answering neither. That is the same side of the split `allTripsStatsProvider`
-/// already sits on.
+/// The all-trips reading is the trips the statistics count ([statsTripsProvider]),
+/// never what the overview happens to be filtered to: the map answers "where did
+/// I go", this answers "how much have I seen", and an aggregate that moved when a
+/// tag chip was tapped would be answering neither. That is the same side of the
+/// split `allTripsStatsProvider` sits on. Routines are not among them — a
+/// template is traveled by the trips stamped out of it, not by itself.
 final visitedCountriesProvider = Provider.autoDispose.family<Set<String>, int?>(
   (ref, tripId) {
     final outlines = ref.watch(countryOutlinesProvider).value;
@@ -44,7 +46,15 @@ final visitedCountriesProvider = Provider.autoDispose.family<Set<String>, int?>(
 
     final List<ItineraryItem> items;
     if (tripId == null) {
-      items = ref.watch(positionedItemsProvider).value ?? const [];
+      // One unfiltered stream, narrowed here: a family keyed by the set of
+      // trip ids would compare by identity and rebuild on every frame.
+      final counted = {
+        for (final trip in ref.watch(statsTripsProvider)) trip.id,
+      };
+      items = [
+        for (final item in ref.watch(positionedItemsProvider).value ?? const [])
+          if (counted.contains(item.tripId)) item,
+      ];
     } else {
       // A single trip reads through the live rule, as everything about one trip
       // does: an option nobody chose is a road not taken, and it did not take
