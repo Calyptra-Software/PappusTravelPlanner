@@ -130,6 +130,11 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
   /// Whether the expense has already been paid/settled.
   bool _paid = false;
 
+  /// Whether a settlement is a reimbursement from outside the group (see
+  /// [Costs.isReimbursement]). Unlike what the row *is*, this is a form field:
+  /// an allowance first booked as a settlement is corrected by ticking it.
+  bool _reimbursement = false;
+
   bool get _isEditing => widget.existing != null;
 
   /// Whether the sheet is editing a settlement between two people rather than
@@ -147,6 +152,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       _reasonController.text = existing.reason;
       _payerController.text = existing.paidBy ?? '';
       _paid = existing.paid;
+      _reimbursement = existing.isReimbursement;
     } else {
       final amount = widget.initialAmountMinor;
       if (amount != null) {
@@ -311,6 +317,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         currencyId: _currencyId!,
         from: from,
         to: to,
+        reimbursement: _reimbursement,
       );
     } else {
       await controller.addTransfer(
@@ -319,6 +326,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         currencyId: _currencyId!,
         from: from,
         to: to,
+        reimbursement: _reimbursement,
       );
     }
     if (mounted) Navigator.of(context).pop();
@@ -492,7 +500,9 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
 
   /// The two ends of a settlement: who hands the money over and who receives it.
   /// No category, no split and no "already paid" — recording a settlement says
-  /// it happened, and it is not a kind of spending.
+  /// it happened, and it is not a kind of spending. The one choice beside the
+  /// ends is whether the money came from outside the group, which decides
+  /// whether it squares anybody up.
   List<Widget> _transferFields(
     ThemeData theme,
     AppLocalizations l10n,
@@ -544,9 +554,17 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
           return null;
         },
       ),
-      const SizedBox(height: 12),
+      const SizedBox(height: 8),
+      CheckboxListTile(
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+        value: _reimbursement,
+        onChanged: (value) => setState(() => _reimbursement = value ?? false),
+        title: Text(l10n.transferReimbursement),
+      ),
+      const SizedBox(height: 4),
       Text(
-        l10n.transferHint,
+        _reimbursement ? l10n.transferReimbursementHint : l10n.transferHint,
         style: theme.textTheme.bodySmall?.copyWith(
           color: theme.colorScheme.onSurfaceVariant,
         ),

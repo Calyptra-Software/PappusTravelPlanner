@@ -654,6 +654,25 @@ UI (features/*/presentation, *widgets)
   goes through `CostController.addTransfer` / `showTransferFormSheet` (a "from → to" form, no
   category, no split), reachable from the trip's general expenses and, prefilled, from each
   suggested payment in the settle-up list.
+- **A reimbursement is a settlement from outside the group** (`Costs.isReimbursement`, v37,
+  only ever set together with `isTransfer`): an employer's flat allowance, an insurer. It has
+  a settlement's shape — `paidBy` the source, one beneficiary the receiver — and, as the one
+  thing a settlement cannot say, moves **no** balance. Booked as an ordinary settlement it
+  left the receiver owing the source exactly what the source had paid them. It is a flag on
+  the settlement and not a flag on the expenses it covers, because allowances are flat sums
+  that belong to no expense and match none in amount. `computeTripStats` reports it beside
+  the balances instead: `PersonStat.reimbursedMinor` for the receiver, and
+  `CurrencyStats.reimbursementsBySource` per source, which `mergeTripStats` pools — "how much
+  has my employer paid back this year" is the question the all-trips reading answers. The
+  source is **not** in `byPerson`: it neither paid for nor benefited from anything on the
+  trip. It belongs to its receiver alone, so a traveler whose allowance covers a dinner they
+  paid for somebody else is still owed that somebody's share. The flag is a form field, not
+  fixed at opening like `isTransfer`, since an allowance already booked as a settlement is
+  corrected by ticking it. `CostController.addTransfer`/`updateTransfer` are its only
+  writers, and the importer drops it off anything that is not a transfer. A trip holding one
+  goes out as `.tpt` **v5**, because an older app would read it as a settlement and show the
+  debt. Deliberately not built (yet): marking an *expense* as not to be repaid, for the case
+  where somebody on the trip pays for others as a gift.
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
@@ -1680,7 +1699,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 36) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 37) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

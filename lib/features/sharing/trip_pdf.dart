@@ -496,14 +496,29 @@ class _TripPdfBuilder {
 
   /// The settlements between people, listed apart from the expenses because
   /// they are not spending: they only move money from one person to another.
-  /// Rendered as two named columns rather than "A -> B" — the bundled Roboto
-  /// has no arrow glyph.
+  /// Reimbursements from outside the group follow under a heading of their
+  /// own, since they square nobody up. Rendered as two named columns rather
+  /// than "A -> B" — the bundled Roboto has no arrow glyph.
   Iterable<pw.Widget> _transfersSection() sync* {
     // Part of the expenses section, not a choice of its own: a repayment only
     // reads next to the balances it settles.
     if (!sections.contains(PdfSection.expenses)) return;
 
-    final transfers = bundleTransfers(bundle);
+    final all = bundleTransfers(bundle);
+    yield* _transferTable(l10n.transfers, [
+      for (final c in all)
+        if (!c.isReimbursement) c,
+    ]);
+    yield* _transferTable(l10n.reimbursements, [
+      for (final c in all)
+        if (c.isReimbursement) c,
+    ]);
+  }
+
+  Iterable<pw.Widget> _transferTable(
+    String title,
+    List<BundleCost> transfers,
+  ) sync* {
     if (transfers.isEmpty) return;
 
     pw.Widget cell(String text, {bool bold = false, pw.Alignment? align}) {
@@ -521,7 +536,7 @@ class _TripPdfBuilder {
     }
 
     yield pw.SizedBox(height: 16);
-    yield _sectionTitle(l10n.transfers);
+    yield _sectionTitle(title);
     yield pw.SizedBox(height: 6);
     yield pw.Table(
       border: pw.TableBorder(

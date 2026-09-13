@@ -80,7 +80,9 @@ List<BundleCost> countedBundleCosts(
   ];
 }
 
-/// The settlements: money handed from one person to another to square up.
+/// The settlements: money handed from one person to another to square up — and
+/// the reimbursements, which share their shape and are told apart by
+/// [BundleCost.isReimbursement].
 List<BundleCost> bundleTransfers(TripBundle bundle) => [
   for (final c in bundle.costs)
     if (c.isTransfer) c,

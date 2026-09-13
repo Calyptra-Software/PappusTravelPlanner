@@ -4419,6 +4419,21 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isReimbursementMeta = const VerificationMeta(
+    'isReimbursement',
+  );
+  @override
+  late final GeneratedColumn<bool> isReimbursement = GeneratedColumn<bool>(
+    'is_reimbursement',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_reimbursement" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -4443,6 +4458,7 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
     paidBy,
     paid,
     isTransfer,
+    isReimbursement,
     createdAt,
   ];
   @override
@@ -4523,6 +4539,15 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
         isTransfer.isAcceptableOrUnknown(data['is_transfer']!, _isTransferMeta),
       );
     }
+    if (data.containsKey('is_reimbursement')) {
+      context.handle(
+        _isReimbursementMeta,
+        isReimbursement.isAcceptableOrUnknown(
+          data['is_reimbursement']!,
+          _isReimbursementMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -4578,6 +4603,10 @@ class $CostsTable extends Costs with TableInfo<$CostsTable, Cost> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_transfer'],
       )!,
+      isReimbursement: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_reimbursement'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -4626,6 +4655,15 @@ class Cost extends DataClass implements Insertable<Cost> {
   /// paid/open split and the category breakdown all leave it out, because no
   /// money left the group. See `computeTripStats`.
   final bool isTransfer;
+
+  /// Marks a [isTransfer] row as a **reimbursement**: money that came into the
+  /// group from outside it — an employer's allowance, an insurer — rather than
+  /// money handed between travelers to square up. It keeps the shape of a
+  /// transfer ([paidBy] the source, its single beneficiary the receiver), but it
+  /// moves nobody's balance: nobody on the trip owes the source anything for it.
+  /// Only ever true together with [isTransfer], which `CostController` is the
+  /// one place to write. See `computeTripStats`.
+  final bool isReimbursement;
   final DateTime createdAt;
   const Cost({
     required this.id,
@@ -4638,6 +4676,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     this.paidBy,
     required this.paid,
     required this.isTransfer,
+    required this.isReimbursement,
     required this.createdAt,
   });
   @override
@@ -4661,6 +4700,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     }
     map['paid'] = Variable<bool>(paid);
     map['is_transfer'] = Variable<bool>(isTransfer);
+    map['is_reimbursement'] = Variable<bool>(isReimbursement);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -4685,6 +4725,7 @@ class Cost extends DataClass implements Insertable<Cost> {
           : Value(paidBy),
       paid: Value(paid),
       isTransfer: Value(isTransfer),
+      isReimbursement: Value(isReimbursement),
       createdAt: Value(createdAt),
     );
   }
@@ -4705,6 +4746,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       paidBy: serializer.fromJson<String?>(json['paidBy']),
       paid: serializer.fromJson<bool>(json['paid']),
       isTransfer: serializer.fromJson<bool>(json['isTransfer']),
+      isReimbursement: serializer.fromJson<bool>(json['isReimbursement']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -4722,6 +4764,7 @@ class Cost extends DataClass implements Insertable<Cost> {
       'paidBy': serializer.toJson<String?>(paidBy),
       'paid': serializer.toJson<bool>(paid),
       'isTransfer': serializer.toJson<bool>(isTransfer),
+      'isReimbursement': serializer.toJson<bool>(isReimbursement),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -4737,6 +4780,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     Value<String?> paidBy = const Value.absent(),
     bool? paid,
     bool? isTransfer,
+    bool? isReimbursement,
     DateTime? createdAt,
   }) => Cost(
     id: id ?? this.id,
@@ -4749,6 +4793,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     paidBy: paidBy.present ? paidBy.value : this.paidBy,
     paid: paid ?? this.paid,
     isTransfer: isTransfer ?? this.isTransfer,
+    isReimbursement: isReimbursement ?? this.isReimbursement,
     createdAt: createdAt ?? this.createdAt,
   );
   Cost copyWithCompanion(CostsCompanion data) {
@@ -4767,6 +4812,9 @@ class Cost extends DataClass implements Insertable<Cost> {
       isTransfer: data.isTransfer.present
           ? data.isTransfer.value
           : this.isTransfer,
+      isReimbursement: data.isReimbursement.present
+          ? data.isReimbursement.value
+          : this.isReimbursement,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -4784,6 +4832,7 @@ class Cost extends DataClass implements Insertable<Cost> {
           ..write('paidBy: $paidBy, ')
           ..write('paid: $paid, ')
           ..write('isTransfer: $isTransfer, ')
+          ..write('isReimbursement: $isReimbursement, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -4801,6 +4850,7 @@ class Cost extends DataClass implements Insertable<Cost> {
     paidBy,
     paid,
     isTransfer,
+    isReimbursement,
     createdAt,
   );
   @override
@@ -4817,6 +4867,7 @@ class Cost extends DataClass implements Insertable<Cost> {
           other.paidBy == this.paidBy &&
           other.paid == this.paid &&
           other.isTransfer == this.isTransfer &&
+          other.isReimbursement == this.isReimbursement &&
           other.createdAt == this.createdAt);
 }
 
@@ -4831,6 +4882,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
   final Value<String?> paidBy;
   final Value<bool> paid;
   final Value<bool> isTransfer;
+  final Value<bool> isReimbursement;
   final Value<DateTime> createdAt;
   const CostsCompanion({
     this.id = const Value.absent(),
@@ -4843,6 +4895,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     this.paidBy = const Value.absent(),
     this.paid = const Value.absent(),
     this.isTransfer = const Value.absent(),
+    this.isReimbursement = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   CostsCompanion.insert({
@@ -4856,6 +4909,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     this.paidBy = const Value.absent(),
     this.paid = const Value.absent(),
     this.isTransfer = const Value.absent(),
+    this.isReimbursement = const Value.absent(),
     this.createdAt = const Value.absent(),
   }) : amountMinor = Value(amountMinor),
        currency = Value(currency),
@@ -4871,6 +4925,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     Expression<String>? paidBy,
     Expression<bool>? paid,
     Expression<bool>? isTransfer,
+    Expression<bool>? isReimbursement,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
@@ -4884,6 +4939,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
       if (paidBy != null) 'paid_by': paidBy,
       if (paid != null) 'paid': paid,
       if (isTransfer != null) 'is_transfer': isTransfer,
+      if (isReimbursement != null) 'is_reimbursement': isReimbursement,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -4899,6 +4955,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     Value<String?>? paidBy,
     Value<bool>? paid,
     Value<bool>? isTransfer,
+    Value<bool>? isReimbursement,
     Value<DateTime>? createdAt,
   }) {
     return CostsCompanion(
@@ -4912,6 +4969,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
       paidBy: paidBy ?? this.paidBy,
       paid: paid ?? this.paid,
       isTransfer: isTransfer ?? this.isTransfer,
+      isReimbursement: isReimbursement ?? this.isReimbursement,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -4949,6 +5007,9 @@ class CostsCompanion extends UpdateCompanion<Cost> {
     if (isTransfer.present) {
       map['is_transfer'] = Variable<bool>(isTransfer.value);
     }
+    if (isReimbursement.present) {
+      map['is_reimbursement'] = Variable<bool>(isReimbursement.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -4968,6 +5029,7 @@ class CostsCompanion extends UpdateCompanion<Cost> {
           ..write('paidBy: $paidBy, ')
           ..write('paid: $paid, ')
           ..write('isTransfer: $isTransfer, ')
+          ..write('isReimbursement: $isReimbursement, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -14220,6 +14282,7 @@ typedef $$CostsTableCreateCompanionBuilder =
       Value<String?> paidBy,
       Value<bool> paid,
       Value<bool> isTransfer,
+      Value<bool> isReimbursement,
       Value<DateTime> createdAt,
     });
 typedef $$CostsTableUpdateCompanionBuilder =
@@ -14234,6 +14297,7 @@ typedef $$CostsTableUpdateCompanionBuilder =
       Value<String?> paidBy,
       Value<bool> paid,
       Value<bool> isTransfer,
+      Value<bool> isReimbursement,
       Value<DateTime> createdAt,
     });
 
@@ -14366,6 +14430,11 @@ class $$CostsTableFilterComposer extends Composer<_$AppDatabase, $CostsTable> {
 
   ColumnFilters<bool> get isTransfer => $composableBuilder(
     column: $table.isTransfer,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isReimbursement => $composableBuilder(
+    column: $table.isReimbursement,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14531,6 +14600,11 @@ class $$CostsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isReimbursement => $composableBuilder(
+    column: $table.isReimbursement,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -14657,6 +14731,11 @@ class $$CostsTableAnnotationComposer
 
   GeneratedColumn<bool> get isTransfer => $composableBuilder(
     column: $table.isTransfer,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isReimbursement => $composableBuilder(
+    column: $table.isReimbursement,
     builder: (column) => column,
   );
 
@@ -14826,6 +14905,7 @@ class $$CostsTableTableManager
                 Value<String?> paidBy = const Value.absent(),
                 Value<bool> paid = const Value.absent(),
                 Value<bool> isTransfer = const Value.absent(),
+                Value<bool> isReimbursement = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CostsCompanion(
                 id: id,
@@ -14838,6 +14918,7 @@ class $$CostsTableTableManager
                 paidBy: paidBy,
                 paid: paid,
                 isTransfer: isTransfer,
+                isReimbursement: isReimbursement,
                 createdAt: createdAt,
               ),
           createCompanionCallback:
@@ -14852,6 +14933,7 @@ class $$CostsTableTableManager
                 Value<String?> paidBy = const Value.absent(),
                 Value<bool> paid = const Value.absent(),
                 Value<bool> isTransfer = const Value.absent(),
+                Value<bool> isReimbursement = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => CostsCompanion.insert(
                 id: id,
@@ -14864,6 +14946,7 @@ class $$CostsTableTableManager
                 paidBy: paidBy,
                 paid: paid,
                 isTransfer: isTransfer,
+                isReimbursement: isReimbursement,
                 createdAt: createdAt,
               ),
           withReferenceMapper: (p0) => p0

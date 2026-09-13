@@ -782,6 +782,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausgleichszahlungen verschieben Geld zwischen Personen. Sie ändern nur die Salden — nie die Gesamtsumme der Reise.';
 
   @override
+  String get reimbursement => 'Erstattung';
+
+  @override
+  String get reimbursements => 'Erstattungen';
+
+  @override
+  String get transferReimbursement => 'Erstattung von außerhalb der Gruppe';
+
+  @override
+  String get transferReimbursementHint =>
+      'Für Geld, das von außerhalb der Reise kam, etwa eine Pauschale vom Arbeitgeber. Es ändert weder Salden noch die Gesamtsumme der Reise, erscheint aber in der Statistik.';
+
+  @override
   String get currenciesSection => 'Währungen';
 
   @override
@@ -1329,6 +1342,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String statsSettlementReceived(String amount) {
     return '$amount erhalten';
+  }
+
+  @override
+  String statsReimbursedAmount(String amount) {
+    return '$amount erstattet';
+  }
+
+  @override
+  String get statsReimbursedBy => 'Erstattet von';
+
+  @override
+  String get statsNoSource => 'Ohne Angabe';
+
+  @override
+  String statsReimbursementLine(String share, String reimbursed, String own) {
+    return 'Anteil $share · erstattet $reimbursed · selbst getragen $own';
   }
 
   @override

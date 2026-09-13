@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **A settlement can be marked as a reimbursement from outside the group**, such as an
+  employer's allowance. It no longer shows the receiver owing the source money, and the
+  statistics show how much was reimbursed and by whom, also across all trips.
 - **The trip list says how many trips match the search and filters**, e.g. "12 of 40
   trips", with a button to clear the filters while any is active. The routine list has the
   same line.

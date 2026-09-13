@@ -90,7 +90,12 @@ class TripBundle {
   /// positions it has no map to draw. Nothing is misread, which is what forced
   /// v2 and v4 — unlike a decision flattened into its day or a routine read as a
   /// dated trip.
-  static const int currentFormatVersion = 4;
+  ///
+  /// v5 added [BundleCost.isReimbursement]. Stamped only on a trip holding a
+  /// reimbursement, and there it has to be: an older app would read one as a
+  /// settlement between travelers, and so show its receiver owing the source
+  /// the money the source handed over — a misread, not a missing detail.
+  static const int currentFormatVersion = 5;
 
   /// Magic string identifying the payload as a Pappus trip bundle.
   ///
@@ -912,6 +917,7 @@ class BundleCost {
     this.paidBy,
     this.paid = false,
     this.isTransfer = false,
+    this.isReimbursement = false,
     required this.createdAt,
     this.beneficiaries = const [],
   });
@@ -933,6 +939,11 @@ class BundleCost {
   /// false there — an older bundle only ever held expenses.
   final bool isTransfer;
 
+  /// Whether this transfer came from outside the group
+  /// ([Costs.isReimbursement]), and so moves no balance. Only meaningful on a
+  /// [isTransfer] row; absent before v5 and read back as false.
+  final bool isReimbursement;
+
   final DateTime createdAt;
 
   /// Person names this cost was split among; empty means "all participants".
@@ -947,6 +958,7 @@ class BundleCost {
     'paidBy': paidBy,
     'paid': paid,
     'isTransfer': isTransfer,
+    'isReimbursement': isReimbursement,
     'createdAt': _encodeDate(createdAt),
     'beneficiaries': beneficiaries,
   };
@@ -960,6 +972,7 @@ class BundleCost {
     paidBy: json['paidBy'] as String?,
     paid: json['paid'] as bool? ?? false,
     isTransfer: json['isTransfer'] as bool? ?? false,
+    isReimbursement: json['isReimbursement'] as bool? ?? false,
     createdAt: _decodeDate(json['createdAt'] as String)!,
     beneficiaries: [
       for (final b in (json['beneficiaries'] as List? ?? const [])) b as String,

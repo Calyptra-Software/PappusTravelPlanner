@@ -21,23 +21,31 @@ void main() {
     paidBy: paidBy,
     paid: paid,
     isTransfer: false,
+    isReimbursement: false,
     createdAt: DateTime(2026),
   );
 
   /// A settlement: [from] hands [minor] to someone (the receiver is the row's
   /// beneficiary, wired up by each test).
-  Cost transfer(int minor, {int currency = eurId, required String from}) =>
-      Cost(
-        id: ++nextId,
-        tripId: 1,
-        amountMinor: minor,
-        currency: currency,
-        reason: '',
-        paidBy: from,
-        paid: true,
-        isTransfer: true,
-        createdAt: DateTime(2026),
-      );
+  ///
+  /// With [reimbursement] the money came from outside the group instead.
+  Cost transfer(
+    int minor, {
+    int currency = eurId,
+    required String? from,
+    bool reimbursement = false,
+  }) => Cost(
+    id: ++nextId,
+    tripId: 1,
+    amountMinor: minor,
+    currency: currency,
+    reason: '',
+    paidBy: from,
+    paid: true,
+    isTransfer: true,
+    isReimbursement: reimbursement,
+    createdAt: DateTime(2026),
+  );
 
   Person person(String name) =>
       Person(id: name.hashCode, name: name, isMe: false);
@@ -340,6 +348,154 @@ void main() {
       final byPerson = {for (final p in cur.byPerson) p.name: p};
       expect(byPerson['Bo']!.settledMinor, 3000);
       expect(byPerson['Bo']!.netMinor, 0);
+      expect(cur.settlements, isEmpty);
+    });
+  });
+
+  group('reimbursements from outside the group', () {
+    test('an allowance leaves its receiver owing nobody', () {
+      // Ann pays her own hotel and her employer pays her a flat allowance.
+      // Booked as an ordinary settlement it would put her 280 in the
+      // employer's debt; as a reimbursement it moves nothing.
+      final hotel = cost(30000, reason: 'Hotel', paidBy: 'Ann');
+      final allowance = transfer(28000, from: 'Employer', reimbursement: true);
+      final stats = computeTripStats(
+        [hotel, allowance],
+        {
+          hotel.id: [person('Ann')],
+          allowance.id: [person('Ann')],
+        },
+        const [],
+        seededBook,
+      );
+      final cur = onlyCurrency(stats);
+      final ann = cur.byPerson.single;
+
+      expect(ann.name, 'Ann');
+      expect(ann.netMinor, 0);
+      expect(ann.settledMinor, 0);
+      expect(ann.reimbursedMinor, 28000);
+      expect(cur.settlements, isEmpty);
+      // The source is nobody on the trip, so it has no balance to show.
+      expect(cur.byPerson.map((p) => p.name), isNot(contains('Employer')));
+    });
+
+    test(
+      'is not spending: total, count, categories and paid are unchanged',
+      () {
+        final hotel = cost(30000, reason: 'Hotel', paidBy: 'Ann', paid: true);
+        final allowance = transfer(
+          28000,
+          from: 'Employer',
+          reimbursement: true,
+        );
+        final cur = onlyCurrency(
+          computeTripStats(
+            [hotel, allowance],
+            {
+              hotel.id: [person('Ann')],
+              allowance.id: [person('Ann')],
+            },
+            const [],
+            seededBook,
+          ),
+        );
+
+        expect(cur.totalMinor, 30000);
+        expect(cur.count, 1);
+        expect(cur.byCategory.map((c) => c.reason), ['Hotel']);
+        expect(cur.paidMinor, 30000);
+        expect(cur.byPerson.single.paidMinor, 30000);
+      },
+    );
+
+    test('is reported per source, largest first', () {
+      final a = transfer(5000, from: 'Employer', reimbursement: true);
+      final b = transfer(3000, from: 'Insurer', reimbursement: true);
+      final c = transfer(4000, from: 'Employer', reimbursement: true);
+      final cur = onlyCurrency(
+        computeTripStats(
+          [a, b, c],
+          {
+            a.id: [person('Ann')],
+            b.id: [person('Bo')],
+            c.id: [person('Bo')],
+          },
+          const [],
+          seededBook,
+        ),
+      );
+
+      expect(cur.reimbursementsBySource.map((s) => s.name), [
+        'Employer',
+        'Insurer',
+      ]);
+      expect(cur.reimbursementsBySource.map((s) => s.amountMinor), [
+        9000,
+        3000,
+      ]);
+      expect(cur.reimbursedMinor, 12000);
+      final byPerson = {for (final p in cur.byPerson) p.name: p};
+      expect(byPerson['Ann']!.reimbursedMinor, 5000);
+      expect(byPerson['Bo']!.reimbursedMinor, 7000);
+    });
+
+    test('belongs to its receiver: a debt to them still stands', () {
+      // Ann pays 60 for herself and Bo, and her allowance covers all of it —
+      // Bo still owes her his 30, since the allowance is hers.
+      final dinner = cost(6000, paidBy: 'Ann');
+      final allowance = transfer(6000, from: 'Employer', reimbursement: true);
+      final cur = onlyCurrency(
+        computeTripStats(
+          [dinner, allowance],
+          {
+            dinner.id: [person('Ann'), person('Bo')],
+            allowance.id: [person('Ann')],
+          },
+          const [],
+          seededBook,
+        ),
+      );
+
+      expect(cur.settlements, hasLength(1));
+      expect(cur.settlements.single.from, 'Bo');
+      expect(cur.settlements.single.to, 'Ann');
+      expect(cur.settlements.single.amountMinor, 3000);
+    });
+
+    test('lists a reimbursement with no source under the empty name', () {
+      final allowance = transfer(1000, from: null, reimbursement: true);
+      final cur = onlyCurrency(
+        computeTripStats(
+          [allowance],
+          {
+            allowance.id: [person('Ann')],
+          },
+          const [],
+          seededBook,
+        ),
+      );
+      expect(cur.reimbursementsBySource.single.name, '');
+      expect(cur.byPerson.single.netMinor, 0);
+    });
+
+    test('is pooled across trips by source and by receiver', () {
+      Map<int, List<Person>> toAnn(Cost c) => {
+        c.id: [person('Ann')],
+      };
+      final first = transfer(28000, from: 'Employer', reimbursement: true);
+      final second = transfer(14000, from: 'Employer', reimbursement: true);
+      final cur = onlyCurrency(
+        mergeTripStats([
+          computeTripStats([first], toAnn(first), const [], seededBook),
+          computeTripStats([second], toAnn(second), const [], seededBook),
+        ], seededBook),
+      );
+
+      expect(cur.reimbursementsBySource.single.name, 'Employer');
+      expect(cur.reimbursementsBySource.single.amountMinor, 42000);
+      expect(cur.byPerson.single.reimbursedMinor, 42000);
+      expect(cur.byPerson.single.netMinor, 0);
       expect(cur.settlements, isEmpty);
     });
   });

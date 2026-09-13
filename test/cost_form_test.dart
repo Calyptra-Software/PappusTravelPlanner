@@ -210,6 +210,42 @@ void main() {
       expect([for (final p in beneficiaries!) p.name], ['Alex']);
     });
 
+    testWidgets('records a reimbursement from outside the group', (
+      tester,
+    ) async {
+      await pumpTransfer(tester);
+
+      await tester.enterText(amountField, '280');
+      await pick(tester, fromField, 'Sam');
+      await pick(tester, toField, 'Alex');
+      await tester.tap(find.text('Reimbursement from outside the group'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      final cost = (await savedCosts(tester)).single;
+      // Still a transfer in shape — a source and a receiver — flagged as one
+      // that settles nobody up.
+      expect(cost.isTransfer, isTrue);
+      expect(cost.isReimbursement, isTrue);
+      expect(cost.amountMinor, 28000);
+      expect(cost.paidBy, 'Sam');
+    });
+
+    testWidgets('an ordinary settlement is not a reimbursement', (
+      tester,
+    ) async {
+      await pumpTransfer(tester);
+
+      await tester.enterText(amountField, '20');
+      await pick(tester, fromField, 'Sam');
+      await pick(tester, toField, 'Alex');
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+
+      expect((await savedCosts(tester)).single.isReimbursement, isFalse);
+    });
+
     testWidgets('refuses a settlement with itself', (tester) async {
       await pumpTransfer(tester);
 

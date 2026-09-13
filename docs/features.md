@@ -635,6 +635,11 @@ It moves the two balances and nothing else. The trip's total, its expense count,
 category breakdown stay untouched, so "paid" still means "spent on the trip" while the
 settle-up list shrinks by what has already been repaid.
 
+A settlement can be ticked as a **reimbursement from outside the group** — an employer's
+allowance, an insurer's refund. It changes no balance, so nobody owes the source anything.
+The statistics list what was reimbursed by each source, and each person's share, what came
+back, and what they paid themselves.
+
 ---
 
 ## Checklists
