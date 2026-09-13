@@ -91,6 +91,7 @@ void main() {
     reason: 'Ticket',
     paid: false,
     isTransfer: false,
+    isReimbursement: false,
     createdAt: DateTime(2026),
   );
 

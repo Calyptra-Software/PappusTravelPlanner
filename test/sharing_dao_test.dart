@@ -291,6 +291,62 @@ void main() {
     expect(totals[newId]!['EUR'], 1600 + 8000);
   });
 
+  test('a reimbursement arrives as one, and forces format v5', () async {
+    final source = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(source.close);
+
+    final sourceId = await _seedTrip(source);
+    // Without one the seeded trip goes out as an older format…
+    final plain = await source.sharingDao.exportTrip(sourceId);
+    expect(plain!.formatVersion, lessThan(5));
+
+    final settlement = (await source.costDao.watchCostsForTrip(sourceId).first)
+        .singleWhere((c) => c.isTransfer);
+    await source.costDao.updateCost(settlement.copyWith(isReimbursement: true));
+
+    // …and with one it must not be read by an app that would take it for a
+    // settlement between travelers.
+    final bundle = await source.sharingDao.exportTrip(sourceId);
+    expect(bundle!.formatVersion, 5);
+
+    final newId = await db.sharingDao.importTrip(
+      TripBundle.decode(bundle.encode()),
+    );
+    final costs = await db.costDao.watchCostsForTrip(newId).first;
+    final imported = costs.singleWhere((c) => c.isTransfer);
+    expect(imported.isReimbursement, isTrue);
+    expect(imported.paidBy, 'Bob');
+  });
+
+  test(
+    'a reimbursement flag on anything but a transfer is not imported',
+    () async {
+      final source = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(source.close);
+      final sourceId = await _seedTrip(source);
+      final json =
+          jsonDecode(
+                utf8.decode(
+                  (await source.sharingDao.exportTrip(sourceId))!.encode(),
+                ),
+              )
+              as Map<String, dynamic>;
+
+      // A hand-edited or corrupt file must not make an expense stop counting.
+      for (final cost in json['costs'] as List) {
+        (cost as Map<String, dynamic>)['isReimbursement'] = true;
+      }
+      final newId = await db.sharingDao.importTrip(TripBundle.fromJson(json));
+
+      final costs = await db.costDao.watchCostsForTrip(newId).first;
+      expect(
+        costs.where((c) => c.isReimbursement).map((c) => c.isTransfer),
+        everyElement(isTrue),
+      );
+      expect(costs.where((c) => !c.isTransfer), isNotEmpty);
+    },
+  );
+
   test('a bundle written before settlements existed reads as expenses', () {
     // The flag is simply absent in an older sender's JSON.
     final json = {

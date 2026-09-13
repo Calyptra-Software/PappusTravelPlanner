@@ -1418,6 +1418,30 @@ abstract class AppLocalizations {
   /// **'Settlements move money between people. They change the balances only — never the trip\'s total.'**
   String get transferHint;
 
+  /// No description provided for @reimbursement.
+  ///
+  /// In en, this message translates to:
+  /// **'Reimbursement'**
+  String get reimbursement;
+
+  /// No description provided for @reimbursements.
+  ///
+  /// In en, this message translates to:
+  /// **'Reimbursements'**
+  String get reimbursements;
+
+  /// No description provided for @transferReimbursement.
+  ///
+  /// In en, this message translates to:
+  /// **'Reimbursement from outside the group'**
+  String get transferReimbursement;
+
+  /// No description provided for @transferReimbursementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'For money that came from outside the trip, such as an employer\'s allowance. It changes nobody\'s balance and never the trip\'s total, but shows up in the statistics.'**
+  String get transferReimbursementHint;
+
   /// No description provided for @currenciesSection.
   ///
   /// In en, this message translates to:
@@ -2287,6 +2311,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'received {amount}'**
   String statsSettlementReceived(String amount);
+
+  /// No description provided for @statsReimbursedAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} reimbursed'**
+  String statsReimbursedAmount(String amount);
+
+  /// No description provided for @statsReimbursedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Reimbursed by'**
+  String get statsReimbursedBy;
+
+  /// No description provided for @statsNoSource.
+  ///
+  /// In en, this message translates to:
+  /// **'No source'**
+  String get statsNoSource;
+
+  /// No description provided for @statsReimbursementLine.
+  ///
+  /// In en, this message translates to:
+  /// **'share {share} · reimbursed {reimbursed} · own cost {own}'**
+  String statsReimbursementLine(String share, String reimbursed, String own);
 
   /// No description provided for @checklist.
   ///

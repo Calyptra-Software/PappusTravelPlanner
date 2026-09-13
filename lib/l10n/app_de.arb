@@ -250,6 +250,10 @@
     }
   },
   "transferHint": "Ausgleichszahlungen verschieben Geld zwischen Personen. Sie ändern nur die Salden — nie die Gesamtsumme der Reise.",
+  "reimbursement": "Erstattung",
+  "reimbursements": "Erstattungen",
+  "transferReimbursement": "Erstattung von außerhalb der Gruppe",
+  "transferReimbursementHint": "Für Geld, das von außerhalb der Reise kam, etwa eine Pauschale vom Arbeitgeber. Es ändert weder Salden noch die Gesamtsumme der Reise, erscheint aber in der Statistik.",
   "currenciesSection": "Währungen",
   "currencyAdd": "Währung hinzufügen",
   "currencyAddTitle": "Neue Währung",
@@ -458,6 +462,20 @@
   "statsSettlementReceived": "{amount} erhalten",
   "@statsSettlementReceived": {
     "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsReimbursedAmount": "{amount} erstattet",
+  "@statsReimbursedAmount": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsReimbursedBy": "Erstattet von",
+  "statsNoSource": "Ohne Angabe",
+  "statsReimbursementLine": "Anteil {share} · erstattet {reimbursed} · selbst getragen {own}",
+  "@statsReimbursementLine": {
+    "placeholders": {
+      "share": { "type": "String" },
+      "reimbursed": { "type": "String" },
+      "own": { "type": "String" }
+    }
   },
   "checklist": "Checkliste",
   "checklistAddHint": "Eintrag hinzufügen…",

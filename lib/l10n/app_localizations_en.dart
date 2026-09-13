@@ -775,6 +775,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Settlements move money between people. They change the balances only — never the trip\'s total.';
 
   @override
+  String get reimbursement => 'Reimbursement';
+
+  @override
+  String get reimbursements => 'Reimbursements';
+
+  @override
+  String get transferReimbursement => 'Reimbursement from outside the group';
+
+  @override
+  String get transferReimbursementHint =>
+      'For money that came from outside the trip, such as an employer\'s allowance. It changes nobody\'s balance and never the trip\'s total, but shows up in the statistics.';
+
+  @override
   String get currenciesSection => 'Currencies';
 
   @override
@@ -1320,6 +1333,22 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String statsSettlementReceived(String amount) {
     return 'received $amount';
+  }
+
+  @override
+  String statsReimbursedAmount(String amount) {
+    return '$amount reimbursed';
+  }
+
+  @override
+  String get statsReimbursedBy => 'Reimbursed by';
+
+  @override
+  String get statsNoSource => 'No source';
+
+  @override
+  String statsReimbursementLine(String share, String reimbursed, String own) {
+    return 'share $share · reimbursed $reimbursed · own cost $own';
   }
 
   @override

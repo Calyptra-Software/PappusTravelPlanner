@@ -32,6 +32,7 @@ void main() {
     String reason = 'Dinner',
     String? paidBy,
     bool isTransfer = false,
+    bool isReimbursement = false,
   }) => Cost(
     id: id,
     tripId: 1,
@@ -40,7 +41,8 @@ void main() {
     reason: reason,
     paidBy: paidBy,
     paid: false,
-    isTransfer: isTransfer,
+    isTransfer: isTransfer || isReimbursement,
+    isReimbursement: isReimbursement,
     createdAt: DateTime(2026),
   );
 
@@ -108,6 +110,39 @@ void main() {
     // Bo is square, so only Cy is left to settle.
     expect(find.text('Cy pays Ann'), findsOneWidget);
     expect(find.text('Bo pays Ann'), findsNothing);
+  });
+
+  testWidgets('a reimbursement is reported, and nobody owes its source', (
+    tester,
+  ) async {
+    // Ann paid her own hotel; her employer paid her an allowance of 280.
+    final hotel = cost(1, 30000, reason: 'Hotel', paidBy: 'Ann');
+    final allowance = cost(
+      2,
+      28000,
+      reason: '',
+      paidBy: 'Employer',
+      isReimbursement: true,
+    );
+    await pumpStats(
+      tester,
+      costs: [hotel, allowance],
+      beneficiaries: {
+        1: [person(1, 'Ann')],
+        2: [person(1, 'Ann')],
+      },
+    );
+
+    expect(find.text('€280.00 reimbursed'), findsOneWidget);
+    expect(find.text('Reimbursed by'), findsOneWidget);
+    expect(find.text('Employer'), findsOneWidget);
+    expect(
+      find.text('share €300.00 · reimbursed €280.00 · own cost €20.00'),
+      findsOneWidget,
+    );
+    // Booked as a settlement this would read "Ann pays Employer".
+    expect(find.text("Everyone's even — nothing to settle."), findsOneWidget);
+    expect(find.textContaining('pays'), findsNothing);
   });
 
   testWidgets('a suggested payment opens the settlement form, prefilled', (

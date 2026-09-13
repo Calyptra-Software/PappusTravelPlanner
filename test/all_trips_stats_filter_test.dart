@@ -38,6 +38,7 @@ void main() {
     reason: 'Dinner',
     paid: false,
     isTransfer: false,
+    isReimbursement: false,
     createdAt: DateTime(2026),
   );
 

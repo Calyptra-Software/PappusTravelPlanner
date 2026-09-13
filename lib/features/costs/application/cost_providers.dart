@@ -207,12 +207,17 @@ class CostController {
   /// repayment isn't a kind of spending — and is stored already settled, since
   /// recording it says the money has changed hands. The receiver is stored as
   /// the row's single beneficiary, which is what shifts their balance.
+  ///
+  /// With [reimbursement] the money came from outside the group instead (see
+  /// [Costs.isReimbursement]), and moves no balance. This and [updateTransfer]
+  /// are the only writers of that flag, which is what keeps it on transfers.
   Future<void> addTransfer({
     required int tripId,
     required int amountMinor,
     required int currencyId,
     required String from,
     required String to,
+    bool reimbursement = false,
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertPerson(from);
@@ -226,18 +231,22 @@ class CostController {
         paidBy: Value(from),
         paid: const Value(true),
         isTransfer: const Value(true),
+        isReimbursement: Value(reimbursement),
       ),
     );
     await repo.setBeneficiaries(id, [to]);
   }
 
-  /// Edits a recorded transfer, keeping it a transfer.
+  /// Edits a recorded transfer, keeping it a transfer. Whether it is a
+  /// [reimbursement] may change: an allowance first booked as a settlement is
+  /// corrected by ticking the box, not by recording it again.
   Future<void> updateTransfer(
     Cost existing, {
     required int amountMinor,
     required int currencyId,
     required String from,
     required String to,
+    bool reimbursement = false,
   }) async {
     final repo = _ref.read(repositoryProvider);
     await repo.upsertPerson(from);
@@ -250,6 +259,7 @@ class CostController {
         paidBy: Value(from),
         paid: true,
         isTransfer: true,
+        isReimbursement: reimbursement,
       ),
     );
     await repo.setBeneficiaries(existing.id, [to]);

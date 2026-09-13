@@ -463,6 +463,16 @@ class Costs extends Table {
   /// paid/open split and the category breakdown all leave it out, because no
   /// money left the group. See `computeTripStats`.
   BoolColumn get isTransfer => boolean().withDefault(const Constant(false))();
+
+  /// Marks a [isTransfer] row as a **reimbursement**: money that came into the
+  /// group from outside it — an employer's allowance, an insurer — rather than
+  /// money handed between travelers to square up. It keeps the shape of a
+  /// transfer ([paidBy] the source, its single beneficiary the receiver), but it
+  /// moves nobody's balance: nobody on the trip owes the source anything for it.
+  /// Only ever true together with [isTransfer], which `CostController` is the
+  /// one place to write. See `computeTripStats`.
+  BoolColumn get isReimbursement =>
+      boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 

@@ -309,6 +309,10 @@
     }
   },
   "transferHint": "Settlements move money between people. They change the balances only — never the trip's total.",
+  "reimbursement": "Reimbursement",
+  "reimbursements": "Reimbursements",
+  "transferReimbursement": "Reimbursement from outside the group",
+  "transferReimbursementHint": "For money that came from outside the trip, such as an employer's allowance. It changes nobody's balance and never the trip's total, but shows up in the statistics.",
   "currenciesSection": "Currencies",
   "currencyAdd": "Add currency",
   "currencyAddTitle": "New currency",
@@ -727,6 +731,20 @@
   "statsSettlementReceived": "received {amount}",
   "@statsSettlementReceived": {
     "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsReimbursedAmount": "{amount} reimbursed",
+  "@statsReimbursedAmount": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsReimbursedBy": "Reimbursed by",
+  "statsNoSource": "No source",
+  "statsReimbursementLine": "share {share} · reimbursed {reimbursed} · own cost {own}",
+  "@statsReimbursementLine": {
+    "placeholders": {
+      "share": { "type": "String" },
+      "reimbursed": { "type": "String" },
+      "own": { "type": "String" }
+    }
   },
   "checklist": "Checklist",
   "checklistAddHint": "Add an item…",

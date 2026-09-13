@@ -207,7 +207,11 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       // land a routine as a dated one whose entries all sit on the 1970 anchor
       // day. Tags it cannot see are only a filing it will not have, but a trip
       // that arrives unfiled is not the trip that was sent.
-      formatVersion: (trip.kind != TripKind.trip || tagNames.isNotEmpty)
+      // A reimbursement forces v5: an older app would read it as a settlement
+      // between travelers and show its receiver owing the source.
+      formatVersion: costRows.any((c) => c.isTransfer && c.isReimbursement)
+          ? 5
+          : (trip.kind != TripKind.trip || tagNames.isNotEmpty)
           ? 4
           : bundleNeedsCurrencyFormat(usedCurrencyCodes)
           ? 3
@@ -308,6 +312,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             paidBy: c.paidBy,
             paid: c.paid,
             isTransfer: c.isTransfer,
+            isReimbursement: c.isReimbursement,
             createdAt: c.createdAt,
             beneficiaries: beneficiariesByCost[c.id] ?? const [],
           ),
@@ -529,6 +534,8 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             paidBy: Value(c.paidBy),
             paid: Value(c.paid),
             isTransfer: Value(c.isTransfer),
+            // Only a transfer can be one, whatever the file says.
+            isReimbursement: Value(c.isTransfer && c.isReimbursement),
             createdAt: Value(c.createdAt),
           ),
         );

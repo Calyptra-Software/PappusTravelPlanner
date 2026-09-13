@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 36;
+  int get schemaVersion => 37;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -272,6 +272,12 @@ class AppDatabase extends _$AppDatabase {
       // then repoint every cost's `currency` from that old index onto its new
       // row and recreate the table so its foreign key to `currencies` takes
       // effect.
+      //
+      // The recreation builds the table from the *current* schema and copies
+      // every column by name, so a column added to costs later (v37's
+      // is_reimbursement) is listed as new here — the old table has no such
+      // column to copy — and its own step below skips a database that came
+      // through this one.
       if (from < 23) {
         await m.createTable(currencies);
         await currencyDao.seedBuiltinCurrencies();
@@ -281,6 +287,7 @@ class AppDatabase extends _$AppDatabase {
             columnTransformer: {
               costs.currency: costs.currency + const Constant(1),
             },
+            newColumns: [costs.isReimbursement],
           ),
         );
       }
@@ -410,6 +417,13 @@ class AppDatabase extends _$AppDatabase {
       // current schema and already has the column — the same guard v33 needs.
       if (from < 36 && from >= 29) {
         await m.addColumn(tracks, tracks.display);
+      }
+      // v37 lets a settlement say it is a reimbursement from outside the group,
+      // which moves no balance. Nothing to backfill: every existing settlement
+      // was recorded as one between travelers, and that is what false means.
+      // Skipped below v23, whose recreation of the table already added it.
+      if (from < 37 && from >= 23) {
+        await m.addColumn(costs, costs.isReimbursement);
       }
     },
     beforeOpen: (details) async {

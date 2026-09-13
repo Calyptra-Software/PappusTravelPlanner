@@ -74,7 +74,8 @@ class CostChip extends ConsumerWidget {
     );
   }
 
-  /// A settlement's chip: who paid whom, and how much. Its receiver is the row's
+  /// A settlement's chip: who paid whom, and how much — a reimbursement wearing
+  /// its own icon, since it squares nobody up. Its receiver is the row's
   /// single beneficiary, so it is read from there; until that stream has loaded
   /// the chip shows the amount alone rather than a half-written arrow.
   Widget _transferChip(
@@ -96,9 +97,12 @@ class CostChip extends ConsumerWidget {
         : l10n.transferBetween(from, to);
 
     return ActionChip(
-      avatar: const Icon(Icons.swap_horiz, size: 16),
+      avatar: Icon(
+        cost.isReimbursement ? Icons.savings_outlined : Icons.swap_horiz,
+        size: 16,
+      ),
       label: Text(between == null ? amount : '$between  $amount'),
-      tooltip: l10n.transfer,
+      tooltip: cost.isReimbursement ? l10n.reimbursement : l10n.transfer,
       visualDensity: VisualDensity.compact,
       onPressed: onTap,
     );

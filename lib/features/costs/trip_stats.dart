@@ -35,6 +35,7 @@ class PersonStat {
     required this.paidMinor,
     required this.shareMinor,
     this.settledMinor = 0,
+    this.reimbursedMinor = 0,
   });
 
   final String name;
@@ -50,6 +51,12 @@ class PersonStat {
   /// they have been paid back. Kept apart from [paidMinor] so "paid" still
   /// means "spent on the trip" and still sums to the trip's total.
   final int settledMinor;
+
+  /// What the person received in reimbursements ([Costs.isReimbursement]) —
+  /// money from outside the group. Deliberately **not** in [netMinor]: nobody
+  /// on the trip owes the source anything, so it is reported beside the
+  /// balance, as what [shareMinor] cost the person once it came back.
+  final int reimbursedMinor;
 
   /// Positive when the person is owed money, negative when they owe.
   int get netMinor => paidMinor - shareMinor + settledMinor;
@@ -78,6 +85,7 @@ class CurrencyStats {
     required this.byCategory,
     required this.byPerson,
     required this.settlements,
+    this.reimbursementsBySource = const [],
   });
 
   /// The currency's code (`Currencies.code`) — its identity outside the
@@ -105,6 +113,23 @@ class CurrencyStats {
 
   /// Minimal set of payments that settle the balances.
   final List<Transfer> settlements;
+
+  /// What came back from outside the group, per source — largest first. A
+  /// source is named by the reimbursement's [Costs.paidBy]; one recorded with
+  /// none is listed under the empty name.
+  final List<SourceStat> reimbursementsBySource;
+
+  /// Everything reimbursed in this currency.
+  int get reimbursedMinor =>
+      reimbursementsBySource.fold(0, (sum, s) => sum + s.amountMinor);
+}
+
+/// One source's reimbursements in a currency — an employer, an insurer.
+class SourceStat {
+  const SourceStat({required this.name, required this.amountMinor});
+
+  final String name;
+  final int amountMinor;
 }
 
 /// Per-currency statistics for a whole trip, in the [CurrencyBook]'s display
@@ -134,6 +159,14 @@ class TripStats {
 /// no money left the group. It also never falls back to the participants: a
 /// transfer with no receiver recorded moves nobody's balance rather than
 /// quietly spreading itself over everyone.
+///
+/// A **reimbursement** ([Costs.isReimbursement]) is a transfer whose money came
+/// from outside the group. It moves no balance at all — counting it would leave
+/// the receiver owing the source what the source handed over — and is collected
+/// instead into the receiver's [PersonStat.reimbursedMinor] and the currency's
+/// [CurrencyStats.reimbursementsBySource]. It belongs to its receiver alone: an
+/// allowance covering the receiver's own share says nothing about what somebody
+/// else on the trip owes them.
 TripStats computeTripStats(
   List<Cost> costs,
   Map<int, List<Person>> beneficiariesByCost,
@@ -191,7 +224,16 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
   final paidByPerson = <String, int>{};
   final shareByPerson = <String, int>{};
   final settledByPerson = <String, int>{};
+  final reimbursedByPerson = <String, int>{};
+  final bySource = <String, int>{};
   for (final part in parts) {
+    for (final source in part.reimbursementsBySource) {
+      bySource.update(
+        source.name,
+        (v) => v + source.amountMinor,
+        ifAbsent: () => source.amountMinor,
+      );
+    }
     total += part.totalMinor;
     paid += part.paidMinor;
     count += part.count;
@@ -223,6 +265,11 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
         (v) => v + person.settledMinor,
         ifAbsent: () => person.settledMinor,
       );
+      reimbursedByPerson.update(
+        person.name,
+        (v) => v + person.reimbursedMinor,
+        ifAbsent: () => person.reimbursedMinor,
+      );
     }
   }
 
@@ -243,6 +290,7 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
     ...paidByPerson.keys,
     ...shareByPerson.keys,
     ...settledByPerson.keys,
+    ...reimbursedByPerson.keys,
   }.toList()..sort();
   final byPerson = names
       .map(
@@ -251,6 +299,7 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
           paidMinor: paidByPerson[name] ?? 0,
           shareMinor: shareByPerson[name] ?? 0,
           settledMinor: settledByPerson[name] ?? 0,
+          reimbursedMinor: reimbursedByPerson[name] ?? 0,
         ),
       )
       .toList();
@@ -263,6 +312,7 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
     byCategory: byCategory,
     byPerson: byPerson,
     settlements: _settle(byPerson),
+    reimbursementsBySource: _sources(bySource),
   );
 }
 
@@ -274,8 +324,11 @@ CurrencyStats _statsForCurrency(
 ) {
   // Every spend figure below is about the expenses only; the transfers are
   // settlements between people and are handled apart, on the balances.
+  // Reimbursements are transfers in shape only: they came from outside the
+  // group, so they are collected apart and settle nothing.
   final expenses = costs.where((c) => !c.isTransfer).toList();
-  final transfers = costs.where((c) => c.isTransfer);
+  final transfers = costs.where((c) => c.isTransfer && !c.isReimbursement);
+  final reimbursements = costs.where((c) => c.isTransfer && c.isReimbursement);
 
   final total = expenses.fold<int>(0, (sum, c) => sum + c.amountMinor);
   final paidTotal = expenses
@@ -354,7 +407,35 @@ CurrencyStats _statsForCurrency(
     }
   }
 
-  final names = {...paid.keys, ...share.keys, ...settled.keys}.toList()..sort();
+  // Reimbursed, per receiver and per source. The source is not a person of the
+  // trip's balances — it neither paid for nor benefited from anything — so it
+  // is not added to [byPerson]; the receiver is, since what came back to them
+  // is part of their standing.
+  final reimbursed = <String, int>{};
+  final bySource = <String, int>{};
+  for (final cost in reimbursements) {
+    bySource.update(
+      cost.paidBy?.trim() ?? '',
+      (v) => v + cost.amountMinor,
+      ifAbsent: () => cost.amountMinor,
+    );
+    final receivers = beneficiariesByCost[cost.id]?.map((p) => p.name).toList();
+    if (receivers == null) continue;
+    for (final entry in _splitEvenly(cost.amountMinor, receivers).entries) {
+      reimbursed.update(
+        entry.key,
+        (v) => v + entry.value,
+        ifAbsent: () => entry.value,
+      );
+    }
+  }
+
+  final names = {
+    ...paid.keys,
+    ...share.keys,
+    ...settled.keys,
+    ...reimbursed.keys,
+  }.toList()..sort();
   final byPerson = names
       .map(
         (name) => PersonStat(
@@ -362,6 +443,7 @@ CurrencyStats _statsForCurrency(
           paidMinor: paid[name] ?? 0,
           shareMinor: share[name] ?? 0,
           settledMinor: settled[name] ?? 0,
+          reimbursedMinor: reimbursed[name] ?? 0,
         ),
       )
       .toList();
@@ -374,8 +456,20 @@ CurrencyStats _statsForCurrency(
     byCategory: byCategory,
     byPerson: byPerson,
     settlements: _settle(byPerson),
+    reimbursementsBySource: _sources(bySource),
   );
 }
+
+/// [bySource] as a list, largest amount first and by name among equals, so the
+/// order is stable.
+List<SourceStat> _sources(Map<String, int> bySource) =>
+    [
+      for (final e in bySource.entries)
+        SourceStat(name: e.key, amountMinor: e.value),
+    ]..sort((a, b) {
+      final byAmount = b.amountMinor.compareTo(a.amountMinor);
+      return byAmount != 0 ? byAmount : a.name.compareTo(b.name);
+    });
 
 /// Splits [amountMinor] evenly across [names], handing the remainder cents to
 /// the first names (in the given order) so the parts sum back to [amountMinor]

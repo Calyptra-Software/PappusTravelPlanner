@@ -114,6 +114,19 @@ void main() {
         from_place_id TEXT,
         to_place_id TEXT
       );
+      CREATE TABLE costs (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER REFERENCES itinerary_items (id),
+        group_id INTEGER REFERENCES item_groups (id),
+        trip_id INTEGER REFERENCES trips (id),
+        amount_minor INTEGER NOT NULL,
+        currency INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        paid_by TEXT,
+        paid INTEGER NOT NULL DEFAULT 0,
+        is_transfer INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
       INSERT INTO trips (id, title) VALUES (1, 'Basel');
       INSERT INTO transport_modes (id, builtin_key, sort_order)
         VALUES (6, 'train', 5);

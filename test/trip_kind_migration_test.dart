@@ -68,6 +68,19 @@ void main() {
         source_trip_id TEXT,
         stopovers TEXT
       );
+      CREATE TABLE costs (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        item_id INTEGER REFERENCES itinerary_items (id),
+        group_id INTEGER REFERENCES item_groups (id),
+        trip_id INTEGER REFERENCES trips (id),
+        amount_minor INTEGER NOT NULL,
+        currency INTEGER NOT NULL,
+        reason TEXT NOT NULL,
+        paid_by TEXT,
+        paid INTEGER NOT NULL DEFAULT 0,
+        is_transfer INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0
+      );
       INSERT INTO trips (id, title, destination, start_date, end_date)
         VALUES (1, 'Rome', 'Italy', 1780000000, 1780400000),
                (2, 'Someday', '', NULL, NULL);

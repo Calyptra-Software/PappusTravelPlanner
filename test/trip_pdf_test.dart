@@ -110,6 +110,19 @@ void main() {
         beneficiaries: const ['Alice'],
         createdAt: DateTime(2026, 5, 3),
       ),
+      // A reimbursement: an allowance from outside the group, listed under a
+      // heading of its own.
+      BundleCost(
+        amountMinor: 5000,
+        currency: 'EUR',
+        reason: '',
+        paidBy: 'Employer',
+        paid: true,
+        isTransfer: true,
+        isReimbursement: true,
+        beneficiaries: const ['Alice'],
+        createdAt: DateTime(2026, 5, 4),
+      ),
     ],
     checklists: [
       BundleChecklist(

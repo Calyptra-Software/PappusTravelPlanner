@@ -223,6 +223,19 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
           accent: accent,
           localeName: localeName,
         ),
+        // What came back from outside the group, by whom — the one figure the
+        // all-trips reading adds up across trips for an employer's allowances.
+        if (current.reimbursementsBySource.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          _SectionHeader(l10n.statsReimbursedBy),
+          const SizedBox(height: 12),
+          _SourceList(
+            stats: current,
+            currency: currency,
+            accent: accent,
+            localeName: localeName,
+          ),
+        ],
         const SizedBox(height: 24),
         _SectionHeader(l10n.statsByPerson),
         const SizedBox(height: 12),
@@ -385,6 +398,25 @@ class _SummaryStrip extends StatelessWidget {
             ),
           ],
         ),
+        if (stats.reimbursedMinor != 0) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.savings_outlined,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                l10n.statsReimbursedAmount(
+                  formatMoney(stats.reimbursedMinor, currency, localeName),
+                ),
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -434,6 +466,44 @@ class _CategoryList extends ConsumerWidget {
             trailing: formatMoney(cat.amountMinor, currency, localeName),
             secondary: '${(cat.fraction * 100).round()}%',
             fraction: cat.fraction,
+            color: accent,
+          ),
+      ],
+    );
+  }
+}
+
+/// The reimbursements' sources — an employer, an insurer — as bars sized against
+/// the largest. A source is nobody on the trip, so it has no person icon.
+class _SourceList extends StatelessWidget {
+  const _SourceList({
+    required this.stats,
+    required this.currency,
+    required this.accent,
+    required this.localeName,
+  });
+
+  final CurrencyStats stats;
+  final CurrencyInfo? currency;
+  final Color accent;
+  final String localeName;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final sources = stats.reimbursementsBySource;
+    final maxAmount = sources.fold<int>(
+      0,
+      (m, s) => s.amountMinor > m ? s.amountMinor : m,
+    );
+    return Column(
+      children: [
+        for (final source in sources)
+          _BarRow(
+            leading: Icon(Icons.savings_outlined, size: 20, color: accent),
+            label: source.name.isEmpty ? l10n.statsNoSource : source.name,
+            trailing: formatMoney(source.amountMinor, currency, localeName),
+            fraction: maxAmount == 0 ? 0 : source.amountMinor / maxAmount,
             color: accent,
           ),
       ],
@@ -552,6 +622,32 @@ class _BalancesSection extends StatelessWidget {
                                     localeName,
                                   ),
                                 ),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      // A reimbursement moves no balance, so the figure on the
+                      // right does not explain it; this line says what the
+                      // share came to once it came back.
+                      if (person.reimbursedMinor != 0)
+                        Text(
+                          l10n.statsReimbursementLine(
+                            formatMoney(
+                              person.shareMinor,
+                              currency,
+                              localeName,
+                            ),
+                            formatMoney(
+                              person.reimbursedMinor,
+                              currency,
+                              localeName,
+                            ),
+                            formatMoney(
+                              person.shareMinor - person.reimbursedMinor,
+                              currency,
+                              localeName,
+                            ),
+                          ),
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
