@@ -8,6 +8,7 @@
   "searchTrips": "Reisen suchen",
   "searchTripsHint": "Titel, Reiseziel oder Notizen",
   "filterTrips": "Filtern und sortieren",
+  "filterTitle": "Filtern",
   "filterAndSort": "Filtern & sortieren",
   "clearFilters": "Zurücksetzen",
   "tripsMatching": "{total, plural, =1{{shown} von 1 Reise} other{{shown} von {total} Reisen}}",

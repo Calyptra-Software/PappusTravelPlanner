@@ -222,6 +222,13 @@ many legs used it and how much time they came to, most-used first — and a **Le
 switch decides which of the two the bars are sized by. The overview's overflow menu holds
 the same thing across every trip at once, as **Overall statistics**.
 
+The overall statistics can be narrowed to some of the trips — by status, dates, tag,
+routine, or participant — with the filter button in their app bar, and a line above the
+tabs says how many trips are counted. The filter is separate from the overview's and starts
+over each time the screen is opened. A trip counts whole or not at all, so one spanning New
+Year counts toward either year with all of its costs. Countries marked by hand count only
+while nothing is filtered.
+
 Both of the app's time axes are kept side by side — what was planned, and what was
 actually recorded — so a trip's timetable can be held against the day it turned into. And
 as with the money, only live entries count: an option you considered and dropped never

@@ -8,6 +8,7 @@
   "searchTrips": "Search trips",
   "searchTripsHint": "Title, destination or notes",
   "filterTrips": "Filter and sort",
+  "filterTitle": "Filter",
   "filterAndSort": "Filter & sort",
   "clearFilters": "Clear",
   "tripsMatching": "{total, plural, =1{{shown} of 1 trip} other{{shown} of {total} trips}}",

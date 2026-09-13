@@ -33,6 +33,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get filterTrips => 'Filter and sort';
 
   @override
+  String get filterTitle => 'Filter';
+
+  @override
   String get filterAndSort => 'Filter & sort';
 
   @override

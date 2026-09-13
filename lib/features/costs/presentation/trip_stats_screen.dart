@@ -3,13 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
+import '../../../core/widgets/app_sheet.dart';
+import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/transport_stats.dart';
 import '../../itinerary/widgets/transport_mode.dart';
 import '../../map/widgets/visited_countries_map.dart';
+import '../../trips/application/stats_trips_provider.dart';
 import '../../trips/application/trip_providers.dart';
+import '../../trips/trip_filter.dart';
+import '../../trips/widgets/query_result_line.dart';
+import '../../trips/widgets/trip_filter_sheet.dart';
 import '../application/cost_providers.dart';
 import '../application/currency_providers.dart';
 import '../cost_reason_icons.dart';
@@ -56,6 +62,15 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
     final accent = trip != null
         ? Color(trip.colorValue)
         : Theme.of(context).colorScheme.primary;
+    // The all-trips reading has a filter of its own; see statsTripQueryProvider
+    // for why it is neither the overview's nor remembered.
+    final query = allTrips ? ref.watch(statsTripQueryProvider) : null;
+    if (allTrips) {
+      // Held for the filter sheet, which reads them when it opens.
+      ref.watch(allParticipantsProvider);
+      ref.watch(tagListProvider);
+      ref.watch(routineListProvider);
+    }
 
     // Keep the selected currency valid as data streams in.
     final currencies = [for (final c in stats.byCurrency) c.currency];
@@ -71,6 +86,18 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: Text(allTrips ? l10n.statsAllTripsTitle : l10n.statsTitle),
+          actions: [
+            if (query != null)
+              IconButton(
+                tooltip: l10n.filterTitle,
+                icon: Badge.count(
+                  count: query.activeFilterCount,
+                  isLabelVisible: query.hasActiveFilters,
+                  child: const Icon(Icons.tune),
+                ),
+                onPressed: () => _openFilters(query),
+              ),
+          ],
           bottom: TabBar(
             tabs: [
               Tab(text: l10n.statsTabExpenses),
@@ -79,28 +106,84 @@ class _TripStatsScreenState extends ConsumerState<TripStatsScreen> {
             ],
           ),
         ),
-        body: TabBarView(
-          children: [
-            _expensesTab(
-              context,
-              l10n: l10n,
-              localeName: localeName,
-              accent: accent,
-              meName: meName,
-              currencies: currencies,
-              selected: selected,
-              current: current,
-              currency: book.byCode(selected),
-            ),
-            _TransportTab(stats: transportStats, accent: accent),
-            // Where the trips *were*, as an aggregate among aggregates: the
-            // map answers "where did I go", this answers "how much have I
-            // seen".
-            VisitedCountriesMap(tripId: tripId, accent: accent),
-          ],
+        body: _withCountLine(
+          query,
+          TabBarView(
+            children: [
+              _expensesTab(
+                context,
+                l10n: l10n,
+                localeName: localeName,
+                accent: accent,
+                meName: meName,
+                currencies: currencies,
+                selected: selected,
+                current: current,
+                currency: book.byCode(selected),
+              ),
+              _TransportTab(stats: transportStats, accent: accent),
+              // Where the trips *were*, as an aggregate among aggregates: the
+              // map answers "where did I go", this answers "how much have I
+              // seen".
+              VisitedCountriesMap(tripId: tripId, accent: accent),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  /// Puts the count line above the tabs on the all-trips reading, where it
+  /// says for all three of them which trips they are about — "40 of 40 trips"
+  /// included, so opening the screen says plainly that nothing is left out.
+  Widget _withCountLine(TripQuery? query, Widget tabs) {
+    if (query == null) return tabs;
+    final l10n = AppLocalizations.of(context);
+    final counted = ref.watch(statsTripsProvider).length;
+    final total = ref.watch(allStatsTripsProvider).length;
+    return Column(
+      children: [
+        QueryResultLine(
+          label: l10n.tripsMatching(counted, total),
+          onClear: query.hasActiveFilters
+              ? () => ref
+                    .read(statsTripQueryProvider.notifier)
+                    .setQuery(query.clearedFilters())
+              : null,
+        ),
+        Expanded(child: tabs),
+      ],
+    );
+  }
+
+  /// The overview's filter sheet, less its sort: a sum has no order.
+  ///
+  /// The rosters are read here rather than watched in `build`, which is safe
+  /// only because [build] watches them on this reading — a `ref.read` of an
+  /// autoDispose provider nothing listens to comes back loading, and the sheet
+  /// would open with no tags, no people and no routines to offer.
+  Future<void> _openFilters(TripQuery query) async {
+    final people =
+        <int, Person>{
+          for (final list
+              in (ref.read(allParticipantsProvider).value ?? const {}).values)
+            for (final person in list) person.id: person,
+        }.values.toList()..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
+    final updated = await showAppSheet<TripQuery>(
+      context,
+      builder: (_) => TripFilterSheet(
+        query: query,
+        people: people,
+        tags: ref.read(tagListProvider).value ?? const [],
+        routines: ref.read(routineListProvider).value ?? const [],
+        showSort: false,
+      ),
+    );
+    if (updated != null && mounted) {
+      ref.read(statsTripQueryProvider.notifier).setQuery(updated);
+    }
   }
 
   Widget _expensesTab(

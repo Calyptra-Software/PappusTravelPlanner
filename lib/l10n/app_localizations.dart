@@ -146,6 +146,12 @@ abstract class AppLocalizations {
   /// **'Filter and sort'**
   String get filterTrips;
 
+  /// No description provided for @filterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get filterTitle;
+
   /// No description provided for @filterAndSort.
   ///
   /// In en, this message translates to:

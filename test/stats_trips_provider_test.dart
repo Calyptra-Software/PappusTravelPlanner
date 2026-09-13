@@ -5,6 +5,7 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/trips/application/stats_trips_provider.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
+import 'package:travelplanner/features/trips/trip_filter.dart';
 
 /// Which trips the all-trips statistics count — decided once, so the tabs
 /// cannot disagree about it.
@@ -67,4 +68,64 @@ void main() {
       expect(transport.read().totalPlannedMinutes, 30);
     },
   );
+
+  Tag tag(int id) => Tag(id: id, name: 'tag $id', colorValue: 0, sortOrder: id);
+
+  ProviderContainer filterable() {
+    final container = ProviderContainer(
+      overrides: [
+        tripListProvider.overrideWith(
+          (ref) => Stream.value([
+            row(1, TripKind.trip),
+            row(2, TripKind.trip),
+            row(3, TripKind.routine),
+          ]),
+        ),
+        tagsByTripProvider.overrideWith(
+          (ref) => Stream.value({
+            1: [tag(10)],
+            3: [tag(10)],
+          }),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    return container;
+  }
+
+  test(
+    'the statistics filter narrows the counted trips, not the total',
+    () async {
+      final container = filterable();
+      final counted = container.listen(statsTripsProvider, (_, _) {});
+      final total = container.listen(allStatsTripsProvider, (_, _) {});
+      await pumpEventQueue();
+      expect([for (final t in counted.read()) t.id], [1, 2]);
+
+      container
+          .read(statsTripQueryProvider.notifier)
+          .setQuery(const TripQuery(tagIds: {10}));
+      await pumpEventQueue();
+
+      // The routine wears the tag too, and is still no trip.
+      expect([for (final t in counted.read()) t.id], [1]);
+      expect(total.read().length, 2);
+    },
+  );
+
+  test('the filter is not remembered once nothing reads it', () async {
+    final container = filterable();
+    var sub = container.listen(statsTripQueryProvider, (_, _) {});
+    container
+        .read(statsTripQueryProvider.notifier)
+        .setQuery(const TripQuery(tagIds: {10}));
+    expect(sub.read().hasActiveFilters, isTrue);
+
+    // Leaving the screen is the last listener going away.
+    sub.close();
+    await pumpEventQueue();
+    sub = container.listen(statsTripQueryProvider, (_, _) {});
+
+    expect(sub.read().hasActiveFilters, isFalse);
+  });
 }

@@ -113,6 +113,25 @@ UI (features/*/presentation, *widgets)
   while one is active: the search text belongs to the app bar's close button. With filters
   remembered across launches, this line is the plainest statement that the list is not
   everything.
+- **The all-trips statistics have a filter, and it is theirs.** `statsTripQueryProvider`
+  (`features/trips/application/stats_trips_provider.dart`) is a `TripQuery` read through the
+  same `applyTripQuery`, and `statsTripsProvider` is the one answer to "which trips count"
+  that the expenses, transport and countries tabs all read — they once each walked the trip
+  list, and only the expenses skipped routines. It is **not** the overview's query: the rule
+  that a statistic must not move because a chip was tapped elsewhere still stands, and what
+  it forbids is narrowing *unnoticed* — so the filter is set on the statistics screen, and
+  the `QueryResultLine` above the tabs says how many trips are counted. It is **not
+  remembered** either (`autoDispose`, no preferences): the overview's filter is a way of
+  reading a list used daily, a statistic is one question, and a subset left standing from
+  last time reads as the whole record. The sheet is the overview's `TripFilterSheet` with
+  `showSort: false`. A trip counts whole or not at all, by the overview's overlap rule — a
+  cost carries no date of its own, so dividing a New Year trip's spending between the two
+  years would be invented. Participants select *trips*, not *people's* spending: the per-person
+  figures still show everyone on those trips. Hand marks join the countries only while the
+  reading is unfiltered (`canMarkCountriesProvider`) — a filtered set asks about journeys, and
+  a mark is not about one — and cannot be made there, or a tick would vanish as it was made.
+  The tag and participant maps are watched only while a facet needs them, so the unfiltered
+  screen opens no stream it has no use for.
 - **The routine list is read the same way, by a query of its own.** `RoutineQuery` /
   `applyRoutineQuery` (`features/trips/routine_filter.dart`, pure) and the persisted
   `routineQueryProvider` are the overview's pattern applied to the other half of the same
@@ -1118,8 +1137,8 @@ UI (features/*/presentation, *widgets)
   trip touched are a third tab of `TripStatsScreen`, not a layer on the all-trips map: the
   map answers "where did I go" and this answers "how much have I seen", and the two sit on
   opposite sides of the filter split — the map draws what `applyTripQuery` left visible,
-  while the statistics read the whole record, which is why an answer here must not move when
-  a tag chip is tapped. It is a `FlutterMap` with **no tiles at all**, only a `PolygonLayer`
+  while the statistics read through a filter of their own (`statsTripQueryProvider`, below),
+  which is why an answer here must not move when a tag chip on the overview is tapped. It is a `FlutterMap` with **no tiles at all**, only a `PolygonLayer`
   over `assets/geo/countries.json`, so it costs nobody's donated server, works offline, and
   worked on the web from its first day. A street map under it would answer a question nobody
   asked and make the fills harder to read.

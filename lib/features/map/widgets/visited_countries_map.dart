@@ -43,10 +43,6 @@ class VisitedCountriesMap extends ConsumerWidget {
   final int? tripId;
   final Color? accent;
 
-  /// Marking a country by hand is a statement about a life, not about one
-  /// journey, so it is offered only where the question is about all of them.
-  bool get _canMark => tripId == null;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -55,6 +51,9 @@ class VisitedCountriesMap extends ConsumerWidget {
     final outlines = ref.watch(countryOutlinesProvider);
     final visited = ref.watch(allVisitedCountriesProvider(tripId));
     final marked = ref.watch(markedCountriesProvider).value ?? const <String>{};
+    // Marking a country by hand is a statement about a life, not about one
+    // journey, so it is offered only where the question is about all of them.
+    final canMark = ref.watch(canMarkCountriesProvider(tripId));
 
     return outlines.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -92,7 +91,7 @@ class VisitedCountriesMap extends ConsumerWidget {
                       fill: fill,
                       onTapCountry: _markOnTap(
                         ref,
-                        canMark: _canMark,
+                        canMark: canMark,
                         visited: visited,
                         marked: marked,
                       ),
@@ -128,7 +127,7 @@ class VisitedCountriesMap extends ConsumerWidget {
                 visited: visited.states,
                 fromTrips: visited.derivedStates,
                 language: language,
-                canMark: _canMark,
+                canMark: canMark,
                 l10n: l10n,
                 theme: theme,
                 onToggle: (code, value) {
@@ -246,7 +245,7 @@ class _FullscreenWorldMap extends ConsumerWidget {
             ref,
             // The same rule as the tab's: a mark is a statement about a life,
             // so it is offered only where the question is about every trip.
-            canMark: tripId == null,
+            canMark: ref.watch(canMarkCountriesProvider(tripId)),
             visited: visited,
             marked: marked,
           ),
