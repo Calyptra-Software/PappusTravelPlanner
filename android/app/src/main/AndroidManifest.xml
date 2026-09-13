@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Needed by the online connection search (Transitous/MOTIS). The debug and
          profile manifests declare this too, but a release build uses this one, so
          without it the search can't reach the network. -->
@@ -22,10 +23,70 @@
          READ_MEDIA_IMAGES, which is deliberately not here) and asks only about
          the one file the picker just handed over. -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
+    <!-- Four permissions this app does not want, taken back out of the merged
+         manifest. androidx work-runtime declares them, and it arrives twice over:
+         home_widget depends on it directly and again through
+         androidx.glance:glance-appwidget. Neither can simply be excluded: three
+         of home_widget's own Kotlin sources reference Glance, so the plugin would
+         stop compiling, and dropping Glance would leave the direct dependency
+         standing anyway.
+
+         Nothing here ever runs a worker. WorkManager is reached only from
+         HomeWidgetBackgroundWorker, which only HomeWidget.registerInteractivityCallback
+         leads to, and this app uses none of that: it pushes a payload with
+         saveWidgetData/updateWidget and answers a tap through a deep link. So the
+         four are dead weight, and on F-Droid's listing page RECEIVE_BOOT_COMPLETED
+         beside FOREGROUND_SERVICE reads as a claim about a trip planner that is
+         simply not true.
+
+         The trade is stated rather than hidden. Adding an interactivity callback
+         later means putting these back, and the failure would be a worker that
+         cannot start rather than a build that breaks. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove"/>
+    <!-- And the one androidx core generates for itself, which only
+         ContextCompat.registerReceiver ever holds: measured on the release APK,
+         that method is called zero times (all seven registerReceiver calls go
+         straight to the platform Context), and the permission name is not in the
+         dex at all. It is signature level, so nothing but this app could ever
+         have been granted it, but F-Droid prints it in the listing all the same
+         and a name like that invites a question nobody should have to ask.
+
+         This is the more debatable of the two removals, so the risk is written
+         down: a future dependency reaching for ContextCompat.registerReceiver
+         would find the permission gone. Dropping these two lines puts it back.
+         The <permission> element goes with it: declaring a permission nothing
+         uses is the same claim in a quieter place. -->
+    <uses-permission android:name="${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        tools:node="remove"/>
+    <permission android:name="${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        tools:node="remove"/>
     <application
         android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="${appIcon}">
+        <!-- And WorkManager must not start, which is the other half of taking its
+             permissions away. androidx.startup runs WorkManagerInitializer in every
+             process at launch, and its ForceStopRunnable takes a PowerManager wake
+             lock straight away: without WAKE_LOCK that is a SecurityException on the
+             startup path, so removing the permission while leaving the initializer
+             standing would trade a cosmetic line for a crash. Nothing here schedules
+             work (see above), so the honest arrangement is that the library is
+             present but never initialized. androidx documents exactly this node as
+             the way to switch to on-demand initialization.
+
+             What it costs is named: a later HomeWidget.registerInteractivityCallback
+             would fail with "WorkManager is not initialized properly" rather than
+             quietly doing nothing, which is the failure worth having. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data android:name="androidx.work.WorkManagerInitializer" tools:node="remove"/>
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true"
