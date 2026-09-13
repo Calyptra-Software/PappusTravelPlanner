@@ -44,14 +44,16 @@ same commit; a security policy that has drifted is worse than none, because peop
 on it.
 
 Both of those first two facts have already drifted once, which is why they are named as
-a pair. The tile server arrived with the map and left a file still saying one host; the
-five permissions androidx `work-runtime` merges in through `home_widget`'s Glance
-dependency left it saying four, and neither was noticed here: the second surfaced only
-when **F-Droid's code-quality report printed the list off the built APK**, which is what
-their store page publishes too — so what the manifest merger produces is on show whether
-or not this repository mentions it. The number to check is therefore the one in the APK (`androguard axml`, or the merger's own report under
-`build/app/outputs/logs/`), never the count of `uses-permission` lines in
-`android/app/src/main/AndroidManifest.xml`.
+a pair. The tile server arrived with the map and left a file still saying one host; androidx
+`work-runtime` merged five permissions into the manifest and left it saying four, and neither
+was noticed here: the second surfaced only when **F-Droid's code-quality report printed the
+list off the built APK**, which is what their store page publishes too. So what the manifest
+merger produces is on show whether or not this repository mentions it, and the number to
+check is the one in the **APK** (`androguard axml`, or the merger's own report under
+`build/app/outputs/logs/`). Counting `uses-permission` lines in
+`android/app/src/main/AndroidManifest.xml` was never right and is now wrong in both
+directions: the file carries `tools:node="remove"` entries that *subtract* from the merged
+result.
 
 ## Architecture
 
@@ -1647,6 +1649,19 @@ flat key/value pairs via `home_widget`. `HomeWidgetSync` (wrapping the app in `a
 watches trips/itinerary and re-pushes on change; widget taps deep-link via
 `pappus://trip?id=N`. `pickFeaturedTrip` decides which trip to show (ongoing → next
 upcoming → most recent past). Widget code is Android-only and no-ops elsewhere.
+
+**WorkManager is in the build and never starts.** `home_widget` depends on
+androidx `work-runtime` directly *and* on `androidx.glance:glance-appwidget`, which depends
+on it again — neither can be excluded, since three of the plugin's own Kotlin sources
+reference Glance. Its only user is `HomeWidgetBackgroundWorker`, reached solely from
+`HomeWidget.registerInteractivityCallback`, which this app does not use: it pushes a payload
+with `saveWidgetData`/`updateWidget` and answers a tap with a deep link. So the five
+permissions it merged into the manifest are removed with `tools:node="remove"`, and — the
+other half, without which the first is a crash rather than a tidy-up — the
+`WorkManagerInitializer` node is removed from `androidx.startup`'s provider, because that
+initializer runs in every process at launch and its `ForceStopRunnable` takes a
+`PowerManager` wake lock immediately. Adding an interactivity callback later means undoing
+both; the failure if you forget is "WorkManager is not initialized properly", which is loud.
 
 A row's time (`widgetTime`) is the one place the payload is not plain text: it carries the
 same planned-time-plus-miss line as the timeline, and a `RemoteViews` text can only be
