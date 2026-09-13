@@ -81,6 +81,11 @@ void main() {
             row(3, TripKind.routine),
           ]),
         ),
+        allParticipantsProvider.overrideWith(
+          (ref) => Stream.value(const {
+            2: [Person(id: 20, name: 'Ann', isMe: false)],
+          }),
+        ),
         tagsByTripProvider.overrideWith(
           (ref) => Stream.value({
             1: [tag(10)],
@@ -112,6 +117,17 @@ void main() {
       expect(total.read().length, 2);
     },
   );
+
+  test('a participant selects the trips they were on', () async {
+    final container = filterable();
+    final counted = container.listen(statsTripsProvider, (_, _) {});
+    container
+        .read(statsTripQueryProvider.notifier)
+        .setQuery(const TripQuery(participantIds: {20}));
+    await pumpEventQueue();
+
+    expect([for (final t in counted.read()) t.id], [2]);
+  });
 
   test('the filter is not remembered once nothing reads it', () async {
     final container = filterable();

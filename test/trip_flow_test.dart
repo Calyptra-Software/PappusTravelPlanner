@@ -284,6 +284,20 @@ void main() {
       expect(find.text('Zermatt'), findsOneWidget);
     });
 
+    testWidgets('follows a filter set in the sheet', (tester) async {
+      await pumpOverview(tester, [_trip(id: 1, title: 'Zermatt')]);
+
+      await tester.tap(find.byIcon(Icons.tune));
+      await tester.pumpAndSettle();
+      // An undated trip, so "past" leaves nothing.
+      await tester.tap(find.widgetWithText(FilterChip, 'Past'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('0 of 1 trip'), findsOneWidget);
+    });
+
     testWidgets('reads in German', (tester) async {
       await pumpOverview(tester, [
         _trip(id: 1, title: 'Zermatt'),

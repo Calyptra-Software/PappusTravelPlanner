@@ -42,6 +42,8 @@ void main() {
   );
 
   const walks = Tag(id: 10, name: 'walks', colorValue: 0, sortOrder: 0);
+  const ann = Person(id: 20, name: 'Ann', isMe: false);
+  const bo = Person(id: 21, name: 'Bo', isMe: false);
 
   Future<void> pumpAllTripsStats(WidgetTester tester) async {
     await tester.pumpWidget(
@@ -58,7 +60,12 @@ void main() {
               1: [walks],
             }),
           ),
-          allParticipantsProvider.overrideWith((ref) => Stream.value(const {})),
+          allParticipantsProvider.overrideWith(
+            (ref) => Stream.value(const {
+              1: [bo],
+              2: [ann, bo],
+            }),
+          ),
           for (final id in [1, 2]) ...[
             // One dinner on the first trip, two on the second.
             countedCostsProvider(id).overrideWith(
@@ -126,5 +133,25 @@ void main() {
 
     expect(find.text('2 of 2 trips'), findsOneWidget);
     expect(find.text('3 expenses'), findsOneWidget);
+  });
+
+  testWidgets('a participant selects the trips they were on', (tester) async {
+    await pumpAllTripsStats(tester);
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pumpAndSettle();
+    // Everyone on any trip, once each and alphabetically.
+    expect(find.widgetWithText(FilterChip, 'Bo'), findsOneWidget);
+    expect(
+      tester.getTopLeft(find.widgetWithText(FilterChip, 'Ann')).dx,
+      lessThan(tester.getTopLeft(find.widgetWithText(FilterChip, 'Bo')).dx),
+    );
+    await tester.tap(find.widgetWithText(FilterChip, 'Ann'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 of 2 trips'), findsOneWidget);
+    expect(find.text('2 expenses'), findsOneWidget);
   });
 }
