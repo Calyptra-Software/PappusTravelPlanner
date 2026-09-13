@@ -33,6 +33,14 @@ Regenerate code after editing anything under generation:
 - **`flutter gen-l10n`** after editing `lib/l10n/app_en.arb` / `app_de.arb`. `app_en.arb` is
   the template; every key added there must also be added to `app_de.arb`.
 
+**A change a user can notice gets a `CHANGELOG.md` entry in the same pull request**, under
+`## Unreleased` at the top (create the heading if the last release took it). That covers
+features, fixed behavior, and what the installed app declares or contacts; not refactors,
+tests, CI, or dependency bumps that change nothing visible. One or two short sentences per
+entry, saying what changed for the user rather than how: the release step in
+`CONTRIBUTING.md` only renames the heading, so an entry that was not written with its
+change is not written at all.
+
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
 without touching it: which hosts are contacted (`api.transitous.org` for a connection
 search, `tile.openstreetmap.org` while a map is open, and nothing else), which permissions
