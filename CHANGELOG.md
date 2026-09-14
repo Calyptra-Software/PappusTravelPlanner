@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **Setting a photo's position opens the map where the trip is**, showing the trip's other
+  places as context, instead of starting on the whole world — the same as setting an
+  entry's position.
 - **A settlement can be marked as a reimbursement from outside the group**, such as an
   employer's allowance. It no longer shows the receiver owing the source money, and the
   statistics show how much was reimbursed and by whom, also across all trips.
