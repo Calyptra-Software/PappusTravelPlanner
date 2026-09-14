@@ -46,8 +46,8 @@ glibc 2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
 
 Windows builds are there too, for x64: a `.zip` to unpack anywhere, then run `pappus.exe`.
 Keep the unpacked folder together, since `pappus.exe` needs the files beside it; to start it
-from the desktop or the Start menu, create a shortcut to it. The program is not signed, so Windows SmartScreen warns on the first start; choose *More
-info*, then *Run anyway*.
+from the desktop or the Start menu, create a shortcut to it. The program is not signed, so
+Windows SmartScreen warns on the first start; choose *More info*, then *Run anyway*.
 
 Every other platform, and Android, Linux or Windows if you would rather not run a stranger's binary, is a
 [build from source](#build-from-source) away.
