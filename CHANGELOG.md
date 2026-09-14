@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **The connection search makes room for its results.** After searching, the form folds
+  into a one-line summary of what was searched, so more connections fit on screen; tap it
+  to change the search.
 - **Setting a photo's position opens the map where the trip is**, showing the trip's other
   places as context, instead of starting on the whole world — the same as setting an
   entry's position.

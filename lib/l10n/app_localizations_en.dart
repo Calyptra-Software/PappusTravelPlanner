@@ -1658,6 +1658,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionViaStayNone => 'No minimum';
 
   @override
+  String connectionSummaryVia(String stops) {
+    return 'via $stops';
+  }
+
+  @override
+  String get connectionEditSearch => 'Edit search';
+
+  @override
   String get connectionPickPlace => 'Search station or place';
 
   @override
