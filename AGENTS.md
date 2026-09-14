@@ -1802,7 +1802,7 @@ Three smaller traps, each found by a test that had to be written twice:
 
 - **A release is a tag, not a build somebody ran.** Pushing `v<version>` to `main` runs
   `.github/workflows/release.yml`: it checks the tag against `pubspec.yaml`, builds the
-  three per-ABI APKs signed from repository secrets and the Linux packages beside them, and
+  three per-ABI APKs signed from repository secrets and the Linux and Windows packages beside them, and
   opens a **draft** release for a human to check the signing fingerprint before publishing. So never build and upload a
   release artifact by hand — the point of the workflow is that the environment which
   produced a published APK is knowable, which is also what a later move to F-Droid's
@@ -1938,6 +1938,28 @@ Three smaller traps, each found by a test that had to be written twice:
   The bundle also carries `libdartjni.so`, linked against the runner's `libjvm`. It is only
   opened on demand by `package:jni`, which only Android code paths reach, so it is inert
   rather than broken.
+- **On Windows the same variable renames the product, and the names are the mechanism.**
+  `path_provider_windows` keys the app's data directory, and with it `shared_preferences`,
+  by `CompanyName\ProductName` from the executable's version resource, and
+  `package_info_plus` reports its `InternalName` as the package name. So
+  `PAPPUS_SIDE_BY_SIDE=true` becomes a preprocessor **flag** (`windows/CMakeLists.txt`) on
+  which `Runner.rc` picks `Pappus CI` / `pappus.ci` and `main.cpp` the window title. That
+  is enough on its own: the saved database path lives under the CI build's own
+  `%APPDATA%` directory, `isCiBuild` reads the `.ci` off `PackageInfo` with no FFI, and
+  `defaultDatabaseFileName` already renames the file on every platform but Android and iOS,
+  since `Documents` is shared here too. A flag rather than a string define, because a
+  quoted name with a space in it has to survive CMake's quoting into `rc.exe` as well as
+  `cl.exe`, and literals chosen in the source do not. Renaming the *released* product
+  would move every existing Windows user's settings, so only the CI build's name changes.
+  `tool/package_windows.ps1` zips the release folder with the **Visual C++ runtime**
+  (`msvcp140`, `vcruntime140`, `vcruntime140_1`) copied beside `pappus.exe` from the
+  Visual Studio that built it, which Flutter's deployment guide asks for and Microsoft's
+  terms allow. Without them a clean machine fails with a missing-DLL error that reads as a
+  broken download. It zips with Windows' own `tar.exe`, named by full path, because some
+  `Compress-Archive` versions write backslashes into entry names. The zip is unsigned, so
+  SmartScreen warns on first start; `SECURITY.md` and the README say so. None of this can
+  be built from Linux, since Flutter does not cross-compile Windows, so the `Build Windows
+  zip` job is the only place the Windows runner is compiled at all.
 - The icon is generated, not drawn twice: `tool/build_ci_icon.py` composes the
   app's own mark with an amber `CI` chip and writes all five densities plus the
   legacy icon (minSdk is 24; adaptive icons start at 26). The chip sits inside

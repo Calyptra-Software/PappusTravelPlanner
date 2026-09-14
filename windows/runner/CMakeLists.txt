@@ -27,6 +27,13 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_MINOR=${FLUTT
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_PATCH=${FLUTTER_VERSION_PATCH}")
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTTER_VERSION_BUILD}")
 
+# The side-by-side build (see the top-level CMakeLists.txt). Target definitions
+# reach the resource compiler as well as the C++ one, which is what lets
+# Runner.rc rename the product.
+if(PAPPUS_SIDE_BY_SIDE)
+  target_compile_definitions(${BINARY_NAME} PRIVATE "PAPPUS_SIDE_BY_SIDE")
+endif()
+
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 

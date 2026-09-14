@@ -204,3 +204,47 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 14
+
+  # The Windows counterpart of the two artifacts above. Built on Windows because
+  # Flutter cannot cross-compile it, which also makes this the only place the
+  # Windows runner and its plugins are compiled at all.
+  windows:
+    name: Build Windows zip
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
+          flutter-version: '3.47.x'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # PAPPUS_SIDE_BY_SIDE renames the product and its InternalName
+      # (windows/runner/Runner.rc). The product name is what path_provider keys
+      # %APPDATA% by, so this build keeps preferences of its own -- and with
+      # them its own saved database path -- instead of opening the file the
+      # released app last used; the ".ci" InternalName is how the app knows.
+      - name: Build and package
+        shell: pwsh
+        env:
+          PAPPUS_SIDE_BY_SIDE: 'true'
+        run: |
+          flutter build windows --release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./tool/package_windows.ps1 -Version (git rev-parse --short HEAD) -OutputDir dist
+
+      # The zip itself, which upload-artifact wraps in a zip of its own: unpack
+      # twice. Unsigned, so SmartScreen warns on the first start.
+      - name: Upload the zip
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-ci-windows-x64-${{ github.sha }}
+          path: dist/*.zip
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14

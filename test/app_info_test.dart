@@ -11,10 +11,14 @@ void main() {
   group('isCiBuild', () {
     test('recognises the side-by-side application id', () {
       expect(isCiBuild('dev.calyptra.pappus$kCiApplicationIdSuffix'), isTrue);
+      // The Windows executable's InternalName in the side-by-side build.
+      expect(isCiBuild('pappus$kCiApplicationIdSuffix'), isTrue);
     });
 
     test('leaves the released application id alone', () {
       expect(isCiBuild('dev.calyptra.pappus'), isFalse);
+      // The Windows executable's InternalName.
+      expect(isCiBuild('pappus'), isFalse);
     });
 
     test('is not fooled by the suffix appearing elsewhere', () {

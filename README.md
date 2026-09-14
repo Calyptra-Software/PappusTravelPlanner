@@ -44,7 +44,11 @@ Linux builds are on the same page, for x86-64: an AppImage (`chmod +x`, then run
 a `.tar.gz` holding the program folder with a desktop entry and an icon. Either needs
 glibc 2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
 
-Every other platform, and Android or Linux if you would rather not run a stranger's binary, is a
+Windows builds are there too, for x64: a `.zip` to unpack anywhere, then run `pappus.exe`.
+The program is not signed, so Windows SmartScreen warns on the first start; choose *More
+info*, then *Run anyway*.
+
+Every other platform, and Android, Linux or Windows if you would rather not run a stranger's binary, is a
 [build from source](#build-from-source) away.
 
 ## Features
