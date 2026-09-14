@@ -8,6 +8,8 @@ import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../itinerary/application/itinerary_providers.dart';
+import '../../map/map_features.dart';
 import '../../map/presentation/map_picker_screen.dart';
 import '../application/attachment_providers.dart';
 import '../attachment_flow.dart';
@@ -15,10 +17,14 @@ import '../attachment_flow.dart';
 /// Opens one attachment: the picture at the size the app kept it, or a document
 /// with the one thing that can be done to it — hand it to a program that
 /// understands the format.
-Future<void> showAttachmentSheet(BuildContext context, Attachment attachment) {
+Future<void> showAttachmentSheet(
+  BuildContext context,
+  Attachment attachment, {
+  int? tripId,
+}) {
   return showAppSheet<void>(
     context,
-    builder: (_) => AttachmentSheet(attachment: attachment),
+    builder: (_) => AttachmentSheet(attachment: attachment, tripId: tripId),
   );
 }
 
@@ -32,9 +38,18 @@ Future<void> showAttachmentSheet(BuildContext context, Attachment attachment) {
 /// The bytes are read only once this is open — they are the one thing in the app
 /// that can be megabytes, and a list must never pull them.
 class AttachmentSheet extends ConsumerWidget {
-  const AttachmentSheet({super.key, required this.attachment});
+  const AttachmentSheet({super.key, required this.attachment, this.tripId});
 
   final Attachment attachment;
+
+  /// The trip this file belongs to, so the map picker can open where the trip
+  /// is rather than on the whole world — the same context an entry's position
+  /// field gives it.
+  ///
+  /// Handed in for the reason `AttachmentsField.coverTripId` is: an attachment
+  /// names one of three owners and only one of them is the trip. Null where the
+  /// caller does not know it, and then the picker opens as it always did.
+  final int? tripId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -86,7 +101,11 @@ class AttachmentSheet extends ConsumerWidget {
             // as well, so this is the visible half of a rule with a floor under
             // it.
             if (live.kind == AttachmentKind.photo)
-              _PositionRow(attachment: live, position: position),
+              _PositionRow(
+                attachment: live,
+                position: position,
+                tripId: tripId,
+              ),
             const Divider(height: 24),
             Wrap(
               spacing: 8,
@@ -252,16 +271,32 @@ class _DocumentPlaceholder extends StatelessWidget {
 /// an old fix, while a position pointed at on the map is a statement. They are
 /// not the same claim, and the app does not quietly upgrade one into the other.
 class _PositionRow extends ConsumerWidget {
-  const _PositionRow({required this.attachment, required this.position});
+  const _PositionRow({
+    required this.attachment,
+    required this.position,
+    required this.tripId,
+  });
 
   final Attachment attachment;
   final LatLng? position;
+  final int? tripId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final source = attachment.positionSource;
+    // Where the trip already is, so a photograph is placed against the plan
+    // rather than against an empty world map — the context the item form's own
+    // position fields give their picker. Watched rather than read in the
+    // callback: the screen this sheet was opened over is nearly always watching
+    // the same provider already, and an `autoDispose` family nobody watches
+    // answers `AsyncLoading`, which would silently be "no points at all".
+    final nearby = tripId == null
+        ? const <LatLng>[]
+        : itemPositions(
+            ref.watch(itineraryProvider(tripId!)).value ?? const [],
+          );
     final label = position == null
         ? l10n.attachmentPositionNone
         : switch (source) {
@@ -294,6 +329,7 @@ class _PositionRow extends ConsumerWidget {
               context,
               title: l10n.attachmentPositionSet,
               initial: position,
+              nearby: nearby,
             );
             if (picked == null) return;
             await ref

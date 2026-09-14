@@ -85,6 +85,7 @@ class TripMapScreen extends ConsumerWidget {
           );
           if (features.isEmpty) return _EmptyMap(l10n: l10n);
           return _MapView(
+            tripId: tripId,
             features: features,
             itemsById: {for (final item in live) item.id: item},
             // Keyed by id so a marker, which carries one and nothing else, can
@@ -126,6 +127,7 @@ class TripMapScreen extends ConsumerWidget {
 
 class _MapView extends ConsumerStatefulWidget {
   const _MapView({
+    required this.tripId,
     required this.features,
     required this.itemsById,
     required this.photosById,
@@ -133,6 +135,9 @@ class _MapView extends ConsumerStatefulWidget {
     this.accent,
   });
 
+  /// The trip on screen. Only the attachment sheet needs it — so the map
+  /// picker it opens can start where this trip is.
+  final int tripId;
   final TripMapFeatures features;
 
   /// The entries the markers stand for, keyed by id. A marker carries an id and
@@ -292,12 +297,16 @@ class _MapViewState extends ConsumerState<_MapView> {
     ];
     if (rows.isEmpty) return;
     if (rows.length == 1) {
-      showAttachmentSheet(context, rows.single);
+      showAttachmentSheet(context, rows.single, tripId: widget.tripId);
       return;
     }
     showGallery(
       context,
       photos: [for (final row in rows) GalleryPhoto(attachment: row)],
+      // These are the trip's own photographs, so the gallery is the trip's:
+      // it offers the cover star, and the sheet behind its ⋮ opens the map
+      // picker where the trip is.
+      tripId: widget.tripId,
     );
   }
 

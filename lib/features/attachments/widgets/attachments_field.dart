@@ -295,7 +295,11 @@ class _Section extends StatelessWidget {
                       initialIndex: viewable.indexOf(attachment),
                       tripId: coverTripId,
                     )
-                  : showAttachmentSheet(context, attachment),
+                  : showAttachmentSheet(
+                      context,
+                      attachment,
+                      tripId: coverTripId,
+                    ),
               dragHandle: ReorderableDragStartListener(
                 index: index,
                 child: Padding(

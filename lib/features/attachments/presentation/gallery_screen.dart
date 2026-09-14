@@ -138,7 +138,11 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
             icon: const Icon(Icons.more_vert),
             // Hands the acts to the sheet that already owns them, the way
             // `MapItemSheet` hands editing to the item form.
-            onPressed: () => showAttachmentSheet(context, photo.attachment),
+            onPressed: () => showAttachmentSheet(
+              context,
+              photo.attachment,
+              tripId: widget.tripId,
+            ),
           ),
         ],
       ),

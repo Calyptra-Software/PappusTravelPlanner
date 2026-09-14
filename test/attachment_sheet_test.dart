@@ -16,6 +16,7 @@ import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
 import 'package:travelplanner/features/attachments/attachment_import.dart';
 import 'package:travelplanner/features/attachments/presentation/attachment_sheet.dart';
+import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 /// One attachment, and the four things that can be done to it.
@@ -90,13 +91,22 @@ void main() {
 
   /// Opens the sheet the way the app does, from a tap on something else, so
   /// what [_delete] pops has a route under it.
-  Future<void> openSheet(WidgetTester tester, Attachment attachment) async {
+  Future<void> openSheet(
+    WidgetTester tester,
+    Attachment attachment, {
+    int? withTripId,
+  }) async {
+    // What the trip holds, as a plain stream: the sheet reads this to tell the
+    // map picker where the trip is, and a drift `.watch()` does not resolve
+    // under the fake-async clock.
+    final items = await db.itineraryDao.itemsFor(tripId);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(repo),
           appVersionProvider.overrideWithValue('0.0.0-test'),
           attachmentProvider.overrideWith((ref, id) => live.stream),
+          itineraryProvider.overrideWith((ref, id) => Stream.value(items)),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -109,7 +119,11 @@ void main() {
           home: Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
-                onPressed: () => showAttachmentSheet(context, attachment),
+                onPressed: () => showAttachmentSheet(
+                  context,
+                  attachment,
+                  tripId: withTripId,
+                ),
                 child: const Text('open'),
               ),
             ),
@@ -389,6 +403,44 @@ void main() {
       // so — the app does not quietly upgrade one claim into the other.
       expect(stored!.positionSource, AttachmentPositionSource.picked);
       expect(stored.lat, isNotNull);
+    });
+
+    testWidgets('opens the map where the trip already is', (tester) async {
+      // A photograph with no position of its own, so the only thing that can
+      // say where to open is the plan. The entry's position is what the item
+      // form's own picker is given, and a picture is placed against the same
+      // world.
+      await (db.update(
+        db.itineraryItems,
+      )..where((i) => i.id.equals(itemId))).write(
+        const ItineraryItemsCompanion(lat: Value(41.8902), lon: Value(12.4922)),
+      );
+      await openSheet(tester, await attach(), withTripId: tripId);
+
+      await tester.tap(find.byTooltip('Place on map'));
+      await tester.pumpAndSettle();
+
+      final options = tester
+          .widget<FlutterMap>(find.byType(FlutterMap))
+          .options;
+      expect(options.initialCenter.latitude, closeTo(41.8902, 1e-6));
+      expect(options.initialCenter.longitude, closeTo(12.4922, 1e-6));
+      // Wide enough to see the neighbourhood, not the whole world.
+      expect(options.initialZoom, 11);
+    });
+
+    testWidgets('and on the whole world when the trip knows no positions', (
+      tester,
+    ) async {
+      await openSheet(tester, await attach(), withTripId: tripId);
+
+      await tester.tap(find.byTooltip('Place on map'));
+      await tester.pumpAndSettle();
+
+      final options = tester
+          .widget<FlutterMap>(find.byType(FlutterMap))
+          .options;
+      expect(options.initialZoom, 2);
     });
 
     testWidgets('backing out of the map leaves the reading alone', (
