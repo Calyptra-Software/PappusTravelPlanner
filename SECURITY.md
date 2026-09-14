@@ -159,9 +159,14 @@ the *first* install, and for any copy that did not come from this repository's
 releases page.
 
 It is not the same number as the file hashes published alongside a release in
-`SHA256SUMS.txt`. Those are hashes of the APK files: they differ from release to
+`SHA256SUMS.txt`. Those are hashes of the release files: they differ from release to
 release and answer whether a download arrived intact. The fingerprints above do
 not change, and answer who signed it.
+
+**The Linux packages are not signed.** The `.tar.gz` and the AppImage carry no
+signature, so there is nothing to check them against but `SHA256SUMS.txt`, and that
+file comes from the same release page. It shows that a download arrived intact. It
+does not show who built the file.
 
 ## What is deliberately not a vulnerability
 

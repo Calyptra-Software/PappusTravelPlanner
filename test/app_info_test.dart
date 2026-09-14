@@ -22,8 +22,10 @@ void main() {
       expect(isCiBuild('ci.calyptra.pappus'), isFalse);
     });
 
-    test('says no for the other platforms, which have no such build', () {
+    test('says no for ids that are not the side-by-side build', () {
       expect(isCiBuild('dev.calyptra.pappus.linux'), isFalse);
+      // What `PackageInfo` reports on Linux, where the GTK id is read instead.
+      expect(isCiBuild('travelplanner'), isFalse);
       expect(isCiBuild(''), isFalse);
     });
   });

@@ -40,7 +40,11 @@ APK matching your device's architecture — `arm64-v8a` for essentially any phon
 decade — and allow your file manager to install it, since it does not come from a store.
 There is no store listing yet.
 
-Every other platform, and Android if you would rather not run a stranger's binary, is a
+Linux builds are on the same page, for x86-64: an AppImage (`chmod +x`, then run it) and
+a `.tar.gz` holding the program folder with a desktop entry and an icon. Either needs
+glibc 2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
+
+Every other platform, and Android or Linux if you would rather not run a stranger's binary, is a
 [build from source](#build-from-source) away.
 
 ## Features

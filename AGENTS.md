@@ -1802,8 +1802,8 @@ Three smaller traps, each found by a test that had to be written twice:
 
 - **A release is a tag, not a build somebody ran.** Pushing `v<version>` to `main` runs
   `.github/workflows/release.yml`: it checks the tag against `pubspec.yaml`, builds the
-  three per-ABI APKs signed from repository secrets, and opens a **draft** release for a
-  human to check the signing fingerprint before publishing. So never build and upload a
+  three per-ABI APKs signed from repository secrets and the Linux packages beside them, and
+  opens a **draft** release for a human to check the signing fingerprint before publishing. So never build and upload a
   release artifact by hand — the point of the workflow is that the environment which
   produced a published APK is knowable, which is also what a later move to F-Droid's
   verified builds would need. `CONTRIBUTING.md` has the steps. The same goal is why
@@ -1907,6 +1907,37 @@ Three smaller traps, each found by a test that had to be written twice:
   beside it. `appVersionProvider` itself is untouched, because that is what the
   connection search sends as its `User-Agent`, whose shape the router's usage
   policy asks for; which build it is, is a matter for the reader.
+- **On Linux the side-by-side build has to isolate more than the id, because the desktop
+  shares more.** `PAPPUS_SIDE_BY_SIDE=true` (an environment variable: `flutter build linux`
+  forwards no `-D`) suffixes the GTK `APPLICATION_ID` in `linux/CMakeLists.txt` and retitles
+  the window. That id is what `path_provider` and `shared_preferences` key
+  `~/.local/share/<id>/` by, so the CI build gets preferences of its own, **including the
+  saved database path**. Choosing a different file in the CI build's settings is therefore
+  not a substitute: the choice is written to the preferences file both builds read, so the
+  CI build first opens (and migrates) whatever the released one last used, and the released
+  one then opens the test file. The default file needs the same care, since
+  `getApplicationDocumentsDirectory` is the user's `~/Documents` on a desktop, not a
+  per-app sandbox: `defaultDatabaseFile(ciBuild:)` names it `pappus-ci.sqlite` there and
+  leaves Android and iOS alone, where the directory already belongs to the id and renaming
+  the file would only hide a tester's data. `isCiBuild` reads the id from GLib
+  (`core/application_id.dart`, two FFI calls, the same ones `path_provider_linux` makes),
+  because `PackageInfo.packageName` on Linux is the pubspec name `travelplanner`.
+  Measured in a throwaway `HOME`: with a released build's preferences pointing elsewhere,
+  the CI AppImage created `~/Documents/pappus-ci.sqlite` and left that file alone.
+- **`tool/package_linux.sh` is the only place Linux packages are made**, by both workflows
+  and by hand, so the AppImage a laptop produces is the one a release publishes. It asserts
+  the **glibc floor** (`max_glibc`, 2.35) against the highest `GLIBC_` symbol version the
+  bundle references. What counts is that reference and not the glibc of the build machine:
+  a build on Ubuntu 24.04 (glibc 2.39) measured GLIBC_2.34, which is why CI builds on
+  `ubuntu-latest` and not on an older runner. A new plugin can raise the floor without
+  anything else noticing, and raising it on purpose means editing that line and the README.
+  appimagetool and its type2 runtime are pinned by version **and** digest. Unpinned, the
+  tool fetches the runtime from a rolling release at build time, and that runtime is
+  embedded in every AppImage handed out. The runtime is static, so users need no `libfuse2`.
+  The packages are unsigned, and `SECURITY.md` says so.
+  The bundle also carries `libdartjni.so`, linked against the runner's `libjvm`. It is only
+  opened on demand by `package:jni`, which only Android code paths reach, so it is inert
+  rather than broken.
 - The icon is generated, not drawn twice: `tool/build_ci_icon.py` composes the
   app's own mark with an amber `CI` chip and writes all five densities plus the
   legacy icon (minSdk is 24; adaptive icons start at 26). The chip sits inside

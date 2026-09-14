@@ -107,7 +107,9 @@ class DatabaseController {
 
   /// Reverts to the default app-managed database location.
   Future<void> resetToDefault() async {
-    final path = await defaultDatabaseFile();
+    final path = await defaultDatabaseFile(
+      ciBuild: _ref.read(isCiBuildProvider),
+    );
     await _ref
         .read(activeDbPathProvider.notifier)
         .setPath(path, persist: false);
