@@ -88,6 +88,17 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   JourneyQuery? _query;
   bool _importing = false;
 
+  /// Whether the form stands folded into one summary row above the results.
+  ///
+  /// Set by running a search and cleared by tapping the summary. On a small
+  /// screen the form alone takes nearly all of the sheet, and the sheet is
+  /// capped below the full height so its handle stays reachable — so with the
+  /// form standing, one or two connections were all that could be seen. Only a
+  /// search folds it, which is also what keeps the summary truthful: every
+  /// field it names can be changed only with the form open, and closing it
+  /// again is the search that makes the results match.
+  bool _formCollapsed = false;
+
   /// Which end is currently fetching a window — true for "earlier", false for
   /// "later", null when nothing is on its way.
   bool? _pagingEarlier;
@@ -226,6 +237,7 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
       _time.minute,
     );
     setState(() {
+      _formCollapsed = true;
       _query = (
         // Not `id`: only a stop is addressable by one, and a picked address
         // has to travel as a coordinate (see `TransportPlace.queryId`).
@@ -465,121 +477,137 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
                 style: theme.textTheme.titleLarge,
               ),
             ),
-            _EndpointTile(
-              icon: Icons.trip_origin,
-              label: l10n.connectionFrom,
-              place: _from,
-              hint: _fromHint,
-              onTap: () => _pick(
-                initialQuery: _fromHint,
-                onPicked: (place) {
-                  _from = place;
-                  _fromHint = null;
-                },
-              ),
-            ),
-            for (var i = 0; i < _vias.length; i++) ...[
-              _EndpointTile(
-                // The dots on the rail between origin and destination: this is
-                // somewhere the journey passes, not somewhere it ends.
-                icon: Icons.more_vert,
-                label: l10n.connectionVia,
-                place: _vias[i].place,
-                onTap: () => _changeVia(i),
-                // The stay hangs off the stop, so removing the row takes it
-                // with it — and the next via starts from no minimum again.
-                onClear: () => setState(() => _vias.removeAt(i)),
-                clearTooltip: l10n.connectionViaRemove,
-              ),
-              _viaStayRow(l10n, i),
-            ],
-            // Between the two ends, because that is where a via stop goes. It
-            // stops being offered at the service's own limit rather than
-            // standing there disabled with nothing to say why.
-            if (_vias.length < kMaxViaStops)
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.add),
-                    label: Text(l10n.connectionViaAdd),
-                    onPressed: _addVia,
-                  ),
-                ),
-              ),
-            _EndpointTile(
-              icon: Icons.place_outlined,
-              label: l10n.connectionTo,
-              place: _to,
-              hint: _toHint,
-              onTap: () => _pick(
-                initialQuery: _toHint,
-                onPicked: (place) {
-                  _to = place;
-                  _toHint = null;
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.event),
-                      label: Text(materialL10n.formatMediumDate(_date)),
-                      onPressed: _pickDate,
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              alignment: Alignment.topCenter,
+              child: _formCollapsed
+                  ? _summary(l10n, materialL10n)
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _EndpointTile(
+                          icon: Icons.trip_origin,
+                          label: l10n.connectionFrom,
+                          place: _from,
+                          hint: _fromHint,
+                          onTap: () => _pick(
+                            initialQuery: _fromHint,
+                            onPicked: (place) {
+                              _from = place;
+                              _fromHint = null;
+                            },
+                          ),
+                        ),
+                        for (var i = 0; i < _vias.length; i++) ...[
+                          _EndpointTile(
+                            // The dots on the rail between origin and destination: this is
+                            // somewhere the journey passes, not somewhere it ends.
+                            icon: Icons.more_vert,
+                            label: l10n.connectionVia,
+                            place: _vias[i].place,
+                            onTap: () => _changeVia(i),
+                            // The stay hangs off the stop, so removing the row takes it
+                            // with it — and the next via starts from no minimum again.
+                            onClear: () => setState(() => _vias.removeAt(i)),
+                            clearTooltip: l10n.connectionViaRemove,
+                          ),
+                          _viaStayRow(l10n, i),
+                        ],
+                        // Between the two ends, because that is where a via stop goes. It
+                        // stops being offered at the service's own limit rather than
+                        // standing there disabled with nothing to say why.
+                        if (_vias.length < kMaxViaStops)
+                          Align(
+                            alignment: AlignmentDirectional.centerStart,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(8, 0, 16, 0),
+                              child: TextButton.icon(
+                                icon: const Icon(Icons.add),
+                                label: Text(l10n.connectionViaAdd),
+                                onPressed: _addVia,
+                              ),
+                            ),
+                          ),
+                        _EndpointTile(
+                          icon: Icons.place_outlined,
+                          label: l10n.connectionTo,
+                          place: _to,
+                          hint: _toHint,
+                          onTap: () => _pick(
+                            initialQuery: _toHint,
+                            onPicked: (place) {
+                              _to = place;
+                              _toHint = null;
+                            },
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.event),
+                                  label: Text(
+                                    materialL10n.formatMediumDate(_date),
+                                  ),
+                                  onPressed: _pickDate,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(Icons.schedule),
+                                  label: Text(
+                                    materialL10n.formatTimeOfDay(_time),
+                                  ),
+                                  onPressed: _pickTime,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SegmentedButton<bool>(
+                            segments: [
+                              ButtonSegment(
+                                value: false,
+                                label: Text(l10n.connectionDepart),
+                              ),
+                              ButtonSegment(
+                                value: true,
+                                label: Text(l10n.connectionArrive),
+                              ),
+                            ],
+                            selected: {_arriveBy},
+                            onSelectionChanged: (s) =>
+                                setState(() => _arriveBy = s.first),
+                          ),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.tune),
+                          title: Text(l10n.connectionOptionsTitle),
+                          subtitle: Text(
+                            searchOptionsSummary(
+                              l10n,
+                              ref.watch(journeySearchOptionsProvider),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: _pickOptions,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.search),
+                            label: Text(l10n.search),
+                            onPressed: _canSearch ? _runSearch : null,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.schedule),
-                      label: Text(materialL10n.formatTimeOfDay(_time)),
-                      onPressed: _pickTime,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<bool>(
-                segments: [
-                  ButtonSegment(
-                    value: false,
-                    label: Text(l10n.connectionDepart),
-                  ),
-                  ButtonSegment(
-                    value: true,
-                    label: Text(l10n.connectionArrive),
-                  ),
-                ],
-                selected: {_arriveBy},
-                onSelectionChanged: (s) => setState(() => _arriveBy = s.first),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.tune),
-              title: Text(l10n.connectionOptionsTitle),
-              subtitle: Text(
-                searchOptionsSummary(
-                  l10n,
-                  ref.watch(journeySearchOptionsProvider),
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              onTap: _pickOptions,
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: FilledButton.icon(
-                icon: const Icon(Icons.search),
-                label: Text(l10n.search),
-                onPressed: _canSearch ? _runSearch : null,
-              ),
             ),
             Flexible(child: _results(l10n)),
             Padding(
@@ -591,6 +619,55 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
       ),
     );
   }
+
+  /// The form folded into one row: where from and to, and when — what the
+  /// results below were searched for. Tapping it opens the form again, leaving
+  /// the results standing until the next search replaces them.
+  ///
+  /// The search options are named only when they deviate from the defaults, the
+  /// rule their own row follows: a filter someone forgot they set is how a
+  /// missing connection turns into a puzzle, and folding the form must not hide
+  /// it — while "all means of transport" on every search would be a line saying
+  /// nothing.
+  Widget _summary(AppLocalizations l10n, MaterialLocalizations materialL10n) {
+    final vias = _vias.map((via) => via.place.name).join(', ');
+    final time = materialL10n.formatTimeOfDay(_time);
+    final options = searchOptionsSummary(
+      l10n,
+      ref.watch(journeySearchOptionsProvider),
+    );
+    return ListTile(
+      leading: const Icon(Icons.search),
+      title: Text(
+        '${_from?.name ?? l10n.connectionFrom} → '
+        '${_to?.name ?? l10n.connectionTo}',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        [
+          [
+            if (vias.isNotEmpty) l10n.connectionSummaryVia(vias),
+            materialL10n.formatMediumDate(_date),
+            '${_arriveBy ? l10n.connectionArrive : l10n.connectionDepart} '
+                '$time',
+          ].join(' · '),
+          // An untouched search summarises as exactly this one word.
+          if (options != l10n.connectionModesAll) options,
+        ].join('\n'),
+        maxLines: 4,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.edit_outlined),
+        tooltip: l10n.connectionEditSearch,
+        onPressed: _expandForm,
+      ),
+      onTap: _expandForm,
+    );
+  }
+
+  void _expandForm() => setState(() => _formCollapsed = false);
 
   /// How long to spend at the via stop at [index] before travelling on.
   ///

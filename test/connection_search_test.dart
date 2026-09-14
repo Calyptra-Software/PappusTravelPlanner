@@ -352,6 +352,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Opens the form again after a search has folded it into its summary.
+  Future<void> editSearch(WidgetTester tester) async {
+    await tester.tap(find.byTooltip('Edit search'));
+    await tester.pumpAndSettle();
+  }
+
   /// Sets the [index]-th via stop's minimum stay to the entry reading [label].
   Future<void> setStay(WidgetTester tester, int index, String label) async {
     await tester.tap(find.byType(DropdownButton<int>).at(index));
@@ -445,6 +451,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(search.calls.last.options.modes, kAllTransitFilters);
 
+    await editSearch(tester);
     await openOptions(tester);
     await tester.tap(find.text('Flights'));
     await tester.pumpAndSettle();
@@ -682,6 +689,7 @@ void main() {
     expect(find.textContaining('≤10 min to stop'), findsOneWidget);
 
     // Back to automatic: the stored value is removed, not set to something.
+    await editSearch(tester);
     await openOptions(tester);
     await tester.tap(find.byType(DropdownButton<int?>).first);
     await tester.pumpAndSettle();
@@ -928,6 +936,7 @@ void main() {
 
     // The next via starts from no minimum rather than inheriting the "2 h"
     // that was set for a stop no longer on the form.
+    await editSearch(tester);
     await addVia(tester, 'Hannover Hbf');
     expect(find.text('No minimum'), findsNWidgets(2));
   });
@@ -1002,6 +1011,62 @@ void main() {
       find.widgetWithText(FilledButton, 'Search'),
     );
     expect(enabled.onPressed, isNotNull);
+  });
+
+  group('the form folds away once searched', () {
+    testWidgets('into a summary of what the results are for', (tester) async {
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await pickInto(tester, 'From');
+      await pickInto(tester, 'To');
+      await tester.tap(find.text('Arrive by'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+
+      // The form is gone, leaving the room to the results...
+      expect(find.widgetWithText(FilledButton, 'Search'), findsNothing);
+      expect(find.byType(SegmentedButton<bool>), findsNothing);
+      expect(find.textContaining('ICE 1'), findsOneWidget);
+      // ...and the row standing in for it says what was asked.
+      expect(find.text('Hamburg Hbf → Hamburg Hbf'), findsOneWidget);
+      expect(find.textContaining(' · Arrive by '), findsOneWidget);
+      // An untouched set of options is not worth a line of its own.
+      expect(find.textContaining('All means of transport'), findsNothing);
+    });
+
+    testWidgets('and opens again without losing the results', (tester) async {
+      await searchFrom(tester);
+      expect(find.widgetWithText(FilledButton, 'Search'), findsNothing);
+
+      await editSearch(tester);
+
+      expect(find.widgetWithText(FilledButton, 'Search'), findsOneWidget);
+      expect(find.byTooltip('Edit search'), findsNothing);
+      expect(find.textContaining('ICE 1'), findsOneWidget);
+      // Opening the form asks the service nothing; searching again folds it.
+      expect(search.calls, hasLength(1));
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Edit search'), findsOneWidget);
+    });
+
+    testWidgets('naming the via stops it goes through', (tester) async {
+      suggestions = const [_place, _viaPlace];
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await pickInto(tester, 'From');
+      await pickInto(tester, 'To');
+      await addVia(tester, 'Hannover Hbf');
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('via Hannover Hbf · '), findsOneWidget);
+    });
   });
 
   group('into a routine', () {

@@ -576,6 +576,8 @@
   "connectionViaHint": "Als Zwischenhalt sind nur Haltestellen möglich.",
   "connectionViaStay": "Mindestens bleiben",
   "connectionViaStayNone": "Kein Minimum",
+  "connectionSummaryVia": "über {stops}",
+  "connectionEditSearch": "Suche ändern",
   "connectionPickPlace": "Bahnhof oder Ort suchen",
   "connectionPickStop": "Bahnhof oder Haltestelle suchen",
   "connectionDepart": "Abfahrt um",

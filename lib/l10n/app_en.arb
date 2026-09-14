@@ -869,6 +869,12 @@
   "connectionViaHint": "Only stations can be a via stop.",
   "connectionViaStay": "Stay at least",
   "connectionViaStayNone": "No minimum",
+  "connectionSummaryVia": "via {stops}",
+  "@connectionSummaryVia": {
+    "description": "Via stops in the collapsed search summary above the results, e.g. 'via Hannover Hbf, Fulda'.",
+    "placeholders": { "stops": { "type": "String" } }
+  },
+  "connectionEditSearch": "Edit search",
   "connectionPickPlace": "Search station or place",
   "connectionPickStop": "Search station",
   "connectionDepart": "Depart at",

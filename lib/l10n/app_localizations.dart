@@ -2894,6 +2894,18 @@ abstract class AppLocalizations {
   /// **'No minimum'**
   String get connectionViaStayNone;
 
+  /// Via stops in the collapsed search summary above the results, e.g. 'via Hannover Hbf, Fulda'.
+  ///
+  /// In en, this message translates to:
+  /// **'via {stops}'**
+  String connectionSummaryVia(String stops);
+
+  /// No description provided for @connectionEditSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit search'**
+  String get connectionEditSearch;
+
   /// No description provided for @connectionPickPlace.
   ///
   /// In en, this message translates to:
