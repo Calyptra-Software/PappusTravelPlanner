@@ -10,10 +10,14 @@
 # The Windows counterpart of tool/package_linux.sh, used by both workflows and
 # by hand, so a zip that works on a test machine is the zip a release publishes.
 #
-# Writes <output-dir>/pappus[-ci]-<version>-windows-x64.zip.
+# Writes <output-dir>/pappus[-ci]-<version>-windows-x64.zip, or with -Folder
+# the same content as a plain folder of that name. The folder is for a CI
+# artifact: upload-artifact zips whatever it is given, so handing it a zip
+# makes a reviewer unpack twice.
 param(
   [Parameter(Mandatory)] [string] $Version,
-  [Parameter(Mandatory)] [string] $OutputDir
+  [Parameter(Mandatory)] [string] $OutputDir,
+  [switch] $Folder
 )
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
@@ -59,6 +63,14 @@ try {
   Write-Host "C++ runtime: $($crt.FullName)"
   foreach ($dll in 'msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll') {
     Copy-Item -Path (Join-Path $crt.FullName $dll) -Destination $stage
+  }
+
+  if ($Folder) {
+    $dir = Join-Path $out $stem
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue $dir
+    Move-Item -Path $stage -Destination $dir
+    Write-Host "Wrote $dir"
+    return
   }
 
   # --- .zip -----------------------------------------------------------------

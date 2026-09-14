@@ -1951,7 +1951,9 @@ Three smaller traps, each found by a test that had to be written twice:
   quoted name with a space in it has to survive CMake's quoting into `rc.exe` as well as
   `cl.exe`, and literals chosen in the source do not. Renaming the *released* product
   would move every existing Windows user's settings, so only the CI build's name changes.
-  `tool/package_windows.ps1` zips the release folder with the **Visual C++ runtime**
+  `tool/package_windows.ps1` zips the release folder (or, with `-Folder`, leaves it
+  unzipped, which is what the CI artifact uploads: `upload-artifact` zips whatever it is
+  handed, and a zip inside that zip had to be unpacked twice) with the **Visual C++ runtime**
   (`msvcp140`, `vcruntime140`, `vcruntime140_1`) copied beside `pappus.exe` from the
   Visual Studio that built it, which Flutter's deployment guide asks for and Microsoft's
   terms allow. Without them a clean machine fails with a missing-DLL error that reads as a
@@ -1959,7 +1961,7 @@ Three smaller traps, each found by a test that had to be written twice:
   `Compress-Archive` versions write backslashes into entry names. The zip is unsigned, so
   SmartScreen warns on first start; `SECURITY.md` and the README say so. None of this can
   be built from Linux, since Flutter does not cross-compile Windows, so the `Build Windows
-  zip` job is the only place the Windows runner is compiled at all.
+  app` job is the only place the Windows runner is compiled at all.
 - The icon is generated, not drawn twice: `tool/build_ci_icon.py` composes the
   app's own mark with an amber `CI` chip and writes all five densities plus the
   legacy icon (minSdk is 24; adaptive icons start at 26). The chip sits inside

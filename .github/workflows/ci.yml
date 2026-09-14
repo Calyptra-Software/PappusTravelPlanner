@@ -209,7 +209,7 @@ jobs:
   # Flutter cannot cross-compile it, which also makes this the only place the
   # Windows runner and its plugins are compiled at all.
   windows:
-    name: Build Windows zip
+    name: Build Windows app
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -236,15 +236,17 @@ jobs:
         run: |
           flutter build windows --release
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          ./tool/package_windows.ps1 -Version (git rev-parse --short HEAD) -OutputDir dist
+          ./tool/package_windows.ps1 -Version (git rev-parse --short HEAD) -OutputDir dist -Folder
 
-      # The zip itself, which upload-artifact wraps in a zip of its own: unpack
-      # twice. Unsigned, so SmartScreen warns on the first start.
-      - name: Upload the zip
+      # The folder rather than the zip a release attaches: upload-artifact zips
+      # what it is given, so a zip would have to be unpacked twice. `dist/` as
+      # the path keeps the folder itself as the archive's single top entry.
+      # Unsigned, so SmartScreen warns on the first start.
+      - name: Upload the build
         uses: actions/upload-artifact@v7
         with:
           name: pappus-ci-windows-x64-${{ github.sha }}
-          path: dist/*.zip
+          path: dist/
           if-no-files-found: error
           overwrite: true
           retention-days: 14

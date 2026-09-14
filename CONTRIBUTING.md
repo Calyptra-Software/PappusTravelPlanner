@@ -117,7 +117,7 @@ flutter build windows; ./tool/package_windows.ps1 -Version dev -OutputDir dist
 
 That build renames its product to **Pappus CI**, which gives it its own settings under
 `%APPDATA%\Calyptra Software\Pappus CI` and `Documents\pappus-ci.sqlite` as its default
-database. It matches the `Build Windows zip` artifact of every pull request.
+database. It matches the `Build Windows app` artifact of every pull request.
 
 ## Cutting a release
 
