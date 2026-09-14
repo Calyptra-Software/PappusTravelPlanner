@@ -149,3 +149,58 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 14
+
+  # The Linux counterpart of the APK above: the branch as an AppImage somebody
+  # can run instead of reading. It is also the only job that builds the Linux
+  # runner at all, so a CMake or plugin change that breaks it shows up here.
+  linux:
+    name: Build Linux AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # What `flutter build linux` needs from the system (Flutter's own list).
+      - name: Install the Linux toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev
+
+      - uses: subosito/flutter-action@v2
+        with:
+          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
+          flutter-version: '3.47.x'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # PAPPUS_SIDE_BY_SIDE suffixes the GTK application id (linux/CMakeLists.txt),
+      # which is what gives this build preferences of its own -- and with them
+      # its own saved database path -- instead of opening the file the released
+      # app last used. On a desktop that matters more than on a phone: nothing
+      # else separates the two, and a schema bump on a branch would migrate
+      # somebody's real trips out of the released app's reach.
+      #
+      # Set for the whole of both steps: the build reads it to choose the id,
+      # the packaging to name the desktop entry and the icon to match.
+      - name: Build and package
+        env:
+          PAPPUS_SIDE_BY_SIDE: 'true'
+        run: |
+          flutter build linux --release
+          tool/package_linux.sh "$(git rev-parse --short HEAD)" dist
+
+      # The AppImage alone: the tarball is the same bundle, and a reviewer wants
+      # one file to run. An artifact is handed out as a zip, which drops the
+      # executable bit, so it needs a `chmod +x` after unpacking -- as every
+      # AppImage downloaded from anywhere does.
+      - name: Upload the AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-ci-linux-x86_64-${{ github.sha }}
+          path: dist/*.AppImage
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14

@@ -44,6 +44,10 @@ dependencies:
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   path: ^1.9.1
+  # Already resolved beneath path_provider_linux. Named for the two GLib calls
+  # that read the Linux application id (core/application_id_io.dart), which is
+  # how the side-by-side CI build knows it is one.
+  ffi: ^2.2.0
   share_plus: ^13.3.0
 
   intl: ^0.20.2

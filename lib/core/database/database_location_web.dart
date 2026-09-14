@@ -17,8 +17,10 @@ final Uri _driftWorker = Uri.parse('drift_worker.js');
 Uint8List? _pendingImport;
 
 /// The web has no concept of a file path; the default "path" is just the fixed
-/// storage name.
-Future<String> defaultDatabaseFile() async => kDatabaseFileName;
+/// storage name. The web has no side-by-side build, so [ciBuild] changes
+/// nothing.
+Future<String> defaultDatabaseFile({bool ciBuild = false}) async =>
+    kDatabaseFileName;
 
 /// Opens a Drift executor backed by sqlite3 compiled to WebAssembly, persisting
 /// to the best storage the browser offers (OPFS, falling back to IndexedDB).

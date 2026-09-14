@@ -8,6 +8,24 @@ set(BINARY_NAME "pappus")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "dev.calyptra.pappus")
+# The window's title.
+set(APPLICATION_TITLE "Pappus Travel Planner")
+
+# The build CI hands out for installing *beside* a released one, the Linux
+# counterpart of the `pappusSideBySide` Gradle property. An environment variable
+# because `flutter build linux` forwards no `-D`; it is read on every configure,
+# which `flutter build` runs each time.
+#
+# The id is the part that matters: GLib reports it to `path_provider` and
+# `shared_preferences`, which key the app's data directory by it, so a CI build
+# keeps its own preferences — including the saved database path — instead of
+# opening whatever file the released app last used. The app reads the same id
+# back to know it is the CI build (lib/core/application_id.dart), and then
+# names its default database file differently too.
+if("$ENV{PAPPUS_SIDE_BY_SIDE}" STREQUAL "true")
+  set(APPLICATION_ID "${APPLICATION_ID}.ci")
+  set(APPLICATION_TITLE "Pappus CI")
+endif()
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

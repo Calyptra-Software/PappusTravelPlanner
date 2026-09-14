@@ -93,6 +93,20 @@ To try it against realistic data, use *Export database…* in the real app and *
 database…* in Pappus CI. Don't uninstall the real app to make room — that takes its
 database with it.
 
+On Linux the same switch is an environment variable, since `flutter` forwards nothing to
+CMake:
+
+```bash
+PAPPUS_SIDE_BY_SIDE=true flutter run -d linux
+PAPPUS_SIDE_BY_SIDE=true flutter build linux && PAPPUS_SIDE_BY_SIDE=true tool/package_linux.sh dev dist
+```
+
+That build is **Pappus CI** too, the one every pull request's `Build Linux AppImage` artifact
+contains. It keeps its own settings, and with them its own database path, and its default
+database is `~/Documents/pappus-ci.sqlite`. Without the variable, a build from source shares
+all of that with an installed Pappus. Pointing it at another file in the settings is not
+enough, because the choice is saved where the other build reads it.
+
 ## Cutting a release
 
 Maintainers only, and it is a tag rather than a build: nothing is compiled on anybody's
@@ -109,8 +123,9 @@ git tag v1.11.0 && git push origin v1.11.0
 
 `.github/workflows/release.yml` takes it from there. It refuses outright if the tag and
 `pubspec.yaml` disagree, builds the three per-ABI APKs signed with the release key from
-the repository secrets, writes `SHA256SUMS.txt`, prints the signing certificate into the
-job summary, and opens a **draft** release with notes GitHub generates from the merged
+the repository secrets, builds the Linux `.tar.gz` and AppImage beside them, writes
+`SHA256SUMS.txt`, prints the signing certificate into the job summary, and opens a
+**draft** release with notes GitHub generates from the merged
 pull requests.
 
 The draft is the point at which a human looks. Check that the fingerprint in the job

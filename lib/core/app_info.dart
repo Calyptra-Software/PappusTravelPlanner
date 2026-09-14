@@ -36,19 +36,22 @@ const String kAppRepositoryUrl =
 /// level in — kept beside it so the two cannot drift apart.
 const String kAppIssuesUrl = '$kAppRepositoryUrl/issues';
 
-/// What an `applicationId` gains when the build is the one meant to be
-/// installed *beside* a real one (`android/app/build.gradle.kts`, the
-/// `pappusSideBySide` property).
+/// What an application id gains when the build is the one meant to be
+/// installed *beside* a real one: the Android `applicationId`
+/// (`android/app/build.gradle.kts`, the `pappusSideBySide` property) and the
+/// GTK application id (`linux/CMakeLists.txt`, `PAPPUS_SIDE_BY_SIDE`).
 const String kCiApplicationIdSuffix = '.ci';
 
 /// Whether [packageName] names the side-by-side CI build.
 ///
 /// Derived from the application id rather than carried as a second switch of
 /// its own: the suffix is what *makes* a build the CI one, so a `--dart-define`
-/// beside it could be set when the Gradle property was not, and the app would
-/// then be wrong about itself in the one field a bug report quotes. Only
-/// Android has such a build, and no other platform's package name ends this
-/// way, so the answer is simply false everywhere else.
+/// beside it could be set when the build property was not, and the app would
+/// then be wrong about itself in the one field a bug report quotes. Android and
+/// Linux have such a build — on Linux the id is read off GLib
+/// (`nativeApplicationId`), since `PackageInfo` reports the pubspec name there
+/// — and no other platform's id ends this way, so the answer is simply false
+/// everywhere else.
 ///
 /// Pure, so the rule is testable without a platform channel.
 bool isCiBuild(String packageName) =>

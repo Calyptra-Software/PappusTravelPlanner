@@ -26,7 +26,8 @@ final appVersionProvider = Provider<String>((ref) {
 
 /// Whether this is the side-by-side CI build (see [isCiBuild]).
 ///
-/// Resolved once at startup from `PackageInfo` and overridden into the scope
+/// Resolved once at startup from the application id (`PackageInfo`, or GTK's
+/// on Linux — see `core/application_id.dart`) and overridden into the scope
 /// beside [appVersionProvider], so a widget can read it synchronously.
 final isCiBuildProvider = Provider<bool>((ref) {
   throw UnimplementedError('isCiBuildProvider must be overridden');

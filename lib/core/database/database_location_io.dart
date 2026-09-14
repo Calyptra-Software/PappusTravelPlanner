@@ -14,11 +14,33 @@ import 'package:path_provider/path_provider.dart';
 /// silently adopts a file that is not its own.
 const String kDatabaseFileName = 'pappus.sqlite';
 
+/// The default file name of the side-by-side CI build on a desktop.
+const String kCiDatabaseFileName = 'pappus-ci.sqlite';
+
 /// Resolves the default database path in the app's documents directory.
-Future<String> defaultDatabaseFile() async {
+///
+/// On a desktop that directory is the *user's* (`~/Documents`), not the app's,
+/// so a [ciBuild] installed beside the released app would otherwise open the
+/// released app's database, and a schema bump on a branch would migrate the
+/// real trips out of the released app's reach. There it takes a name of its
+/// own. On Android and iOS the directory already belongs to the application
+/// id, which the CI build does not share, so the name stays — changing it
+/// would only hide the data a tester already has in that build.
+Future<String> defaultDatabaseFile({bool ciBuild = false}) async {
   final dir = await getApplicationDocumentsDirectory();
-  return p.join(dir.path, kDatabaseFileName);
+  final name = defaultDatabaseFileName(
+    ciBuild: ciBuild,
+    sharedDirectory: !Platform.isAndroid && !Platform.isIOS,
+  );
+  return p.join(dir.path, name);
 }
+
+/// The rule behind [defaultDatabaseFile]'s name, pure so it is testable
+/// without a documents directory.
+String defaultDatabaseFileName({
+  required bool ciBuild,
+  required bool sharedDirectory,
+}) => ciBuild && sharedDirectory ? kCiDatabaseFileName : kDatabaseFileName;
 
 /// Opens a Drift executor over the file at [path], creating it if needed.
 QueryExecutor openExecutor(String path) {
