@@ -25,6 +25,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 RES = Path("android/app/src/main/res")
 SRC_FOREGROUND = RES / "drawable-xxxhdpi/ic_launcher_foreground.png"
+WINDOWS_ICON = Path("windows/runner/resources/app_icon_ci.ico")
 
 GREEN = "#31513B"
 AMBER = "#AC7824"
@@ -40,6 +41,14 @@ MARK_OFFSET = -24  # ...and lift it away from the chip's corner.
 # i.e. radius 132 about (216, 216) at this scale -- or a round launcher mask
 # slices a piece off it, which reads as a broken icon rather than a badge.
 # Placed on the diagonal, that bounds it: hypot(56, 56) + 52 = 131 <= 132.
+# What the drawing actually covers on the 432px canvas: the mark starts at
+# (432 - 432 * MARK_SCALE) / 2 + MARK_OFFSET and the chip's far edge is the
+# other end of it. A couple of pixels of air, then nothing.
+CROP = (16, 16, 368, 368)
+
+# The sizes a Windows .ico is expected to carry.
+ICO_SIZES = (16, 24, 32, 48, 64, 128, 256)
+
 CHIP_CENTRE = (272, 272)
 CHIP_RADIUS = 52
 CHIP_RING = 7
@@ -98,7 +107,18 @@ def main() -> None:
         out.parent.mkdir(parents=True, exist_ok=True)
         foreground.resize((px, px), Image.LANCZOS).save(out)
 
-    print(f"wrote {2 * len(DENSITIES)} files under {RES}")
+    # The Windows executable's icon (windows/runner/Runner.rc picks this one in
+    # the side-by-side build). Cropped to what is drawn, because the adaptive
+    # icon's canvas is mostly the margin a launcher mask needs and a desktop
+    # icon has no mask: uncropped, the mark would sit small in its own box on
+    # the taskbar. Every size Windows asks for in one file -- it picks per
+    # context and scales any it does not find, which is what makes a 16px
+    # taskbar icon look like a blurred 256.
+    art = foreground.crop(CROP)
+    WINDOWS_ICON.parent.mkdir(parents=True, exist_ok=True)
+    art.save(WINDOWS_ICON, sizes=[(px, px) for px in ICO_SIZES])
+
+    print(f"wrote {2 * len(DENSITIES)} files under {RES} and {WINDOWS_ICON}")
 
 
 if __name__ == "__main__":
