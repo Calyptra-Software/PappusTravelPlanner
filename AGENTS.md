@@ -1963,8 +1963,13 @@ Three smaller traps, each found by a test that had to be written twice:
   be built from Linux, since Flutter does not cross-compile Windows, so the `Build Windows
   app` job is the only place the Windows runner is compiled at all.
 - The icon is generated, not drawn twice: `tool/build_ci_icon.py` composes the
-  app's own mark with an amber `CI` chip and writes all five densities plus the
-  legacy icon (minSdk is 24; adaptive icons start at 26). The chip sits inside
+  app's own mark with an amber `CI` chip and writes all five densities, the
+  legacy icon (minSdk is 24; adaptive icons start at 26), and the Windows
+  executable's `app_icon_ci.ico` — cropped to what is drawn, since a desktop
+  icon has no launcher mask and would otherwise sit small inside the margin
+  that mask needs, and carrying every size Windows asks for, because it scales
+  whatever it does not find and a blurred 256 is what a 16px taskbar icon then
+  looks like. The chip sits inside
   the adaptive icon's **safe circle** — 66 of 108dp — because a round launcher
   mask slices off anything outside it, which reads as a broken icon rather than
   as a badge. That is also why it is not a corner badge or a bottom band.

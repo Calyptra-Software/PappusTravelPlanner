@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# One place for the toolchain: four jobs install it, and a bump that reaches
+# three of them would have them testing and building against different SDKs.
+env:
+  # Kept in sync with the `flutter:` constraint in pubspec.yaml.
+  FLUTTER_VERSION: '3.47.x'
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,8 +26,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
-          flutter-version: '3.47.x'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -83,8 +88,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
-          flutter-version: '3.47.x'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -168,8 +172,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
-          flutter-version: '3.47.x'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -216,8 +219,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          # Kept in sync with the `flutter:` constraint in pubspec.yaml.
-          flutter-version: '3.47.x'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 

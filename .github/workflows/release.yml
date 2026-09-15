@@ -23,6 +23,15 @@ on:
   # artifact; what to look at is the certificate in the job summary.
   workflow_dispatch:
 
+# One place for the toolchain, as in ci.yml. Exact, unlike the `3.47.x` the CI
+# workflow uses: a range is right there -- it should catch a breaking patch
+# release early -- and wrong here, because the published APK has to be
+# reproducible, so the toolchain that built it must be a fact and not whatever
+# was newest that morning. Bump it deliberately; an F-Droid recipe is expected
+# to read this line, so it stays a plain literal.
+env:
+  FLUTTER_VERSION: '3.47.2'
+
 permissions:
   contents: write
 
@@ -39,14 +48,12 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      # Exact, unlike the `3.47.x` the CI job uses. A range is right there --
-      # it should catch a breaking patch release early -- and wrong here: the
-      # published APK has to be reproducible, so the toolchain that built it
-      # must be a fact and not whatever was newest that morning. Bump it
-      # deliberately, and expect an F-Droid recipe to read this very line.
+      # Exact, unlike the `3.47.x` the CI job uses -- see FLUTTER_VERSION at
+      # the top of this file, which is the line to bump and the line an F-Droid
+      # recipe is expected to read.
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.2'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -179,7 +186,7 @@ jobs:
       # Exact, for the reason given on the APK job's copy of this step.
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.2'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -223,7 +230,7 @@ jobs:
       # Exact, for the reason given on the APK job's copy of this step.
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.2'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
