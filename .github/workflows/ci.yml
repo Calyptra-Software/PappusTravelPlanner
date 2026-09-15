@@ -192,15 +192,18 @@ jobs:
           flutter build linux --release
           tool/package_linux.sh "$(git rev-parse --short HEAD)" dist
 
-      # The AppImage alone: the tarball is the same bundle, and a reviewer wants
-      # one file to run. An artifact is handed out as a zip, which drops the
-      # executable bit, so it needs a `chmod +x` after unpacking -- as every
-      # AppImage downloaded from anywhere does.
-      - name: Upload the AppImage
+      # Both packages, though a reviewer who only wants to run the branch wants
+      # the AppImage: the tarball is the only one carrying install.sh, so
+      # uploading the AppImage alone left the installer as the one thing in
+      # this repository that no artifact could be used to try. An artifact is
+      # handed out as a zip, which drops the executable bit, so the AppImage
+      # needs a `chmod +x` after unpacking -- as every AppImage downloaded from
+      # anywhere does. Inside the tarball the bits survive, tar keeping them.
+      - name: Upload the packages
         uses: actions/upload-artifact@v7
         with:
           name: pappus-ci-linux-x86_64-${{ github.sha }}
-          path: dist/*.AppImage
+          path: dist/*
           if-no-files-found: error
           overwrite: true
           retention-days: 14
