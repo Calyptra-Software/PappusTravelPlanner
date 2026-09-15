@@ -503,7 +503,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     if (!_isEditing && _mode == null && modes.isNotEmpty) {
       _mode = modes
           .firstWhere(
-            (m) => m.builtinKey == TransportMode.train.name,
+            (m) => m.builtinKey == TransportMode.walk.name,
             orElse: () => modes.first,
           )
           .id;

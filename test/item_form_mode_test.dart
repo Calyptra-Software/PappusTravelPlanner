@@ -32,10 +32,11 @@ void main() {
   final day = DateTime(2026, 7, 5);
 
   // Deliberately no "other" built-in here, so the word "Other" on screen can
-  // only have come from the "no mode" hint.
+  // only have come from the "no mode" hint. Walk is deliberately not first, so
+  // the new-leg default cannot pass by falling back to the first row.
   final modes = [
-    TransportModeRow(id: 1, builtinKey: 'walk', sortOrder: 0),
-    TransportModeRow(id: 6, builtinKey: 'train', sortOrder: 1),
+    TransportModeRow(id: 6, builtinKey: 'train', sortOrder: 0),
+    TransportModeRow(id: 1, builtinKey: 'walk', sortOrder: 1),
   ];
 
   setUp(() async {
@@ -113,13 +114,13 @@ void main() {
         find.byType(DropdownButtonFormField<int?>),
       );
 
-  testWidgets('a new leg opens on the train built-in', (tester) async {
+  testWidgets('a new leg opens on the walk built-in', (tester) async {
     await tester.pumpWidget(
       wrap(const ItemFormSheet(tripId: 1, kind: ItemKind.transport)),
     );
     await tester.pump();
 
-    expect(dropdownOf(tester).initialValue, 6);
+    expect(dropdownOf(tester).initialValue, 1);
   });
 
   testWidgets('an existing leg keeps the mode it has', (tester) async {
@@ -128,13 +129,13 @@ void main() {
         ItemFormSheet(
           tripId: 1,
           kind: ItemKind.transport,
-          existing: leg(mode: 1),
+          existing: leg(mode: 6),
         ),
       ),
     );
     await tester.pump();
 
-    expect(dropdownOf(tester).initialValue, 1);
+    expect(dropdownOf(tester).initialValue, 6);
   });
 
   testWidgets(
@@ -151,7 +152,7 @@ void main() {
       );
       await tester.pump();
 
-      // Not silently pre-selected onto train (or any other row) ...
+      // Not silently pre-selected onto walk (or any other row) ...
       expect(dropdownOf(tester).initialValue, isNull);
       // ... and labelled the way the timeline labels it.
       expect(find.text('Other'), findsOneWidget);

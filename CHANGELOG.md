@@ -5,6 +5,7 @@ exact commits.
 
 ## Unreleased
 
+- **A new transport entry starts out as a walk** instead of a train.
 - **Linux and Windows builds are released too**, next to the Android APKs: an AppImage
   and a `.tar.gz` for Linux, and a `.zip` for Windows. The Linux `.tar.gz` carries an
   `install.sh` that adds a menu entry and an icon for your user, and an `uninstall.sh`
