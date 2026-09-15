@@ -101,16 +101,19 @@ EOF
 
 # --- .tar.gz ----------------------------------------------------------------
 #
-# The bundle as flutter built it, plus a desktop entry, an icon, and the pair
-# of scripts that put the three where a desktop looks for them. Unpacking and
-# running ./pappus works on its own; what needs installing is the *entry*,
-# whose `Exec=` and `Icon=` are a bare name and a theme lookup and so resolve
-# for nobody until it sits in ~/.local/share/applications with an absolute
-# path. Sorted, with fixed owners and timestamps, and `gzip -n`, so that
-# packing the same bundle twice gives the same file.
+# The bundle as flutter built it, plus an icon, the pair of scripts that
+# install it for one user, and the desktop entry those scripts write -- as a
+# template, `<app id>.desktop.in`, and deliberately not as a `.desktop` file.
+# Unpacking and running ./pappus works on its own, but no entry can work from
+# here: `Exec=` has to name the program by an absolute path, and that path only
+# exists once install.sh has chosen it. Shipped as a ready `.desktop` it was
+# the file a file manager offers as a launcher, it was dragged onto a desktop,
+# and it failed there with "pappus: command not found". Sorted, with fixed
+# owners and timestamps, and `gzip -n`, so that packing the same bundle twice
+# gives the same file.
 tar_dir="$work/$stem"
 cp -a "$bundle" "$tar_dir"
-desktop_entry pappus >"$tar_dir/$app_id.desktop"
+desktop_entry @EXEC@ >"$tar_dir/$app_id.desktop.in"
 cp "$icon_src" "$tar_dir/$app_id.png"
 cp "$root/linux/packaging/install.sh" "$root/linux/packaging/uninstall.sh" "$tar_dir/"
 chmod +x "$tar_dir/install.sh" "$tar_dir/uninstall.sh"

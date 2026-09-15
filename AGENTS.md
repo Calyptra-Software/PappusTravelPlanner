@@ -1951,8 +1951,11 @@ Three smaller traps, each found by a test that had to be written twice:
   **absolute** path, since `~/.local/bin` is not on every distribution's PATH and never on
   the session's when it is created after login. The payload goes to `~/.local/opt/<app id>`
   and deliberately *not* to `~/.local/share/<app id>`, which is where `path_provider` keeps
-  that build's preferences. Everything is derived from the single `.desktop` file lying
-  beside the script — the app id, the icon name, and from the `.ci` suffix the command name
+  that build's preferences. The entry is packed as a **template**, `<app id>.desktop.in`,
+  and not as a `.desktop` file: shipped ready-made it was the file a file manager offered as
+  a launcher, and dragged onto a desktop it failed with "pappus: command not found", since
+  the absolute path it needs only exists once the script has chosen it. Everything is
+  derived from that single template lying beside the script — the app id, the icon name, and from the `.ci` suffix the command name
   `pappus-ci` — so the CI build installs beside the released app rather than over it, which
   is the same rule the rest of the side-by-side machinery follows. The scripts are POSIX
   `sh`, touch nothing outside `$HOME`, and the uninstall removes its symlink only while it

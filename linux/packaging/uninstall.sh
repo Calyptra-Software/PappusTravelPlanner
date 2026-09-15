@@ -4,12 +4,12 @@
 set -eu
 
 here="$(cd "$(dirname "$0")" && pwd)"
-desktop="$(ls "$here"/*.desktop 2>/dev/null | head -1 || true)"
-if [ -z "$desktop" ]; then
-  echo "error: run this from the installed folder (it must hold a .desktop file)" >&2
+template="$(ls "$here"/*.desktop.in 2>/dev/null | head -1 || true)"
+if [ -z "$template" ]; then
+  echo "error: run this from the installed folder (it must hold a .desktop.in file)" >&2
   exit 1
 fi
-app_id="$(basename "$desktop" .desktop)"
+app_id="$(basename "$template" .desktop.in)"
 case "$app_id" in
   *.ci) command_name="pappus-ci" ;;
   *) command_name="pappus" ;;
