@@ -1938,6 +1938,25 @@ Three smaller traps, each found by a test that had to be written twice:
   The bundle also carries `libdartjni.so`, linked against the runner's `libjvm`. It is only
   opened on demand by `package:jni`, which only Android code paths reach, so it is inert
   rather than broken.
+  It also **refuses to package a bundle built as the other build** — the id is compiled
+  into the executable, so it is read back with `strings` rather than taken on trust from
+  the environment. Setting `PAPPUS_SIDE_BY_SIDE` for the build and forgetting it for the
+  packaging (or the reverse) is otherwise silent, and produces a CI build wearing the
+  released app's name, desktop entry and icon.
+- **The tarball carries `install.sh` / `uninstall.sh` (`linux/packaging/`), because a
+  desktop entry is the one part of it that cannot work where it is unpacked.** `Exec=` is
+  a bare command name and `Icon=` a theme lookup, so both resolve for nobody until the
+  entry sits in `~/.local/share/applications`; running `./pappus` in the unpacked folder
+  always worked and still does. The installed entry's `Exec=` is rewritten to the
+  **absolute** path, since `~/.local/bin` is not on every distribution's PATH and never on
+  the session's when it is created after login. The payload goes to `~/.local/opt/<app id>`
+  and deliberately *not* to `~/.local/share/<app id>`, which is where `path_provider` keeps
+  that build's preferences. Everything is derived from the single `.desktop` file lying
+  beside the script — the app id, the icon name, and from the `.ci` suffix the command name
+  `pappus-ci` — so the CI build installs beside the released app rather than over it, which
+  is the same rule the rest of the side-by-side machinery follows. The scripts are POSIX
+  `sh`, touch nothing outside `$HOME`, and the uninstall removes its symlink only while it
+  still points into its own install.
 - **On Windows the same variable renames the product, and the names are the mechanism.**
   `path_provider_windows` keys the app's data directory, and with it `shared_preferences`,
   by `CompanyName\ProductName` from the executable's version resource, and
