@@ -107,6 +107,18 @@ database is `~/Documents/pappus-ci.sqlite`. Without the variable, a build from s
 all of that with an installed Pappus. Pointing it at another file in the settings is not
 enough, because the choice is saved where the other build reads it.
 
+On Windows it is the same variable, in PowerShell:
+
+```powershell
+$env:PAPPUS_SIDE_BY_SIDE = 'true'
+flutter run -d windows
+flutter build windows; ./tool/package_windows.ps1 -Version dev -OutputDir dist
+```
+
+That build renames its product to **Pappus CI**, which gives it its own settings under
+`%APPDATA%\Calyptra Software\Pappus CI` and `Documents\pappus-ci.sqlite` as its default
+database. It matches the `Build Windows app` artifact of every pull request.
+
 ## Cutting a release
 
 Maintainers only, and it is a tag rather than a build: nothing is compiled on anybody's
@@ -123,7 +135,7 @@ git tag v1.11.0 && git push origin v1.11.0
 
 `.github/workflows/release.yml` takes it from there. It refuses outright if the tag and
 `pubspec.yaml` disagree, builds the three per-ABI APKs signed with the release key from
-the repository secrets, builds the Linux `.tar.gz` and AppImage beside them, writes
+the repository secrets, builds the Linux `.tar.gz` and AppImage and the Windows `.zip` beside them, writes
 `SHA256SUMS.txt`, prints the signing certificate into the job summary, and opens a
 **draft** release with notes GitHub generates from the merged
 pull requests.

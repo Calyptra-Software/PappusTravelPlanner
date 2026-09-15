@@ -213,10 +213,56 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  # And for Windows, which Flutter builds only on Windows.
+  windows:
+    name: Build the Windows zip
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Exact, for the reason given on the APK job's copy of this step.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # Without PAPPUS_SIDE_BY_SIDE, as on Linux. The version is the pubspec's,
+      # which the APK job checks against the tag.
+      - name: Build and package
+        shell: pwsh
+        run: |
+          $version = (Select-String -Path pubspec.yaml -Pattern '^version: ([^+]+)\+').Matches[0].Groups[1].Value
+          flutter build windows --release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./tool/package_windows.ps1 -Version $version -OutputDir dist
+
+      # Git Bash's sha256sum, so the lines have the same line endings as the
+      # other two jobs' and merge into one file. The sed turns the binary-mode
+      # marker (`hash *name`) that sha256sum may print on Windows into the two
+      # spaces the Linux lines carry; `sha256sum -c` reads either.
+      - name: Checksums
+        shell: bash
+        working-directory: dist
+        run: sha256sum pappus-* | sed 's/ \*/  /' | tee SHA256SUMS.txt
+
+      - name: Upload the zip as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-${{ github.ref_name }}-windows
+          path: |
+            dist/pappus-*
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
   publish:
     name: Draft the release
     if: github.ref_type == 'tag'
-    needs: [release, linux]
+    needs: [release, linux, windows]
     runs-on: ubuntu-latest
     steps:
       # The gh CLI resolves the repository from the checkout.
@@ -232,10 +278,15 @@ jobs:
           name: pappus-${{ github.ref_name }}-linux
           path: dist/linux
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: pappus-${{ github.ref_name }}-windows
+          path: dist/windows
+
       # One checksum file for the release, as there was when it held only APKs;
       # each job's own stays in its artifact.
       - name: Merge the checksums
-        run: cat dist/android/SHA256SUMS.txt dist/linux/SHA256SUMS.txt | tee dist/SHA256SUMS.txt
+        run: cat dist/android/SHA256SUMS.txt dist/linux/SHA256SUMS.txt dist/windows/SHA256SUMS.txt | tee dist/SHA256SUMS.txt
 
       # A draft, never a published release. Two reasons: the APKs are unsigned
       # in the sense that matters whenever the secrets are absent, and even
@@ -263,4 +314,5 @@ jobs:
             --notes "See the [changelog]($SERVER_URL/$REPOSITORY/blob/$GITHUB_REF_NAME/CHANGELOG.md) for more details." \
             dist/android/app-*-release.apk \
             dist/linux/pappus-* \
+            dist/windows/pappus-* \
             dist/SHA256SUMS.txt

@@ -6,6 +6,19 @@ project(pappus LANGUAGES CXX)
 # the on-disk name of your application.
 set(BINARY_NAME "pappus")
 
+# The build CI hands out for installing *beside* a released one, the Windows
+# counterpart of the `pappusSideBySide` Gradle property and of the same variable
+# in linux/CMakeLists.txt. An environment variable because `flutter build
+# windows` forwards no `-D`; it is read on every configure, which `flutter
+# build` runs each time.
+#
+# It becomes a preprocessor flag, not a string, so that Runner.rc and main.cpp
+# choose between literals themselves and no name with a space in it has to
+# survive being quoted through CMake into the resource compiler.
+if("$ENV{PAPPUS_SIDE_BY_SIDE}" STREQUAL "true")
+  set(PAPPUS_SIDE_BY_SIDE ON)
+endif()
+
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.
 cmake_policy(VERSION 3.14...3.25)

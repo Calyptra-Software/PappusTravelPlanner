@@ -72,6 +72,20 @@ IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
 #define VERSION_AS_STRING "1.0.0"
 #endif
 
+// The side-by-side CI build names itself apart (windows/CMakeLists.txt). Both
+// names are load-bearing, not cosmetic: path_provider_windows keys the app's
+// data directory -- and with it shared_preferences, including the saved
+// database path -- by CompanyName\ProductName, and package_info_plus reports
+// InternalName as the package name, whose ".ci" suffix is what `isCiBuild`
+// reads (lib/core/app_info.dart).
+#ifdef PAPPUS_SIDE_BY_SIDE
+#define PRODUCT_NAME "Pappus CI"
+#define INTERNAL_NAME "pappus.ci"
+#else
+#define PRODUCT_NAME "Pappus Travel Planner"
+#define INTERNAL_NAME "pappus"
+#endif
+
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION VERSION_AS_NUMBER
  PRODUCTVERSION VERSION_AS_NUMBER
@@ -90,12 +104,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "Calyptra Software" "\0"
-            VALUE "FileDescription", "Pappus Travel Planner" "\0"
+            VALUE "FileDescription", PRODUCT_NAME "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "pappus" "\0"
+            VALUE "InternalName", INTERNAL_NAME "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026-present Joshua Lampert and contributors. GNU General Public License v3 or later." "\0"
             VALUE "OriginalFilename", "pappus.exe" "\0"
-            VALUE "ProductName", "Pappus Travel Planner" "\0"
+            VALUE "ProductName", PRODUCT_NAME "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

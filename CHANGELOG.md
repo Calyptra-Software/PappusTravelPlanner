@@ -5,8 +5,8 @@ exact commits.
 
 ## Unreleased
 
-- **Linux builds are released too**, as an AppImage and a `.tar.gz` for x86-64, next to
-  the Android APKs.
+- **Linux and Windows builds are released too**, next to the Android APKs: an AppImage
+  and a `.tar.gz` for Linux, and a `.zip` for Windows.
 
 - **The connection search makes room for its results.** After searching, the form folds
   into a one-line summary of what was searched, so more connections fit on screen; tap it

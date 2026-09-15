@@ -163,8 +163,9 @@ It is not the same number as the file hashes published alongside a release in
 release and answer whether a download arrived intact. The fingerprints above do
 not change, and answer who signed it.
 
-**The Linux packages are not signed.** The `.tar.gz` and the AppImage carry no
-signature, so there is nothing to check them against but `SHA256SUMS.txt`, and that
+**The Linux and Windows packages are not signed.** The `.tar.gz`, the AppImage and the
+Windows `.zip` carry no signature, which is also why Windows SmartScreen warns before
+the first start. So there is nothing to check them against but `SHA256SUMS.txt`, and that
 file comes from the same release page. It shows that a download arrived intact. It
 does not show who built the file.
 
