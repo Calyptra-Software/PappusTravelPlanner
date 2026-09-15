@@ -44,6 +44,20 @@ else
   stem="pappus-$version-linux-x86_64"
 fi
 
+# --- Is this the bundle we are about to call it? -----------------------------
+#
+# PAPPUS_SIDE_BY_SIDE has to be set for the *build* and for the packaging, and
+# forgetting it on one of the two is silent: the bundle is built with one
+# application id and packaged under the other's name, desktop entry and icon.
+# The id is compiled into the executable, so ask it rather than trust the
+# environment. Found by doing exactly this while testing the installer.
+built_id="$(strings -a "$bundle/pappus" | grep -m1 -x 'dev\.calyptra\.pappus\(\.ci\)\?' || true)"
+if [ -n "$built_id" ] && [ "$built_id" != "$app_id" ]; then
+  echo "error: the bundle was built as $built_id but would be packaged as $app_id" >&2
+  echo "       (set PAPPUS_SIDE_BY_SIDE for both the build and this script, or for neither)" >&2
+  exit 1
+fi
+
 # --- The oldest glibc this bundle runs on -----------------------------------
 #
 # What decides it is the highest symbol version the binaries *reference*, not
@@ -87,13 +101,22 @@ EOF
 
 # --- .tar.gz ----------------------------------------------------------------
 #
-# The bundle as flutter built it, plus a desktop entry and an icon for whoever
-# wants to put it in a menu. Sorted, with fixed owners and timestamps, and
-# `gzip -n`, so that packing the same bundle twice gives the same file.
+# The bundle as flutter built it, plus an icon, the pair of scripts that
+# install it for one user, and the desktop entry those scripts write -- as a
+# template, `<app id>.desktop.in`, and deliberately not as a `.desktop` file.
+# Unpacking and running ./pappus works on its own, but no entry can work from
+# here: `Exec=` has to name the program by an absolute path, and that path only
+# exists once install.sh has chosen it. Shipped as a ready `.desktop` it was
+# the file a file manager offers as a launcher, it was dragged onto a desktop,
+# and it failed there with "pappus: command not found". Sorted, with fixed
+# owners and timestamps, and `gzip -n`, so that packing the same bundle twice
+# gives the same file.
 tar_dir="$work/$stem"
 cp -a "$bundle" "$tar_dir"
-desktop_entry pappus >"$tar_dir/$app_id.desktop"
+desktop_entry @EXEC@ >"$tar_dir/$app_id.desktop.in"
 cp "$icon_src" "$tar_dir/$app_id.png"
+cp "$root/linux/packaging/install.sh" "$root/linux/packaging/uninstall.sh" "$tar_dir/"
+chmod +x "$tar_dir/install.sh" "$tar_dir/uninstall.sh"
 epoch="${SOURCE_DATE_EPOCH:-$(git -C "$root" log -1 --format=%ct)}"
 tar --sort=name --mtime="@$epoch" --owner=0 --group=0 --numeric-owner \
   -C "$work" -cf - "$stem" | gzip -n -9 >"$out/$stem.tar.gz"

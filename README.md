@@ -41,8 +41,9 @@ decade — and allow your file manager to install it, since it does not come fro
 There is no store listing yet.
 
 Linux builds are on the same page, for x86-64: an AppImage (`chmod +x`, then run it) and
-a `.tar.gz` holding the program folder with a desktop entry and an icon. Either needs
-glibc 2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
+a `.tar.gz`. Unpack the `.tar.gz` anywhere and run `./pappus`, or run `./install.sh` in it
+to get a menu entry and an icon for your user alone (`./uninstall.sh` undoes that). Either
+download needs glibc 2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
 
 Windows builds are there too, for x64: a `.zip` to unpack anywhere, then run `pappus.exe`.
 Keep the unpacked folder together, since `pappus.exe` needs the files beside it; to start it

@@ -6,8 +6,9 @@ exact commits.
 ## Unreleased
 
 - **Linux and Windows builds are released too**, next to the Android APKs: an AppImage
-  and a `.tar.gz` for Linux, and a `.zip` for Windows.
-
+  and a `.tar.gz` for Linux, and a `.zip` for Windows. The Linux `.tar.gz` carries an
+  `install.sh` that adds a menu entry and an icon for your user, and an `uninstall.sh`
+  that removes them again.
 - **The connection search makes room for its results.** After searching, the form folds
   into a one-line summary of what was searched, so more connections fit on screen; tap it
   to change the search.
