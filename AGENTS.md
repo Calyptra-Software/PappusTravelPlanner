@@ -1504,10 +1504,12 @@ UI (features/*/presentation, *widgets)
   pixel — which is also what makes the front of a cluster the picture the gallery opens on.
   The mark sits on the representative's **own** position, never the middle of the group:
   this app does not put a mark where nothing is, and the others are a thumb's width away in
-  any case. A tap answers by size, which is the split `_showPhotos` exists to draw: **one**
-  picture opens `AttachmentSheet` — the same sheet its entry's form opens, and where the
-  position controls live, which is what a pin was tapped to ask about — while **several**
-  open the gallery, since a sheet can only answer for one of them.
+  any case. A tap opens the **gallery**, however many pictures the mark holds. It used to
+  answer by size — one picture opened `AttachmentSheet`, several the gallery — but what a
+  mark holds is a matter of zoom, so the same photograph opened two different things
+  depending on how far out the map was, and a lone picture was stuck at a third of the
+  screen when seeing it was what the tap was for. The sheet, with the position controls,
+  is still one tap away behind the gallery's ⋮.
 - **A `.tpt` carries the bytes, Base64-encoded, and does not bump the format version.**
   It has to carry them: an attachment exists only inside the database, so naming one
   without it would hand the recipient a reference to a file on somebody else's phone, and
@@ -1560,10 +1562,7 @@ UI (features/*/presentation, *widgets)
   section that says nothing about what is inside it is a row with no reason to be tapped. This is not the rule against thumbnails *in the
   timeline*: there a picture would displace the entry it hangs on, here the photographs are
   the subject. Elsewhere the rule is **a photo opens the gallery, a document opens the
-  sheet** — with one deliberate exception, the map, where a marker keeps opening
-  `AttachmentSheet`: you tapped a pin to ask about *that* position, and the position
-  controls live in the sheet, so swiping away to pictures that are not on the map would
-  leave the question behind.
+  sheet**, the map included.
 - **The gallery is a reading.** Swiping browses and writes nothing (the `AlternativeCard`
   rule), and the four acts stay in `AttachmentSheet` behind the ⋮ — two places holding the
   delete confirmation means one of them going stale, the same reason `MapItemSheet` hands

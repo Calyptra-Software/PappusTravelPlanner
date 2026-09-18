@@ -567,8 +567,7 @@ coordinates are never borrowed, since the entry already has a pin and the pictur
 necessarily taken at it.
 
 Pictures that would sit on top of each other are gathered under one thumbnail with a count,
-and come apart again as you zoom in. Tapping a lone picture opens its sheet; tapping a
-gathered one opens them all as a gallery.
+and come apart again as you zoom in. Tapping one opens its pictures in the gallery.
 
 ### Where they live, and where they go
 

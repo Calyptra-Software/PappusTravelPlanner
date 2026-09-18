@@ -12,7 +12,6 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../attachments/application/attachment_providers.dart';
-import '../../attachments/presentation/attachment_sheet.dart';
 import '../../attachments/presentation/gallery_screen.dart';
 import '../../attachments/trip_gallery.dart';
 import '../photo_clusters.dart';
@@ -282,24 +281,19 @@ class _MapViewState extends ConsumerState<_MapView> {
     );
   }
 
-  /// What a photo marker is for.
+  /// What a photo marker is for: the pictures under it, in the gallery.
   ///
-  /// One picture opens the sheet that owns the acts on it — the same one the
-  /// entry's form opens, since a photograph is one thing wherever it is reached
-  /// from, and the position controls live there, which is what a pin was tapped
-  /// to ask about. Several, gathered under one thumbnail, open the gallery
-  /// instead: the question there is "what are these", and a sheet can only
-  /// answer for one of them.
+  /// However many there are. Whether a mark holds one picture or several is a
+  /// matter of zoom — `clusterPhotos` gathers in screen pixels — so answering
+  /// one with the sheet and several with the gallery made the same photograph
+  /// open two different things depending on how far out the map was. And the
+  /// picture is what a tap on a picture is nearly always for; the sheet, where
+  /// the position controls live, is one tap further behind the gallery's ⋮.
   void _showPhotos(PhotoCluster cluster) {
     final rows = [
       for (final photo in cluster.photos)
         ?widget.photosById[photo.attachmentId],
     ];
-    if (rows.isEmpty) return;
-    if (rows.length == 1) {
-      showAttachmentSheet(context, rows.single, tripId: widget.tripId);
-      return;
-    }
     showGallery(
       context,
       photos: [for (final row in rows) GalleryPhoto(attachment: row)],
