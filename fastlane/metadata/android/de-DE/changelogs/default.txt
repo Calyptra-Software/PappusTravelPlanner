@@ -1,1 +1,1 @@
-1.11.4 ändert nichts Sichtbares. Die drei Downloads sind intern anders nummeriert, auf Wunsch von F-Droid; an der angezeigten Version ändert das nichts.
+1.12.0: Wer eine Ausgabe bezahlt, kann andere einladen, und ein Ausgleich lässt sich als Erstattung von außerhalb der Gruppe markieren. Die Gesamtstatistik lässt sich auf einen Teil der Reisen eingrenzen, und Routinen zählen dort nicht mehr doppelt. Die Reiseliste zeigt, wie viele Reisen passen. Die Verbindungssuche klappt ihr Formular nach der Suche ein. Die App deklariert fünf Berechtigungen weniger.
