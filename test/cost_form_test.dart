@@ -106,6 +106,76 @@ void main() {
     expect([for (final p in beneficiaries!) p.name], ['Sam']);
   });
 
+  testWidgets('the payer invites one person, or everyone at once', (
+    tester,
+  ) async {
+    await pumpForm(tester, people: const ['Alex', 'Kim', 'Sam']);
+
+    await tester.enterText(amountField, '90');
+    await tester.tap(categoryField);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dinner'));
+    await tester.pumpAndSettle();
+
+    // Nobody can be invited before somebody pays.
+    expect(find.textContaining('Invited by'), findsNothing);
+    await tester.tap(payerField);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sam'));
+    await tester.pumpAndSettle();
+    // With only the payer in the split, there is still nobody to invite.
+    expect(find.textContaining('Invited by'), findsNothing);
+
+    for (final name in ['Alex', 'Kim']) {
+      await tester.ensureVisible(find.text('Add person'));
+      await tester.tap(find.text('Add person'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(name));
+      await tester.pumpAndSettle();
+    }
+
+    final box = find.widgetWithText(CheckboxListTile, 'Invited by Sam');
+    CheckboxListTile tile() => tester.widget<CheckboxListTile>(box);
+    expect(tile().value, isFalse);
+
+    // A chip invites one person by itself…
+    await tester.tap(find.widgetWithText(InputChip, 'Alex'));
+    await tester.pumpAndSettle();
+    expect(tile().value, isNull);
+    await tester.tap(find.widgetWithText(InputChip, 'Alex'));
+    await tester.pumpAndSettle();
+    expect(tile().value, isFalse);
+
+    // The box invites everyone the payer can invite…
+    await tester.ensureVisible(box);
+    await tester.tap(box);
+    await tester.pumpAndSettle();
+    expect(tile().value, isTrue);
+    expect(
+      find.byIcon(Icons.volunteer_activism),
+      findsNWidgets(3),
+    ); // two chips, one box
+
+    // …and a chip then lets one of them repay after all.
+    await tester.tap(find.widgetWithText(InputChip, 'Kim'));
+    await tester.pumpAndSettle();
+    expect(tile().value, isNull);
+
+    // The payer's own chip is not an invitation to anyone.
+    await tester.tap(find.widgetWithText(InputChip, 'Sam'));
+    await tester.pumpAndSettle();
+    expect(tile().value, isNull);
+
+    await tester.tap(find.text('Add'));
+    await tester.pumpAndSettle();
+
+    final cost = (await savedCosts(tester)).single;
+    final invited = await tester.runAsync(
+      () => repo.watchInvited(cost.id).first,
+    );
+    expect(invited, {'Alex'});
+  });
+
   testWidgets('a category nobody has is added from the search box', (
     tester,
   ) async {

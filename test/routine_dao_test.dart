@@ -907,6 +907,25 @@ void main() {
       expect(people.map((p) => p.name), ['Sam']);
     });
 
+    test('a guest on the fare is invited on every copy', () async {
+      final routineId = await makeRoutine();
+      await makeLeg(routineId);
+      final costId = await costOn(routineId, minor: 640, paidBy: 'Me');
+      await db.costDao.setBeneficiaries(
+        costId,
+        ['Me', 'Sam'],
+        invited: {'Sam'},
+      );
+
+      final tripId = await db.routineDao.materializeRoutine(
+        routineId,
+        startDate: DateTime(2026, 8),
+      );
+
+      final copied = (await db.costDao.watchCostsForTrip(tripId).first).single;
+      expect(await db.costDao.watchInvited(copied.id).first, {'Sam'});
+    });
+
     test('looking a journey up keeps the fare that was on its leg', () async {
       // A single-leg commute has no group to hang its fare on, so without a
       // rescue the price would vanish the moment its connection was refreshed.

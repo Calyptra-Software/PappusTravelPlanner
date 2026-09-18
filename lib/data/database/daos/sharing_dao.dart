@@ -138,6 +138,10 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
 
     final costRows = await _costsForTrip(tripId);
     final beneficiariesByCost = await _beneficiaryNamesByCost(tripId);
+    final invitedByCost = await _beneficiaryNamesByCost(
+      tripId,
+      invitedOnly: true,
+    );
     final checklistRows = await (select(
       checklists,
     )..where((c) => c.tripId.equals(tripId))).get();
@@ -209,7 +213,11 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       // that arrives unfiled is not the trip that was sent.
       // A reimbursement forces v5: an older app would read it as a settlement
       // between travelers and show its receiver owing the source.
-      formatVersion: costRows.any((c) => c.isTransfer && c.isReimbursement)
+      // An invitation forces v6 for the same reason: an older app would show
+      // the guest owing the payer the share they were invited to.
+      formatVersion: invitedByCost.isNotEmpty
+          ? 6
+          : costRows.any((c) => c.isTransfer && c.isReimbursement)
           ? 5
           : (trip.kind != TripKind.trip || tagNames.isNotEmpty)
           ? 4
@@ -315,6 +323,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             isReimbursement: c.isReimbursement,
             createdAt: c.createdAt,
             beneficiaries: beneficiariesByCost[c.id] ?? const [],
+            invited: invitedByCost[c.id] ?? const [],
           ),
       ],
       attachments: attachmentsOf(onTrip: true),
@@ -539,11 +548,19 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             createdAt: Value(c.createdAt),
           ),
         );
+        // An invitation is kept only where it means something — on an
+        // expense with a payer, for somebody else — whatever the file says,
+        // as `CostController` is the rule on the way in from the form.
+        final payer = c.paidBy;
+        final canInvite = !c.isTransfer && payer != null && payer.isNotEmpty;
         for (final name in c.beneficiaries) {
           await into(costBeneficiaries).insert(
             CostBeneficiariesCompanion.insert(
               costId: costId,
               personId: personIds[name]!,
+              invited: Value(
+                canInvite && name != payer && c.invited.contains(name),
+              ),
             ),
             mode: InsertMode.insertOrIgnore,
           );
@@ -824,8 +841,12 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
     return query.map((row) => row.readTable(costs)).get();
   }
 
-  /// Beneficiary person names for every cost in the trip, keyed by cost id.
-  Future<Map<int, List<String>>> _beneficiaryNamesByCost(int tripId) async {
+  /// Beneficiary person names for every cost in the trip, keyed by cost id —
+  /// with [invitedOnly], only those the payer invited.
+  Future<Map<int, List<String>>> _beneficiaryNamesByCost(
+    int tripId, {
+    bool invitedOnly = false,
+  }) async {
     final query =
         select(costBeneficiaries).join([
             innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
@@ -837,9 +858,12 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
           ])
           ..where(
-            itineraryItems.tripId.equals(tripId) |
-                itemGroups.tripId.equals(tripId) |
-                costs.tripId.equals(tripId),
+            (itineraryItems.tripId.equals(tripId) |
+                    itemGroups.tripId.equals(tripId) |
+                    costs.tripId.equals(tripId)) &
+                (invitedOnly
+                    ? costBeneficiaries.invited
+                    : const Constant(true)),
           )
           ..orderBy([OrderingTerm(expression: people.name)]);
     final rows = await query.get();

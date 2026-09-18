@@ -318,6 +318,60 @@ void main() {
     expect(imported.paidBy, 'Bob');
   });
 
+  test('an invitation arrives as one, and forces format v6', () async {
+    final source = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(source.close);
+
+    final sourceId = await _seedTrip(source);
+    final plain = await source.sharingDao.exportTrip(sourceId);
+    expect(plain!.formatVersion, lessThan(6));
+    expect(plain.toJson()['costs'], everyElement(isNot(contains('invited'))));
+
+    // Alice paid for Alice and Bob; now Bob is her guest.
+    final expense = (await source.costDao.watchCostsForTrip(sourceId).first)
+        .singleWhere((c) => c.paidBy == 'Alice' && !c.isTransfer);
+    await source.costDao.setBeneficiaries(
+      expense.id,
+      ['Alice', 'Bob'],
+      invited: {'Bob'},
+    );
+
+    // An older app would show Bob owing Alice his share.
+    final bundle = await source.sharingDao.exportTrip(sourceId);
+    expect(bundle!.formatVersion, 6);
+
+    final newId = await db.sharingDao.importTrip(
+      TripBundle.decode(bundle.encode()),
+    );
+    final invited = await db.costDao.watchInvitedForTrip(newId).first;
+    expect(invited.values.single, {'Bob'});
+  });
+
+  test('an invitation that means nothing is not imported', () async {
+    final source = AppDatabase.forTesting(NativeDatabase.memory());
+    addTearDown(source.close);
+    final sourceId = await _seedTrip(source);
+    final json =
+        jsonDecode(
+              utf8.decode(
+                (await source.sharingDao.exportTrip(sourceId))!.encode(),
+              ),
+            )
+            as Map<String, dynamic>;
+
+    // Every beneficiary of every row marked invited: the payer of an expense
+    // (Alice, on the tickets) and the receiver of a settlement among them.
+    for (final cost in json['costs'] as List) {
+      final c = cost as Map<String, dynamic>;
+      c['invited'] = c['beneficiaries'];
+    }
+    final newId = await db.sharingDao.importTrip(TripBundle.fromJson(json));
+
+    final invited = await db.costDao.watchInvitedForTrip(newId).first;
+    // Only the one expense's non-paying beneficiary survives.
+    expect(invited.values.expand((names) => names), ['Bob']);
+  });
+
   test(
     'a reimbursement flag on anything but a transfer is not imported',
     () async {

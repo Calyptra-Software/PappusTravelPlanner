@@ -127,6 +127,11 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
   List<String> _paidFor = const [];
   bool _seededPaidFor = false;
 
+  /// Which of [_paidFor] the payer invited (see [CostBeneficiaries.invited]).
+  /// May hold names that no longer apply — the payer, somebody removed from the
+  /// split — so it is read through [_guests], never directly.
+  Set<String> _invited = const {};
+
   /// Whether the expense has already been paid/settled.
   bool _paid = false;
 
@@ -175,7 +180,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
   /// Seeds the "paid for" list from an existing cost once its beneficiaries
   /// load. A settlement has exactly one beneficiary — its recipient — so it
   /// seeds that field instead.
-  void _seedPaidFor(List<Person> beneficiaries) {
+  void _seedPaidFor(List<Person> beneficiaries, Set<String> invited) {
     if (_seededPaidFor) return;
     _seededPaidFor = true;
     if (_isTransfer) {
@@ -185,7 +190,31 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       return;
     }
     _paidFor = beneficiaries.map((p) => p.name).toList();
+    _invited = invited;
   }
+
+  /// The payer, or null when the expense has none.
+  String? get _payer {
+    final payer = _payerController.text.trim();
+    return payer.isEmpty ? null : payer;
+  }
+
+  /// Who the payer can invite: everyone the expense was for but themself.
+  /// Empty without a payer — nobody can be invited by nobody.
+  List<String> get _invitable {
+    final payer = _payer;
+    if (payer == null) return const [];
+    return [
+      for (final name in _paidFor)
+        if (name != payer) name,
+    ];
+  }
+
+  /// Who is invited, of those who can be.
+  Set<String> get _guests => {
+    for (final name in _invitable)
+      if (_invited.contains(name)) name,
+  };
 
   /// Opens the category picker: every saved category with its icon, plus
   /// whatever the user types into the search box.
@@ -284,6 +313,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         reason: reason,
         paidBy: paidBy,
         paidFor: _paidFor,
+        invited: _guests,
         paid: _paid,
       );
     } else {
@@ -296,6 +326,7 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         reason: reason,
         paidBy: paidBy,
         paidFor: _paidFor,
+        invited: _guests,
         paid: _paid,
       );
     }
@@ -382,7 +413,10 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
       final beneficiaries = ref
           .watch(costBeneficiariesProvider(widget.existing!.id))
           .value;
-      if (beneficiaries != null) _seedPaidFor(beneficiaries);
+      final invited = ref.watch(costInvitedProvider(widget.existing!.id)).value;
+      if (beneficiaries != null && invited != null) {
+        _seedPaidFor(beneficiaries, invited);
+      }
     }
 
     final media = MediaQuery.of(context);
@@ -580,6 +614,8 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
     List<String> people,
     String? meName,
   ) {
+    final invitable = _invitable;
+    final guests = _guests;
     return [
       // Category and payer are picked, never typed into directly: the
       // field opens a searchable list of what is saved, and a name it
@@ -632,12 +668,28 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
         children: [
           for (final name in _paidFor)
             InputChip(
+              // Tapping somebody the payer could invite toggles the invitation;
+              // the giving hand says who is invited without a second list to read.
               avatar: Icon(
-                name == meName ? Icons.person : Icons.person_outline,
+                guests.contains(name)
+                    ? Icons.volunteer_activism
+                    : (name == meName ? Icons.person : Icons.person_outline),
                 size: 16,
               ),
               label: Text(name),
+              tooltip: guests.contains(name) ? l10n.costInvited : null,
               visualDensity: VisualDensity.compact,
+              showCheckmark: false,
+              selected: guests.contains(name),
+              onSelected: invitable.contains(name)
+                  ? (selected) => setState(() {
+                      _invited = {
+                        for (final n in _invited)
+                          if (n != name) n,
+                        if (selected) name,
+                      };
+                    })
+                  : null,
               onDeleted: () => setState(() {
                 _paidFor = _paidFor.where((n) => n != name).toList();
               }),
@@ -650,6 +702,27 @@ class _CostFormSheetState extends ConsumerState<CostFormSheet> {
           ),
         ],
       ),
+      // Invites everyone the payer can invite at once; the chips above are
+      // where one person is invited alone, which leaves this box half-ticked.
+      if (invitable.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          secondary: const Icon(Icons.volunteer_activism),
+          tristate: true,
+          value: guests.isEmpty
+              ? false
+              : (guests.length == invitable.length ? true : null),
+          // A half-ticked box is cleared by a tap rather than filled, as a
+          // tristate checkbox would otherwise cycle it to "all" first.
+          onChanged: (_) => setState(() {
+            _invited = guests.isEmpty ? invitable.toSet() : const {};
+          }),
+          title: Text(l10n.costInvitedBy(_payer!)),
+          subtitle: Text(l10n.costInvitedHint),
+        ),
+      ],
       const SizedBox(height: 8),
       CheckboxListTile(
         contentPadding: EdgeInsets.zero,

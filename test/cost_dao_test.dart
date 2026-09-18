@@ -376,6 +376,36 @@ void main() {
     expect(people.map((p) => p.name), ['Bob', 'Cara']);
   });
 
+  test('setBeneficiaries marks the invited, and re-marks on update', () async {
+    final tripId = await db.tripDao.createTrip(
+      TripsCompanion.insert(title: 'T'),
+    );
+    final id = await db.costDao.addCost(tripCost(tripId, 9000, eurId, 'Food'));
+
+    await db.costDao.setBeneficiaries(id, ['Ann', 'Bo', 'Cy'], invited: {'Bo'});
+    expect(await db.costDao.watchInvited(id).first, {'Bo'});
+    expect(await db.costDao.watchInvitedForTrip(tripId).first, {
+      id: {'Bo'},
+    });
+
+    // A link that stays still changes; a name outside the split is ignored.
+    await db.costDao.setBeneficiaries(
+      id,
+      ['Ann', 'Bo', 'Cy'],
+      invited: {'Cy', 'Dee'},
+    );
+    expect(await db.costDao.watchInvited(id).first, {'Cy'});
+    expect((await db.costDao.watchBeneficiaries(id).first).map((p) => p.name), [
+      'Ann',
+      'Bo',
+      'Cy',
+    ]);
+
+    await db.costDao.setBeneficiaries(id, ['Ann', 'Bo', 'Cy']);
+    expect(await db.costDao.watchInvited(id).first, isEmpty);
+    expect(await db.costDao.watchInvitedForTrip(tripId).first, isEmpty);
+  });
+
   test('setBeneficiaries with an empty list clears the split', () async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'T'),

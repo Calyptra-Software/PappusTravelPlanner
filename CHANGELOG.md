@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **An expense's payer can invite people.** Tap a name under "Paid for", or tick
+  "Invited by …" for everyone at once: an invited person owes nothing for it, and the
+  balances show who was invited to how much.
 - **Tapping a photo on the map shows it full screen**, also when it is the only one
   there. Its details are behind the gallery's ⋮ menu.
 - **Importing a recording: a handover can be moved again right away.** Chips under the map

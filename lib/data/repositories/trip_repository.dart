@@ -448,8 +448,15 @@ class TripRepository {
       _db.costDao.watchBeneficiaries(costId);
   Stream<Map<int, List<Person>>> watchBeneficiariesForTrip(int tripId) =>
       _db.costDao.watchBeneficiariesForTrip(tripId);
-  Future<void> setBeneficiaries(int costId, List<String> names) =>
-      _db.costDao.setBeneficiaries(costId, names);
+  Stream<Set<String>> watchInvited(int costId) =>
+      _db.costDao.watchInvited(costId);
+  Stream<Map<int, Set<String>>> watchInvitedForTrip(int tripId) =>
+      _db.costDao.watchInvitedForTrip(tripId);
+  Future<void> setBeneficiaries(
+    int costId,
+    List<String> names, {
+    Set<String> invited = const {},
+  }) => _db.costDao.setBeneficiaries(costId, names, invited: invited);
   Future<void> upsertReason(String label) => _db.costDao.upsertReason(label);
   Stream<List<String>> watchReasons() => _db.costDao.watchReasons();
   Stream<List<CostReason>> watchReasonRows() => _db.costDao.watchReasonRows();

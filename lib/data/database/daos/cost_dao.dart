@@ -251,12 +251,65 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
     });
   }
 
+  /// The names of the people a cost's payer invited (see
+  /// [CostBeneficiaries.invited]) — a subset of [watchBeneficiaries].
+  Stream<Set<String>> watchInvited(int costId) {
+    final query =
+        select(people).join([
+          innerJoin(
+            costBeneficiaries,
+            costBeneficiaries.personId.equalsExp(people.id),
+          ),
+        ])..where(
+          costBeneficiaries.costId.equals(costId) & costBeneficiaries.invited,
+        );
+    return query.watch().map(
+      (rows) => {for (final row in rows) row.readTable(people).name},
+    );
+  }
+
+  /// The invited beneficiaries of every cost in a trip, by name and keyed by
+  /// cost id — [watchBeneficiariesForTrip]'s reach, narrowed to the links
+  /// marked [CostBeneficiaries.invited]. Costs inviting nobody are absent.
+  Stream<Map<int, Set<String>>> watchInvitedForTrip(int tripId) {
+    final query =
+        select(costBeneficiaries).join([
+          innerJoin(costs, costs.id.equalsExp(costBeneficiaries.costId)),
+          innerJoin(people, people.id.equalsExp(costBeneficiaries.personId)),
+          leftOuterJoin(
+            itineraryItems,
+            itineraryItems.id.equalsExp(costs.itemId),
+          ),
+          leftOuterJoin(itemGroups, itemGroups.id.equalsExp(costs.groupId)),
+        ])..where(
+          costBeneficiaries.invited &
+              (itineraryItems.tripId.equals(tripId) |
+                  itemGroups.tripId.equals(tripId) |
+                  costs.tripId.equals(tripId)),
+        );
+    return query.watch().map((rows) {
+      final byCost = <int, Set<String>>{};
+      for (final row in rows) {
+        final costId = row.readTable(costBeneficiaries).costId;
+        byCost.putIfAbsent(costId, () => {}).add(row.readTable(people).name);
+      }
+      return byCost;
+    });
+  }
+
   /// Replaces a cost's beneficiaries with exactly [names], creating any missing
-  /// people in the shared roster. Runs in a transaction so the set is never left
-  /// half-updated.
-  Future<void> setBeneficiaries(int costId, List<String> names) async {
+  /// people in the shared roster, and marks those in [invited] as invited (see
+  /// [CostBeneficiaries.invited]) and every other one as not. A name in
+  /// [invited] but not in [names] is ignored. Runs in a transaction so the set
+  /// is never left half-updated.
+  Future<void> setBeneficiaries(
+    int costId,
+    List<String> names, {
+    Set<String> invited = const {},
+  }) async {
     await transaction(() async {
       final ids = <int>[];
+      final invitedIds = <int>{};
       for (final name in names) {
         await into(people).insert(
           PeopleCompanion.insert(name: name),
@@ -266,6 +319,7 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
           people,
         )..where((p) => p.name.equals(name))).getSingle();
         ids.add(person.id);
+        if (invited.contains(name)) invitedIds.add(person.id);
       }
       if (ids.isEmpty) {
         await (delete(
@@ -273,15 +327,19 @@ class CostDao extends DatabaseAccessor<AppDatabase> with _$CostDaoMixin {
         )..where((cb) => cb.costId.equals(costId))).go();
         return;
       }
-      // Drop links no longer wanted, then add the new ones (ignoring dupes).
+      // Drop links no longer wanted, then write the rest — a link that stays
+      // may still change whether it is an invitation.
       await (delete(
             costBeneficiaries,
           )..where((cb) => cb.costId.equals(costId) & cb.personId.isNotIn(ids)))
           .go();
       for (final id in ids) {
-        await into(costBeneficiaries).insert(
-          CostBeneficiariesCompanion.insert(costId: costId, personId: id),
-          mode: InsertMode.insertOrIgnore,
+        await into(costBeneficiaries).insertOnConflictUpdate(
+          CostBeneficiariesCompanion.insert(
+            costId: costId,
+            personId: id,
+            invited: Value(invitedIds.contains(id)),
+          ),
         );
       }
     });

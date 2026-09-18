@@ -518,6 +518,136 @@ void main() {
     );
   });
 
+  group('invitations', () {
+    Map<String, PersonStat> byName(CurrencyStats cur) => {
+      for (final p in cur.byPerson) p.name: p,
+    };
+
+    test('a guest owes nothing and the payer carries the share', () {
+      // Ann pays 90 for Ann, Bo and Cy; Bo is invited, Cy repays.
+      final dinner = cost(9000, paidBy: 'Ann');
+      final cur = onlyCurrency(
+        computeTripStats(
+          [dinner],
+          {
+            dinner.id: [person('Ann'), person('Bo'), person('Cy')],
+          },
+          const [],
+          seededBook,
+          invitedByCost: {
+            dinner.id: {'Bo'},
+          },
+        ),
+      );
+      final people = byName(cur);
+
+      // What was spent, and on whom, is unchanged.
+      expect(cur.totalMinor, 9000);
+      expect(cur.byCategory.single.amountMinor, 9000);
+      expect(people.values.map((p) => p.shareMinor), [3000, 3000, 3000]);
+
+      expect(people['Bo']!.invitedMinor, 3000);
+      expect(people['Bo']!.borneMinor, 0);
+      expect(people['Bo']!.netMinor, 0);
+      expect(people['Ann']!.hostedMinor, 3000);
+      expect(people['Ann']!.borneMinor, 6000);
+      expect(people['Ann']!.netMinor, 3000);
+      expect(people['Cy']!.netMinor, -3000);
+
+      expect(cur.settlements, hasLength(1));
+      expect(cur.settlements.single.from, 'Cy');
+      expect(cur.settlements.single.to, 'Ann');
+      expect(cur.settlements.single.amountMinor, 3000);
+    });
+
+    test('inviting everyone leaves nobody owing anything', () {
+      final dinner = cost(9001, paidBy: 'Ann');
+      final cur = onlyCurrency(
+        computeTripStats(
+          [dinner],
+          {
+            dinner.id: [person('Ann'), person('Bo'), person('Cy')],
+          },
+          const [],
+          seededBook,
+          invitedByCost: {
+            dinner.id: {'Bo', 'Cy'},
+          },
+        ),
+      );
+      final people = byName(cur);
+      // The odd cent is Ann's own share, so all of it stays with her.
+      expect(people['Ann']!.borneMinor, 9001);
+      expect(people.values.map((p) => p.netMinor), everyElement(0));
+      expect(cur.settlements, isEmpty);
+    });
+
+    test('is ignored without a payer, on the payer, and on the fallback', () {
+      final unpaid = cost(6000);
+      final ownShare = cost(6000, paidBy: 'Ann');
+      final fallback = cost(6000, paidBy: 'Ann');
+      final cur = onlyCurrency(
+        computeTripStats(
+          [unpaid, ownShare, fallback],
+          {
+            unpaid.id: [person('Ann'), person('Bo')],
+            ownShare.id: [person('Ann'), person('Bo')],
+          },
+          const ['Ann', 'Bo'],
+          seededBook,
+          invitedByCost: {
+            unpaid.id: {'Bo'},
+            ownShare.id: {'Ann'},
+            // An invitation only ever names an explicit beneficiary.
+            fallback.id: {'Bo'},
+          },
+        ),
+      );
+      for (final p in cur.byPerson) {
+        expect(p.invitedMinor, 0, reason: p.name);
+        expect(p.hostedMinor, 0, reason: p.name);
+      }
+    });
+
+    test('pools across trips', () {
+      final first = cost(4000, paidBy: 'Ann');
+      final second = cost(2000, paidBy: 'Bo');
+      final merged = onlyCurrency(
+        mergeTripStats([
+          computeTripStats(
+            [first],
+            {
+              first.id: [person('Ann'), person('Bo')],
+            },
+            const [],
+            seededBook,
+            invitedByCost: {
+              first.id: {'Bo'},
+            },
+          ),
+          computeTripStats(
+            [second],
+            {
+              second.id: [person('Ann'), person('Bo')],
+            },
+            const [],
+            seededBook,
+            invitedByCost: {
+              second.id: {'Ann'},
+            },
+          ),
+        ], seededBook),
+      );
+      final people = byName(merged);
+      expect(people['Ann']!.invitedMinor, 1000);
+      expect(people['Ann']!.hostedMinor, 2000);
+      expect(people['Bo']!.invitedMinor, 2000);
+      expect(people['Bo']!.hostedMinor, 1000);
+      // Each invited the other and paid for it: nothing to settle.
+      expect(merged.settlements, isEmpty);
+    });
+  });
+
   group('mergeTripStats', () {
     test(
       'pools categories, per-person paid/share and settle-up per currency',

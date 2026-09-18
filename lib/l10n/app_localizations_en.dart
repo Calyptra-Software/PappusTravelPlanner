@@ -731,6 +731,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get costPaidFor => 'Paid for';
 
   @override
+  String get costInvited => 'Invited';
+
+  @override
+  String costInvitedBy(String payer) {
+    return 'Invited by $payer';
+  }
+
+  @override
+  String get costInvitedHint =>
+      'Invited people pay nothing back. Tap a name above to invite only some.';
+
+  @override
   String get costPaidByNone => 'Unassigned';
 
   @override
@@ -1340,6 +1352,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String statsSettlementReceived(String amount) {
     return 'received $amount';
+  }
+
+  @override
+  String statsInvitedTo(String amount) {
+    return 'invited to $amount';
+  }
+
+  @override
+  String statsInvitedOthers(String amount) {
+    return 'invited others to $amount';
   }
 
   @override

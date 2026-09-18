@@ -825,6 +825,15 @@ class CostBeneficiaries extends Table {
   IntColumn get personId =>
       integer().references(People, #id, onDelete: KeyAction.cascade)();
 
+  /// Whether the payer **invited** this person: they benefit from the expense
+  /// and their share counts as theirs, but they do not pay it back — the payer
+  /// carries it. Per beneficiary rather than per cost, so one dinner can have
+  /// a guest and somebody who repays without being split into two. Means
+  /// nothing on a cost with no [Costs.paidBy], on the payer's own link, or on
+  /// a transfer, and `CostController` writes it on none of them. See
+  /// `computeTripStats`.
+  BoolColumn get invited => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {costId, personId};
 }

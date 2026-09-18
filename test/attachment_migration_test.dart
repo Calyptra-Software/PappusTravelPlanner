@@ -144,6 +144,11 @@ void main() {
         is_transfer INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT 0
       );
+      CREATE TABLE cost_beneficiaries (
+        cost_id INTEGER NOT NULL REFERENCES costs (id),
+        person_id INTEGER NOT NULL REFERENCES people (id),
+        PRIMARY KEY (cost_id, person_id)
+      );
       INSERT INTO trips (id, title) VALUES (1, 'Hamburg');
       INSERT INTO transport_modes (id, builtin_key, sort_order)
         VALUES (6, 'train', 5);

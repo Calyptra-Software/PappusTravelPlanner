@@ -52,6 +52,8 @@ void main() {
 
     final raw = sqlite3.open(path);
     raw.execute('ALTER TABLE costs DROP COLUMN is_reimbursement');
+    // And everything a later version added, so the file is a v36 one.
+    raw.execute('ALTER TABLE cost_beneficiaries DROP COLUMN invited');
     raw.execute('PRAGMA user_version = 36');
     raw.close();
   }

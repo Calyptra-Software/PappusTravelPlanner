@@ -55,6 +55,7 @@ void main() {
     WidgetTester tester, {
     required List<Cost> costs,
     required Map<int, List<Person>> beneficiaries,
+    Map<int, Set<String>> invited = const {},
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -62,6 +63,7 @@ void main() {
           ...currencyOverrides,
           tripProvider(1).overrideWith((ref) => Stream.value(trip)),
           countedCostsProvider(1).overrideWith((ref) => Stream.value(costs)),
+          tripInvitedProvider(1).overrideWith((ref) => Stream.value(invited)),
           tripBeneficiariesProvider(
             1,
           ).overrideWith((ref) => Stream.value(beneficiaries)),
@@ -143,6 +145,26 @@ void main() {
     // Booked as a settlement this would read "Ann pays Employer".
     expect(find.text("Everyone's even — nothing to settle."), findsOneWidget);
     expect(find.textContaining('pays'), findsNothing);
+  });
+
+  testWidgets('a guest owes nothing, and the balances say why', (tester) async {
+    // Ann paid 90 for Ann, Bo and Cy; Bo was invited, Cy repays.
+    final dinner = cost(1, 9000, paidBy: 'Ann');
+    await pumpStats(
+      tester,
+      costs: [dinner],
+      beneficiaries: {
+        1: [person(1, 'Ann'), person(2, 'Bo'), person(3, 'Cy')],
+      },
+      invited: {
+        1: {'Bo'},
+      },
+    );
+
+    expect(find.text('invited to €30.00'), findsOneWidget);
+    expect(find.text('invited others to €30.00'), findsOneWidget);
+    expect(find.text('Cy pays Ann'), findsOneWidget);
+    expect(find.text('Bo pays Ann'), findsNothing);
   });
 
   testWidgets('a suggested payment opens the settlement form, prefilled', (
