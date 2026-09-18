@@ -95,7 +95,11 @@ class TripBundle {
   /// reimbursement, and there it has to be: an older app would read one as a
   /// settlement between travelers, and so show its receiver owing the source
   /// the money the source handed over — a misread, not a missing detail.
-  static const int currentFormatVersion = 5;
+  ///
+  /// v6 added [BundleCost.invited], stamped only on a trip where somebody was
+  /// invited, by the same argument: an older app would split the expense as
+  /// one to be repaid and show the guest owing the payer their share.
+  static const int currentFormatVersion = 6;
 
   /// Magic string identifying the payload as a Pappus trip bundle.
   ///
@@ -920,6 +924,7 @@ class BundleCost {
     this.isReimbursement = false,
     required this.createdAt,
     this.beneficiaries = const [],
+    this.invited = const [],
   });
 
   final int? itemLocalId;
@@ -949,6 +954,10 @@ class BundleCost {
   /// Person names this cost was split among; empty means "all participants".
   final List<String> beneficiaries;
 
+  /// Those of [beneficiaries] the payer invited ([CostBeneficiaries.invited]).
+  /// Written only when there are any, and absent before v6.
+  final List<String> invited;
+
   Map<String, dynamic> toJson() => {
     'itemLocalId': itemLocalId,
     'groupLocalId': groupLocalId,
@@ -961,6 +970,7 @@ class BundleCost {
     'isReimbursement': isReimbursement,
     'createdAt': _encodeDate(createdAt),
     'beneficiaries': beneficiaries,
+    if (invited.isNotEmpty) 'invited': invited,
   };
 
   factory BundleCost.fromJson(Map<String, dynamic> json) => BundleCost(
@@ -976,6 +986,9 @@ class BundleCost {
     createdAt: _decodeDate(json['createdAt'] as String)!,
     beneficiaries: [
       for (final b in (json['beneficiaries'] as List? ?? const [])) b as String,
+    ],
+    invited: [
+      for (final b in (json['invited'] as List? ?? const [])) b as String,
     ],
   );
 }

@@ -92,6 +92,21 @@ final costBeneficiariesProvider = StreamProvider.autoDispose
       return ref.watch(repositoryProvider).watchBeneficiaries(costId);
     });
 
+/// The names a cost's payer invited, keyed by cost id (see
+/// [CostBeneficiaries.invited]). Seeds the expense form.
+final costInvitedProvider = StreamProvider.autoDispose.family<Set<String>, int>(
+  (ref, costId) {
+    return ref.watch(repositoryProvider).watchInvited(costId);
+  },
+);
+
+/// Who was invited on every cost in a trip, keyed by cost id — the part of
+/// [tripBeneficiariesProvider] the payer carries.
+final tripInvitedProvider = StreamProvider.autoDispose
+    .family<Map<int, Set<String>>, int>((ref, tripId) {
+      return ref.watch(repositoryProvider).watchInvitedForTrip(tripId);
+    });
+
 /// Beneficiary split for every cost in a trip, keyed by cost id. Backs the
 /// statistics screen so it can compute shares without one stream per cost.
 final tripBeneficiariesProvider = StreamProvider.autoDispose
@@ -110,12 +125,17 @@ final tripStatsProvider = Provider.autoDispose.family<TripStats, int>((
 ) {
   final costs = ref.watch(countedCostsProvider(tripId)).value;
   final beneficiaries = ref.watch(tripBeneficiariesProvider(tripId)).value;
+  final invited = ref.watch(tripInvitedProvider(tripId)).value;
   final participants = ref.watch(tripParticipantsProvider(tripId)).value;
   final book = ref.watch(currencyBookProvider);
   if (costs == null) return const TripStats([]);
-  return computeTripStats(costs, beneficiaries ?? const {}, [
-    for (final p in participants ?? const <Person>[]) p.name,
-  ], book);
+  return computeTripStats(
+    costs,
+    beneficiaries ?? const {},
+    [for (final p in participants ?? const <Person>[]) p.name],
+    book,
+    invitedByCost: invited ?? const {},
+  );
 });
 
 /// Expense statistics pooled across the trips the statistics count — the
@@ -156,6 +176,7 @@ class CostController {
     required String reason,
     String? paidBy,
     List<String> paidFor = const [],
+    Set<String> invited = const {},
     bool paid = false,
   }) async {
     final repo = _ref.read(repositoryProvider);
@@ -173,7 +194,11 @@ class CostController {
         paid: Value(paid),
       ),
     );
-    await repo.setBeneficiaries(id, paidFor);
+    await repo.setBeneficiaries(
+      id,
+      paidFor,
+      invited: _guestsOf(paidBy, invited),
+    );
   }
 
   Future<void> updateCost(
@@ -183,6 +208,7 @@ class CostController {
     required String reason,
     String? paidBy,
     List<String> paidFor = const [],
+    Set<String> invited = const {},
     bool paid = false,
   }) async {
     final repo = _ref.read(repositoryProvider);
@@ -197,8 +223,24 @@ class CostController {
         paid: paid,
       ),
     );
-    await repo.setBeneficiaries(existing.id, paidFor);
+    await repo.setBeneficiaries(
+      existing.id,
+      paidFor,
+      invited: _guestsOf(paidBy, invited),
+    );
   }
+
+  /// Of [invited], the names an expense paid by [paidBy] can actually invite:
+  /// nobody without a payer, and never the payer. The one place this is
+  /// enforced on the way in, so a flag that means nothing is never stored.
+  /// (Whether each name is a beneficiary at all is `setBeneficiaries`' check.)
+  static Set<String> _guestsOf(String? paidBy, Set<String> invited) =>
+      paidBy == null || paidBy.isEmpty
+      ? const {}
+      : {
+          for (final name in invited)
+            if (name != paidBy) name,
+        };
 
   // --- transfers (settling up between people) ---
 

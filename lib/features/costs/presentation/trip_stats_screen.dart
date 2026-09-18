@@ -626,6 +626,33 @@ class _BalancesSection extends StatelessWidget {
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
+                      // What the balance leaves out because somebody paid
+                      // without wanting it back: a share that was the
+                      // person's, yet shows up in no debt.
+                      for (final line in [
+                        if (person.invitedMinor != 0)
+                          l10n.statsInvitedTo(
+                            formatMoney(
+                              person.invitedMinor,
+                              currency,
+                              localeName,
+                            ),
+                          ),
+                        if (person.hostedMinor != 0)
+                          l10n.statsInvitedOthers(
+                            formatMoney(
+                              person.hostedMinor,
+                              currency,
+                              localeName,
+                            ),
+                          ),
+                      ])
+                        Text(
+                          line,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       // A reimbursement moves no balance, so the figure on the
                       // right does not explain it; this line says what the
                       // share came to once it came back.
@@ -643,7 +670,7 @@ class _BalancesSection extends StatelessWidget {
                               localeName,
                             ),
                             formatMoney(
-                              person.shareMinor - person.reimbursedMinor,
+                              person.borneMinor - person.reimbursedMinor,
                               currency,
                               localeName,
                             ),

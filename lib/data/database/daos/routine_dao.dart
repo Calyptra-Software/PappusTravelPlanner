@@ -315,6 +315,9 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
           CostBeneficiariesCompanion.insert(
             costId: newId,
             personId: person.personId,
+            // A guest is part of the split too: the colleague whose ticket
+            // is always on you is invited every morning, not just once.
+            invited: Value(person.invited),
           ),
           mode: InsertMode.insertOrIgnore,
         );

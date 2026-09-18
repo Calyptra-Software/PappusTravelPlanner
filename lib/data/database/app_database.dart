@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -424,6 +424,13 @@ class AppDatabase extends _$AppDatabase {
       // Skipped below v23, whose recreation of the table already added it.
       if (from < 37 && from >= 23) {
         await m.addColumn(costs, costs.isReimbursement);
+      }
+      // v38 lets an expense's payer invite some of the people it was for, who
+      // then owe nothing for it. Nothing to backfill: every existing split was
+      // one to be repaid, which is what false means. Skipped below v10, whose
+      // creation of the table above already has the column.
+      if (from < 38 && from >= 10) {
+        await m.addColumn(costBeneficiaries, costBeneficiaries.invited);
       }
     },
     beforeOpen: (details) async {

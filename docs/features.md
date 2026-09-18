@@ -627,6 +627,10 @@ actually spent, not a figure derived from a rate you typed in.
 A cost splits among the people it was for, falling back to everyone on the trip when you
 have not said.
 
+The payer can **invite** some of them: tap a name under "Paid for", or tick "Invited by …" to
+invite everyone at once. An invited person pays nothing back — the payer carries their share —
+and the balances say who was invited to how much.
+
 ### Recording the money handed back
 
 A suggested payment can be booked as a **settlement** — from one person to another, no

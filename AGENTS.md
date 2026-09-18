@@ -671,8 +671,23 @@ UI (features/*/presentation, *widgets)
   corrected by ticking it. `CostController.addTransfer`/`updateTransfer` are its only
   writers, and the importer drops it off anything that is not a transfer. A trip holding one
   goes out as `.tpt` **v5**, because an older app would read it as a settlement and show the
-  debt. Deliberately not built (yet): marking an *expense* as not to be repaid, for the case
-  where somebody on the trip pays for others as a gift.
+  debt.
+- **An invitation is a property of the split, not of the cost** (`CostBeneficiaries.invited`,
+  v38): the payer paid for this beneficiary and does not want it back. Per beneficiary so one
+  dinner can hold a guest and somebody who repays without being cut in two. The share stays
+  the guest's — `shareMinor`, the totals and the categories do not move, since the money was
+  spent all the same — and `computeTripStats` books it to the guest's `invitedMinor` and the
+  payer's `hostedMinor`, which `borneMinor` (what somebody's expenses came to in the end) and
+  so `netMinor` read. It means something only on an expense **with a payer**, for a
+  beneficiary **other than the payer**, and on an **explicit** split — the participant
+  fallback names nobody to invite — so the stats ignore it anywhere else, and
+  `CostController._guestsOf` and the importer never store it there. The form marks it on the
+  "paid for" chips (tap to toggle, a giving hand for the avatar) plus a tristate *Invited by {payer}*
+  box that invites or clears everyone at once. It rides with a routine's fare, since a
+  colleague whose ticket is always on you is invited every morning. A trip with one goes out
+  as `.tpt` **v6**, stamped only then, because an older app would show the guest owing their
+  share. The PDF is untouched: it prints no split and no balance, and an invitation changes
+  neither the total nor any row.
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
@@ -1706,7 +1721,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 37) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 38) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

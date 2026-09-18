@@ -284,6 +284,12 @@
   "costPaidBy": "Paid by",
   "costPaid": "Already paid",
   "costPaidFor": "Paid for",
+  "costInvited": "Invited",
+  "costInvitedBy": "Invited by {payer}",
+  "@costInvitedBy": {
+    "placeholders": { "payer": { "type": "String" } }
+  },
+  "costInvitedHint": "Invited people pay nothing back. Tap a name above to invite only some.",
   "costPaidByNone": "Unassigned",
   "costPaidByName": "Paid by {name}",
   "@costPaidByName": {
@@ -736,6 +742,14 @@
   },
   "statsSettlementReceived": "received {amount}",
   "@statsSettlementReceived": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsInvitedTo": "invited to {amount}",
+  "@statsInvitedTo": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsInvitedOthers": "invited others to {amount}",
+  "@statsInvitedOthers": {
     "placeholders": { "amount": { "type": "String" } }
   },
   "statsReimbursedAmount": "{amount} reimbursed",

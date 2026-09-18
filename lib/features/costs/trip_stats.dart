@@ -36,6 +36,8 @@ class PersonStat {
     required this.shareMinor,
     this.settledMinor = 0,
     this.reimbursedMinor = 0,
+    this.invitedMinor = 0,
+    this.hostedMinor = 0,
   });
 
   final String name;
@@ -55,11 +57,24 @@ class PersonStat {
   /// What the person received in reimbursements ([Costs.isReimbursement]) —
   /// money from outside the group. Deliberately **not** in [netMinor]: nobody
   /// on the trip owes the source anything, so it is reported beside the
-  /// balance, as what [shareMinor] cost the person once it came back.
+  /// balance, as what [borneMinor] came to once it came back.
   final int reimbursedMinor;
 
+  /// The part of [shareMinor] somebody else invited the person to
+  /// ([CostBeneficiaries.invited]): theirs to have had, not theirs to repay.
+  final int invitedMinor;
+
+  /// The shares of others the person invited them to, as the payer — carried
+  /// by them instead of being owed back.
+  final int hostedMinor;
+
+  /// What the person's expenses came to in the end: their [shareMinor], less
+  /// what they were invited to, plus what they invited others to. Before any
+  /// reimbursement, which [reimbursedMinor] reports beside it.
+  int get borneMinor => shareMinor - invitedMinor + hostedMinor;
+
   /// Positive when the person is owed money, negative when they owe.
-  int get netMinor => paidMinor - shareMinor + settledMinor;
+  int get netMinor => paidMinor - borneMinor + settledMinor;
 }
 
 /// A suggested payment that settles part of the balances: [from] pays [to].
@@ -167,12 +182,25 @@ class TripStats {
 /// [CurrencyStats.reimbursementsBySource]. It belongs to its receiver alone: an
 /// allowance covering the receiver's own share says nothing about what somebody
 /// else on the trip owes them.
+///
+/// An **invitation** ([invitedByCost], names keyed by cost id, as
+/// [CostDao.watchInvitedForTrip] returns) says that the payer carries a
+/// beneficiary's share rather than being owed it. The share stays the guest's
+/// in [PersonStat.shareMinor] — it is what they had — and the totals and
+/// categories do not move, since the money was spent all the same; what moves
+/// is the balance, the share being booked to the guest's
+/// [PersonStat.invitedMinor] and the payer's [PersonStat.hostedMinor]. An
+/// invitation needs a payer and a beneficiary who is not the payer, and is
+/// ignored on anything else: nobody can be invited by nobody, and inviting
+/// oneself changes nothing. It only ever names an explicit beneficiary, so a
+/// cost split by the participant fallback invites nobody.
 TripStats computeTripStats(
   List<Cost> costs,
   Map<int, List<Person>> beneficiariesByCost,
   List<String> participantNames,
-  CurrencyBook book,
-) {
+  CurrencyBook book, {
+  Map<int, Set<String>> invitedByCost = const {},
+}) {
   final byCurrency = <String, List<Cost>>{};
   for (final cost in costs) {
     final code = book.byId(cost.currency)?.code;
@@ -185,7 +213,13 @@ TripStats computeTripStats(
     final group = byCurrency[code];
     if (group == null || group.isEmpty) continue;
     result.add(
-      _statsForCurrency(code, group, beneficiariesByCost, participantNames),
+      _statsForCurrency(
+        code,
+        group,
+        beneficiariesByCost,
+        participantNames,
+        invitedByCost,
+      ),
     );
   }
   return TripStats(result);
@@ -225,6 +259,8 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
   final shareByPerson = <String, int>{};
   final settledByPerson = <String, int>{};
   final reimbursedByPerson = <String, int>{};
+  final invitedByPerson = <String, int>{};
+  final hostedByPerson = <String, int>{};
   final bySource = <String, int>{};
   for (final part in parts) {
     for (final source in part.reimbursementsBySource) {
@@ -270,6 +306,16 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
         (v) => v + person.reimbursedMinor,
         ifAbsent: () => person.reimbursedMinor,
       );
+      invitedByPerson.update(
+        person.name,
+        (v) => v + person.invitedMinor,
+        ifAbsent: () => person.invitedMinor,
+      );
+      hostedByPerson.update(
+        person.name,
+        (v) => v + person.hostedMinor,
+        ifAbsent: () => person.hostedMinor,
+      );
     }
   }
 
@@ -291,6 +337,8 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
     ...shareByPerson.keys,
     ...settledByPerson.keys,
     ...reimbursedByPerson.keys,
+    ...invitedByPerson.keys,
+    ...hostedByPerson.keys,
   }.toList()..sort();
   final byPerson = names
       .map(
@@ -300,6 +348,8 @@ CurrencyStats _mergeCurrency(String currency, List<CurrencyStats> parts) {
           shareMinor: shareByPerson[name] ?? 0,
           settledMinor: settledByPerson[name] ?? 0,
           reimbursedMinor: reimbursedByPerson[name] ?? 0,
+          invitedMinor: invitedByPerson[name] ?? 0,
+          hostedMinor: hostedByPerson[name] ?? 0,
         ),
       )
       .toList();
@@ -321,6 +371,7 @@ CurrencyStats _statsForCurrency(
   List<Cost> costs,
   Map<int, List<Person>> beneficiariesByCost,
   List<String> participantNames,
+  Map<int, Set<String>> invitedByCost,
 ) {
   // Every spend figure below is about the expenses only; the transfers are
   // settlements between people and are handled apart, on the balances.
@@ -359,24 +410,42 @@ CurrencyStats _statsForCurrency(
           .toList()
         ..sort((a, b) => b.amountMinor.compareTo(a.amountMinor));
 
-  // Paid and share, per person.
+  // Paid and share, per person — and of each share, what the payer carries.
   final paid = <String, int>{};
   final share = <String, int>{};
+  final invited = <String, int>{};
+  final hosted = <String, int>{};
   for (final cost in expenses) {
     final payer = cost.paidBy;
-    if (payer != null && payer.isNotEmpty) {
+    final hasPayer = payer != null && payer.isNotEmpty;
+    if (hasPayer) {
       paid.update(
         payer,
         (v) => v + cost.amountMinor,
         ifAbsent: () => cost.amountMinor,
       );
     }
-    final beneficiaries =
-        beneficiariesByCost[cost.id]?.map((p) => p.name).toList() ??
-        participantNames;
-    for (final entry in _splitEvenly(cost.amountMinor, beneficiaries).entries) {
+    final listed = beneficiariesByCost[cost.id]?.map((p) => p.name).toList();
+    final guests = hasPayer && listed != null
+        ? invitedByCost[cost.id] ?? const <String>{}
+        : const <String>{};
+    for (final entry in _splitEvenly(
+      cost.amountMinor,
+      listed ?? participantNames,
+    ).entries) {
       share.update(
         entry.key,
+        (v) => v + entry.value,
+        ifAbsent: () => entry.value,
+      );
+      if (entry.key == payer || !guests.contains(entry.key)) continue;
+      invited.update(
+        entry.key,
+        (v) => v + entry.value,
+        ifAbsent: () => entry.value,
+      );
+      hosted.update(
+        payer!,
         (v) => v + entry.value,
         ifAbsent: () => entry.value,
       );
@@ -435,6 +504,7 @@ CurrencyStats _statsForCurrency(
     ...share.keys,
     ...settled.keys,
     ...reimbursed.keys,
+    ...hosted.keys,
   }.toList()..sort();
   final byPerson = names
       .map(
@@ -444,6 +514,8 @@ CurrencyStats _statsForCurrency(
           shareMinor: share[name] ?? 0,
           settledMinor: settled[name] ?? 0,
           reimbursedMinor: reimbursed[name] ?? 0,
+          invitedMinor: invited[name] ?? 0,
+          hostedMinor: hosted[name] ?? 0,
         ),
       )
       .toList();

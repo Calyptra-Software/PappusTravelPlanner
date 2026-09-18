@@ -1340,6 +1340,24 @@ abstract class AppLocalizations {
   /// **'Paid for'**
   String get costPaidFor;
 
+  /// No description provided for @costInvited.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited'**
+  String get costInvited;
+
+  /// No description provided for @costInvitedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited by {payer}'**
+  String costInvitedBy(String payer);
+
+  /// No description provided for @costInvitedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Invited people pay nothing back. Tap a name above to invite only some.'**
+  String get costInvitedHint;
+
   /// No description provided for @costPaidByNone.
   ///
   /// In en, this message translates to:
@@ -2317,6 +2335,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'received {amount}'**
   String statsSettlementReceived(String amount);
+
+  /// No description provided for @statsInvitedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'invited to {amount}'**
+  String statsInvitedTo(String amount);
+
+  /// No description provided for @statsInvitedOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'invited others to {amount}'**
+  String statsInvitedOthers(String amount);
 
   /// No description provided for @statsReimbursedAmount.
   ///

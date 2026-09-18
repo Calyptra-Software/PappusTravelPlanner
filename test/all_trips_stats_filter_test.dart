@@ -77,6 +77,9 @@ void main() {
             tripBeneficiariesProvider(
               id,
             ).overrideWith((ref) => Stream.value(const {})),
+            tripInvitedProvider(
+              id,
+            ).overrideWith((ref) => Stream.value(const {})),
             tripParticipantsProvider(
               id,
             ).overrideWith((ref) => Stream.value(const [])),

@@ -6294,8 +6294,23 @@ class $CostBeneficiariesTable extends CostBeneficiaries
       'REFERENCES people (id) ON DELETE CASCADE',
     ),
   );
+  static const VerificationMeta _invitedMeta = const VerificationMeta(
+    'invited',
+  );
   @override
-  List<GeneratedColumn> get $columns => [costId, personId];
+  late final GeneratedColumn<bool> invited = GeneratedColumn<bool>(
+    'invited',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("invited" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [costId, personId, invited];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -6324,6 +6339,12 @@ class $CostBeneficiariesTable extends CostBeneficiaries
     } else if (isInserting) {
       context.missing(_personIdMeta);
     }
+    if (data.containsKey('invited')) {
+      context.handle(
+        _invitedMeta,
+        invited.isAcceptableOrUnknown(data['invited']!, _invitedMeta),
+      );
+    }
     return context;
   }
 
@@ -6341,6 +6362,10 @@ class $CostBeneficiariesTable extends CostBeneficiaries
         DriftSqlType.int,
         data['${effectivePrefix}person_id'],
       )!,
+      invited: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}invited'],
+      )!,
     );
   }
 
@@ -6353,12 +6378,26 @@ class $CostBeneficiariesTable extends CostBeneficiaries
 class CostBeneficiary extends DataClass implements Insertable<CostBeneficiary> {
   final int costId;
   final int personId;
-  const CostBeneficiary({required this.costId, required this.personId});
+
+  /// Whether the payer **invited** this person: they benefit from the expense
+  /// and their share counts as theirs, but they do not pay it back — the payer
+  /// carries it. Per beneficiary rather than per cost, so one dinner can have
+  /// a guest and somebody who repays without being split into two. Means
+  /// nothing on a cost with no [Costs.paidBy], on the payer's own link, or on
+  /// a transfer, and `CostController` writes it on none of them. See
+  /// `computeTripStats`.
+  final bool invited;
+  const CostBeneficiary({
+    required this.costId,
+    required this.personId,
+    required this.invited,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['cost_id'] = Variable<int>(costId);
     map['person_id'] = Variable<int>(personId);
+    map['invited'] = Variable<bool>(invited);
     return map;
   }
 
@@ -6366,6 +6405,7 @@ class CostBeneficiary extends DataClass implements Insertable<CostBeneficiary> {
     return CostBeneficiariesCompanion(
       costId: Value(costId),
       personId: Value(personId),
+      invited: Value(invited),
     );
   }
 
@@ -6377,6 +6417,7 @@ class CostBeneficiary extends DataClass implements Insertable<CostBeneficiary> {
     return CostBeneficiary(
       costId: serializer.fromJson<int>(json['costId']),
       personId: serializer.fromJson<int>(json['personId']),
+      invited: serializer.fromJson<bool>(json['invited']),
     );
   }
   @override
@@ -6385,17 +6426,21 @@ class CostBeneficiary extends DataClass implements Insertable<CostBeneficiary> {
     return <String, dynamic>{
       'costId': serializer.toJson<int>(costId),
       'personId': serializer.toJson<int>(personId),
+      'invited': serializer.toJson<bool>(invited),
     };
   }
 
-  CostBeneficiary copyWith({int? costId, int? personId}) => CostBeneficiary(
-    costId: costId ?? this.costId,
-    personId: personId ?? this.personId,
-  );
+  CostBeneficiary copyWith({int? costId, int? personId, bool? invited}) =>
+      CostBeneficiary(
+        costId: costId ?? this.costId,
+        personId: personId ?? this.personId,
+        invited: invited ?? this.invited,
+      );
   CostBeneficiary copyWithCompanion(CostBeneficiariesCompanion data) {
     return CostBeneficiary(
       costId: data.costId.present ? data.costId.value : this.costId,
       personId: data.personId.present ? data.personId.value : this.personId,
+      invited: data.invited.present ? data.invited.value : this.invited,
     );
   }
 
@@ -6403,44 +6448,51 @@ class CostBeneficiary extends DataClass implements Insertable<CostBeneficiary> {
   String toString() {
     return (StringBuffer('CostBeneficiary(')
           ..write('costId: $costId, ')
-          ..write('personId: $personId')
+          ..write('personId: $personId, ')
+          ..write('invited: $invited')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(costId, personId);
+  int get hashCode => Object.hash(costId, personId, invited);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CostBeneficiary &&
           other.costId == this.costId &&
-          other.personId == this.personId);
+          other.personId == this.personId &&
+          other.invited == this.invited);
 }
 
 class CostBeneficiariesCompanion extends UpdateCompanion<CostBeneficiary> {
   final Value<int> costId;
   final Value<int> personId;
+  final Value<bool> invited;
   final Value<int> rowid;
   const CostBeneficiariesCompanion({
     this.costId = const Value.absent(),
     this.personId = const Value.absent(),
+    this.invited = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CostBeneficiariesCompanion.insert({
     required int costId,
     required int personId,
+    this.invited = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : costId = Value(costId),
        personId = Value(personId);
   static Insertable<CostBeneficiary> custom({
     Expression<int>? costId,
     Expression<int>? personId,
+    Expression<bool>? invited,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
       if (costId != null) 'cost_id': costId,
       if (personId != null) 'person_id': personId,
+      if (invited != null) 'invited': invited,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6448,11 +6500,13 @@ class CostBeneficiariesCompanion extends UpdateCompanion<CostBeneficiary> {
   CostBeneficiariesCompanion copyWith({
     Value<int>? costId,
     Value<int>? personId,
+    Value<bool>? invited,
     Value<int>? rowid,
   }) {
     return CostBeneficiariesCompanion(
       costId: costId ?? this.costId,
       personId: personId ?? this.personId,
+      invited: invited ?? this.invited,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6466,6 +6520,9 @@ class CostBeneficiariesCompanion extends UpdateCompanion<CostBeneficiary> {
     if (personId.present) {
       map['person_id'] = Variable<int>(personId.value);
     }
+    if (invited.present) {
+      map['invited'] = Variable<bool>(invited.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6477,6 +6534,7 @@ class CostBeneficiariesCompanion extends UpdateCompanion<CostBeneficiary> {
     return (StringBuffer('CostBeneficiariesCompanion(')
           ..write('costId: $costId, ')
           ..write('personId: $personId, ')
+          ..write('invited: $invited, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -16583,12 +16641,14 @@ typedef $$CostBeneficiariesTableCreateCompanionBuilder =
     CostBeneficiariesCompanion Function({
       required int costId,
       required int personId,
+      Value<bool> invited,
       Value<int> rowid,
     });
 typedef $$CostBeneficiariesTableUpdateCompanionBuilder =
     CostBeneficiariesCompanion Function({
       Value<int> costId,
       Value<int> personId,
+      Value<bool> invited,
       Value<int> rowid,
     });
 
@@ -16649,6 +16709,11 @@ class $$CostBeneficiariesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<bool> get invited => $composableBuilder(
+    column: $table.invited,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$CostsTableFilterComposer get costId {
     final $$CostsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -16705,6 +16770,11 @@ class $$CostBeneficiariesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<bool> get invited => $composableBuilder(
+    column: $table.invited,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CostsTableOrderingComposer get costId {
     final $$CostsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -16761,6 +16831,9 @@ class $$CostBeneficiariesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<bool> get invited =>
+      $composableBuilder(column: $table.invited, builder: (column) => column);
+
   $$CostsTableAnnotationComposer get costId {
     final $$CostsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -16843,20 +16916,24 @@ class $$CostBeneficiariesTableTableManager
               ({
                 Value<int> costId = const Value.absent(),
                 Value<int> personId = const Value.absent(),
+                Value<bool> invited = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CostBeneficiariesCompanion(
                 costId: costId,
                 personId: personId,
+                invited: invited,
                 rowid: rowid,
               ),
           createCompanionCallback:
               ({
                 required int costId,
                 required int personId,
+                Value<bool> invited = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CostBeneficiariesCompanion.insert(
                 costId: costId,
                 personId: personId,
+                invited: invited,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
