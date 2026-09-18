@@ -151,7 +151,10 @@ void main() {
     await tester.tap(box);
     await tester.pumpAndSettle();
     expect(tile().value, isTrue);
-    expect(find.byIcon(Icons.volunteer_activism), findsNWidgets(3)); // two chips, one box
+    expect(
+      find.byIcon(Icons.volunteer_activism),
+      findsNWidgets(3),
+    ); // two chips, one box
 
     // …and a chip then lets one of them repay after all.
     await tester.tap(find.widgetWithText(InputChip, 'Kim'));
