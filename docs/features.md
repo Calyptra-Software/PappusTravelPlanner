@@ -411,7 +411,8 @@ trip's ⋮ menu (or from any leg's form), tick the run of entries it covers, and
 divided between them. Where an entry has no coordinates, the map asks you to tap the spot where
 one leg handed over to the next, and draws the division while you decide; the recording's own
 ends fill in the first and last positions, so a single leg usually needs no tapping at all.
-Every handover has to be pointed at. Places in the run are given coordinates as well: a place
+Every handover has to be pointed at. The chips under the map say which handover a tap
+places; tap a chip to go back and move one you already placed. Places in the run are given coordinates as well: a place
 standing between two legs is their handover, so it gets the same spot they do, and one at either
 end of the run gets where the recording started or finished. Anything you had already placed
 yourself is left alone.

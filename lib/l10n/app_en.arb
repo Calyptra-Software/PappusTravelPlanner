@@ -505,9 +505,15 @@
     "description": "Asks the user to point at the handover between two legs.",
     "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
   },
-  "trackBoundaryMove": "Tapping moves the nearest handover",
-  "@trackBoundaryMove": {
-    "description": "Says that a handover already placed is not final."
+  "trackMoveBoundary": "Tap to move where \u201c{before}\u201d hands over to \u201c{after}\u201d",
+  "@trackMoveBoundary": {
+    "description": "The selected handover is already placed; a tap moves it.",
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "trackHandoverChip": "Handover {number}",
+  "@trackHandoverChip": {
+    "description": "Chip selecting which handover the next tap on the map places.",
+    "placeholders": { "number": { "type": "int" } }
   },
   "trackImportConfirm": "Import",
   "@trackImportConfirm": {

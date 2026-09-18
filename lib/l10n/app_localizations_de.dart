@@ -1070,8 +1070,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get trackBoundaryMove =>
-      'Ein Tipp verschiebt den nächsten Übergabepunkt';
+  String trackMoveBoundary(String before, String after) {
+    return 'Antippen, um zu verschieben, wo „$before“ an „$after“ übergibt';
+  }
+
+  @override
+  String trackHandoverChip(int number) {
+    return 'Übergabe $number';
+  }
 
   @override
   String get trackImportConfirm => 'Importieren';

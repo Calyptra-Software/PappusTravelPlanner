@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -43,7 +44,10 @@ void main() {
 
   final line = [for (var i = 0; i < 40; i++) LatLng(53.5 + i * 0.001, 9.9)];
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(
+    WidgetTester tester, {
+    List<ItineraryItem>? selection,
+  }) async {
     tester.view.physicalSize = const Size(1000, 1400);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -62,13 +66,31 @@ void main() {
           home: TrackImportScreen(
             lines: [line],
             name: 'Walk',
-            selection: [leg(1, 'A → B'), leg(2, 'B → C')],
+            selection: selection ?? [leg(1, 'A → B'), leg(2, 'B → C')],
           ),
         ),
       ),
     );
     await tester.pumpAndSettle();
   }
+
+  /// Taps the map [dy] pixels below its centre, where the line runs. The wait
+  /// is the double-tap timeout, which a single tap has to outlast to count.
+  Future<void> tapMap(WidgetTester tester, double dy) async {
+    await tester.tapAt(
+      tester.getCenter(find.byType(FlutterMap)) + Offset(0, dy),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+  }
+
+  List<LatLng> handovers(WidgetTester tester) => [
+    for (final marker
+        in tester.widget<MarkerLayer>(find.byType(MarkerLayer)).markers)
+      marker.point,
+  ];
+
+  bool confirmable(WidgetTester tester) =>
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed != null;
 
   Future<void> drain(WidgetTester tester) async {
     await tester.pump(kTileUpdateThrottle);
@@ -180,6 +202,54 @@ void main() {
       isNotNull,
     );
     expect(find.textContaining('2 coordinates set'), findsOneWidget);
+
+    await drain(tester);
+  });
+
+  testWidgets('a placed handover can be moved before the next is placed', (
+    tester,
+  ) async {
+    // The selection moves on after a tap, but going back is one tap on the
+    // chip — the next open handover no longer takes every tap.
+    await pump(
+      tester,
+      selection: [leg(1, 'A → B'), leg(2, 'B → C'), leg(3, 'C → D')],
+    );
+    expect(find.text('Handover 1'), findsOneWidget);
+    expect(find.text('Handover 2'), findsOneWidget);
+
+    await tapMap(tester, 60);
+    expect(handovers(tester), hasLength(1));
+    final first = handovers(tester).single;
+    expect(find.textContaining('Tap where “B → C”'), findsOneWidget);
+
+    await tester.tap(find.text('Handover 1'));
+    await tester.pump();
+    expect(find.textContaining('Tap to move where “A → B”'), findsOneWidget);
+
+    await tapMap(tester, 120);
+    final moved = handovers(tester).single;
+    expect(moved, isNot(first), reason: 'the first handover moved');
+    expect(confirmable(tester), isFalse, reason: 'the second is still open');
+    // And the selection has gone on to the one still open.
+    expect(find.textContaining('Tap where “B → C”'), findsOneWidget);
+
+    await drain(tester);
+  });
+
+  testWidgets('once all are placed, a tap refines the one just placed', (
+    tester,
+  ) async {
+    // One rule throughout: the selected handover moves, never the nearest.
+    await pump(tester);
+
+    await tapMap(tester, 0);
+    expect(confirmable(tester), isTrue);
+    final placedAt = handovers(tester).single;
+
+    await tapMap(tester, 80);
+    expect(handovers(tester).single, isNot(placedAt));
+    expect(find.textContaining('Tap to move where “A → B”'), findsOneWidget);
 
     await drain(tester);
   });

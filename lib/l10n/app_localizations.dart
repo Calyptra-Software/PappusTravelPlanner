@@ -1874,11 +1874,17 @@ abstract class AppLocalizations {
   /// **'Tap where “{before}” hands over to “{after}”'**
   String trackTapBoundary(String before, String after);
 
-  /// Says that a handover already placed is not final.
+  /// The selected handover is already placed; a tap moves it.
   ///
   /// In en, this message translates to:
-  /// **'Tapping moves the nearest handover'**
-  String get trackBoundaryMove;
+  /// **'Tap to move where “{before}” hands over to “{after}”'**
+  String trackMoveBoundary(String before, String after);
+
+  /// Chip selecting which handover the next tap on the map places.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover {number}'**
+  String trackHandoverChip(int number);
 
   /// Writes the divided line onto the entries.
   ///
