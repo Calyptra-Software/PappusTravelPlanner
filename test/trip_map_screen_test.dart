@@ -10,6 +10,10 @@ import 'package:travelplanner/core/clock.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
+import 'package:travelplanner/features/attachments/application/cover_providers.dart';
+import 'package:travelplanner/features/attachments/presentation/attachment_sheet.dart';
+import 'package:travelplanner/features/attachments/presentation/gallery_screen.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
@@ -77,6 +81,7 @@ void main() {
     EdgeInsets systemInsets = EdgeInsets.zero,
     Map<int, List<TrackLine>> tracks = const {},
     Map<int, List<Track>> trackRows = const {},
+    List<Attachment> photos = const [],
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -104,6 +109,13 @@ void main() {
             itemTracksProvider(
               entry.key,
             ).overrideWith((ref) => Stream.value(entry.value)),
+          tripPhotoMarkersProvider(
+            tripId,
+          ).overrideWith((ref) => Stream.value(photos)),
+          // What the gallery a tapped photograph opens reads: the star over it
+          // and the picture itself.
+          tripCoverIdProvider(tripId).overrideWith((ref) => null),
+          attachmentBytesProvider.overrideWith((ref, id) async => null),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -581,6 +593,43 @@ void main() {
     // Tile loading is throttled, so a timer outlives the last pump. It runs on
     // once after firing (the trailing call), hence twice — otherwise the tree is
     // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('a lone photograph opens the gallery, not its sheet', (
+    tester,
+  ) async {
+    // Whether a mark holds one picture or several depends on the zoom, so the
+    // answer to a tap must not: one picture opens full screen too, and its
+    // sheet is behind the gallery's ⋮.
+    await pumpMap(
+      tester,
+      items: [place(id: 1, lat: 50.1109, lon: 8.6821)],
+      photos: [
+        Attachment(
+          id: 11,
+          itemId: 1,
+          kind: AttachmentKind.photo,
+          mimeType: 'image/jpeg',
+          name: 'Römer.jpg',
+          byteSize: 1024,
+          lat: 50.1107,
+          lon: 8.6822,
+          sortOrder: 0,
+          createdAt: DateTime(2026, 5, 1),
+        ),
+      ],
+    );
+
+    // The markers' stream answers a frame after the entries'.
+    await tester.pump();
+    await tester.tap(find.byType(MapPhotoMarker));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GalleryScreen), findsOneWidget);
+    expect(find.byType(AttachmentSheet), findsNothing);
+
     await tester.pump(kTileUpdateThrottle);
     await tester.pump(kTileUpdateThrottle);
   });

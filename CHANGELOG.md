@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **Tapping a photo on the map shows it full screen**, also when it is the only one
+  there. Its details are behind the gallery's ⋮ menu.
 - **Importing a recording: a handover can be moved again right away.** Chips under the map
   choose which handover the next tap places, so a badly placed one no longer has to wait
   until all the others are placed.
