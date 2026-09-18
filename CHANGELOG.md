@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.12.0 — 2026-09-18
 
 - **An expense's payer can invite people.** Tap a name under "Paid for", or tick
   "Invited by …" for everyone at once: an invited person owes nothing for it, and the
