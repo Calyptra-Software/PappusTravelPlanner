@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **Importing a recording: a handover can be moved again right away.** Chips under the map
+  choose which handover the next tap places, so a badly placed one no longer has to wait
+  until all the others are placed.
 - **A new transport entry starts out as a walk** instead of a train.
 - **Linux and Windows builds are released too**, next to the Android APKs: an AppImage
   and a `.tar.gz` for Linux, and a `.zip` for Windows. The Linux `.tar.gz` carries an

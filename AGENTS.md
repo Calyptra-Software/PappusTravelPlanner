@@ -997,9 +997,17 @@ UI (features/*/presentation, *widgets)
   kind of guess that turns into a wrong answer months later. Insisting also means nothing
   downstream needs a rule for dividing a line nobody has said anything about, and no entry
   can come out of an import half-placed — the failure that made the rule necessary. A
-  handover already placed is not final: a further tap moves the nearest one, which is the
-  screen's only interaction — an earlier "pick it up, then put it down" step was a state
-  nobody could see, competing with the map for the same tap. The **outer** ends
+  handover already placed is not final, and the screen has **one rule**: a tap places the
+  *selected* handover. The selection is a numbered chip in the panel, matched by a larger
+  numbered mark on the map, and it moves on to the next open handover after each tap — so
+  the first pass is one tap each — and stays put once none is open, so a second tap refines
+  the one just placed. It used to be two rules: the open handover took every tap, and only a
+  finished division let a tap move the *nearest* one, so a handover placed badly could not be
+  corrected before all the others were placed, and then the nearest could be its neighbour.
+  The selection lives in the panel and never on the map, because an earlier "pick the mark
+  up, then put it down" step was a state nobody could see, competing with the map for the
+  same tap. Snapping still keeps a handover between the nearest *placed* ones on either
+  side, since with the selection free the one next to it may be open. The **outer** ends
   need no asking: the recording's first point is where the first leg started
   (`trackImportEnds`), which is also what fills in a single hand-entered leg's coordinates.
   An end the user already gave is never overwritten — their statement, with the file as a

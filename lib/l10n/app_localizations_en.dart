@@ -1063,7 +1063,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get trackBoundaryMove => 'Tapping moves the nearest handover';
+  String trackMoveBoundary(String before, String after) {
+    return 'Tap to move where “$before” hands over to “$after”';
+  }
+
+  @override
+  String trackHandoverChip(int number) {
+    return 'Handover $number';
+  }
 
   @override
   String get trackImportConfirm => 'Import';

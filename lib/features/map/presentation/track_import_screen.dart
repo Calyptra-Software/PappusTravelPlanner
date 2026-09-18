@@ -48,13 +48,22 @@ const Color kTrackUndividedColor = Color(0xFF9E9E9E);
 /// turns into a wrong answer months later. It also means nothing downstream
 /// needs a rule for dividing a line nobody has said anything about.
 ///
-/// There is one interaction and no modes: **a tap puts a handover where it
-/// landed.** While one is still open it is that one; once they are all placed a
-/// tap moves the nearest, which is what changing your mind looks like. An
-/// earlier version made the marker itself tappable to "pick up" first — an
-/// invisible state, and one that competed with the map for the same tap, so
-/// often neither happened. The marks are inert on purpose, and the tap is the
-/// map's own `onTap`: flutter_map's gesture handling wraps its children, so a
+/// There is one rule: **a tap puts the selected handover where it landed.**
+/// Which one is selected is on screen — a numbered chip under the map, and the
+/// matching mark on it drawn larger — and a tap on a chip selects another. After
+/// a handover is placed the selection moves on to the next one still open, so
+/// the first pass is one tap per handover; once none is open it stays where it
+/// is, so tapping again refines the one just placed. Re-placing an earlier one
+/// before the rest are done is a tap on its chip, where it used to be
+/// impossible: open ones always took the tap, and only a finished division let
+/// the nearest one move — a second rule, and one that could pick the neighbour
+/// of the handover you meant.
+///
+/// The selection is chosen in the panel and never on the map. An earlier
+/// version made the marker itself tappable to "pick up" first — an invisible
+/// state, and one that competed with the map for the same tap, so often neither
+/// happened. The marks are inert on purpose, and the tap is the map's own
+/// `onTap`: flutter_map's gesture handling wraps its children, so a
 /// `GestureDetector` placed among them never wins the arena and no tap arrives
 /// at all. Both of those were tried; neither is worth trying again.
 Future<bool?> importTrackAcrossEntries(
@@ -94,6 +103,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   late TrackImportPlan _plan;
   late List<LatLng?> _boundaries;
 
+  /// The handover the next tap places, or null when there is none to place.
+  int? _selected;
+
   /// Every point of the recording in one sequence — what a tap is snapped
   /// against, and the same order the cutting walks.
   late List<LatLng> _flat;
@@ -104,6 +116,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     _plan = trackImportPlan(widget.selection);
     _boundaries = [..._plan.boundaries];
     _flat = [for (final line in widget.lines) ...line];
+    _selected = _open ?? (_boundaries.isEmpty ? null : 0);
   }
 
   /// The first handover nobody has said anything about, or null once they are
@@ -129,43 +142,46 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
 
   bool get _complete => _boundaries.every((b) => b != null);
 
-  /// A tap puts a handover where it landed. That is the whole interaction.
+  /// A tap puts the selected handover where it landed. That is the whole
+  /// interaction.
   ///
-  /// While one is still open it is that one; once they are all placed a tap
-  /// moves the **nearest**, which is what changing your mind looks like. There
-  /// is deliberately no picking-up step: a mode you cannot see is a mode you
-  /// cannot use, and nothing here is written until *Import* anyway — so a tap in
-  /// the wrong place costs another tap and is visible the moment it happens,
+  /// There is deliberately no picking-up step on the map: a mode you cannot see
+  /// is a mode you cannot use, and the selection is drawn in the panel and on
+  /// the mark. Nothing here is written until *Import* anyway — so a tap in the
+  /// wrong place costs another tap and is visible the moment it happens,
   /// because the division is redrawn under it.
   void _place(LatLng tap) {
-    final index = _open ?? _nearest(tap);
+    final index = _selected;
     if (index == null) return;
 
-    // Between its neighbours, because a stretch cannot run backwards.
-    final previous = index == 0 ? null : _boundaries[index - 1];
-    final next = index + 1 < _boundaries.length ? _boundaries[index + 1] : null;
+    // Between the nearest placed handovers on either side, because a stretch
+    // cannot run backwards. Not merely the immediate neighbours: with the
+    // selection free, the one next to it may still be open.
+    LatLng? previous;
+    for (var i = index - 1; i >= 0 && previous == null; i--) {
+      previous = _boundaries[i];
+    }
+    LatLng? next;
+    for (var i = index + 1; i < _boundaries.length && next == null; i++) {
+      next = _boundaries[i];
+    }
     final after = previous == null ? 0 : trackIndexOf(_flat, previous) + 1;
     final before = next == null ? null : trackIndexOf(_flat, next) - 1;
     final snapped = snapToTrack(_flat, tap, after: after, before: before);
     if (snapped == null) return;
-    setState(() => _boundaries[index] = snapped);
+    setState(() {
+      _boundaries[index] = snapped;
+      _selected = _nextOpen(index) ?? index;
+    });
   }
 
-  /// The placed handover closest to [tap].
-  int? _nearest(LatLng tap) {
-    const distance = Distance(calculator: Haversine());
-    var best = -1;
-    var bestMetres = double.infinity;
-    for (var i = 0; i < _boundaries.length; i++) {
-      final at = _boundaries[i];
-      if (at == null) continue;
-      final metres = distance.as(LengthUnit.Meter, at, tap);
-      if (metres < bestMetres) {
-        bestMetres = metres;
-        best = i;
-      }
+  /// The first handover still open after [index], else the first one before
+  /// it — or null when none is.
+  int? _nextOpen(int index) {
+    for (var i = index + 1; i < _boundaries.length; i++) {
+      if (_boundaries[i] == null) return i;
     }
-    return best < 0 ? null : best;
+    return _open;
   }
 
   Future<void> _confirm() async {
@@ -214,7 +230,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     const basemap = kDefaultBasemap;
-    final open = _open;
+    final selected = _selected;
     final placed = _placedPrefix;
     final stretches = splitTracks(widget.lines, placed);
 
@@ -276,14 +292,19 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                           if (_boundaries[i] case final at?)
                             Marker(
                               point: at,
-                              width: 28,
-                              height: 28,
+                              width: 32,
+                              height: 32,
                               // Ignoring pointers on purpose: the mark is a
                               // mark, not a control. Letting it take taps put it
                               // in competition with the layer that places
                               // handovers, and a tap that two widgets both want
                               // is a tap that does nothing.
-                              child: const IgnorePointer(child: _Handover()),
+                              child: IgnorePointer(
+                                child: _Handover(
+                                  number: i + 1,
+                                  selected: i == selected,
+                                ),
+                              ),
                             ),
                       ],
                     ),
@@ -313,13 +334,17 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
           _Panel(
             l10n: l10n,
             theme: theme,
-            question: open == null
+            question: selected == null
                 ? null
-                : l10n.trackTapBoundary(
-                    _label(_plan.legs[open], l10n),
-                    _label(_plan.legs[open + 1], l10n),
+                : (_boundaries[selected] == null
+                      ? l10n.trackTapBoundary
+                      : l10n.trackMoveBoundary)(
+                    _label(_plan.legs[selected], l10n),
+                    _label(_plan.legs[selected + 1], l10n),
                   ),
-            hint: _complete ? l10n.trackBoundaryMove : null,
+            handovers: [for (final at in _boundaries) at != null],
+            selected: selected,
+            onSelect: (index) => setState(() => _selected = index),
             legend: [
               for (var i = 0; i < _plan.legs.length; i++)
                 (
@@ -357,7 +382,9 @@ class _Panel extends StatelessWidget {
     required this.l10n,
     required this.theme,
     required this.question,
-    required this.hint,
+    required this.handovers,
+    required this.selected,
+    required this.onSelect,
     required this.legend,
     required this.summary,
     required this.onConfirm,
@@ -366,7 +393,11 @@ class _Panel extends StatelessWidget {
   final AppLocalizations l10n;
   final ThemeData theme;
   final String? question;
-  final String? hint;
+
+  /// One per handover, saying whether it has been placed.
+  final List<bool> handovers;
+  final int? selected;
+  final ValueChanged<int> onSelect;
   final List<(String, Color)> legend;
   final String summary;
   final VoidCallback? onConfirm;
@@ -396,15 +427,42 @@ class _Panel extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              question ?? hint ?? summary,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: question == null
-                    ? theme.colorScheme.onSurfaceVariant
-                    : theme.colorScheme.onSurface,
+            if (handovers.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              // Scrolls rather than wraps: a long run must not eat the map.
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < handovers.length; i++)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(end: 8),
+                        child: ChoiceChip(
+                          avatar: Icon(
+                            handovers[i]
+                                ? Icons.check_circle
+                                : Icons.radio_button_unchecked,
+                            size: 18,
+                          ),
+                          showCheckmark: false,
+                          label: Text(l10n.trackHandoverChip(i + 1)),
+                          selected: i == selected,
+                          onSelected: (_) => onSelect(i),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
+            if (question case final question?) ...[
+              const SizedBox(height: 8),
+              Text(
+                question,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
@@ -434,18 +492,34 @@ class _Panel extends StatelessWidget {
 /// Ink on a halo, in its own colours rather than the theme's — raster tiles are
 /// pale in both themes and full of thin lines, so a mark tinted by the theme
 /// reads as a road.
+///
+/// Numbered, so it can be matched to its chip in the panel; the selected one is
+/// drawn larger, which is the map's half of saying which one a tap will move.
 class _Handover extends StatelessWidget {
-  const _Handover();
+  const _Handover({required this.number, required this.selected});
+
+  final int number;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) => Center(
     child: Container(
-      width: 18,
-      height: 18,
+      width: selected ? 30 : 22,
+      height: selected ? 30 : 22,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: const Color(0xFF212121),
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 3),
+        border: Border.all(color: Colors.white, width: selected ? 4 : 2),
+      ),
+      child: Text(
+        '$number',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: selected ? 13 : 11,
+          fontWeight: FontWeight.bold,
+          height: 1,
+        ),
       ),
     ),
   );
