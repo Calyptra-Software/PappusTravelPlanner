@@ -2131,3 +2131,27 @@ The answer is a `bool` rather than the `Uri` the native side gets, since the web
 dialog to wait for and no path to come back with: on the web `true` means *handed over*,
 which is everything a page is told. Verifying it needs a browser — `flutter run -d
 web-server` — because this file is never compiled by `flutter test`.
+
+**Closing the database is a request on the web, and the answer may never come**, which is
+why `DatabaseController._closeLiveDatabase` bounds the wait there and only there. drift
+answers a close by shutting the worker down — `server_impl.dart`'s `terminateAll` calls
+`shutdown()`, closing the channels the reply would travel on — and `client_impl.dart`
+covers that by catching the `ConnectionClosedException` the closing channel is expected to
+raise on the pending request. Where none is raised either, the wait never ends: measured
+in Firefox, where the export stopped dead with no file, no message and no error, since
+every one of `createEmpty`, `importFromBytes` and `exportBytes` closes before it does
+anything. What those callers need is not the acknowledgement but that nothing holds the
+storage, and probing or deleting it establishes that for itself — so carrying on is safe
+and a silent forever becomes a pause. Native keeps waiting, where carrying on early would
+mean copying a file that is still open. The trigger was never identified, only the
+mechanism and the place; the same export succeeded on a later run with `close()` returning
+normally, so this is insurance rather than a cure.
+
+Two things about that browser worth knowing before chasing the next web problem.
+`flutter run -d web-server` serves **without** cross-origin isolation, so
+`SharedArrayBuffer` is missing and drift picks `opfsShared` (the database in a *shared*
+worker) where a deployment sending `Cross-Origin-Opener-Policy: same-origin` and
+`Cross-Origin-Embedder-Policy: require-corp` would get `opfsLocks`. Development and
+production therefore run different storage implementations, and this hang appeared in the
+development one. And drift prints the choice itself (`Using … due to missing browser
+features: …`) whenever anything is missing, which is the first line to look for.
