@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **In the browser, exporting the database downloads the file.** The button did nothing
+  at all in Firefox, and said nothing about it even where the download did start. The
+  copy is now handed to the browser's downloads directly.
 - **In the browser, recorded lines and the world map are drawn again.** A track showed
   nothing on the map and the countries map reported an error instead of drawing. Only
   the reading was affected: a line imported in the browser was always stored correctly
