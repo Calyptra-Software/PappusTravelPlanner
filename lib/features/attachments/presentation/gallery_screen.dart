@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/providers.dart';
@@ -86,6 +87,25 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
   /// the app fighting the finger.
   bool _zoomed = false;
 
+  /// Whether a pointer that can *hover* is on the picture.
+  ///
+  /// Which is the honest way to ask "is there a mouse here", rather than
+  /// reading a platform and guessing: a finger cannot hover, so this stays
+  /// false for its whole life on a phone and the buttons below never appear
+  /// there — where they would be clutter over a gesture that already works.
+  bool _hovered = false;
+
+  /// Long enough to read as a page turning rather than a picture replacing
+  /// another, short enough not to be a wait when arrowing through twenty.
+  static const Duration _turn = Duration(milliseconds: 250);
+
+  bool get _canTurn => widget.photos.length > 1 && !_zoomed;
+
+  void _turnTo(int index) {
+    if (!_canTurn || index < 0 || index >= widget.photos.length) return;
+    _controller.animateToPage(index, duration: _turn, curve: Curves.easeOut);
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -146,24 +166,123 @@ class _GalleryScreenState extends ConsumerState<GalleryScreen> {
           ),
         ],
       ),
-      body: PageView.builder(
-        controller: _controller,
-        physics: _zoomed
-            ? const NeverScrollableScrollPhysics()
-            : const PageScrollPhysics(),
-        itemCount: widget.photos.length,
-        onPageChanged: (index) => setState(() {
-          _index = index;
-          // A new page starts unzoomed, so the lock cannot survive the picture
-          // it was about.
-          _zoomed = false;
-        }),
-        itemBuilder: (context, index) => _GalleryPage(
-          key: ValueKey(widget.photos[index].attachment.id),
-          photo: widget.photos[index],
-          onZoomChanged: (zoomed) {
-            if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
-          },
+      // The arrow keys turn the page, and they are the part of this that works
+      // everywhere: a trackpad's two-finger swipe reaches a `PageView` as a
+      // scroll of whatever distance the fingers travelled, and a page only
+      // settles on the next one once that passes half a screen or carries
+      // enough velocity — so on a laptop the gesture often lands back where it
+      // started. That is Flutter's own behaviour and not something this screen
+      // can fix; what it can do is offer the two controls a desk has.
+      body: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+              _turnTo(_index - 1),
+          const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+              _turnTo(_index + 1),
+        },
+        child: Focus(
+          autofocus: true,
+          child: MouseRegion(
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: Stack(
+              children: [
+                PageView.builder(
+                  controller: _controller,
+                  physics: _zoomed
+                      ? const NeverScrollableScrollPhysics()
+                      : const PageScrollPhysics(),
+                  itemCount: widget.photos.length,
+                  onPageChanged: (index) => setState(() {
+                    _index = index;
+                    // A new page starts unzoomed, so the lock cannot survive
+                    // the picture it was about.
+                    _zoomed = false;
+                  }),
+                  itemBuilder: (context, index) => _GalleryPage(
+                    key: ValueKey(widget.photos[index].attachment.id),
+                    photo: widget.photos[index],
+                    onZoomChanged: (zoomed) {
+                      if (zoomed != _zoomed) setState(() => _zoomed = zoomed);
+                    },
+                  ),
+                ),
+                // Each shown only where it leads somewhere: no button back from
+                // the first picture or on from the last, by the rule the
+                // journey preview's confirm button follows — one that did
+                // nothing would be worse than none. Both go while a picture is
+                // magnified, for the reason the physics do.
+                if (_index > 0)
+                  _PageTurnButton(
+                    alignment: Alignment.centerLeft,
+                    icon: Icons.chevron_left,
+                    tooltip: l10n.galleryPrevious,
+                    visible: _hovered && _canTurn,
+                    onPressed: () => _turnTo(_index - 1),
+                  ),
+                if (_index < widget.photos.length - 1)
+                  _PageTurnButton(
+                    alignment: Alignment.centerRight,
+                    icon: Icons.chevron_right,
+                    tooltip: l10n.galleryNext,
+                    visible: _hovered && _canTurn,
+                    onPressed: () => _turnTo(_index + 1),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One of the two chevrons a mouse reveals over the picture.
+///
+/// Drawn ink-on-scrim rather than tinted by the theme, the rule the map's
+/// marker follows: what it sits on is a photograph, and a control coloured by
+/// the scheme is invisible over half of them. It fades rather than appearing,
+/// so a mouse crossing the screen does not make the picture flash.
+class _PageTurnButton extends StatelessWidget {
+  const _PageTurnButton({
+    required this.alignment,
+    required this.icon,
+    required this.tooltip,
+    required this.visible,
+    required this.onPressed,
+  });
+
+  final Alignment alignment;
+  final IconData icon;
+  final String tooltip;
+  final bool visible;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: const Duration(milliseconds: 150),
+          // Not merely transparent: an invisible button that still took the
+          // click would turn the page for somebody who meant to tap the
+          // picture.
+          child: IgnorePointer(
+            ignoring: !visible,
+            child: IconButton(
+              tooltip: tooltip,
+              icon: Icon(icon),
+              color: Colors.white,
+              iconSize: 32,
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.black.withValues(alpha: 0.4),
+              ),
+              onPressed: onPressed,
+            ),
+          ),
         ),
       ),
     );

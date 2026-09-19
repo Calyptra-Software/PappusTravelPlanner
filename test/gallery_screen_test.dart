@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,6 +127,90 @@ void main() {
 
     expect(find.text('Forum'), findsOneWidget);
     expect(find.text('2 / 2'), findsOneWidget);
+  });
+
+  testWidgets('the arrow keys turn the page, both ways', (tester) async {
+    // A trackpad's swipe reaches a `PageView` as a scroll that often falls
+    // short of the half-screen a page needs, so on a laptop the gesture lands
+    // back where it started. The keys are the way through that works wherever
+    // there is a keyboard.
+    final museum = await addPlace('Kunsthalle');
+    final forum = await addPlace('Forum');
+    await pumpGallery(tester, [
+      GalleryPhoto(
+        attachment: await attach('a.jpg', itemId: museum),
+        label: 'Kunsthalle',
+      ),
+      GalleryPhoto(
+        attachment: await attach('b.jpg', itemId: forum),
+        label: 'Forum',
+      ),
+    ]);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(find.text('Forum'), findsOneWidget);
+    expect(find.text('2 / 2'), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(find.text('Kunsthalle'), findsOneWidget);
+  });
+
+  testWidgets('the ends are ends: no key turns past them', (tester) async {
+    final museum = await addPlace('Kunsthalle');
+    await pumpGallery(tester, [
+      GalleryPhoto(
+        attachment: await attach('a.jpg', itemId: museum),
+        label: 'Kunsthalle',
+      ),
+    ]);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kunsthalle'), findsOneWidget);
+  });
+
+  testWidgets('a mouse is given two chevrons; a finger is not', (tester) async {
+    final museum = await addPlace('Kunsthalle');
+    final forum = await addPlace('Forum');
+    await pumpGallery(tester, [
+      GalleryPhoto(
+        attachment: await attach('a.jpg', itemId: museum),
+        label: 'Kunsthalle',
+      ),
+      GalleryPhoto(
+        attachment: await attach('b.jpg', itemId: forum),
+        label: 'Forum',
+      ),
+    ]);
+
+    // Only the one that leads somewhere is there at all: the first picture
+    // has no way back, by the rule that a button doing nothing is worse than
+    // none.
+    expect(find.byIcon(Icons.chevron_left), findsNothing);
+
+    // Nothing has hovered yet, which is the whole of a touch screen's life —
+    // so the chevron is transparent *and* out of the way: a tap where it sits
+    // reaches the picture, and the page stays where it was.
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+    expect(find.text('Kunsthalle'), findsOneWidget);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await mouse.moveTo(tester.getCenter(find.byType(PageView)));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.chevron_right));
+    await tester.pumpAndSettle();
+    expect(find.text('Forum'), findsOneWidget);
+    // And now the way back exists, while the way on does not.
+    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
   });
 
   testWidgets('opens where it was told to', (tester) async {

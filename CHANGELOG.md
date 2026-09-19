@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **The photo gallery turns with the arrow keys**, and with two chevrons that appear
+  when there is a mouse. Swiping still works; it is just hard to aim on a trackpad.
 - **In the browser, exporting the database downloads the file.** The button could stop
   without a word: the database's own shutdown never answered and the export waited for
   it for good. It now carries on after a few seconds, and the copy is handed to the

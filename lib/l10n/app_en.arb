@@ -1247,6 +1247,8 @@
   "attachmentsTripTitle": "Trip documents",
   "attachmentsTripAdd": "Add trip document",
   "galleryTitle": "Photos",
+  "galleryPrevious": "Previous photo",
+  "galleryNext": "Next photo",
   "coverSet": "Use as trip cover",
   "coverRemove": "Remove as trip cover",
   "photosCount": "{count, plural, =1{1 photo} other{{count} photos}}",

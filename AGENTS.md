@@ -1600,6 +1600,21 @@ UI (features/*/presentation, *widgets)
   three in memory. Zoom and page-turn are one gesture, so the page is **locked while
   magnified** (`_zoomed`, compared against `> 1.01` because a pinch back out settles on
   1.0000001 and an equality test would lock the page for good).
+- **A swipe is a finger's way of turning a page, and a desk has neither.** A trackpad's
+  two-finger swipe reaches a `PageView` as a scroll of whatever distance the fingers
+  travelled, and a page settles on the next one only past half a screen or on enough
+  velocity — so on a laptop it lands back where it started more often than not. That is
+  Flutter's behaviour, not something this screen can repair, so the gallery offers the two
+  controls a desk does have: the **arrow keys** (a `CallbackShortcuts` over an autofocused
+  `Focus`, which works wherever there is a keyboard and shows nothing), and two **chevrons
+  a mouse reveals**. `MouseRegion`'s hover is the honest way to ask whether there is a
+  pointer, rather than reading the platform and guessing at it: a finger cannot hover, so
+  on a phone they never appear, over a gesture that already works there. Both obey the
+  rules the swipe obeys — nothing turns while a picture is magnified — and neither is
+  offered where it would lead nowhere: no way back from the first picture, none on from the
+  last, the rule the journey preview's confirm button follows. Drawn ink-on-scrim like the
+  map's marker and for the same reason: what they sit on is a photograph, and a control
+  tinted by the scheme is invisible over half of them.
 
 - **A trip's overview card shows one photograph, and which one is three states.**
   `coverPhoto` (in `trip_gallery.dart`, pure) answers: **none** when the trip says it wants
