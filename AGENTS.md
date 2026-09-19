@@ -965,6 +965,20 @@ UI (features/*/presentation, *widgets)
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
+- **The codec does its arithmetic with `*` and `~/`, never with shifts and masks**, and that
+  is a platform fact rather than a style: on the web an `int` is a JavaScript number and the
+  bitwise operators truncate to **32 bits, unsigned**, so `~n` answers `2^32 - n - 1` where
+  the VM answers `-n - 1`. The encoder survived that (its zig-zag only ever hands `~` a
+  negative number, and small positives come back unharmed); the decoder did not, turning a
+  step of −22402 into 4294944894 — so the **first move south or west** threw a line out of
+  the world. Every recorded track and, since the country outlines are packed with this same
+  codec, the whole world map. The multiply-and-divide form is exact on both platforms, the
+  values staying far inside the 2^53 a double holds whole. What makes this worth writing
+  down is that nothing here could see it: `flutter test` runs on the VM, so the existing
+  tests — Google's worked example among them, negative coordinates and all — passed
+  throughout, and the web is the one target CI does not build. It was found by compiling the
+  codec with `dart compile js` and running it under `node`, which is also how to check it
+  again.
 - **Several rows on one entry are the ordinary case, so the form lists them rather than
   counting them.** A leg carries more than one line routinely — the `<trkseg>` split above,
   a second import onto the same leg, a connection's computed route left standing beside a
