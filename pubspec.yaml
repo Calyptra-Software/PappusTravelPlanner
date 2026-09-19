@@ -40,7 +40,7 @@ dependencies:
   # picked photo over as reaches Dart only through `AndroidPlatformFile`, and
   # that URI is the one thing that can be asked where the photograph was taken.
   # See features/attachments/attachment_flow.dart.
-  android_file_picker: ^1.0.0
+  android_file_picker: ^1.1.1
   file_selector: ^1.1.0
   path_provider: ^2.1.6
   path: ^1.9.1
