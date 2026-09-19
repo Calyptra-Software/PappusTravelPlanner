@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **In the browser, recorded lines and the world map are drawn again.** A track showed
+  nothing on the map and the countries map reported an error instead of drawing. Only
+  the reading was affected: a line imported in the browser was always stored correctly
+  and has been drawing on every other platform throughout.
 - **A connection search no longer shows "Canceled" for a journey that runs.** The
   router sometimes marks a walk between two stops as canceled; only a canceled train,
   bus or other service now marks a connection.

@@ -34,6 +34,31 @@ void main() {
     expect(encodeTrackPoints(points), known);
   });
 
+  test('the widest values a coordinate reaches survive the arithmetic', () {
+    // The first point of a line is written as a difference from zero, so it is
+    // the largest number this codec ever handles: a longitude at the router's
+    // 1e-6 is 1.8e8, and 3.6e8 once zig-zagged. That is the range the multiply
+    // -and-divide form has to stay exact over — it is written without shifts
+    // and masks because the web's are 32 bits and unsigned, which this test
+    // cannot see: `flutter test` runs on the VM, where both forms agree. The
+    // check that does see it is `dart compile js` plus `node` (see AGENTS.md).
+    const corners = [
+      LatLng(90, 180),
+      LatLng(-90, -180),
+      LatLng(90, -180),
+      LatLng(-90, 180),
+      LatLng(0, 0),
+    ];
+    final decoded = decodeTrackPoints(
+      encodeTrackPoints(corners, precision: kRoutedShapePrecision),
+      precision: kRoutedShapePrecision,
+    );
+    for (var i = 0; i < corners.length; i++) {
+      expect(decoded[i].latitude, closeTo(corners[i].latitude, 1e-6));
+      expect(decoded[i].longitude, closeTo(corners[i].longitude, 1e-6));
+    }
+  });
+
   test('an empty track packs to nothing and back', () {
     expect(encodeTrackPoints(const []), '');
     expect(decodeTrackPoints(''), isEmpty);

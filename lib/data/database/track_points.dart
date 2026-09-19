@@ -99,18 +99,34 @@ List<LatLng> decodeTrackPoints(
 
 /// One signed value, zig-zag encoded so a small negative step costs as little as
 /// a small positive one, then written five bits at a time.
+///
+/// Written as multiplication and division rather than shifts and masks, which
+/// is not a matter of taste: on the web an `int` is a JavaScript number and the
+/// bitwise operators truncate to **32 bits, unsigned**, so `~n` answers
+/// `2^32 - n - 1` where the VM answers `-n - 1`. The two halves of this codec
+/// then disagree across platforms — see [_readValue], where that cost every
+/// negative value in the database. The arithmetic below is exact on both: five
+/// bits at a time is a factor of 32, and the values stay far inside the 2^53 a
+/// double holds whole (a longitude at the router's 1e-6 is 1.8e8).
 void _writeValue(StringBuffer out, int value) {
-  var v = value < 0 ? ~(value << 1) : value << 1;
+  var v = value < 0 ? -value * 2 - 1 : value * 2;
   while (v >= 0x20) {
-    out.writeCharCode((0x20 | (v & 0x1f)) + 63);
-    v >>= 5;
+    out.writeCharCode(0x20 + v % 0x20 + 63);
+    v ~/= 0x20;
   }
   out.writeCharCode(v + 63);
 }
 
 /// The inverse of [_writeValue], returning the value and where it ended.
+///
+/// The zig-zag is undone by arithmetic for the reason [_writeValue] gives, and
+/// this is the half that was measured going wrong: `~(result >> 1)` on the web
+/// turned a step of −22402 into 4294944894, so a line's first move south or
+/// west threw it out of the world — every recorded track, and every country
+/// outline, since both are read through here.
 (int, int) _readValue(String encoded, int index) {
-  var shift = 0;
+  var bits = 0;
+  var place = 1;
   var result = 0;
   int byte;
   do {
@@ -119,13 +135,14 @@ void _writeValue(StringBuffer out, int value) {
     }
     byte = encoded.codeUnitAt(index++) - 63;
     if (byte < 0) throw const FormatException('Bad character in track');
-    result |= (byte & 0x1f) << shift;
-    shift += 5;
+    result += (byte % 0x20) * place;
+    place *= 0x20;
+    bits += 5;
     // Six groups cover the 32 bits a coordinate needs; more means the string is
     // not one of ours, and left unchecked would spin up an arbitrary integer.
-    if (shift > 30 && byte >= 0x20) {
+    if (bits > 30 && byte >= 0x20) {
       throw const FormatException('Overlong track point');
     }
   } while (byte >= 0x20);
-  return (result & 1 != 0 ? ~(result >> 1) : result >> 1, index);
+  return (result.isOdd ? -((result + 1) ~/ 2) : result ~/ 2, index);
 }
