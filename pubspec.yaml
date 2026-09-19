@@ -74,7 +74,7 @@ dependencies:
   # to JPEG and reading a picture's own EXIF position. Pure Dart, which is the
   # same reason flutter_map was chosen — a native codec plugin has no Linux and
   # no web, and this runs on all six targets. See features/attachments/.
-  image: ^4.9.2
+  image: ^4.10.1
   # Where the device says it is, for the map's "you are here" — the app's first
   # and only runtime permission, asked for on a button press and never at
   # launch. Endorsed on all six targets (Linux goes through GeoClue over D-Bus),
