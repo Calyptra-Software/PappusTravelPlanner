@@ -3,6 +3,12 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **A connection search no longer shows "Canceled" for a journey that runs.** The
+  router sometimes marks a walk between two stops as canceled; only a canceled train,
+  bus or other service now marks a connection.
+
 ## 1.12.0 — 2026-09-18
 
 - **An expense's payer can invite people.** Tap a name under "Paid for", or tick
