@@ -138,10 +138,19 @@ JourneyOption _itinerary(Map<String, dynamic> j) => JourneyOption(
 /// agree (`S2`, `U1`, `114`, `FlixBus N60`) or `displayName` merely appends the
 /// trip number (`RE8 (11440)`), so the fallback only ever catches a feed that
 /// names a route without the router naming a service.
+///
+/// `cancelled` is read only on a leg some service runs. The router also sets it
+/// on street legs — the three-minute walk from Halle's FlixBus stop to
+/// platform 6 of the Hbf comes back `cancelled: true` on every date, live data
+/// or not, while the walk the other way does not — and since one cancelled leg
+/// marks the whole connection as canceled, a path nobody can cancel was
+/// declaring an intact journey dead. MOTIS's own UI reads the flag only inside
+/// its `isTransitLeg` branch, so it never shows this either.
 JourneyLeg _leg(Map<String, dynamic> j) {
   final realTime = j['realTime'] as bool? ?? false;
+  final mode = transitModeFromMotis(j['mode'] as String? ?? 'OTHER');
   return JourneyLeg(
-    mode: transitModeFromMotis(j['mode'] as String? ?? 'OTHER'),
+    mode: mode,
     from: _legEnd(
       j['from'] as Map<String, dynamic>,
       scheduledKey: 'scheduledDeparture',
@@ -158,7 +167,7 @@ JourneyLeg _leg(Map<String, dynamic> j) {
     line: (j['displayName'] ?? j['routeShortName']) as String?,
     headsign: j['headsign'] as String?,
     tripId: j['tripId'] as String?,
-    cancelled: j['cancelled'] as bool? ?? false,
+    cancelled: !mode.isOwnSteam && (j['cancelled'] as bool? ?? false),
     stops: _legStops(j['intermediateStops'], realTime),
     shape: _legShape(j['legGeometry']),
   );
