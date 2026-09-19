@@ -33,7 +33,7 @@ dependencies:
   shared_preferences: ^2.5.5
 
   # Opening / importing / exporting the database file.
-  file_picker: ^12.1.2
+  file_picker: ^12.3.0
   # Already resolved beneath file_picker (it is its Android implementation, and
   # file_picker imports it on every platform). Named here because this app uses
   # it directly and deliberately: the URI the Storage Access Framework handed a
