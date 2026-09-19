@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/database_location.dart';
 import '../../../core/format/byte_format.dart';
 import '../../../core/providers.dart';
+import '../../../core/save_file.dart';
 import '../../../core/settings/language_dialog.dart';
 import '../../../core/settings/theme_mode_dialog.dart';
 import '../../../core/widgets/attribution.dart';
@@ -330,12 +331,16 @@ class SettingsScreen extends ConsumerWidget {
       final fileName = kDatabaseFileName.endsWith('.sqlite')
           ? kDatabaseFileName
           : '$kDatabaseFileName.sqlite';
-      final saved = await FilePicker.saveFile(
+      final saved = await saveBytesToFile(
         dialogTitle: l10n.dbExport,
         fileName: fileName,
         bytes: bytes,
+        // What `FilePicker.saveFile` defaults to, kept explicit now that the
+        // call goes through our own seam: on Android it is the type the
+        // document picker is opened with, so it is not a formality.
+        mimeType: 'application/octet-stream',
       );
-      if (saved == null || !context.mounted) return;
+      if (!saved || !context.mounted) return;
       _snack(context, l10n.dbExported);
     } catch (error) {
       if (context.mounted) _snack(context, l10n.dbError('$error'));

@@ -42,6 +42,11 @@ dependencies:
   # See features/attachments/attachment_flow.dart.
   android_file_picker: ^1.1.1
   file_selector: ^1.1.0
+  # Already resolved beneath Flutter's own web plugins. Named here for the one
+  # place this app reaches into the browser itself: handing the exported
+  # database to its download machinery (core/save_file_web.dart), which
+  # `file_picker` does in a way Firefox ignores.
+  web: ^1.1.1
   path_provider: ^2.1.6
   path: ^1.9.1
   # Already resolved beneath path_provider_linux. Named for the two GLib calls

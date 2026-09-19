@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **In the browser, exporting the database downloads the file.** The button could stop
+  without a word: the database's own shutdown never answered and the export waited for
+  it for good. It now carries on after a few seconds, and the copy is handed to the
+  browser's downloads directly rather than through a route that dropped it.
 - **In the browser, recorded lines and the world map are drawn again.** A track showed
   nothing on the map and the countries map reported an error instead of drawing. Only
   the reading was affected: a line imported in the browser was always stored correctly
