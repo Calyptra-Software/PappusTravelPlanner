@@ -298,6 +298,92 @@ void main() {
       expect(leg.stops.single.cancelled, isTrue);
     });
 
+    test('a street leg is never cancelled, whatever the router says', () {
+      // Trimmed from a live answer (Hannover -> München via Halle, 2026-09-20):
+      // the router flags the walk between Halle's FlixBus stop and the Hbf as
+      // cancelled on every date, while both services run.
+      final legs = parsePlanResponse({
+        'itineraries': [
+          {
+            'duration': 22740,
+            'startTime': '2026-09-20T04:20:00Z',
+            'endTime': '2026-09-20T07:41:00Z',
+            'transfers': 1,
+            'legs': [
+              {
+                'mode': 'WALK',
+                'realTime': false,
+                'scheduled': false,
+                'cancelled': true,
+                'from': {
+                  'name': 'Halle (Saale)',
+                  'tz': 'Europe/Berlin',
+                  'cancelled': true,
+                  'scheduledDeparture': '2026-09-20T04:23:00Z',
+                },
+                'to': {
+                  'name': 'Halle (Saale) Hbf',
+                  'tz': 'Europe/Berlin',
+                  'cancelled': true,
+                  'scheduledArrival': '2026-09-20T04:26:00Z',
+                },
+              },
+              {
+                'mode': 'HIGHSPEED_RAIL',
+                'displayName': 'ICE 1501',
+                'realTime': true,
+                'cancelled': false,
+                'from': {
+                  'name': 'Halle (Saale) Hbf',
+                  'tz': 'Europe/Berlin',
+                  'scheduledDeparture': '2026-09-20T04:45:00Z',
+                  'departure': '2026-09-20T04:45:00Z',
+                },
+                'to': {
+                  'name': 'München Hbf',
+                  'tz': 'Europe/Berlin',
+                  'scheduledArrival': '2026-09-20T07:41:00Z',
+                  'arrival': '2026-09-20T07:41:00Z',
+                },
+              },
+            ],
+          },
+        ],
+      }).options.single.legs;
+
+      expect(legs.map((leg) => leg.cancelled), [false, false]);
+    });
+
+    test('a service leg the router cancels stays cancelled', () {
+      final leg = parsePlanResponse({
+        'itineraries': [
+          {
+            'duration': 3600,
+            'startTime': '2026-09-20T04:45:00Z',
+            'endTime': '2026-09-20T05:45:00Z',
+            'transfers': 0,
+            'legs': [
+              {
+                'mode': 'HIGHSPEED_RAIL',
+                'realTime': true,
+                'cancelled': true,
+                'from': {
+                  'name': 'Halle (Saale) Hbf',
+                  'scheduledDeparture': '2026-09-20T04:45:00Z',
+                },
+                'to': {
+                  'name': 'Erfurt Hbf',
+                  'scheduledArrival': '2026-09-20T05:45:00Z',
+                },
+              },
+            ],
+          },
+        ],
+      }).options.single.legs.single;
+
+      expect(leg.cancelled, isTrue);
+    });
+
     test('a leg the service gave no stops for simply has none', () {
       final option = parsePlanResponse(
         _decode(_fixture('motis_plan_overnight.json')),
