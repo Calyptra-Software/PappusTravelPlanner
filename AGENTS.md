@@ -1762,6 +1762,17 @@ watches trips/itinerary and re-pushes on change; widget taps deep-link via
 `pappus://trip?id=N`. `pickFeaturedTrip` decides which trip to show (ongoing → next
 upcoming → most recent past). Widget code is Android-only and no-ops elsewhere.
 
+**Every entry point needs the `_widgetSupported` guard, including the one that only
+listens.** `listenWidgetClicks` was missing it, and merely *activating*
+`HomeWidget.widgetClicked` threw a `MissingPluginException` — reported with a full stack
+into the console at every start on the web and on the desktops, where nothing depended on
+the stream in the first place. The other three calls had the guard, which is what made
+this one invisible: the sentence above was true of the feature and false of one line.
+The failure of a channel with no implementation is loud but harmless, so it cost no
+function, only a red error standing in front of every real one. `widget_deep_link_test.dart`
+now asserts the guard for the four non-Android platforms — no plugin is registered under
+`flutter test`, so an unguarded listen fails there exactly as it does in the app.
+
 **WorkManager is in the build and never starts.** `home_widget` depends on
 androidx `work-runtime` directly *and* on `androidx.glance:glance-appwidget`, which depends
 on it again — neither can be excluded, since three of the plugin's own Kotlin sources

@@ -8,10 +8,12 @@
 // `widgetLaunchLocation` is pure, and `GoRouter.configuration.findMatch` runs
 // the real table without a widget tree, which is also what keeps it clear of
 // the drift-stream hazards a `TripDetailScreen` would drag in.
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:travelplanner/core/router/app_router.dart';
+import 'package:travelplanner/features/home_widget/home_widget_service.dart';
 import 'package:travelplanner/features/home_widget/widget_deep_link.dart';
 
 Uri widgetUri(String query) => Uri.parse('pappus://trip?$query');
@@ -97,5 +99,34 @@ void main() {
       expect(match.isError, isFalse);
       expect(match.uri.path, '/');
     });
+  });
+
+  group('the listener the widget needs, where there is a widget', () {
+    // `HomeWidget.widgetClicked` is a plugin channel with no implementation off
+    // Android, and *activating* the stream is what throws — so this asserts the
+    // guard rather than the platform: with no plugin registered here, an
+    // unguarded listen would come back as a `MissingPluginException` instead of
+    // a null.
+    late GoRouter router;
+
+    setUp(() {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      router = container.read(routerProvider);
+    });
+
+    for (final platform in const [
+      TargetPlatform.linux,
+      TargetPlatform.windows,
+      TargetPlatform.macOS,
+      TargetPlatform.iOS,
+    ]) {
+      test('nothing is listened to on $platform', () {
+        debugDefaultTargetPlatformOverride = platform;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        expect(listenWidgetClicks(router), isNull);
+      });
+    }
   });
 }

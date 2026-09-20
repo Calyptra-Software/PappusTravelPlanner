@@ -140,8 +140,24 @@ Future<void> handleInitialWidgetLaunch(GoRouter router) async {
   _navigate(router, uri);
 }
 
-/// Listens for widget taps while the app is running.
-StreamSubscription<Uri?> listenWidgetClicks(GoRouter router) {
+/// Listens for widget taps while the app is running, where there is a widget
+/// to tap — and answers null everywhere else, which is what the caller already
+/// holds it as.
+///
+/// The guard is the one [handleInitialWidgetLaunch] has, and its absence here
+/// was the whole bug: `HomeWidget.widgetClicked` is a plugin channel with no
+/// implementation off Android, so merely *activating* the stream threw a
+/// `MissingPluginException` — reported in full, with a stack, into the console
+/// at every start on the web and on the desktops. Nothing depended on the
+/// stream there (the only thing it can carry is a tap on a widget those
+/// platforms cannot show), so the cost was not a lost feature but a red error
+/// standing in front of every real one.
+///
+/// Null rather than a subscription to an empty stream: there is nothing being
+/// listened to, and saying so is cheaper than manufacturing something to
+/// cancel.
+StreamSubscription<Uri?>? listenWidgetClicks(GoRouter router) {
+  if (!_widgetSupported) return null;
   return HomeWidget.widgetClicked.listen((uri) => _navigate(router, uri));
 }
 
