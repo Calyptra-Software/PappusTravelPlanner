@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/features/map/location/device_location.dart';
 
 import 'location_fixture.dart';
@@ -13,20 +16,36 @@ import 'location_fixture.dart';
 /// say out loud. Driven through a stand-in for the platform plugin, so none of
 /// this needs a device with a receiver in it.
 void main() {
-  late FakeGeolocator platform;
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
+  late FakeGeolocator platform;
+  late SharedPreferences prefs;
+
+  setUp(() async {
     platform = FakeGeolocator();
     GeolocatorPlatform.instance = platform;
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
   });
 
-  /// A container with the provider kept alive, as a screen watching it would.
+  /// A container with the provider kept alive, as a screen watching it would —
+  /// which is also what makes the remembered switch resume, since that is the
+  /// moment the provider is built.
   (ProviderContainer, DeviceLocationController) open() {
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
     addTearDown(container.dispose);
     container.listen(deviceLocationProvider, (_, _) {}, fireImmediately: true);
     return (container, container.read(deviceLocationProvider.notifier));
   }
+
+  /// What a previous session left behind: the switch as the user last set it.
+  /// Written into the instance the container is about to read, rather than
+  /// through `setMockInitialValues` again — that replaces the store under an
+  /// already-loaded [SharedPreferences], which would keep answering from its
+  /// own cache.
+  Future<void> remembered(bool on) => prefs.setBool('map_show_my_location', on);
 
   DeviceLocationState stateOf(ProviderContainer c) =>
       c.read(deviceLocationProvider);
@@ -119,7 +138,7 @@ void main() {
     platform.emit(latitude: 53.55, longitude: 10.0, accuracy: 12);
     await pumpEventQueue();
 
-    await controller.toggle();
+    await controller.stop();
 
     // The null-to-fix transition is how a listener recognizes the first reading
     // of a session and centers the map on it exactly once. Leaving the old fix
@@ -139,7 +158,7 @@ void main() {
       platform.permission = LocationPermission.whileInUse;
       final (container, controller) = open();
       await controller.start();
-      await controller.toggle();
+      await controller.stop();
 
       platform.emit(latitude: 53.55, longitude: 10.0, accuracy: 12);
       await pumpEventQueue();
@@ -163,7 +182,9 @@ void main() {
 
   test('the provider stops the receiver when the last screen goes', () async {
     platform.permission = LocationPermission.whileInUse;
-    final container = ProviderContainer();
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
     final subscription = container.listen(
       deviceLocationProvider,
       (_, _) {},
@@ -178,5 +199,126 @@ void main() {
     // `autoDispose` is what makes "leaving the map switches the sensor off" a
     // property of the provider rather than something every screen must remember.
     expect(platform.streamCancelled, isTrue);
+  });
+
+  group('the remembered switch', () {
+    test('is what a press stores, and switching off clears', () async {
+      platform.permission = LocationPermission.whileInUse;
+      final (_, controller) = open();
+
+      await controller.start();
+      expect(prefs.getBool('map_show_my_location'), isTrue);
+
+      await controller.stop();
+      expect(
+        prefs.getBool('map_show_my_location'),
+        isFalse,
+        reason: 'switching off is also a statement about the next map',
+      );
+    });
+
+    test('survives a press that came to nothing', () async {
+      // The receiver was off at the time, which is the case where the *next*
+      // map should try again rather than ask again.
+      platform.serviceEnabled = false;
+      final (_, controller) = open();
+
+      await controller.start();
+
+      expect(prefs.getBool('map_show_my_location'), isTrue);
+    });
+
+    test('puts the mark back on when a map opens', () async {
+      platform.permission = LocationPermission.whileInUse;
+      await remembered(true);
+
+      final (container, _) = open();
+      await pumpEventQueue();
+
+      expect(stateOf(container).on, isTrue);
+      expect(platform.streamRequested, isTrue);
+      expect(
+        stateOf(container).startedByHand,
+        isFalse,
+        reason: 'nobody pressed anything, so no camera moves',
+      );
+    });
+
+    test('never brings up a permission dialog on its own', () async {
+      // The one thing a screen may not do by being opened. Without a grant the
+      // resume simply ends, leaving the button to ask.
+      platform.permission = LocationPermission.denied;
+      await remembered(true);
+
+      final (container, _) = open();
+      await pumpEventQueue();
+
+      expect(platform.permissionRequests, 0);
+      expect(platform.streamRequested, isFalse);
+      expect(stateOf(container).on, isFalse);
+    });
+
+    test('says nothing when it comes to nothing', () async {
+      platform.serviceEnabled = false;
+      await remembered(true);
+
+      final (container, _) = open();
+      await pumpEventQueue();
+
+      // A pressed start would report `serviceOff` here, and should. A resume
+      // must not: a snackbar on every map opened with location switched off is
+      // the sort of help that gets the feature switched back off.
+      expect(stateOf(container).problem, isNull);
+      expect(stateOf(container).on, isFalse);
+    });
+
+    test('is not written by a resume, only read', () async {
+      platform.permission = LocationPermission.whileInUse;
+      await remembered(true);
+      final (_, controller) = open();
+      await pumpEventQueue();
+
+      await controller.stop();
+
+      // The resume must not be able to undo the off that follows it.
+      expect(prefs.getBool('map_show_my_location'), isFalse);
+    });
+
+    test('leaves a fresh install off', () async {
+      platform.permission = LocationPermission.whileInUse;
+      final (container, _) = open();
+      await pumpEventQueue();
+
+      expect(stateOf(container).on, isFalse);
+      expect(platform.streamRequested, isFalse);
+    });
+
+    test('switching off mid-start leaves no receiver behind', () async {
+      // The window is the width of the checks a start waits on, and the resume
+      // puts one in flight on every map that opens — so an off pressed in the
+      // first second used to leave a receiver running under a button that read
+      // *off*.
+      platform.permission = LocationPermission.whileInUse;
+      final (container, controller) = open();
+
+      final starting = controller.start();
+      await controller.stop();
+      await starting;
+      await pumpEventQueue();
+
+      expect(platform.streamRequested, isFalse);
+      expect(stateOf(container).on, isFalse);
+    });
+
+    test('a press still centers the map', () async {
+      platform.permission = LocationPermission.whileInUse;
+      final (container, controller) = open();
+
+      await controller.start();
+      platform.emit(latitude: 53.55, longitude: 10.0, accuracy: 12);
+      await pumpEventQueue();
+
+      expect(stateOf(container).startedByHand, isTrue);
+    });
   });
 }

@@ -316,7 +316,9 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
                 zoomOutTooltip: l10n.mapZoomOut,
               ),
               const SizedBox(height: 8),
-              const MapLocationButton(),
+              MapLocationButton(
+                onCenter: (fix) => centerOnFix(_controller, fix),
+              ),
             ],
           ),
         ),

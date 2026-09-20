@@ -507,7 +507,9 @@ class _MapViewState extends ConsumerState<_MapView> {
                 zoomOutTooltip: l10n.mapZoomOut,
               ),
               const SizedBox(height: 8),
-              const MapLocationButton(),
+              MapLocationButton(
+                onCenter: (fix) => centerOnFix(_controller, fix),
+              ),
             ],
           ),
         ),

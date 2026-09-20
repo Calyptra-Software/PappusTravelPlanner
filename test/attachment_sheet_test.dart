@@ -9,7 +9,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/providers.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
@@ -41,7 +44,13 @@ void main() {
   /// fallback below be tested at all.
   late StreamController<Attachment?> live;
 
+  /// The map picker this sheet opens carries the locate button, which reads the
+  /// remembered switch when it is built.
+  late SharedPreferences prefs;
+
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     repo = TripRepository(db);
     live = StreamController<Attachment?>.broadcast();
@@ -105,6 +114,7 @@ void main() {
         overrides: [
           repositoryProvider.overrideWithValue(repo),
           appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           attachmentProvider.overrideWith((ref, id) => live.stream),
           itineraryProvider.overrideWith((ref, id) => Stream.value(items)),
         ],

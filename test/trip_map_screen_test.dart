@@ -6,8 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/clock.dart';
 import 'package:travelplanner/core/providers.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/attachments/application/attachment_providers.dart';
@@ -20,6 +23,8 @@ import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
 import 'package:travelplanner/features/map/map_features.dart';
 import 'package:travelplanner/features/map/presentation/map_item_sheet.dart';
+import 'package:travelplanner/features/map/widgets/device_location_overlay.dart'
+    show kLocationZoom;
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/map/widgets/track_row.dart';
 import 'package:travelplanner/features/map/presentation/trip_map_screen.dart';
@@ -33,6 +38,15 @@ import 'location_fixture.dart';
 /// schedules a timer onto the next minute boundary and would outlive the test.
 void main() {
   const tripId = 7;
+
+  // The locate button reads the remembered switch when it is built, so the map
+  // needs somewhere to read it from. Empty unless a test says otherwise, which
+  // is what a fresh install looks like.
+  late SharedPreferences prefs;
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
 
   // `PolylineLayer` is generic in its hit value, so `byType(PolylineLayer)` —
   // which means `PolylineLayer<dynamic>` — matches nothing now that the lines
@@ -90,6 +104,7 @@ void main() {
           // `main` resolves from the package metadata; a test has no bundle to
           // read it from.
           appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           tripProvider(tripId).overrideWith((ref) => Stream.value(trip)),
           itineraryProvider(tripId).overrideWith((ref) => Stream.value(items)),
           alternativeBranchesProvider(
@@ -846,6 +861,10 @@ void main() {
   group('where the device is', () {
     late FakeGeolocator platform;
 
+    /// The button's tooltip while the mark is on, which is also where the long
+    /// press that switches it off is advertised.
+    const centerTooltip = 'Center on my position (long press to hide)';
+
     setUp(() {
       platform = FakeGeolocator()..permission = LocationPermission.whileInUse;
       GeolocatorPlatform.instance = platform;
@@ -900,11 +919,84 @@ void main() {
       platform.emit(latitude: 53.56, longitude: 9.98, accuracy: 40);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byTooltip('Hide my position'));
+      // The long press, since the tap now centers the map on the mark — and
+      // this is the act that also says "not on the next map either".
+      await tester.longPress(find.byTooltip(centerTooltip));
       await tester.pumpAndSettle();
 
       expect(locationCircle, findsNothing);
       expect(platform.streamCancelled, isTrue);
+      expect(prefs.getBool('map_show_my_location'), isFalse);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a map opened later puts the mark back on its own', (
+      tester,
+    ) async {
+      // What the last press left behind. The complaint this answers is a map
+      // that had to be told again on every screen.
+      await prefs.setBool('map_show_my_location', true);
+
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      // Pumped rather than settled throughout: the button spins while it waits
+      // for the first reading, and an indefinite spinner never settles.
+      await tester.pump();
+      platform.emit(latitude: 53.56, longitude: 9.98, accuracy: 40);
+      await tester.pump();
+
+      expect(locationCircle, findsOneWidget);
+      expect(find.byTooltip(centerTooltip), findsOneWidget);
+      // Nothing was asked of the user: the grant was already there.
+      expect(platform.permissionRequests, 0);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a press while it is on centers the map again', (tester) async {
+      await prefs.setBool('map_show_my_location', true);
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      await tester.pump();
+      // A long way from the trip, so the two cameras cannot be confused.
+      platform.emit(latitude: 40.0, longitude: 10.0, accuracy: 40);
+      await tester.pump();
+
+      // The resume drew the mark and left the camera on the trip, which is the
+      // half a plain toggle could not have given back in one press.
+      expect(
+        MapCamera.of(tester.element(locationCircle)).center.latitude,
+        closeTo(53.55, 0.01),
+      );
+
+      await tester.tap(find.byTooltip(centerTooltip));
+      await tester.pump();
+
+      final camera = MapCamera.of(tester.element(locationCircle));
+      expect(camera.center.latitude, closeTo(40.0, 0.01));
+      expect(camera.zoom, greaterThanOrEqualTo(kLocationZoom));
+      // Still on: a press asks to be found, it does not switch anything off.
+      expect(find.byTooltip(centerTooltip), findsOneWidget);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a map opened later never brings up the dialog', (
+      tester,
+    ) async {
+      platform.permission = LocationPermission.denied;
+      await prefs.setBool('map_show_my_location', true);
+
+      await pumpMap(tester, items: [place(id: 1, lat: 53.55, lon: 9.99)]);
+      await tester.pumpAndSettle();
+
+      // The one thing a screen may not do by being opened — and it says nothing
+      // about it either, since nobody asked it anything.
+      expect(platform.permissionRequests, 0);
+      expect(find.text('Location access was declined'), findsNothing);
+      expect(find.byTooltip('Show my position'), findsOneWidget);
 
       await tester.pump(kTileUpdateThrottle);
       await tester.pump(kTileUpdateThrottle);

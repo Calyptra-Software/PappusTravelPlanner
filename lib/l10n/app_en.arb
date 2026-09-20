@@ -566,9 +566,9 @@
   "@mapMyLocationShow": {
     "description": "Tooltip of the map button that switches the device's own position on."
   },
-  "mapMyLocationHide": "Hide my position",
-  "@mapMyLocationHide": {
-    "description": "Tooltip of the same button while the device's position is being shown."
+  "mapMyLocationCenter": "Center on my position (long press to hide)",
+  "@mapMyLocationCenter": {
+    "description": "Tooltip of the same button while the device's position is being shown: a press centers the map on it, a long press switches it off again."
   },
   "mapUseMyLocation": "Use my position",
   "@mapUseMyLocation": {

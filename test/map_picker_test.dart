@@ -7,7 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/providers.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 import 'package:travelplanner/core/theme/app_theme.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
@@ -21,14 +24,22 @@ import 'location_fixture.dart';
 /// and deliberately does not do — to the rest of the row.
 void main() {
   late AppDatabase db;
+  // The locate button reads the remembered switch when it is built, so every
+  // map needs somewhere to read it from.
+  late SharedPreferences prefs;
 
-  setUp(() => db = AppDatabase.forTesting(NativeDatabase.memory()));
+  setUp(() async {
+    db = AppDatabase.forTesting(NativeDatabase.memory());
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
   tearDown(() => db.close());
 
   Widget host(Widget child, {AppDatabase? database, ThemeData? theme}) =>
       ProviderScope(
         overrides: [
           appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           if (database != null) databaseProvider.overrideWithValue(database),
         ],
         child: MaterialApp(

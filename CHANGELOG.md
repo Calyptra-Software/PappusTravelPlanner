@@ -5,6 +5,13 @@ exact commits.
 
 ## Unreleased
 
+- **The map remembers that you want to see where you are.** The locate button used to
+  have to be pressed again on every map, which is a lot of pressing when you move
+  between a trip's timeline and its map. Now the mark comes back on its own, without
+  moving the camera off what the map was showing. While it is on, a press centers the
+  map on you and a long press switches it off again — after which maps open without the
+  mark, as before. A map that starts the receiver this way never asks for the location
+  permission: that still only happens on a press.
 - **The photo gallery turns with the arrow keys**, and with two chevrons that appear
   when there is a mouse. Swiping still works; it is just hard to aim on a trackpad.
 - **In the browser, exporting the database downloads the file.** The button could stop

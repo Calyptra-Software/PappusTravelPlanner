@@ -26,7 +26,14 @@ void main() {
   final polylineLayer = find.byWidgetPredicate((w) => w is PolylineLayer);
 
   Trip? opened;
-  setUp(() => opened = null);
+  // The locate button reads the remembered switch when it is built, so every
+  // map needs somewhere to read it from.
+  late SharedPreferences prefs;
+  setUp(() async {
+    opened = null;
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
 
   const tealTrip = 0xFF00695C;
   const orangeTrip = 0xFFEF6C00;
@@ -76,6 +83,7 @@ void main() {
       ProviderScope(
         overrides: [
           appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           positionedItemsProvider.overrideWith((ref) => Stream.value(items)),
         ],
         child: MaterialApp(
@@ -151,6 +159,7 @@ void main() {
       ProviderScope(
         overrides: [
           appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
           positionedItemsProvider.overrideWith(
             (ref) => Stream.value([leg(10, 1, 53.5), leg(11, 2, 20.0)]),
           ),

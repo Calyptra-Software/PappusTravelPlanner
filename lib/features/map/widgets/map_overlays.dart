@@ -138,6 +138,7 @@ class MapRoundButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onPressed,
+    this.onLongPress,
     this.foreground,
     this.busy = false,
   });
@@ -145,6 +146,11 @@ class MapRoundButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final VoidCallback onPressed;
+
+  /// What a long press does, where there is anything for it to do. One button
+  /// has such a thing: the locate button's tap centers the map on the user, so
+  /// switching the mark off again needs somewhere else to live.
+  final VoidCallback? onLongPress;
 
   /// The icon's color, or null for the theme's own. Used to say that a button
   /// is *on* — a state the zoom pair does not have and the locate button does.
@@ -172,13 +178,41 @@ class MapRoundButton extends StatelessWidget {
                 color: foreground,
               ),
             ),
-          IconButton(
-            icon: Icon(icon),
-            color: foreground,
-            tooltip: tooltip,
-            onPressed: onPressed,
-          ),
+          _longPressable(context),
         ],
+      ),
+    );
+  }
+
+  /// The icon, with its tooltip — and, where there is one, a long press.
+  ///
+  /// The two cannot be had the ordinary way at once: `IconButton`'s own tooltip
+  /// is a [Tooltip] wrapped *around* it, whose long-press recognizer sits
+  /// between the finger and any gesture detector further out and wins the arena
+  /// against it. The button would then answer a long press by explaining
+  /// itself. So where there is a long press to make, the tooltip is put up by
+  /// hand with [TooltipTriggerMode.manual] — which stops it reacting to a touch
+  /// and leaves a mouse hovering it exactly as before, that being where a
+  /// tooltip is read anyway. It still carries the semantics label either way.
+  Widget _longPressable(BuildContext context) {
+    final button = IconButton(
+      icon: Icon(icon),
+      color: foreground,
+      tooltip: onLongPress == null ? tooltip : null,
+      onPressed: onPressed,
+    );
+    if (onLongPress == null) return button;
+    return Tooltip(
+      message: tooltip,
+      triggerMode: TooltipTriggerMode.manual,
+      child: GestureDetector(
+        onLongPress: () {
+          // The press did something and the icon barely changes, so the device
+          // says so the way it says every other long press did something.
+          Feedback.forLongPress(context);
+          onLongPress!();
+        },
+        child: button,
       ),
     );
   }
