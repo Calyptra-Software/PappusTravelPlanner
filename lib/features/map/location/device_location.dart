@@ -200,6 +200,12 @@ class DeviceLocationController extends Notifier<DeviceLocationState> {
     // The map may be gone again before the microtask runs — a tap that bounced
     // straight back off the screen, a test that disposed its container.
     if (!ref.mounted) return;
+    // A press can beat the microtask to it, and does whenever the *press* is
+    // what first made anything watch this: the connection search asks for one
+    // reading from a sheet that is not a map. The press wins outright — it is
+    // the half that may bring up a dialog, and a resume replacing it would
+    // silently withdraw the question the user had just been asked.
+    if (state.on || state.problem != null) return;
     await _run(mayAsk: false, announce: false, byHand: false);
   }
 

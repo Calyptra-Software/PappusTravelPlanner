@@ -1188,6 +1188,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapPickHint => 'Tap the map to place a point';
 
   @override
+  String get connectionUseMyPosition => 'Use my position';
+
+  @override
   String get connectionPickOnMap => 'Choose on map';
 
   @override

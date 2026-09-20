@@ -8,8 +8,11 @@ import '../../../data/database/app_database.dart' show Trip;
 import '../../../data/database/tables.dart' show TripKind;
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
+import '../../map/location/device_location.dart';
 import '../../map/map_features.dart';
 import '../../map/presentation/map_picker_screen.dart';
+import '../../map/widgets/device_location_overlay.dart'
+    show locationProblemText;
 import '../../trips/application/trip_providers.dart';
 import '../../trips/widgets/trip_picker.dart';
 import '../application/journey_search_options_provider.dart';
@@ -727,8 +730,8 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
       ),
       error: (_, _) => _ErrorRow(
         message: l10n.connectionSearchError,
-        retryLabel: l10n.connectionRetry,
-        onRetry: () => ref.invalidate(journeyResultsProvider(query)),
+        actionLabel: l10n.connectionRetry,
+        onAction: () => ref.invalidate(journeyResultsProvider(query)),
       ),
       data: (results) => AbsorbPointer(
         absorbing: _importing,
@@ -1000,27 +1003,37 @@ class _ResultCard extends StatelessWidget {
 class _ErrorRow extends StatelessWidget {
   const _ErrorRow({
     required this.message,
-    required this.retryLabel,
-    required this.onRetry,
+    this.actionLabel,
+    this.actionIcon = Icons.refresh,
+    this.onAction,
   });
 
   final String message;
-  final String retryLabel;
-  final VoidCallback onRetry;
+
+  /// What can be done about it, where anything can. Null for a state the user
+  /// can only answer by pressing the thing they pressed again — a permission
+  /// declined this once — which needs no button of its own.
+  final String? actionLabel;
+  final IconData actionIcon;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
+    final label = actionLabel;
+    final action = onAction;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            icon: const Icon(Icons.refresh),
-            label: Text(retryLabel),
-            onPressed: onRetry,
-          ),
+          if (label != null && action != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: Icon(actionIcon),
+              label: Text(label),
+              onPressed: action,
+            ),
+          ],
         ],
       ),
     );
@@ -1068,19 +1081,60 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
   );
   late String _query = widget.initialQuery ?? '';
 
+  /// The receiver, for as long as this sheet is the reason it is running.
+  ///
+  /// Held by hand rather than watched in `build`, and that is the whole of what
+  /// keeps the rule: watching would start a receiver because a *picker was
+  /// opened*, and this sheet is not a map — there is nothing on it for a
+  /// position to be drawn on. A subscription made on the press keeps the
+  /// provider, and so the receiver, alive for exactly as long as the press is
+  /// waiting for its answer; closing it releases both, by `autoDispose`.
+  ///
+  /// Which is also why nothing here calls `stop()`: that writes the remembered
+  /// switch, and it is the user's standing answer for their *maps*. A search
+  /// asking where it starts must not switch the mark off everywhere else.
+  ProviderSubscription<DeviceLocationState>? _locating;
+
+  /// The last refusal, said **in the sheet** rather than as a snackbar.
+  ///
+  /// A snackbar raised from inside a modal sheet is drawn by the scaffold
+  /// behind it, so it appears under the sheet the user is looking at: the
+  /// message about a switched-off receiver was being reported into thin air.
+  /// The row is the better vessel here in any case — it sits beside the control
+  /// that raised it, it carries the way out to the system screen without
+  /// competing with the sheet for the bottom of the display, and it stays put
+  /// while an unfamiliar sentence is read, where a snackbar is gone in four
+  /// seconds. A map keeps the snackbar: nothing is above it to hide it.
+  LocationProblem? _locationProblem;
+
   @override
   void dispose() {
+    _locating?.close();
     _controller.dispose();
     super.dispose();
   }
 
-  /// Picks a bare coordinate from the map and answers the sheet with it.
+  /// A bare coordinate as a search endpoint.
   ///
-  /// The result is a [TransportPlace] of kind [PlaceKind.place], which is what
-  /// makes `queryId` send `lat,lon` rather than an id — there is no id to send,
-  /// and a coordinate is what the router wants for a door anyway. It is named by
-  /// its own numbers: the app does not ask the geocoder what is there, because
-  /// that would be putting a name on the user's choice that they did not make.
+  /// Kind [PlaceKind.place], which is what makes `queryId` send `lat,lon`
+  /// rather than an id — there is no id to send, and a coordinate is what the
+  /// router wants for a door anyway. Named by its **own numbers** in both cases
+  /// this is reached from, and for the same reason: the app does not ask the
+  /// geocoder what is there, because that would put a name on a choice the user
+  /// did not make. A reading of the device is not called "my position" either,
+  /// tempting as it reads in the field — the name is what the imported leg
+  /// carries afterwards, and "my position" stops being true the moment its
+  /// owner walks away from it, while the numbers go on saying where the journey
+  /// started.
+  TransportPlace _coordinatePlace(LatLng point) => TransportPlace(
+    id: coordinateQueryId(point.latitude, point.longitude),
+    name: formatCoordinates(point),
+    kind: PlaceKind.place,
+    lat: point.latitude,
+    lon: point.longitude,
+  );
+
+  /// Picks a bare coordinate from the map and answers the sheet with it.
   Future<void> _pickOnMap(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final point = await pickPointOnMap(
@@ -1089,15 +1143,58 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
       nearby: widget.nearby,
     );
     if (point == null || !context.mounted) return;
-    Navigator.of(context).pop(
-      TransportPlace(
-        id: coordinateQueryId(point.latitude, point.longitude),
-        name: formatCoordinates(point),
-        kind: PlaceKind.place,
-        lat: point.latitude,
-        lon: point.longitude,
-      ),
-    );
+    Navigator.of(context).pop(_coordinatePlace(point));
+  }
+
+  /// Takes the device's own reading as this end of the search.
+  ///
+  /// "When is the next train from here" is the question a phone is holding the
+  /// answer to, and until now the way to it was *Choose on map*, the map's
+  /// locate button, and a tap on the mark — three acts and a wait, for the
+  /// commonest starting point there is.
+  ///
+  /// Still a pointing act, which is the rule this does not break: the press
+  /// states the position, and only the reading that press was waiting for is
+  /// taken, so a receiver that walks the mark down the street afterwards does
+  /// not walk the search endpoint with it. The same trade `pickPointOnMap`'s
+  /// own locate button makes.
+  void _useMyPosition() {
+    setState(() => _locationProblem = null);
+    final subscription = ref.listenManual(deviceLocationProvider, (_, next) {
+      final fix = next.fix;
+      if (fix != null) {
+        _takeReading(fix);
+        return;
+      }
+      final problem = next.problem;
+      if (problem != null) _giveUpOnReading(problem);
+    });
+    _locating = subscription;
+
+    final current = subscription.read();
+    final fix = current.fix;
+    if (fix != null) return _takeReading(fix);
+    // A map behind this sheet may have the receiver running already — the
+    // overview's own map is one of the places a lookup is started from, and the
+    // remembered switch puts the mark there without being asked. Starting again
+    // would cancel that session and blank its mark for a second, to ask the
+    // question it is in the middle of answering.
+    if (!current.on) ref.read(deviceLocationProvider.notifier).start();
+    setState(() {});
+  }
+
+  void _takeReading(DeviceFix fix) {
+    _locating?.close();
+    _locating = null;
+    if (!mounted) return;
+    Navigator.of(context).pop(_coordinatePlace(fix.position));
+  }
+
+  void _giveUpOnReading(LocationProblem problem) {
+    _locating?.close();
+    _locating = null;
+    if (!mounted) return;
+    setState(() => _locationProblem = problem);
   }
 
   @override
@@ -1133,7 +1230,12 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
                           : l10n.connectionPickPlace,
                       prefixIcon: const Icon(Icons.search),
                     ),
-                    onChanged: (v) => setState(() => _query = v),
+                    onChanged: (v) => setState(() {
+                      _query = v;
+                      // Naming a place is a different answer to the same
+                      // question, and it cannot be refused by a receiver.
+                      _locationProblem = null;
+                    }),
                   ),
                   // Said here rather than discovered as a suggestion list that
                   // silently omits the address just typed into it.
@@ -1153,8 +1255,30 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
             if (async.hasError)
               _ErrorRow(
                 message: l10n.connectionSearchError,
-                retryLabel: l10n.connectionRetry,
-                onRetry: () => ref.invalidate(geocodeProvider(_query)),
+                actionLabel: l10n.connectionRetry,
+                onAction: () => ref.invalidate(geocodeProvider(_query)),
+              ),
+            // Where the geocoder's own failure is reported, since both are the
+            // same kind of news: the sheet could not do what was asked of it.
+            // The words are the maps' words, from `locationProblemText`.
+            if (_locationProblem case final problem?)
+              Builder(
+                builder: (context) {
+                  final (:message, :openSettings) = locationProblemText(
+                    l10n,
+                    problem,
+                  );
+                  return _ErrorRow(
+                    message: message,
+                    actionLabel: openSettings == null
+                        ? null
+                        : l10n.mapLocationOpenSettings,
+                    actionIcon: Icons.settings_outlined,
+                    onAction: openSettings == null
+                        ? null
+                        : () => openSettings(),
+                  );
+                },
               ),
             Flexible(
               child: ListView(
@@ -1170,12 +1294,29 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
                   // ids there, so a coordinate would be a choice that could only
                   // fail — which is the same reason that list is filtered to
                   // stations.
-                  if (!widget.stopsOnly)
+                  if (!widget.stopsOnly) ...[
+                    ListTile(
+                      leading: const Icon(Icons.my_location),
+                      title: Text(l10n.connectionUseMyPosition),
+                      // Working, and there is nothing else on this sheet that
+                      // would say so. Not tappable meanwhile: a second press
+                      // has no second meaning here, and the way out of a fix
+                      // that never comes is to close the picker, which releases
+                      // the receiver with it.
+                      trailing: _locating == null
+                          ? null
+                          : const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                      onTap: _locating == null ? _useMyPosition : null,
+                    ),
                     ListTile(
                       leading: const Icon(Icons.map_outlined),
                       title: Text(l10n.connectionPickOnMap),
                       onTap: () => _pickOnMap(context),
                     ),
+                  ],
                   for (final place in places)
                     ListTile(
                       leading: const Icon(Icons.place_outlined),

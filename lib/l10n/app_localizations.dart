@@ -2078,6 +2078,12 @@ abstract class AppLocalizations {
   /// **'Tap the map to place a point'**
   String get mapPickHint;
 
+  /// Takes the device's own reading as the start or end of a connection search.
+  ///
+  /// In en, this message translates to:
+  /// **'Use my position'**
+  String get connectionUseMyPosition;
+
   /// Opens the map to pick a coordinate as a search endpoint.
   ///
   /// In en, this message translates to:

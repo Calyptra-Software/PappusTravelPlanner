@@ -336,6 +336,11 @@ map* above the search results, for an address the geocoder does not know or a sp
 name at all. (A via stop is the exception — the routing service only accepts stations
 there.)
 
+Above that sits *Use my position*, for either end: one tap and the search starts from where
+you are standing, without naming it. What arrives in the field is the coordinate itself. Only
+the one reading the tap waited for is taken, so walking on does not move the search; the
+receiver is released again as soon as it has answered, or when you close the picker.
+
 Placing both ends of a leg has a side effect worth knowing: a leg you entered by hand can
 then be looked up in the timetable, because the app finally knows where it starts and ends.
 And moving an end that *came* from a search makes the app forget which station the search

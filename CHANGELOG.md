@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **A connection can be searched from where you are.** The **From** and **To** pickers offer
+  *Use my position* beside *Choose on map*, which was the old route to the same thing by way
+  of the map and its locate button. The field then shows the coordinate. Not for a
+  via stop, where the routing service only accepts stations.
 - **The map remembers that you want to see where you are.** The locate button used to
   have to be pressed again on every map, which is a lot of pressing when you move
   between a trip's timeline and its map. Now the mark comes back on its own, without
