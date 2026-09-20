@@ -4058,6 +4058,18 @@ abstract class AppLocalizations {
   /// **'Photos'**
   String get galleryTitle;
 
+  /// No description provided for @galleryPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous photo'**
+  String get galleryPrevious;
+
+  /// No description provided for @galleryNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next photo'**
+  String get galleryNext;
+
   /// No description provided for @coverSet.
   ///
   /// In en, this message translates to:

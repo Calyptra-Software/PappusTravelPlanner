@@ -2393,6 +2393,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get galleryTitle => 'Photos';
 
   @override
+  String get galleryPrevious => 'Previous photo';
+
+  @override
+  String get galleryNext => 'Next photo';
+
+  @override
   String get coverSet => 'Use as trip cover';
 
   @override

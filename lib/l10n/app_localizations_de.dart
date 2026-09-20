@@ -2404,6 +2404,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get galleryTitle => 'Fotos';
 
   @override
+  String get galleryPrevious => 'Vorheriges Foto';
+
+  @override
+  String get galleryNext => 'Nächstes Foto';
+
+  @override
   String get coverSet => 'Als Titelbild verwenden';
 
   @override
