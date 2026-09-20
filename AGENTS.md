@@ -832,16 +832,35 @@ UI (features/*/presentation, *widgets)
   centering on yourself asks for exactly the tiles panning there by hand would.
   It is the app's **first and only runtime permission**, requested on the press
   of the locate button and at no other moment, and released again by
-  `autoDispose` when the last map watching it goes away — which is why the map
-  must not start it for you: a screen that switched a receiver on because it was
-  opened would be asking for something nobody requested. Declining, location
+  `autoDispose` when the last map watching it goes away. What that press *said*
+  is remembered, though (`map_show_my_location` in the preferences), and a map
+  opened afterwards puts the mark back on by itself. The rule was that no screen
+  may ask for something nobody requested — not that the user must request it
+  again on every screen, which somebody moving between a timeline and its map
+  does a dozen times an hour, each time waiting out a fresh fix. A **resume** is
+  therefore the quiet half of a press and differs in exactly three ways, which
+  are together what makes it something a screen may do: it never brings up the
+  permission dialog (a grant already given is used, a missing one simply ends
+  it), it reports nothing when it comes to nothing — a snackbar on every map
+  opened with location switched off is the sort of help that gets a feature
+  switched back off — and it moves no camera. Declining, location
   switched off device-wide, and no receiver at all are three *answers*
   (`LocationProblem`), each with its own sentence and, for the two with a system
   screen behind them, a button that opens it. The one press does the whole job:
   permission, receiver, and **one** centering — `listenForFirstFix` reads "first"
   off the null-to-fix transition, which is exactly why switching the mark off
-  clears the fix, and every reading after that moves the mark and not the camera,
-  since a map panned ahead to see what is coming must stay where it was put.
+  clears the fix, and it ignores a session it did not start (`startedByHand`),
+  since a screen that has just framed itself on a trip must not be pulled off it
+  by a reading nobody asked for. Every reading after that moves the mark and not
+  the camera, since a map panned ahead to see what is coming must stay where it
+  was put — so a press while the mark is **already on** means *center on me
+  again*, which is the press the remembered switch made worth having, where a
+  plain toggle would have answered "off" and charged two presses for getting back
+  what was already there. Switching off moves to the **long** press
+  (`MapRoundButton.onLongPress`, which puts the tooltip up by hand because
+  `IconButton`'s own would win the gesture arena against it): the receiver stops
+  with the map either way, so off is for saying *not again* rather than for
+  saving a battery today.
   The mark is drawn in a **blue of its own** (`device_location_overlay.dart`),
   not the trip's accent and not the reserved red: it is not part of the plan, and
   the two "you are here"s must not be mistakable — `now_marker.dart` answers

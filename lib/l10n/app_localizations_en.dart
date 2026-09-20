@@ -1133,7 +1133,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapMyLocationShow => 'Show my position';
 
   @override
-  String get mapMyLocationHide => 'Hide my position';
+  String get mapMyLocationCenter =>
+      'Center on my position (long press to hide)';
 
   @override
   String get mapUseMyLocation => 'Use my position';

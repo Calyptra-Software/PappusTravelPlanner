@@ -348,9 +348,14 @@ starts the receiver, and centers the map once. The reading is drawn with its
 accuracy as a circle around it. In the map picker the same button offers that reading as the
 point being picked.
 
+The button stays on: every map you open afterwards shows the mark without being asked
+again, leaving the camera where it framed itself. A press while it is on centers the map on
+you, and a **long press** switches it off again — after which maps open without the mark
+until you press it again.
+
 Declining, location switched off device-wide, and no receiver at all each get their own
 sentence, with a button to the system screen where there is one. The position is never
-stored, never exported, and never sent anywhere; switching the mark off stops the receiver.
+stored, never exported, and never sent anywhere; leaving the map stops the receiver.
 
 ### Asking a marker what it is
 

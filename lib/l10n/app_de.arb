@@ -402,7 +402,7 @@
   "mapFullscreen": "Karte im Vollbild",
   "mapExitFullscreen": "Vollbild beenden",
   "mapMyLocationShow": "Meine Position anzeigen",
-  "mapMyLocationHide": "Meine Position ausblenden",
+  "mapMyLocationCenter": "Auf meine Position zentrieren (lang drücken zum Ausblenden)",
   "mapUseMyLocation": "Meine Position übernehmen",
   "mapLocationDenied": "Standortzugriff wurde abgelehnt",
   "mapLocationBlocked": "Standortzugriff ist für diese App gesperrt",

@@ -88,7 +88,8 @@ void reportLocationProblems(BuildContext context, WidgetRef ref) {
   });
 }
 
-/// Runs [onFirstFix] with the first reading of each session, and no other.
+/// Runs [onFirstFix] with the first reading of each *pressed* session, and no
+/// other.
 ///
 /// Call from `build`. "First" is read off the null-to-fix transition rather than
 /// counted, which is exactly why switching the mark off clears the fix: that is
@@ -96,10 +97,16 @@ void reportLocationProblems(BuildContext context, WidgetRef ref) {
 /// distinction is the whole of the agreed behavior — the map is put where the
 /// user is *once*, and every reading after that only moves the mark, so a map
 /// panned ahead to see what is coming stays where it was put.
+///
+/// A session the remembered switch started when this screen opened is left out
+/// (`startedByHand`): nobody asked anything just now, and the camera the screen
+/// framed for itself — a trip, a country, the ends of a journey — is a better
+/// answer to "what am I looking at" than a fix that happens to have arrived.
+/// Getting there is what the button is for, every time rather than once.
 void listenForFirstFix(WidgetRef ref, ValueChanged<DeviceFix> onFirstFix) {
   ref.listen(deviceLocationProvider, (previous, next) {
     final fix = next.fix;
-    if (fix == null || previous?.fix != null) return;
+    if (fix == null || previous?.fix != null || !next.startedByHand) return;
     onFirstFix(fix);
   });
 }
@@ -113,21 +120,38 @@ void centerOnFix(MapController controller, DeviceFix fix) {
   );
 }
 
-/// The button that switches the mark on and off.
+/// The button that finds the user on the map.
 ///
-/// One press does the whole thing: ask for the permission if it has not been
-/// given, start the receiver, and — through the null-to-fix transition its
-/// callers listen for — center the map on the first reading. A second press
-/// switches it off again. The camera is never moved after that: a map that
-/// follows you is a map you cannot look ahead on, and panning away to see what
-/// comes next is the most ordinary thing to do while traveling.
+/// The first press does the whole thing: ask for the permission if it has not
+/// been given, start the receiver, and — through the null-to-fix transition its
+/// callers listen for — center the map on the first reading. After that the
+/// camera is never moved *by itself*: a map that follows you is a map you
+/// cannot look ahead on, and panning away to see what comes next is the most
+/// ordinary thing to do while traveling.
+///
+/// So a press while the mark is already on means **center on me again**, and
+/// that is the press the remembered switch made worth having. A map opened with
+/// the switch still on draws the mark without moving anything, which leaves
+/// exactly one thing to ask for — the one the button now asks for — where a
+/// plain toggle would have answered "off" and made the user press twice to get
+/// back what they had.
+///
+/// Switching off is the long press, and it is the rarer act by some way: the
+/// receiver already stops when the last map goes away, so this is for saying
+/// *not again*, not for saving a battery today.
 class MapLocationButton extends ConsumerWidget {
-  const MapLocationButton({super.key});
+  const MapLocationButton({super.key, required this.onCenter});
+
+  /// Put the map on this reading. The camera belongs to the screen, which is
+  /// why the button asks rather than moves — the same [centerOnFix] the first
+  /// fix of a pressed session goes through.
+  final ValueChanged<DeviceFix> onCenter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final state = ref.watch(deviceLocationProvider);
+    final fix = state.fix;
 
     reportLocationProblems(context, ref);
 
@@ -140,8 +164,20 @@ class MapLocationButton extends ConsumerWidget {
       // Highlighted while it is on, so the button says whether the receiver is
       // running even before the first fix has drawn anything.
       foreground: state.on ? _kLocationBlue : null,
-      tooltip: state.on ? l10n.mapMyLocationHide : l10n.mapMyLocationShow,
-      onPressed: () => ref.read(deviceLocationProvider.notifier).toggle(),
+      tooltip: state.on ? l10n.mapMyLocationCenter : l10n.mapMyLocationShow,
+      onPressed: () {
+        if (!state.on) {
+          ref.read(deviceLocationProvider.notifier).start();
+        } else if (fix != null) {
+          onCenter(fix);
+        }
+        // On, but nothing received yet: the spinner is already saying so, and
+        // there is nowhere to center on. The press that would help is the long
+        // one, which this is not.
+      },
+      onLongPress: state.on
+          ? () => ref.read(deviceLocationProvider.notifier).stop()
+          : null,
       // Something is happening, and until the first reading arrives there is
       // nothing on the map to show it.
       busy: state.locating,

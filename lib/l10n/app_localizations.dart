@@ -1970,11 +1970,11 @@ abstract class AppLocalizations {
   /// **'Show my position'**
   String get mapMyLocationShow;
 
-  /// Tooltip of the same button while the device's position is being shown.
+  /// Tooltip of the same button while the device's position is being shown: a press centers the map on it, a long press switches it off again.
   ///
   /// In en, this message translates to:
-  /// **'Hide my position'**
-  String get mapMyLocationHide;
+  /// **'Center on my position (long press to hide)'**
+  String get mapMyLocationCenter;
 
   /// Tooltip of the map picker's button that puts the mark on the device's own position.
   ///
