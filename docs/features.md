@@ -337,11 +337,9 @@ name at all. (A via stop is the exception — the routing service only accepts s
 there.)
 
 Above that sits *Use my position*, for either end: one tap and the search starts from where
-you are standing, without naming it. What arrives in the field is the coordinate itself, not
-the words "my position" — it is the endpoint of a journey, and it has to go on saying where
-that journey started. Only the one reading the tap waited for is taken, so walking on does
-not move the search; the receiver is released again as soon as it has answered, or when you
-close the picker.
+you are standing, without naming it. What arrives in the field is the coordinate itself. Only
+the one reading the tap waited for is taken, so walking on does not move the search; the
+receiver is released again as soon as it has answered, or when you close the picker.
 
 Placing both ends of a leg has a side effect worth knowing: a leg you entered by hand can
 then be looked up in the timetable, because the app finally knows where it starts and ends.
