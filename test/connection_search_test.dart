@@ -1497,5 +1497,69 @@ void main() {
       // answer to this press, not the end of the question.
       expect(find.text('Use my position'), findsOneWidget);
     });
+
+    testWidgets('and said inside the sheet, where it can be seen', (
+      tester,
+    ) async {
+      // The bug this stands on: a snackbar raised from inside a modal sheet is
+      // drawn by the scaffold *behind* it, so the message landed underneath the
+      // picker the user was looking at. `find.text` found it all the same,
+      // which is why the test above passed while nothing was visible — hence
+      // this one, which asks *where* the words are.
+      platform.serviceEnabled = false;
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Use my position'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Location is switched off on this device'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.byType(SnackBar), findsNothing);
+
+      // With the way out of it: the one state where a sentence alone would be
+      // telling the user to go and find a screen that moves with every version
+      // of every OS.
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.text('Settings'),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('a refusal goes away when the question changes', (
+      tester,
+    ) async {
+      platform.serviceEnabled = false;
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Use my position'));
+      await tester.pumpAndSettle();
+      expect(find.text('Location is switched off on this device'), findsOne);
+
+      // Naming a place is a different answer to the same question, and it
+      // cannot be refused by a receiver.
+      await tester.enterText(find.byType(TextField).last, 'Ham');
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Location is switched off on this device'),
+        findsNothing,
+      );
+    });
   });
 }

@@ -43,39 +43,56 @@ const Color _kLocationBlue = Color(0xFF1A73E8);
 /// the sort of help nobody wants twice.
 const double kLocationZoom = 15;
 
-/// Says a refusal out loud, with a way out of it where there is one.
+/// What a refusal says, and the way out of it where there is one.
 ///
-/// Public because a map is no longer the only place a reading is asked for: the
-/// connection search takes one as an endpoint, and the same four answers have
-/// to read the same way there. Two sets of words for one state is how one of
-/// them ends up describing something the app no longer does.
+/// The words are kept apart from the vessel they are said in, because a
+/// snackbar is not everywhere the right one: one raised from inside a modal
+/// sheet is drawn by the scaffold *behind* that sheet, so it lands underneath
+/// the very thing the user is looking at — which is how the connection search
+/// came to report a switched-off receiver into thin air. A map says it in a
+/// snackbar, a sheet says it in a row of its own, and both say the same
+/// sentence, since two wordings for one state is how one of them ends up
+/// describing something the app no longer does.
+///
+/// The two problems with a system screen behind them carry an action rather
+/// than a sentence telling the user to go and find it: a permission the
+/// platform will not ask about again, and location switched off device-wide,
+/// both sit several taps deep in places that differ per OS and per version.
+({String message, Future<bool> Function()? openSettings}) locationProblemText(
+  AppLocalizations l10n,
+  LocationProblem problem,
+) => switch (problem) {
+  LocationProblem.denied => (
+    message: l10n.mapLocationDenied,
+    openSettings: null,
+  ),
+  LocationProblem.deniedForever => (
+    message: l10n.mapLocationBlocked,
+    openSettings: Geolocator.openAppSettings,
+  ),
+  LocationProblem.serviceOff => (
+    message: l10n.mapLocationServiceOff,
+    openSettings: Geolocator.openLocationSettings,
+  ),
+  LocationProblem.failed => (
+    message: l10n.mapLocationFailed,
+    openSettings: null,
+  ),
+};
+
+/// Says a refusal out loud over a map, where a snackbar is the right vessel:
+/// there is nothing above it to hide it, and nothing on screen waiting on it.
 void showLocationProblem(BuildContext context, LocationProblem problem) {
   final l10n = AppLocalizations.of(context);
-
-  // The two problems with a system screen behind them get an action rather
-  // than a sentence telling the user to go and find it: a permission the
-  // platform will not ask about again, and location switched off device-wide,
-  // both sit several taps deep in places that differ per OS and per version.
-  final (String message, Future<bool> Function()? settings) = switch (problem) {
-    LocationProblem.denied => (l10n.mapLocationDenied, null),
-    LocationProblem.deniedForever => (
-      l10n.mapLocationBlocked,
-      Geolocator.openAppSettings,
-    ),
-    LocationProblem.serviceOff => (
-      l10n.mapLocationServiceOff,
-      Geolocator.openLocationSettings,
-    ),
-    LocationProblem.failed => (l10n.mapLocationFailed, null),
-  };
+  final (:message, :openSettings) = locationProblemText(l10n, problem);
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      action: settings == null
+      action: openSettings == null
           ? null
           : SnackBarAction(
               label: l10n.mapLocationOpenSettings,
-              onPressed: () => settings(),
+              onPressed: () => openSettings(),
             ),
     ),
   );

@@ -12,7 +12,7 @@ import '../../map/location/device_location.dart';
 import '../../map/map_features.dart';
 import '../../map/presentation/map_picker_screen.dart';
 import '../../map/widgets/device_location_overlay.dart'
-    show showLocationProblem;
+    show locationProblemText;
 import '../../trips/application/trip_providers.dart';
 import '../../trips/widgets/trip_picker.dart';
 import '../application/journey_search_options_provider.dart';
@@ -730,8 +730,8 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
       ),
       error: (_, _) => _ErrorRow(
         message: l10n.connectionSearchError,
-        retryLabel: l10n.connectionRetry,
-        onRetry: () => ref.invalidate(journeyResultsProvider(query)),
+        actionLabel: l10n.connectionRetry,
+        onAction: () => ref.invalidate(journeyResultsProvider(query)),
       ),
       data: (results) => AbsorbPointer(
         absorbing: _importing,
@@ -1003,27 +1003,37 @@ class _ResultCard extends StatelessWidget {
 class _ErrorRow extends StatelessWidget {
   const _ErrorRow({
     required this.message,
-    required this.retryLabel,
-    required this.onRetry,
+    this.actionLabel,
+    this.actionIcon = Icons.refresh,
+    this.onAction,
   });
 
   final String message;
-  final String retryLabel;
-  final VoidCallback onRetry;
+
+  /// What can be done about it, where anything can. Null for a state the user
+  /// can only answer by pressing the thing they pressed again — a permission
+  /// declined this once — which needs no button of its own.
+  final String? actionLabel;
+  final IconData actionIcon;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
+    final label = actionLabel;
+    final action = onAction;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         children: [
           Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            icon: const Icon(Icons.refresh),
-            label: Text(retryLabel),
-            onPressed: onRetry,
-          ),
+          if (label != null && action != null) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              icon: Icon(actionIcon),
+              label: Text(label),
+              onPressed: action,
+            ),
+          ],
         ],
       ),
     );
@@ -1085,6 +1095,18 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
   /// asking where it starts must not switch the mark off everywhere else.
   ProviderSubscription<DeviceLocationState>? _locating;
 
+  /// The last refusal, said **in the sheet** rather than as a snackbar.
+  ///
+  /// A snackbar raised from inside a modal sheet is drawn by the scaffold
+  /// behind it, so it appears under the sheet the user is looking at: the
+  /// message about a switched-off receiver was being reported into thin air.
+  /// The row is the better vessel here in any case — it sits beside the control
+  /// that raised it, it carries the way out to the system screen without
+  /// competing with the sheet for the bottom of the display, and it stays put
+  /// while an unfamiliar sentence is read, where a snackbar is gone in four
+  /// seconds. A map keeps the snackbar: nothing is above it to hide it.
+  LocationProblem? _locationProblem;
+
   @override
   void dispose() {
     _locating?.close();
@@ -1137,6 +1159,7 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
   /// not walk the search endpoint with it. The same trade `pickPointOnMap`'s
   /// own locate button makes.
   void _useMyPosition() {
+    setState(() => _locationProblem = null);
     final subscription = ref.listenManual(deviceLocationProvider, (_, next) {
       final fix = next.fix;
       if (fix != null) {
@@ -1171,9 +1194,7 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
     _locating?.close();
     _locating = null;
     if (!mounted) return;
-    setState(() {});
-    // The same four sentences the maps give, from the one place that has them.
-    showLocationProblem(context, problem);
+    setState(() => _locationProblem = problem);
   }
 
   @override
@@ -1209,7 +1230,12 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
                           : l10n.connectionPickPlace,
                       prefixIcon: const Icon(Icons.search),
                     ),
-                    onChanged: (v) => setState(() => _query = v),
+                    onChanged: (v) => setState(() {
+                      _query = v;
+                      // Naming a place is a different answer to the same
+                      // question, and it cannot be refused by a receiver.
+                      _locationProblem = null;
+                    }),
                   ),
                   // Said here rather than discovered as a suggestion list that
                   // silently omits the address just typed into it.
@@ -1229,8 +1255,30 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
             if (async.hasError)
               _ErrorRow(
                 message: l10n.connectionSearchError,
-                retryLabel: l10n.connectionRetry,
-                onRetry: () => ref.invalidate(geocodeProvider(_query)),
+                actionLabel: l10n.connectionRetry,
+                onAction: () => ref.invalidate(geocodeProvider(_query)),
+              ),
+            // Where the geocoder's own failure is reported, since both are the
+            // same kind of news: the sheet could not do what was asked of it.
+            // The words are the maps' words, from `locationProblemText`.
+            if (_locationProblem case final problem?)
+              Builder(
+                builder: (context) {
+                  final (:message, :openSettings) = locationProblemText(
+                    l10n,
+                    problem,
+                  );
+                  return _ErrorRow(
+                    message: message,
+                    actionLabel: openSettings == null
+                        ? null
+                        : l10n.mapLocationOpenSettings,
+                    actionIcon: Icons.settings_outlined,
+                    onAction: openSettings == null
+                        ? null
+                        : () => openSettings(),
+                  );
+                },
               ),
             Flexible(
               child: ListView(

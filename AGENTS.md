@@ -834,7 +834,18 @@ UI (features/*/presentation, *widgets)
   is the half that may bring up the dialog and a resume replacing it would withdraw the
   question just asked. Where a map *behind* the sheet has the receiver running already, its
   reading is taken as it stands rather than restarting the session and blanking its mark.
-  The four refusals read identically in both places, from the one `showLocationProblem`.
+  The four refusals read identically wherever they are said, from the one
+  `locationProblemText` — but they are not *shown* the same way, and that split is the
+  general fact rather than a detail of this feature: **a snackbar raised from inside a modal
+  sheet is drawn by the scaffold behind that sheet**, since a sheet is a route in the overlay
+  and hosts no `Scaffold` of its own, so the message lands underneath the thing the user is
+  looking at. The search therefore says it in an `_ErrorRow` beside the geocoder's own
+  failure — the better vessel here in any case: it sits next to the control that raised it,
+  carries the way out to the system screen without competing with the sheet for the bottom of
+  the display, and stays put while an unfamiliar sentence is read, where a snackbar is gone in
+  four seconds. A map keeps `showLocationProblem`, having nothing above it to hide one. Note
+  that `find.text` finds a message either way, so a test that only asks *whether* it was said
+  passes while nothing is visible; ask where it is (`find.descendant(of: BottomSheet)`).
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what
