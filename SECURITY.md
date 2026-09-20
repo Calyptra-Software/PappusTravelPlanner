@@ -127,8 +127,10 @@ widget to open a trip.
 platform's location service and stops it again when the map is closed. The
 button's setting is remembered, so a map opened later starts it again by
 itself — but only where the permission has already been granted: the dialog
-appears on that press and at no other moment, and switching the mark off stops
-the app asking for a position again. The reading is held in memory for as long
+appears on a press and at no other moment, and switching the mark off stops
+the app asking for a position again. The connection search's *Use my position*
+is the second such press: it starts the service, takes one reading as the
+endpoint of that search, and releases it again immediately. The reading is held in memory for as long
 as it is on screen — it is not written to the database, does not go into a
 `.tpt` bundle or any other export, and is not sent anywhere. See *What is deliberately not a vulnerability* below for what the
 tile server does and does not learn from it.

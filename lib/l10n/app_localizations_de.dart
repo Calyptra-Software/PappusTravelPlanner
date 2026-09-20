@@ -1196,6 +1196,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapPickHint => 'Auf die Karte tippen, um einen Punkt zu setzen';
 
   @override
+  String get connectionUseMyPosition => 'Meine Position verwenden';
+
+  @override
   String get connectionPickOnMap => 'Auf Karte wählen';
 
   @override

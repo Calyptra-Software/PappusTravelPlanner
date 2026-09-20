@@ -638,6 +638,10 @@
   "@mapPickHint": {
     "description": "Shown in the map picker until a position has been chosen."
   },
+  "connectionUseMyPosition": "Use my position",
+  "@connectionUseMyPosition": {
+    "description": "Takes the device's own reading as the start or end of a connection search."
+  },
   "connectionPickOnMap": "Choose on map",
   "@connectionPickOnMap": {
     "description": "Opens the map to pick a coordinate as a search endpoint."

@@ -8,8 +8,11 @@ import '../../../data/database/app_database.dart' show Trip;
 import '../../../data/database/tables.dart' show TripKind;
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
+import '../../map/location/device_location.dart';
 import '../../map/map_features.dart';
 import '../../map/presentation/map_picker_screen.dart';
+import '../../map/widgets/device_location_overlay.dart'
+    show showLocationProblem;
 import '../../trips/application/trip_providers.dart';
 import '../../trips/widgets/trip_picker.dart';
 import '../application/journey_search_options_provider.dart';
@@ -1068,19 +1071,48 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
   );
   late String _query = widget.initialQuery ?? '';
 
+  /// The receiver, for as long as this sheet is the reason it is running.
+  ///
+  /// Held by hand rather than watched in `build`, and that is the whole of what
+  /// keeps the rule: watching would start a receiver because a *picker was
+  /// opened*, and this sheet is not a map — there is nothing on it for a
+  /// position to be drawn on. A subscription made on the press keeps the
+  /// provider, and so the receiver, alive for exactly as long as the press is
+  /// waiting for its answer; closing it releases both, by `autoDispose`.
+  ///
+  /// Which is also why nothing here calls `stop()`: that writes the remembered
+  /// switch, and it is the user's standing answer for their *maps*. A search
+  /// asking where it starts must not switch the mark off everywhere else.
+  ProviderSubscription<DeviceLocationState>? _locating;
+
   @override
   void dispose() {
+    _locating?.close();
     _controller.dispose();
     super.dispose();
   }
 
-  /// Picks a bare coordinate from the map and answers the sheet with it.
+  /// A bare coordinate as a search endpoint.
   ///
-  /// The result is a [TransportPlace] of kind [PlaceKind.place], which is what
-  /// makes `queryId` send `lat,lon` rather than an id — there is no id to send,
-  /// and a coordinate is what the router wants for a door anyway. It is named by
-  /// its own numbers: the app does not ask the geocoder what is there, because
-  /// that would be putting a name on the user's choice that they did not make.
+  /// Kind [PlaceKind.place], which is what makes `queryId` send `lat,lon`
+  /// rather than an id — there is no id to send, and a coordinate is what the
+  /// router wants for a door anyway. Named by its **own numbers** in both cases
+  /// this is reached from, and for the same reason: the app does not ask the
+  /// geocoder what is there, because that would put a name on a choice the user
+  /// did not make. A reading of the device is not called "my position" either,
+  /// tempting as it reads in the field — the name is what the imported leg
+  /// carries afterwards, and "my position" stops being true the moment its
+  /// owner walks away from it, while the numbers go on saying where the journey
+  /// started.
+  TransportPlace _coordinatePlace(LatLng point) => TransportPlace(
+    id: coordinateQueryId(point.latitude, point.longitude),
+    name: formatCoordinates(point),
+    kind: PlaceKind.place,
+    lat: point.latitude,
+    lon: point.longitude,
+  );
+
+  /// Picks a bare coordinate from the map and answers the sheet with it.
   Future<void> _pickOnMap(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final point = await pickPointOnMap(
@@ -1089,15 +1121,59 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
       nearby: widget.nearby,
     );
     if (point == null || !context.mounted) return;
-    Navigator.of(context).pop(
-      TransportPlace(
-        id: coordinateQueryId(point.latitude, point.longitude),
-        name: formatCoordinates(point),
-        kind: PlaceKind.place,
-        lat: point.latitude,
-        lon: point.longitude,
-      ),
-    );
+    Navigator.of(context).pop(_coordinatePlace(point));
+  }
+
+  /// Takes the device's own reading as this end of the search.
+  ///
+  /// "When is the next train from here" is the question a phone is holding the
+  /// answer to, and until now the way to it was *Choose on map*, the map's
+  /// locate button, and a tap on the mark — three acts and a wait, for the
+  /// commonest starting point there is.
+  ///
+  /// Still a pointing act, which is the rule this does not break: the press
+  /// states the position, and only the reading that press was waiting for is
+  /// taken, so a receiver that walks the mark down the street afterwards does
+  /// not walk the search endpoint with it. The same trade `pickPointOnMap`'s
+  /// own locate button makes.
+  void _useMyPosition() {
+    final subscription = ref.listenManual(deviceLocationProvider, (_, next) {
+      final fix = next.fix;
+      if (fix != null) {
+        _takeReading(fix);
+        return;
+      }
+      final problem = next.problem;
+      if (problem != null) _giveUpOnReading(problem);
+    });
+    _locating = subscription;
+
+    final current = subscription.read();
+    final fix = current.fix;
+    if (fix != null) return _takeReading(fix);
+    // A map behind this sheet may have the receiver running already — the
+    // overview's own map is one of the places a lookup is started from, and the
+    // remembered switch puts the mark there without being asked. Starting again
+    // would cancel that session and blank its mark for a second, to ask the
+    // question it is in the middle of answering.
+    if (!current.on) ref.read(deviceLocationProvider.notifier).start();
+    setState(() {});
+  }
+
+  void _takeReading(DeviceFix fix) {
+    _locating?.close();
+    _locating = null;
+    if (!mounted) return;
+    Navigator.of(context).pop(_coordinatePlace(fix.position));
+  }
+
+  void _giveUpOnReading(LocationProblem problem) {
+    _locating?.close();
+    _locating = null;
+    if (!mounted) return;
+    setState(() {});
+    // The same four sentences the maps give, from the one place that has them.
+    showLocationProblem(context, problem);
   }
 
   @override
@@ -1170,12 +1246,29 @@ class _PlacePickerSheetState extends ConsumerState<_PlacePickerSheet> {
                   // ids there, so a coordinate would be a choice that could only
                   // fail — which is the same reason that list is filtered to
                   // stations.
-                  if (!widget.stopsOnly)
+                  if (!widget.stopsOnly) ...[
+                    ListTile(
+                      leading: const Icon(Icons.my_location),
+                      title: Text(l10n.connectionUseMyPosition),
+                      // Working, and there is nothing else on this sheet that
+                      // would say so. Not tappable meanwhile: a second press
+                      // has no second meaning here, and the way out of a fix
+                      // that never comes is to close the picker, which releases
+                      // the receiver with it.
+                      trailing: _locating == null
+                          ? null
+                          : const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                      onTap: _locating == null ? _useMyPosition : null,
+                    ),
                     ListTile(
                       leading: const Icon(Icons.map_outlined),
                       title: Text(l10n.connectionPickOnMap),
                       onTap: () => _pickOnMap(context),
                     ),
+                  ],
                   for (final place in places)
                     ListTile(
                       leading: const Icon(Icons.place_outlined),

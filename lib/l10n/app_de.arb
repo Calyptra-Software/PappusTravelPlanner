@@ -420,6 +420,7 @@
   "coordinatesPick": "Auf Karte wählen",
   "coordinatesClear": "Position entfernen",
   "mapPickHint": "Auf die Karte tippen, um einen Punkt zu setzen",
+  "connectionUseMyPosition": "Meine Position verwenden",
   "connectionPickOnMap": "Auf Karte wählen",
   "mapView": "Karte",
   "statsOpen": "Statistik",

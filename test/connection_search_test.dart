@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -32,6 +33,8 @@ import 'package:travelplanner/features/map/presentation/map_picker_screen.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'location_fixture.dart';
 
 /// Records import calls without touching the database.
 class _FakeController extends TransportSearchController {
@@ -151,6 +154,10 @@ class _FakeSearch implements TransportSearch {
   /// own anchor day, which no timetable answers for.
   DateTime? lastTime;
 
+  /// How the last query addressed its start: a stop id, or `lat,lon` for
+  /// anything with no id of its own.
+  String? lastFromId;
+
   /// When set, only *paging* requests fail — the first window still answers, so
   /// a test can check that results already found survive a failed "later".
   bool failPaging = false;
@@ -176,6 +183,7 @@ class _FakeSearch implements TransportSearch {
   }) async {
     calls.add((options: options, via: via, pageCursor: pageCursor));
     lastTime = time;
+    lastFromId = fromId;
     if (pageCursor != null && failPaging) {
       throw const TransportSearchException('offline');
     }
@@ -1375,15 +1383,119 @@ void main() {
     expect(picker.nearby, [LatLng(_address.lat!, _address.lon!)]);
   });
 
-  testWidgets('a via stop is not offered the map', (tester) async {
+  testWidgets('a via stop is offered neither the map nor the device', (
+    tester,
+  ) async {
     await pump(tester);
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
 
     // Only stop ids are allowed there, so a coordinate could only fail — the
-    // same reason that list is filtered to stations.
+    // same reason that list is filtered to stations, and it rules out both ways
+    // of naming one.
     await tester.tap(find.text('Add via stop'));
     await tester.pumpAndSettle();
     expect(find.text('Choose on map'), findsNothing);
+    expect(find.text('Use my position'), findsNothing);
+  });
+
+  /// "When is the next train from here" asked without naming where here is.
+  group('an endpoint can be the device itself', () {
+    late FakeGeolocator platform;
+
+    setUp(() {
+      platform = FakeGeolocator()..permission = LocationPermission.whileInUse;
+      GeolocatorPlatform.instance = platform;
+    });
+
+    testWidgets('a reading fills the end it was asked from', (tester) async {
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+      // Pumped rather than settled: the row spins until the reading arrives.
+      await tester.tap(find.text('Use my position'));
+      await tester.pump();
+
+      platform.emit(latitude: 53.55, longitude: 9.99, accuracy: 12);
+      await tester.pumpAndSettle();
+
+      // Named by its own numbers, exactly as a point chosen on the map is: the
+      // name is what an imported leg carries afterwards, and "my position"
+      // stops being true the moment its owner walks away from it.
+      expect(find.text('53.55000, 9.99000'), findsOneWidget);
+
+      await pickInto(tester, 'To');
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+
+      // There is no id to send, so the router is addressed by the coordinate —
+      // which it takes anywhere it takes a stop id.
+      expect(search.lastFromId, '53.55,9.99');
+    });
+
+    testWidgets('only the reading the press waited for is taken', (
+      tester,
+    ) async {
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Use my position'));
+      await tester.pump();
+
+      platform.emit(latitude: 53.55, longitude: 9.99, accuracy: 12);
+      await tester.pumpAndSettle();
+      // The receiver goes on reading; the endpoint does not go on moving. A
+      // press states a position, and a statement does not follow its owner
+      // down the street.
+      platform.emit(latitude: 48.13, longitude: 11.58, accuracy: 12);
+      await tester.pumpAndSettle();
+
+      expect(find.text('53.55000, 9.99000'), findsOneWidget);
+      expect(find.textContaining('48.13'), findsNothing);
+      expect(
+        platform.streamCancelled,
+        isTrue,
+        reason: 'and the receiver is released with the sheet',
+      );
+    });
+
+    testWidgets('opening the picker starts nothing', (tester) async {
+      // Even with the switch the maps remember left on: this sheet is not a
+      // map, and there is nothing on it a position would be drawn on. Nothing
+      // watches the provider until the row is pressed, so nothing resumes.
+      await prefs.setBool('map_show_my_location', true);
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+
+      expect(platform.streamRequested, isFalse);
+      expect(platform.permissionRequests, 0);
+    });
+
+    testWidgets('a refusal is said in the words the maps use', (tester) async {
+      platform.permission = LocationPermission.denied;
+      await pump(tester);
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('From'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Use my position'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Location access was declined'), findsOneWidget);
+      // The picker stays open with the row pressable again: a refusal is an
+      // answer to this press, not the end of the question.
+      expect(find.text('Use my position'), findsOneWidget);
+    });
   });
 }

@@ -43,6 +43,44 @@ const Color _kLocationBlue = Color(0xFF1A73E8);
 /// the sort of help nobody wants twice.
 const double kLocationZoom = 15;
 
+/// Says a refusal out loud, with a way out of it where there is one.
+///
+/// Public because a map is no longer the only place a reading is asked for: the
+/// connection search takes one as an endpoint, and the same four answers have
+/// to read the same way there. Two sets of words for one state is how one of
+/// them ends up describing something the app no longer does.
+void showLocationProblem(BuildContext context, LocationProblem problem) {
+  final l10n = AppLocalizations.of(context);
+
+  // The two problems with a system screen behind them get an action rather
+  // than a sentence telling the user to go and find it: a permission the
+  // platform will not ask about again, and location switched off device-wide,
+  // both sit several taps deep in places that differ per OS and per version.
+  final (String message, Future<bool> Function()? settings) = switch (problem) {
+    LocationProblem.denied => (l10n.mapLocationDenied, null),
+    LocationProblem.deniedForever => (
+      l10n.mapLocationBlocked,
+      Geolocator.openAppSettings,
+    ),
+    LocationProblem.serviceOff => (
+      l10n.mapLocationServiceOff,
+      Geolocator.openLocationSettings,
+    ),
+    LocationProblem.failed => (l10n.mapLocationFailed, null),
+  };
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      action: settings == null
+          ? null
+          : SnackBarAction(
+              label: l10n.mapLocationOpenSettings,
+              onPressed: () => settings(),
+            ),
+    ),
+  );
+}
+
 /// Reports a refusal, once, as a message with a way out of it where there is
 /// one.
 ///
@@ -50,41 +88,10 @@ const double kLocationZoom = 15;
 /// null, so a second attempt that fails the same way still says so, while the
 /// stream of fixes that follows a successful one cannot re-raise anything.
 void reportLocationProblems(BuildContext context, WidgetRef ref) {
-  final l10n = AppLocalizations.of(context);
   ref.listen(deviceLocationProvider, (previous, next) {
     final problem = next.problem;
     if (problem == null || problem == previous?.problem) return;
-
-    // The two problems with a system screen behind them get an action rather
-    // than a sentence telling the user to go and find it: a permission the
-    // platform will not ask about again, and location switched off device-wide,
-    // both sit several taps deep in places that differ per OS and per version.
-    final (
-      String message,
-      Future<bool> Function()? settings,
-    ) = switch (problem) {
-      LocationProblem.denied => (l10n.mapLocationDenied, null),
-      LocationProblem.deniedForever => (
-        l10n.mapLocationBlocked,
-        Geolocator.openAppSettings,
-      ),
-      LocationProblem.serviceOff => (
-        l10n.mapLocationServiceOff,
-        Geolocator.openLocationSettings,
-      ),
-      LocationProblem.failed => (l10n.mapLocationFailed, null),
-    };
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        action: settings == null
-            ? null
-            : SnackBarAction(
-                label: l10n.mapLocationOpenSettings,
-                onPressed: () => settings(),
-              ),
-      ),
-    );
+    showLocationProblem(context, problem);
   });
 }
 

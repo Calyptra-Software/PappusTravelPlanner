@@ -810,6 +810,31 @@ UI (features/*/presentation, *widgets)
   a lookup with neither end named — the list is empty, which is a wider map and not a wrong
   one. The geocoder is deliberately *not* biased by any of it: a name is looked up the same
   way wherever the trip is.
+- **And it can be pointed at the device, which is the commonest endpoint there is.**
+  *Use my position* sits above *Choose on map* in the same picker, for either end and by the
+  same rule as the map (not for a **via** stop). It answers with the same
+  `_coordinatePlace` — kind `place`, `lat,lon` as the `queryId`, **named by its own
+  numbers**: a reading is not called "my position" however well that reads in the field,
+  because the name is what an imported leg carries afterwards, and "my position" stops being
+  true the moment its owner walks away from it while the numbers go on saying where the
+  journey started. It is still a *pointing* act — the press states the position, and only
+  the reading that press was waiting for is taken, the same trade the map picker's own
+  locate button makes; the receiver goes on reading and the endpoint does not go on moving.
+  The route to it was three acts and a wait (*Choose on map*, the locate button, a tap on
+  the mark) for the question a phone is holding the answer to.
+  What it must **not** do is start a receiver because a picker was opened: this sheet is not
+  a map and has nothing to draw a position on. So it holds the provider with
+  `ref.listenManual` **on the press** rather than watching it in `build` — the subscription
+  is what keeps an `autoDispose` provider, and so the receiver, alive for exactly as long as
+  the press is waiting, and closing it releases both. Nothing here calls `stop()` either:
+  that writes the remembered switch, which is the user's standing answer for their *maps*,
+  and a search asking where it starts must not switch the mark off everywhere else. The
+  press also **beats the resume** that the provider's own `build` schedules when that switch
+  is on (`_resume` yields to a session already running or already answered), since the press
+  is the half that may bring up the dialog and a resume replacing it would withdraw the
+  question just asked. Where a map *behind* the sheet has the receiver running already, its
+  reading is taken as it stands rather than restarting the session and blanking its mark.
+  The four refusals read identically in both places, from the one `showLocationProblem`.
 - **The picker writes coordinates and nothing else.** Not `fromPlaceId`/`toPlaceId`: those
   mean "the id the search was issued against", and a tap on a map is not a search. The
   coordinate fallback in `planned_journey.dart` then addresses the end anyway, which is what

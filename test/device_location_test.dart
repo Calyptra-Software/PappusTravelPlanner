@@ -293,6 +293,23 @@ void main() {
       expect(platform.streamRequested, isFalse);
     });
 
+    test('yields to a press made in the same turn', () async {
+      // The connection search's *Use my position* is what makes this ordinary:
+      // there the press is what first makes anything watch the provider, so the
+      // resume the build schedules and the press race each other. The press
+      // wins outright, because it is the half that may bring up the dialog —
+      // a resume replacing it would withdraw the question just asked.
+      platform.permission = LocationPermission.denied;
+      await remembered(true);
+      final (container, controller) = open();
+
+      await controller.start();
+      await pumpEventQueue();
+
+      expect(platform.permissionRequests, 1, reason: 'the press may ask');
+      expect(stateOf(container).problem, LocationProblem.denied);
+    });
+
     test('switching off mid-start leaves no receiver behind', () async {
       // The window is the width of the checks a start waits on, and the resume
       // puts one in flight on every map that opens — so an off pressed in the
