@@ -139,6 +139,14 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
         ItineraryItemsCompanion(colorValue: Value(colorValue)),
       );
 
+  /// Writes just whether the map draws the straight segment between a leg's
+  /// ends — targeted for the reason [setItemColor] is: its callers hold a
+  /// snapshot of the row.
+  Future<void> setChordDisplay(int id, TrackDisplay display) =>
+      (update(itineraryItems)..where((i) => i.id.equals(id))).write(
+        ItineraryItemsCompanion(chordDisplay: Value(display)),
+      );
+
   Future<int> deleteItem(int id) =>
       (delete(itineraryItems)..where((i) => i.id.equals(id))).go();
 

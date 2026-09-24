@@ -21,6 +21,7 @@ void main() {
     kind: ItemKind.transport,
     title: title,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   ItineraryItem place(int id, String title, {int day = 1}) => ItineraryItem(
@@ -31,6 +32,7 @@ void main() {
     kind: ItemKind.place,
     title: title,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   /// A day of walk, café, walk, station, train.
@@ -200,6 +202,7 @@ void main() {
           sortOrder: 0,
           kind: ItemKind.transport,
           spansNextDay: false,
+          chordDisplay: TrackDisplay.auto,
           fromLocation: 'Rahlstedt',
           toLocation: 'Hbf',
         ),
@@ -238,6 +241,7 @@ void main() {
     title: title,
     alternativeId: branchId,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   /// A day that forks: a loose walk, then a choice between the ferry and the

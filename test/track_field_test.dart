@@ -44,7 +44,14 @@ void main() {
     sortOrder: id,
   );
 
-  Future<void> pump(WidgetTester tester, List<Track> tracks) async {
+  Future<void> pump(
+    WidgetTester tester,
+    List<Track> tracks, {
+    LatLng? from,
+    LatLng? to,
+    TrackDisplay chordDisplay = TrackDisplay.auto,
+    ValueChanged<TrackDisplay>? onSetChordDisplay,
+  }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -60,20 +67,31 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(body: TrackField(itemId: itemId, tripId: 1)),
+          home: Scaffold(
+            body: TrackField(
+              itemId: itemId,
+              tripId: 1,
+              from: from,
+              to: to,
+              chordDisplay: chordDisplay,
+              onSetChordDisplay: onSetChordDisplay,
+            ),
+          ),
         ),
       ),
     );
     await tester.pump();
   }
 
-  testWidgets('with no line it says so, and what the map draws instead', (
+  testWidgets('with no line and no ends it says the map draws nothing', (
     tester,
   ) async {
     await pump(tester, const []);
 
     expect(
-      find.text('None — the map draws the straight line between the ends.'),
+      find.text(
+        'None — a leg is drawn once both of its ends have coordinates.',
+      ),
       findsOneWidget,
     );
     expect(find.text('Import GPX…'), findsOneWidget);
@@ -167,6 +185,70 @@ void main() {
       ]);
 
       expect(find.text('Tunnel · Imported · 1.1 km'), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+    });
+  });
+
+  group('the straight line between the ends', () {
+    const hamburg = LatLng(53.55, 9.99);
+    const north = LatLng(53.56, 9.99);
+
+    testWidgets('is listed once both ends are placed, and drawn', (
+      tester,
+    ) async {
+      await pump(tester, const [], from: hamburg, to: north);
+
+      expect(find.text('Straight line · 1.1 km'), findsOneWidget);
+      // Its own row says what the map draws, so "none" would contradict it.
+      expect(find.textContaining('None'), findsNothing);
+    });
+
+    testWidgets('is not listed with one end missing', (tester) async {
+      await pump(tester, const [], from: hamburg);
+
+      expect(find.textContaining('Straight line'), findsNothing);
+    });
+
+    testWidgets('is off while a stored line is drawn instead', (tester) async {
+      await pump(
+        tester,
+        [track(1)],
+        from: hamburg,
+        to: north,
+        onSetChordDisplay: (_) {},
+      );
+
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_off), findsOneWidget);
+    });
+
+    testWidgets('its eye hides it, with nothing to remove', (tester) async {
+      TrackDisplay? written;
+      await pump(
+        tester,
+        const [],
+        from: hamburg,
+        to: north,
+        onSetChordDisplay: (display) => written = display,
+      );
+
+      // The ends are the leg's positions and are edited as such.
+      expect(find.byIcon(Icons.close), findsNothing);
+      await tester.tap(find.byIcon(Icons.visibility));
+      expect(written, TrackDisplay.hidden);
+    });
+
+    testWidgets('a hidden one stays listed, to be put back', (tester) async {
+      await pump(
+        tester,
+        const [],
+        from: hamburg,
+        to: north,
+        chordDisplay: TrackDisplay.hidden,
+        onSetChordDisplay: (_) {},
+      );
+
+      expect(find.text('Straight line · 1.1 km'), findsOneWidget);
       expect(find.byIcon(Icons.visibility_off), findsOneWidget);
     });
   });

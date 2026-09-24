@@ -18,6 +18,7 @@ void main() {
         kind: ItemKind.place,
         title: title,
         spansNextDay: false,
+        chordDisplay: TrackDisplay.auto,
         lat: lat,
         lon: lon,
       );
@@ -35,6 +36,7 @@ void main() {
     sortOrder: 0,
     kind: ItemKind.transport,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     fromLat: fromLat,
     fromLon: fromLon,
     toLat: toLat,
@@ -293,6 +295,7 @@ void main() {
       sortOrder: 0,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       fromLat: 53.5511,
       fromLon: 9.9937,
       toLat: 53.5600,
@@ -361,6 +364,7 @@ void main() {
       sortOrder: 0,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       fromLat: 53.5511,
       fromLon: 9.9937,
       toLat: 53.5600,
@@ -506,6 +510,7 @@ void main() {
       sortOrder: 0,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       fromLat: 53.5511,
       fromLon: 9.9937,
       toLat: 53.5600,
@@ -564,6 +569,7 @@ void main() {
       sortOrder: id,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       fromLat: 53.5511,
       fromLon: 9.9937,
       toLat: 53.5600,
@@ -944,6 +950,92 @@ void main() {
       ], excludingId: edited.id);
 
       expect(points, [const LatLng(3.0, 4.0)]);
+    });
+  });
+
+  group('the straight segment between the ends can be put away', () {
+    ItineraryItem leg({TrackDisplay chord = TrackDisplay.auto}) =>
+        ItineraryItem(
+          id: 1,
+          tripId: 1,
+          date: DateTime(2026, 5, 1),
+          sortOrder: 0,
+          kind: ItemKind.transport,
+          spansNextDay: false,
+          chordDisplay: chord,
+          fromLat: 53.5511,
+          fromLon: 9.9937,
+          toLat: 53.5600,
+          toLon: 10.0100,
+        );
+
+    const walked = [LatLng(53.5511, 9.9937), LatLng(53.5540, 9.9990)];
+
+    test('the rule, in its three states', () {
+      expect(chordDrawn(TrackDisplay.auto, anyLineDrawn: false), isTrue);
+      expect(chordDrawn(TrackDisplay.auto, anyLineDrawn: true), isFalse);
+      expect(chordDrawn(TrackDisplay.hidden, anyLineDrawn: false), isFalse);
+      expect(chordDrawn(TrackDisplay.shown, anyLineDrawn: true), isTrue);
+    });
+
+    test('a hidden segment leaves a leg with no line off the map', () {
+      // The ends stay in the row — a reference, not a line to draw.
+      expect(tripMapFeatures([leg(chord: TrackDisplay.hidden)]).paths, isEmpty);
+    });
+
+    test('and one whose lines are hidden too', () {
+      final features = tripMapFeatures(
+        [leg(chord: TrackDisplay.hidden)],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: walked,
+              source: TrackSource.imported,
+              display: TrackDisplay.hidden,
+            ),
+          ],
+        },
+      );
+
+      expect(features.paths, isEmpty);
+      expect(features.isEmpty, isTrue);
+    });
+
+    test('hiding it changes nothing while a stored line is drawn', () {
+      final features = tripMapFeatures(
+        [leg(chord: TrackDisplay.hidden)],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: walked,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+
+      expect(features.paths.map((p) => p.trackId), [11]);
+    });
+
+    test('a segment asked for is drawn beside the stored line', () {
+      final features = tripMapFeatures(
+        [leg(chord: TrackDisplay.shown)],
+        tracks: {
+          1: [
+            const TrackLine(
+              id: 11,
+              points: walked,
+              source: TrackSource.imported,
+            ),
+          ],
+        },
+      );
+
+      expect(features.paths.map((p) => p.trackId), [11, null]);
+      // Still one badge for the entry.
+      expect(features.paths.where((p) => p.badged), hasLength(1));
     });
   });
 }

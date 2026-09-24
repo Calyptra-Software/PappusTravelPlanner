@@ -485,6 +485,7 @@ class BundleItem {
     this.notes,
     this.location,
     this.colorValue,
+    this.chordDisplay = TrackDisplay.auto,
     this.lat,
     this.lon,
     this.mode,
@@ -528,6 +529,13 @@ class BundleItem {
   /// lossless. Absent from bundles written before entries could carry one,
   /// which read as null: exactly the trip they described.
   final int? colorValue;
+
+  /// Whether the map draws the straight segment between a leg's ends. A choice
+  /// about the entry like [colorValue], so it travels; by **name**, like
+  /// [BundleTrack.display], and only when it says something, so no format
+  /// version moves — an older app draws the segment, which is the trip as it
+  /// always drew it.
+  final TrackDisplay chordDisplay;
 
   // place-only
   final String? location;
@@ -596,6 +604,7 @@ class BundleItem {
     'spansNextDay': spansNextDay,
     'notes': notes,
     'colorValue': colorValue,
+    if (chordDisplay != TrackDisplay.auto) 'chordDisplay': chordDisplay.name,
     'location': location,
     'lat': lat,
     'lon': lon,
@@ -632,6 +641,10 @@ class BundleItem {
     spansNextDay: json['spansNextDay'] as bool? ?? false,
     notes: json['notes'] as String?,
     colorValue: json['colorValue'] as int?,
+    chordDisplay: TrackDisplay.values.firstWhere(
+      (d) => d.name == json['chordDisplay'],
+      orElse: () => TrackDisplay.auto,
+    ),
     location: json['location'] as String?,
     // Read as `num`, not `double`: a coordinate that happens to be whole may
     // come back from another writer's JSON as an int, and a cast would throw on

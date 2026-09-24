@@ -974,6 +974,51 @@ void main() {
         expect(items.map((i) => i.colorValue), [0xFF1B5E20, null]);
       },
     );
+
+    test('a hidden straight line travels, and says so only then', () async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'Hamburg'),
+      );
+      for (final (i, chord) in [
+        TrackDisplay.hidden,
+        TrackDisplay.auto,
+      ].indexed) {
+        await db.itineraryDao.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: tripId,
+            date: DateTime(2026, 5),
+            kind: ItemKind.transport,
+            sortOrder: Value(i),
+            fromLat: const Value(53.55),
+            fromLon: const Value(9.99),
+            toLat: const Value(53.56),
+            toLon: const Value(10.01),
+            chordDisplay: Value(chord),
+          ),
+        );
+      }
+
+      final bundle = (await db.sharingDao.exportTrip(tripId))!;
+      final json = [for (final item in bundle.items) item.toJson()];
+      expect(json.first['chordDisplay'], 'hidden');
+      // The default is not written, so an ordinary bundle is what it was.
+      expect(json.last.containsKey('chordDisplay'), isFalse);
+
+      final target = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(target.close);
+      final importedId = await target.sharingDao.importTrip(
+        TripBundle.fromJson(bundle.toJson()),
+      );
+      final items = await target.itineraryDao
+          .watchItemsForTrip(importedId)
+          .first;
+      expect(items.map((i) => i.chordDisplay), [
+        TrackDisplay.hidden,
+        TrackDisplay.auto,
+      ]);
+      // Hidden or not, the ends come along.
+      expect(items.first.fromLat, 53.55);
+    });
   });
 }
 

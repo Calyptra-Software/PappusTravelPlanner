@@ -1005,7 +1005,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapColorTrip => 'Trip color';
 
   @override
-  String get trackSection => 'Recorded line';
+  String get trackSection => 'Lines on the map';
 
   @override
   String get trackImport => 'Import GPX…';
@@ -1036,7 +1036,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get trackNone =>
-      'None — the map draws the straight line between the ends.';
+      'None — a leg is drawn once both of its ends have coordinates.';
+
+  @override
+  String get trackChord => 'Straight line';
 
   @override
   String trackCount(int count) {

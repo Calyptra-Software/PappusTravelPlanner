@@ -13,6 +13,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.transport,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     fromLat: fromLat,
     fromLon: fromLat == null ? null : 9.0,
     toLat: toLat,
@@ -27,6 +28,7 @@ void main() {
     kind: ItemKind.place,
     title: 'Café',
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     lat: lat,
     lon: lat == null ? null : 9.0,
   );
@@ -117,6 +119,7 @@ void main() {
       sortOrder: id,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
     );
 
     test('two bare legs come out fully placed', () {

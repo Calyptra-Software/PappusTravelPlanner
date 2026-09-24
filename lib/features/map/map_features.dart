@@ -228,7 +228,9 @@ final class TripMapFeatures {
 /// it **instead of** the straight segment between its ends: the chord and the
 /// path are two answers to the same question, and drawing both would put a line
 /// across the bay beside the line around it. Without one, nothing changes — the
-/// great circle between the ends is still the best the plan can say.
+/// great circle between the ends is still the best the plan can say. Both are
+/// defaults the user may overrule, line by line and for the chord
+/// (`chordDisplay`), which is [drawnTrackIds] and [chordDrawn].
 ///
 /// [photos] are the trip's positioned pictures, *unfiltered*: which of them the
 /// map may draw is decided here rather than in SQL, because the answer is
@@ -283,27 +285,28 @@ TripMapFeatures tripMapFeatures(
         ];
         final pieces =
             <({int? trackId, bool dashed, List<List<LatLng>> segments})>[];
-        if (drawn.isNotEmpty) {
-          for (final line in drawn) {
-            pieces.add((
-              trackId: line.id,
-              // On the line making the claim, not on the entry: a routed line
-              // the user has asked to see may now stand beside a recording, and
-              // the dash is what says which is which.
-              dashed: line.source == TrackSource.routed,
-              segments: splitAtAntimeridian(line.points),
-            ));
-          }
-        } else {
-          final from = _point(item.fromLat, item.fromLon);
-          final to = _point(item.toLat, item.toLon);
-          if (from == null || to == null) continue;
+        for (final line in drawn) {
+          pieces.add((
+            trackId: line.id,
+            // On the line making the claim, not on the entry: a routed line
+            // the user has asked to see may now stand beside a recording, and
+            // the dash is what says which is which.
+            dashed: line.source == TrackSource.routed,
+            segments: splitAtAntimeridian(line.points),
+          ));
+        }
+        final from = _point(item.fromLat, item.fromLon);
+        final to = _point(item.toLat, item.toLon);
+        if (from != null &&
+            to != null &&
+            chordDrawn(item.chordDisplay, anyLineDrawn: drawn.isNotEmpty)) {
           pieces.add((
             trackId: null,
             dashed: false,
             segments: splitAtAntimeridian(greatCircle(from, to)),
           ));
         }
+        if (pieces.isEmpty) continue;
         final badge = _badgeIndex(pieces);
         for (var i = 0; i < pieces.length; i++) {
           paths.add(
@@ -472,11 +475,11 @@ List<List<LatLng>> splitAtAntimeridian(List<LatLng> points) {
 ///   counting the ones forced [TrackDisplay.shown], since a line the user asked
 ///   for is a line that is there.
 ///
-/// The answer may be **empty**, which is new: with every line hidden the entry
-/// falls back to the straight segment between its ends, exactly as an entry with
-/// no lines at all does. That is the plan's own statement about the leg, and a
-/// leg vanishing from the map because of a decision about *how* to draw it would
-/// be a bigger surprise than the chord.
+/// The answer may be **empty**: with every line hidden the entry falls back to
+/// the straight segment between its ends, exactly as an entry with no lines at
+/// all does (see [chordDrawn]). That is the plan's own statement about the leg,
+/// and a leg vanishing from the map because of a decision about *how one of its
+/// lines* is drawn would be a bigger surprise than the chord.
 Set<int> drawnTrackIds(
   Iterable<({int id, TrackSource source, TrackDisplay display})> lines,
 ) {
@@ -497,6 +500,33 @@ Set<int> drawnTrackIds(
   }
   return drawn;
 }
+
+/// Whether the straight segment between a leg's ends is drawn, given what the
+/// user said about it ([display], the entry's `chordDisplay`) and whether any of
+/// the leg's stored lines is being drawn ([anyLineDrawn], from
+/// [drawnTrackIds]).
+///
+/// The same three sentences as for a stored line, and the one place they are
+/// decided for the segment — the map and the lists saying whether it is drawn
+/// both ask here:
+///
+/// * [TrackDisplay.hidden]: never. The leg keeps its ends, which are still its
+///   positions, and simply has no line between them — for a leg whose ends are
+///   there as a reference and whose chord would cut across the picture;
+/// * [TrackDisplay.shown]: always, beside whatever else is drawn;
+/// * [TrackDisplay.auto]: only while nothing better is, which is the rule the
+///   map has always followed — a line that was followed or computed is a better
+///   drawing of the leg than the chord between its ends.
+///
+/// A hidden segment is the one way a leg with both ends placed leaves the map,
+/// and deliberately so: it is the user saying so about that very line, not a
+/// side effect of a decision about another one.
+bool chordDrawn(TrackDisplay display, {required bool anyLineDrawn}) =>
+    switch (display) {
+      TrackDisplay.hidden => false,
+      TrackDisplay.shown => true,
+      TrackDisplay.auto => !anyLineDrawn,
+    };
 
 /// The lines under one tap, folded to **one per entry**, in the order the plan
 /// draws them.

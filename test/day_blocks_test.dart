@@ -23,6 +23,7 @@ void main() {
     sortOrder: sortOrder,
     kind: ItemKind.place,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     title: title,
     alternativeId: alternativeId,
     groupId: groupId,

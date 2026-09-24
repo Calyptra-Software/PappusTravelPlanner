@@ -1186,6 +1186,26 @@ UI (features/*/presentation, *widgets)
   statement about the line, it travels — `copyItemTracks` (a hidden trace would otherwise
   come back every morning a routine is stamped out) and the `.tpt`, written only when it says
   something and read as `auto` when absent, so no format version moves.
+- **The chord is a line too, and the user may put it away.** `ItineraryItems.chordDisplay`
+  (v39) gives the straight segment between a leg's ends the same three `TrackDisplay` states,
+  decided once in the pure `chordDrawn`: `auto` draws it while no stored line is drawn (the
+  rule above, unchanged), `hidden` never, `shown` beside whatever else is. The case it exists
+  for is a leg whose ends are there **as a reference** — to frame the picker, to search a
+  connection from, to count a country — and whose chord would cut across the picture saying
+  nothing. Hiding it keeps the coordinates; only the line goes. That does not contradict the
+  fallback above: what that rule forbids is a leg vanishing because of a decision about
+  *another* line, and here the user is saying so about this very one. On the entry and not
+  on `Tracks`, since the chord is not a row there — the reason the color is on the entry.
+  It appears as a `ChordRow` under the stored lines wherever both ends are placed, drawn or
+  not (a row that appeared only while its line was drawn could not put it back), with the
+  eye and no remove, since the ends are edited as positions. In the item form the row
+  reads the form's *current* ends, so it follows an end picked before saving, and its eye
+  writes at once like a stored line's (`setChordDisplay`, targeted) while the form also
+  holds the value so its full-row save cannot put back the one it opened with. A tap on
+  the chord marks that row in `MapItemSheet` (`highlightChord`, since it has no track id).
+  It travels with `copyItemPlan` and in the `.tpt` (by name, only when not `auto`, no version
+  bump); it does **not** travel through `replaceJourneyLegs`, whose legs have new ends and
+  usually their own routed shapes. The all-trips map honors it through `tripMapFeatures`.
 - **A color is a property of the entry, not of the line it happens to be drawn as.**
   `ItineraryItems.colorValue` (nullable, v30) colors an entry on the map — a leg's line or a
   place's pin — and null means the trip's accent, which is what every row written before it
@@ -1805,7 +1825,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 38) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 39) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget

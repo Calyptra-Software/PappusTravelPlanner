@@ -345,6 +345,19 @@ class ItineraryItems extends Table {
   /// color it was given. One entry, one color, however it is drawn.
   IntColumn get colorValue => integer().nullable()();
 
+  /// Whether the map draws the straight segment between a leg's two ends — see
+  /// [TrackDisplay], whose three states it reuses. Defaults to
+  /// [TrackDisplay.auto], which is what every row written before v39 means: the
+  /// segment is drawn when no stored line of the leg is.
+  ///
+  /// On the entry and not on [Tracks] because the segment is not a row there:
+  /// it is the plan's own drawing of the leg, made out of the two ends this row
+  /// carries. Hiding it keeps those ends — they are still the leg's positions,
+  /// counted, framed by the picker and searched from — and only stops the map
+  /// drawing a line between them. Meaningless on a place, which is left `auto`.
+  IntColumn get chordDisplay =>
+      intEnum<TrackDisplay>().withDefault(const Constant(0))();
+
   // --- place-only ---
   TextColumn get location => text().nullable()();
 
@@ -575,7 +588,8 @@ enum TrackSource {
 }
 
 /// Whether a stored line is drawn on the map, when the default is not what the
-/// user wants.
+/// user wants — and, through `ItineraryItems.chordDisplay`, whether the straight
+/// segment between a leg's ends is.
 ///
 /// Three states in one column, the arrangement `Trips.coverAttachmentId` /
 /// `coverHidden` makes for the cover photo: [auto] is where every line starts

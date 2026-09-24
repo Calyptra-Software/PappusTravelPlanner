@@ -21,6 +21,7 @@ void main() {
     kind: ItemKind.transport,
     title: title,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   ItineraryItem placed(
@@ -36,6 +37,7 @@ void main() {
     kind: ItemKind.transport,
     title: title,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     fromLat: fromLat,
     fromLon: 9.9,
     toLat: toLat,

@@ -79,6 +79,7 @@ void main() {
         sortOrder: 0,
         kind: ItemKind.place,
         spansNextDay: false,
+        chordDisplay: TrackDisplay.auto,
         title: title,
         alternativeId: alternativeId,
       );
@@ -333,6 +334,7 @@ void main() {
                   sortOrder: 0,
                   kind: ItemKind.transport,
                   spansNextDay: false,
+                  chordDisplay: TrackDisplay.auto,
                   mode: 6,
                   fromLocation: 'Hamburg',
                   toLocation: 'Kronberg',

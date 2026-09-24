@@ -119,6 +119,12 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// here that is about how the entry is *drawn* rather than what it is.
   int? _colorValue;
 
+  /// Whether the map draws the straight segment between a leg's ends. Written
+  /// the moment its eye is pressed, as a stored line's is — the two sit in one
+  /// list and must not behave differently — and held here as well, so a save
+  /// cannot put back the value the form opened with.
+  TrackDisplay _chordDisplay = TrackDisplay.auto;
+
   bool get _isTransport => widget.kind == ItemKind.transport;
   bool get _isEditing => widget.existing != null;
 
@@ -157,6 +163,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _fromPosition = _Coordinates.of(existing.fromLat, existing.fromLon);
       _toPosition = _Coordinates.of(existing.toLat, existing.toLon);
       _colorValue = existing.colorValue;
+      _chordDisplay = existing.chordDisplay;
     } else if (_isTransport) {
       _fromController.text = widget.defaultFromLocation ?? '';
     }
@@ -333,6 +340,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           // How the entry is drawn on the map. Not cleared for either kind: a
           // place and a leg are both drawn there, so both keep their color.
           colorValue: Value(_colorValue),
+          chordDisplay: _isTransport ? _chordDisplay : TrackDisplay.auto,
           // Everything else a leg carries but the form does not edit — the
           // overnight flag, the source trip id the live-times refresh needs, the
           // stops in between — rides along untouched, and is cleared only on an
@@ -631,6 +639,15 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                     TrackField(
                       itemId: widget.existing!.id,
                       tripId: widget.tripId,
+                      from: _fromPosition?.toLatLng(),
+                      to: _toPosition?.toLatLng(),
+                      chordDisplay: _chordDisplay,
+                      onSetChordDisplay: (display) {
+                        setState(() => _chordDisplay = display);
+                        ref
+                            .read(repositoryProvider)
+                            .setChordDisplay(widget.existing!.id, display);
+                      },
                       onImported: _reloadPositions,
                     ),
                   ],

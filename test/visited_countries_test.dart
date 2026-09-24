@@ -127,6 +127,7 @@ void main() {
       sortOrder: 0,
       kind: ItemKind.place,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       lat: lat,
       lon: lat == null ? null : 9.9937,
     );
@@ -138,6 +139,7 @@ void main() {
       sortOrder: 1,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       fromLat: fromLat,
       fromLon: fromLat == null ? null : 9.9937,
       toLat: toLat,

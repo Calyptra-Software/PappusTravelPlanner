@@ -30,6 +30,7 @@ void main() {
     alternativeId: branchId,
     groupId: groupId,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   AlternativeSet aSet(int id, int sortOrder, {int day = 1}) => AlternativeSet(

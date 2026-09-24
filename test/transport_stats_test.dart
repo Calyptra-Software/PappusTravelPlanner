@@ -28,6 +28,7 @@ void main() {
     sortOrder: 0,
     kind: ItemKind.transport,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     mode: mode == null ? null : idOf(mode),
     startMinutes: startMinutes,
     endMinutes: endMinutes,
@@ -42,6 +43,7 @@ void main() {
     sortOrder: 0,
     kind: ItemKind.place,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     title: 'Somewhere',
   );
 

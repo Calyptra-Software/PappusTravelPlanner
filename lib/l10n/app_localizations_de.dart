@@ -1012,7 +1012,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapColorTrip => 'Reisefarbe';
 
   @override
-  String get trackSection => 'Aufgezeichnete Linie';
+  String get trackSection => 'Linien auf der Karte';
 
   @override
   String get trackImport => 'GPX importieren…';
@@ -1043,7 +1043,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get trackNone =>
-      'Keine — die Karte zeichnet die Luftlinie zwischen den Enden.';
+      'Keine — ein Abschnitt wird gezeichnet, sobald beide Enden Koordinaten haben.';
+
+  @override
+  String get trackChord => 'Luftlinie';
 
   @override
   String trackCount(int count) {

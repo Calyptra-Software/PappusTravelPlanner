@@ -56,6 +56,7 @@ void main() {
     sortOrder: 0,
     kind: ItemKind.transport,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     fromLat: lat,
     fromLon: 9.9937,
     toLat: lat - 1,
@@ -70,6 +71,7 @@ void main() {
     kind: ItemKind.place,
     title: 'Place $id',
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     lat: lat,
     lon: 8.6821,
   );

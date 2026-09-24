@@ -412,6 +412,11 @@ by default a recording (or an import) is drawn and a route the search computed i
 you can overrule it either way. Hide every line of a leg and the map draws the straight segment
 between its ends again.
 
+That straight segment has a row of its own, *Straight line*, whenever both ends have
+coordinates, with the same eye. Switch it off and the leg keeps its coordinates but draws
+no line at all: useful when the ends are there for reference and a line across the map
+would say nothing. A leg with nothing drawn is changed back from its form.
+
 On the map, **tapping a line** says which one it is: the entry opens with its lines listed
 and the one you touched marked. Where two entries run over the same ground  the tap lists
 both and lets you pick.
