@@ -1,3 +1,5 @@
+import 'package:latlong2/latlong.dart';
+
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../data/database/track_points.dart';
@@ -80,4 +82,49 @@ double? _lengthOf(String packed) {
   } on FormatException {
     return null;
   }
+}
+
+/// The straight segment between a leg's ends, read the way [TrackSummary] reads
+/// a stored line, so the lists can offer it as one more row.
+///
+/// Not a [TrackSummary]: it has no row id, no name and no source, being the
+/// plan's own drawing of the leg rather than a line anybody stored.
+final class ChordSummary {
+  const ChordSummary({
+    required this.meters,
+    required this.display,
+    required this.drawn,
+  });
+
+  /// How far apart the ends are, along the great circle the map draws.
+  final double meters;
+
+  /// What the user has said about drawing it — the entry's `chordDisplay`.
+  final TrackDisplay display;
+
+  /// Whether the map is drawing it now, answered by `chordDrawn`.
+  final bool drawn;
+}
+
+/// The segment between [from] and [to], or null when the leg lacks either end —
+/// there is then no segment the map could draw, and so nothing to switch.
+///
+/// [tracks] are the leg's lines as [summarizeTracks] read them. One that is
+/// marked drawn but cannot be decoded is not drawn by the map either, so it does
+/// not count against the segment here.
+ChordSummary? summarizeChord({
+  required LatLng? from,
+  required LatLng? to,
+  required TrackDisplay display,
+  required List<TrackSummary> tracks,
+}) {
+  if (from == null || to == null) return null;
+  return ChordSummary(
+    meters: lineLength([from, to]),
+    display: display,
+    drawn: chordDrawn(
+      display,
+      anyLineDrawn: tracks.any((t) => t.drawn && t.meters != null),
+    ),
+  );
 }

@@ -27,6 +27,7 @@ void main() {
     actualStartMinutes: actualStart,
     actualEndMinutes: actualEnd,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   Future<void> pump(WidgetTester tester, ItineraryItem it) => tester.pumpWidget(

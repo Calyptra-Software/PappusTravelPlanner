@@ -1778,10 +1778,10 @@ abstract class AppLocalizations {
   /// **'Trip color'**
   String get mapColorTrip;
 
-  /// Heading of the item form's section for the GPX line an entry followed.
+  /// Heading of the list of lines the map may draw for a leg: its recorded or computed lines, and the straight line between its ends.
   ///
   /// In en, this message translates to:
-  /// **'Recorded line'**
+  /// **'Lines on the map'**
   String get trackSection;
 
   /// Button that picks a GPX file and stores its lines on this entry.
@@ -1838,11 +1838,17 @@ abstract class AppLocalizations {
   /// **'Nothing to draw'**
   String get trackNotDrawable;
 
-  /// Shown when an entry has no recorded line.
+  /// Shown when a leg has no stored line and not both of its ends placed, so the map draws nothing for it.
   ///
   /// In en, this message translates to:
-  /// **'None — the map draws the straight line between the ends.'**
+  /// **'None — a leg is drawn once both of its ends have coordinates.'**
   String get trackNone;
+
+  /// A leg's row for the straight line the map draws between its two ends when no other line is drawn; followed by the distance.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight line'**
+  String get trackChord;
 
   /// How many lines an entry carries; a recording that stopped and resumed arrives as several.
   ///

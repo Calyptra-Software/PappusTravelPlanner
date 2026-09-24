@@ -50,6 +50,7 @@ void main() {
       sortOrder: id,
       kind: ItemKind.place,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       title: null,
       startMinutes: minutes,
       endMinutes: endMinutes,

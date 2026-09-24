@@ -34,7 +34,12 @@ import 'map_picker_screen.dart';
 /// follow, which two run together — so it is set where that is answered, and the
 /// map redraws under the sheet as it is chosen.
 class MapItemSheet extends ConsumerWidget {
-  const MapItemSheet({super.key, required this.item, this.highlightTrackId});
+  const MapItemSheet({
+    super.key,
+    required this.item,
+    this.highlightTrackId,
+    this.highlightChord = false,
+  });
 
   final ItineraryItem item;
 
@@ -49,6 +54,10 @@ class MapItemSheet extends ConsumerWidget {
   /// the straight segment between the ends, which is a drawing of the plan and
   /// not a row to point at.
   final int? highlightTrackId;
+
+  /// Whether the tap landed on the straight segment between the ends, which is
+  /// then the row marked — it has no track id to name it by.
+  final bool highlightChord;
 
   /// Writes the entry's map color, and nothing else.
   ///
@@ -78,6 +87,8 @@ class MapItemSheet extends ConsumerWidget {
         ?.where((i) => i.id == item.id)
         .firstOrNull;
     final colorValue = (live ?? item).colorValue;
+    // Read live for the same reason: it is the other thing this sheet writes.
+    final chordDisplay = (live ?? item).chordDisplay;
     final mode = isTransport
         ? ref.watch(transportModesByIdProvider)[item.mode]
         : null;
@@ -89,6 +100,18 @@ class MapItemSheet extends ConsumerWidget {
         ? (ref.watch(itemTrackSummariesProvider(item.id)).value ??
               const <TrackSummary>[])
         : const <TrackSummary>[];
+    final chord = isTransport
+        ? summarizeChord(
+            from: item.fromLat == null || item.fromLon == null
+                ? null
+                : LatLng(item.fromLat!, item.fromLon!),
+            to: item.toLat == null || item.toLon == null
+                ? null
+                : LatLng(item.toLat!, item.toLon!),
+            display: chordDisplay,
+            tracks: tracks,
+          )
+        : null;
 
     final title = isTransport
         ? (item.title ?? mode?.label(l10n) ?? '')
@@ -156,7 +179,7 @@ class MapItemSheet extends ConsumerWidget {
                   ),
                 ),
               const SizedBox(height: 12),
-              if (tracks.isNotEmpty) ...[
+              if (tracks.isNotEmpty || chord != null) ...[
                 Text(l10n.trackSection, style: theme.textTheme.labelLarge),
                 const SizedBox(height: 4),
                 for (final track in tracks)
@@ -173,6 +196,17 @@ class MapItemSheet extends ConsumerWidget {
                         .read(repositoryProvider)
                         .setTrackDisplay(track.id, display),
                     highlighted: track.id == highlightTrackId,
+                  ),
+                // The segment between the ends, under the same eye: a line
+                // across the picture that says nothing is noticed while looking
+                // at it, and hiding it keeps the positions it is drawn from.
+                if (chord != null)
+                  ChordRow(
+                    chord: chord,
+                    onSetDisplay: (display) => ref
+                        .read(repositoryProvider)
+                        .setChordDisplay(item.id, display),
+                    highlighted: highlightChord,
                   ),
                 const SizedBox(height: 12),
               ],
@@ -198,7 +232,10 @@ class MapItemSheet extends ConsumerWidget {
                       context,
                       tripId: item.tripId,
                       kind: item.kind,
-                      existing: item,
+                      // The row as it is now: the form saves what it opened
+                      // with, so a color or a hidden segment set on this sheet
+                      // would otherwise be put back by that save.
+                      existing: live ?? item,
                     );
                   },
                 ),

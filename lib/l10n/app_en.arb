@@ -433,9 +433,9 @@
   "@mapColorTrip": {
     "description": "Tooltip of the swatch that leaves an entry in its trip's accent color instead of giving it one of its own."
   },
-  "trackSection": "Recorded line",
+  "trackSection": "Lines on the map",
   "@trackSection": {
-    "description": "Heading of the item form's section for the GPX line an entry followed."
+    "description": "Heading of the list of lines the map may draw for a leg: its recorded or computed lines, and the straight line between its ends."
   },
   "trackImport": "Import GPX\u2026",
   "@trackImport": {
@@ -473,9 +473,13 @@
   "@trackNotDrawable": {
     "description": "Stands where a line's length would, when the stored line cannot be read or holds fewer than two points \u2014 the map draws nothing for it either way."
   },
-  "trackNone": "None \u2014 the map draws the straight line between the ends.",
+  "trackNone": "None \u2014 a leg is drawn once both of its ends have coordinates.",
   "@trackNone": {
-    "description": "Shown when an entry has no recorded line."
+    "description": "Shown when a leg has no stored line and not both of its ends placed, so the map draws nothing for it."
+  },
+  "trackChord": "Straight line",
+  "@trackChord": {
+    "description": "A leg's row for the straight line the map draws between its two ends when no other line is drawn; followed by the distance."
   },
   "trackCount": "{count, plural, =1{1 line} other{{count} lines}}",
   "@trackCount": {

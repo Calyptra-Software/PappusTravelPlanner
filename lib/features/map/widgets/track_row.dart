@@ -54,7 +54,6 @@ class TrackRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final source = switch (track.source) {
       TrackSource.recorded => l10n.trackSourceRecorded,
       TrackSource.imported => l10n.trackSourceImported,
@@ -64,6 +63,84 @@ class TrackRow extends StatelessWidget {
         ? l10n.trackNotDrawable
         : formatDistance(track.meters!);
 
+    return _LineRow(
+      icon: switch (track.source) {
+        // A computed route is the one of the three the map draws differently,
+        // so it is the one that reads differently here.
+        TrackSource.routed => Icons.alt_route,
+        _ => Icons.timeline,
+      },
+      text: [?track.name, source, length].join(' · '),
+      drawn: track.drawn,
+      onSetDisplay: onSetDisplay,
+      onRemove: onRemove,
+      highlighted: highlighted,
+    );
+  }
+}
+
+/// The straight segment between a leg's two ends, listed beneath its stored
+/// lines as one more thing the map may draw.
+///
+/// It carries the eye and nothing else: there is nothing to remove — the ends
+/// are the leg's positions and are edited as such — and *not drawing* the line
+/// between them is exactly what the eye already says. Listed wherever the leg
+/// has both ends, drawn or not, because a row that appeared only while its line
+/// was on the map could not be used to put it back.
+class ChordRow extends StatelessWidget {
+  const ChordRow({
+    super.key,
+    required this.chord,
+    this.onSetDisplay,
+    this.highlighted = false,
+  });
+
+  final ChordSummary chord;
+
+  /// Writes the entry's `chordDisplay`, by the rule [TrackRow.onSetDisplay]
+  /// follows: the eye writes [TrackDisplay.shown] or [TrackDisplay.hidden].
+  final ValueChanged<TrackDisplay>? onSetDisplay;
+
+  /// Marks this row as the line that was just tapped on the map.
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return _LineRow(
+      // Two ends and the line between them, which is all this row is.
+      icon: Icons.linear_scale,
+      text: [l10n.trackChord, formatDistance(chord.meters)].join(' · '),
+      drawn: chord.drawn,
+      onSetDisplay: onSetDisplay,
+      highlighted: highlighted,
+    );
+  }
+}
+
+/// The layout both kinds of row share, so a stored line and the segment between
+/// the ends read as rows of one list.
+class _LineRow extends StatelessWidget {
+  const _LineRow({
+    required this.icon,
+    required this.text,
+    required this.drawn,
+    required this.onSetDisplay,
+    this.onRemove,
+    required this.highlighted,
+  });
+
+  final IconData icon;
+  final String text;
+  final bool drawn;
+  final ValueChanged<TrackDisplay>? onSetDisplay;
+  final VoidCallback? onRemove;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     return Container(
       decoration: highlighted
           ? BoxDecoration(
@@ -75,12 +152,7 @@ class TrackRow extends StatelessWidget {
       child: Row(
         children: [
           Icon(
-            switch (track.source) {
-              // A computed route is the one of the three the map draws
-              // differently, so it is the one that reads differently here.
-              TrackSource.routed => Icons.alt_route,
-              _ => Icons.timeline,
-            },
+            icon,
             size: 18,
             color: highlighted
                 ? theme.colorScheme.onSecondaryContainer
@@ -89,7 +161,7 @@ class TrackRow extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              [?track.name, source, length].join(' · '),
+              text,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: highlighted
                     ? theme.colorScheme.onSecondaryContainer
@@ -97,7 +169,7 @@ class TrackRow extends StatelessWidget {
                     // color the rest of the app uses for what is off: the row
                     // is still there to be read and switched back on, and the
                     // eye beside it is the control, not the statement.
-                    : (track.drawn ? null : theme.colorScheme.onSurfaceVariant),
+                    : (drawn ? null : theme.colorScheme.onSurfaceVariant),
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -105,12 +177,12 @@ class TrackRow extends StatelessWidget {
           if (onSetDisplay != null)
             IconButton(
               onPressed: () => onSetDisplay!(
-                track.drawn ? TrackDisplay.hidden : TrackDisplay.shown,
+                drawn ? TrackDisplay.hidden : TrackDisplay.shown,
               ),
-              tooltip: track.drawn ? l10n.trackHide : l10n.trackShow,
+              tooltip: drawn ? l10n.trackHide : l10n.trackShow,
               visualDensity: VisualDensity.compact,
               icon: Icon(
-                track.drawn ? Icons.visibility : Icons.visibility_off,
+                drawn ? Icons.visibility : Icons.visibility_off,
                 size: 18,
               ),
             ),

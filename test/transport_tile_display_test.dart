@@ -59,6 +59,7 @@ ItineraryItem leg({
   sortOrder: 0,
   kind: ItemKind.transport,
   spansNextDay: false,
+  chordDisplay: TrackDisplay.auto,
   title: title,
   notes: notes,
   fromLocation: fromLocation,

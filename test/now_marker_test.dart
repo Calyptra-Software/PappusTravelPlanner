@@ -25,6 +25,7 @@ void main() {
     sortOrder: sortOrder,
     kind: ItemKind.place,
     spansNextDay: spansNextDay,
+    chordDisplay: TrackDisplay.auto,
     title: 'Item $id',
     startMinutes: start,
     endMinutes: end,

@@ -33,6 +33,7 @@ void main() {
     kind: ItemKind.place,
     sortOrder: 0,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   AlternativeSet decision(DateTime date) =>

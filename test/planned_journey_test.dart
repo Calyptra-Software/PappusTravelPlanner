@@ -37,6 +37,7 @@ void main() {
     groupId: groupId,
     startMinutes: start,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     fromLocation: from,
     toLocation: to,
     fromPlaceId: fromPlaceId,
@@ -466,6 +467,7 @@ void main() {
       startMinutes: start,
       actualEndMinutes: actualEnd,
       spansNextDay: spansNextDay,
+      chordDisplay: TrackDisplay.auto,
     );
 
     test('the leg before it arriving late is what the next leg asks from', () {

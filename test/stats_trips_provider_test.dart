@@ -28,6 +28,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.transport,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     mode: 1,
     startMinutes: 480,
     endMinutes: 510,

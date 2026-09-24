@@ -44,6 +44,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.place,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     lat: lat,
     lon: lon,
   );
@@ -94,6 +95,7 @@ void main() {
           sortOrder: 0,
           kind: ItemKind.place,
           spansNextDay: false,
+          chordDisplay: TrackDisplay.auto,
         ),
       ],
     );

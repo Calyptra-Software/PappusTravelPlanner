@@ -18,6 +18,7 @@ void main() {
         location: location,
         groupId: groupId,
         spansNextDay: false,
+        chordDisplay: TrackDisplay.auto,
       );
 
   ItineraryItem leg({String? from, String? to, int? groupId}) => ItineraryItem(
@@ -30,6 +31,7 @@ void main() {
     toLocation: to,
     groupId: groupId,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
   );
 
   Attachment photo({

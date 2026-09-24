@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 38;
+  int get schemaVersion => 39;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -432,6 +432,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 38 && from >= 10) {
         await m.addColumn(costBeneficiaries, costBeneficiaries.invited);
       }
+      // v39 lets the user say whether the straight segment between a leg's ends
+      // is drawn, so a leg can keep its coordinates without a line across the
+      // map. Defaulted to `auto`, which is the rule the map has always followed
+      // and therefore what every existing entry means.
+      // Through the if-missing helper like v30's color, since a database from
+      // below v20 has the table rebuilt from the current schema and already has
+      // it.
+      if (from < 39) {
+        await _addItineraryColumnsIfMissing(m, [itineraryItems.chordDisplay]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -537,7 +547,7 @@ class AppDatabase extends _$AppDatabase {
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
         // otherwise the copy step selects a column the old table lacks. The v24
-        // through v30 additions; extend this list when a later version adds more.
+        // through v39 additions; extend this list when a later version adds more.
         newColumns: [
           itineraryItems.spansNextDay,
           itineraryItems.fromLat,
@@ -551,6 +561,7 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.lat,
           itineraryItems.lon,
           itineraryItems.colorValue,
+          itineraryItems.chordDisplay,
         ],
       ),
     );

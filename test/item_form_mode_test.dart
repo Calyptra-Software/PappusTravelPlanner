@@ -104,6 +104,7 @@ void main() {
     sortOrder: 0,
     kind: ItemKind.transport,
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     fromLocation: 'Zurich',
     toLocation: 'Chur',
     mode: mode,

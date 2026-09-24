@@ -177,14 +177,23 @@ class _MapViewState extends ConsumerState<_MapView> {
   /// A map can only say *where* — the name, the times and the delay marks all
   /// live in the row it was drawn from, and a pin with no way to ask about it is
   /// a dot on a picture.
-  void _showItem(int itemId, {int? trackId}) {
+  void _showItem(int itemId, {int? trackId, bool chord = false}) {
     final item = widget.itemsById[itemId];
     if (item == null) return;
     showAppSheet<void>(
       context,
-      builder: (_) => MapItemSheet(item: item, highlightTrackId: trackId),
+      builder: (_) => MapItemSheet(
+        item: item,
+        highlightTrackId: trackId,
+        highlightChord: chord,
+      ),
     );
   }
+
+  /// What a tap on [hit] opens: its entry, with the line under the finger marked
+  /// — a stored one by its id, the segment between the ends by having none.
+  void _showPath(MapPath hit) =>
+      _showItem(hit.itemId, trackId: hit.trackId, chord: hit.trackId == null);
 
   /// What a tap on a *line* is for: the entry it belongs to, and — since a leg
   /// draws one line per stored track — which of that entry's lines it was.
@@ -198,7 +207,7 @@ class _MapViewState extends ConsumerState<_MapView> {
   void _showLines(List<MapPath> hits) {
     if (hits.isEmpty) return;
     if (hits.length == 1) {
-      _showItem(hits.single.itemId, trackId: hits.single.trackId);
+      _showPath(hits.single);
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -216,7 +225,7 @@ class _MapViewState extends ConsumerState<_MapView> {
             subtitle: ends == null ? null : Text(ends),
             onTap: () {
               Navigator.of(context).pop();
-              _showItem(hit.itemId, trackId: hit.trackId);
+              _showPath(hit);
             },
           ),
       ],

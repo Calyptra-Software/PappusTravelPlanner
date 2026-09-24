@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/providers.dart';
+import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../track_import_flow.dart';
@@ -28,6 +30,10 @@ import 'track_row.dart';
 /// on. *Remove all* stays, and only where it means something more than the row's
 /// own button — from two lines up.
 ///
+/// Beneath them, wherever the leg has both ends, the **straight segment**
+/// between those ends as one more row ([ChordRow]) — the line the map draws when
+/// none of the stored ones is, and the one line whose only act is the eye.
+///
 /// What is still not offered is a way to *type* a line: a track cannot be
 /// written, only imported, and the map is where one is looked at.
 class TrackField extends ConsumerWidget {
@@ -35,6 +41,10 @@ class TrackField extends ConsumerWidget {
     super.key,
     required this.itemId,
     required this.tripId,
+    this.from,
+    this.to,
+    this.chordDisplay = TrackDisplay.auto,
+    this.onSetChordDisplay,
     this.onImported,
   });
 
@@ -54,6 +64,18 @@ class TrackField extends ConsumerWidget {
   /// whose form was open, which is exactly the shape of two writers on one row.
   final VoidCallback? onImported;
 
+  /// The leg's ends as the form around this currently holds them — not as the
+  /// row does, so a segment appears the moment its second end is placed and
+  /// goes when one is removed, before anything is saved.
+  final LatLng? from;
+  final LatLng? to;
+
+  /// What the entry says about drawing the segment between [from] and [to].
+  final TrackDisplay chordDisplay;
+
+  /// Writes [chordDisplay]; the segment's row carries no eye without it.
+  final ValueChanged<TrackDisplay>? onSetChordDisplay;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -61,6 +83,12 @@ class TrackField extends ConsumerWidget {
     final tracks =
         ref.watch(itemTrackSummariesProvider(itemId)).value ??
         const <TrackSummary>[];
+    final chord = summarizeChord(
+      from: from,
+      to: to,
+      display: chordDisplay,
+      tracks: tracks,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,23 +110,24 @@ class TrackField extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 4),
-        if (tracks.isEmpty)
+        // "None" only when there is not even a segment to list: with both ends
+        // placed the segment's own row already says what the map draws.
+        if (tracks.isEmpty && chord == null)
           Text(
             l10n.trackNone,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
-          )
-        else
-          for (final track in tracks)
-            TrackRow(
-              track: track,
-              onSetDisplay: (display) => ref
-                  .read(repositoryProvider)
-                  .setTrackDisplay(track.id, display),
-              onRemove: () =>
-                  ref.read(repositoryProvider).deleteTrack(track.id),
-            ),
+          ),
+        for (final track in tracks)
+          TrackRow(
+            track: track,
+            onSetDisplay: (display) =>
+                ref.read(repositoryProvider).setTrackDisplay(track.id, display),
+            onRemove: () => ref.read(repositoryProvider).deleteTrack(track.id),
+          ),
+        if (chord != null)
+          ChordRow(chord: chord, onSetDisplay: onSetChordDisplay),
         const SizedBox(height: 4),
         Wrap(
           spacing: 8,

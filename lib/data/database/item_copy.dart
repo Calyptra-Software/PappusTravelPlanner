@@ -51,6 +51,9 @@ ItineraryItemsCompanion copyItemPlan(
   // it is copied onto, and a copy that reverted to the trip's accent would have
   // to be re-colored every time.
   colorValue: Value(item.colorValue),
+  // Whether the segment between the ends is drawn: a statement about the same
+  // two ends the copy carries, so it goes where they go.
+  chordDisplay: Value(item.chordDisplay),
   mode: Value(item.mode),
   fromLocation: Value(item.fromLocation),
   toLocation: Value(item.toLocation),

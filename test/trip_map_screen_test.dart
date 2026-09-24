@@ -82,6 +82,7 @@ void main() {
     kind: ItemKind.place,
     title: 'Place $id',
     spansNextDay: false,
+    chordDisplay: TrackDisplay.auto,
     lat: lat,
     lon: lon,
     startMinutes: startMinutes,
@@ -200,6 +201,7 @@ void main() {
           sortOrder: 0,
           kind: ItemKind.transport,
           spansNextDay: false,
+          chordDisplay: TrackDisplay.auto,
           fromLat: 53.5511,
           fromLon: 9.9937,
           toLat: 50.1109,
@@ -230,6 +232,7 @@ void main() {
       sortOrder: 0,
       kind: ItemKind.transport,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       title: 'To the station',
       fromLat: 53.5511,
       fromLon: 9.9937,
@@ -479,6 +482,70 @@ void main() {
       await tester.pump(kTileUpdateThrottle);
       await tester.pump(kTileUpdateThrottle);
     });
+
+    testWidgets('tapping the straight line marks the straight line', (
+      tester,
+    ) async {
+      // No stored line: what is under the finger is the segment between the
+      // ends, and its row is where it can be put away.
+      await pumpMap(tester, items: [leg()]);
+      await tester.pump();
+
+      await tester.tapAt(
+        tester.getCenter(find.byType(FlutterMap)) + const Offset(44, -40),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(MapItemSheet), findsOneWidget);
+      final chord = tester.widget<ChordRow>(find.byType(ChordRow));
+      expect(chord.highlighted, isTrue);
+      expect(chord.chord.drawn, isTrue);
+      expect(find.byIcon(Icons.visibility), findsOneWidget);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+  });
+
+  testWidgets('a leg whose straight line is put away draws no line', (
+    tester,
+  ) async {
+    await pumpMap(
+      tester,
+      items: [
+        ItineraryItem(
+          id: 3,
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          sortOrder: 0,
+          kind: ItemKind.transport,
+          spansNextDay: false,
+          chordDisplay: TrackDisplay.hidden,
+          fromLat: 53.5511,
+          fromLon: 9.9937,
+          toLat: 50.1109,
+          toLon: 8.6821,
+        ),
+        // Something else on the map, so it is a map and not the empty state.
+        ItineraryItem(
+          id: 4,
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          sortOrder: 1,
+          kind: ItemKind.place,
+          spansNextDay: false,
+          chordDisplay: TrackDisplay.auto,
+          title: 'Office',
+          lat: 50.1109,
+          lon: 8.6821,
+        ),
+      ],
+    );
+
+    expect(tester.widget<PolylineLayer>(polylineLayer).polylines, isEmpty);
+
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
   });
 
   testWidgets("an entry's own color outranks the trip's accent", (
@@ -495,6 +562,7 @@ void main() {
           sortOrder: 0,
           kind: ItemKind.transport,
           spansNextDay: false,
+          chordDisplay: TrackDisplay.auto,
           fromLat: 53.5511,
           fromLon: 9.9937,
           toLat: 50.1109,
@@ -828,6 +896,7 @@ void main() {
           fromLocation: 'Hamburg Hbf',
           toLocation: 'Frankfurt(Main) Hbf',
           spansNextDay: false,
+          chordDisplay: TrackDisplay.auto,
           fromLat: 53.5511,
           fromLon: 9.9937,
           toLat: 50.1109,

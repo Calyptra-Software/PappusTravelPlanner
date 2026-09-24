@@ -2384,6 +2384,18 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<TrackDisplay, int> chordDisplay =
+      GeneratedColumn<int>(
+        'chord_display',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0),
+      ).withConverter<TrackDisplay>(
+        $ItineraryItemsTable.$converterchordDisplay,
+      );
   static const VerificationMeta _locationMeta = const VerificationMeta(
     'location',
   );
@@ -2548,6 +2560,7 @@ class $ItineraryItemsTable extends ItineraryItems
     spansNextDay,
     notes,
     colorValue,
+    chordDisplay,
     location,
     lat,
     lon,
@@ -2839,6 +2852,12 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.int,
         data['${effectivePrefix}color_value'],
       ),
+      chordDisplay: $ItineraryItemsTable.$converterchordDisplay.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}chord_display'],
+        )!,
+      ),
       location: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}location'],
@@ -2905,6 +2924,8 @@ class $ItineraryItemsTable extends ItineraryItems
 
   static JsonTypeConverter2<ItemKind, int, int> $converterkind =
       const EnumIndexConverter<ItemKind>(ItemKind.values);
+  static JsonTypeConverter2<TrackDisplay, int, int> $converterchordDisplay =
+      const EnumIndexConverter<TrackDisplay>(TrackDisplay.values);
 }
 
 class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
@@ -2973,6 +2994,18 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   /// case — and an entry that later gains a recording would otherwise lose the
   /// color it was given. One entry, one color, however it is drawn.
   final int? colorValue;
+
+  /// Whether the map draws the straight segment between a leg's two ends — see
+  /// [TrackDisplay], whose three states it reuses. Defaults to
+  /// [TrackDisplay.auto], which is what every row written before v39 means: the
+  /// segment is drawn when no stored line of the leg is.
+  ///
+  /// On the entry and not on [Tracks] because the segment is not a row there:
+  /// it is the plan's own drawing of the leg, made out of the two ends this row
+  /// carries. Hiding it keeps those ends — they are still the leg's positions,
+  /// counted, framed by the picker and searched from — and only stops the map
+  /// drawing a line between them. Meaningless on a place, which is left `auto`.
+  final TrackDisplay chordDisplay;
   final String? location;
 
   /// Coordinates (WGS84) of this place, when known — what the user pointed at on
@@ -3045,6 +3078,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     required this.spansNextDay,
     this.notes,
     this.colorValue,
+    required this.chordDisplay,
     this.location,
     this.lat,
     this.lon,
@@ -3099,6 +3133,11 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     }
     if (!nullToAbsent || colorValue != null) {
       map['color_value'] = Variable<int>(colorValue);
+    }
+    {
+      map['chord_display'] = Variable<int>(
+        $ItineraryItemsTable.$converterchordDisplay.toSql(chordDisplay),
+      );
     }
     if (!nullToAbsent || location != null) {
       map['location'] = Variable<String>(location);
@@ -3180,6 +3219,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       colorValue: colorValue == null && nullToAbsent
           ? const Value.absent()
           : Value(colorValue),
+      chordDisplay: Value(chordDisplay),
       location: location == null && nullToAbsent
           ? const Value.absent()
           : Value(location),
@@ -3242,6 +3282,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       spansNextDay: serializer.fromJson<bool>(json['spansNextDay']),
       notes: serializer.fromJson<String?>(json['notes']),
       colorValue: serializer.fromJson<int?>(json['colorValue']),
+      chordDisplay: $ItineraryItemsTable.$converterchordDisplay.fromJson(
+        serializer.fromJson<int>(json['chordDisplay']),
+      ),
       location: serializer.fromJson<String?>(json['location']),
       lat: serializer.fromJson<double?>(json['lat']),
       lon: serializer.fromJson<double?>(json['lon']),
@@ -3279,6 +3322,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'spansNextDay': serializer.toJson<bool>(spansNextDay),
       'notes': serializer.toJson<String?>(notes),
       'colorValue': serializer.toJson<int?>(colorValue),
+      'chordDisplay': serializer.toJson<int>(
+        $ItineraryItemsTable.$converterchordDisplay.toJson(chordDisplay),
+      ),
       'location': serializer.toJson<String?>(location),
       'lat': serializer.toJson<double?>(lat),
       'lon': serializer.toJson<double?>(lon),
@@ -3312,6 +3358,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     bool? spansNextDay,
     Value<String?> notes = const Value.absent(),
     Value<int?> colorValue = const Value.absent(),
+    TrackDisplay? chordDisplay,
     Value<String?> location = const Value.absent(),
     Value<double?> lat = const Value.absent(),
     Value<double?> lon = const Value.absent(),
@@ -3348,6 +3395,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     spansNextDay: spansNextDay ?? this.spansNextDay,
     notes: notes.present ? notes.value : this.notes,
     colorValue: colorValue.present ? colorValue.value : this.colorValue,
+    chordDisplay: chordDisplay ?? this.chordDisplay,
     location: location.present ? location.value : this.location,
     lat: lat.present ? lat.value : this.lat,
     lon: lon.present ? lon.value : this.lon,
@@ -3394,6 +3442,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       colorValue: data.colorValue.present
           ? data.colorValue.value
           : this.colorValue,
+      chordDisplay: data.chordDisplay.present
+          ? data.chordDisplay.value
+          : this.chordDisplay,
       location: data.location.present ? data.location.value : this.location,
       lat: data.lat.present ? data.lat.value : this.lat,
       lon: data.lon.present ? data.lon.value : this.lon,
@@ -3437,6 +3488,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('colorValue: $colorValue, ')
+          ..write('chordDisplay: $chordDisplay, ')
           ..write('location: $location, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
@@ -3472,6 +3524,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     spansNextDay,
     notes,
     colorValue,
+    chordDisplay,
     location,
     lat,
     lon,
@@ -3506,6 +3559,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.spansNextDay == this.spansNextDay &&
           other.notes == this.notes &&
           other.colorValue == this.colorValue &&
+          other.chordDisplay == this.chordDisplay &&
           other.location == this.location &&
           other.lat == this.lat &&
           other.lon == this.lon &&
@@ -3538,6 +3592,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<bool> spansNextDay;
   final Value<String?> notes;
   final Value<int?> colorValue;
+  final Value<TrackDisplay> chordDisplay;
   final Value<String?> location;
   final Value<double?> lat;
   final Value<double?> lon;
@@ -3568,6 +3623,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.chordDisplay = const Value.absent(),
     this.location = const Value.absent(),
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
@@ -3599,6 +3655,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.spansNextDay = const Value.absent(),
     this.notes = const Value.absent(),
     this.colorValue = const Value.absent(),
+    this.chordDisplay = const Value.absent(),
     this.location = const Value.absent(),
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
@@ -3632,6 +3689,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<bool>? spansNextDay,
     Expression<String>? notes,
     Expression<int>? colorValue,
+    Expression<int>? chordDisplay,
     Expression<String>? location,
     Expression<double>? lat,
     Expression<double>? lon,
@@ -3664,6 +3722,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (spansNextDay != null) 'spans_next_day': spansNextDay,
       if (notes != null) 'notes': notes,
       if (colorValue != null) 'color_value': colorValue,
+      if (chordDisplay != null) 'chord_display': chordDisplay,
       if (location != null) 'location': location,
       if (lat != null) 'lat': lat,
       if (lon != null) 'lon': lon,
@@ -3697,6 +3756,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<bool>? spansNextDay,
     Value<String?>? notes,
     Value<int?>? colorValue,
+    Value<TrackDisplay>? chordDisplay,
     Value<String?>? location,
     Value<double?>? lat,
     Value<double?>? lon,
@@ -3728,6 +3788,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       spansNextDay: spansNextDay ?? this.spansNextDay,
       notes: notes ?? this.notes,
       colorValue: colorValue ?? this.colorValue,
+      chordDisplay: chordDisplay ?? this.chordDisplay,
       location: location ?? this.location,
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
@@ -3795,6 +3856,11 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (colorValue.present) {
       map['color_value'] = Variable<int>(colorValue.value);
     }
+    if (chordDisplay.present) {
+      map['chord_display'] = Variable<int>(
+        $ItineraryItemsTable.$converterchordDisplay.toSql(chordDisplay.value),
+      );
+    }
     if (location.present) {
       map['location'] = Variable<String>(location.value);
     }
@@ -3858,6 +3924,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('spansNextDay: $spansNextDay, ')
           ..write('notes: $notes, ')
           ..write('colorValue: $colorValue, ')
+          ..write('chordDisplay: $chordDisplay, ')
           ..write('location: $location, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
@@ -12672,6 +12739,7 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<bool> spansNextDay,
       Value<String?> notes,
       Value<int?> colorValue,
+      Value<TrackDisplay> chordDisplay,
       Value<String?> location,
       Value<double?> lat,
       Value<double?> lon,
@@ -12704,6 +12772,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<bool> spansNextDay,
       Value<String?> notes,
       Value<int?> colorValue,
+      Value<TrackDisplay> chordDisplay,
       Value<String?> location,
       Value<double?> lat,
       Value<double?> lon,
@@ -12922,6 +12991,12 @@ class $$ItineraryItemsTableFilterComposer
   ColumnFilters<int> get colorValue => $composableBuilder(
     column: $table.colorValue,
     builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<TrackDisplay, TrackDisplay, int>
+  get chordDisplay => $composableBuilder(
+    column: $table.chordDisplay,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
   );
 
   ColumnFilters<String> get location => $composableBuilder(
@@ -13226,6 +13301,11 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get chordDisplay => $composableBuilder(
+    column: $table.chordDisplay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get location => $composableBuilder(
     column: $table.location,
     builder: (column) => ColumnOrderings(column),
@@ -13440,6 +13520,12 @@ class $$ItineraryItemsTableAnnotationComposer
     column: $table.colorValue,
     builder: (column) => column,
   );
+
+  GeneratedColumnWithTypeConverter<TrackDisplay, int> get chordDisplay =>
+      $composableBuilder(
+        column: $table.chordDisplay,
+        builder: (column) => column,
+      );
 
   GeneratedColumn<String> get location =>
       $composableBuilder(column: $table.location, builder: (column) => column);
@@ -13709,6 +13795,7 @@ class $$ItineraryItemsTableTableManager
                 Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
+                Value<TrackDisplay> chordDisplay = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<double?> lat = const Value.absent(),
                 Value<double?> lon = const Value.absent(),
@@ -13739,6 +13826,7 @@ class $$ItineraryItemsTableTableManager
                 spansNextDay: spansNextDay,
                 notes: notes,
                 colorValue: colorValue,
+                chordDisplay: chordDisplay,
                 location: location,
                 lat: lat,
                 lon: lon,
@@ -13771,6 +13859,7 @@ class $$ItineraryItemsTableTableManager
                 Value<bool> spansNextDay = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
+                Value<TrackDisplay> chordDisplay = const Value.absent(),
                 Value<String?> location = const Value.absent(),
                 Value<double?> lat = const Value.absent(),
                 Value<double?> lon = const Value.absent(),
@@ -13801,6 +13890,7 @@ class $$ItineraryItemsTableTableManager
                 spansNextDay: spansNextDay,
                 notes: notes,
                 colorValue: colorValue,
+                chordDisplay: chordDisplay,
                 location: location,
                 lat: lat,
                 lon: lon,

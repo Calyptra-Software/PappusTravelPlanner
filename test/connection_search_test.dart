@@ -13,7 +13,7 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
 import 'package:travelplanner/data/database/app_database.dart'
     show ItineraryItem, Trip;
 import 'package:travelplanner/data/database/tables.dart'
-    show ItemKind, TripKind;
+    show ItemKind, TrackDisplay, TripKind;
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_controller.dart';
@@ -1341,6 +1341,7 @@ void main() {
       sortOrder: 0,
       kind: ItemKind.place,
       spansNextDay: false,
+      chordDisplay: TrackDisplay.auto,
       lat: lat,
       lon: lon,
     );

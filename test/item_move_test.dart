@@ -236,6 +236,29 @@ void main() {
     expect(copy.colorValue, 0xFF1B5E20);
   });
 
+  test('a copy keeps a straight line that was put away', () async {
+    final tripId = await makeTrip();
+    final leg = await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day1,
+        kind: ItemKind.transport,
+        fromLat: const Value(53.55),
+        fromLon: const Value(9.99),
+        toLat: const Value(53.56),
+        toLon: const Value(10.01),
+        chordDisplay: const Value(TrackDisplay.hidden),
+      ),
+    );
+
+    // It is a statement about the same two ends the copy carries.
+    final copy = await readItem(
+      await db.itineraryDao.duplicateItem(leg, day: day2),
+    );
+    expect(copy.chordDisplay, TrackDisplay.hidden);
+    expect(copy.toLon, 10.01);
+  });
+
   test('a copy does not join the original\'s group', () async {
     final tripId = await makeTrip();
     final leg1 = await makeItem(tripId, title: 'Leg 1', sortOrder: 0);

@@ -290,6 +290,11 @@ class TripRepository {
       _db.itineraryDao.updateItem(item);
   Future<void> setItemColor(int itemId, int? colorValue) =>
       _db.itineraryDao.setItemColor(itemId, colorValue);
+
+  /// Whether the map draws the straight segment between a leg's ends. See
+  /// `chordDrawn`.
+  Future<void> setChordDisplay(int itemId, TrackDisplay display) =>
+      _db.itineraryDao.setChordDisplay(itemId, display);
   Future<void> setLiveTimes(
     int itemId, {
     required int? actualStart,

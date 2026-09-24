@@ -5,6 +5,13 @@ exact commits.
 
 ## Unreleased
 
+- **A leg can keep its coordinates without a line between them.** Its list of lines
+  on the map now has a *Straight line* row with the same eye as a recorded line, in
+  the leg's form and in the sheet a tap on the map opens. Switched off, the map draws
+  no line for that leg unless one of its other lines is on.
+- **A color picked in a map entry's sheet is no longer undone by *Edit*.** The form
+  opened from there used to start from the color the entry had before, and saving it
+  put that color back.
 - **A connection can be searched from where you are.** The **From** and **To** pickers offer
   *Use my position* beside *Choose on map*, which was the old route to the same thing by way
   of the map and its locate button. The field then shows the coordinate. Not for a
