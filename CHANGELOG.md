@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **The line down the left of a day runs straight through groups and decisions.** It no
+  longer shifts sideways inside a group or a decision, and it no longer breaks at their
+  headers, a group's shared cost, or a decision's option pills.
 - **A leg can keep its coordinates without a line between them.** Its list of lines
   on the map now has a *Straight line* row with the same eye as a recorded line, in
   the leg's form and in the sheet a tap on the map opens. Switched off, the map draws

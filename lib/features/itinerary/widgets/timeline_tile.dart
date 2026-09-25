@@ -20,6 +20,7 @@ import '../now_marker.dart';
 import 'item_times.dart';
 import 'live_refresh_button.dart';
 import 'now_line.dart';
+import 'timeline_rail.dart';
 import 'transport_mode.dart';
 
 /// A single row in the itinerary timeline. Renders as a place stop or, for
@@ -202,115 +203,131 @@ class GroupRunTile extends StatelessWidget {
         ? marker.index
         : -1;
 
+    final tint = accent.withValues(alpha: isNow ? 0.10 : 0.06);
+    final radius = BorderRadius.circular(12);
     final band = Container(
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: isNow ? 0.10 : 0.06),
+      decoration: BoxDecoration(color: tint, borderRadius: radius),
+      // The stripe is painted over the band rather than around it: as a
+      // `decoration` it would inset the members by its width and put their
+      // rail off the line of the entries above and below the run.
+      foregroundDecoration: BoxDecoration(
         border: Border(
           left: BorderSide(color: isNow ? nowColor(theme) : accent, width: 3),
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: radius,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
-            child: Row(
-              children: [
-                Icon(Icons.link, size: 16, color: accent),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    (label != null && label!.isNotEmpty)
-                        ? label!
-                        : l10n.groupDefaultLabel,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: accent,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (isNow) ...[const NowBadge(), const SizedBox(width: 4)],
-                // The run's own files — the shared ticket. On the label for the
-                // reason its fare hangs off the group: it is one ticket for the
-                // journey, not a copy on each leg.
-                _GroupAttachmentBadge(
-                  tripId: items.first.tripId,
-                  groupId: groupId,
-                  accent: accent,
-                ),
-                // A group of legs is a journey — the run added by one import,
-                // sharing one ticket — so the way to read it back sits on the
-                // label that says as much.
-                if (onShowJourney case final show?)
-                  IconButton(
-                    tooltip: l10n.journeyDetails,
-                    visualDensity: VisualDensity.compact,
-                    iconSize: 18,
-                    icon: const Icon(Icons.route),
-                    color: accent,
-                    onPressed: show,
-                  ),
-                // What is done to the run as a whole belongs on the run's own
-                // label, not inside one member's edit form: a shared-ticket
-                // journey is moved and deleted as one thing, and the label is
-                // the only place that names that thing.
-                _GroupMenu(
-                  groupId: groupId,
-                  tripId: items.first.tripId,
-                  label: label,
-                  accent: accent,
-                ),
-                ?dragHandle,
-              ],
-            ),
-          ),
-          ReorderableListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            buildDefaultDragHandles: false,
-            itemCount: items.length,
-            onReorderItem: (oldIndex, newIndex) =>
-                onReorder(items, oldIndex, newIndex),
-            itemBuilder: (context, i) {
-              final item = items[i];
-              return TimelineTile(
-                key: ValueKey('item-${item.id}'),
-                item: item,
-                accent: accent,
-                onTap: () => onTapItem(item),
-                costs: costsByItem[item.id] ?? const [],
-                localeName: localeName,
-                onTapCost: onTapCost,
-                isNow: i == happeningIndex,
-                nowLineMinutes: i == lineIndex ? now : null,
-                held: isHeldItem(held, item),
-                dragHandle: ReorderableDragStartListener(
-                  index: i,
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 4),
-                    child: Icon(
-                      Icons.drag_indicator,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          // Everything in the run is behind us: the line closes it off rather
-          // than being dropped, the same way an option's does.
-          if (lineIndex == items.length) NowLine(minutes: now!),
-          if (groupCosts.isNotEmpty)
+      // One rail behind the whole band — label and shared ticket included — so
+      // the line runs through the run instead of breaking at its edges.
+      child: TimelineRail(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(48, 0, 8, 10),
-              child: _CostsSection(
-                costs: groupCosts,
-                localeName: localeName,
-                onTapCost: onTapCost,
+              padding: const EdgeInsets.fromLTRB(0, 8, 8, 0),
+              child: Row(
+                children: [
+                  TimelineRailIcon(
+                    icon: Icons.link,
+                    color: accent,
+                    background: Color.alphaBlend(
+                      tint,
+                      theme.colorScheme.surface,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      (label != null && label!.isNotEmpty)
+                          ? label!
+                          : l10n.groupDefaultLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (isNow) ...[const NowBadge(), const SizedBox(width: 4)],
+                  // The run's own files — the shared ticket. On the label for
+                  // the reason its fare hangs off the group: it is one ticket
+                  // for the journey, not a copy on each leg.
+                  _GroupAttachmentBadge(
+                    tripId: items.first.tripId,
+                    groupId: groupId,
+                    accent: accent,
+                  ),
+                  // A group of legs is a journey — the run added by one import,
+                  // sharing one ticket — so the way to read it back sits on the
+                  // label that says as much.
+                  if (onShowJourney case final show?)
+                    IconButton(
+                      tooltip: l10n.journeyDetails,
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      icon: const Icon(Icons.route),
+                      color: accent,
+                      onPressed: show,
+                    ),
+                  // What is done to the run as a whole belongs on the run's own
+                  // label, not inside one member's edit form: a shared-ticket
+                  // journey is moved and deleted as one thing, and the label is
+                  // the only place that names that thing.
+                  _GroupMenu(
+                    groupId: groupId,
+                    tripId: items.first.tripId,
+                    label: label,
+                    accent: accent,
+                  ),
+                  ?dragHandle,
+                ],
               ),
             ),
-        ],
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              itemCount: items.length,
+              onReorderItem: (oldIndex, newIndex) =>
+                  onReorder(items, oldIndex, newIndex),
+              itemBuilder: (context, i) {
+                final item = items[i];
+                return TimelineTile(
+                  key: ValueKey('item-${item.id}'),
+                  item: item,
+                  accent: accent,
+                  onTap: () => onTapItem(item),
+                  costs: costsByItem[item.id] ?? const [],
+                  localeName: localeName,
+                  onTapCost: onTapCost,
+                  isNow: i == happeningIndex,
+                  nowLineMinutes: i == lineIndex ? now : null,
+                  held: isHeldItem(held, item),
+                  dragHandle: ReorderableDragStartListener(
+                    index: i,
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.drag_indicator,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            // Everything in the run is behind us: the line closes it off rather
+            // than being dropped, the same way an option's does.
+            if (lineIndex == items.length) NowLine(minutes: now!),
+            if (groupCosts.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(48, 0, 8, 10),
+                child: _CostsSection(
+                  costs: groupCosts,
+                  localeName: localeName,
+                  onTapCost: onTapCost,
+                ),
+              ),
+          ],
+        ),
       ),
     );
 
@@ -660,18 +677,9 @@ class _Gutter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final line = Theme.of(context).colorScheme.outlineVariant;
     return SizedBox(
-      width: 40,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Positioned.fill(
-            child: Center(child: Container(width: 2, color: line)),
-          ),
-          child,
-        ],
-      ),
+      width: kTimelineGutterWidth,
+      child: TimelineRail(child: Center(child: child)),
     );
   }
 }

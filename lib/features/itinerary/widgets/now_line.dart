@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/format/date_format.dart';
 import '../../../l10n/app_localizations.dart';
+import 'timeline_rail.dart';
 
 /// The colour "now" is drawn in. Deliberately *not* the trip's accent — the
 /// timeline already spends that colour on days, groups and decisions, and the
@@ -25,35 +26,39 @@ class NowLine extends StatelessWidget {
     final color = nowColor(theme);
     return Semantics(
       label: l10n.now,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            // Centred on the timeline's rail: the gutter is 40 wide (see
-            // `_Gutter`), so the dot lands on the line the day is strung along.
-            SizedBox(
-              width: 40,
-              child: Center(
-                child: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
+      // The rail runs on through the line, padding included: it sits between
+      // two entries, and the day's line should not break where it is drawn.
+      child: TimelineRail(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              // Centered on the timeline's rail, so the dot lands on the line
+              // the day is strung along.
+              SizedBox(
+                width: kTimelineGutterWidth,
+                child: Center(
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
               ),
-            ),
-            Expanded(child: Container(height: 2, color: color)),
-            const SizedBox(width: 8),
-            Text(
-              formatMinutes(minutes),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
+              Expanded(child: Container(height: 2, color: color)),
+              const SizedBox(width: 8),
+              Text(
+                formatMinutes(minutes),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
