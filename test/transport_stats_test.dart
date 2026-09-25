@@ -21,13 +21,14 @@ void main() {
     int? endMinutes,
     int? actualStartMinutes,
     int? actualEndMinutes,
+    int endDayOffset = 0,
   }) => ItineraryItem(
     id: ++nextId,
     tripId: 1,
     date: date ?? day,
     sortOrder: 0,
     kind: ItemKind.transport,
-    spansNextDay: false,
+    endDayOffset: endDayOffset,
     chordDisplay: TrackDisplay.auto,
     mode: mode == null ? null : idOf(mode),
     startMinutes: startMinutes,
@@ -42,7 +43,7 @@ void main() {
     date: day,
     sortOrder: 0,
     kind: ItemKind.place,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     title: 'Somewhere',
   );
@@ -155,11 +156,69 @@ void main() {
   test('a leg running past midnight counts its real span', () {
     // Departs 22:00, arrives 06:00 the next morning: 8 hours.
     final stats = computeTransportStats([
-      leg(TransportMode.ferry, startMinutes: 1320, endMinutes: 360),
+      leg(
+        TransportMode.ferry,
+        startMinutes: 1320,
+        endMinutes: 360,
+        endDayOffset: 1,
+      ),
     ]);
     final ferry = stats.byMode.single;
     expect(ferry.legs, 1);
     expect(ferry.plannedMinutes, 480);
+  });
+
+  test('a leg running through two nights counts both', () {
+    // Departs 22:00, arrives 06:00 two mornings later: 32 hours.
+    final stats = computeTransportStats([
+      leg(
+        TransportMode.train,
+        startMinutes: 1320,
+        endMinutes: 360,
+        endDayOffset: 2,
+      ),
+    ]);
+    expect(stats.byMode.single.plannedMinutes, 32 * 60);
+  });
+
+  test('the end day is read, not guessed from the order of the times', () {
+    // 09:00 to 10:00 the next day is 25 hours, which the order of the two
+    // numbers alone would have read as one.
+    final stats = computeTransportStats([
+      leg(
+        TransportMode.ferry,
+        startMinutes: 540,
+        endMinutes: 600,
+        endDayOffset: 1,
+      ),
+    ]);
+    expect(stats.byMode.single.plannedMinutes, 25 * 60);
+  });
+
+  test('an actual departure just past midnight is a delay, not a day', () {
+    // Planned 23:55 to 06:00; left at 00:10 and arrived 06:05.
+    final stats = computeTransportStats([
+      leg(
+        TransportMode.train,
+        startMinutes: 1435,
+        endMinutes: 360,
+        endDayOffset: 1,
+        actualStartMinutes: 10,
+        actualEndMinutes: 365,
+      ),
+    ]);
+    final train = stats.byMode.single;
+    expect(train.plannedMinutes, 6 * 60 + 5);
+    expect(train.actualMinutes, 5 * 60 + 55);
+  });
+
+  test('an end before its start on the same day counts nothing', () {
+    // Broken data rather than a journey running backwards — every path that
+    // writes an entry now dates such an end on the next day instead.
+    final stats = computeTransportStats([
+      leg(TransportMode.ferry, startMinutes: 1320, endMinutes: 360),
+    ]);
+    expect(stats.byMode.single.plannedMinutes, 0);
   });
 
   test('a journey split across midnight balances across the trip', () {

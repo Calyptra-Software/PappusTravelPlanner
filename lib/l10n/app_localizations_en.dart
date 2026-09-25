@@ -391,6 +391,55 @@ class AppLocalizationsEn extends AppLocalizations {
       'What really happened. The timeline shows how late or early it ran.';
 
   @override
+  String get endDayArrives => 'Arrives';
+
+  @override
+  String get endDayEnds => 'Ends';
+
+  @override
+  String get endDaySame => 'Same day';
+
+  @override
+  String endDayLater(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days later',
+      one: 'Next day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get endDayEarlier => 'One day earlier';
+
+  @override
+  String get endDayLaterButton => 'One day later';
+
+  @override
+  String get endBeforeStart =>
+      'The end is before the start. Is it on a later day?';
+
+  @override
+  String continuationArrives(String time) {
+    return 'Arrives $time';
+  }
+
+  @override
+  String continuationUntil(String time) {
+    return 'Until $time';
+  }
+
+  @override
+  String get continuationEnds => 'Ends this day';
+
+  @override
+  String get continuationAllDay => 'Continues all day';
+
+  @override
+  String get continuationStarted => 'Continued from an earlier day';
+
+  @override
   String get notesOptional => 'Notes (optional)';
 
   @override

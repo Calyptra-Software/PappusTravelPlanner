@@ -36,7 +36,7 @@ void main() {
     kind: kind,
     groupId: groupId,
     startMinutes: start,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     fromLocation: from,
     toLocation: to,
@@ -455,7 +455,7 @@ void main() {
       required int sortOrder,
       required int start,
       int? actualEnd,
-      bool spansNextDay = false,
+      int endDayOffset = 0,
       DateTime? date,
     }) => ItineraryItem(
       id: nextId++,
@@ -466,7 +466,7 @@ void main() {
       groupId: 4,
       startMinutes: start,
       actualEndMinutes: actualEnd,
-      spansNextDay: spansNextDay,
+      endDayOffset: endDayOffset,
       chordDisplay: TrackDisplay.auto,
     );
 
@@ -505,10 +505,46 @@ void main() {
         sortOrder: 0,
         start: 1430,
         actualEnd: 8,
-        spansNextDay: true,
+        endDayOffset: 1,
       );
       final second = inRun(sortOrder: 1, start: 30);
       expect(departureSeedMinutes([first, second], second), isNull);
+    });
+
+    test('an overnight arrival seeds the leg leaving the morning it lands', () {
+      // Arrived 07:40, twenty-eight late, on the day the next leg leaves.
+      final first = inRun(
+        sortOrder: 0,
+        start: 1320,
+        actualEnd: 460,
+        endDayOffset: 1,
+      );
+      final second = inRun(
+        sortOrder: 1,
+        start: 480,
+        date: DateTime(2026, 8, 4),
+      );
+      expect(departureSeedMinutes([first, second], second), 460);
+    });
+
+    test('a late arrival that slips past midnight dates itself', () {
+      // Planned 23:50, arrived 00:12 — the next day, where the next leg is.
+      ItineraryItem planned(int end, {DateTime? date}) => ItineraryItem(
+        id: nextId++,
+        tripId: 1,
+        date: date ?? DateTime(2026, 8, 3),
+        sortOrder: 0,
+        kind: ItemKind.transport,
+        groupId: 4,
+        startMinutes: 1380,
+        endMinutes: end,
+        actualEndMinutes: 12,
+        endDayOffset: 0,
+        chordDisplay: TrackDisplay.auto,
+      );
+      final first = planned(1430);
+      final second = inRun(sortOrder: 1, start: 20, date: DateTime(2026, 8, 4));
+      expect(departureSeedMinutes([first, second], second), 12);
     });
 
     test('a leg on another day is not the leg before it either', () {

@@ -35,6 +35,7 @@ void main() {
     int dayOffset = 0,
     String? fromPlaceId,
     String? toPlaceId,
+    int endDayOffset = 0,
   }) => db.itineraryDao.addItem(
     ItineraryItemsCompanion.insert(
       tripId: tripId,
@@ -48,6 +49,7 @@ void main() {
       toLocation: Value(to),
       startMinutes: Value(start),
       endMinutes: Value(end),
+      endDayOffset: Value(endDayOffset),
     ),
   );
 
@@ -276,6 +278,30 @@ void main() {
       expect(items.map((i) => i.date), [
         DateTime(2026, 7, 30),
         DateTime(2026, 7, 31),
+        DateTime(2026, 8, 1),
+      ]);
+    });
+
+    test('the morning a night train arrives is a day of the plan', () async {
+      // Out on the night train, back two days after it arrives.
+      final routineId = await makeRoutine();
+      await makeLeg(routineId, start: 1334, end: 432, endDayOffset: 1);
+      await makeLeg(routineId, from: 'Vienna', to: 'Home', dayOffset: 3);
+
+      // Day one, the arrival, and the way back — the gap after the arrival
+      // closes up, as every gap does.
+      expect(await db.routineDao.routineDaySpan(routineId), 3);
+
+      final tripId = await db.routineDao.materializeRoutine(
+        routineId,
+        startDate: DateTime(2026, 7, 30),
+      );
+      final trip = await db.tripDao.findTrip(tripId);
+      expect(trip!.endDate, DateTime(2026, 8, 1));
+      final items = await db.itineraryDao.watchItemsForTrip(tripId).first;
+      expect(items.first.endDayOffset, 1);
+      expect(items.map((i) => i.date), [
+        DateTime(2026, 7, 30),
         DateTime(2026, 8, 1),
       ]);
     });

@@ -326,4 +326,54 @@ void main() {
       expect(change.actualMinutes, isNull);
     },
   );
+
+  test('a stored leg is timed on its own minute line', () {
+    // Planned 22:14 to 07:12 two mornings on; arrived 07:27, and left at
+    // 22:20.
+    final leg = ItineraryItem(
+      id: 1,
+      tripId: 1,
+      date: DateTime(2026, 7, 27),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      mode: 6,
+      startMinutes: 22 * 60 + 14,
+      endMinutes: 7 * 60 + 12,
+      actualStartMinutes: 22 * 60 + 20,
+      actualEndMinutes: 7 * 60 + 27,
+      endDayOffset: 2,
+      chordDisplay: TrackDisplay.auto,
+    );
+    final view = journeyViewFromItems(
+      [leg],
+      {6: TransportModeRow(id: 6, builtinKey: 'train', sortOrder: 0)},
+    );
+
+    final stored = view.legs.single;
+    expect(stored.to.date, DateTime(2026, 7, 29));
+    expect(stored.from.delay, 6);
+    expect(stored.to.delay, 15);
+    expect(view.duration, const Duration(hours: 32, minutes: 58));
+  });
+
+  test('a departure a few minutes over midnight is late, not a day early', () {
+    final leg = ItineraryItem(
+      id: 1,
+      tripId: 1,
+      date: DateTime(2026, 7, 27),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      mode: 6,
+      startMinutes: 23 * 60 + 55,
+      endMinutes: 6 * 60,
+      actualStartMinutes: 10,
+      endDayOffset: 1,
+      chordDisplay: TrackDisplay.auto,
+    );
+    final view = journeyViewFromItems(
+      [leg],
+      {6: TransportModeRow(id: 6, builtinKey: 'train', sortOrder: 0)},
+    );
+    expect(view.legs.single.from.delay, 15);
+  });
 }

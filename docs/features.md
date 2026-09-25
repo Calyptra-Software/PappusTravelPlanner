@@ -192,6 +192,15 @@ plan plus delta already says it, and the plan is what the day is judged against.
 Each end is compared with its own counterpart, so a train that left late but has not
 landed yet runs from its actual departure to its planned arrival.
 
+### Across midnight
+
+An entry can end on a later day than it starts: a night train, or a journey through several
+nights. Its form has a field for the day it arrives or ends on, and suggests the next day
+when the end comes before the start. The timeline marks the end with **+1** (or **+2** …),
+and every later day it reaches shows it at the top: when it arrives, or that it continues all
+day. A delay across midnight is read as a delay — within twelve hours of the plan, a later
+time counts as late rather than as the day before.
+
 ### "You are here"
 
 On today's plan, the entry currently under way is marked with a badge and tinted, and

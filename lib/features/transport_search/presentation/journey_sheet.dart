@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/format/civil_date.dart';
 import '../../../data/database/app_database.dart'
     show ItineraryItem, TransportModeRow;
 import '../../../l10n/app_localizations.dart';
@@ -341,7 +342,9 @@ class _LegCard extends StatelessWidget {
             if (leg.stops.isNotEmpty) _StopsSection(stops: leg.stops),
             _EndLine(
               end: leg.to,
-              dayOffset: leg.to.date.difference(leg.from.date).inDays,
+              // Calendar days, not 24-hour spans: across the spring change a
+              // night is 23 hours, and `difference().inDays` read it as none.
+              dayOffset: daysBetween(leg.from.date, leg.to.date),
             ),
           ],
         ),

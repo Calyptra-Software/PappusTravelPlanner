@@ -81,7 +81,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 39;
+  int get schemaVersion => 40;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -297,6 +297,10 @@ class AppDatabase extends _$AppDatabase {
       // transport leg's endpoints (stored for a future map). All nullable/
       // defaulted, so there is nothing to backfill on existing rows.
       //
+      // The flag is no longer added here: v40 turned it into a day count, and
+      // the schema no longer names the old column. A database coming through
+      // this branch simply gets the count from the v40 branch below.
+      //
       // Add each only if it isn't already there: a database coming from below v20
       // is recreated by `_seedTransportModesAndRepointLegs` above, whose
       // TableMigration builds the table from the *current* schema and so already
@@ -305,7 +309,6 @@ class AppDatabase extends _$AppDatabase {
       // columns are genuinely missing, so they are added here.
       if (from < 24) {
         await _addItineraryColumnsIfMissing(m, [
-          itineraryItems.spansNextDay,
           itineraryItems.fromLat,
           itineraryItems.fromLon,
           itineraryItems.toLat,
@@ -442,6 +445,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 39) {
         await _addItineraryColumnsIfMissing(m, [itineraryItems.chordDisplay]);
       }
+      // v40 turns "ends on the next day" into "ends this many days later", so a
+      // journey can run through more than one night.
+      if (from < 40) {
+        await _replaceSpansNextDay(m);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -535,6 +543,53 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
+  /// The v40 step: `spans_next_day` (a boolean) becomes `end_day_offset` (a
+  /// count of days), carried over as 1 where the flag was set.
+  ///
+  /// The new column is added only where it is missing, for the reason
+  /// [_addItineraryColumnsIfMissing] gives — a database from below v20 had the
+  /// table rebuilt from the current schema and already has it, with no old flag
+  /// beside it. The old column is dropped rather than left behind: two columns
+  /// saying when an entry ends is exactly one too many, and nothing reads it
+  /// any more. `DROP COLUMN` is allowed on it because its only constraint is
+  /// its own `CHECK (… IN (0, 1))`.
+  ///
+  /// It also settles the entries the flag could not describe: a **hand-entered**
+  /// night train (departs 22:00, arrives 07:00) was saved with the flag unset,
+  /// since the form never offered it, and so read as ending before it began.
+  /// The transport statistics already read such a pair as ending the next day,
+  /// while the timeline and the calendar export read it as broken; that was
+  /// one fact with two answers, and the only reading of an end before its start
+  /// that is not an error is the next morning. The rule is `endsBeforeStart` in
+  /// `entry_times.dart`, which the form applies to every new entry: the planned
+  /// end decides, and the actual end only where there is no planned one. (A
+  /// comparison with NULL is never true in SQL, so a missing time decides
+  /// nothing here either.)
+  Future<void> _replaceSpansNextDay(Migrator m) async {
+    final existing = (await customSelect(
+      'PRAGMA table_info(itinerary_items)',
+    ).get()).map((r) => r.read<String>('name')).toSet();
+    if (!existing.contains('end_day_offset')) {
+      await m.addColumn(itineraryItems, itineraryItems.endDayOffset);
+    }
+    if (existing.contains('spans_next_day')) {
+      await customStatement(
+        'UPDATE itinerary_items SET end_day_offset = 1 '
+        'WHERE spans_next_day = 1',
+      );
+      await customStatement(
+        'ALTER TABLE itinerary_items DROP COLUMN spans_next_day',
+      );
+    }
+    await customStatement(
+      'UPDATE itinerary_items SET end_day_offset = 1 '
+      'WHERE end_day_offset = 0 AND ('
+      'end_minutes < COALESCE(start_minutes, actual_start_minutes) '
+      'OR (end_minutes IS NULL AND actual_end_minutes < '
+      'COALESCE(actual_start_minutes, start_minutes)))',
+    );
+  }
+
   Future<void> _seedTransportModesAndRepointLegs(Migrator m) async {
     await m.createTable(transportModes);
     await transportModeDao.seedBuiltinModes();
@@ -547,9 +602,9 @@ class AppDatabase extends _$AppDatabase {
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
         // otherwise the copy step selects a column the old table lacks. The v24
-        // through v39 additions; extend this list when a later version adds more.
+        // through v40 additions; extend this list when a later version adds more.
         newColumns: [
-          itineraryItems.spansNextDay,
+          itineraryItems.endDayOffset,
           itineraryItems.fromLat,
           itineraryItems.fromLon,
           itineraryItems.toLat,

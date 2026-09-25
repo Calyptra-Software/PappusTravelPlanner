@@ -99,7 +99,12 @@ class TripBundle {
   /// v6 added [BundleCost.invited], stamped only on a trip where somebody was
   /// invited, by the same argument: an older app would split the expense as
   /// one to be repaid and show the guest owing the payer their share.
-  static const int currentFormatVersion = 6;
+  ///
+  /// v7 added [BundleItem.endDayOffset], stamped only on a trip with an entry
+  /// ending two or more days after it starts. A one-night entry still goes out
+  /// with the `spansNextDay` an older app reads correctly, so it forces nothing;
+  /// a longer one would be read as arriving the next morning, days early.
+  static const int currentFormatVersion = 7;
 
   /// Magic string identifying the payload as a Pappus trip bundle.
   ///
@@ -481,7 +486,7 @@ class BundleItem {
     this.endMinutes,
     this.actualStartMinutes,
     this.actualEndMinutes,
-    this.spansNextDay = false,
+    this.endDayOffset = 0,
     this.notes,
     this.location,
     this.colorValue,
@@ -517,10 +522,16 @@ class BundleItem {
   final int? actualStartMinutes;
   final int? actualEndMinutes;
 
-  /// Whether the entry's end falls on the day after [date] — an overnight leg.
-  /// Absent from bundles written before it was recorded, and read as false then,
-  /// which is what such a bundle meant.
-  final bool spansNextDay;
+  /// How many days after [date] the entry's end falls — 1 for a night train,
+  /// more for a journey through several nights.
+  ///
+  /// Written as `endDayOffset` only when it is not 0, and always beside it the
+  /// boolean `spansNextDay` older apps read, so a one-night leg reads the same
+  /// in either. A bundle holding an entry of two or more nights is stamped v7,
+  /// because an older app would read that as arriving the next morning. Read
+  /// back from `spansNextDay` when absent, which is what every bundle written
+  /// before v7 carries.
+  final int endDayOffset;
   final String? notes;
 
   /// The color the entry is drawn in on the map, or null for the trip's own
@@ -601,7 +612,8 @@ class BundleItem {
     'endMinutes': endMinutes,
     'actualStartMinutes': actualStartMinutes,
     'actualEndMinutes': actualEndMinutes,
-    'spansNextDay': spansNextDay,
+    'spansNextDay': endDayOffset > 0,
+    if (endDayOffset != 0) 'endDayOffset': endDayOffset,
     'notes': notes,
     'colorValue': colorValue,
     if (chordDisplay != TrackDisplay.auto) 'chordDisplay': chordDisplay.name,
@@ -638,7 +650,9 @@ class BundleItem {
     endMinutes: json['endMinutes'] as int?,
     actualStartMinutes: json['actualStartMinutes'] as int?,
     actualEndMinutes: json['actualEndMinutes'] as int?,
-    spansNextDay: json['spansNextDay'] as bool? ?? false,
+    endDayOffset:
+        json['endDayOffset'] as int? ??
+        ((json['spansNextDay'] as bool? ?? false) ? 1 : 0),
     notes: json['notes'] as String?,
     colorValue: json['colorValue'] as int?,
     chordDisplay: TrackDisplay.values.firstWhere(

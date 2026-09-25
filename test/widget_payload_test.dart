@@ -42,6 +42,7 @@ void main() {
     int? actualEndMinutes,
     String location = 'Place',
     String? notes,
+    int endDayOffset = 0,
   }) {
     return ItineraryItem(
       id: id,
@@ -49,7 +50,7 @@ void main() {
       date: DateTime(2026, 7, 5),
       sortOrder: id,
       kind: ItemKind.place,
-      spansNextDay: false,
+      endDayOffset: endDayOffset,
       chordDisplay: TrackDisplay.auto,
       title: null,
       startMinutes: minutes,
@@ -276,6 +277,30 @@ void main() {
         p.rows.single.time,
         '09:00 <font color="#FF8A80">(+15)</font> – '
         '10:30 <font color="#A5D6A7">(−5)</font>',
+      );
+    });
+
+    test('an end on a later day carries the day, before any delay', () {
+      final t = trip(
+        id: 1,
+        title: 'Vienna',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 9),
+      );
+      final items = [
+        placeItem(
+          1,
+          minutes: 22 * 60 + 14,
+          endMinutes: 7 * 60 + 12,
+          actualEndMinutes: 7 * 60 + 27,
+          endDayOffset: 1,
+        ),
+      ];
+      final p = buildWidgetPayload([t], items, now, l10n, 'en');
+
+      expect(
+        p.rows.single.time,
+        '22:14 – 07:12 +1 <font color="#FF8A80">(+15)</font>',
       );
     });
   });

@@ -178,3 +178,64 @@ List<ItineraryItem> itemsInDayOrder(List<DayBlock> blocks) => [
         itemsByBranch[chosen.id] ?? const <ItineraryItem>[],
     },
 ];
+
+/// An entry that began on an earlier day and is still running on this one — a
+/// night train on the morning it arrives, a festival on its second day.
+///
+/// Not a [DayBlock]: the entry belongs to the day it starts on, where it is
+/// planned, dragged and counted, and a day's blocks are what its reorderable
+/// list is indexed by. So the day it runs into only *refers* to it, above its
+/// own blocks, the way a timetable prints "arr. 07:12" under the next day's
+/// heading. Nothing about it is counted again: its costs stay in the day it
+/// left on, and an export reads the entry once.
+final class Continuation {
+  const Continuation({required this.item, required this.daysAfter});
+
+  final ItineraryItem item;
+
+  /// How many days after the day it started this is: 1 on the morning after.
+  final int daysAfter;
+
+  /// Whether the entry ends on this day, rather than running through it.
+  bool get arrives => daysAfter == item.endDayOffset;
+}
+
+/// The entries running into [day] from an earlier one, earliest start first.
+///
+/// Only the plan as it stands: a loose entry, or one in the **chosen** option of
+/// its decision — an option not taken is not travelling through anyone's
+/// morning. A branch entry starts on its decision's day, not on its own date,
+/// the rule [buildDayBlocks] follows for where it is drawn.
+List<Continuation> continuationsOn({
+  required DateTime day,
+  required List<ItineraryItem> items,
+  required Map<int, AlternativeSet> sets,
+  required Map<int, List<Alternative>> branchesBySet,
+}) {
+  final chosenSetOf = <int, int>{
+    for (final entry in branchesBySet.entries)
+      for (final branch in entry.value)
+        if (branch.chosen) branch.id: entry.key,
+  };
+  final continuations = <Continuation>[];
+  for (final item in items) {
+    if (item.endDayOffset == 0) continue;
+    final branchId = item.alternativeId;
+    final start = branchId == null
+        ? item.date
+        : sets[chosenSetOf[branchId]]?.date;
+    // An entry of an option not chosen has no set to look up here.
+    if (start == null) continue;
+    final daysAfter = daysBetween(normalizeDay(start), day);
+    if (daysAfter < 1 || daysAfter > item.endDayOffset) continue;
+    continuations.add(Continuation(item: item, daysAfter: daysAfter));
+  }
+  // Earliest start first; entries that left on the same day keep the order
+  // the itinerary gave them (List.sort is not stable, hence the index).
+  final order = {for (final (i, c) in continuations.indexed) c: i};
+  continuations.sort((a, b) {
+    final byStart = b.daysAfter.compareTo(a.daysAfter);
+    return byStart != 0 ? byStart : order[a]!.compareTo(order[b]!);
+  });
+  return continuations;
+}

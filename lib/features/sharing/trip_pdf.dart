@@ -314,7 +314,11 @@ class _TripPdfBuilder {
   }
 
   pw.Widget _itemRow(BundleItem item) {
-    final time = formatTimeRange(item.startMinutes, item.endMinutes);
+    final time = formatTimeRange(
+      item.startMinutes,
+      item.endMinutes,
+      endDayOffset: item.endDayOffset,
+    );
     final isTransport = item.kind == ItemKind.transport;
 
     final title = isTransport

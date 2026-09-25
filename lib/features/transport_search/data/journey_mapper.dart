@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:drift/drift.dart';
 
 import '../../../core/format/civil_date.dart';
@@ -18,9 +20,10 @@ import '../domain/transit_mode.dart';
 ///  * **UTC → wall-clock.** MOTIS times are UTC instants plus a per-stop IANA
 ///    timezone; each end is projected into *its own* zone (a leg can depart in
 ///    Berlin and arrive in a different offset), giving the day it belongs to and
-///    minutes-since-midnight. When arrival lands on the next calendar day the leg
-///    is flagged [MappedLeg.spansNextDay] rather than split — an overnight train
-///    stays one entry anchored to its departure day.
+///    minutes-since-midnight. When arrival lands on a later calendar day the leg
+///    carries how many days later ([MappedLeg.endDayOffset]) rather than being
+///    split — an overnight train stays one entry anchored to its departure day,
+///    and so does one that runs through two nights.
 ///  * **Mode fan-in.** The routing vocabulary ([TransitMode]) collapses onto the
 ///    app's built-in [TransportMode] catalogue via [builtinTransportModeFor],
 ///    then onto a concrete row id through the caller's [resolveMode] — which
@@ -118,7 +121,7 @@ ItineraryItemsCompanion mappedLegToCompanion(
   endMinutes: Value(leg.endMinutes),
   actualStartMinutes: Value(leg.actualStartMinutes),
   actualEndMinutes: Value(leg.actualEndMinutes),
-  spansNextDay: Value(leg.spansNextDay),
+  endDayOffset: Value(leg.endDayOffset),
   mode: Value(leg.modeId),
   notes: Value(leg.notes),
   sourceTripId: Value(leg.sourceTripId),
@@ -154,7 +157,11 @@ MappedLeg _mapLeg(
     endMinutes: to.minutes,
     actualStartMinutes: actualStart,
     actualEndMinutes: actualEnd,
-    spansNextDay: to.date.isAfter(from.date),
+    // Never negative: a flight westward over the date line can land on an
+    // earlier calendar date than it left, and an entry's end day counts
+    // forwards only. Such a leg reads as ending on its departure day, as it
+    // always has.
+    endDayOffset: math.max(0, daysBetween(from.date, to.date)),
     modeId: resolveMode(leg.mode),
     title: leg.line,
     notes: _composeNotes(leg, labels),
@@ -270,7 +277,7 @@ tz.Location? _locationOrNull(String? tzName) {
 }
 
 /// A single leg reduced to the fields an [ItineraryItems] transport row needs:
-/// local [date], planned start/end minutes, the overnight flag, a resolved
+/// local [date], planned start/end minutes, the day it arrives on, a resolved
 /// [modeId] (or null), endpoint names and coordinates. The repository turns a
 /// list of these into rows — assigning the trip, sort order and any group.
 class MappedLeg {
@@ -280,7 +287,7 @@ class MappedLeg {
     required this.endMinutes,
     required this.actualStartMinutes,
     required this.actualEndMinutes,
-    required this.spansNextDay,
+    required this.endDayOffset,
     required this.modeId,
     required this.title,
     required this.notes,
@@ -303,7 +310,10 @@ class MappedLeg {
   /// (an imminent train); null for a purely-scheduled future search.
   final int? actualStartMinutes;
   final int? actualEndMinutes;
-  final bool spansNextDay;
+
+  /// How many days after [date] the leg arrives — see
+  /// `ItineraryItems.endDayOffset`.
+  final int endDayOffset;
   final int? modeId;
   final String? title;
 

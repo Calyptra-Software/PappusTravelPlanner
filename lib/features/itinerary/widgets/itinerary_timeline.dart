@@ -12,6 +12,7 @@ import '../../costs/application/currency_providers.dart';
 import '../../transport_search/presentation/journey_details_sheet.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
+import '../entry_times.dart';
 import '../now_marker.dart';
 import 'alternative_card.dart';
 import 'now_line.dart';
@@ -153,13 +154,29 @@ class ItineraryTimeline extends StatefulWidget {
       final end = normalizeDay(tripEnd!);
       while (!d.isAfter(end)) {
         days.add(d);
-        d = d.add(const Duration(days: 1));
+        // Calendar days, not 24 hours: the night the clocks go back is 25 hours
+        // long, and adding a Duration to its midnight lands on 23:00 the same
+        // day — a second heading for a day already shown, and every day after
+        // it an hour off the entries' own midnights.
+        d = addDays(d, 1);
       }
     }
     // An item inside an option belongs to the day of its decision, not to its
-    // own date, so it can never pull a day into existence on its own.
+    // own date, so it can never pull a day into existence on its own — only
+    // the days its end reaches past that one, counted from the decision's day.
+    // An entry ending on a later day brings that day with it: the morning a
+    // night train arrives is part of the plan with nothing else on it.
+    final setOfBranch = {
+      for (final entry in branches.entries)
+        for (final branch in entry.value) branch.id: entry.key,
+    };
     for (final item in items) {
-      if (item.alternativeId == null) days.add(normalizeDay(item.date));
+      final branchId = item.alternativeId;
+      final start = branchId == null
+          ? item.date
+          : sets[setOfBranch[branchId]]?.date;
+      if (start == null) continue;
+      days.addAll(daysCovered(normalizeDay(start), item.endDayOffset));
     }
     for (final set in sets.values) {
       days.add(normalizeDay(set.date));
@@ -239,6 +256,12 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
               sets: widget.sets,
               branchesBySet: widget.branches,
             ),
+            continuations: continuationsOn(
+              day: days[i],
+              items: widget.items,
+              sets: widget.sets,
+              branchesBySet: widget.branches,
+            ),
             accent: widget.accent,
             collapsed: widget.collapsedDays.contains(days[i]),
             onToggleCollapsed: widget.onToggleDayCollapsed,
@@ -308,6 +331,7 @@ class _DaySection extends ConsumerWidget {
     required this.day,
     required this.dayNumber,
     required this.blocks,
+    this.continuations = const [],
     required this.accent,
     required this.collapsed,
     required this.onToggleCollapsed,
@@ -356,6 +380,10 @@ class _DaySection extends ConsumerWidget {
 
   /// The day's blocks in order: single items and whole decisions.
   final List<DayBlock> blocks;
+
+  /// The entries running into this day from an earlier one, drawn above its
+  /// blocks — see [Continuation].
+  final List<Continuation> continuations;
   final Color accent;
   final Map<int, ItemGroup> groups;
   final Map<int, List<Cost>> costsByGroup;
@@ -523,7 +551,12 @@ class _DaySection extends ConsumerWidget {
   Widget _buildBody(BuildContext context, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
     final live = _liveItems;
-    final lastItem = live.isEmpty ? null : live.last;
+    // Where the day leaves you is where its last entry does — or, on a morning
+    // with nothing planned yet but an arrival, where that arrival does: the
+    // next leg out of Vienna starts in Vienna.
+    final lastItem = live.isNotEmpty
+        ? live.last
+        : continuations.where((c) => c.arrives).lastOrNull?.item;
     final nowMinutes = now.hour * 60 + now.minute;
     // Where today stands: either an entry is under way, or the day divides into
     // what is behind us and what is ahead. Null on any other day, and on a day
@@ -554,7 +587,23 @@ class _DaySection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (blocks.isEmpty)
+        // What reaches into this day from an earlier one comes first: it began
+        // before anything planned here, and it is what the morning is spent on.
+        for (final continuation in continuations)
+          ContinuationTile(
+            key: ValueKey('continuation-${continuation.item.id}'),
+            continuation: continuation,
+            onTap: () => onTapItem(continuation.item),
+            isNow:
+                isToday &&
+                !relativeDays &&
+                continuationHappening(
+                  continuation.item,
+                  daysAfter: continuation.daysAfter,
+                  nowMinutes: nowMinutes,
+                ),
+          ),
+        if (blocks.isEmpty && continuations.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(48, 4, 4, 4),
             child: Text(
@@ -564,7 +613,7 @@ class _DaySection extends ConsumerWidget {
               ),
             ),
           )
-        else
+        else if (blocks.isNotEmpty)
           ReorderableListView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),

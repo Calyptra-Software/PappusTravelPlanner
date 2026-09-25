@@ -58,7 +58,7 @@ ItineraryItem leg({
   date: DateTime(2026, 7, 27),
   sortOrder: 0,
   kind: ItemKind.transport,
-  spansNextDay: false,
+  endDayOffset: 0,
   chordDisplay: TrackDisplay.auto,
   title: title,
   notes: notes,

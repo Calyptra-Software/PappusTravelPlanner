@@ -2349,20 +2349,17 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _spansNextDayMeta = const VerificationMeta(
-    'spansNextDay',
+  static const VerificationMeta _endDayOffsetMeta = const VerificationMeta(
+    'endDayOffset',
   );
   @override
-  late final GeneratedColumn<bool> spansNextDay = GeneratedColumn<bool>(
-    'spans_next_day',
+  late final GeneratedColumn<int> endDayOffset = GeneratedColumn<int>(
+    'end_day_offset',
     aliasedName,
     false,
-    type: DriftSqlType.bool,
+    type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("spans_next_day" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
+    defaultValue: const Constant(0),
   );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
@@ -2557,7 +2554,7 @@ class $ItineraryItemsTable extends ItineraryItems
     endMinutes,
     actualStartMinutes,
     actualEndMinutes,
-    spansNextDay,
+    endDayOffset,
     notes,
     colorValue,
     chordDisplay,
@@ -2667,12 +2664,12 @@ class $ItineraryItemsTable extends ItineraryItems
         ),
       );
     }
-    if (data.containsKey('spans_next_day')) {
+    if (data.containsKey('end_day_offset')) {
       context.handle(
-        _spansNextDayMeta,
-        spansNextDay.isAcceptableOrUnknown(
-          data['spans_next_day']!,
-          _spansNextDayMeta,
+        _endDayOffsetMeta,
+        endDayOffset.isAcceptableOrUnknown(
+          data['end_day_offset']!,
+          _endDayOffsetMeta,
         ),
       );
     }
@@ -2840,9 +2837,9 @@ class $ItineraryItemsTable extends ItineraryItems
         DriftSqlType.int,
         data['${effectivePrefix}actual_end_minutes'],
       ),
-      spansNextDay: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}spans_next_day'],
+      endDayOffset: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}end_day_offset'],
       )!,
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2969,13 +2966,22 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   final int? actualStartMinutes;
   final int? actualEndMinutes;
 
-  /// Whether this entry's **end** falls on the day *after* [date]. Almost always
-  /// an overnight transport leg — a night train that departs before midnight and
-  /// arrives the next morning: the entry stays anchored to its departure [date]
-  /// and appears once, on that day, while [endMinutes]/[actualEndMinutes] are
-  /// read as minutes into the following calendar day. This keeps the 0-1439
-  /// encoding intact rather than letting a single row straddle two dates.
-  final bool spansNextDay;
+  /// How many calendar days after [date] this entry's **end** falls: 0 for an
+  /// entry that ends on the day it starts, 1 for a night train arriving the
+  /// next morning, 2 or more for a journey that runs through several nights.
+  ///
+  /// The entry stays anchored to its start [date] — that is the day it is
+  /// planned on, dragged within and counted toward — while [endMinutes] (and,
+  /// by `entry_times.dart`'s rule, [actualEndMinutes]) are read as minutes into
+  /// the day this many days later. That keeps the 0-1439 encoding of every
+  /// time column intact rather than letting a row straddle two dates, and it
+  /// keeps the shape of the entry when it is moved or copied to another day:
+  /// an offset travels with its start, where a second date would have to be
+  /// moved beside it everywhere a date is written.
+  ///
+  /// v40 replaced the boolean `spans_next_day` this used to be, which could say
+  /// "the next day" and nothing further.
+  final int endDayOffset;
   final String? notes;
 
   /// ARGB color this entry is drawn in **on the map**, or null to be drawn in
@@ -3075,7 +3081,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     this.endMinutes,
     this.actualStartMinutes,
     this.actualEndMinutes,
-    required this.spansNextDay,
+    required this.endDayOffset,
     this.notes,
     this.colorValue,
     required this.chordDisplay,
@@ -3127,7 +3133,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     if (!nullToAbsent || actualEndMinutes != null) {
       map['actual_end_minutes'] = Variable<int>(actualEndMinutes);
     }
-    map['spans_next_day'] = Variable<bool>(spansNextDay);
+    map['end_day_offset'] = Variable<int>(endDayOffset);
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
     }
@@ -3212,7 +3218,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       actualEndMinutes: actualEndMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(actualEndMinutes),
-      spansNextDay: Value(spansNextDay),
+      endDayOffset: Value(endDayOffset),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -3279,7 +3285,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       endMinutes: serializer.fromJson<int?>(json['endMinutes']),
       actualStartMinutes: serializer.fromJson<int?>(json['actualStartMinutes']),
       actualEndMinutes: serializer.fromJson<int?>(json['actualEndMinutes']),
-      spansNextDay: serializer.fromJson<bool>(json['spansNextDay']),
+      endDayOffset: serializer.fromJson<int>(json['endDayOffset']),
       notes: serializer.fromJson<String?>(json['notes']),
       colorValue: serializer.fromJson<int?>(json['colorValue']),
       chordDisplay: $ItineraryItemsTable.$converterchordDisplay.fromJson(
@@ -3319,7 +3325,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'endMinutes': serializer.toJson<int?>(endMinutes),
       'actualStartMinutes': serializer.toJson<int?>(actualStartMinutes),
       'actualEndMinutes': serializer.toJson<int?>(actualEndMinutes),
-      'spansNextDay': serializer.toJson<bool>(spansNextDay),
+      'endDayOffset': serializer.toJson<int>(endDayOffset),
       'notes': serializer.toJson<String?>(notes),
       'colorValue': serializer.toJson<int?>(colorValue),
       'chordDisplay': serializer.toJson<int>(
@@ -3355,7 +3361,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<int?> endMinutes = const Value.absent(),
     Value<int?> actualStartMinutes = const Value.absent(),
     Value<int?> actualEndMinutes = const Value.absent(),
-    bool? spansNextDay,
+    int? endDayOffset,
     Value<String?> notes = const Value.absent(),
     Value<int?> colorValue = const Value.absent(),
     TrackDisplay? chordDisplay,
@@ -3392,7 +3398,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     actualEndMinutes: actualEndMinutes.present
         ? actualEndMinutes.value
         : this.actualEndMinutes,
-    spansNextDay: spansNextDay ?? this.spansNextDay,
+    endDayOffset: endDayOffset ?? this.endDayOffset,
     notes: notes.present ? notes.value : this.notes,
     colorValue: colorValue.present ? colorValue.value : this.colorValue,
     chordDisplay: chordDisplay ?? this.chordDisplay,
@@ -3435,9 +3441,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       actualEndMinutes: data.actualEndMinutes.present
           ? data.actualEndMinutes.value
           : this.actualEndMinutes,
-      spansNextDay: data.spansNextDay.present
-          ? data.spansNextDay.value
-          : this.spansNextDay,
+      endDayOffset: data.endDayOffset.present
+          ? data.endDayOffset.value
+          : this.endDayOffset,
       notes: data.notes.present ? data.notes.value : this.notes,
       colorValue: data.colorValue.present
           ? data.colorValue.value
@@ -3485,7 +3491,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('endMinutes: $endMinutes, ')
           ..write('actualStartMinutes: $actualStartMinutes, ')
           ..write('actualEndMinutes: $actualEndMinutes, ')
-          ..write('spansNextDay: $spansNextDay, ')
+          ..write('endDayOffset: $endDayOffset, ')
           ..write('notes: $notes, ')
           ..write('colorValue: $colorValue, ')
           ..write('chordDisplay: $chordDisplay, ')
@@ -3521,7 +3527,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     endMinutes,
     actualStartMinutes,
     actualEndMinutes,
-    spansNextDay,
+    endDayOffset,
     notes,
     colorValue,
     chordDisplay,
@@ -3556,7 +3562,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.endMinutes == this.endMinutes &&
           other.actualStartMinutes == this.actualStartMinutes &&
           other.actualEndMinutes == this.actualEndMinutes &&
-          other.spansNextDay == this.spansNextDay &&
+          other.endDayOffset == this.endDayOffset &&
           other.notes == this.notes &&
           other.colorValue == this.colorValue &&
           other.chordDisplay == this.chordDisplay &&
@@ -3589,7 +3595,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<int?> endMinutes;
   final Value<int?> actualStartMinutes;
   final Value<int?> actualEndMinutes;
-  final Value<bool> spansNextDay;
+  final Value<int> endDayOffset;
   final Value<String?> notes;
   final Value<int?> colorValue;
   final Value<TrackDisplay> chordDisplay;
@@ -3620,7 +3626,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.endMinutes = const Value.absent(),
     this.actualStartMinutes = const Value.absent(),
     this.actualEndMinutes = const Value.absent(),
-    this.spansNextDay = const Value.absent(),
+    this.endDayOffset = const Value.absent(),
     this.notes = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.chordDisplay = const Value.absent(),
@@ -3652,7 +3658,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.endMinutes = const Value.absent(),
     this.actualStartMinutes = const Value.absent(),
     this.actualEndMinutes = const Value.absent(),
-    this.spansNextDay = const Value.absent(),
+    this.endDayOffset = const Value.absent(),
     this.notes = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.chordDisplay = const Value.absent(),
@@ -3686,7 +3692,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<int>? endMinutes,
     Expression<int>? actualStartMinutes,
     Expression<int>? actualEndMinutes,
-    Expression<bool>? spansNextDay,
+    Expression<int>? endDayOffset,
     Expression<String>? notes,
     Expression<int>? colorValue,
     Expression<int>? chordDisplay,
@@ -3719,7 +3725,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (actualStartMinutes != null)
         'actual_start_minutes': actualStartMinutes,
       if (actualEndMinutes != null) 'actual_end_minutes': actualEndMinutes,
-      if (spansNextDay != null) 'spans_next_day': spansNextDay,
+      if (endDayOffset != null) 'end_day_offset': endDayOffset,
       if (notes != null) 'notes': notes,
       if (colorValue != null) 'color_value': colorValue,
       if (chordDisplay != null) 'chord_display': chordDisplay,
@@ -3753,7 +3759,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<int?>? endMinutes,
     Value<int?>? actualStartMinutes,
     Value<int?>? actualEndMinutes,
-    Value<bool>? spansNextDay,
+    Value<int>? endDayOffset,
     Value<String?>? notes,
     Value<int?>? colorValue,
     Value<TrackDisplay>? chordDisplay,
@@ -3785,7 +3791,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       endMinutes: endMinutes ?? this.endMinutes,
       actualStartMinutes: actualStartMinutes ?? this.actualStartMinutes,
       actualEndMinutes: actualEndMinutes ?? this.actualEndMinutes,
-      spansNextDay: spansNextDay ?? this.spansNextDay,
+      endDayOffset: endDayOffset ?? this.endDayOffset,
       notes: notes ?? this.notes,
       colorValue: colorValue ?? this.colorValue,
       chordDisplay: chordDisplay ?? this.chordDisplay,
@@ -3847,8 +3853,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (actualEndMinutes.present) {
       map['actual_end_minutes'] = Variable<int>(actualEndMinutes.value);
     }
-    if (spansNextDay.present) {
-      map['spans_next_day'] = Variable<bool>(spansNextDay.value);
+    if (endDayOffset.present) {
+      map['end_day_offset'] = Variable<int>(endDayOffset.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -3921,7 +3927,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('endMinutes: $endMinutes, ')
           ..write('actualStartMinutes: $actualStartMinutes, ')
           ..write('actualEndMinutes: $actualEndMinutes, ')
-          ..write('spansNextDay: $spansNextDay, ')
+          ..write('endDayOffset: $endDayOffset, ')
           ..write('notes: $notes, ')
           ..write('colorValue: $colorValue, ')
           ..write('chordDisplay: $chordDisplay, ')
@@ -12736,7 +12742,7 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<int?> endMinutes,
       Value<int?> actualStartMinutes,
       Value<int?> actualEndMinutes,
-      Value<bool> spansNextDay,
+      Value<int> endDayOffset,
       Value<String?> notes,
       Value<int?> colorValue,
       Value<TrackDisplay> chordDisplay,
@@ -12769,7 +12775,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<int?> endMinutes,
       Value<int?> actualStartMinutes,
       Value<int?> actualEndMinutes,
-      Value<bool> spansNextDay,
+      Value<int> endDayOffset,
       Value<String?> notes,
       Value<int?> colorValue,
       Value<TrackDisplay> chordDisplay,
@@ -12978,8 +12984,8 @@ class $$ItineraryItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<bool> get spansNextDay => $composableBuilder(
-    column: $table.spansNextDay,
+  ColumnFilters<int> get endDayOffset => $composableBuilder(
+    column: $table.endDayOffset,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13286,8 +13292,8 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get spansNextDay => $composableBuilder(
-    column: $table.spansNextDay,
+  ColumnOrderings<int> get endDayOffset => $composableBuilder(
+    column: $table.endDayOffset,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13508,8 +13514,8 @@ class $$ItineraryItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<bool> get spansNextDay => $composableBuilder(
-    column: $table.spansNextDay,
+  GeneratedColumn<int> get endDayOffset => $composableBuilder(
+    column: $table.endDayOffset,
     builder: (column) => column,
   );
 
@@ -13792,7 +13798,7 @@ class $$ItineraryItemsTableTableManager
                 Value<int?> endMinutes = const Value.absent(),
                 Value<int?> actualStartMinutes = const Value.absent(),
                 Value<int?> actualEndMinutes = const Value.absent(),
-                Value<bool> spansNextDay = const Value.absent(),
+                Value<int> endDayOffset = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
                 Value<TrackDisplay> chordDisplay = const Value.absent(),
@@ -13823,7 +13829,7 @@ class $$ItineraryItemsTableTableManager
                 endMinutes: endMinutes,
                 actualStartMinutes: actualStartMinutes,
                 actualEndMinutes: actualEndMinutes,
-                spansNextDay: spansNextDay,
+                endDayOffset: endDayOffset,
                 notes: notes,
                 colorValue: colorValue,
                 chordDisplay: chordDisplay,
@@ -13856,7 +13862,7 @@ class $$ItineraryItemsTableTableManager
                 Value<int?> endMinutes = const Value.absent(),
                 Value<int?> actualStartMinutes = const Value.absent(),
                 Value<int?> actualEndMinutes = const Value.absent(),
-                Value<bool> spansNextDay = const Value.absent(),
+                Value<int> endDayOffset = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
                 Value<TrackDisplay> chordDisplay = const Value.absent(),
@@ -13887,7 +13893,7 @@ class $$ItineraryItemsTableTableManager
                 endMinutes: endMinutes,
                 actualStartMinutes: actualStartMinutes,
                 actualEndMinutes: actualEndMinutes,
-                spansNextDay: spansNextDay,
+                endDayOffset: endDayOffset,
                 notes: notes,
                 colorValue: colorValue,
                 chordDisplay: chordDisplay,

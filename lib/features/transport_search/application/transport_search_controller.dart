@@ -30,7 +30,7 @@ typedef JourneyImportLabels = ({
 /// Turns a chosen [JourneyOption] into itinerary legs and writes them to a trip.
 ///
 /// The three pure/data pieces meet here: the current [TransportModes] resolve a
-/// [modeResolver], [journeyToLegs] maps the journey (local times, overnight flag,
+/// [modeResolver], [journeyToLegs] maps the journey (local times, end day,
 /// mode ids), and [TripRepository.insertJourney] appends the legs and bundles
 /// each day's run into a group. Requires the timezone database to be initialised
 /// (done in `main`).
@@ -298,7 +298,7 @@ class TransportSearchController {
       date: item.date,
       startMinutes: start,
       endMinutes: end,
-      spansNextDay: item.spansNextDay,
+      endDayOffset: item.endDayOffset,
       fromName: item.fromLocation ?? '',
       toName: item.toLocation ?? '',
     );

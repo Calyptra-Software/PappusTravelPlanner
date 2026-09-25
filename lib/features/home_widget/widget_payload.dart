@@ -35,11 +35,11 @@ const String _widgetEarlyColor = '#A5D6A7';
 String widgetTime(ItineraryItem item) => [
   for (final mark in timeMarks(item))
     if (mark.delta case final delta?)
-      '${formatMinutes(mark.minutes)} <font color="'
+      '${formatMinutes(mark.minutes)}${formatDayMark(mark.day)} <font color="'
           '${delta > 0 ? _widgetLateColor : _widgetEarlyColor}">'
           '(${formatSignedMinutes(delta)})</font>'
     else
-      formatMinutes(mark.minutes),
+      '${formatMinutes(mark.minutes)}${formatDayMark(mark.day)}',
 ].join(' – ');
 
 /// Flat, pre-formatted data handed to the native Android widget. All strings are

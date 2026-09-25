@@ -734,6 +734,78 @@ abstract class AppLocalizations {
   /// **'What really happened. The timeline shows how late or early it ran.'**
   String get actualTimesHint;
 
+  /// Label of the item form's field saying which day an entry ends on; 'Arrives' for a transport leg, 'Ends' (endDayEnds) for a place.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrives'**
+  String get endDayArrives;
+
+  /// No description provided for @endDayEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get endDayEnds;
+
+  /// No description provided for @endDaySame.
+  ///
+  /// In en, this message translates to:
+  /// **'Same day'**
+  String get endDaySame;
+
+  /// The day an entry ends on, counted from the day it starts on.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Next day} other{{count} days later}}'**
+  String endDayLater(int count);
+
+  /// No description provided for @endDayEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'One day earlier'**
+  String get endDayEarlier;
+
+  /// No description provided for @endDayLaterButton.
+  ///
+  /// In en, this message translates to:
+  /// **'One day later'**
+  String get endDayLaterButton;
+
+  /// No description provided for @endBeforeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'The end is before the start. Is it on a later day?'**
+  String get endBeforeStart;
+
+  /// On the day a transport leg that left on an earlier day arrives: when it arrives.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrives {time}'**
+  String continuationArrives(String time);
+
+  /// On the day an entry that began on an earlier day ends: when it ends.
+  ///
+  /// In en, this message translates to:
+  /// **'Until {time}'**
+  String continuationUntil(String time);
+
+  /// No description provided for @continuationEnds.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends this day'**
+  String get continuationEnds;
+
+  /// No description provided for @continuationAllDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Continues all day'**
+  String get continuationAllDay;
+
+  /// No description provided for @continuationStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Continued from an earlier day'**
+  String get continuationStarted;
+
   /// No description provided for @notesOptional.
   ///
   /// In en, this message translates to:

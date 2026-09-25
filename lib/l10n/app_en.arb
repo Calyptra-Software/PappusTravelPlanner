@@ -152,6 +152,33 @@
   "plannedTimes": "Planned",
   "actualTimes": "Actual",
   "actualTimesHint": "What really happened. The timeline shows how late or early it ran.",
+  "endDayArrives": "Arrives",
+  "endDayEnds": "Ends",
+  "@endDayArrives": {
+    "description": "Label of the item form's field saying which day an entry ends on; 'Arrives' for a transport leg, 'Ends' (endDayEnds) for a place."
+  },
+  "endDaySame": "Same day",
+  "endDayLater": "{count, plural, =1{Next day} other{{count} days later}}",
+  "@endDayLater": {
+    "description": "The day an entry ends on, counted from the day it starts on.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "endDayEarlier": "One day earlier",
+  "endDayLaterButton": "One day later",
+  "endBeforeStart": "The end is before the start. Is it on a later day?",
+  "continuationArrives": "Arrives {time}",
+  "@continuationArrives": {
+    "description": "On the day a transport leg that left on an earlier day arrives: when it arrives.",
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "continuationUntil": "Until {time}",
+  "@continuationUntil": {
+    "description": "On the day an entry that began on an earlier day ends: when it ends.",
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "continuationEnds": "Ends this day",
+  "continuationAllDay": "Continues all day",
+  "continuationStarted": "Continued from an earlier day",
   "notesOptional": "Notes (optional)",
   "save": "Save",
   "add": "Add",

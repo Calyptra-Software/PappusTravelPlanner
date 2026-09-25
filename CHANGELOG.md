@@ -5,6 +5,18 @@ exact commits.
 
 ## Unreleased
 
+- **An entry can end on a later day, and that day shows it.** The form has an *Arrives* (or
+  *Ends*) field for the day, offered as the next day as soon as the end is before the start,
+  and a journey can run through several nights. The timeline marks such an end with **+1**
+  (or **+2** …), and the day it arrives on shows the arrival at the top, with its delay and
+  "you are here" while you are still on board.
+- **A delay across midnight reads as a delay.** A train planned for 23:55 that leaves at
+  00:10 is fifteen minutes late, no longer almost a day early.
+- **Overnight entries keep their end in the calendar export.** An event ending the next
+  morning used to lose its end time.
+- **A trip across a daylight-saving change no longer shows one of its days twice.**
+- **A trip shared with a leg of two or more nights needs this version to be opened.** One
+  night stays readable by older versions.
 - **The line down the left of a day runs straight through groups and decisions.** It no
   longer shifts sideways inside a group or a decision, and it no longer breaks at their
   headers, a group's shared cost, or a decision's option pills.

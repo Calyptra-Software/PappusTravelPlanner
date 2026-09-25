@@ -53,10 +53,12 @@ void main() {
     String? notes,
     int sortOrder = 0,
     int? alternativeLocalId,
+    int endDayOffset = 0,
   }) => BundleItem(
     localId: id,
     date: date,
     sortOrder: sortOrder,
+    endDayOffset: endDayOffset,
     kind: ItemKind.place,
     title: title,
     location: location,
@@ -172,6 +174,32 @@ void main() {
       );
 
       expect(lines, contains('DTEND;VALUE=DATE:20260901'));
+    });
+
+    test('an end on a later day is written on that day', () {
+      // It used to be dropped: read as the same day, a 07:12 arrival came
+      // before a 22:14 departure.
+      for (final (offset, end) in [(1, '20260901'), (2, '20260902')]) {
+        final lines = logicalLines(
+          export(
+            bundleWith(
+              items: [
+                place(
+                  1,
+                  date: DateTime(2026, 8, 31),
+                  title: 'Night train',
+                  startMinutes: 22 * 60 + 14,
+                  endMinutes: 7 * 60 + 12,
+                  endDayOffset: offset,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        expect(lines, contains('DTSTART:20260831T221400'));
+        expect(lines, contains('DTEND:${end}T071200'));
+      }
     });
 
     test('an end at or before its start is dropped rather than written', () {

@@ -27,7 +27,7 @@ void main() {
     date: DateTime(2026, 5, 1),
     sortOrder: id,
     kind: ItemKind.transport,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     mode: 1,
     startMinutes: 480,

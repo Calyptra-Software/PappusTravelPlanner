@@ -179,7 +179,7 @@ void main() {
     expect(saved.sourceTripId, leg.sourceTripId);
     expect(saved.fromLat, leg.fromLat);
     expect(saved.toLon, leg.toLon);
-    expect(saved.spansNextDay, leg.spansNextDay);
+    expect(saved.endDayOffset, leg.endDayOffset);
     // The plan and the notes the form does edit come back unchanged too.
     expect(saved.title, leg.title);
     expect(saved.startMinutes, 452);
@@ -394,6 +394,143 @@ void main() {
       await openNewLeg(tester);
 
       expect(searchSheetAlternativeId(tester), isNull);
+    });
+  });
+
+  group('the day an entry ends on', () {
+    Future<ItineraryItem> handLeg({
+      int start = 22 * 60 + 14,
+      int end = 7 * 60 + 12,
+      int endDayOffset = 0,
+    }) async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          mode: const Value(6),
+          fromLocation: const Value('Hamburg'),
+          toLocation: const Value('Vienna'),
+          startMinutes: Value(start),
+          endMinutes: Value(end),
+          endDayOffset: Value(endDayOffset),
+        ),
+      );
+      return reread(id);
+    }
+
+    Future<void> open(WidgetTester tester, ItineraryItem leg) async {
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: leg),
+          items: [leg],
+        ),
+      );
+      await tester.pump();
+    }
+
+    Future<void> tapTooltip(WidgetTester tester, String tooltip) async {
+      final button = find.byTooltip(tooltip);
+      await tester.ensureVisible(button);
+      await tester.pump();
+      await tester.tap(button);
+      await tester.pump();
+    }
+
+    testWidgets('says the day, and the date beside it', (tester) async {
+      await open(tester, await handLeg(endDayOffset: 1));
+
+      expect(find.text('Arrives'), findsWidgets);
+      expect(find.text('Next day · Tue, Aug 4'), findsOneWidget);
+    });
+
+    testWidgets('a journey can be given more nights than one', (tester) async {
+      final leg = await handLeg(endDayOffset: 1);
+      await open(tester, leg);
+
+      await tapTooltip(tester, 'One day later');
+      expect(find.text('2 days later · Wed, Aug 5'), findsOneWidget);
+      await save(tester);
+
+      expect((await reread(leg.id)).endDayOffset, 2);
+    });
+
+    testWidgets('an end before its start on the same day is refused', (
+      tester,
+    ) async {
+      final leg = await handLeg(endDayOffset: 1);
+      await open(tester, leg);
+
+      await tapTooltip(tester, 'One day earlier');
+      expect(find.text('Same day'), findsOneWidget);
+      await save(tester);
+
+      // Not written, and said where it is corrected.
+      expect(
+        find.text('The end is before the start. Is it on a later day?'),
+        findsOneWidget,
+      );
+      expect((await reread(leg.id)).endDayOffset, 1);
+
+      await tapTooltip(tester, 'One day later');
+      expect(
+        find.text('The end is before the start. Is it on a later day?'),
+        findsNothing,
+      );
+      await save(tester);
+      expect((await reread(leg.id)).endDayOffset, 1);
+    });
+
+    testWidgets('picking an end before the start suggests the next day', (
+      tester,
+    ) async {
+      final leg = await handLeg(start: 9 * 60, end: 10 * 60);
+      await open(tester, leg);
+      expect(find.text('Same day'), findsOneWidget);
+
+      // Change the planned arrival to 07:12 through the time picker's
+      // keyboard entry.
+      final arrives = find.text('10:00');
+      await tester.ensureVisible(arrives);
+      await tester.pump();
+      await tester.tap(arrives);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.keyboard_outlined));
+      await tester.pumpAndSettle();
+      final fields = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(fields.at(0), '7');
+      await tester.enterText(fields.at(1), '12');
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      // 09:00 to 07:12 has no reading on one day; the next one is offered,
+      // visibly.
+      expect(find.text('Next day · Tue, Aug 4'), findsOneWidget);
+      await save(tester);
+
+      final saved = await reread(leg.id);
+      expect(saved.endMinutes, 7 * 60 + 12);
+      expect(saved.endDayOffset, 1);
+    });
+
+    testWidgets('clearing the end takes its day with it', (tester) async {
+      final leg = await handLeg(endDayOffset: 1);
+      await open(tester, leg);
+
+      // The planned arrival's clear button: the second of the planned row.
+      final clear = find.byIcon(Icons.clear).at(1);
+      await tester.ensureVisible(clear);
+      await tester.pump();
+      await tester.tap(clear);
+      await tester.pump();
+      await save(tester);
+
+      final saved = await reread(leg.id);
+      expect(saved.endMinutes, isNull);
+      expect(saved.endDayOffset, 0);
     });
   });
 }

@@ -255,4 +255,32 @@ void main() {
       expect(BundleTrip.fromJson(json).kind, TripKind.trip);
     });
   });
+
+  group('an entry\'s end day', () {
+    Map<String, dynamic> itemJson({Object? spansNextDay, Object? offset}) => {
+      'localId': 1,
+      'date': '2026-05-01',
+      'kind': 'transport',
+      'spansNextDay': ?spansNextDay,
+      'endDayOffset': ?offset,
+    };
+
+    test('a bundle written before v7 reads its flag as one day', () {
+      expect(BundleItem.fromJson(itemJson(spansNextDay: true)).endDayOffset, 1);
+      expect(
+        BundleItem.fromJson(itemJson(spansNextDay: false)).endDayOffset,
+        0,
+      );
+      expect(BundleItem.fromJson(itemJson()).endDayOffset, 0);
+    });
+
+    test('the count wins over the flag beside it', () {
+      expect(
+        BundleItem.fromJson(
+          itemJson(spansNextDay: true, offset: 3),
+        ).endDayOffset,
+        3,
+      );
+    });
+  });
 }

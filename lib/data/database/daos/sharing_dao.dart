@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../../../features/itinerary/entry_times.dart';
 import '../../../features/sharing/trip_bundle.dart';
 import '../app_database.dart';
 import '../tables.dart';
@@ -215,7 +216,11 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
       // between travelers and show its receiver owing the source.
       // An invitation forces v6 for the same reason: an older app would show
       // the guest owing the payer the share they were invited to.
-      formatVersion: invitedByCost.isNotEmpty
+      // An entry running through two or more nights forces v7: an older app
+      // knows only "ends the next day" and would land it days early.
+      formatVersion: itemRows.any((i) => i.endDayOffset > 1)
+          ? 7
+          : invitedByCost.isNotEmpty
           ? 6
           : costRows.any((c) => c.isTransfer && c.isReimbursement)
           ? 5
@@ -278,7 +283,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             endMinutes: i.endMinutes,
             actualStartMinutes: i.actualStartMinutes,
             actualEndMinutes: i.actualEndMinutes,
-            spansNextDay: i.spansNextDay,
+            endDayOffset: i.endDayOffset,
             notes: i.notes,
             colorValue: i.colorValue,
             chordDisplay: i.chordDisplay,
@@ -478,7 +483,18 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             endMinutes: Value(i.endMinutes),
             actualStartMinutes: Value(i.actualStartMinutes),
             actualEndMinutes: Value(i.actualEndMinutes),
-            spansNextDay: Value(i.spansNextDay),
+            // A bundle written before an end day could be given may hold a
+            // hand-entered night train that ends before it starts; it is read
+            // the way the v40 migration read the same record in a database.
+            endDayOffset: Value(
+              settledEndDayOffset(
+                startMinutes: i.startMinutes,
+                endMinutes: i.endMinutes,
+                endDayOffset: i.endDayOffset,
+                actualStartMinutes: i.actualStartMinutes,
+                actualEndMinutes: i.actualEndMinutes,
+              ),
+            ),
             notes: Value(i.notes),
             colorValue: Value(i.colorValue),
             chordDisplay: Value(i.chordDisplay),

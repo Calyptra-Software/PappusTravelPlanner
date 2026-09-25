@@ -115,7 +115,7 @@ void main() {
     });
 
     test('the overnight coach leg crosses midnight in UTC', () {
-      // The mapper turns this into spansNextDay; here we just confirm the raw
+      // The mapper turns this into an end day offset; here we just confirm the raw
       // departure/arrival land on different calendar days, and the two ends can
       // sit in different time zones.
       final opt = parsePlanResponse(

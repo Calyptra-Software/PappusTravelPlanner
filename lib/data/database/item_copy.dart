@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 
+import '../../features/itinerary/entry_times.dart';
 import 'app_database.dart';
 
 /// The **plan** an itinerary item carries, as a companion ready to insert a
@@ -15,7 +16,7 @@ import 'app_database.dart';
 /// Nor its **provenance**: `sourceTripId` names one dated run of one service at
 /// the routing provider, so a copy on another day would refresh its live times
 /// from a train it is not. What the routing service told us *about the plan* —
-/// the overnight flag, the endpoint coordinates, the stops passed through — is
+/// the day the entry ends on, the endpoint coordinates, the stops passed through — is
 /// part of what the entry is and does travel.
 ///
 /// Shared by every duplicate in the app (an item, a group, a whole option) so
@@ -39,7 +40,7 @@ ItineraryItemsCompanion copyItemPlan(
   endMinutes: Value(item.endMinutes),
   actualStartMinutes: Value(item.actualStartMinutes),
   actualEndMinutes: Value(item.actualEndMinutes),
-  spansNextDay: Value(item.spansNextDay),
+  endDayOffset: Value(item.endDayOffset),
   notes: Value(item.notes),
   location: Value(item.location),
   // Where the place is, beside what it is called. A copy lands on another day,
@@ -67,4 +68,14 @@ ItineraryItemsCompanion copyItemPlan(
   fromPlaceId: Value(item.fromPlaceId),
   toPlaceId: Value(item.toPlaceId),
   stopovers: Value(item.stopovers),
+);
+
+/// The days an entry about to be written spans: from its date through the day
+/// its end falls on. What `TripDao.widenToCover` is handed for a leg, since an
+/// overnight connection searched for a trip's last evening arrives on a day the
+/// trip does not yet cover — its *departure* day is inside the range, the
+/// morning it arrives in is not.
+Iterable<DateTime> companionDays(ItineraryItemsCompanion entry) => daysCovered(
+  entry.date.value,
+  entry.endDayOffset.present ? entry.endDayOffset.value : 0,
 );

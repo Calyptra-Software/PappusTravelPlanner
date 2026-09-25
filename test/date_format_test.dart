@@ -26,6 +26,25 @@ void main() {
     });
   });
 
+  group('a time range', () {
+    test('reads start to end, or whichever of them there is', () {
+      expect(formatTimeRange(540, 630), '09:00 – 10:30');
+      expect(formatTimeRange(540, null), '09:00');
+      expect(formatTimeRange(null, 630), '10:30');
+      expect(formatTimeRange(null, null), '');
+    });
+
+    test('marks an end on a later day', () {
+      expect(
+        formatTimeRange(22 * 60 + 14, 7 * 60 + 12, endDayOffset: 1),
+        '22:14 – 07:12 +1',
+      );
+      expect(formatTimeRange(null, 432, endDayOffset: 2), '07:12 +2');
+      // A day with no end time to qualify is not printed on its own.
+      expect(formatTimeRange(540, null, endDayOffset: 1), '09:00');
+    });
+  });
+
   group('locale-aware date formatting', () {
     test('German uses the day-period convention', () {
       expect(formatFullDate(d5, 'de'), '5. Juli 2026');

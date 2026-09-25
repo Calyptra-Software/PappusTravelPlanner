@@ -27,6 +27,7 @@ import '../../transport_search/presentation/journey_destination.dart';
 import '../application/item_clipboard.dart';
 import '../application/itinerary_providers.dart';
 import '../application/transport_mode_providers.dart';
+import '../entry_times.dart';
 import '../widgets/transport_mode.dart';
 
 /// Opens the add/edit sheet for an itinerary item and persists on save.
@@ -100,6 +101,15 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   late DateTime _date;
   final _times = <_TimeSlot, int?>{};
 
+  /// How many days after [_date] the entry ends — see
+  /// `ItineraryItems.endDayOffset`. Suggested as 1 the moment the times say the
+  /// end comes before the start, and changed by hand beyond that.
+  int _endDayOffset = 0;
+
+  /// Whether a save was refused because the end comes before the start on the
+  /// day given — said under the end-day field, which is where it is corrected.
+  bool _endBeforeStart = false;
+
   /// The selected transport mode's row id, or null before the modes have loaded
   /// (a default is filled in once they do) or when there are somehow none.
   int? _mode;
@@ -158,6 +168,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       _times[_TimeSlot.plannedEnd] = existing.endMinutes;
       _times[_TimeSlot.actualStart] = existing.actualStartMinutes;
       _times[_TimeSlot.actualEnd] = existing.actualEndMinutes;
+      _endDayOffset = existing.endDayOffset;
       _mode = existing.mode;
       _position = _Coordinates.of(existing.lat, existing.lon);
       _fromPosition = _Coordinates.of(existing.fromLat, existing.fromLon);
@@ -198,8 +209,84 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
         : TimeOfDay.now();
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked != null) {
-      setState(() => _times[slot] = picked.hour * 60 + picked.minute);
+      setState(() {
+        _times[slot] = picked.hour * 60 + picked.minute;
+        // 22:14 to 07:12 is a night train, not a typo: an end before its start
+        // on the same day has one reading that is not an error, so it is
+        // offered — visibly, in the end-day field, where it can be taken back.
+        // Never the other way round: a later end may be meant for a later day
+        // all the same (a 25-hour journey), and only the user knows that.
+        if (_endDayOffset == 0 && endsBeforeStart(_entryTimes)) {
+          _endDayOffset = 1;
+        }
+        _endBeforeStart = false;
+      });
     }
+  }
+
+  /// The form's times on the entry's minute line, as they would be saved.
+  EntryTimes get _entryTimes => entryTimes(
+    startMinutes: _times[_TimeSlot.plannedStart],
+    endMinutes: _times[_TimeSlot.plannedEnd],
+    endDayOffset: _endDayOffset,
+    actualStartMinutes: _times[_TimeSlot.actualStart],
+    actualEndMinutes: _times[_TimeSlot.actualEnd],
+  );
+
+  /// Whether the entry has an end for the end day to qualify, or already has a
+  /// day set — the only cases in which the field says anything.
+  bool get _hasEnd =>
+      _endDayOffset > 0 ||
+      _times[_TimeSlot.plannedEnd] != null ||
+      _times[_TimeSlot.actualEnd] != null;
+
+  /// Which day the entry ends on, as a count from its own day with two steps.
+  ///
+  /// A count and not a date picker, because it is one: a routine has no dates
+  /// to pick from, and a night train is "the next day" whatever the calendar
+  /// says. The date is spelled out beside it where there is one, so the count
+  /// never has to be worked out in anyone's head.
+  Widget _endDayField(AppLocalizations l10n, String localeName) {
+    final theme = Theme.of(context);
+    final count = _endDayOffset == 0
+        ? l10n.endDaySame
+        : l10n.endDayLater(_endDayOffset);
+    final text = widget.intoRoutine || _endDayOffset == 0
+        ? count
+        : '$count · ${formatDay(addDays(_date, _endDayOffset), localeName)}';
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: _isTransport ? l10n.endDayArrives : l10n.endDayEnds,
+        prefixIcon: const Icon(Icons.event_available, size: 18),
+        errorText: _endBeforeStart ? l10n.endBeforeStart : null,
+        errorMaxLines: 2,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+      ),
+      child: Row(
+        children: [
+          Expanded(child: Text(text)),
+          IconButton(
+            tooltip: l10n.endDayEarlier,
+            icon: const Icon(Icons.remove),
+            onPressed: _endDayOffset == 0
+                ? null
+                : () => setState(() {
+                    _endDayOffset--;
+                    _endBeforeStart = false;
+                  }),
+          ),
+          IconButton(
+            tooltip: l10n.endDayLaterButton,
+            icon: const Icon(Icons.add),
+            color: theme.colorScheme.primary,
+            onPressed: () => setState(() {
+              _endDayOffset++;
+              _endBeforeStart = false;
+            }),
+          ),
+        ],
+      ),
+    );
   }
 
   /// The two time fields of one row — planned or actual. Both rows carry the
@@ -214,7 +301,17 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
         onTap: () => _pickTime(slot),
         onClear: _times[slot] == null
             ? null
-            : () => setState(() => _times[slot] = null),
+            : () => setState(() {
+                _times[slot] = null;
+                _endBeforeStart = false;
+                // The last end gone takes its day with it, rather than leaving
+                // "next day" standing over an entry that no longer says when
+                // it ends.
+                if (_times[_TimeSlot.plannedEnd] == null &&
+                    _times[_TimeSlot.actualEnd] == null) {
+                  _endDayOffset = 0;
+                }
+              }),
       ),
     );
 
@@ -284,6 +381,19 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    // An end before its start is refused rather than saved: everything that
+    // measures the entry would read it as a moment at its start, which is how a
+    // night train used to vanish from "you are here" the minute it left.
+    if (endsBeforeStart(_entryTimes)) {
+      setState(() => _endBeforeStart = true);
+      return;
+    }
+    // No end, no end day: a count of days after nothing would say the entry
+    // ends on a day without saying when, and it would still widen the plan.
+    final hasEndTime =
+        _times[_TimeSlot.plannedEnd] != null ||
+        _times[_TimeSlot.actualEnd] != null;
+    final endDayOffset = hasEndTime ? _endDayOffset : 0;
     final repo = ref.read(repositoryProvider);
     final title = _titleController.text.trim();
     final location = _locationController.text.trim();
@@ -324,6 +434,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           endMinutes: Value(_times[_TimeSlot.plannedEnd]),
           actualStartMinutes: Value(_times[_TimeSlot.actualStart]),
           actualEndMinutes: Value(_times[_TimeSlot.actualEnd]),
+          endDayOffset: endDayOffset,
           notes: Value(nullIfEmpty(notes)),
           location: Value(_isTransport ? null : nullIfEmpty(location)),
           mode: Value(_isTransport ? _mode : null),
@@ -342,8 +453,8 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           colorValue: Value(_colorValue),
           chordDisplay: _isTransport ? _chordDisplay : TrackDisplay.auto,
           // Everything else a leg carries but the form does not edit — the
-          // overnight flag, the source trip id the live-times refresh needs, the
-          // stops in between — rides along untouched, and is cleared only on an
+          // source trip id the live-times refresh needs, the stops in between —
+          // rides along untouched, and is cleared only on an
           // entry that is no longer a leg. Direction/platform live in notes,
           // which the form does edit.
           //
@@ -387,6 +498,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           endMinutes: Value(_times[_TimeSlot.plannedEnd]),
           actualStartMinutes: Value(_times[_TimeSlot.actualStart]),
           actualEndMinutes: Value(_times[_TimeSlot.actualEnd]),
+          endDayOffset: Value(endDayOffset),
           notes: Value(nullIfEmpty(notes)),
           location: Value(_isTransport ? null : nullIfEmpty(location)),
           mode: Value(_isTransport ? _mode : null),
@@ -720,6 +832,12 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
                 Text(l10n.plannedTimes, style: theme.textTheme.labelLarge),
                 const SizedBox(height: 8),
                 _timeRow(l10n, _TimeSlot.plannedStart, _TimeSlot.plannedEnd),
+                // Beside the planned end, which it dates; an actual end with no
+                // plan is dated by it too, which is why it is shown for either.
+                if (_hasEnd) ...[
+                  const SizedBox(height: 12),
+                  _endDayField(l10n, localeName),
+                ],
                 const SizedBox(height: 16),
                 Text(l10n.actualTimes, style: theme.textTheme.labelLarge),
                 const SizedBox(height: 4),

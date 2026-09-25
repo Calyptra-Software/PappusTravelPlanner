@@ -1340,7 +1340,7 @@ void main() {
       date: DateTime(2026, 7, 27),
       sortOrder: 0,
       kind: ItemKind.place,
-      spansNextDay: false,
+      endDayOffset: 0,
       chordDisplay: TrackDisplay.auto,
       lat: lat,
       lon: lon,

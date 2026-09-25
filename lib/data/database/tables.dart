@@ -319,13 +319,22 @@ class ItineraryItems extends Table {
   IntColumn get actualStartMinutes => integer().nullable()();
   IntColumn get actualEndMinutes => integer().nullable()();
 
-  /// Whether this entry's **end** falls on the day *after* [date]. Almost always
-  /// an overnight transport leg — a night train that departs before midnight and
-  /// arrives the next morning: the entry stays anchored to its departure [date]
-  /// and appears once, on that day, while [endMinutes]/[actualEndMinutes] are
-  /// read as minutes into the following calendar day. This keeps the 0-1439
-  /// encoding intact rather than letting a single row straddle two dates.
-  BoolColumn get spansNextDay => boolean().withDefault(const Constant(false))();
+  /// How many calendar days after [date] this entry's **end** falls: 0 for an
+  /// entry that ends on the day it starts, 1 for a night train arriving the
+  /// next morning, 2 or more for a journey that runs through several nights.
+  ///
+  /// The entry stays anchored to its start [date] — that is the day it is
+  /// planned on, dragged within and counted toward — while [endMinutes] (and,
+  /// by `entry_times.dart`'s rule, [actualEndMinutes]) are read as minutes into
+  /// the day this many days later. That keeps the 0-1439 encoding of every
+  /// time column intact rather than letting a row straddle two dates, and it
+  /// keeps the shape of the entry when it is moved or copied to another day:
+  /// an offset travels with its start, where a second date would have to be
+  /// moved beside it everywhere a date is written.
+  ///
+  /// v40 replaced the boolean `spans_next_day` this used to be, which could say
+  /// "the next day" and nothing further.
+  IntColumn get endDayOffset => integer().withDefault(const Constant(0))();
   TextColumn get notes => text().nullable()();
 
   /// ARGB color this entry is drawn in **on the map**, or null to be drawn in
