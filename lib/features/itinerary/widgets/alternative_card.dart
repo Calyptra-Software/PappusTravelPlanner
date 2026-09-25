@@ -19,6 +19,7 @@ import '../day_blocks.dart';
 import '../now_marker.dart';
 import 'now_line.dart';
 import 'put_down_chip.dart';
+import 'timeline_rail.dart';
 import 'timeline_tile.dart';
 
 /// An option's name: its own label, or its position spelled as a letter
@@ -230,6 +231,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
     final label = (set.label != null && set.label!.isNotEmpty)
         ? set.label!
         : l10n.decisionDefaultLabel;
+    final tint = widget.accent.withValues(alpha: _focused ? 0.09 : 0.05);
+    final radius = BorderRadius.circular(12);
 
     // Clicking anywhere on the card gives it the keyboard, so the arrow keys
     // step through the options — the desktop counterpart of putting a finger on
@@ -253,21 +256,34 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
           ),
         },
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: widget.accent.withValues(alpha: _focused ? 0.09 : 0.05),
-            // The ring says "the arrows land here" — a focusable card with no
-            // way to see it has the focus is a keyboard path no one can find.
+          decoration: BoxDecoration(color: tint, borderRadius: radius),
+          // The ring says "the arrows land here" — a focusable card with no
+          // way to see it has the focus is a keyboard path no one can find.
+          // Painted over the card rather than around it, so it takes no room:
+          // as a `decoration` it would inset the options' entries and put
+          // their rail off the line of the day around the card.
+          foregroundDecoration: BoxDecoration(
             border: Border.all(
               color: widget.accent.withValues(alpha: _focused ? 1 : 0.4),
               width: _focused ? 2 : 1,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: radius,
           ),
+          // The rail is drawn in three pieces — header, the option on screen,
+          // indicators — rather than once behind the card: the option's piece
+          // belongs to its page and slides away with it, where a rail behind
+          // the pager would stay put and show through between two pages.
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _header(theme, l10n, label),
+              TimelineRail(
+                child: _header(
+                  theme,
+                  l10n,
+                  label,
+                  Color.alphaBlend(tint, theme.colorScheme.surface),
+                ),
+              ),
               // The pager drives the card's height, so the height has to be
               // recomputed on every scroll tick: `onPageChanged` fires halfway
               // through a swipe, and rebuilding only then would leave the card
@@ -297,37 +313,56 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                             if (_heights[index] == size.height) return;
                             setState(() => _heights[index] = size.height);
                           },
-                          child: _branchPage(theme, l10n, index),
+                          child: TimelineRail(
+                            child: _branchPage(theme, l10n, index),
+                          ),
                         ),
                       );
                     },
                   ),
                 ),
               ),
-              _indicators(theme, l10n),
+              TimelineRail(child: _indicators(theme, l10n)),
             ],
           ),
         ),
       ),
     );
 
-    final nowLine = widget.nowLineMinutes;
-    if (nowLine == null) return card;
+    // The gap around the card is part of the day's line too.
+    const margin = TimelineRail(
+      child: SizedBox(width: kTimelineGutterWidth, height: 6),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        NowLine(minutes: nowLine),
+        if (widget.nowLineMinutes case final nowLine?)
+          NowLine(minutes: nowLine),
+        margin,
         card,
+        margin,
       ],
     );
   }
 
-  Widget _header(ThemeData theme, AppLocalizations l10n, String label) {
+  /// The decision's label row, its fork icon on the rail. [background] is the
+  /// card's own color, which the icon's disc is filled with.
+  Widget _header(
+    ThemeData theme,
+    AppLocalizations l10n,
+    String label,
+    Color background,
+  ) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 4, 0),
+      padding: const EdgeInsets.fromLTRB(0, 8, 4, 0),
       child: Row(
         children: [
-          Icon(Icons.alt_route, size: 18, color: widget.accent),
+          TimelineRailIcon(
+            icon: Icons.alt_route,
+            size: 18,
+            color: widget.accent,
+            background: background,
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -472,7 +507,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 8, 0),
+          // Past the gutter, like the entries below: the rail runs down there.
+          padding: const EdgeInsets.fromLTRB(kTimelineGutterWidth, 6, 8, 0),
           child: Row(
             children: [
               Expanded(
@@ -642,7 +678,8 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
   Widget _indicators(ThemeData theme, AppLocalizations l10n) {
     final book = ref.watch(currencyBookProvider);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 0, 4, 6),
+      // Past the gutter, so the rail does not run through the left chevron.
+      padding: const EdgeInsets.fromLTRB(kTimelineGutterWidth, 0, 4, 6),
       child: Row(
         children: [
           IconButton(
