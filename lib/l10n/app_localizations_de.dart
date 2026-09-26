@@ -2374,6 +2374,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attachmentOpen => 'Öffnen';
 
   @override
+  String get attachmentOpenNoApp =>
+      'Kein Programm auf diesem Gerät hat die Datei geöffnet. Du kannst sie aber mit einer App teilen, die das kann.';
+
+  @override
+  String get attachmentMore => 'Mehr';
+
+  @override
   String get attachmentShare => 'Teilen';
 
   @override

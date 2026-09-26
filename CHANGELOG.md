@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **A tap on a document opens it.** A PDF or any other file that is not a picture opens
+  straight in the app your device uses for it, instead of having to be shared and
+  downloaded first. If nothing on the device opens it, its sheet says so and offers
+  *Share*. Rename, share and delete have moved to a ⋮ at the end of each attachment's row.
 - **An entry can end on a later day, and that day shows it.** The form has an *Arrives* (or
   *Ends*) field for the day, offered as the next day as soon as the end is before the start,
   and a journey can run through several nights. The timeline marks such an end with **+1**

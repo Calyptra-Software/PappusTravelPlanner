@@ -851,6 +851,8 @@
   "attachmentRename": "Umbenennen",
   "attachmentNameLabel": "Name",
   "attachmentOpen": "Öffnen",
+  "attachmentOpenNoApp": "Kein Programm auf diesem Gerät hat die Datei geöffnet. Du kannst sie aber mit einer App teilen, die das kann.",
+  "attachmentMore": "Mehr",
   "attachmentShare": "Teilen",
   "attachmentDelete": "Löschen",
   "attachmentDeleteQuestion": "Diesen Anhang löschen?",

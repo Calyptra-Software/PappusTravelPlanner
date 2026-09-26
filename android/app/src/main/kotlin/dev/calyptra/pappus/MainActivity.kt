@@ -38,6 +38,7 @@ class MainActivity : FlutterActivity() {
             }
         }
         mediaLocation = MediaLocationBridge(this, flutterEngine.dartExecutor.binaryMessenger)
+        DocumentOpener(this, flutterEngine.dartExecutor.binaryMessenger)
         // The intent that launched us (cold start): buffer it — Dart isn't
         // listening for pushes yet, so it will pull via getInitialTrip.
         pendingTrip = readTrip(intent)

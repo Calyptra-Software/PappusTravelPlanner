@@ -1806,6 +1806,24 @@ UI (features/*/presentation, *widgets)
   the strip draws that list, the cover star reads which of it is the cover, and an entry's
   chip filters it. Three copies of `tripGallery(...)` would be three chances for the order
   to drift.
+- **A tap on a document opens it, in somebody else's program.** A document is *opened*, and
+  the app has no reading of its own for a PDF, so `openAttachment` (`attachment_flow.dart`)
+  hands a copy to the platform: `core/open_file.dart`, split like `save_file.dart`. Native
+  writes it to `<app cache>/opened/<id>/<name>` — the app's own cache, never a shared temp
+  directory where a passport scan is readable by every account on a desktop — and names it
+  to the OS: `url_launcher` on the desktops, `DocumentOpener.kt` on Android, which serves it
+  through a non-exported `DocumentFileProvider` limited to that one folder and starts
+  `ACTION_VIEW` with a one-URI read grant (no permission, no `<queries>`; `startActivity`
+  needs neither). The web opens a blob in a tab. The copy is removed by the **next** open,
+  not after this one, since a viewer reads it for as long as it is open, so at most one
+  document lies outside the database. Two traps that decided the details: a file with no
+  type is **not** sent (`application/octet-stream` is what this app's own `.tpt` filter
+  answers, so the "viewer" would be Pappus importing it as a trip), and a desktop picks the
+  program by the extension, so `attachmentFileName` puts one back on a renamed "Ticket" from
+  the table `extensionForMimeType` shares with the import. Where nothing takes the file, the
+  row's tap opens the sheet with the reason in it, not a snack bar: this list lives in a
+  modal sheet, and a snack bar would be drawn underneath it. Since no row's tap reaches the
+  sheet any more, every row carries a ⋮ to it.
 - **The card reads one map, not one query per card.** `tripCoversProvider` is the
   `watchPositionedItems` rule applied again, in two steps because the thumbnail is a blob:
   `watchCoverCandidates` asks only *where* each photograph sits — no bytes — and

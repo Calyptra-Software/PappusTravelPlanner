@@ -1249,6 +1249,8 @@
   "attachmentRename": "Rename",
   "attachmentNameLabel": "Name",
   "attachmentOpen": "Open",
+  "attachmentOpenNoApp": "Nothing on this device opened this file. You can still share it with an app that can.",
+  "attachmentMore": "More",
   "attachmentShare": "Share",
   "attachmentDelete": "Delete",
   "attachmentDeleteQuestion": "Delete this attachment?",

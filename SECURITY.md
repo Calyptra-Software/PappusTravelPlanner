@@ -54,7 +54,13 @@ somewhere it is not escaped — is worth reporting.
 
 **It keeps attached files inside the database**, not beside it, so everything
 already true of that file is true of them: see *The database is not encrypted*
-below.
+below. The one exception is **opening** a document: another program cannot read
+the database, so the file is copied into the app's own cache directory
+(`opened/`) and handed over from there — on Android through a non-exported
+`FileProvider` that serves only that folder and grants the viewer read access
+to the one file. On the web it is shown in a new browser tab instead, and
+nothing is written. The copy stays until the next document is opened, which
+replaces it; the viewer may keep its own record of having opened it.
 
 **It reads one thing out of a photo, and drops the rest.** A picture attached
 through *Add photo* has its EXIF searched for the position the camera recorded,
@@ -184,7 +190,7 @@ this app can add on top without giving up what it is for.
 
 **The exports are plaintext too** — `.tpt`, `.ics` and the PDF are all meant to
 be handed to other people and other programs. An attachment handed to the share
-sheet is likewise a plain copy of the file, for whichever program the user picks.
+sheet, or opened in another program, is likewise a plain copy of the file.
 
 **Attachments travel with a shared trip.** A `.tpt` bundle carries every photo
 and file on the trip, Base64-encoded — it is the one lossless export, and an
