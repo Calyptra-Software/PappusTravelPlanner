@@ -1,1 +1,9 @@
-1.13.0: A tap on a document opens it in the app your device uses for it. An entry can end on a later day, and that day shows the arrival. A connection can be searched from your position, and the map remembers that you want to see where you are. A leg's straight line on the map can be switched off. The timeline's line runs straight through groups and decisions. Fixes for the browser version and for delays across midnight.
+1.13.0:
+• Documents open with a tap
+• Entries can end on a later day
+• Connection search from your position
+• The map remembers showing your position
+• A leg's straight line can be hidden
+• Timeline line straight through groups and decisions
+• Delays across midnight read correctly
+• Fixes for the browser version

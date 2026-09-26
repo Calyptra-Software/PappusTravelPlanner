@@ -1,1 +1,9 @@
-1.13.0: Ein Tipp auf ein Dokument öffnet es in der passenden App. Ein Eintrag kann an einem späteren Tag enden, und dieser Tag zeigt die Ankunft. Verbindungen lassen sich vom eigenen Standort aus suchen, und die Karte merkt sich, dass er angezeigt werden soll. Die gerade Linie eines Abschnitts auf der Karte lässt sich ausblenden. Die Linie der Zeitleiste läuft gerade durch Gruppen und Entscheidungen. Korrekturen für die Browserversion und für Verspätungen über Mitternacht.
+1.13.0:
+• Dokumente öffnen sich per Tipp
+• Einträge können an einem späteren Tag enden
+• Verbindungssuche vom eigenen Standort
+• Die Karte merkt sich die Standortanzeige
+• Gerade Linie eines Abschnitts ausblendbar
+• Zeitleiste läuft gerade durch Gruppen und Entscheidungen
+• Verspätungen über Mitternacht korrekt
+• Korrekturen für die Browserversion
