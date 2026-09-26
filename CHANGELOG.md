@@ -9,7 +9,8 @@ exact commits.
   *Ends*) field for the day, offered as the next day as soon as the end is before the start,
   and a journey can run through several nights. The timeline marks such an end with **+1**
   (or **+2** …), and the day it arrives on shows the arrival at the top, with its delay and
-  "you are here" while you are still on board.
+  "you are here" while you are still on board. The home-screen widget shows it on that
+  day too.
 - **A delay across midnight reads as a delay.** A train planned for 23:55 that leaves at
   00:10 is fifteen minutes late, no longer almost a day early.
 - **Overnight entries keep their end in the calendar export.** An event ending the next

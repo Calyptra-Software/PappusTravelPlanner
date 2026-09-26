@@ -46,8 +46,12 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
     final featured = pickFeaturedTrip(trips, now);
 
     var todayItems = <ItineraryItem>[];
+    var continuations = <Continuation>[];
     if (featured != null && isTripOngoing(featured, now)) {
       final today = normalizeDay(now);
+      final items = await repo.watchItems(featured.id).first;
+      final sets = await repo.watchAlternativeSets(featured.id).first;
+      final branches = await repo.watchAlternativeBranches(featured.id).first;
       // Assemble today exactly as the timeline does — as blocks — so a decision
       // keeps the slot it occupies in the day. Only the plan as it stands
       // reaches the home screen: an option that was considered but not chosen
@@ -55,10 +59,18 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
       todayItems = itemsInDayOrder(
         buildDayBlocks(
           day: today,
-          items: await repo.watchItems(featured.id).first,
-          sets: await repo.watchAlternativeSets(featured.id).first,
-          branchesBySet: await repo.watchAlternativeBranches(featured.id).first,
+          items: items,
+          sets: sets,
+          branchesBySet: branches,
         ),
+      );
+      // And what runs into today from an earlier day, by the timeline's own
+      // rule: the night train on the morning it arrives.
+      continuations = continuationsOn(
+        day: today,
+        items: items,
+        sets: sets,
+        branchesBySet: branches,
       );
     }
 
@@ -75,6 +87,7 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
       l10n,
       locale.languageCode,
       modeLabels: modeLabels,
+      continuations: continuations,
     );
 
     await _save(payload);

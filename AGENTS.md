@@ -1905,6 +1905,14 @@ colored in part through HTML, so the `(+15)` is wrapped in a `<font color>` that
 the widget's own (a lighter red/green — it paints on its own dark background, not the app's
 theme), and a row with nothing recorded still sends plain "09:00 – 10:30".
 
+An entry running into today from an earlier day is a row too, above today's own, from the
+same `continuationsOn` the timeline draws its `ContinuationTile`s from (`continuationRow`):
+its time is the **end** alone behind a `↳`, the timeline's turn-down arrow ("↳ 07:12
+(+15)"), since yesterday's departure says nothing about today, and where there is no end
+time to give — a day the entry runs through — the arrow stands alone and the note says
+"Continues all day". No Kotlin changed for it: the arrow goes through the same
+`Html.fromHtml` as any time.
+
 ## Testing notes
 
 Drift's `.watch()` streams **do not resolve under `flutter_test`'s fake-async** clock, so
