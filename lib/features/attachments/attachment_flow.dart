@@ -19,6 +19,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../core/format/byte_format.dart';
+import '../../core/open_file.dart';
 import '../../core/providers.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
@@ -221,7 +222,7 @@ Future<void> shareAttachment(
     );
     return;
   }
-  final fileName = attachment.name ?? _defaultFileName(attachment);
+  final fileName = attachmentFileName(attachment);
   if (_isDesktop) {
     final location = await getSaveLocation(suggestedName: fileName);
     if (location == null) return;
@@ -242,16 +243,65 @@ Future<void> shareAttachment(
   );
 }
 
-/// A name for a file that arrived without one, so what leaves the app is not
-/// called `null`. Its id keeps two of them apart.
-String _defaultFileName(Attachment attachment) {
-  final extension = switch (attachment.mimeType) {
-    'image/jpeg' => 'jpg',
-    'application/pdf' => 'pdf',
-    'text/plain' => 'txt',
-    _ => 'bin',
-  };
-  return 'attachment-${attachment.id}.$extension';
+/// Hands one attachment to whatever program on this device opens its kind of
+/// file, answering whether one took it.
+///
+/// What a tap on a document does: a document is *opened*, and the app has no
+/// reading of its own for a PDF or a booking. `false` — no such program, no
+/// bytes, a copy that could not be written — is for the caller to answer with
+/// the share sheet, which reaches every program that can take a file.
+Future<bool> openAttachment(WidgetRef ref, Attachment attachment) async {
+  final bytes = await ref
+      .read(repositoryProvider)
+      .readAttachmentBytes(attachment.id);
+  if (bytes == null) return false;
+  try {
+    return await ref.read(openBytesProvider)(
+      fileName: attachmentFileName(attachment),
+      bytes: bytes,
+      mimeType: attachment.mimeType,
+      slot: '${attachment.id}',
+    );
+  } on Exception catch (error) {
+    debugPrint('Could not open attachment ${attachment.id}: $error');
+    return false;
+  }
+}
+
+/// How [openAttachment] hands the bytes over. A provider so a test can stand
+/// in for the platform, which `flutter test` has no viewer on.
+typedef OpenBytes =
+    Future<bool> Function({
+      required String fileName,
+      required Uint8List bytes,
+      required String mimeType,
+      required String slot,
+    });
+
+final openBytesProvider = Provider<OpenBytes>((ref) => openBytesExternally);
+
+/// The name an attachment leaves the app under, to be opened or shared.
+///
+/// The name the user sees, made into one every file system takes: the
+/// characters Windows refuses (and the separators every system reads as a
+/// folder) become `_`, and a name renamed down to nothing, or that arrived
+/// without one, falls back to `attachment-<id>`, which keeps two of them apart.
+/// An extension is added when the name has none and the media type has one,
+/// since a desktop chooses the program by it — "Ticket" renamed from
+/// "ticket.pdf" would otherwise open in nothing.
+String attachmentFileName(Attachment attachment) {
+  final cleaned = (attachment.name ?? '')
+      .replaceAll(RegExp(r'[\\/:*?"<>|\x00-\x1F]'), '_')
+      .trim()
+      // Windows drops a trailing dot or space, so "ticket." and "ticket" would
+      // name the same file.
+      .replaceAll(RegExp(r'[. ]+$'), '');
+  final base = cleaned.isEmpty ? 'attachment-${attachment.id}' : cleaned;
+  // A short run of letters and digits after the last dot, so "Hotel Dr. Kurz"
+  // is not mistaken for a file already carrying an extension.
+  if (RegExp(r'.\.[A-Za-z0-9]{1,5}$').hasMatch(base)) return base;
+  final extension = extensionForMimeType(attachment.mimeType);
+  return extension == null ? base : '$base.$extension';
 }
 
 /// The file extensions the photo door offers.

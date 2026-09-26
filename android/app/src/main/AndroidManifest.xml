@@ -87,6 +87,18 @@
             tools:node="merge">
             <meta-data android:name="androidx.work.WorkManagerInitializer" tools:node="remove"/>
         </provider>
+        <!-- Serves the copy of an attachment that "open" hands to a viewer
+             (DocumentOpener.kt), and nothing else: see res/xml/opened_documents.xml.
+             Not exported; the viewer is granted the one URI it is sent. -->
+        <provider
+            android:name=".DocumentFileProvider"
+            android:authorities="${applicationId}.opened"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/opened_documents" />
+        </provider>
         <activity
             android:name=".MainActivity"
             android:exported="true"

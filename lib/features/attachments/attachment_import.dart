@@ -467,14 +467,42 @@ String? _mimeForImage(Uint8List bytes) =>
 /// Only the handful worth naming — a ticket, a booking, a scan, a note. Anything
 /// else is `application/octet-stream`, which is an honest "a file", and is what
 /// the platform falls back to reading the extension itself.
-String _mimeForExtension(String? extension) => switch (extension) {
-  'pdf' => 'application/pdf',
-  'txt' => 'text/plain',
-  'md' => 'text/markdown',
-  'csv' => 'text/csv',
-  'html' || 'htm' => 'text/html',
-  'json' => 'application/json',
-  'ics' => 'text/calendar',
-  'zip' => 'application/zip',
-  _ => 'application/octet-stream',
+String _mimeForExtension(String? extension) =>
+    _documentTypes[extension] ?? 'application/octet-stream';
+
+/// The extensions [_mimeForExtension] names, and the one each media type is
+/// written back out with by [extensionForMimeType]. One table for both
+/// directions, so a type added here is recognised on the way in and named on
+/// the way out.
+const Map<String, String> _documentTypes = {
+  'pdf': 'application/pdf',
+  'txt': 'text/plain',
+  'md': 'text/markdown',
+  'csv': 'text/csv',
+  'html': 'text/html',
+  'htm': 'text/html',
+  'json': 'application/json',
+  'ics': 'text/calendar',
+  'zip': 'application/zip',
+};
+
+/// The extension a file of [mimeType] is written out with, or null for a type
+/// this app has no name for.
+///
+/// For a file leaving the app that has lost its own — renamed to "Ticket" — since
+/// a desktop picks the program that opens a file by its extension, and a phone's
+/// share targets often do too. Covers everything this file stores as a media
+/// type: the documents above and the pictures the decoder recognises.
+String? extensionForMimeType(String mimeType) => switch (mimeType) {
+  'image/jpeg' => 'jpg',
+  'image/png' => 'png',
+  'image/gif' => 'gif',
+  'image/webp' => 'webp',
+  'image/bmp' => 'bmp',
+  'image/tiff' => 'tiff',
+  _ =>
+    _documentTypes.entries
+        .where((entry) => entry.value == mimeType)
+        .firstOrNull
+        ?.key,
 };

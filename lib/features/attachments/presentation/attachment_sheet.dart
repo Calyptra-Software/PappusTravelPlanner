@@ -17,14 +17,22 @@ import '../attachment_flow.dart';
 /// Opens one attachment: the picture at the size the app kept it, or a document
 /// with the one thing that can be done to it — hand it to a program that
 /// understands the format.
+///
+/// [openFailed] is set when this sheet is the answer to a document that nothing
+/// on the device would open, so the sheet says so above *Share*.
 Future<void> showAttachmentSheet(
   BuildContext context,
   Attachment attachment, {
   int? tripId,
+  bool openFailed = false,
 }) {
   return showAppSheet<void>(
     context,
-    builder: (_) => AttachmentSheet(attachment: attachment, tripId: tripId),
+    builder: (_) => AttachmentSheet(
+      attachment: attachment,
+      tripId: tripId,
+      openFailed: openFailed,
+    ),
   );
 }
 
@@ -37,8 +45,13 @@ Future<void> showAttachmentSheet(
 ///
 /// The bytes are read only once this is open — they are the one thing in the app
 /// that can be megabytes, and a list must never pull them.
-class AttachmentSheet extends ConsumerWidget {
-  const AttachmentSheet({super.key, required this.attachment, this.tripId});
+class AttachmentSheet extends ConsumerStatefulWidget {
+  const AttachmentSheet({
+    super.key,
+    required this.attachment,
+    this.tripId,
+    this.openFailed = false,
+  });
 
   final Attachment attachment;
 
@@ -51,8 +64,28 @@ class AttachmentSheet extends ConsumerWidget {
   /// caller does not know it, and then the picker opens as it always did.
   final int? tripId;
 
+  /// Whether the sheet opens on "nothing would open this file".
+  final bool openFailed;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AttachmentSheet> createState() => _AttachmentSheetState();
+}
+
+class _AttachmentSheetState extends ConsumerState<AttachmentSheet> {
+  /// Said inside the sheet rather than in a snack bar: one raised from a modal
+  /// sheet is drawn by the scaffold behind it, underneath the sheet.
+  late bool _openFailed = widget.openFailed;
+
+  Attachment get attachment => widget.attachment;
+  int? get tripId => widget.tripId;
+
+  Future<void> _open(Attachment live) async {
+    final opened = await openAttachment(ref, live);
+    if (mounted) setState(() => _openFailed = !opened);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     // The row as the database holds it: this sheet writes the name and the
@@ -94,6 +127,15 @@ class AttachmentSheet extends ConsumerWidget {
               _Picture(attachment: live)
             else
               _DocumentPlaceholder(mimeType: live.mimeType),
+            if (_openFailed) ...[
+              const SizedBox(height: 8),
+              Text(
+                l10n.attachmentOpenNoApp,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
             // Photographs only: a document is a file, not a place — whatever
             // it is a picture of — so a `.png` ticket is offered no position to
@@ -110,6 +152,15 @@ class AttachmentSheet extends ConsumerWidget {
             Wrap(
               spacing: 8,
               children: [
+                // Documents only: a photograph is already on show above, and
+                // opening is what a tap on a document's row does — this is the
+                // same act for a sheet reached through the ⋮ or the gallery.
+                if (live.kind == AttachmentKind.document)
+                  TextButton.icon(
+                    onPressed: () => _open(live),
+                    icon: const Icon(Icons.open_in_new),
+                    label: Text(l10n.attachmentOpen),
+                  ),
                 TextButton.icon(
                   onPressed: () => shareAttachment(context, ref, live),
                   icon: const Icon(Icons.ios_share),

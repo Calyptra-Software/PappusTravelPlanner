@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What DocumentFileProvider may name: the one folder open_file_io.dart writes
+     an attachment's copy to before handing it to a viewer, and nothing else. -->
+<paths>
+    <cache-path name="opened" path="opened/" />
+</paths>

@@ -3998,6 +3998,18 @@ abstract class AppLocalizations {
   /// **'Open'**
   String get attachmentOpen;
 
+  /// No description provided for @attachmentOpenNoApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing on this device opened this file. You can still share it with an app that can.'**
+  String get attachmentOpenNoApp;
+
+  /// No description provided for @attachmentMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get attachmentMore;
+
   /// No description provided for @attachmentShare.
   ///
   /// In en, this message translates to:

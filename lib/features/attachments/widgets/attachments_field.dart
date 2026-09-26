@@ -211,7 +211,7 @@ class AttachmentsField extends ConsumerWidget {
 /// no line saying "nothing here", because a heading over an invitation already
 /// says it — and two of those, one per kind, would be noise where the point is
 /// to see at a glance what there is.
-class _Section extends StatelessWidget {
+class _Section extends ConsumerWidget {
   const _Section({
     required this.title,
     required this.attachments,
@@ -235,7 +235,7 @@ class _Section extends StatelessWidget {
   final VoidCallback onAdd;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     // What a gallery opened from this section walks: its own pictures, in the
     // order they are listed. A document that is a picture is here too — filed
@@ -284,22 +284,35 @@ class _Section extends StatelessWidget {
               key: ValueKey(attachment.id),
               attachment: attachment,
               // A picture opens the gallery of *this section*, at itself; a
-              // file nothing can draw opens the sheet, there being nothing to
-              // leaf through.
-              onTap: () => attachment.isViewable
-                  ? showGallery(
-                      context,
-                      photos: [
-                        for (final a in viewable) GalleryPhoto(attachment: a),
-                      ],
-                      initialIndex: viewable.indexOf(attachment),
-                      tripId: coverTripId,
-                    )
-                  : showAttachmentSheet(
-                      context,
-                      attachment,
-                      tripId: coverTripId,
-                    ),
+              // file nothing here can draw is opened by whatever program on
+              // the device reads it, since opening it is what it is for. Where
+              // nothing will, the sheet opens instead and says so, with *Share*
+              // in reach — the way out named beside the problem.
+              onTap: () async {
+                if (attachment.isViewable) {
+                  await showGallery(
+                    context,
+                    photos: [
+                      for (final a in viewable) GalleryPhoto(attachment: a),
+                    ],
+                    initialIndex: viewable.indexOf(attachment),
+                    tripId: coverTripId,
+                  );
+                  return;
+                }
+                if (await openAttachment(ref, attachment)) return;
+                if (!context.mounted) return;
+                await showAttachmentSheet(
+                  context,
+                  attachment,
+                  tripId: coverTripId,
+                  openFailed: true,
+                );
+              },
+              // The sheet — rename, share, delete — on every row, now that no
+              // row's tap leads to it.
+              onMore: () =>
+                  showAttachmentSheet(context, attachment, tripId: coverTripId),
               dragHandle: ReorderableDragStartListener(
                 index: index,
                 child: Padding(
@@ -336,11 +349,15 @@ class AttachmentTile extends StatelessWidget {
     super.key,
     required this.attachment,
     this.onTap,
+    this.onMore,
     this.dragHandle,
   });
 
   final Attachment attachment;
   final VoidCallback? onTap;
+
+  /// Opens what can be done to the file, behind a ⋮ at the end of the row.
+  final VoidCallback? onMore;
 
   /// The grip that reorders this row, when the list it is in can be reordered.
   final Widget? dragHandle;
@@ -390,6 +407,12 @@ class AttachmentTile extends StatelessWidget {
               Icons.place_outlined,
               size: 18,
               color: theme.colorScheme.onSurfaceVariant,
+            ),
+          if (onMore case final more?)
+            IconButton(
+              tooltip: l10n.attachmentMore,
+              icon: const Icon(Icons.more_vert),
+              onPressed: more,
             ),
           ?dragHandle,
         ],

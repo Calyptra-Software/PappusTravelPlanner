@@ -553,16 +553,18 @@ settings — the app cannot give it back — so the switch is offered beside tha
 An entry with attachments shows **"3 photos"** and **"2 documents"** as two counts side by
 side rather than one saying "5 attachments", because they are two different acts: a
 photograph is *looked at*, a document is *opened*. Tapping the first opens that entry's
-photographs as a gallery; tapping the second lists its documents, each going on to whatever
-program understands it. A group's label shows the same two as bare icons — it already
+photographs as a gallery; tapping the second lists its documents, and tapping one of those
+opens it in whatever program on the device reads it — a PDF in the PDF viewer. A document
+that is a picture opens in a gallery of its own instead. If nothing on the device opens the
+file, its sheet opens and says so, with **Share** beside it. A group's label shows the same two as bare icons — it already
 carries a name, the journey button, the ⋮ and the drag handle.
 
 The lists themselves are under two headings, *Photos* and *Documents*, each with its own
 count and its own **Add** button, so which kind you are adding is chosen where that kind is
 listed. Drag a row to reorder it within its heading.
 
-Each attachment's ⋮ offers **Rename**, **Open**, **Share** and **Delete**, and a photo also
-**Place on map** / **Remove position**.
+Each attachment's ⋮, at the end of its row and in the gallery, offers **Rename**, **Share**
+and **Delete**; a document also **Open**, and a photo **Place on map** / **Remove position**.
 
 ### The trip's photographs
 
