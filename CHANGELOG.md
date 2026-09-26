@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.13.0 — 2026-09-26
 
 - **A tap on a document opens it.** A PDF or any other file that is not a picture opens
   straight in the app your device uses for it, instead of having to be shared and

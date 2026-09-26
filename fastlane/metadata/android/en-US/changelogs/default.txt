@@ -1,1 +1,9 @@
-1.12.0: An expense's payer can invite people, and a settlement can be marked as a reimbursement from outside the group. The overall statistics can be narrowed to some of the trips, and routines no longer count twice there. The trip list says how many trips match. The connection search folds its form away once searched. The app declares five fewer permissions.
+1.13.0:
+• Documents open with a tap
+• Entries can end on a later day
+• Connection search from your position
+• The map remembers showing your position
+• A leg's straight line can be hidden
+• Timeline line straight through groups and decisions
+• Delays across midnight read correctly
+• Fixes for the browser version

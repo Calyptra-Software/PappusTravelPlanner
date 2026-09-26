@@ -1,1 +1,9 @@
-1.12.0: Wer eine Ausgabe bezahlt, kann andere einladen, und ein Ausgleich lässt sich als Erstattung von außerhalb der Gruppe markieren. Die Gesamtstatistik lässt sich auf einen Teil der Reisen eingrenzen, und Routinen zählen dort nicht mehr doppelt. Die Reiseliste zeigt, wie viele Reisen passen. Die Verbindungssuche klappt ihr Formular nach der Suche ein. Die App deklariert fünf Berechtigungen weniger.
+1.13.0:
+• Dokumente öffnen sich per Tipp
+• Einträge können an einem späteren Tag enden
+• Verbindungssuche vom eigenen Standort
+• Die Karte merkt sich die Standortanzeige
+• Gerade Linie eines Abschnitts ausblendbar
+• Zeitleiste läuft gerade durch Gruppen und Entscheidungen
+• Verspätungen über Mitternacht korrekt
+• Korrekturen für die Browserversion
