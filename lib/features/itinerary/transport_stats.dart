@@ -1,5 +1,6 @@
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
+import 'entry_times.dart';
 
 /// Statistics derived from a trip's transport legs, split out as pure functions
 /// (like `trip_stats.dart`) so the aggregation is unit-testable without a
@@ -85,16 +86,20 @@ TransportStats computeTransportStats(List<ItineraryItem> items) {
     actualCount.putIfAbsent(mode, () => 0);
     final day = _dayIndex(item.date);
 
+    // Both axes on the entry's own minute line, which is what dates an end
+    // on a later day — and an actual time a few minutes over midnight from its
+    // plan — rather than a guess made from the order of the two numbers.
+    final times = item.times;
     planned
         .putIfAbsent(mode, () => [])
-        .add(_Span(day, item.startMinutes, item.endMinutes));
+        .add(_Span(day, times.plannedStart, times.plannedEnd));
 
     if (item.actualStartMinutes != null || item.actualEndMinutes != null) {
       actualCount.update(mode, (v) => v + 1);
     }
     actual
         .putIfAbsent(mode, () => [])
-        .add(_Span(day, item.actualStartMinutes, item.actualEndMinutes));
+        .add(_Span(day, times.actualStart, times.actualEnd));
   }
 
   final byMode =
@@ -170,7 +175,8 @@ int _byUsage(TransportModeStat a, TransportModeStat b) {
 }
 
 /// One leg's span on a single axis: its [day] (an absolute day index) plus the
-/// [start] and [end] minutes-since-midnight on that axis, either of which may be
+/// [start] and [end] on that axis, as minutes on the leg's own minute line
+/// (`entry_times.dart`) — so an end on a later day is past 1439. Either may be
 /// null.
 class _Span {
   const _Span(this.day, this.start, this.end);
@@ -181,9 +187,10 @@ class _Span {
 
 /// Total minutes a mode spent in transit on one axis, given each leg's [spans].
 ///
-/// Every endpoint is placed on an absolute minute line (`day * 1440 + minute`),
-/// and a leg whose end falls before its start is read as running past midnight
-/// (its end shifts to the next day). When starts and ends balance — the usual
+/// Every endpoint is placed on an absolute minute line (`day * 1440 + minute`,
+/// where `minute` is already on the entry's own line and so may run past 1439
+/// for an end on a later day). A leg whose end still falls before its start is
+/// broken data and counts nothing. When starts and ends balance — the usual
 /// case, and the case a stop-split produces, where a start-only leg's departure
 /// pairs with an end-only leg's arrival — the total is simply Σ(ends) − Σ(starts)
 /// across the mode, so the missing middle drops out. When they don't balance
@@ -195,10 +202,8 @@ int _axisMinutes(List<_Span> spans) {
   var closedSum = 0;
   for (final s in spans) {
     final absStart = s.start == null ? null : s.day * 1440 + s.start!;
-    var absEnd = s.end == null ? null : s.day * 1440 + s.end!;
-    if (s.start != null && s.end != null && s.end! < s.start!) {
-      absEnd = absEnd! + 1440; // Departed one day, arrived the next.
-    }
+    final absEnd = s.end == null ? null : s.day * 1440 + s.end!;
+    if (absStart != null && absEnd != null && absEnd < absStart) continue;
     if (absStart != null) starts.add(absStart);
     if (absEnd != null) ends.add(absEnd);
     if (absStart != null && absEnd != null) closedSum += absEnd - absStart;

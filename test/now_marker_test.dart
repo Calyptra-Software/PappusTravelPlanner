@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/day_blocks.dart';
+import 'package:travelplanner/features/itinerary/entry_times.dart';
 import 'package:travelplanner/features/itinerary/now_marker.dart';
 
 /// Covers [nowMarker]: where the current time falls in a day that reads as an
@@ -17,14 +18,14 @@ void main() {
     int? actualEnd,
     int sortOrder = 0,
     int? alternativeId,
-    bool spansNextDay = false,
+    int endDayOffset = 0,
   }) => ItineraryItem(
     id: id,
     tripId: 1,
     date: day,
     sortOrder: sortOrder,
     kind: ItemKind.place,
-    spansNextDay: spansNextDay,
+    endDayOffset: endDayOffset,
     chordDisplay: TrackDisplay.auto,
     title: 'Item $id',
     startMinutes: start,
@@ -257,7 +258,7 @@ void main() {
       1,
       actualStart: 21 * 60 + 38,
       actualEnd: 2 * 60 + 25,
-      spansNextDay: true,
+      endDayOffset: 1,
     );
 
     test('is under way while it runs, not finished at its departure', () {
@@ -312,5 +313,71 @@ void main() {
       // Bad data, not a journey running backwards.
       expect(itemSpan(item(3, start: 600, end: 300)), (start: 600, end: 600));
     });
+  });
+
+  group('an entry seen from a day it runs into', () {
+    // A night train through two nights: 22:14 today to 07:12 two mornings on.
+    ItineraryItem longTrain() =>
+        item(1, start: 22 * 60 + 14, end: 7 * 60 + 12, endDayOffset: 2);
+
+    test('is under way all through the middle day', () {
+      expect(itemSpan(longTrain()), (
+        start: 22 * 60 + 14,
+        end: 2 * kMinutesPerDay + 7 * 60 + 12,
+      ));
+      expect(
+        continuationHappening(longTrain(), daysAfter: 1, nowMinutes: 12 * 60),
+        isTrue,
+      );
+    });
+
+    test('is under way on the last morning until it arrives', () {
+      expect(
+        continuationHappening(longTrain(), daysAfter: 2, nowMinutes: 7 * 60),
+        isTrue,
+      );
+      expect(
+        continuationHappening(
+          longTrain(),
+          daysAfter: 2,
+          nowMinutes: 7 * 60 + 12,
+        ),
+        isFalse,
+      );
+    });
+
+    test('an arrival running late keeps it under way past the timetable', () {
+      final late = item(
+        1,
+        start: 22 * 60 + 14,
+        end: 7 * 60 + 12,
+        actualEnd: 7 * 60 + 40,
+        endDayOffset: 1,
+      );
+      expect(
+        continuationHappening(late, daysAfter: 1, nowMinutes: 7 * 60 + 30),
+        isTrue,
+      );
+    });
+
+    test('a moment reaches into no later day', () {
+      expect(
+        continuationHappening(
+          item(1, start: 600, endDayOffset: 1),
+          daysAfter: 1,
+          nowMinutes: 300,
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  test('a departure just past midnight is under way from when it left', () {
+    // Planned 23:55, left at 00:10: under way from 00:10 the next day, read on
+    // the departure day's line as 24:10 — not from 00:10 that same morning.
+    final span = itemSpan(
+      item(1, start: 1435, end: 360, actualStart: 10, endDayOffset: 1),
+    );
+    expect(span, (start: 1450, end: kMinutesPerDay + 360));
   });
 }

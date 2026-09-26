@@ -3,6 +3,7 @@ import 'dart:collection';
 import '../../core/format/civil_date.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
+import '../itinerary/entry_times.dart';
 
 /// Everything about a trip's [TripKind] that is decidable without a database.
 /// Pure, so it unit-tests without one.
@@ -49,7 +50,7 @@ List<DateTime> routineDaysOf(
 ) {
   final days = SplayTreeSet<DateTime>();
   for (final date in [
-    for (final i in items) i.date,
+    for (final i in items) ...daysCovered(i.date, i.endDayOffset),
     for (final s in sets) s.date,
   ]) {
     days.add(normalizeDay(date));

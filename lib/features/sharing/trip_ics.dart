@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import '../../core/format/civil_date.dart';
 import '../../core/format/money_format.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
+import '../itinerary/entry_times.dart' show kMinutesPerDay;
 import '../itinerary/widgets/transport_mode.dart';
 import 'trip_bundle.dart';
 
@@ -149,12 +151,15 @@ class _TripIcsBuilder {
     } else {
       _line('DTSTART', _floating(item.date, start));
       final end = item.endMinutes;
-      // An entry lives inside one day, so an end at or before its start can
-      // only be an unfinished edit — and RFC 5545 requires DTEND to be strictly
-      // later. An event with no DTEND simply takes up no time, which is the
-      // honest reading of "we know when it starts and nothing more".
-      if (end != null && end > start) {
-        _line('DTEND', _floating(item.date, end));
+      // The end falls `endDayOffset` days after the start, which is how a night
+      // train gets the DTEND it used to lose: read as the same day, its 07:12
+      // arrival came before its 22:14 departure and was dropped. An end at or
+      // before its start *on the entry's own line* can only be an unfinished
+      // edit — and RFC 5545 requires DTEND to be strictly later. An event with
+      // no DTEND simply takes up no time, which is the honest reading of "we
+      // know when it starts and nothing more".
+      if (end != null && item.endDayOffset * kMinutesPerDay + end > start) {
+        _line('DTEND', _floating(addDays(item.date, item.endDayOffset), end));
       }
       _line('TRANSP', 'OPAQUE');
     }

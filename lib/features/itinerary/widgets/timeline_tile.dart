@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/format/date_format.dart';
 import '../../../core/format/money_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
@@ -16,7 +17,9 @@ import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../application/item_clipboard.dart';
 import '../application/transport_mode_providers.dart';
+import '../day_blocks.dart' show Continuation;
 import '../now_marker.dart';
+import '../time_marks.dart';
 import 'item_times.dart';
 import 'live_refresh_button.dart';
 import 'now_line.dart';
@@ -671,6 +674,180 @@ class _CountChip extends StatelessWidget {
 }
 
 /// Left gutter with a continuous rail line and a node marker.
+/// An entry from an earlier day, drawn at the top of a day it runs into: the
+/// morning a night train arrives, the middle day of a festival.
+///
+/// A reference and not the entry: it cannot be dragged (the entry belongs to the
+/// day it starts on, and a day's list is indexed by its own blocks), carries no
+/// costs (they are counted on the day the entry starts), and a tap opens the same
+/// form the entry itself does. What it says is the one thing this day needs to
+/// know about it — when it arrives or ends here, with the delay beside it — or
+/// that it runs through the whole day. Drawn lighter than an entry, on a smaller
+/// node, with a turn-down arrow saying it came from above.
+class ContinuationTile extends ConsumerWidget {
+  const ContinuationTile({
+    super.key,
+    required this.continuation,
+    required this.onTap,
+    this.isNow = false,
+  });
+
+  final Continuation continuation;
+  final VoidCallback onTap;
+
+  /// Whether the entry is under way right now — the night train still running
+  /// on the morning it is due in.
+  final bool isNow;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final now = nowColor(theme);
+    final item = continuation.item;
+    final isTransport = item.kind == ItemKind.transport;
+    final modeRow = isTransport
+        ? ref.watch(transportModesByIdProvider)[item.mode]
+        : null;
+
+    final String header;
+    final String? detail;
+    if (isTransport) {
+      final modeLabel = modeRow?.label(l10n) ?? l10n.modeOther;
+      final line = item.title;
+      header = (line != null && line.isNotEmpty)
+          ? '$modeLabel · $line'
+          : modeLabel;
+      final route = [
+        item.fromLocation ?? '',
+        item.toLocation ?? '',
+      ].where((s) => s.isNotEmpty).join('  →  ');
+      detail = route.isEmpty ? null : route;
+    } else {
+      final hasTitle = item.title != null && item.title!.isNotEmpty;
+      header = hasTitle ? item.title! : (item.location ?? '');
+      detail = hasTitle && (item.location?.isNotEmpty ?? false)
+          ? item.location
+          : null;
+    }
+
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final statusStyle = theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.primary,
+      fontWeight: FontWeight.w600,
+    );
+    final end = continuation.arrives ? endMark(item) : null;
+    final status = <InlineSpan>[
+      TextSpan(
+        text: !continuation.arrives
+            ? l10n.continuationAllDay
+            : end == null
+            ? l10n.continuationEnds
+            : isTransport
+            ? l10n.continuationArrives(formatMinutes(end.minutes))
+            : l10n.continuationUntil(formatMinutes(end.minutes)),
+      ),
+      if (end?.delta case final delta?)
+        TextSpan(
+          text: ' (${formatSignedMinutes(delta)})',
+          style: TextStyle(
+            color: delayColor(theme, delta),
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+    ];
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Gutter(
+            child: Tooltip(
+              message: l10n.continuationStarted,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isNow ? now : theme.colorScheme.outline,
+                    width: isNow ? 2 : 1,
+                  ),
+                ),
+                child: Icon(
+                  isTransport
+                      ? (modeRow?.icon ?? kDefaultTransportModeIcon)
+                      : Icons.place_outlined,
+                  size: 13,
+                  color: muted,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4, top: 1),
+                      child: Icon(
+                        Icons.subdirectory_arrow_right,
+                        size: 16,
+                        color: muted,
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text.rich(
+                                  TextSpan(children: status),
+                                  style: statusStyle,
+                                ),
+                              ),
+                              if (isNow) ...[
+                                const SizedBox(width: 8),
+                                const NowBadge(),
+                              ],
+                            ],
+                          ),
+                          Text(
+                            header,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: muted,
+                            ),
+                          ),
+                          if (detail != null)
+                            Text(
+                              detail,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: muted,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _Gutter extends StatelessWidget {
   const _Gutter({required this.child});
   final Widget child;

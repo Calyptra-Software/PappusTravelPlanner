@@ -17,7 +17,7 @@ void main() {
         title: title,
         location: location,
         groupId: groupId,
-        spansNextDay: false,
+        endDayOffset: 0,
         chordDisplay: TrackDisplay.auto,
       );
 
@@ -30,7 +30,7 @@ void main() {
     fromLocation: from,
     toLocation: to,
     groupId: groupId,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
   );
 

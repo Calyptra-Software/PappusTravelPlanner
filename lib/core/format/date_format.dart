@@ -61,15 +61,28 @@ String formatDurationHm(int minutes) {
   return '${h}h ${m}m';
 }
 
-/// Formats a start/end pair, e.g. "09:00 – 11:30", "09:00", or ''.
-String formatTimeRange(int? startMinutes, int? endMinutes) {
+/// Formats a start/end pair, e.g. "09:00 – 11:30", "09:00", or ''. An end
+/// [endDayOffset] days after the start is marked as such: "22:14 – 07:12 +1".
+String formatTimeRange(
+  int? startMinutes,
+  int? endMinutes, {
+  int endDayOffset = 0,
+}) {
   final start = formatMinutes(startMinutes);
-  final end = formatMinutes(endMinutes);
+  final end = endMinutes == null
+      ? ''
+      : '${formatMinutes(endMinutes)}${formatDayMark(endDayOffset)}';
   if (start.isEmpty && end.isEmpty) return '';
   if (end.isEmpty) return start;
   if (start.isEmpty) return end;
   return '$start – $end';
 }
+
+/// The mark after a time that falls [days] days after the entry's own date:
+/// " +1", " +2", or '' on the entry's date. Written without a unit and without
+/// parentheses, which is what keeps it apart from a delay's "(+15)" beside it;
+/// the timetables it is copied from print it the same way.
+String formatDayMark(int days) => days > 0 ? ' +$days' : '';
 
 /// Formats how far an actual time missed its planned one, in minutes: "+15"
 /// (a quarter of an hour late), "−5" (five minutes early), "±0" (to the minute).

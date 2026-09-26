@@ -20,7 +20,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.transport,
     title: title,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
   );
 
@@ -31,7 +31,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.place,
     title: title,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
   );
 
@@ -201,7 +201,7 @@ void main() {
           date: DateTime(2026, 5, 1),
           sortOrder: 0,
           kind: ItemKind.transport,
-          spansNextDay: false,
+          endDayOffset: 0,
           chordDisplay: TrackDisplay.auto,
           fromLocation: 'Rahlstedt',
           toLocation: 'Hbf',
@@ -240,7 +240,7 @@ void main() {
     kind: kind,
     title: title,
     alternativeId: branchId,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
   );
 

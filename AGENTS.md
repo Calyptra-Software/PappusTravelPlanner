@@ -311,8 +311,10 @@ UI (features/*/presentation, *widgets)
   imported leg keeps. The time it starts from is where the traveler really is:
   `departureSeedMinutes` prefers the **previous leg's actual arrival** when one has been
   recorded (late or early — standing there sooner means an earlier connection is catchable), so
-  a delay already entered on the leg before does not have to be typed again. Not across a date
-  boundary or an overnight leg, where minutes-since-midnight would seed the wrong day. It seeds
+  a delay already entered on the leg before does not have to be typed again. The arrival is
+  dated on the earlier leg's own minute line (`entry_times.dart`) and seeds only a leg leaving
+  on that same day, so an overnight leg seeds the morning it lands on and a 23:58 arrival is
+  never read as the small hours of the wrong day. It seeds
   a form the user reads and can change; nothing here decides anything. Offered only on a run of
   two or more legs, since on one leg it would be the journey's own button twice.
 - **A lone leg is looked up from its own sheet**, not the journey sheet: the item form's
@@ -435,10 +437,10 @@ UI (features/*/presentation, *widgets)
   Untimed entries stay
   *ahead* of the line unless something timed after them is already past — we cannot know when
   they happen, and claiming they are done is the guess that would make the mark lie. An
-  **overnight** entry's end is minutes into the *next* day, so `itemSpan` carries it past
-  midnight (`+ kMinutesPerDay`) rather than letting `end < start` collapse the span to a
-  moment: without that, a night train reads as finished the minute it departs, and the
-  traveller sitting on it is told the journey is behind them. A decision
+  **overnight** entry's end is on a later day, so `itemSpan` measures it on the entry's own
+  minute line (`entry_times.dart`), past 1439, rather than letting `end < start` collapse the
+  span to a moment: without that, a night train reads as finished the minute it departs, and
+  the traveller sitting on it is told the journey is behind them. A decision
   is timed by its **chosen** option only. The mark is drawn *inside* the tile/card, never as an
   extra list child: the day is a `ReorderableListView` indexed by its blocks. `core/clock.dart`'s
   `nowProvider` ticks it on the minute; today's day header carries `Today · HH:mm` so a collapsed
@@ -463,6 +465,39 @@ UI (features/*/presentation, *widgets)
   `widgets/item_times.dart` (colored spans) and the home widget (see below). An actual time
   outranks its planned one in `now_marker.dart`, though: "you are here" is a claim about the
   day as it is going.
+- **An entry ends on a day of its own** (`ItineraryItems.endDayOffset`, v40): how many days
+  after its `date` the end falls, so a night train is 1 and a journey through two nights 2.
+  It replaced the boolean `spansNextDay`, which could say "the next day" and nothing further.
+  A count and not a second date, because the entry stays anchored to the day it starts on —
+  that is where it is planned, dragged and counted — and an offset travels with that day
+  through every move, copy and routine rebase, where a second date would have to be moved
+  beside it at each of them. **Every reader places the times through
+  `features/itinerary/entry_times.dart`**, which puts all four on one minute line counted from
+  midnight of the start day. Before it the same fact had three answers: the now-marker read
+  the flag, the transport statistics guessed "next day" from an end before its start, and the
+  `.ics` export read neither and dropped the end. An **actual** time carries no day of its
+  own; it takes the day nearest its planned counterpart (`foldNear`, within ±12 h), so 00:10
+  against a planned 23:55 is fifteen minutes late and not a day early. That is a heuristic,
+  chosen over two more stored day counts that would each have needed a field in the form: a
+  delay of twelve hours or more is read as the wrong day. An end with no plan stands on the
+  end day. An end before its start **on its own line** is refused by the form rather than
+  saved, and one picked there is answered by offering the next day — visibly, in the end-day
+  field, and never the reverse, since a later end may still be meant for a later day. The v40
+  migration and the `.tpt` importer apply the same rule (`endsBeforeStart` /
+  `settledEndDayOffset`) to records written before a day could be given, which is what a
+  hand-entered night train always was.
+  **A later day shows what reaches into it** (`continuationsOn` in `day_blocks.dart`, drawn
+  as a `ContinuationTile`): the arrival, with its delay, or "continues all day", above the
+  day's own blocks and outside its `ReorderableListView`, since that list is indexed by the
+  day's blocks and the entry is not one of them. A reference, not a copy: not draggable,
+  carrying no costs (they are counted on the start day) and never exported twice. Live entries
+  only, and a branch entry starts on its decision's day, the rule `buildDayBlocks` follows.
+  "You are here" asks it too (`continuationHappening`, the clock moved onto the entry's line),
+  so the morning a night train is due in says the traveler is still on it. The days an entry
+  covers are part of the plan's days everywhere those are listed — the timeline,
+  `routineDaysOf` / `RoutineDao.routineDays`, and what `widenToCover` is handed on an import
+  — or the morning an overnight leg arrives in would be missing from a one-day trip, and a
+  routine's day numbers would disagree between the timeline and the form's day field.
 - **The router is somebody else's donated server, and its usage policy is part of the
   feature.** Transitous asks each request to carry a `User-Agent` naming the application,
   the client's **version**, and a way of contact; all three live in `core/app_info.dart`
@@ -727,7 +762,9 @@ UI (features/*/presentation, *widgets)
   delete the original.
 - **A bundle stamps only the format version the trip actually needs**, so an older app keeps
   reading what it can: v2 for a trip with decisions, v3 for one using a currency the old
-  four-value enum never had. That is why a cost's currency is written under the *old enum name*
+  four-value enum never had, v7 for one with an entry ending two or more days after it starts
+  (a one-night entry also writes the `spansNextDay` an older app reads correctly, so it forces
+  nothing). That is why a cost's currency is written under the *old enum name*
   (`eur`) when its code is one of those four and as the plain code (`JPY`) otherwise —
   `bundleCurrencyToken` / `bundleCurrencyCode` in `trip_bundle.dart`, whose legacy table is
   frozen and must not follow the enum if it grows. The currency definitions ride along in
@@ -1825,7 +1862,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 39) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 40) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget
@@ -1867,6 +1904,14 @@ colored in part through HTML, so the `(+15)` is wrapped in a `<font color>` that
 `TodayItemsRemoteViewsService` parses back into spans with `Html.fromHtml`. The colors are
 the widget's own (a lighter red/green — it paints on its own dark background, not the app's
 theme), and a row with nothing recorded still sends plain "09:00 – 10:30".
+
+An entry running into today from an earlier day is a row too, above today's own, from the
+same `continuationsOn` the timeline draws its `ContinuationTile`s from (`continuationRow`):
+its time is the **end** alone behind a `↳`, the timeline's turn-down arrow ("↳ 07:12
+(+15)"), since yesterday's departure says nothing about today, and where there is no end
+time to give — a day the entry runs through — the arrow stands alone and the note says
+"Continues all day". No Kotlin changed for it: the arrow goes through the same
+`Html.fromHtml` as any time.
 
 ## Testing notes
 

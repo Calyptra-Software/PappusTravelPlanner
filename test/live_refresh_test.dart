@@ -142,7 +142,7 @@ void main() {
         date: day,
         startMinutes: 16 * 60 + 34, // Hamburg 16:34 local
         endMinutes: 23 * 60 + 10, // München 23:10 local
-        spansNextDay: false,
+        endDayOffset: 0,
         fromName: 'Hamburg Hbf',
         toName: 'München Hbf',
       )!;
@@ -157,7 +157,7 @@ void main() {
         date: day,
         startMinutes: 18 * 60 + 29, // Berlin Hbf 18:29 local (planned)
         endMinutes: 23 * 60 + 10,
-        spansNextDay: false,
+        endDayOffset: 0,
         fromName: 'S+U Berlin Hauptbahnhof',
         toName: 'München Hbf',
       )!;
@@ -193,7 +193,7 @@ void main() {
         date: day,
         startMinutes: 16 * 60, // 14:00Z -> 16:00 local
         endMinutes: 17 * 60,
-        spansNextDay: false,
+        endDayOffset: 0,
         fromName: 'A',
         toName: 'B',
       );
@@ -206,7 +206,7 @@ void main() {
         date: day,
         startMinutes: 5 * 60, // nothing departs at 05:00
         endMinutes: 6 * 60,
-        spansNextDay: false,
+        endDayOffset: 0,
         fromName: 'Nowhere',
         toName: 'Elsewhere',
       );
@@ -248,7 +248,7 @@ void main() {
       date: DateTime(2026, 7, 26),
       startMinutes: 16 * 60,
       endMinutes: 17 * 60,
-      spansNextDay: false,
+      endDayOffset: 0,
       fromName: 'A',
       toName: 'B',
     );

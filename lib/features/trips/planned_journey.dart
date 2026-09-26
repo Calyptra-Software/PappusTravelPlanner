@@ -1,5 +1,7 @@
+import '../../core/format/civil_date.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
+import '../itinerary/entry_times.dart';
 import '../transport_search/domain/transport_place.dart';
 
 /// A run of transport legs in a plan that can be **looked up again**: searched
@@ -139,18 +141,23 @@ class PlannedJourney {
 /// counts the same way round: standing there sooner means an earlier connection is
 /// catchable.
 ///
-/// Null unless [run] holds the leg directly before it on the **same day**, ending
-/// without crossing midnight: comparing minutes across a date boundary is how a
-/// 23:58 arrival becomes an early morning, and a seed is not worth a wrong day.
-/// It only seeds a form the user can see and change — nothing here decides
-/// anything.
+/// Null unless [run] holds a leg directly before it, and that leg's actual
+/// arrival falls on the **day** this leg is searched on. The arrival is dated on
+/// the earlier leg's own minute line (`entry_times.dart`), so an overnight leg
+/// arriving the morning this one leaves seeds it, and a 23:58 arrival is never
+/// read as an early morning: comparing bare minutes across a date boundary is
+/// how that happens, and a seed is not worth a wrong day. It only seeds a form
+/// the user can see and change — nothing here decides anything.
 int? departureSeedMinutes(List<ItineraryItem> run, ItineraryItem leg) {
   final legs = _runLegs(run);
   final index = legs.indexWhere((item) => item.id == leg.id);
   if (index <= 0) return null;
   final before = legs[index - 1];
-  if (before.spansNextDay || !_sameDay(before.date, leg.date)) return null;
-  return before.actualEndMinutes;
+  final arrival = before.times.actualEnd;
+  if (arrival == null) return null;
+  final arrivalDay = addDays(before.date, dayOfLine(arrival));
+  if (!_sameDay(arrivalDay, leg.date)) return null;
+  return minuteOfLine(arrival);
 }
 
 bool _sameDay(DateTime a, DateTime b) =>

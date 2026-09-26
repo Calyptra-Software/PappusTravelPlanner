@@ -16,13 +16,14 @@ void main() {
     int? alternativeId,
     int? groupId,
     DateTime? date,
+    int endDayOffset = 0,
   }) => ItineraryItem(
     id: id,
     tripId: 1,
     date: date ?? day,
     sortOrder: sortOrder,
     kind: ItemKind.place,
-    spansNextDay: false,
+    endDayOffset: endDayOffset,
     chordDisplay: TrackDisplay.auto,
     title: title,
     alternativeId: alternativeId,
@@ -295,5 +296,121 @@ void main() {
 
     expect(blocks, hasLength(2));
     expect((blocks[1] as GroupBlock).items, hasLength(2));
+  });
+
+  group('continuationsOn', () {
+    final third = DateTime(2026, 7, 7);
+
+    test('a night train reaches the morning after, and arrives there', () {
+      final train = item(1, title: 'NJ 40', sortOrder: 0, endDayOffset: 1);
+      final next = continuationsOn(
+        day: otherDay,
+        items: [train],
+        sets: const {},
+        branchesBySet: const {},
+      );
+      expect(next, hasLength(1));
+      expect(next.single.item.id, 1);
+      expect(next.single.daysAfter, 1);
+      expect(next.single.arrives, isTrue);
+
+      // Not on the day it leaves, which draws it as an entry, nor after.
+      for (final d in [day, third]) {
+        expect(
+          continuationsOn(
+            day: d,
+            items: [train],
+            sets: const {},
+            branchesBySet: const {},
+          ),
+          isEmpty,
+        );
+      }
+    });
+
+    test('a two-night journey runs through the middle day', () {
+      final train = item(1, title: 'Moscow', sortOrder: 0, endDayOffset: 2);
+      final middle = continuationsOn(
+        day: otherDay,
+        items: [train],
+        sets: const {},
+        branchesBySet: const {},
+      ).single;
+      expect(middle.arrives, isFalse);
+      final last = continuationsOn(
+        day: third,
+        items: [train],
+        sets: const {},
+        branchesBySet: const {},
+      ).single;
+      expect(last.arrives, isTrue);
+    });
+
+    test('only the chosen option travels into the next day', () {
+      final sets = {5: set(5, sortOrder: 0)};
+      final branches = {
+        5: [
+          branch(10, setId: 5, sortOrder: 0, chosen: true),
+          branch(11, setId: 5, sortOrder: 1),
+        ],
+      };
+      final continuations = continuationsOn(
+        day: otherDay,
+        items: [
+          item(
+            1,
+            title: 'Night train',
+            sortOrder: 0,
+            alternativeId: 10,
+            endDayOffset: 1,
+          ),
+          item(
+            2,
+            title: 'Night bus',
+            sortOrder: 0,
+            alternativeId: 11,
+            endDayOffset: 1,
+          ),
+        ],
+        sets: sets,
+        branchesBySet: branches,
+      );
+      expect(continuations.map((c) => c.item.id), [1]);
+    });
+
+    test('an option entry starts on its decision\'s day', () {
+      final continuations = continuationsOn(
+        day: otherDay,
+        items: [
+          // Carrying some other date, as an entry moved by an older app might.
+          item(
+            1,
+            title: 'Ferry',
+            sortOrder: 0,
+            alternativeId: 10,
+            endDayOffset: 1,
+            date: DateTime(2026, 1, 1),
+          ),
+        ],
+        sets: {5: set(5, sortOrder: 0)},
+        branchesBySet: {
+          5: [branch(10, setId: 5, sortOrder: 0, chosen: true)],
+        },
+      );
+      expect(continuations.single.item.id, 1);
+    });
+
+    test('what left earliest comes first', () {
+      final continuations = continuationsOn(
+        day: third,
+        items: [
+          item(1, title: 'Late', sortOrder: 0, date: otherDay, endDayOffset: 1),
+          item(2, title: 'Long', sortOrder: 0, endDayOffset: 2),
+        ],
+        sets: const {},
+        branchesBySet: const {},
+      );
+      expect(continuations.map((c) => c.item.id), [2, 1]);
+    });
   });
 }

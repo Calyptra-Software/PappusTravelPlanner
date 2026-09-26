@@ -29,7 +29,7 @@ void main() {
     kind: kind,
     alternativeId: branchId,
     groupId: groupId,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
   );
 

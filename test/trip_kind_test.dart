@@ -26,13 +26,13 @@ void main() {
         createdAt: DateTime(2026, 1, 1),
       );
 
-  ItineraryItem item(DateTime date) => ItineraryItem(
+  ItineraryItem item(DateTime date, {int endDayOffset = 0}) => ItineraryItem(
     id: 1,
     tripId: 1,
     date: date,
     kind: ItemKind.place,
     sortOrder: 0,
-    spansNextDay: false,
+    endDayOffset: endDayOffset,
     chordDisplay: TrackDisplay.auto,
   );
 
@@ -104,6 +104,21 @@ void main() {
         ], const []),
         2,
       );
+    });
+
+    test('the morning a night train arrives is a day of the plan', () {
+      // Nothing else is planned on it, and the timeline shows it all the same:
+      // the train arrives there, and the next entry goes there.
+      final days = routineDaysOf([
+        item(DateTime(1970, 1, 1), endDayOffset: 1),
+        item(DateTime(1970, 1, 5)),
+      ], const []);
+
+      expect(days, [
+        DateTime(1970, 1, 1),
+        DateTime(1970, 1, 2),
+        DateTime(1970, 1, 5),
+      ]);
     });
 
     test('an empty routine is still a plan for one day', () {

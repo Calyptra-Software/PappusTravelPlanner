@@ -192,7 +192,7 @@ void main() {
         title: const Value('NJ 401'),
         startMinutes: const Value(22 * 60 + 30),
         endMinutes: const Value(7 * 60 + 15),
-        spansNextDay: const Value(true),
+        endDayOffset: const Value(1),
         fromLat: const Value(53.5),
         fromLon: const Value(10.0),
         sourceTripId: const Value('trip-401'),
@@ -208,7 +208,7 @@ void main() {
 
     // What describes the journey comes along — without the overnight flag the
     // copy would claim to arrive at 07:15 on the evening it departs.
-    expect(copy.spansNextDay, isTrue);
+    expect(copy.endDayOffset, 1);
     expect(copy.fromLat, 53.5);
     expect(decodeStopovers(copy.stopovers).single.name, 'Basel SBB');
     // Its identity at the routing service does not: that names one dated run of

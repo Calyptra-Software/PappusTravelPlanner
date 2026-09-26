@@ -16,7 +16,8 @@ Color delayColor(ThemeData theme, int delta) {
 
 /// The times of an itinerary entry as the timeline draws them: the planned
 /// range, each end carrying — once the actual time is recorded — how far it
-/// missed its plan, in colour ("09:00 (+15) – 10:30 (−5)"). What is printed is
+/// missed its plan, in colour ("09:00 (+15) – 10:30 (−5)"), and an end on a
+/// later day carrying that day ("22:14 – 07:12 +1"). What is printed is
 /// decided by [timeMarks]; this only paints it.
 class ItemTimes extends StatelessWidget {
   const ItemTimes({super.key, required this.item, this.style});
@@ -40,6 +41,20 @@ class ItemTimes extends StatelessWidget {
     for (final mark in marks) {
       if (spans.isNotEmpty) spans.add(const TextSpan(text: ' – '));
       spans.add(TextSpan(text: formatMinutes(mark.minutes)));
+      // The day an end falls on, when it is not the entry's own: a night
+      // train's "07:12 +1". Before the delay, so each figure sits beside what it
+      // qualifies — the "+1" is about the time, the "(+15)" about the plan.
+      if (mark.day > 0) {
+        spans.add(
+          TextSpan(
+            text: formatDayMark(mark.day),
+            style: TextStyle(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        );
+      }
       final delta = mark.delta;
       if (delta == null) continue;
       spans.add(

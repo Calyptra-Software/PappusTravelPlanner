@@ -2,6 +2,7 @@ import '../../core/format/date_format.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
+import '../itinerary/day_blocks.dart' show Continuation;
 import '../itinerary/time_marks.dart';
 
 /// One line of "today's plan" shown on the widget.
@@ -35,12 +36,55 @@ const String _widgetEarlyColor = '#A5D6A7';
 String widgetTime(ItineraryItem item) => [
   for (final mark in timeMarks(item))
     if (mark.delta case final delta?)
-      '${formatMinutes(mark.minutes)} <font color="'
+      '${formatMinutes(mark.minutes)}${formatDayMark(mark.day)} <font color="'
           '${delta > 0 ? _widgetLateColor : _widgetEarlyColor}">'
           '(${formatSignedMinutes(delta)})</font>'
     else
-      formatMinutes(mark.minutes),
+      '${formatMinutes(mark.minutes)}${formatDayMark(mark.day)}',
 ].join(' – ');
+
+/// The mark a continuation's time opens with — the turn-down arrow the
+/// timeline draws beside the same row, saying it came from an earlier day.
+const String kWidgetContinuationMark = '↳';
+
+/// A row for an entry that began on an earlier day and runs into today: the
+/// night train on the morning it arrives. It goes above today's own rows, as it
+/// does in the timeline, and deep-links into the entry like any other.
+///
+/// Its time is the end alone, behind [kWidgetContinuationMark], with its miss
+/// coloured as [widgetTime] colours one ("↳ 07:12 (+15)") — the start was
+/// yesterday and says nothing about today. Where there is no time to give — a
+/// day the entry runs through, or an end with no time — the mark stands alone
+/// and the note says in words what the time cannot.
+WidgetRow continuationRow(
+  Continuation continuation,
+  AppLocalizations l10n, {
+  Map<int, String> modeLabels = const {},
+}) {
+  final item = continuation.item;
+  final end = continuation.arrives ? endMark(item) : null;
+  final String time;
+  if (end == null) {
+    time = kWidgetContinuationMark;
+  } else if (end.delta case final delta?) {
+    time =
+        '$kWidgetContinuationMark ${formatMinutes(end.minutes)} <font color="'
+        '${delta > 0 ? _widgetLateColor : _widgetEarlyColor}">'
+        '(${formatSignedMinutes(delta)})</font>';
+  } else {
+    time = '$kWidgetContinuationMark ${formatMinutes(end.minutes)}';
+  }
+  return WidgetRow(
+    id: item.id,
+    time: time,
+    text: _itemText(item, l10n, modeLabels),
+    note: !continuation.arrives
+        ? l10n.continuationAllDay
+        : end == null
+        ? l10n.continuationEnds
+        : '',
+  );
+}
 
 /// Flat, pre-formatted data handed to the native Android widget. All strings are
 /// already localised so the Kotlin side only has to display them.
@@ -148,7 +192,9 @@ String _itemText(
 }
 
 /// Builds the full payload. [todayItems] are the featured trip's items for
-/// today, already ordered; only used when the featured trip is ongoing.
+/// today, already ordered, and [continuations] the entries running into today
+/// from an earlier day (`continuationsOn`); both only used when the featured
+/// trip is ongoing.
 WidgetPayload buildWidgetPayload(
   List<Trip> trips,
   List<ItineraryItem> todayItems,
@@ -156,6 +202,7 @@ WidgetPayload buildWidgetPayload(
   AppLocalizations l10n,
   String localeName, {
   Map<int, String> modeLabels = const {},
+  List<Continuation> continuations = const [],
 }) {
   final trip = pickFeaturedTrip(trips, now);
   if (trip == null) {
@@ -197,18 +244,22 @@ WidgetPayload buildWidgetPayload(
 
   // Send every item for today; the native widget decides how many fit its
   // current size and renders a "+N" only when some genuinely don't fit.
+  // What began on an earlier day comes first, as it does in the timeline: it
+  // started before anything planned today, and on the morning a night train
+  // is due it is what the day is spent on.
   List<WidgetRow> rows = const [];
-  if (ongoing && todayItems.isNotEmpty) {
-    rows = todayItems
-        .map(
-          (i) => WidgetRow(
-            id: i.id,
-            time: widgetTime(i),
-            text: _itemText(i, l10n, modeLabels),
-            note: i.notes?.trim() ?? '',
-          ),
-        )
-        .toList();
+  if (ongoing) {
+    rows = [
+      for (final c in continuations)
+        continuationRow(c, l10n, modeLabels: modeLabels),
+      for (final i in todayItems)
+        WidgetRow(
+          id: i.id,
+          time: widgetTime(i),
+          text: _itemText(i, l10n, modeLabels),
+          note: i.notes?.trim() ?? '',
+        ),
+    ];
   }
 
   return WidgetPayload(

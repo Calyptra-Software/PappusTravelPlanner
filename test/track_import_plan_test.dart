@@ -12,7 +12,7 @@ void main() {
     date: DateTime(2026, 5, 1),
     sortOrder: id,
     kind: ItemKind.transport,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     fromLat: fromLat,
     fromLon: fromLat == null ? null : 9.0,
@@ -27,7 +27,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.place,
     title: 'Café',
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     lat: lat,
     lon: lat == null ? null : 9.0,
@@ -118,7 +118,7 @@ void main() {
       date: DateTime(2026, 5, 1),
       sortOrder: id,
       kind: ItemKind.transport,
-      spansNextDay: false,
+      endDayOffset: 0,
       chordDisplay: TrackDisplay.auto,
     );
 

@@ -1,6 +1,7 @@
 import '../../../data/database/app_database.dart';
 import '../../../data/database/stopovers.dart';
 import '../../../data/database/tables.dart';
+import '../../itinerary/entry_times.dart';
 import '../journey_view.dart';
 
 /// Reads itinerary rows back as the journey they were imported from — the
@@ -14,9 +15,10 @@ import '../journey_view.dart';
 /// what decides whether a stretch is walked or ridden.
 ///
 /// Times come out on a wall-clock scale, since that is all the rows hold. Each
-/// day is counted in whole days from the epoch and each entry's end is dated by
-/// its own `spansNextDay`, so an overnight leg still runs forwards and a change
-/// across midnight still comes out positive.
+/// day is counted in whole days from the epoch and each entry's times are placed
+/// by `entry_times.dart`, so an overnight leg still runs forwards, a change
+/// across midnight still comes out positive, and a departure planned for 23:55
+/// that left at 00:10 is fifteen minutes late rather than a day early.
 JourneyView journeyViewFromItems(
   List<ItineraryItem> items,
   Map<int, TransportModeRow> modesById,
@@ -39,9 +41,10 @@ JourneyView journeyViewFromItems(
 
 ViewLeg _storedLeg(ItineraryItem item, Map<int, TransportModeRow> modesById) {
   final builtin = modesById[item.mode]?.builtinKey;
-  final endDate = item.spansNextDay
-      ? DateTime(item.date.year, item.date.month, item.date.day + 1)
-      : item.date;
+  final endDate = endDateOf(item);
+  final day = _absolute(item.date, 0)!;
+  final times = item.times;
+  int? onLine(int? minutes) => minutes == null ? null : day + minutes;
   return ViewLeg(
     mode: StoredMode(item.mode),
     ownSteam:
@@ -52,15 +55,15 @@ ViewLeg _storedLeg(ItineraryItem item, Map<int, TransportModeRow> modesById) {
       name: item.fromLocation ?? '',
       date: item.date,
       minutes: item.startMinutes,
-      absolute: _absolute(item.date, item.startMinutes),
-      actualAbsolute: _absolute(item.date, item.actualStartMinutes),
+      absolute: onLine(times.plannedStart),
+      actualAbsolute: onLine(times.actualStart),
     ),
     to: ViewPoint(
       name: item.toLocation ?? '',
       date: endDate,
       minutes: item.endMinutes,
-      absolute: _absolute(endDate, item.endMinutes),
-      actualAbsolute: _absolute(endDate, item.actualEndMinutes),
+      absolute: onLine(times.plannedEnd),
+      actualAbsolute: onLine(times.actualEnd),
     ),
     line: item.title,
     notes: item.notes,

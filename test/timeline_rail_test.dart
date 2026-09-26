@@ -46,7 +46,7 @@ void main() {
     date: day,
     sortOrder: sortOrder,
     kind: kind,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     title: 'Entry $id',
     fromLocation: kind == ItemKind.transport ? 'A' : null,

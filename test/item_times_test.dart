@@ -15,6 +15,7 @@ void main() {
     int? end,
     int? actualStart,
     int? actualEnd,
+    int endDayOffset = 0,
   }) => ItineraryItem(
     id: 1,
     tripId: 1,
@@ -26,7 +27,7 @@ void main() {
     endMinutes: end,
     actualStartMinutes: actualStart,
     actualEndMinutes: actualEnd,
-    spansNextDay: false,
+    endDayOffset: endDayOffset,
     chordDisplay: TrackDisplay.auto,
   );
 
@@ -115,5 +116,61 @@ void main() {
 
     expect(find.byType(Text), findsNothing);
     expect(ItemTimes.hasAny(item()), isFalse);
+  });
+
+  testWidgets('an end on a later day carries that day', (tester) async {
+    await pump(
+      tester,
+      item(start: 22 * 60 + 14, end: 7 * 60 + 12, endDayOffset: 1),
+    );
+
+    expect(line(tester), '22:14 – 07:12 +1');
+    expect(colorOf(tester, '+1'), theme.colorScheme.primary);
+  });
+
+  testWidgets('and says how many days later', (tester) async {
+    await pump(
+      tester,
+      item(start: 22 * 60 + 14, end: 7 * 60 + 12, endDayOffset: 2),
+    );
+
+    expect(line(tester), '22:14 – 07:12 +2');
+  });
+
+  testWidgets('the day mark sits before the delay it is not part of', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      item(
+        start: 22 * 60 + 14,
+        end: 7 * 60 + 12,
+        actualEnd: 7 * 60 + 27,
+        endDayOffset: 1,
+      ),
+    );
+
+    expect(line(tester), '22:14 – 07:12 +1 (+15)');
+  });
+
+  testWidgets('a departure a few minutes over midnight is late, not early', (
+    tester,
+  ) async {
+    await pump(
+      tester,
+      item(start: 23 * 60 + 55, end: 6 * 60, actualStart: 10, endDayOffset: 1),
+    );
+
+    // Fifteen minutes late — not "−23:45", which a subtraction of the two
+    // bare minute counts would print.
+    expect(line(tester), '23:55 (+15) – 06:00 +1');
+  });
+
+  testWidgets('an arrival that slips past midnight is late too', (
+    tester,
+  ) async {
+    await pump(tester, item(start: 22 * 60, end: 23 * 60 + 50, actualEnd: 5));
+
+    expect(line(tester), '22:00 – 23:50 (+15)');
   });
 }

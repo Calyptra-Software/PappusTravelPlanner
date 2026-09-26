@@ -20,7 +20,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.transport,
     title: title,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
   );
 
@@ -36,7 +36,7 @@ void main() {
     sortOrder: id,
     kind: ItemKind.transport,
     title: title,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     fromLat: fromLat,
     fromLon: 9.9,

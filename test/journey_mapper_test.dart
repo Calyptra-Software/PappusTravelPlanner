@@ -42,7 +42,7 @@ void main() {
       expect(first.date, DateTime(2026, 7, 27));
       expect(first.startMinutes, 18 * 60 + 34); // 16:34Z -> 18:34 Berlin
       expect(first.endMinutes, 20 * 60 + 33); // 18:33Z -> 20:33 Berlin
-      expect(first.spansNextDay, isFalse);
+      expect(first.endDayOffset, 0);
       expect(first.title, 'ICE 607');
       expect(first.modeId, 6); // highSpeedRail via stub
     });
@@ -58,7 +58,7 @@ void main() {
       expect(overnight.date, DateTime(2026, 7, 27)); // departure day
       expect(overnight.startMinutes, 21 * 60 + 45); // 19:45Z -> 21:45 Berlin
       expect(overnight.endMinutes, 6 * 60 + 20); // 04:20Z -> 06:20 Vienna
-      expect(overnight.spansNextDay, isTrue);
+      expect(overnight.endDayOffset, 1);
     });
 
     test('every leg maps to a leg (walks included)', () {
@@ -88,7 +88,7 @@ void main() {
 
       expect(mapped.startMinutes, 11 * 60); // 10:00Z -> 11:00 London
       expect(mapped.endMinutes, 14 * 60); // 12:00Z -> 14:00 Berlin
-      expect(mapped.spansNextDay, isFalse);
+      expect(mapped.endDayOffset, 0);
     });
 
     test('captures real-time at import when the leg carries it', () {
@@ -132,11 +132,33 @@ void main() {
       expect(mapped.actualEndMinutes, isNull);
     });
 
-    test('crossing local midnight sets spansNextDay and next-day minutes', () {
+    test(
+      'crossing local midnight sets a one-day end offset and next-day minutes',
+      () {
+        final leg = JourneyLeg(
+          mode: TransitMode.nightRail,
+          from: _point('A', DateTime.utc(2026, 7, 27, 21, 30), 'Europe/Berlin'),
+          to: _point('B', DateTime.utc(2026, 7, 27, 22, 30), 'Europe/Berlin'),
+          realTime: false,
+        );
+        final mapped = journeyToLegs(
+          _oneLeg(leg),
+          resolveMode: _stubResolve,
+        ).single;
+
+        expect(mapped.date, DateTime(2026, 7, 27));
+        expect(mapped.startMinutes, 23 * 60 + 30); // 23:30 Berlin
+        expect(mapped.endMinutes, 30); // 00:30 next day
+        expect(mapped.endDayOffset, 1);
+      },
+    );
+
+    test('a journey through two nights arrives two days later', () {
       final leg = JourneyLeg(
         mode: TransitMode.nightRail,
+        // 23:30 Berlin on the 27th to 07:00 Moscow on the 29th.
         from: _point('A', DateTime.utc(2026, 7, 27, 21, 30), 'Europe/Berlin'),
-        to: _point('B', DateTime.utc(2026, 7, 27, 22, 30), 'Europe/Berlin'),
+        to: _point('B', DateTime.utc(2026, 7, 29, 4), 'Europe/Moscow'),
         realTime: false,
       );
       final mapped = journeyToLegs(
@@ -144,10 +166,24 @@ void main() {
         resolveMode: _stubResolve,
       ).single;
 
-      expect(mapped.date, DateTime(2026, 7, 27));
-      expect(mapped.startMinutes, 23 * 60 + 30); // 23:30 Berlin
-      expect(mapped.endMinutes, 30); // 00:30 next day
-      expect(mapped.spansNextDay, isTrue);
+      expect(mapped.endMinutes, 7 * 60);
+      // It used to read "the next day", whatever the timetable said.
+      expect(mapped.endDayOffset, 2);
+    });
+
+    test('a flight landing on an earlier date ends on its own day', () {
+      // Tokyo 10:00 on the 28th to Los Angeles 04:00 on the 27th.
+      final leg = JourneyLeg(
+        mode: TransitMode.other,
+        from: _point('HND', DateTime.utc(2026, 7, 28, 1), 'Asia/Tokyo'),
+        to: _point('LAX', DateTime.utc(2026, 7, 27, 11), 'America/Los_Angeles'),
+        realTime: false,
+      );
+      final mapped = journeyToLegs(
+        _oneLeg(leg),
+        resolveMode: _stubResolve,
+      ).single;
+      expect(mapped.endDayOffset, 0);
     });
 
     test('composes notes from direction and platforms (neutral labels)', () {

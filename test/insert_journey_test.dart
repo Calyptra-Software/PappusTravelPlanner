@@ -24,7 +24,7 @@ void main() {
   MappedLeg leg(
     DateTime date, {
     int? modeId = 6,
-    bool spansNextDay = false,
+    int endDayOffset = 0,
     int startMinutes = 600,
     int endMinutes = 700,
     int? actualStartMinutes,
@@ -37,7 +37,7 @@ void main() {
     endMinutes: endMinutes,
     actualStartMinutes: actualStartMinutes,
     actualEndMinutes: actualEndMinutes,
-    spansNextDay: spansNextDay,
+    endDayOffset: endDayOffset,
     modeId: modeId,
     title: 'ICE 1',
     notes: notes,
@@ -125,10 +125,10 @@ void main() {
     final tripId = await makeTrip();
     final ids = await repo.insertJourney(
       tripId,
-      companions(tripId, [leg(dayA, spansNextDay: true)]),
+      companions(tripId, [leg(dayA, endDayOffset: 1)]),
       group: false,
     );
-    expect((await read(ids.single)).spansNextDay, isTrue);
+    expect((await read(ids.single)).endDayOffset, 1);
   });
 
   test('persists the composed notes (direction/platform)', () async {
@@ -220,6 +220,22 @@ void main() {
       final trip = await db.tripDao.findTrip(tripId);
       expect(trip!.startDate, dayA, reason: 'the near end is unmoved');
       expect(trip.endDate, dayB);
+    });
+
+    test('widens the trip to the morning an overnight leg arrives', () async {
+      final tripId = await datedTrip();
+
+      // One leg, leaving on the trip's only day: its departure is inside the
+      // range, the morning it arrives in is not.
+      await repo.insertJourney(
+        tripId,
+        companions(tripId, [
+          leg(dayA, startMinutes: 1334, endMinutes: 432, endDayOffset: 1),
+        ]),
+      );
+
+      final trip = await db.tripDao.findTrip(tripId);
+      expect(trip!.endDate, dayB);
     });
 
     test('a journey inside the range moves nothing', () async {

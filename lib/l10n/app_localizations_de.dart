@@ -395,6 +395,55 @@ class AppLocalizationsDe extends AppLocalizations {
       'Was wirklich passiert ist. Die Zeitleiste zeigt die Abweichung vom Plan.';
 
   @override
+  String get endDayArrives => 'Ankunft';
+
+  @override
+  String get endDayEnds => 'Ende';
+
+  @override
+  String get endDaySame => 'Am selben Tag';
+
+  @override
+  String endDayLater(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage später',
+      one: 'Am nächsten Tag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get endDayEarlier => 'Einen Tag früher';
+
+  @override
+  String get endDayLaterButton => 'Einen Tag später';
+
+  @override
+  String get endBeforeStart =>
+      'Das Ende liegt vor dem Beginn. Ist es an einem späteren Tag?';
+
+  @override
+  String continuationArrives(String time) {
+    return 'Ankunft $time';
+  }
+
+  @override
+  String continuationUntil(String time) {
+    return 'Bis $time';
+  }
+
+  @override
+  String get continuationEnds => 'Endet an diesem Tag';
+
+  @override
+  String get continuationAllDay => 'Läuft den ganzen Tag';
+
+  @override
+  String get continuationStarted => 'Fortsetzung von einem früheren Tag';
+
+  @override
   String get notesOptional => 'Notizen (optional)';
 
   @override

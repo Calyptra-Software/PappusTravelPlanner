@@ -1,3 +1,4 @@
+import '../../../core/format/civil_date.dart';
 import '../../../data/database/stopovers.dart';
 import '../domain/journey.dart';
 import 'journey_mapper.dart' show localParts;
@@ -34,8 +35,8 @@ class RefreshedTimes {
 /// their real-time [TripStop.departure]/[TripStop.arrival] are projected into the
 /// stop's timezone to minutes-since-midnight. Returns null when neither end could
 /// be matched — so a leg whose schedule has since changed is left untouched
-/// rather than mis-timed. [spansNextDay] places the arrival on the following day,
-/// as the itinerary does.
+/// rather than mis-timed. [endDayOffset] places the arrival that many days
+/// after [date], as the itinerary does.
 ///
 /// A **cancellation** is reported the moment either end of the leg is skipped,
 /// even though there are then no times to go with it: not being run is the most
@@ -45,11 +46,11 @@ RefreshedTimes? refreshedActualTimes({
   required DateTime date,
   required int startMinutes,
   required int endMinutes,
-  required bool spansNextDay,
+  required int endDayOffset,
   required String fromName,
   required String toName,
 }) {
-  final arrivalDate = spansNextDay ? date.add(const Duration(days: 1)) : date;
+  final arrivalDate = addDays(date, endDayOffset);
 
   final board = _match(
     stops,
@@ -116,7 +117,7 @@ Stopover _refreshedStopover(
   final match = _match(
     stops,
     name: stopover.name,
-    wantDate: date.add(Duration(days: stopover.dayOffset)),
+    wantDate: addDays(date, stopover.dayOffset),
     wantMinutes: stopover.minutes,
     scheduled: (s) => s.scheduledDeparture,
   );

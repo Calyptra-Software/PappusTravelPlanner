@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:drift/drift.dart';
 
 import '../../../core/format/civil_date.dart';
+import '../../../features/itinerary/entry_times.dart';
 import '../app_database.dart';
 import '../item_copy.dart';
 import '../tables.dart';
@@ -233,7 +234,9 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       // A leg written onto a day the trip does not cover — a replacement that
       // crosses midnight where the old run did not — widens the trip rather than
       // sitting outside it.
-      await attachedDatabase.tripDao.widenToCover(tripId, byDay.keys);
+      await attachedDatabase.tripDao.widenToCover(tripId, [
+        for (final leg in legs) ...companionDays(leg),
+      ]);
 
       // The rescued fares find their home on the replacement: its bundle when it
       // has one, its first leg otherwise. A replacement with no legs at all leaves
@@ -405,7 +408,9 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// is what once turned a one-day commute into a trip ending in 2083.
   ///
   /// A day with no entries is not a day of the plan: nothing shows it, so
-  /// nothing can be added to it, so a gap in the dates closes up.
+  /// nothing can be added to it, so a gap in the dates closes up. A day an entry
+  /// *ends* on is one, though — the morning a night train arrives is shown, and
+  /// is where the next entry goes.
   Future<List<DateTime>> routineDays(int routineId) async {
     final itemRows = await (select(
       itineraryItems,
@@ -415,7 +420,7 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
     )..where((s) => s.tripId.equals(routineId))).get();
     final days = SplayTreeSet<DateTime>();
     for (final day in [
-      for (final i in itemRows) i.date,
+      for (final i in itemRows) ...daysCovered(i.date, i.endDayOffset),
       for (final s in setRows) s.date,
     ]) {
       days.add(DateTime(day.year, day.month, day.day));

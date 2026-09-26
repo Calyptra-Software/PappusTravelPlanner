@@ -3,6 +3,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/home_widget/widget_payload.dart';
+import 'package:travelplanner/features/itinerary/day_blocks.dart';
 import 'package:travelplanner/l10n/app_localizations_en.dart';
 
 void main() {
@@ -42,6 +43,7 @@ void main() {
     int? actualEndMinutes,
     String location = 'Place',
     String? notes,
+    int endDayOffset = 0,
   }) {
     return ItineraryItem(
       id: id,
@@ -49,7 +51,7 @@ void main() {
       date: DateTime(2026, 7, 5),
       sortOrder: id,
       kind: ItemKind.place,
-      spansNextDay: false,
+      endDayOffset: endDayOffset,
       chordDisplay: TrackDisplay.auto,
       title: null,
       startMinutes: minutes,
@@ -277,6 +279,116 @@ void main() {
         '09:00 <font color="#FF8A80">(+15)</font> – '
         '10:30 <font color="#A5D6A7">(−5)</font>',
       );
+    });
+
+    test('an end on a later day carries the day, before any delay', () {
+      final t = trip(
+        id: 1,
+        title: 'Vienna',
+        start: DateTime(2026, 7, 4),
+        end: DateTime(2026, 7, 9),
+      );
+      final items = [
+        placeItem(
+          1,
+          minutes: 22 * 60 + 14,
+          endMinutes: 7 * 60 + 12,
+          actualEndMinutes: 7 * 60 + 27,
+          endDayOffset: 1,
+        ),
+      ];
+      final p = buildWidgetPayload([t], items, now, l10n, 'en');
+
+      expect(
+        p.rows.single.time,
+        '22:14 – 07:12 +1 <font color="#FF8A80">(+15)</font>',
+      );
+    });
+  });
+
+  group('an entry running into today from an earlier day', () {
+    final italy = trip(
+      id: 1,
+      title: 'Italy',
+      start: DateTime(2026, 7, 4),
+      end: DateTime(2026, 7, 9),
+    );
+
+    // Left yesterday at 22:14, due this morning at 07:12.
+    ItineraryItem nightTrain({int? actualEnd, int endDayOffset = 1}) =>
+        placeItem(
+          7,
+          minutes: 22 * 60 + 14,
+          endMinutes: 7 * 60 + 12,
+          actualEndMinutes: actualEnd,
+          endDayOffset: endDayOffset,
+          location: 'Night train',
+        );
+
+    test('comes first, and says when it arrives', () {
+      final p = buildWidgetPayload(
+        [italy],
+        [placeItem(1, minutes: 9 * 60, location: 'Breakfast')],
+        now,
+        l10n,
+        'en',
+        continuations: [Continuation(item: nightTrain(), daysAfter: 1)],
+      );
+
+      expect(p.rows.map((r) => r.text), ['Night train', 'Breakfast']);
+      expect(p.rows.first.time, '↳ 07:12');
+      expect(p.rows.first.note, '');
+      // Tapping it opens the entry itself.
+      expect(p.rows.first.id, 7);
+    });
+
+    test('carries its delay the way any other row does', () {
+      final p = buildWidgetPayload(
+        [italy],
+        const [],
+        now,
+        l10n,
+        'en',
+        continuations: [
+          Continuation(item: nightTrain(actualEnd: 7 * 60 + 27), daysAfter: 1),
+        ],
+      );
+
+      expect(p.rows.single.time, '↳ 07:12 <font color="#FF8A80">(+15)</font>');
+    });
+
+    test('a day it runs through says so in words', () {
+      final p = buildWidgetPayload(
+        [italy],
+        const [],
+        now,
+        l10n,
+        'en',
+        continuations: [
+          Continuation(item: nightTrain(endDayOffset: 2), daysAfter: 1),
+        ],
+      );
+
+      expect(p.rows.single.time, '↳');
+      expect(p.rows.single.note, 'Continues all day');
+    });
+
+    test('is not shown for a trip that is not under way', () {
+      final later = trip(
+        id: 2,
+        title: 'Later',
+        start: DateTime(2026, 8, 1),
+        end: DateTime(2026, 8, 3),
+      );
+      final p = buildWidgetPayload(
+        [later],
+        const [],
+        now,
+        l10n,
+        'en',
+        continuations: [Continuation(item: nightTrain(), daysAfter: 1)],
+      );
+      expect(p.rows, isEmpty);
     });
   });
 }

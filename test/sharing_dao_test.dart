@@ -57,7 +57,7 @@ void main() {
         mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
         fromLocation: const Value('Florence'),
         toLocation: const Value('Rome'),
-        spansNextDay: const Value(true),
+        endDayOffset: const Value(1),
         sourceTripId: const Value('trip-99'),
         stopovers: Value(
           encodeStopovers(const [
@@ -137,7 +137,7 @@ void main() {
     expect(transport.mode, 'train');
     // A routed leg's plan travels: the overnight flag and the stops it calls
     // at. Its routing trip id does not — that is provenance, not plan.
-    expect(transport.spansNextDay, isTrue);
+    expect(transport.endDayOffset, 1);
     expect(decodeStopovers(transport.stopovers).map((s) => s.name), [
       'Innsbruck Hbf',
     ]);
@@ -1020,6 +1020,85 @@ void main() {
       expect(items.first.fromLat, 53.55);
     });
   });
+
+  group('the day an entry ends on', () {
+    Future<int> tripWithLeg(int endDayOffset) async {
+      final tripId = await db.tripDao.createTrip(
+        TripsCompanion.insert(title: 'Vienna'),
+      );
+      await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          kind: ItemKind.transport,
+          startMinutes: const Value(22 * 60 + 14),
+          endMinutes: const Value(7 * 60 + 12),
+          endDayOffset: Value(endDayOffset),
+        ),
+      );
+      return tripId;
+    }
+
+    Future<List<ItineraryItem>> roundTrip(TripBundle bundle) async {
+      final target = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(target.close);
+      final id = await target.sharingDao.importTrip(
+        TripBundle.decode(bundle.encode()),
+      );
+      return target.itineraryDao.watchItemsForTrip(id).first;
+    }
+
+    test('one night goes out readable by an older app', () async {
+      final bundle = (await db.sharingDao.exportTrip(await tripWithLeg(1)))!;
+      expect(bundle.formatVersion, lessThan(7));
+      final json = bundle.items.single.toJson();
+      // What an older app reads, and reads correctly.
+      expect(json['spansNextDay'], isTrue);
+      expect((await roundTrip(bundle)).single.endDayOffset, 1);
+    });
+
+    test('two nights force v7, which an older app refuses', () async {
+      final bundle = (await db.sharingDao.exportTrip(await tripWithLeg(2)))!;
+      // An older app would read "the next day" and land the arrival a day
+      // early — a misread, the same reason v5 and v6 exist.
+      expect(bundle.formatVersion, 7);
+      final json = bundle.items.single.toJson();
+      expect(json['endDayOffset'], 2);
+      expect(json['spansNextDay'], isTrue);
+      expect((await roundTrip(bundle)).single.endDayOffset, 2);
+    });
+
+    test('an ordinary entry writes no count at all', () async {
+      final bundle = (await db.sharingDao.exportTrip(await tripWithLeg(0)))!;
+      final json = bundle.items.single.toJson();
+      expect(json.containsKey('endDayOffset'), isFalse);
+      expect(json['spansNextDay'], isFalse);
+    });
+
+    test('a night train written before the day could be given is dated '
+        'on import', () async {
+      // An old bundle's hand-entered night train: the flag was never set.
+      final bundle = TripBundle(
+        schemaVersion: 39,
+        trip: BundleTrip(
+          title: 'Vienna',
+          destination: '',
+          colorValue: 0xFF00695C,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+        items: [
+          BundleItem(
+            localId: 1,
+            date: DateTime(2026, 5, 1),
+            kind: ItemKind.transport,
+            startMinutes: 22 * 60 + 14,
+            endMinutes: 7 * 60 + 12,
+          ),
+        ],
+      );
+      expect((await roundTrip(bundle)).single.endDayOffset, 1);
+    });
+  });
 }
 
 /// Normalizes a bundle's JSON for comparison across databases: the local keys
@@ -1098,7 +1177,7 @@ Future<int> _seedTrip(AppDatabase db) async {
       mode: const Value(6), // seeded 'train' mode (enum index 5 + 1)
       // An imported overnight leg: both are read back on the recipient's side,
       // so both have to travel.
-      spansNextDay: const Value(true),
+      endDayOffset: const Value(1),
       stopovers: Value(
         encodeStopovers(const [
           Stopover(name: 'Firenze S.M.N.', minutes: 1320),

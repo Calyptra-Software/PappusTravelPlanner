@@ -103,7 +103,7 @@ void main() {
     date: day,
     sortOrder: 0,
     kind: ItemKind.transport,
-    spansNextDay: false,
+    endDayOffset: 0,
     chordDisplay: TrackDisplay.auto,
     fromLocation: 'Zurich',
     toLocation: 'Chur',
