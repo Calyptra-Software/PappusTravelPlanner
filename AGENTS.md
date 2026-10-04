@@ -993,10 +993,26 @@ UI (features/*/presentation, *widgets)
   hook runner caches the result, so incremental builds pay nothing. What it does *not*
   cost, also measured: two cold builds gave byte-identical APKs, and the library carries no
   GNU build ID and no embedded path — the two things that made `libdartjni.so` differ —
-  so the verified builds hold without `-Wl,--build-id=none`. It is compiled with the NDK
-  the app pins (r28c, as the F-Droid recipe does), not the r29 the downloaded binaries were
-  built with. The `Check SQLite was compiled, not downloaded` step in CI fails a build that
-  has gone back to downloading, which otherwise looks exactly like one that has not.
+  so it needs no `-Wl,--build-id=none`. The `Check SQLite was compiled, not downloaded`
+  step in CI fails a build that has gone back to downloading, which otherwise looks
+  exactly like one that has not.
+  **Which compiler builds it is not Gradle's choice, and that cost a release.** Gradle
+  compiles `libdartjni.so` with `ndkVersion = flutter.ndkVersion`, but the hook gets its
+  compiler from Flutter, which takes `ANDROID_NDK_HOME` before anything else and only
+  then the newest NDK in the SDK. Locally there is one NDK and no variable, so both agree;
+  GitHub's runners set the variable to their own default NDK, so 1.13.1 shipped a
+  `libsqlite3.so` built with **r27d** beside a `libdartjni.so` built with r28c — and
+  fdroidserver sets the same variable to the recipe's `ndk:`, so F-Droid compiled it with
+  r28c and could not reproduce the release (1.58 million of 1.75 million bytes differ).
+  Two local builds agreeing proved nothing about this, since they share the one thing
+  that differed. `tool/pin_ndk.sh` therefore points `ANDROID_NDK_HOME` at
+  `flutter.ndkVersion`, read from the Flutter SDK rather than copied, in both workflows
+  before the build; `tool/check_apk_ndk.py` then reads the NDK each compiled-here library
+  names in its `.note.android.ident` and fails the job unless both carry that version.
+  Only those two are checked: `libflutter.so` and AndroidX's
+  `libdatastore_shared_counter.so` arrive prebuilt, with whatever NDK their publishers
+  used. The recipe's `ndk:` has to name the same release, so a Flutter upgrade that moves
+  `flutter.ndkVersion` means editing the recipe in the same breath.
 - **Every modal sheet is opened by `showAppSheet`** (`core/widgets/app_sheet.dart`),
   which is where four settings that belong together now live. A sheet is `useSafeArea`
   and capped at the screen less the status bar less one touch target, so it stops below
