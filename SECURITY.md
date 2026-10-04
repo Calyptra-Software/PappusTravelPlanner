@@ -262,6 +262,12 @@ Android plugin with the Play Services client removed
 release APK's dex holds no reference to `com/google/android/gms`, and the
 resolved Gradle runtime classpath names no `play-services` artifact.
 
+**SQLite is compiled from source during the build** rather than downloaded as a
+ready-made library: the unmodified amalgamation from sqlite.org lives in
+`third_party/sqlite3`, with its hashes recorded beside it, and CI fails a build
+that fetches a prebuilt one. So no native library enters the app that was not
+built from source in this repository.
+
 ## What happens after a report
 
 I will confirm what you found, or explain why I think it does not hold. If it

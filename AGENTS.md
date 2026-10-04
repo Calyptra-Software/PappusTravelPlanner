@@ -968,6 +968,35 @@ UI (features/*/presentation, *widgets)
   default (Baseflow/flutter-geolocator#841). `third_party/geolocator_android/README.md`
   holds the details; `analysis_options.yaml` excludes the directory, because this project's
   lints are not about somebody else's code.
+- **SQLite is compiled from a copy in this repository, not downloaded.**
+  `package:sqlite3` resolves its native library through a build hook whose default fetches
+  a ready-made `libsqlite3.so` per ABI from the package's GitHub releases, and that binary
+  is what used to ship. F-Droid requires native libraries to be built from source, and a
+  maintainer confirmed that this applies here (fdroiddata!47901) — while, measured on the
+  metadata at the time, 34 of 37 Flutter apps they ship on `package:sqlite3` 3.x still
+  download it, so "other apps do it" is not evidence of what a reviewer will accept. Since
+  the published APKs are verified against F-Droid's own build, compiling only in the recipe
+  would have broken that match; the copy has to live here. So `hooks.user_defines` in
+  `pubspec.yaml` points the hook at `third_party/sqlite3/sqlite3.c`, the unmodified
+  amalgamation, with the hook's default options left on so the compile-time flags stay the
+  ones `package:sqlite3` builds its own binaries with — drift relies on several of them,
+  and this changes *how* SQLite is built, not what it can do. Nothing there is patched,
+  and nothing should be: the copy's value is that it is byte for byte sqlite.org's.
+  The consequence to remember is that **bumping `package:sqlite3` no longer moves the
+  SQLite version**: the version is that directory, Dependabot cannot see it, and keeping it
+  current is this project's job. `tool/update_sqlite.sh` does the mechanical part — it
+  reads the current release and its SHA3-256 off sqlite.org's download page, refuses an
+  archive that does not match, and rewrites the provenance block in
+  `third_party/sqlite3/README.md`. What it costs, measured: 10–22 KB per ABI, and about a
+  minute on a cold release build (198 s against 139 s for three ABIs), since the
+  amalgamation is one translation unit and the three compiles run one after another; the
+  hook runner caches the result, so incremental builds pay nothing. What it does *not*
+  cost, also measured: two cold builds gave byte-identical APKs, and the library carries no
+  GNU build ID and no embedded path — the two things that made `libdartjni.so` differ —
+  so the verified builds hold without `-Wl,--build-id=none`. It is compiled with the NDK
+  the app pins (r28c, as the F-Droid recipe does), not the r29 the downloaded binaries were
+  built with. The `Check SQLite was compiled, not downloaded` step in CI fails a build that
+  has gone back to downloading, which otherwise looks exactly like one that has not.
 - **Every modal sheet is opened by `showAppSheet`** (`core/widgets/app_sheet.dart`),
   which is where four settings that belong together now live. A sheet is `useSafeArea`
   and capped at the screen less the status bar less one touch target, so it stops below

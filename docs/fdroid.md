@@ -40,6 +40,10 @@ per-version files would mean writing the same text three times every release.
   is linked in; see AGENTS.md. F-Droid's scanner rejects both the Gradle coordinate and
   the class references in the dex, and CI checks the release classpath on every pull
   request so this cannot regress quietly.
+- **Prebuilt native libraries.** `package:sqlite3` downloads a ready-made `libsqlite3.so`
+  unless told otherwise, and F-Droid requires it built from source. `pubspec.yaml` points
+  its hook at the amalgamation in `third_party/sqlite3`, which the release build compiles
+  too, so the verified builds still match; CI fails a build that downloads it.
 - **Binaries in the tree.** `web/sqlite3.wasm` is one, which is why the recipe's `rm:`
   drops `web/` along with the other platforms it does not build.
 - **Generated sources.** The `*.g.dart` files and the localizations are committed, so the
