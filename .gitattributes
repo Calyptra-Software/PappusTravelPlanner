@@ -1,0 +1,4 @@
+# Copies of other projects' code, kept unmodified (or nearly so) in this
+# repository. Marked vendored so GitHub's language statistics describe this
+# project rather than its 9 MB of SQLite.
+third_party/** linguist-vendored
