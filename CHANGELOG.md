@@ -3,6 +3,12 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **SQLite is now built from source** as part of the app's build, instead of being
+  downloaded as a ready-made library. It is the same SQLite version with the same
+  options, so nothing about how the app behaves changes.
+
 ## 1.13.0 — 2026-09-26
 
 - **A tap on a document opens it.** A PDF or any other file that is not a picture opens

@@ -133,6 +133,23 @@ jobs:
           fi
           echo "No Play Services in the release runtime classpath."
 
+      # F-Droid requires native libraries built from source, and
+      # `package:sqlite3` downloads a prebuilt one unless pubspec.yaml points
+      # its hook at third_party/sqlite3. A build that has quietly gone back to
+      # downloading looks exactly like one that has not, only faster, so the
+      # evidence is read off disk: the hook runner puts a fetched library in a
+      # `download-*` directory and a compiled one in a directory named after
+      # its build's hash. This job starts from a fresh checkout, so any such
+      # directory was created by the build above.
+      - name: Check SQLite was compiled, not downloaded
+        run: |
+          if find .dart_tool/hooks_runner -type d -name 'download-*' | grep -q .; then
+            echo "::error::package:sqlite3 downloaded a prebuilt library — see AGENTS.md on third_party/sqlite3"
+            find .dart_tool/hooks_runner -type d -name 'download-*'
+            exit 1
+          fi
+          echo "No prebuilt SQLite was fetched."
+
       # The arm64-v8a split is the one every phone made in the last decade
       # runs, so it is the one worth handing out: a reviewer can install the
       # branch instead of reading it. It installs *alongside* the real app

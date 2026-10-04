@@ -19,7 +19,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
 
   # State management and routing.
   flutter_riverpod: ^3.4.3
@@ -98,7 +98,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
-  sqlite3: ^3.6.0 # used by tests to build an old-schema DB for migration checks
+  sqlite3: ^3.7.0 # used by tests to build an old-schema DB for migration checks
 
   # Code generation: `dart run build_runner build --delete-conflicting-outputs`.
   build_runner: ^2.16.1
@@ -127,6 +127,23 @@ dev_dependencies:
 # build to keep GMS for, so the swap is unconditional rather than a variant.
 # third_party/geolocator_android/README.md documents the three edits, what they
 # cost, and how to rebase them onto a new release.
+#
+# SQLite is compiled from the copy in third_party/sqlite3, not downloaded. Left
+# to itself, `package:sqlite3`'s build hook fetches a ready-made library per
+# ABI from the package's GitHub releases, and that binary is what ships: built
+# from upstream sources, but not built here. F-Droid requires every native
+# library to be built from source (fdroiddata!47901), and since the published
+# APKs are verified against F-Droid's build, this build has to compile it too.
+# `path` is relative to this file; the default compile-time options stay on,
+# so SQLite is built with the flags package:sqlite3 uses for its own binaries
+# and nothing about its behavior changes. third_party/sqlite3/README.md holds
+# the provenance, the hashes, and how to update it.
+hooks:
+  user_defines:
+    sqlite3:
+      source: source
+      path: third_party/sqlite3/sqlite3.c
+
 dependency_overrides:
   geolocator_android:
     path: third_party/geolocator_android
