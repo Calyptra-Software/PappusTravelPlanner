@@ -95,6 +95,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # The SQLite build hook takes its compiler from ANDROID_NDK_HOME, which
+      # the runner points at its own default NDK, while Gradle uses the one the
+      # app pins. tool/pin_ndk.sh makes both use flutter.ndkVersion, which is
+      # also what F-Droid's recipe builds with; without it the published
+      # libsqlite3.so cannot be reproduced there (it happened to 1.13.1).
+      - name: Pin the NDK
+        run: tool/pin_ndk.sh
+
       # The command used to cut a release, in the one variant that can be
       # installed beside a real one: `pappusSideBySide` suffixes the
       # applicationId and relabels the app (android/app/build.gradle.kts).
@@ -110,6 +118,12 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_pappusSideBySide: 'true'
         run: flutter build apk --split-per-abi
+
+      # The pin is invisible in the build log and its failure silent in the
+      # APK, so it is read back off the APKs: every library compiled here
+      # carries the NDK it came from in an ELF note.
+      - name: Check the native libraries were built with that NDK
+        run: python3 tool/check_apk_ndk.py --expect "$PAPPUS_NDK_VERSION" build/app/outputs/flutter-apk/app-*-release.apk
 
       # The one fact about this build that nothing else would notice going
       # wrong. `third_party/geolocator_android` exists so that no Google Play

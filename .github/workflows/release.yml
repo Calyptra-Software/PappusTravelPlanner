@@ -117,11 +117,25 @@ jobs:
           keyPassword=$KEY_PASSWORD
           EOF
 
+      # The SQLite build hook takes its compiler from ANDROID_NDK_HOME, which
+      # the runner points at its own default NDK, while Gradle uses the one the
+      # app pins. tool/pin_ndk.sh makes both use flutter.ndkVersion, which is
+      # also what F-Droid's recipe builds with; without it the published
+      # libsqlite3.so cannot be reproduced there (it happened to 1.13.1).
+      - name: Pin the NDK
+        run: tool/pin_ndk.sh
+
       # Deliberately without ORG_GRADLE_PROJECT_pappusSideBySide: that property
       # suffixes the applicationId and swaps in the committed CI key, which is
       # the opposite of what a release is.
       - name: Build the APKs
         run: flutter build apk --release --split-per-abi
+
+      # The pin is invisible in the build log and its failure silent in the
+      # APK, so it is read back off the APKs: every library compiled here
+      # carries the NDK it came from in an ELF note.
+      - name: Check the native libraries were built with that NDK
+        run: python3 tool/check_apk_ndk.py --expect "$PAPPUS_NDK_VERSION" build/app/outputs/flutter-apk/app-*-release.apk
 
       # What a release is easiest to get wrong about is which key signed it,
       # and the answer is invisible in the file name. Printing it puts it in

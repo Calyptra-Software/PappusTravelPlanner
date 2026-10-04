@@ -64,7 +64,7 @@ That was measured before it was promised. Against the published 1.11.1, all thre
 `apksigner verify` — which is exactly what `common.verify_apks` does inside `fdroid build` —
 accept the published signature on the locally rebuilt APK.
 
-Three things had to be true for that, and all three are load-bearing rather than incidental:
+Four things have to be true for that, and all four are load-bearing rather than incidental:
 
 - **No GNU build ID in `libdartjni.so`.** `android/build.gradle.kts` passes
   `-Wl,--build-id=none` to `jni`'s CMake. Without it the two builds differ in exactly 20
@@ -80,10 +80,16 @@ Three things had to be true for that, and all three are load-bearing rather than
   and a build at the CI's own path matches the CI. Hence the `mv` to
   `/home/runner/work/PappusTravelPlanner/PappusTravelPlanner`, which is where
   `actions/checkout` puts the repository in `.github/workflows/release.yml`.
+- **The same NDK for the SQLite build hook.** The hook compiles `libsqlite3.so` with the NDK
+  in `ANDROID_NDK_HOME`, which fdroidserver sets to the recipe's `ndk:` and GitHub's runners
+  to their own default. 1.13.1 was built with r27d there and could not be reproduced with
+  r28c. Both workflows now run `tool/pin_ndk.sh` before building, which sets it to
+  `flutter.ndkVersion`, and `tool/check_apk_ndk.py` fails the job if a library compiled here
+  names a different NDK. The recipe's `ndk:` must name that same release.
 
 The cost of this arrangement is worth stating: if a release ever fails to reproduce,
 F-Droid publishes **nothing** for it rather than falling back to signing its own — and
 dropping `binary:` later would change the signature for everyone who installed from
-F-Droid, which is the same forced reinstall 1.11.0 imposed once. So the three points above
+F-Droid, which is the same forced reinstall 1.11.0 imposed once. So the four points above
 are not tidiness; they are what has to keep holding.
 
