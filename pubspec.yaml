@@ -24,7 +24,7 @@ dependencies:
   # State management and routing.
   flutter_riverpod: ^3.4.3
   riverpod_annotation: ^4.0.3
-  go_router: ^18.0.1
+  go_router: ^18.0.2
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
   drift: ^2.35.0
@@ -53,7 +53,7 @@ dependencies:
   # that read the Linux application id (core/application_id_io.dart), which is
   # how the side-by-side CI build knows it is one.
   ffi: ^2.2.0
-  share_plus: ^13.3.0
+  share_plus: ^13.3.1
 
   intl: ^0.20.2
   home_widget: ^0.10.0 # Android home-screen widget
@@ -63,7 +63,7 @@ dependencies:
   # Both are here for the Transitous usage policy: it asks every request to
   # carry the client's version, and the data sources to be linked (not merely
   # named) somewhere visible. See core/app_info.dart and core/widgets/attribution.dart.
-  package_info_plus: ^10.2.1 # the app's own version, for the API User-Agent
+  package_info_plus: ^10.2.2 # the app's own version, for the API User-Agent
   # Opening the data-source attribution links, and on a desktop a copy of an
   # attachment in the program that reads it (core/open_file_io.dart).
   url_launcher: ^6.3.2
@@ -75,7 +75,7 @@ dependencies:
   # Reading a GPX track. Already resolved as a transitive dependency (via
   # `pdf`), but this app parses foreign files with it, which is a direct and
   # deliberate use rather than a coincidence of the tree — see SECURITY.md.
-  xml: ^7.0.1
+  xml: ^7.1.0
   latlong2: ^0.10.1 # its coordinate type, shared by the pure map_features.dart
   # Photos and files hung on part of a plan: decoding, downscaling, re-encoding
   # to JPEG and reading a picture's own EXIF position. Pure Dart, which is the
@@ -89,7 +89,7 @@ dependencies:
   # of what it answers is stored or sent anywhere; see features/map/location/.
   # Its Android half comes from third_party/, not from pub.dev — see the
   # dependency_overrides below.
-  geolocator: ^14.0.3
+  geolocator: ^14.1.1
 
 dev_dependencies:
   flutter_test:
