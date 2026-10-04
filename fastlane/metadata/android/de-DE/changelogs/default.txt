@@ -1,9 +1,2 @@
-1.13.0:
-• Dokumente öffnen sich per Tipp
-• Einträge können an einem späteren Tag enden
-• Verbindungssuche vom eigenen Standort
-• Die Karte merkt sich die Standortanzeige
-• Gerade Linie eines Abschnitts ausblendbar
-• Zeitleiste läuft gerade durch Gruppen und Entscheidungen
-• Verspätungen über Mitternacht korrekt
-• Korrekturen für die Browserversion
+1.13.1:
+• SQLite wird aus dem Quelltext gebaut statt heruntergeladen

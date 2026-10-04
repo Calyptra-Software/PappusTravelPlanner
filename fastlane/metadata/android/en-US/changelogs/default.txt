@@ -1,9 +1,2 @@
-1.13.0:
-• Documents open with a tap
-• Entries can end on a later day
-• Connection search from your position
-• The map remembers showing your position
-• A leg's straight line can be hidden
-• Timeline line straight through groups and decisions
-• Delays across midnight read correctly
-• Fixes for the browser version
+1.13.1:
+• SQLite is built from source instead of downloaded
