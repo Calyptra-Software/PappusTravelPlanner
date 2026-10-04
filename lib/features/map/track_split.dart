@@ -58,6 +58,24 @@ List<List<List<LatLng>>> splitTracks(
   List<List<LatLng>> lines,
   List<LatLng> boundaries,
 ) {
+  final flat = [for (final line in lines) ...line];
+  if (flat.length < 2) return [for (var i = 0; i <= boundaries.length; i++) []];
+  if (boundaries.isEmpty) return [lines];
+  return splitTracksAt(lines, [
+    for (final cut in trackCutIndices(flat, boundaries)) cut!,
+  ]);
+}
+
+/// [splitTracks] with the handovers already located: [cuts] are indices into
+/// the recording read as one sequence, strictly increasing.
+///
+/// What the import screen divides by, because a handover there is a *point of
+/// the line* once it has been placed — and so the division drawn and the one
+/// written are the same division, not two searches that happen to agree.
+List<List<List<LatLng>>> splitTracksAt(
+  List<List<LatLng>> lines,
+  List<int> cuts,
+) {
   // Flattened, with each point remembering which line it came from, so a cut
   // can be looked for along the outing and rebuilt within its segments.
   final flat = <LatLng>[];
@@ -68,17 +86,16 @@ List<List<List<LatLng>>> splitTracks(
       owner.add(i);
     }
   }
-  if (flat.length < 2) return [for (var i = 0; i <= boundaries.length; i++) []];
-  if (boundaries.isEmpty) return [lines];
+  if (flat.length < 2) return [for (var i = 0; i <= cuts.length; i++) []];
+  if (cuts.isEmpty) return [lines];
 
-  final cuts = _cutIndices(flat, boundaries);
   return [
-    for (var stretch = 0; stretch <= boundaries.length; stretch++)
+    for (var stretch = 0; stretch <= cuts.length; stretch++)
       _linesBetween(
         flat,
         owner,
         stretch == 0 ? 0 : cuts[stretch - 1],
-        stretch == boundaries.length ? flat.length - 1 : cuts[stretch],
+        stretch == cuts.length ? flat.length - 1 : cuts[stretch],
       ),
   ];
 }
@@ -105,16 +122,32 @@ List<List<LatLng>> _linesBetween(
 
 /// The index each boundary falls on, strictly increasing, with room left for
 /// every stretch to keep at least two points.
-List<int> _cutIndices(List<LatLng> points, List<LatLng> boundaries) {
-  final cuts = <int>[];
+List<int> _cutIndices(List<LatLng> points, List<LatLng> boundaries) => [
+  for (final cut in trackCutIndices(points, boundaries)) cut!,
+];
+
+/// Where each handover falls along [points], by the rule [splitTrack] cuts by,
+/// or null for a handover nobody has placed yet.
+///
+/// An open handover is skipped but still **keeps its room**: one point is left
+/// for it on either side, so placing it later never has to move the ones that
+/// were already resolved around it.
+List<int?> trackCutIndices(List<LatLng> points, List<LatLng?> boundaries) {
+  final cuts = <int?>[];
   var searchFrom = 1;
   for (var i = 0; i < boundaries.length; i++) {
+    final boundary = boundaries[i];
+    if (boundary == null) {
+      cuts.add(null);
+      searchFrom++;
+      continue;
+    }
     // Leave one point per remaining stretch, so a cut cannot swallow the ones
     // behind it on a line with barely more points than entries.
     final latest = points.length - 2 - (boundaries.length - 1 - i);
     final index = _nearestIndex(
       points,
-      boundaries[i],
+      boundary,
       searchFrom.clamp(1, latest < 1 ? 1 : latest),
       latest < 1 ? 1 : latest,
     );
@@ -155,11 +188,27 @@ LatLng? snapToTrack(
   int after = 0,
   int? before,
 }) {
-  final last = (before ?? points.length - 1).clamp(0, points.length - 1);
-  if (points.length < 2 || after > last) return null;
-  return points[_nearestIndex(points, tap, after, last)];
+  final index = snapIndexOnTrack(points, tap, after: after, before: before);
+  return index == null ? null : points[index];
 }
 
-/// Where a point of the recording sits in it, or -1. Used to turn a handover
-/// back into the bound its neighbours are searched against.
-int trackIndexOf(List<LatLng> points, LatLng point) => points.indexOf(point);
+/// [snapToTrack], answering with the index rather than the point.
+///
+/// The index is what a handover *is* once placed. Its coordinate is not enough
+/// to find it again: a handover taken from an entry's coordinates lies beside
+/// the line rather than on it, and a route that passes one spot twice has the
+/// same coordinate at two indices. Looking a neighbour back up by coordinate
+/// once turned the first case into an index of -1, which snapped every tap to
+/// the recording's first point.
+int? snapIndexOnTrack(
+  List<LatLng> points,
+  LatLng tap, {
+  int after = 0,
+  int? before,
+}) {
+  if (points.length < 2) return null;
+  final first = after.clamp(0, points.length - 1);
+  final last = (before ?? points.length - 1).clamp(0, points.length - 1);
+  if (first > last || after > last) return null;
+  return _nearestIndex(points, tap, first, last);
+}

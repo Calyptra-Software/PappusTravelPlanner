@@ -101,7 +101,21 @@ class TrackImportScreen extends ConsumerStatefulWidget {
 class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   final MapController _controller = MapController();
   late TrackImportPlan _plan;
+
+  /// What each handover is written as, onto entries that had no coordinate
+  /// there: the entry's own position while untouched, the tapped point once
+  /// moved.
   late List<LatLng?> _boundaries;
+
+  /// Where each handover divides the line, as an index into [_flat] — the
+  /// state the bounds, the preview and the written division all read.
+  ///
+  /// Kept beside [_boundaries] rather than derived from it, because a
+  /// coordinate does not say where on the line it is: one taken from an entry
+  /// lies beside the recording, and a walk that returns to its station puts
+  /// the same spot at two places on it. Resolved once, so moving one handover
+  /// never moves another.
+  late List<int?> _cuts;
 
   /// The handover the next tap places, or null when there is none to place.
   int? _selected;
@@ -116,6 +130,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     _plan = trackImportPlan(widget.selection);
     _boundaries = [..._plan.boundaries];
     _flat = [for (final line in widget.lines) ...line];
+    _cuts = trackCutIndices(_flat, _boundaries);
     _selected = _open ?? (_boundaries.isEmpty ? null : 0);
   }
 
@@ -131,16 +146,16 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   /// The handovers placed so far, as a prefix — everything up to the first one
   /// still open. That prefix is what can be drawn as divided; the rest of the
   /// line belongs to nobody yet.
-  List<LatLng> get _placedPrefix {
-    final out = <LatLng>[];
-    for (final at in _boundaries) {
-      if (at == null) break;
-      out.add(at);
+  List<int> get _placedPrefix {
+    final out = <int>[];
+    for (final cut in _cuts) {
+      if (cut == null) break;
+      out.add(cut);
     }
     return out;
   }
 
-  bool get _complete => _boundaries.every((b) => b != null);
+  bool get _complete => _cuts.every((c) => c != null);
 
   /// A tap puts the selected handover where it landed. That is the whole
   /// interaction.
@@ -156,21 +171,27 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
 
     // Between the nearest placed handovers on either side, because a stretch
     // cannot run backwards. Not merely the immediate neighbours: with the
-    // selection free, the one next to it may still be open.
-    LatLng? previous;
+    // selection free, the one next to it may still be open — and each open one
+    // in between keeps a point of its own, as every stretch keeps two.
+    int? previous;
     for (var i = index - 1; i >= 0 && previous == null; i--) {
-      previous = _boundaries[i];
+      if (_cuts[i] != null) previous = i;
     }
-    LatLng? next;
-    for (var i = index + 1; i < _boundaries.length && next == null; i++) {
-      next = _boundaries[i];
+    int? next;
+    for (var i = index + 1; i < _cuts.length && next == null; i++) {
+      if (_cuts[i] != null) next = i;
     }
-    final after = previous == null ? 0 : trackIndexOf(_flat, previous) + 1;
-    final before = next == null ? null : trackIndexOf(_flat, next) - 1;
-    final snapped = snapToTrack(_flat, tap, after: after, before: before);
-    if (snapped == null) return;
+    final after = previous == null
+        ? index + 1
+        : _cuts[previous]! + (index - previous);
+    final before = next == null
+        ? _flat.length - 1 - (_cuts.length - index)
+        : _cuts[next]! - (next - index);
+    final at = snapIndexOnTrack(_flat, tap, after: after, before: before);
+    if (at == null) return;
     setState(() {
-      _boundaries[index] = snapped;
+      _cuts[index] = at;
+      _boundaries[index] = _flat[at];
       _selected = _nextOpen(index) ?? index;
     });
   }
@@ -186,8 +207,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
 
   Future<void> _confirm() async {
     final navigator = Navigator.of(context);
-    final boundaries = [for (final at in _boundaries) at!];
-    final stretches = splitTracks(widget.lines, boundaries);
+    final stretches = splitTracksAt(widget.lines, [
+      for (final cut in _cuts) cut!,
+    ]);
     final ends = trackImportEnds(
       TrackImportPlan(
         legs: _plan.legs,
@@ -232,7 +254,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     const basemap = kDefaultBasemap;
     final selected = _selected;
     final placed = _placedPrefix;
-    final stretches = splitTracks(widget.lines, placed);
+    final stretches = splitTracksAt(widget.lines, placed);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.trackImportTitle)),
@@ -288,10 +310,14 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                     ),
                     MarkerLayer(
                       markers: [
-                        for (var i = 0; i < _boundaries.length; i++)
-                          if (_boundaries[i] case final at?)
+                        // On the line, where it divides it — not at the
+                        // entry's coordinate it may have been read from,
+                        // which can lie beside the line and so say nothing
+                        // about which pass of it was taken.
+                        for (var i = 0; i < _cuts.length; i++)
+                          if (_cuts[i] case final cut?)
                             Marker(
-                              point: at,
+                              point: _flat[cut],
                               width: 32,
                               height: 32,
                               // Ignoring pointers on purpose: the mark is a
@@ -342,7 +368,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                     _label(_plan.legs[selected], l10n),
                     _label(_plan.legs[selected + 1], l10n),
                   ),
-            handovers: [for (final at in _boundaries) at != null],
+            handovers: [for (final cut in _cuts) cut != null],
             selected: selected,
             onSelect: (index) => setState(() => _selected = index),
             legend: [

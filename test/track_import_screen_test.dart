@@ -255,4 +255,54 @@ void main() {
 
     await drain(tester);
   });
+
+  testWidgets('a handover read off an entry can be moved along the line', (
+    tester,
+  ) async {
+    // Both handovers come from the legs' own coordinates, which lie beside
+    // the recording rather than on it. Moving the first used to look the
+    // second up by coordinate, find nothing (-1), and snap every tap to the
+    // recording's first point — after which no tap moved it at all.
+    LatLng offLine(double lat) => LatLng(lat, 9.9003);
+    ItineraryItem beside(int id, String title, double from, double to) =>
+        ItineraryItem(
+          id: id,
+          tripId: 1,
+          date: DateTime(2026, 5, 1),
+          sortOrder: id,
+          kind: ItemKind.transport,
+          title: title,
+          endDayOffset: 0,
+          chordDisplay: TrackDisplay.auto,
+          fromLat: offLine(from).latitude,
+          fromLon: offLine(from).longitude,
+          toLat: offLine(to).latitude,
+          toLon: offLine(to).longitude,
+        );
+    await pump(
+      tester,
+      selection: [
+        beside(1, 'A → B', 53.5, 53.530),
+        beside(2, 'B → C', 53.530, 53.535),
+        beside(3, 'C → D', 53.535, 53.539),
+      ],
+    );
+    expect(confirmable(tester), isTrue, reason: 'nothing is open');
+    // Drawn where the line is divided, not beside it.
+    expect(handovers(tester).first, line[30]);
+
+    await tester.tap(find.text('Handover 1'));
+    await tester.pump();
+    await tapMap(tester, 60);
+    final moved = handovers(tester).first;
+    expect(line, contains(moved));
+    expect(moved, isNot(line.first));
+    expect(moved.latitude, lessThan(53.53));
+    expect(handovers(tester)[1], line[35], reason: 'the other one stays');
+
+    await tapMap(tester, 20);
+    expect(handovers(tester).first, isNot(moved), reason: 'and moves again');
+
+    await drain(tester);
+  });
 }
