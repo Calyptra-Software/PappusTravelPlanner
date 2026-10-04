@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.13.1 — 2026-10-04
 
 - **SQLite is now built from source** as part of the app's build, instead of being
   downloaded as a ready-made library. It is the same SQLite version with the same
