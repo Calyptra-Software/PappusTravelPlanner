@@ -1173,7 +1173,14 @@ UI (features/*/presentation, *widgets)
   The selection lives in the panel and never on the map, because an earlier "pick the mark
   up, then put it down" step was a state nobody could see, competing with the map for the
   same tap. Snapping still keeps a handover between the nearest *placed* ones on either
-  side, since with the selection free the one next to it may be open. The **outer** ends
+  side, since with the selection free the one next to it may be open. Those bounds are
+  **indices into the recording, never coordinates looked up again**: a handover read off
+  an entry's position lies *beside* the line, so `indexOf` found nothing, the bound came
+  out as -1, and every tap snapped to the recording's first point. The screen therefore
+  holds each handover as a cut index (`trackCutIndices`, resolved once, so moving one never
+  moves another), divides by those (`splitTracksAt`) for both the preview and the write,
+  and draws the mark on the line where it cuts. The coordinate is kept beside it only as
+  what gets written onto an entry that had none. The **outer** ends
   need no asking: the recording's first point is where the first leg started
   (`trackImportEnds`), which is also what fills in a single hand-entered leg's coordinates.
   An end the user already gave is never overwritten — their statement, with the file as a

@@ -3,6 +3,13 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **A handover taken from an entry's coordinates can be moved again when dividing a
+  recording.** Tapping to move one used to throw it back to the recording's first point,
+  after which it could not be moved at all. Handovers are now also drawn on the line, where
+  it is actually divided.
+
 ## 1.13.2 — 2026-10-04
 
 - **Nothing changes in the app.** 1.13.1 compiled SQLite with a different Android NDK than

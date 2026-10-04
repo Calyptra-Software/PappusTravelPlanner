@@ -152,4 +152,41 @@ void main() {
     );
     expect(snapped, points[3]);
   });
+
+  group('cut indices', () {
+    test('an open handover keeps its room between resolved ones', () {
+      // Placing it later must not have to move the ones around it, so it is
+      // left a point of its own on either side.
+      final cuts = trackCutIndices(line(9), [
+        const LatLng(0, 0.001),
+        null,
+        const LatLng(0, 0.002),
+      ]);
+      expect(cuts, [1, null, 3]);
+    });
+
+    test('dividing by indices is dividing by the points at them', () {
+      final points = line(9);
+      final boundaries = [const LatLng(0, 0.003), const LatLng(0, 0.006)];
+      expect(
+        splitTracksAt([points], [3, 6]),
+        splitTracks([points], boundaries),
+      );
+    });
+  });
+
+  test('a tap snaps to an index, so a repeated spot is not ambiguous', () {
+    // There and back: the turning point's neighbours share coordinates, and
+    // only the index says which pass a handover was put on.
+    final points = [...line(5), ...line(4).reversed];
+    expect(
+      snapIndexOnTrack(points, const LatLng(0, 0.001), after: 5),
+      7,
+      reason: 'the second pass, the one inside the bounds',
+    );
+    expect(
+      snapIndexOnTrack(points, const LatLng(0, 0), after: 4, before: 3),
+      isNull,
+    );
+  });
 }
