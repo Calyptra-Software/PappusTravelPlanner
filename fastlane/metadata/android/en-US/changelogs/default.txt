@@ -1,2 +1,2 @@
-1.13.1:
-• SQLite is built from source instead of downloaded
+1.13.2:
+• No changes to the app; rebuilt so F-Droid can verify it

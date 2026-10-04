@@ -3,6 +3,12 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.13.2 — 2026-10-04
+
+- **Nothing changes in the app.** 1.13.1 compiled SQLite with a different Android NDK than
+  the rest of the app, so F-Droid could not rebuild it byte for byte and verify it. This
+  release builds every native library with the same one.
+
 ## 1.13.1 — 2026-10-04
 
 - **SQLite is now built from source** as part of the app's build, instead of being

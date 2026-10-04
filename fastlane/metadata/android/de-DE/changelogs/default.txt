@@ -1,2 +1,2 @@
-1.13.1:
-• SQLite wird aus dem Quelltext gebaut statt heruntergeladen
+1.13.2:
+• Keine Änderungen an der App; neu gebaut, damit F-Droid sie prüfen kann
