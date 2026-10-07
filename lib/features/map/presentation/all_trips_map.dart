@@ -184,10 +184,16 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
     // One stream for every trip's lines, keyed by entry — the same reason the
     // entries themselves come in one query rather than one per trip.
     final tracks = ref.watch(allTracksProvider(null)).value ?? const {};
+    // A trip whose only positioned entry is a leg placed at one end has
+    // nothing to draw: it is in the query because the countries count that
+    // end, and it has no place here, where an empty reading would leave
+    // nothing to frame the camera on.
     final drawn = <(Trip, TripMapFeatures)>[
       for (final trip in widget.trips)
         if (byTrip[trip.id] case final tripItems?)
-          (trip, tripMapFeatures(tripItems, tracks: tracks)),
+          if (tripMapFeatures(tripItems, tracks: tracks) case final features
+              when !features.isEmpty)
+            (trip, features),
     ];
 
     if (itemsAsync.isLoading && drawn.isEmpty) {

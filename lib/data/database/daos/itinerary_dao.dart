@@ -78,13 +78,16 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
         ])..where(
           (itineraryItems.alternativeId.isNull() |
                   alternatives.chosen.equals(true)) &
-              // A place needs its own pair; a leg needs both of its ends, since
-              // one end alone cannot be drawn as anything but a place.
+              // A place needs its own pair; a leg either end's. One end alone
+              // is still where somebody stood, and the countries count it the
+              // way a single trip's reading does — what may be *drawn* from it
+              // is `tripMapFeatures`' question, which already draws no line
+              // without both ends.
               ((itineraryItems.lat.isNotNull() &
                       itineraryItems.lon.isNotNull()) |
                   (itineraryItems.fromLat.isNotNull() &
-                      itineraryItems.fromLon.isNotNull() &
-                      itineraryItems.toLat.isNotNull() &
+                      itineraryItems.fromLon.isNotNull()) |
+                  (itineraryItems.toLat.isNotNull() &
                       itineraryItems.toLon.isNotNull())),
         );
     query.orderBy([

@@ -1374,7 +1374,12 @@ UI (features/*/presentation, *widgets)
   `visitedPoints` yields a place's own position and **both ends** of a leg, and nothing in
   between: a flight from Hamburg to Rome passes over Austria without anybody setting foot in
   it, and a chord on a map is not a claim about the ground beneath it. A single trip reads
-  through `liveItems`, since an option nobody chose took nobody anywhere.
+  through `liveItems`, since an option nobody chose took nobody anywhere. Each end counts **on
+  its own**, so `watchPositionedItems` — the all-trips reading — hands over a leg with only
+  one end placed, which the all-trips map then simply does not draw (`tripMapFeatures` draws
+  no line without both ends, and a trip left with nothing to draw is dropped before the
+  camera is framed). It used to require both ends, a rule borrowed from the map, so the same
+  trip could count a country on its own tab and not in the total.
 - **A point off every outline goes to the nearest one only when it is close and clearly
   nearer** (`kOffshoreReachKm`, 3 km; `kOffshoreMargin`, twice as near as the runner-up). The
   rule used to be "never", on the grounds that a wrong country is a claim and a missing one

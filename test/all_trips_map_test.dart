@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -209,6 +210,46 @@ void main() {
     // Tile loading is throttled, so a timer outlives the last pump. It runs on
     // once after firing (the trailing call), hence twice — otherwise the tree is
     // disposed with a timer still pending.
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('a leg placed at one end alone gives the map nothing to draw', (
+    tester,
+  ) async {
+    // The query hands such a leg over, because the countries count the end it
+    // has; on a map one end is not a line. A trip holding nothing else must
+    // read as having nothing to place rather than as a map with nothing on it.
+    final oneEnded = leg(
+      10,
+      1,
+      53.5,
+    ).copyWith(toLat: const Value(null), toLon: const Value(null));
+    await pumpMap(tester, trips: [trip(1, tealTrip)], items: [oneEnded]);
+
+    expect(find.text('Nothing to place yet'), findsOneWidget);
+    expect(find.byType(FlutterMap), findsNothing);
+
+    await tester.pump(kTileUpdateThrottle);
+    await tester.pump(kTileUpdateThrottle);
+  });
+
+  testWidgets('beside a drawable trip, it is simply not drawn', (tester) async {
+    final oneEnded = leg(
+      11,
+      2,
+      50.1,
+    ).copyWith(toLat: const Value(null), toLon: const Value(null));
+    await pumpMap(
+      tester,
+      trips: [trip(1, tealTrip), trip(2, orangeTrip)],
+      items: [leg(10, 1, 53.5), oneEnded],
+    );
+
+    final layer = tester.widget<PolylineLayer>(polylineLayer);
+    expect(layer.polylines, hasLength(1));
+    expect(layer.polylines.single.color, const Color(tealTrip));
+
     await tester.pump(kTileUpdateThrottle);
     await tester.pump(kTileUpdateThrottle);
   });
