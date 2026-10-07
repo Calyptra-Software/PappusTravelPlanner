@@ -36,7 +36,17 @@ if [ ! -x "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; then
   sdkmanager=$(find "$sdk/cmdline-tools" -path '*/bin/sdkmanager' 2>/dev/null | sort -V | tail -n1)
   [ -n "$sdkmanager" ] || { echo "NDK $version is missing and sdkmanager was not found" >&2; exit 1; }
   echo "Installing NDK $version" >&2
-  yes | "$sdkmanager" --install "ndk;$version" >/dev/null
+  # `yes` only answers the license prompts, and it always fails: it is still
+  # writing when sdkmanager exits, so it dies of a broken pipe — which
+  # pipefail would report as the install failing. Its status is not the
+  # question; sdkmanager's is, and whether the compiler is there afterwards.
+  # This branch went untested until GitHub's runner image stopped shipping
+  # this NDK (ubuntu-24.04 20261002), and then failed every Android build.
+  { yes || true; } | "$sdkmanager" --install "ndk;$version" >/dev/null
+  [ -x "$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ] || {
+    echo "sdkmanager reported success, but NDK $version has no clang at $ndk" >&2
+    exit 1
+  }
 fi
 
 vars=(
