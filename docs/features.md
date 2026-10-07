@@ -469,8 +469,9 @@ trip's countries; from the overview it is all of them.
 It is counted from where an entry *stands* — a place's position, and each end of a
 transport leg — and never from the line between two: a flight passes over the countries
 between its ends without anybody setting foot in them, and a line on a map is not a claim
-about the ground under it. A position that falls in no country at all is left uncounted
-rather than given to the nearest one.
+about the ground under it. The outlines are simplified, so a position on a coast can fall just
+outside them; it then counts for the nearest country if that is within 3 km and clearly
+nearer than any other. Further out, or between two countries, it is not counted.
 
 The map's ⛶ button opens it on the whole screen, without the list; the same button closes
 it again, as does the back button. It keeps the camera in both directions, so zooming in on
@@ -491,8 +492,8 @@ to change the trip. Ticking a state fills that state and not the territories und
 flag.
 
 Ticking by hand is also the answer to the smallest countries. The outlines are generalized,
-and a country only a kilometer or two across sits far enough from its own outline that a
-position inside it cannot be recognized.
+and a country under a kilometer across, such as Vatican City, sits far enough from its own
+outline that a position inside it cannot be recognized.
 
 This map draws no tiles: everything on it is the bundled outline set, so it needs no
 connection and asks nothing of anybody's servers. The outlines are Natural Earth, which is

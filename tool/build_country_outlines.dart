@@ -1,10 +1,10 @@
 // Builds `assets/geo/countries.json` from Natural Earth's admin-0 set.
 //
 //     dart run tool/build_country_outlines.dart \
-//       ne_50m_admin_0_countries.geojson assets/geo/countries.json
+//       ne_10m_admin_0_countries.geojson assets/geo/countries.json
 //
-// The source (public domain, https://www.naturalearthdata.com/) is 3.0 MB of
-// GeoJSON with some eighty attributes per country; what ships is 240 KB. This
+// The source (public domain, https://www.naturalearthdata.com/) is 13 MB of
+// GeoJSON with some eighty attributes per country; what ships is 1.0 MB. This
 // exists as a committed tool rather than a one-off script because the asset is
 // derived data: the day the set has to be rebuilt — a finer scale, another
 // attribute, a country that changes its name — the alternative is guessing what
@@ -93,8 +93,8 @@ void main(List<String> args) {
     countries.add({
       'c': p['ADM0_A3'],
       'sov': ?(_isState(p) ? _stateCode(p) : stateCodes[p['SOV_A3']]),
-      'en': p['NAME_EN'],
-      'de': p['NAME_DE'] ?? p['NAME_EN'],
+      'en': _nameFixes[p['ADM0_A3']]?.en ?? p['NAME_EN'],
+      'de': _nameFixes[p['ADM0_A3']]?.de ?? p['NAME_DE'] ?? p['NAME_EN'],
       'k': _region(p),
       's': _isState(p) ? 1 : 0,
       'p': polygons,
@@ -125,8 +125,35 @@ void main(List<String> args) {
 /// A dependency is never one, even where it shares its state's alpha-2: the
 /// Indian Ocean Territories and Ashmore and Cartier both answer `AU`, and
 /// counting them would put Australia in the tally three times.
+///
+/// A lease is not one either, for the same reason: at 1:10m Baikonur answers
+/// `KZ`, and taking it as Kazakhstan's own row would list Kazakhstan twice. It
+/// counts for Kazakhstan through its `SOV_A3` instead, the way a dependency
+/// does. The type cannot settle Brazilian Island, which also answers `BR`: the
+/// source calls it indeterminate, and so is Palestine, which is a counted state.
+/// So it is named in [_notStates].
 bool _isState(Map<String, dynamic> p) =>
-    kCountedStates.contains(_stateCode(p)) && p['TYPE'] != 'Dependency';
+    kCountedStates.contains(_stateCode(p)) &&
+    !const {'Dependency', 'Lease'}.contains(p['TYPE']) &&
+    !_notStates.contains(p['ADM0_A3']);
+
+/// Areas carrying a counted state's alpha-2 that are not that state's own
+/// ground, by area code, where the source's type does not already say so.
+///
+/// Brazilian Island lies where the Quaraí meets the Uruguay, claimed by
+/// Uruguay as well; it counts for nobody, like every other ground the source
+/// leaves undetermined. Should another such area appear, the row count below
+/// refuses the asset until it is named here.
+const Set<String> _notStates = {'BRI'};
+
+/// Names the source gets wrong, by area code.
+///
+/// Natural Earth 5.1.2 names the Spratly Islands "Wake Island" in English and
+/// "Wake" in German — a different atoll on the other side of the Pacific — while
+/// its own `ADMIN` field has them right.
+const Map<String, ({String en, String de})> _nameFixes = {
+  'PGA': (en: 'Spratly Islands', de: 'Spratly-Inseln'),
+};
 
 /// The 193 members of the United Nations, plus the two observer states —
 /// Vatican City and Palestine.
@@ -180,9 +207,9 @@ String _stateCode(Map<String, dynamic> p) {
 /// is the one area the source files under Antarctica while its continent says
 /// otherwise; it reads better beside the Falklands.
 String _region(Map<String, dynamic> p) {
+  if (p['ADM0_A3'] == 'SGS') return 'South America';
   final region = p['REGION_UN'] as String;
   if (region == 'Americas') return p['CONTINENT'] as String;
-  if (p['ADM0_A3'] == 'SGS') return 'South America';
   return region;
 }
 
@@ -271,6 +298,13 @@ List<LatLng> _startAfterSeam(List<LatLng> ring) {
 /// Marino to a triangle and Monaco to nothing at all, so each ring is allowed
 /// an error proportional to its own size, capped so that a continent-sized one
 /// does not become a lozenge.
+///
+/// The cap is 0.005°, about 350 m, which is under 4 px at the map's deepest
+/// zoom; it keeps 294k of the source's 548k points. It was 0.02° while the
+/// source was 1:50m, and lowering it there changed nothing anyone could see:
+/// that source's own edges are 8 km long at the median, so the straight cuts a
+/// zoomed-in coast showed were the source's and not this function's. At 1:10m
+/// the median edge is 1.7 km.
 double _toleranceFor(List<LatLng> ring) {
   var south = 90.0, north = -90.0, west = 180.0, east = -180.0;
   for (final point in ring) {
@@ -280,7 +314,7 @@ double _toleranceFor(List<LatLng> ring) {
     east = math.max(east, point.longitude);
   }
   final extent = math.max(north - south, east - west);
-  return math.min(0.02, extent / 60);
+  return math.min(0.005, extent / 60);
 }
 
 /// Douglas-Peucker, iterative so a coastline of ten thousand points cannot
