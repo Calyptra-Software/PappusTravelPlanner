@@ -13,6 +13,8 @@ exact commits.
   Coasts no longer turn into long straight lines when zoomed in. Positions in harbor cities
   such as Copenhagen, Stockholm or Venice, and in Monaco, now count for their country; a
   position just off the coast counts for the nearest country when no other is close.
+- **A country reached only at one end of a connection now counts in the all-trips
+  statistics too.** Before, it counted on the trip's own Countries tab but not in the total.
 
 ## 1.13.2 — 2026-10-04
 
