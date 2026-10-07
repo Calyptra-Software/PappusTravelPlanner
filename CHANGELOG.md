@@ -9,6 +9,10 @@ exact commits.
   recording.** Tapping to move one used to throw it back to the recording's first point,
   after which it could not be moved at all. Handovers are now also drawn on the line, where
   it is actually divided.
+- **The country map is drawn in finer detail, and countries are recognized more reliably.**
+  Coasts no longer turn into long straight lines when zoomed in. Positions in harbor cities
+  such as Copenhagen, Stockholm or Venice, and in Monaco, now count for their country; a
+  position just off the coast counts for the nearest country when no other is close.
 
 ## 1.13.2 — 2026-10-04
 

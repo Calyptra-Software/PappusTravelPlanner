@@ -22,7 +22,7 @@ flutter test test/cost_dao_test.dart --plain-name "adds a cost"  # a single test
 flutter run -d <android|chrome|linux>                    # run; list targets with `flutter devices`
 
 dart run tool/build_country_outlines.dart \
-  ne_50m_admin_0_countries.geojson assets/geo/countries.json   # rebuild the country outlines
+  ne_10m_admin_0_countries.geojson assets/geo/countries.json   # rebuild the country outlines
 ```
 
 Regenerate code after editing anything under generation:
@@ -1373,30 +1373,51 @@ UI (features/*/presentation, *widgets)
 - **A country is counted from where an entry *stands*, never from the line between two.**
   `visitedPoints` yields a place's own position and **both ends** of a leg, and nothing in
   between: a flight from Hamburg to Rome passes over Austria without anybody setting foot in
-  it, and a chord on a map is not a claim about the ground beneath it. A point in no country
-  is left uncounted rather than given to the nearest one — the outlines are generalized, so a
-  coastal position can fall just offshore, and a wrong country is a claim while a missing one
-  is only a gap. A single trip reads through `liveItems`, since an option nobody chose took
-  nobody anywhere.
-- **The outlines are Natural Earth at 1:50m, packed with the track codec.** Rings are
+  it, and a chord on a map is not a claim about the ground beneath it. A single trip reads
+  through `liveItems`, since an option nobody chose took nobody anywhere.
+- **A point off every outline goes to the nearest one only when it is close and clearly
+  nearer** (`kOffshoreReachKm`, 3 km; `kOffshoreMargin`, twice as near as the runner-up). The
+  rule used to be "never", on the grounds that a wrong country is a claim and a missing one
+  only a gap — and that holds where the answer is genuinely open. But a generalized coast
+  runs *inland* of the real one wherever the real one is intricate, which is exactly where
+  ports and their stations are, so the gap was not a rare edge case: measured on the
+  **unsimplified** 1:50m source, Copenhagen's central station lay 0.3 km out to sea,
+  Stockholm's 0.9 km, Venice's 2.7 km, and so did Istanbul, Lisbon, Split and Dubrovnik. The
+  move to 1:10m brought most of them ashore but not all — Copenhagen's station is still 140 m
+  out in the source, Dubrovnik's old town 0.36 km off the asset — so a finer source narrows
+  the gap and does not close it. The reach was set at 1:50m and kept, since open water is
+  further out than that from anything. The margin is what keeps the old reason standing
+  where it applies: the narrows between Helsingør and Helsingborg are 2.1 km from Denmark
+  and 2.9 km from Sweden, nearer neither by enough, and count for neither. A point *inside*
+  an outline is never moved — land borders are shared edges with no gap, so a border town
+  already lies in one of its countries, and second-guessing that would trade a gap for a
+  claim.
+- **The outlines are Natural Earth 5.1.2 at 1:10m, packed with the track codec.** Rings are
   encoded polylines at three decimals (~110 m) and simplified with a Douglas-Peucker
-  tolerance **scaled to each ring's own extent** (`min(0.02, extent / 60)`), which is what
-  turns 3.0 MB of GeoJSON into a 243 KB asset without deleting the micro-states: a fixed
-  tolerance generous enough for Russia's coastline collapses San Marino to a triangle and
-  Monaco to nothing. The codec was already there and tested, and every mapping tool reads the
-  format. **Holes are kept**, so Lesotho is Lesotho and not South Africa; that is the one
+  tolerance **scaled to each ring's own extent** (`min(0.005, extent / 60)`), which is what
+  turns 13 MB of GeoJSON into a 1.0 MB asset (294k of 548k points) without deleting the
+  micro-states: a fixed tolerance generous enough for Russia's coastline collapses San Marino
+  to a triangle and Monaco to nothing. The set was 1:50m at 0.02° (243 KB) until a coast
+  zoomed in on read as a run of straight cuts — and lowering the tolerance alone changed
+  nothing visible, which is the lesson worth keeping: 1:50m's own edges are **8 km** long at
+  the median, so the cuts were the source's, and only a finer source (1.7 km at 1:10m) could
+  remove them. What it costs, measured on the desktop VM: parsing goes from 8 to 38 ms (once
+  per launch, `countryOutlinesProvider` keeps it), and looking up 2000 inland positions from
+  76 to 180 ms. The codec was already there and tested, and every mapping tool reads the format.
+  **Holes are kept**, so Lesotho is Lesotho and not South Africa; that is the one
   thing a naive "outer ring only" conversion gets wrong, and there is a test standing on
   Maseru to say so. Regions are `REGION_UN`, except that the Americas are split by
   `CONTINENT` (the UN's single "Americas" is not how anybody reads a list of continents), and
   the names come from the source's own `NAME_EN`/`NAME_DE` rather than from a list this
-  project would have to maintain. `tool/build_country_outlines.dart` is the conversion, kept
+  project would have to maintain — bar the one it gets wrong (`_nameFixes`: the Spratly
+  Islands are called "Wake Island" there). `tool/build_country_outlines.dart` is the conversion, kept
   in the repo and writing through `encodeTrackPoints` — the same codec the app reads it with,
   so the two halves cannot drift, and rebuilding the asset is not an exercise in guessing what
   was done to it the first time.
-- **An area is drawn; a state is counted.** The set holds the source's 242 areas, since a
+- **An area is drawn; a state is counted.** The set holds the source's 258 areas, since a
   world map with holes where the dependencies are is a worse map — but what a tally means by
-  "country" is the **200 sovereign states** (`ADMIN == SOVEREIGNT` in the source, which is
-  where the number comes from), so every area carries the `stateCode` it counts toward and
+  "country" is the **195 states** of `kCountedStates` (below), so every area carries the
+  `stateCode` it counts toward and
   `sovereign` says whether it *is* that state. A week in Greenland is a week in a country and
   counts for Denmark. The area's own id is the three-letter administrative code, because the
   alpha-2 is *not* unique: Australia, its Indian Ocean Territories and Ashmore and Cartier all
@@ -1414,7 +1435,10 @@ UI (features/*/presentation, *widgets)
   builder **refuses to write the asset** unless every code in it has exactly one outline, so
   the denominator cannot drift silently in either direction. A dependency never counts as a
   state even when it shares its state's alpha-2, or Australia would be in the tally three
-  times.
+  times; nor does a **lease** (Baikonur answers `KZ`, and counts for Kazakhstan the way a
+  dependency counts for its state). Brazilian Island answers `BR` and is claimed by Uruguay
+  too, but the source calls it *indeterminate*, as it does Palestine, so the type cannot tell
+  them apart and it is named in `_notStates` instead — counted for nobody.
 - **The two sets are kept apart, because filling by state would lie about the picture.**
   `visitedWorld` returns `areas` (what the map fills) beside `states` (what the list counts):
   a visit fills the ground it happened on and credits the state, while a **mark** fills that
@@ -1430,13 +1454,13 @@ UI (features/*/presentation, *widgets)
   `surfaceContainerLowest`), so the picture inverts correctly in a light theme instead of
   being a dark map with a white sea.
 - **A generalized outline is off the ground it stands for, and below a certain size that is
-  the whole country.** At 1:50m the micro-states are present and San Marino, Liechtenstein,
-  Andorra, Singapore, Malta and the Maldives are all detected from real coordinates — but
-  **Monaco and the Vatican are not**: their outlines sit one to two kilometres off, so St
-  Peter's Square reads as `IT` and a point in Monaco reads as sea. Measured, written down in
+  the whole country.** The micro-states are present and San Marino, Liechtenstein, Andorra,
+  Singapore, Malta, the Maldives and — since 1:10m — Monaco are detected from real
+  coordinates, but **the Vatican is not**: its outline stops short of St Peter's Square,
+  which reads as `IT` (inside an outline, so never moved). Measured, written down in
   `assets/geo/countries-ATTRIBUTION.txt` and standing in a test, rather than left to be
-  discovered by whoever goes there. The answer is not a finer asset — it is that a country
-  can be ticked by hand.
+  discovered by whoever goes there. The answer is not an ever finer asset — it is that a
+  country can be ticked by hand.
 - **A country ticked by hand counts exactly like one a trip stood in.** `VisitedCountries`
   (v31, keyed by code) records the marks; `markedCountriesProvider` streams them and
   `allVisitedCountriesProvider` merges them with the derived set — for the **all-trips**

@@ -109,8 +109,25 @@ void main() {
 
     test('the open ocean is nowhere, and stays nowhere', () {
       // Not the nearest country: a wrong country is a claim, a missing one is
-      // only a gap.
+      // only a gap. Mid-Atlantic is far beyond the reach given to a coast.
       expect(countryOf(const LatLng(30.0, -40.0)), isNull);
+    });
+
+    test('a harbor drawn short of its station still counts', () {
+      // The generalized coast runs inland of the real one where the real one
+      // is intricate, and leaves these just off the outline: Copenhagen's
+      // central station (the position the connection search returned for it)
+      // and Dubrovnik's old town. Both are far nearer their own coast than any
+      // other — Sweden is 24 km away, Bosnia 4 km — so they are given to it.
+      expect(countryOf(const LatLng(55.673058, 12.565558)), 'DK');
+      expect(countryOf(const LatLng(42.6407, 18.1077)), 'HR');
+    });
+
+    test('water between two countries is nobody\'s', () {
+      // The narrows between Helsingør and Helsingborg, 2.1 km from Denmark and
+      // 2.9 km from Sweden: within reach of both, nearer neither by enough to
+      // say.
+      expect(countryOf(const LatLng(56.04, 12.655)), isNull);
     });
 
     test('a country reached across the antimeridian is still itself', () {
@@ -189,18 +206,17 @@ void main() {
       expect(statesAt([const LatLng(47.1410, 9.5209)]), {'LI'});
       expect(statesAt([const LatLng(42.5063, 1.5218)]), {'AD'});
       expect(statesAt([const LatLng(1.3521, 103.8198)]), {'SG'});
+      // Monaco only since the outlines are 1:10m: at 1:50m its outline lay
+      // 0.75 km off, in the sea, with France 1.5 km away.
+      expect(statesAt([const LatLng(43.7393, 7.4276)]), {'MC'});
     });
 
     test('below that, the outline is off the ground it stands for', () {
-      // Monaco and the Vatican are about a kilometre across, and the source
-      // generalizes by more than that: a real position in St Peter's Square
-      // falls inside Italy's outline, and one in Monaco falls in the sea. This
-      // is recorded rather than worked around — a tolerance wide enough to
-      // catch them would be wide enough to mis-attribute every border town, and
-      // the honest route for these is the tick box, which is exactly what it is
-      // there for.
+      // The Vatican is half a kilometre across, and even at 1:10m its outline
+      // stops short of St Peter's Square, which falls inside Italy's — and a
+      // position inside an outline is never second-guessed. The honest route
+      // here is the tick box, which is exactly what it is there for.
       expect(statesAt([const LatLng(41.9022, 12.4539)]), {'IT'});
-      expect(statesAt([const LatLng(43.7393, 7.4276)]), isEmpty);
     });
   });
 
@@ -296,6 +312,30 @@ void main() {
       final palestine = state('PS');
       expect(palestine.sovereign, isTrue);
       expect(statesAt([const LatLng(31.9038, 35.2034)]), {'PS'}); // Ramallah
+    });
+
+    test('a leased area counts for the state it is leased from', () {
+      // Baikonur carries Kazakhstan's alpha-2 in the source; taken as a state's
+      // own row it would list Kazakhstan twice.
+      final baikonur = countries.firstWhere((c) => c.code == 'KAB');
+      expect(baikonur.sovereign, isFalse);
+      expect(baikonur.stateCode, 'KZ');
+      expect(
+        sovereignStates(countries).where((c) => c.stateCode == 'KZ'),
+        hasLength(1),
+      );
+    });
+
+    test('ground claimed by two states counts for neither', () {
+      // Brazilian Island carries Brazil's alpha-2 but is claimed by Uruguay
+      // as well.
+      final island = countries.firstWhere((c) => c.code == 'BRI');
+      expect(island.sovereign, isFalse);
+      expect(island.stateCode, null);
+      expect(
+        sovereignStates(countries).where((c) => c.stateCode == 'BR'),
+        hasLength(1),
+      );
     });
 
     test('Antarctica is drawn and is not a country', () {

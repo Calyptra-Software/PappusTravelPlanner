@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:latlong2/latlong.dart';
 
@@ -138,8 +139,8 @@ bool _inRing(List<LatLng> ring, LatLng point) {
 ///
 /// The rings are the same encoded polyline a track is stored in — the codec was
 /// there, the format is compact, and every mapping tool reads it. That, plus a
-/// simplification scaled to each ring's own size, is what turns 3.0 MB of
-/// source GeoJSON into 240 KB of asset. `tool/build_country_outlines.dart` is
+/// simplification scaled to each ring's own size, is what turns 13 MB of
+/// source GeoJSON into 1.0 MB of asset. `tool/build_country_outlines.dart` is
 /// the other half of this and writes through the same codec.
 List<CountryOutline> parseCountryOutlines(String source) {
   final json = jsonDecode(source);
@@ -192,30 +193,142 @@ Iterable<LatLng> visitedPoints(Iterable<ItineraryItem> items) sync* {
   }
 }
 
+/// How far off every outline a position may lie and still be given to the
+/// nearest one, in kilometres.
+///
+/// The outlines are generalized, and a generalized coast runs inland of the
+/// real one wherever the real one is intricate — which is exactly where ports
+/// and their stations are. Copenhagen's central station lies 0.14 km offshore
+/// in the 1:10m source itself, and Dubrovnik's old town 0.36 km off the asset.
+/// The reach was set when the outlines were 1:50m, where the same stations
+/// lay up to 2.7 km out (Venice), and kept: an open-water position — a
+/// ferry's midpoint, an ocean crossing — is further out than that from
+/// anything, so the wider reach costs nothing the margin does not already
+/// guard.
+const double kOffshoreReachKm = 3;
+
+/// How much nearer the nearest area must be than the next, for a position
+/// lying off every outline to be given to it.
+///
+/// What separates "this is the Danish coast, drawn a little short" from "this
+/// is a strait between two countries": Copenhagen's station is a few metres
+/// from Denmark and 24 km from Sweden, while a point in the narrows at
+/// Helsingør is 2.1 km from one and 2.9 km from the other. Where it cannot be told, nothing is counted —
+/// a wrong country is a claim, a missing one only a gap, and that still holds
+/// for the case this cannot decide.
+const double kOffshoreMargin = 2;
+
 /// Which of [countries] the [points] fall in, by area.
 ///
 /// Areas rather than states, because the two answer different questions: this
 /// is where somebody stood, and it is what the map fills. What it *counts
 /// toward* is [statesVisited].
 ///
-/// A point in no area is simply not counted: the outlines are generalized, so a
-/// coastal position can fall a little offshore, and an ocean crossing's ends are
-/// genuinely nowhere. Neither is worth inventing a nearest country for — a wrong
-/// country is a claim, while a missing one is only a gap.
+/// A point inside an outline is that area's. A point inside none is given to
+/// the nearest one only when that lies within [kOffshoreReachKm] and is clearly
+/// nearer than any other ([kOffshoreMargin]), so a harbor station drawn a few
+/// hundred metres out to sea still counts, and the middle of the sea does not.
+/// A point inside an outline is never moved: land borders are shared edges
+/// with no gap between them, so a border town is inside one of its two
+/// countries already, and second-guessing that would trade a gap for a claim.
 Set<String> visitedAreaCodes(
   List<CountryOutline> countries,
   Iterable<LatLng> points,
 ) {
   final visited = <String>{};
   for (final point in points) {
-    for (final country in countries) {
-      if (country.contains(point)) {
-        visited.add(country.code);
-        break;
-      }
-    }
+    final code =
+        _areaContaining(countries, point) ?? _areaOff(countries, point);
+    if (code != null) visited.add(code);
   }
   return visited;
+}
+
+String? _areaContaining(List<CountryOutline> countries, LatLng point) {
+  for (final country in countries) {
+    if (country.contains(point)) return country.code;
+  }
+  return null;
+}
+
+/// The area a position lying off every outline belongs to, if one is near
+/// enough and unambiguous enough to say so.
+String? _areaOff(List<CountryOutline> countries, LatLng point) {
+  // Anything further than this cannot be the nearest within reach, nor the
+  // runner-up that would make it ambiguous, so its edges are never walked.
+  const relevantKm = kOffshoreReachKm * kOffshoreMargin;
+  String? nearest;
+  var best = double.infinity, second = double.infinity;
+  for (final country in countries) {
+    if (!country._isWithin(point, relevantKm)) continue;
+    final distance = country._distanceKm(point);
+    if (distance < best) {
+      second = best;
+      best = distance;
+      nearest = country.code;
+    } else if (distance < second) {
+      second = distance;
+    }
+  }
+  if (best > kOffshoreReachKm || second < best * kOffshoreMargin) return null;
+  return nearest;
+}
+
+/// Kilometres per degree of latitude, on a sphere — at the few kilometres
+/// these distances are about, the flattening is far below the generalization.
+const double _kmPerDegree = 111.2;
+
+extension on CountryOutline {
+  /// Whether [point] lies within [km] of this area's bounding box.
+  bool _isWithin(LatLng point, double km) {
+    final dLat = km / _kmPerDegree;
+    final dLon = km / (_kmPerDegree * _cosLat(point.latitude));
+    return point.latitude >= bounds.south - dLat &&
+        point.latitude <= bounds.north + dLat &&
+        point.longitude >= bounds.west - dLon &&
+        point.longitude <= bounds.east + dLon;
+  }
+
+  /// The distance from [point] to this area's nearest edge, in kilometres.
+  ///
+  /// Every ring counts, holes included: a hole is a lake, and its shore is as
+  /// much this area's edge as the coast is. Measured in a plane laid flat at
+  /// the point, which is exact enough over the few kilometres that matter and
+  /// merely large for everything further.
+  double _distanceKm(LatLng point) {
+    final kx = _kmPerDegree * _cosLat(point.latitude);
+    var best = double.infinity;
+    for (final polygon in polygons) {
+      for (final ring in polygon) {
+        for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          final d = _segmentDistance(
+            (ring[j].longitude - point.longitude) * kx,
+            (ring[j].latitude - point.latitude) * _kmPerDegree,
+            (ring[i].longitude - point.longitude) * kx,
+            (ring[i].latitude - point.latitude) * _kmPerDegree,
+          );
+          if (d < best) best = d;
+        }
+      }
+    }
+    return best;
+  }
+}
+
+/// The cosine of a latitude, kept off zero so a box widened at a pole stays
+/// finite.
+double _cosLat(double latitude) =>
+    math.max(math.cos(latitude * math.pi / 180), 0.01);
+
+/// The distance from the origin to the segment from (ax, ay) to (bx, by).
+double _segmentDistance(double ax, double ay, double bx, double by) {
+  final dx = bx - ax, dy = by - ay;
+  final length2 = dx * dx + dy * dy;
+  final t = length2 == 0
+      ? 0.0
+      : (-(ax * dx + ay * dy) / length2).clamp(0.0, 1.0);
+  final x = ax + t * dx, y = ay + t * dy;
+  return math.sqrt(x * x + y * y);
 }
 
 /// The states [areas] count toward.

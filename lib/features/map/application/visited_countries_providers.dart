@@ -10,9 +10,8 @@ import '../visited_countries.dart';
 
 /// The world's country outlines, read from the bundle once.
 ///
-/// Deliberately **not** `autoDispose`: it is 240 KB of asset and some fifty
-/// thousand
-/// decoded points, the same for every trip and every launch, and re-reading it
+/// Deliberately **not** `autoDispose`: it is 1.0 MB of asset and some three
+/// hundred thousand decoded points, the same for every trip and every launch, and re-reading it
 /// each time the statistics screen is opened would be work done for nothing.
 final countryOutlinesProvider = FutureProvider<List<CountryOutline>>((
   ref,
