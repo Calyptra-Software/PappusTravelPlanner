@@ -1,0 +1,1302 @@
+{
+  "@@locale": "zh",
+  "appTitle": "Pappus Travel Planner",
+  "tripsTitle": "我的旅行",
+  "newTrip": "新建旅行",
+  "noTripsTitle": "还没有旅行",
+  "noTripsBody": "点按「新建旅行」来规划你的第一次旅程。",
+  "searchTrips": "搜索旅行",
+  "searchTripsHint": "标题、目的地或备注",
+  "filterTrips": "筛选和排序",
+  "filterTitle": "筛选",
+  "filterAndSort": "筛选与排序",
+  "clearFilters": "清除",
+  "tripsMatching": "{total, plural, =1{{shown} / 1 次旅行} other{{shown} / {total} 次旅行}}",
+  "@tripsMatching": {
+    "placeholders": { "shown": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "routinesMatching": "{total, plural, =1{{shown} / 1 个模板行程} other{{shown} / {total} 个模板行程}}",
+  "@routinesMatching": {
+    "placeholders": { "shown": { "type": "int" }, "total": { "type": "int" } }
+  },
+  "statusLabel": "状态",
+  "tripStatusUpcoming": "即将开始",
+  "tripStatusOngoing": "进行中",
+  "tripStatusPast": "已结束",
+  "tripStatusUndated": "无日期",
+  "sortLabel": "排序",
+  "sortDateAsc": "日期（最早）",
+  "sortDateDesc": "日期（最晚）",
+  "sortNameAsc": "名称（A-Z）",
+  "sortCreatedDesc": "最近添加",
+  "sortExpenseDesc": "费用（最高）",
+  "sortExpenseAsc": "费用（最低）",
+  "anyDate": "不限",
+  "noTripsFoundTitle": "没有匹配的旅行",
+  "noTripsFoundBody": "没有与「{query}」匹配的旅行。",
+  "@noTripsFoundBody": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "genericError": "出了点问题：\n{error}",
+  "@genericError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "days": "{count, plural, =1{1 天} other{{count} 天}}",
+  "@days": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "entries": "{count, plural, =1{1 个条目} other{{count} 个条目}}",
+  "@entries": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "datesNotSet": "未设置日期",
+  "until": "至 {date}",
+  "@until": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "editTrip": "编辑旅行",
+  "shareTrip": "分享旅行",
+  "shareTripSaved": "旅行文件已保存。",
+  "shareTripFailed": "无法分享此旅行。",
+  "exportPdf": "导出为 PDF",
+  "exportPdfFailed": "无法将此旅行导出为 PDF。",
+  "exportGpx": "导出轨迹（GPX）\u2026",
+  "@exportGpx": {
+    "description": "Menu entry that writes the lines the trip's entries carry as a GPX file, for opening in a mapping tool."
+  },
+  "exportGpxEmpty": "此旅行没有可导出的轨迹",
+  "@exportGpxEmpty": {
+    "description": "Shown when the GPX export was asked for on a trip whose entries carry no recorded or computed line."
+  },
+  "exportGpxFailed": "无法导出轨迹",
+  "@exportGpxFailed": {
+    "description": "Shown when writing the GPX file failed."
+  },
+  "exportIcs": "导出到日历",
+  "exportIcsFailed": "无法将此旅行导出到日历。",
+  "exportAction": "导出",
+  "pdfSectionsTitle": "PDF 包含内容",
+  "pdfSectionsSubtitle": "旅行名称、日期和参与者始终会包含在内。",
+  "pdfSectionEmpty": "没有记录",
+  "pdfInclSettlements": "包含结算",
+  "pdfLists": "{count, plural, =1{1 个清单} other{{count} 个清单}}",
+  "@pdfLists": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pdfItems": "{count, plural, =1{1 个项目} other{{count} 个项目}}",
+  "@pdfItems": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pdfOtherOptions": "其他选项：{options}",
+  "@pdfOtherOptions": {
+    "placeholders": { "options": { "type": "String" } }
+  },
+  "pdfExportedOn": "导出于 {date}",
+  "@pdfExportedOn": {
+    "placeholders": { "date": { "type": "String" } }
+  },
+  "importTrip": "导入旅行",
+  "importTripSuccess": "旅行已导入。",
+  "importTripInvalid": "此文件不是有效的共享旅行文件。",
+  "importTripTooNew": "此旅行来自更新版本的应用。请更新应用后再导入。",
+  "importTripFailed": "无法导入此旅行。",
+  "fieldTitle": "标题",
+  "titleHint": "例如：意大利之夏",
+  "titleValidator": "请输入标题",
+  "fieldDestination": "目的地",
+  "destinationHint": "例如：罗马、佛罗伦萨",
+  "fieldDates": "日期",
+  "fieldNotes": "备注",
+  "accentColour": "强调色",
+  "customColour": "自定义颜色",
+  "pickColour": "选择颜色",
+  "hexColour": "十六进制",
+  "invalidHexColour": "请输入有效的十六进制颜色，例如 1565C0",
+  "createTrip": "创建旅行",
+  "saveChanges": "保存更改",
+  "itineraryTitle": "行程",
+  "deleteTrip": "删除旅行",
+  "deleteTripQuestion": "删除旅行？",
+  "deleteTripBody": "这将永久删除该旅行及其全部行程。",
+  "cancel": "取消",
+  "delete": "删除",
+  "nothingPlanned": "暂无行程安排。",
+  "now": "现在",
+  "today": "今天",
+  "addPlace": "添加地点",
+  "addArrival": "添加 {place}",
+  "@addArrival": {
+    "description": "Quick-add chip that creates a place matching the destination of the day's last transport leg.",
+    "placeholders": { "place": { "type": "String" } }
+  },
+  "addTransport": "添加交通",
+  "hideEntries": "收起条目",
+  "showEntries": "展开条目",
+  "editPlace": "编辑地点",
+  "editTransport": "编辑交通",
+  "fieldMode": "方式",
+  "fieldFrom": "起点",
+  "fieldTo": "终点",
+  "fieldPlace": "地点",
+  "placeHint": "例如：斗兽场",
+  "placeValidator": "请输入地点",
+  "fromToValidator": "请输入起点或终点中的至少一项",
+  "transportLabelOptional": "标签（可选）",
+  "noteTitleOptional": "备注标题（可选）",
+  "fieldDay": "日期",
+  "timeDeparts": "出发",
+  "timeArrives": "到达",
+  "timeStart": "开始",
+  "timeEnd": "结束",
+  "setTime": "设置时间",
+  "plannedTimes": "计划",
+  "actualTimes": "实际",
+  "actualTimesHint": "实际发生的情况。时间线会显示提前或延误了多久。",
+  "endDayArrives": "到达",
+  "endDayEnds": "结束",
+  "@endDayArrives": {
+    "description": "Label of the item form's field saying which day an entry ends on; 'Arrives' for a transport leg, 'Ends' (endDayEnds) for a place."
+  },
+  "endDaySame": "当日",
+  "endDayLater": "{count, plural, =1{次日} other{{count} 天后}}",
+  "@endDayLater": {
+    "description": "The day an entry ends on, counted from the day it starts on.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "endDayEarlier": "提前一天",
+  "endDayLaterButton": "延后一天",
+  "endBeforeStart": "结束时间早于开始时间。是否在之后的某一天？",
+  "continuationArrives": "{time} 到达",
+  "@continuationArrives": {
+    "description": "On the day a transport leg that left on an earlier day arrives: when it arrives.",
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "continuationUntil": "至 {time}",
+  "@continuationUntil": {
+    "description": "On the day an entry that began on an earlier day ends: when it ends.",
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "continuationEnds": "当天结束",
+  "continuationAllDay": "全天持续",
+  "continuationStarted": "由前一天延续",
+  "notesOptional": "备注（可选）",
+  "save": "保存",
+  "add": "添加",
+  "search": "搜索",
+  "searchNoMatches": "没有匹配项",
+  "searchAdd": "添加“{query}”",
+  "@searchAdd": {
+    "description": "Row in a search picker that adds what was typed as a new entry",
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "language": "语言",
+  "languageSystem": "跟随系统",
+  "languageEnglish": "英语",
+  "languageGerman": "德语",
+  "languageChinese": "中文",
+  "theme": "主题",
+  "themeSystem": "跟随系统",
+  "themeLight": "浅色",
+  "themeDark": "深色",
+  "settingsTitle": "设置",
+  "databaseSection": "数据库",
+  "currentDatabase": "当前数据库",
+  "dbOpen": "打开数据库…",
+  "dbOpenSubtitle": "选择现有的 .sqlite 文件",
+  "dbNew": "新建数据库…",
+  "dbNewSubtitle": "在指定位置创建空数据库",
+  "dbNewEmpty": "新建空数据库",
+  "dbNewEmptySubtitle": "从没有旅行的状态重新开始",
+  "dbNewEmptyConfirmTitle": "开始使用新数据库？",
+  "dbNewEmptyConfirmBody": "这将删除所有当前旅行，并从空数据库开始。此操作无法撤销；如果要保留数据，请先导出副本。",
+  "dbNewEmptyAction": "开始新建",
+  "dbNewEmptyDone": "已开始使用新的空数据库",
+  "dbImport": "导入数据库…",
+  "dbImportSubtitle": "使用 .sqlite 文件替换当前数据",
+  "dbExport": "导出数据库…",
+  "dbExportSubtitle": "保存当前数据库的副本",
+  "dbReset": "恢复默认设置",
+  "dbResetSubtitle": "使用应用默认的数据库位置",
+  "dbImportConfirmTitle": "导入数据库？",
+  "dbImportConfirmBody": "这将用所选文件的内容替换所有现有旅行，且无法撤销。",
+  "dbImportAction": "导入",
+  "dbOpened": "数据库已打开",
+  "dbCreated": "已创建新数据库",
+  "dbImported": "数据库已导入",
+  "dbExported": "数据库已导出",
+  "dbResetDone": "已切换到默认数据库",
+  "dbError": "无法完成操作：{error}",
+  "@dbError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "modeWalk": "步行",
+  "modeBike": "自行车",
+  "modeCar": "汽车",
+  "modeTaxi": "出租车",
+  "modeBus": "公交车",
+  "modeTrain": "火车",
+  "modeTram": "有轨电车",
+  "modeSubway": "地铁",
+  "modeFerry": "渡轮",
+  "modeFlight": "飞机",
+  "modeOther": "其他",
+  "modeSki": "滑雪",
+  "widgetNoTripsTitle": "还没有旅行",
+  "widgetNoTripsBody": "点按规划下一次旅程",
+  "widgetInDays": "{count, plural, =1{1 天后} other{{count} 天后}}",
+  "@widgetInDays": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "widgetTomorrow": "明天开始",
+  "widgetEndedYesterday": "昨天结束",
+  "widgetEndedDaysAgo": "{count, plural, =1{1 天前结束} other{{count} 天前结束}}",
+  "@widgetEndedDaysAgo": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "widgetDayXofY": "第 {current} / {total} 天",
+  "@widgetDayXofY": {
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "widgetTodayHeader": "今天",
+  "widgetMoreItems": "{count, plural, =1{还有 1 项} other{还有 {count} 项}}",
+  "@widgetMoreItems": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "addCost": "添加费用",
+  "editCost": "编辑费用",
+  "costAmount": "金额",
+  "costCurrency": "货币",
+  "costReason": "类别",
+  "costReasonHint": "例如：酒店、晚餐、火车票",
+  "costReasonLabel": "类别名称",
+  "costAmountInvalid": "请输入有效金额",
+  "costReasonRequired": "请输入类别",
+  "costsTotal": "合计",
+  "costs": "费用",
+  "generalCosts": "一般费用",
+  "@generalCosts": {
+    "description": "Heading for trip-wide expenses not tied to a specific place or transport"
+  },
+  "costReasonsSection": "费用类别",
+  "costReasonDisplay": "在费用标签上显示",
+  "costReasonDisplayIcon": "图标",
+  "costReasonDisplayText": "文字",
+  "costReasonDisplayBoth": "图文",
+  "costReasonDisplayHelp": "费用标签上的类别显示方式——图标：仅显示符号；文字：仅显示名称；图文：同时显示符号和名称。金额始终显示。",
+  "costReasonAdd": "添加类别",
+  "costReasonAddTitle": "新建类别",
+  "costReasonRenameTitle": "重命名类别",
+  "costReasonChooseIcon": "选择图标",
+  "costReasonDeleteConfirmTitle": "删除类别？",
+  "costReasonDeleteConfirmBody": "「{reason}」将从类别列表中移除。现有费用会保留其文字。",
+  "@costReasonDeleteConfirmBody": {
+    "placeholders": { "reason": { "type": "String" } }
+  },
+  "noCostReasons": "还没有保存的类别",
+  "transportModesSection": "交通方式",
+  "transportModeAdd": "添加方式",
+  "transportModeAddTitle": "新建交通方式",
+  "transportModeRenameTitle": "重命名方式",
+  "transportModeLabel": "名称",
+  "transportModeHint": "例如：缆车",
+  "transportModeChooseIcon": "选择图标",
+  "transportModeDeleteConfirmTitle": "删除交通方式？",
+  "transportModeDeleteConfirmBody": "「{mode}」将从交通方式列表中移除。使用它的现有交通线路会保留路线，但不再有交通方式。",
+  "@transportModeDeleteConfirmBody": {
+    "placeholders": { "mode": { "type": "String" } }
+  },
+  "noTransportModes": "还没有交通方式",
+  "costPaidBy": "付款人",
+  "costPaid": "已付款",
+  "costPaidFor": "付款对象",
+  "costInvited": "已邀请",
+  "costInvitedBy": "由 {payer} 邀请",
+  "@costInvitedBy": {
+    "placeholders": { "payer": { "type": "String" } }
+  },
+  "costInvitedHint": "受邀者无需付款。点按上方的姓名可只邀请其中几位。",
+  "costPaidByNone": "未指定",
+  "costPaidByName": "由 {name} 付款",
+  "@costPaidByName": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "addTransfer": "记录结算",
+  "@addTransfer": {
+    "description": "Records money handed from one person to another to settle a debt — not an expense"
+  },
+  "editTransfer": "编辑结算",
+  "transfer": "结算",
+  "transfers": "结算记录",
+  "transferFrom": "转出",
+  "transferTo": "转入",
+  "transferPersonRequired": "请选择一位成员",
+  "transferSamePerson": "请选择两位不同的成员",
+  "transferAmountPositive": "请输入大于零的金额",
+  "transferBetween": "{from} → {to}",
+  "@transferBetween": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "transferHint": "结算用于成员之间转移钱款，仅改变余额，不会改变旅行总额。",
+  "reimbursement": "报销",
+  "reimbursements": "报销记录",
+  "transferReimbursement": "来自团队外部的报销",
+  "transferReimbursementHint": "用于记录来自旅行之外的钱款，例如雇主补贴。它不会改变任何人的余额，也不会改变旅行总额，但会显示在统计中。",
+  "currenciesSection": "货币",
+  "currencyAdd": "添加货币",
+  "currencyAddTitle": "新建货币",
+  "currencyEditTitle": "编辑货币",
+  "currencyCode": "代码",
+  "currencyCodeHint": "例如：JPY",
+  "currencyCodeRequired": "请输入代码",
+  "currencySymbol": "符号",
+  "currencySymbolHint": "例如：¥",
+  "currencyRate": "汇率",
+  "currencyRateInvalid": "请输入大于零的数字",
+  "currencyRateNone": "未设置汇率",
+  "currencyRateExplains": "1 {code} = {rate} {base}",
+  "@currencyRateExplains": {
+    "description": "What one unit of a currency is worth in the base currency",
+    "placeholders": {
+      "code": { "type": "String" },
+      "rate": { "type": "String" },
+      "base": { "type": "String" }
+    }
+  },
+  "currencyRateHelp": "1 {code} 折合多少 {base}。如果不想换算，可留空。",
+  "@currencyRateHelp": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "base": { "type": "String" }
+    }
+  },
+  "currencyBase": "基准货币",
+  "currencyBaseHelp": "所有汇率都以基准货币表示，新费用也默认使用基准货币。多种货币的总额会换算成基准货币——与各币种的精确金额并列显示，而不会取而代之。",
+  "currencyMakeBase": "设为基准货币",
+  "currencyRebaseWarnTitle": "更改基准货币？",
+  "currencyRebaseWarnBody": "「{code}」没有汇率，因此其他货币的汇率无法以其为基准重新表示，现有汇率将被清除。之后你可以重新输入。",
+  "@currencyRebaseWarnBody": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "currencyInUse": "已用于 {count, plural, =1{1 笔费用} other{{count} 笔费用}}",
+  "@currencyInUse": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "currencyDeleteConfirmTitle": "删除货币？",
+  "currencyDeleteConfirmBody": "「{code}」将从货币列表中移除。",
+  "@currencyDeleteConfirmBody": {
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "currencyDeleteBlockedInUse": "「{code}」仍被 {count, plural, =1{1 笔费用} other{{count} 笔费用}}使用。金额不能没有货币。",
+  "@currencyDeleteBlockedInUse": {
+    "placeholders": {
+      "code": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "currencyDeleteBlockedBase": "无法删除基准货币。请先将另一种货币设为基准货币。",
+  "currencyCodeTaken": "该代码已在列表中",
+  "noCurrencies": "还没有货币",
+  "peopleSection": "成员",
+  "noPeople": "还没有保存的成员",
+  "personAdd": "添加成员",
+  "personAddTitle": "新建成员",
+  "personRenameTitle": "重命名成员",
+  "personLabel": "姓名",
+  "personHint": "例如：Alex",
+  "personDeleteConfirmTitle": "删除成员？",
+  "personDeleteConfirmBody": "「{name}」将从成员列表中移除。现有费用会保留其付款人。",
+  "@personDeleteConfirmBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "personMarkAsMe": "标记为我",
+  "personIsMe": "这是我",
+  "myCostsTotal": "我的费用",
+  "expenseScopeAll": "全部",
+  "expenseScopeMine": "我的",
+  "participants": "参与者",
+  "addParticipant": "添加参与者",
+  "statsTitle": "统计",
+  "statsAllTripsTitle": "总览统计",
+  "mapTitle": "地图",
+  "@mapTitle": {
+    "description": "Title of the screen showing a trip's places and legs on a map."
+  },
+  "mapOpen": "在地图上显示",
+  "@mapOpen": {
+    "description": "Tooltip of the action opening a trip's map."
+  },
+  "mapNothingToShow": "还没有可显示的内容",
+  "@mapNothingToShow": {
+    "description": "Shown when no entry of the trip carries coordinates."
+  },
+  "mapNothingToShowHint": "地点和路线获得坐标后会显示在这里——导入的路线自带坐标。",
+  "@mapNothingToShowHint": {
+    "description": "Explains how an entry comes to have coordinates."
+  },
+  "mapTripsHere": "{count, plural, =1{此处有 1 次旅行} other{此处有 {count} 次旅行}}",
+  "@mapTripsHere": {
+    "description": "Title of the sheet listing the trips a tapped line belongs to, when more than one runs under the finger.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "mapEntriesHere": "{count, plural, =1{此处有 1 个条目} other{此处有 {count} 个条目}}",
+  "@mapEntriesHere": {
+    "description": "Title of the sheet listing the entries whose lines lie under one tap on a trip's map, when several do.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "mapColor": "地图上的颜色",
+  "@mapColor": {
+    "description": "Heading of the control choosing the color one itinerary entry is drawn in on the map."
+  },
+  "mapColorHint": "为该条目的轨迹或标记着色，旅行的其他内容不受影响。",
+  "@mapColorHint": {
+    "description": "Explains what the entry's map color applies to."
+  },
+  "mapColorTrip": "旅行颜色",
+  "@mapColorTrip": {
+    "description": "Tooltip of the swatch that leaves an entry in its trip's accent color instead of giving it one of its own."
+  },
+  "trackSection": "地图上的轨迹",
+  "@trackSection": {
+    "description": "Heading of the list of lines the map may draw for a leg: its recorded or computed lines, and the straight line between its ends."
+  },
+  "trackImport": "导入 GPX\u2026",
+  "@trackImport": {
+    "description": "Button that picks a GPX file and stores its lines on this entry."
+  },
+  "trackRemove": "移除",
+  "@trackRemove": {
+    "description": "Tooltip of the button that deletes one of the lines stored on this entry."
+  },
+  "trackShow": "在地图上绘制",
+  "@trackShow": {
+    "description": "Tooltip of the eye button on a line the map is not drawing; pressing it draws this one."
+  },
+  "trackHide": "不绘制",
+  "@trackHide": {
+    "description": "Tooltip of the eye button on a line the map is drawing; pressing it stops drawing this one, without deleting it."
+  },
+  "trackRemoveAll": "全部移除",
+  "@trackRemoveAll": {
+    "description": "Button that deletes every line stored on this entry at once. Offered only when there are several."
+  },
+  "trackSourceRecorded": "已记录",
+  "@trackSourceRecorded": {
+    "description": "A line somebody actually travelled, as opposed to one a router proposed."
+  },
+  "trackSourceImported": "已导入",
+  "@trackSourceImported": {
+    "description": "A line that came out of a GPX file."
+  },
+  "trackSourceRouted": "计算路线",
+  "@trackSourceRouted": {
+    "description": "A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it."
+  },
+  "trackNotDrawable": "无可绘制内容",
+  "@trackNotDrawable": {
+    "description": "Stands where a line's length would, when the stored line cannot be read or holds fewer than two points — the map draws nothing for it either way."
+  },
+  "trackNone": "无——路段的两端都有坐标后才会绘制。",
+  "@trackNone": {
+    "description": "Shown when a leg has no stored line and not both of its ends placed, so the map draws nothing for it."
+  },
+  "trackChord": "直线",
+  "@trackChord": {
+    "description": "A leg's row for the straight line the map draws between its two ends when no other line is drawn; followed by the distance."
+  },
+  "trackCount": "{count, plural, =1{1 条轨迹} other{{count} 条轨迹}}",
+  "@trackCount": {
+    "description": "How many lines an entry carries; a recording that stopped and resumed arrives as several.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "trackImportTitle": "导入记录的轨迹",
+  "@trackImportTitle": {
+    "description": "Title of the screen that spreads one GPX across the entries it covers."
+  },
+  "trackPickEntries": "它覆盖哪些条目？",
+  "@trackPickEntries": {
+    "description": "Title of the sheet where the covered entries are ticked."
+  },
+  "trackPickEntriesHint": "一次选择一段连续的条目——轨迹会在它们之间分配。",
+  "@trackPickEntriesHint": {
+    "description": "Explains that the selection must be contiguous."
+  },
+  "trackPickOptionHint": "行程出现分支时，请选择该轨迹所走的选项。",
+  "@trackPickOptionHint": {
+    "description": "Second line of the picker's hint, shown only when the plan holds a decision."
+  },
+  "trackPickOption": "该轨迹走的是哪个选项？",
+  "@trackPickOption": {
+    "description": "Tooltip of the switch that points the import at one option of a decision."
+  },
+  "trackOptionNotChosen": "不是旅行所采用的选项",
+  "@trackOptionNotChosen": {
+    "description": "Says that the line is about to be imported into a road not taken. Switching here does not settle the decision."
+  },
+  "trackTapBoundary": "点按「{before}」交接到「{after}」的位置",
+  "@trackTapBoundary": {
+    "description": "Asks the user to point at the handover between two legs.",
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "trackMoveBoundary": "点按移动「{before}」交接到「{after}」的位置",
+  "@trackMoveBoundary": {
+    "description": "The selected handover is already placed; a tap moves it.",
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "trackHandoverChip": "交接点 {number}",
+  "@trackHandoverChip": {
+    "description": "Chip selecting which handover the next tap on the map places.",
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "trackImportConfirm": "导入",
+  "@trackImportConfirm": {
+    "description": "Writes the divided line onto the entries."
+  },
+  "trackImportSummary": "{legs, plural, =1{1 个条目} other{{legs} 个条目}}，{ends, plural, =0{未设置坐标} =1{已设置 1 个坐标} other{已设置 {ends} 个坐标}}",
+  "@trackImportSummary": {
+    "description": "Says what the import will do, since it changes entries and not only the map.",
+    "placeholders": { "legs": { "type": "int" }, "ends": { "type": "int" } }
+  },
+  "trackNoLegsPicked": "请至少选择一条交通路线",
+  "@trackNoLegsPicked": {
+    "description": "Shown when the selection holds only places, which cannot carry a line."
+  },
+  "trackImported": "轨迹已导入",
+  "@trackImported": {
+    "description": "Confirmation after a GPX import."
+  },
+  "trackNothingInFile": "该文件中没有轨迹",
+  "@trackNothingInFile": {
+    "description": "Shown when a GPX file held no track or route with at least two points."
+  },
+  "trackInvalidFile": "该文件不是可读取的 GPX",
+  "@trackInvalidFile": {
+    "description": "Shown when the picked file could not be parsed as GPX."
+  },
+  "mapZoomIn": "放大",
+  "@mapZoomIn": {
+    "description": "Tooltip of the map's zoom-in button."
+  },
+  "mapZoomOut": "缩小",
+  "@mapZoomOut": {
+    "description": "Tooltip of the map's zoom-out button."
+  },
+  "mapFullscreen": "全屏地图",
+  "@mapFullscreen": {
+    "description": "Tooltip of the country map's button that opens the map on the whole screen."
+  },
+  "mapExitFullscreen": "退出全屏",
+  "@mapExitFullscreen": {
+    "description": "Tooltip of the button that closes the fullscreen country map."
+  },
+  "mapMyLocationShow": "显示我的位置",
+  "@mapMyLocationShow": {
+    "description": "Tooltip of the map button that switches the device's own position on."
+  },
+  "mapMyLocationCenter": "居中到我的位置（长按隐藏）",
+  "@mapMyLocationCenter": {
+    "description": "Tooltip of the same button while the device's position is being shown: a press centers the map on it, a long press switches it off again."
+  },
+  "mapUseMyLocation": "使用我的位置",
+  "@mapUseMyLocation": {
+    "description": "Tooltip of the map picker's button that puts the mark on the device's own position."
+  },
+  "mapLocationDenied": "位置访问已被拒绝",
+  "@mapLocationDenied": {
+    "description": "Shown when the user dismissed the system's location permission dialog."
+  },
+  "mapLocationBlocked": "此应用的位置访问权限已被阻止",
+  "@mapLocationBlocked": {
+    "description": "Shown when the permission was denied permanently, so only the system settings can grant it."
+  },
+  "mapLocationServiceOff": "此设备的位置服务已关闭",
+  "@mapLocationServiceOff": {
+    "description": "Shown when the device's location service itself is off."
+  },
+  "mapLocationFailed": "无法确定你的位置",
+  "@mapLocationFailed": {
+    "description": "Shown when the device has no position to give — no receiver, no fix, or an error."
+  },
+  "mapLocationOpenSettings": "设置",
+  "@mapLocationOpenSettings": {
+    "description": "Action on the location message, opening the system settings where it can be granted or switched on."
+  },
+  "mapPickConfirm": "使用此点",
+  "@mapPickConfirm": {
+    "description": "Confirms the position under the crosshair in the map picker."
+  },
+  "mapPickTitlePlace": "选择地点",
+  "@mapPickTitlePlace": {
+    "description": "Title of the map picker when choosing where a place is."
+  },
+  "mapPickTitleFrom": "选择起点",
+  "@mapPickTitleFrom": {
+    "description": "Title of the map picker when choosing where a leg starts."
+  },
+  "mapPickTitleTo": "选择终点",
+  "@mapPickTitleTo": {
+    "description": "Title of the map picker when choosing where a leg ends."
+  },
+  "coordinatesLabel": "坐标",
+  "@coordinatesLabel": {
+    "description": "Label of the field holding an entry's position."
+  },
+  "coordinatesFrom": "起点坐标",
+  "@coordinatesFrom": {
+    "description": "Label of the field holding a leg's departure position."
+  },
+  "coordinatesTo": "终点坐标",
+  "@coordinatesTo": {
+    "description": "Label of the field holding a leg's arrival position."
+  },
+  "coordinatesNone": "未设置",
+  "@coordinatesNone": {
+    "description": "Shown in place of a position that has not been chosen."
+  },
+  "coordinatesPick": "在地图上选择",
+  "@coordinatesPick": {
+    "description": "Opens the map picker for this position."
+  },
+  "coordinatesClear": "移除位置",
+  "@coordinatesClear": {
+    "description": "Clears a position that was chosen earlier."
+  },
+  "mapPickHint": "点按地图放置点",
+  "@mapPickHint": {
+    "description": "Shown in the map picker until a position has been chosen."
+  },
+  "connectionUseMyPosition": "使用我的位置",
+  "@connectionUseMyPosition": {
+    "description": "Takes the device's own reading as the start or end of a connection search."
+  },
+  "connectionPickOnMap": "在地图上选择",
+  "@connectionPickOnMap": {
+    "description": "Opens the map to pick a coordinate as a search endpoint."
+  },
+  "mapView": "地图",
+  "@mapView": {
+    "description": "Name of the overview's map view, beside list and calendar."
+  },
+  "statsOpen": "统计",
+  "statsAllTripsOpen": "总览统计",
+  "statsTabExpenses": "费用",
+  "countriesRatio": "{visited} / {total} · {percent}%",
+  "@countriesRatio": {
+    "description": "How much of a region has been visited.",
+    "placeholders": { "visited": {"type": "int"}, "total": {"type": "int"}, "percent": {"type": "int"} }
+  },
+  "countriesWorld": "全球",
+  "@countriesWorld": {
+    "description": "Heading of the total across every region."
+  },
+  "regionAfrica": "非洲",
+  "@regionAfrica": { "description": "Region name." },
+  "regionAsia": "亚洲",
+  "@regionAsia": { "description": "Region name." },
+  "regionEurope": "欧洲",
+  "@regionEurope": { "description": "Region name." },
+  "regionNorthAmerica": "北美洲",
+  "@regionNorthAmerica": { "description": "Region name." },
+  "regionSouthAmerica": "南美洲",
+  "@regionSouthAmerica": { "description": "Region name." },
+  "regionOceania": "澳大利亚和大洋洲",
+  "@regionOceania": { "description": "Region name." },
+  "regionAntarctica": "南极洲",
+  "@regionAntarctica": { "description": "Region name." },
+  "statsTabCountries": "国家",
+  "@statsTabCountries": {
+    "description": "Tab showing which countries the trips touched."
+  },
+  "countriesVisited": "{count, plural, =0{还没有国家} =1{1 个国家} other{{count} 个国家}}",
+  "@countriesVisited": {
+    "description": "How many countries have been visited.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsTabTransport": "交通",
+  "statsNoData": "还没有可分析的费用",
+  "statsNoTransport": "还没有可分析的交通路段",
+  "statsByCategory": "按类别",
+  "statsByMode": "按方式",
+  "statsScopeLegs": "路段",
+  "statsScopeTime": "时间",
+  "statsLegs": "{count, plural, =1{1 条路段} other{{count} 条路段}}",
+  "@statsLegs": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsTotalTime": "共 {duration}",
+  "@statsTotalTime": {
+    "placeholders": { "duration": { "type": "String" } }
+  },
+  "statsByPerson": "按成员",
+  "statsScopePaid": "已付",
+  "statsScopeShare": "分摊",
+  "statsScopeBalances": "余额",
+  "statsPaidShort": "已付",
+  "statsShareShort": "分摊",
+  "statsSettleUp": "结清",
+  "statsSettledUp": "大家都已结清——无需结算。",
+  "statsGetsBack": "应收回",
+  "statsOwes": "应付",
+  "statsEven": "已结清",
+  "statsExpenses": "{count, plural, =1{1 笔费用} other{{count} 笔费用}}",
+  "@statsExpenses": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "statsPaidAmount": "已付 {amount}（{percent}%）",
+  "@statsPaidAmount": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "percent": { "type": "int" }
+    }
+  },
+  "statsOpenAmount": "未结 {amount}（{percent}%）",
+  "@statsOpenAmount": {
+    "placeholders": {
+      "amount": { "type": "String" },
+      "percent": { "type": "int" }
+    }
+  },
+  "statsTransfer": "{from} 付给 {to}",
+  "@statsTransfer": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "statsRecordSettlement": "记录",
+  "@statsRecordSettlement": {
+    "description": "Button on a suggested settle-up payment: books it as an actual settlement"
+  },
+  "statsSettlementSent": "已还 {amount}",
+  "@statsSettlementSent": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsSettlementReceived": "已收到 {amount}",
+  "@statsSettlementReceived": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsInvitedTo": "受邀承担 {amount}",
+  "@statsInvitedTo": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsInvitedOthers": "邀请他人承担 {amount}",
+  "@statsInvitedOthers": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsReimbursedAmount": "已报销 {amount}",
+  "@statsReimbursedAmount": {
+    "placeholders": { "amount": { "type": "String" } }
+  },
+  "statsReimbursedBy": "报销方",
+  "statsNoSource": "无来源",
+  "statsReimbursementLine": "分摊 {share} · 报销 {reimbursed} · 自付 {own}",
+  "@statsReimbursementLine": {
+    "placeholders": {
+      "share": { "type": "String" },
+      "reimbursed": { "type": "String" },
+      "own": { "type": "String" }
+    }
+  },
+  "checklist": "清单",
+  "checklistAddHint": "添加项目…",
+  "checklistEditTitle": "编辑项目",
+  "checklistRenameTitle": "重命名清单",
+  "checklistNewTitle": "新建清单",
+  "checklistAdd": "添加清单",
+  "checklistDeleteTitle": "删除清单？",
+  "checklistDeleteBody": "「{name}」及其所有项目将被移除。",
+  "@checklistDeleteBody": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "checklistActions": "清单操作",
+  "checklistDelete": "删除清单",
+  "checklistDuplicate": "创建副本",
+  "checklistCopyTitle": "{name}（副本）",
+  "@checklistCopyTitle": {
+    "description": "Name given to a checklist duplicated within the same trip.",
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "checklistCopyToTrip": "复制到旅行…",
+  "checklistMoveToTrip": "移动到旅行…",
+  "tripPickerTitle": "选择哪次旅行？",
+  "checklistNoOtherTrips": "还没有其他旅行可放入。",
+  "checklistCopiedTo": "已复制到「{trip}」。不会复制勾选状态——清单只能以空白状态复用。",
+  "@checklistCopiedTo": {
+    "description": "Confirmation after copying a checklist into another trip.",
+    "placeholders": { "trip": { "type": "String" } }
+  },
+  "checklistMovedTo": "已移动到「{trip}」。",
+  "@checklistMovedTo": {
+    "description": "Confirmation after moving a checklist to another trip.",
+    "placeholders": { "trip": { "type": "String" } }
+  },
+  "moveOrCopy": "移动或复制",
+  "moveOrCopyHint": "拿起此条目，再选择放置位置——其他日期或者某一分支选项。",
+  "moveToDots": "移动到…",
+  "copyToDots": "复制到…",
+  "duplicateEntry": "创建副本",
+  "moveHere": "移动到这里",
+  "copyHere": "复制到这里",
+  "holdingMove": "正在移动：{entry}",
+  "@holdingMove": {
+    "description": "Bar shown while an itinerary entry is picked up and waiting to be put down.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "holdingCopy": "正在复制：{entry}",
+  "@holdingCopy": {
+    "description": "Bar shown while an itinerary entry is picked up to be duplicated elsewhere.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "holdingHint": "在任意日期或选项上点按「移动到这里」或「复制到这里」。",
+  "untitledEntry": "未命名条目",
+  "copiedWithoutCosts": "已复制。不会复制费用——因为付款只发生过一次。",
+  "putIntoUnchosenOption": "已放入 {option}——当前选择其他选项时，它不会计入旅行。",
+  "@putIntoUnchosenOption": {
+    "description": "Warning after moving or copying an entry into an option that is not the chosen one.",
+    "placeholders": { "option": { "type": "String" } }
+  },
+  "alternatives": "备选方案",
+  "planAlternatives": "规划备选方案",
+  "planAlternativesHint": "将此条目转为分支：规划多个选项，再选定最终采用的选项。",
+  "itemInOptionHint": "属于某个分支——仅在该分支被选用时计入旅行。",
+  "decisionDefaultLabel": "分支",
+  "decisionActions": "分支操作",
+  "decisionRename": "重命名分支",
+  "decisionNameLabel": "分支名称（可选）",
+  "decisionNameHint": "例如：周六下午",
+  "decisionDelete": "删除分支",
+  "decisionDeleteQuestion": "删除此分支？",
+  "decisionDeleteBody": "所有分支及其条目和费用都将被删除。",
+  "optionLetter": "分支 {letter}",
+  "@optionLetter": {
+    "placeholders": { "letter": { "type": "String" } }
+  },
+  "optionChosen": "已选用",
+  "optionChoose": "选用此选项",
+  "optionEmpty": "该选项暂无计划内容。",
+  "optionAdd": "添加选项",
+  "optionDuplicate": "复制选项",
+  "optionRename": "重命名选项",
+  "optionNameLabel": "选项名称（可选）",
+  "optionNameHint": "例如：博物馆日",
+  "optionDelete": "删除选项",
+  "optionDeleteQuestion": "删除此选项？",
+  "optionDeleteBody": "其中的条目及其费用也会被删除，其他选项会保留。",
+  "optionKeepOnly": "仅保留此选项",
+  "optionKeepOnlyQuestion": "仅保留此选项？",
+  "optionKeepOnlyBody": "其中的条目会移回当天，其他选项将被删除。",
+  "optionPrevious": "上一个选项",
+  "optionNext": "下一个选项",
+  "grouping": "分组",
+  "groupActions": "分组操作",
+  "groupWithNext": "与下一项编组",
+  "groupRename": "重命名分组",
+  "groupMoveTo": "移动分组到…",
+  "groupCopyTo": "复制分组到…",
+  "groupRemoveItem": "从分组中移除",
+  "groupUngroup": "取消编组",
+  "groupDelete": "删除分组",
+  "groupDeleteQuestion": "删除此分组？",
+  "groupDeleteBody": "其中的条目及其所有费用（包括共同费用）会一并删除。若要保留条目，请改为取消编组。",
+  "groupNameLabel": "分组名称（可选）",
+  "groupNameHint": "例如：前往罗马的火车",
+  "groupDefaultLabel": "已编组",
+  "groupSharedExpenses": "共同费用",
+  "groupMemberHint": "属于同个分组——共同费用适用于其中的所有项目。",
+  "calendarView": "日历视图",
+  "listView": "列表视图",
+  "calendarToday": "今天",
+  "calendarPreviousMonth": "上个月",
+  "calendarNextMonth": "下个月",
+  "calendarUndatedTitle": "无日期的旅行",
+  "calendarUndatedTooltip": "显示无日期的旅行",
+  "connectionSearch": "搜索路线",
+  "connectionSearchOnline": "在线搜索",
+  "connectionFrom": "起点",
+  "connectionTo": "终点",
+  "connectionVia": "途经站点",
+  "connectionViaAdd": "添加途经站点",
+  "connectionViaRemove": "移除途经站点",
+  "connectionViaHint": "只有车站可以作为途经站点。",
+  "connectionViaStay": "至少停留",
+  "connectionViaStayNone": "无限制",
+  "connectionSummaryVia": "途经 {stops}",
+  "@connectionSummaryVia": {
+    "description": "Via stops in the collapsed search summary above the results, e.g. 'via Hannover Hbf, Fulda'.",
+    "placeholders": { "stops": { "type": "String" } }
+  },
+  "connectionEditSearch": "编辑搜索",
+  "connectionPickPlace": "搜索车站或地点",
+  "connectionPickStop": "搜索车站",
+  "connectionDepart": "出发时间",
+  "connectionArrive": "到达时间",
+  "connectionBudgetsTitle": "往返站点的时间",
+  "connectionBudgetsHint": "仅当从地址而非车站搜索时，才会应用首段和末段时间。",
+  "connectionBudgetAuto": "自动",
+  "connectionBudgetPre": "到首个站点",
+  "connectionBudgetPost": "从最后一站",
+  "connectionBudgetDirect": "全程不乘坐公共交通",
+  "connectionSummaryToStop": "到站 ≤{minutes} 分钟",
+  "@connectionSummaryToStop": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionSummaryFromStop": "离站 ≤{minutes} 分钟",
+  "@connectionSummaryFromStop": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionSummaryOwnWay": "自行接驳 ≤{minutes} 分钟",
+  "@connectionSummaryOwnWay": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+  "connectionWheelchair": "无障碍通行",
+  "connectionWheelchairHint": "仅显示无台阶的步行和换乘路线，以及标注为无障碍的班次。许多交通网络并未公布此类信息，因此可能查不到或结果很少。",
+  "connectionNoAccessibleConnections": "未找到无障碍路线",
+  "connectionByBike": "骑行出行",
+  "connectionByBikeHint": "全程骑行，或骑到首个站点。",
+  "connectionBikeOnBoard": "可携带自行车",
+  "connectionBikeOnBoardHint": "仅显示允许携带自行车的班次。许多交通网络并未公布此类信息，因此可能查不到结果。",
+  "connectionCyclingSpeed": "骑行速度",
+  "connectionCyclingSpeedHint": "用于计算骑行路段。",
+  "connectionNoBikeConnections": "未找到可携带自行车的路线",
+  "connectionCancelled": "已取消",
+  "connectionWithoutTransit": "不含公共交通",
+  "connectionSearchNoResults": "未找到路线",
+  "connectionEarlier": "更早",
+  "connectionLater": "更晚",
+  "connectionSearchError": "无法访问路线查询服务",
+  "connectionRetry": "重试",
+  "connectionChanges": "{count, plural, =0{直达} =1{1 次换乘} other{{count} 次换乘}}",
+  "@connectionChanges": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionChangeIn": "在 {place} 换乘，{minutes} 分钟",
+  "@connectionChangeIn": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "place": { "type": "String" }
+    }
+  },
+  "connectionChangeBetween": "换乘 {minutes} 分钟：{from} → {to}",
+  "@connectionChangeBetween": {
+    "placeholders": {
+      "minutes": { "type": "int" },
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "connectionChangeNow": "当前 {minutes} 分钟",
+  "@connectionChangeNow": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionOptionsTitle": "搜索选项",
+  "connectionOptionsReset": "重置",
+  "connectionMinTransfer": "最短换乘时间",
+  "connectionMinTransferHint": "到达后再次出发之间的间隔不能短于此时间。",
+  "connectionMinTransferAny": "不限",
+  "connectionMinutesShort": "{minutes} 分钟",
+  "@connectionMinutesShort": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionHoursShort": "{hours} 小时",
+  "@connectionHoursShort": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "connectionHoursMinutesShort": "{hours} 小时 {minutes} 分钟",
+  "@connectionHoursMinutesShort": {
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionWalkingSpeed": "步行速度",
+  "connectionWalkingSpeedHint": "用于计算往返及车站之间的步行路段。",
+  "connectionSpeedValue": "{speed} 千米/小时",
+  "@connectionSpeedValue": {
+    "placeholders": {
+      "speed": { "type": "String" }
+    }
+  },
+  "connectionSpeedNormal": "正常",
+  "connectionMaxTransfers": "最多换乘次数",
+  "connectionMaxTransfersAny": "不限",
+  "connectionMaxTransfersDirect": "直达",
+  "connectionMaxTransfersAtMost": "≤{count}",
+  "@connectionMaxTransfersAtMost": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionSummaryMinTransfer": "换乘间隔 ≥ {minutes} 分钟",
+  "@connectionSummaryMinTransfer": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "connectionSummaryMaxChanges": "{count, plural, =0{仅直达} =1{最多 1 次换乘} other{最多 {count} 次换乘}}",
+  "@connectionSummaryMaxChanges": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionModesTitle": "交通工具",
+  "connectionModesSubtitle": "规划路线时只使用这些交通工具。",
+  "connectionModesAll": "所有交通工具",
+  "connectionModesNone": "不使用交通工具",
+  "connectionModeLongDistance": "长途列车",
+  "connectionModeRegional": "区域列车",
+  "connectionModeCity": "地铁与有轨电车",
+  "connectionModeBus": "公交车与长途客车",
+  "connectionModeFerry": "渡轮",
+  "connectionModeAir": "航班",
+  "connectionModeOther": "缆车及其他",
+  "connectionAddToDay": "添加到当天",
+  "connectionAdded": "路线已添加",
+  "connectionSaveToTrip": "保存到旅行…",
+  "connectionSavedTo": "已添加到「{trip}」",
+  "@connectionSavedTo": {
+    "description": "Confirmation after saving a looked-up connection into a trip.",
+    "placeholders": { "trip": { "type": "String" } }
+  },
+  "attributionOsm": "© OpenStreetMap 贡献者",
+  "attributionTransitous": "时刻表数据来自 Transitous",
+  "dataSourcesSection": "数据来源",
+  "dataSourcesNote": "路线查询使用开放许可的时刻表和地图数据：",
+  "linkOpenFailed": "无法打开 {url}",
+  "@linkOpenFailed": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "transportModeRestoreBuiltin": "恢复内置",
+  "platformShort": "站台 {track}",
+  "@platformShort": {
+    "placeholders": {
+      "track": { "type": "String" }
+    }
+  },
+  "platformFromShort": "从 {track} 站台",
+  "@platformFromShort": {
+    "description": "The platform a leg starts at, named as such because the service gave no platform at the other end to pair it with an arrow. Worded from/to rather than departure/arrival: on a walking transfer, 'departure' reads as the next train's platform rather than this leg's.",
+    "placeholders": {
+      "track": { "type": "String" }
+    }
+  },
+  "platformToShort": "到 {track} 站台",
+  "@platformToShort": {
+    "description": "The platform a leg ends at, named as such because the service gave no platform at the other end to pair it with an arrow. See platformFromShort on the wording.",
+    "placeholders": {
+      "track": { "type": "String" }
+    }
+  },
+  "directionTo": "开往 {destination}",
+  "@directionTo": {
+    "placeholders": {
+      "destination": { "type": "String" }
+    }
+  },
+  "connectionStops": "{count, plural, =1{经停 1 站} other{经停 {count} 站}}",
+  "@connectionStops": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionStopsCancelled": "{count, plural, =1{1 站已取消} other{{count} 站已取消}}",
+  "@connectionStopsCancelled": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "connectionChangePlace": "在 {place} 换乘",
+  "@connectionChangePlace": {
+    "placeholders": {
+      "place": { "type": "String" }
+    }
+  },
+  "connectionChangePlaces": "换乘：{from} → {to}",
+  "@connectionChangePlaces": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "journeyDetails": "查看行程",
+  "liveTimesRefresh": "更新实时信息",
+  "liveTimesNone": "没有可更新的实时信息",
+  "liveTimesCancelled": "该班次已取消",
+  "liveTimesError": "无法获取实时信息",
+
+  "tripKindTrip": "旅行",
+  "tripKindRoutine": "模板行程",
+  "tripKindTripBody": "日历上的旅行——一天或多天。",
+  "tripKindRoutineBody": "没有日期的可复用计划。每次出行时，都可以据此创建一次真实旅行。",
+  "newRoutine": "新建模板行程",
+  "editRoutine": "编辑模板行程",
+  "routinesTitle": "模板行程",
+  "noRoutinesTitle": "还没有模板行程",
+  "noRoutinesBody": "模板行程是可以反复使用的计划——例如通勤路线、每周六的骑行。创建一个模板行程，之后每次出行时都可以据此创建旅行。",
+  "noRoutinesFoundTitle": "没有匹配的模板行程",
+  "noRoutinesFoundBody": "没有与「{query}」匹配的模板行程。",
+  "@noRoutinesFoundBody": {
+    "placeholders": { "query": { "type": "String" } }
+  },
+  "searchRoutines": "搜索模板行程",
+  "searchRoutinesHint": "标题、目的地或备注",
+  "filterRoutines": "筛选与排序",
+  "routineNoDates": "无日期",
+  "routineFromRoutine": "从模板行程…",
+  "routineCreateTrip": "创建旅行",
+  "routineCreateTripFor": "创建旅行，日期为",
+  "routineStartDate": "开始日期",
+  "routineLookUpConnections": "搜索当前路线",
+  "routineLookUpConnectionsBody": "在所选日期搜索此计划中的各段旅程，以便更新实时信息。",
+  "routineCreated": "旅行已创建。",
+  "routineCreatedOpen": "打开",
+  "routineDuplicateReversed": "复制并反转",
+  "routineReversedSuffix": "{title}（返程）",
+  "@routineReversedSuffix": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "routineAlreadyRecordedTitle": "已记录",
+  "routineAlreadyRecordedBody": "「{title}」已有一个从 {date} 开始的旅行。要再创建一个吗？",
+  "@routineAlreadyRecordedBody": {
+    "placeholders": {
+      "title": { "type": "String" },
+      "date": { "type": "String" }
+    }
+  },
+  "routineCreateAnyway": "仍要创建",
+  "routineNewDay": "第 {number} 天（新）",
+  "@routineNewDay": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "routineAddDay": "添加一天",
+  "routineDayNumber": "第 {number} 天",
+  "@routineDayNumber": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "connectionsNotFound": "未找到路线——计划已按原样复制。",
+  "connectionsNotTaken": "有一段路线无法沿用——计划已保留。",
+  "connectionsOffline": "无法连接到路线服务。计划已按原样复制。",
+  "connectionsKeepPlan": "保留计划",
+  "connectionsUseThis": "使用此路线",
+  "connectionsSearching": "正在查询路线…",
+  "connectionsFindForLeg": "查找路线",
+  "filterRoutineLabel": "来自模板行程",
+  "filterRoutineAny": "任意模板行程",
+  "tagsLabel": "标签",
+  "tagsManage": "管理标签",
+  "tagsNone": "还没有标签",
+  "tagsAddHint": "新建标签",
+  "tagsAdd": "添加标签",
+  "tagsFilterLabel": "已加标签",
+  "tagsAll": "全部",
+  "tagDeleteQuestion": "删除此标签？",
+  "tagDeleteBody": "它会从所有带有此标签的旅行中移除，旅行本身不受影响。",
+  "tagRename": "重命名标签",
+  "tagNameLabel": "名称",
+  "tagDuplicate": "已存在同名标签。",
+  "aboutSection": "关于",
+  "aboutCiBuild": "CI 测试版本",
+  "aboutCiBuildSubtitle": "与正式版应用并存，使用独立的数据库。请勿用于真实旅行。",
+  "aboutVersion": "版本",
+  "aboutVersionCopied": "版本号已复制",
+  "aboutSourceCode": "源代码",
+  "aboutReportIssue": "反馈问题",
+  "aboutContact": "联系我们",
+  "aboutLicenses": "开源许可",
+  "aboutLicensesSubtitle": "此应用所使用的库和字体",
+  "attachmentsLabel": "附件",
+  "attachmentsAddPhoto": "添加照片",
+  "attachmentsAddFile": "添加文件",
+  "attachmentsAdding": "正在读取文件…",
+  "attachmentsAddedOne": "已添加附件。",
+  "attachmentsAddedMany": "已添加 {count} 个文件。",
+  "@attachmentsAddedMany": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentsCount": "{count, plural, =1{1 个附件} other{{count} 个附件}}",
+  "@attachmentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentTooLarge": "该文件大小为 {size}——上限为 {limit}。导出旅行时会复制整个数据库，大文件可能导致无法移动。",
+  "@attachmentTooLarge": {
+    "placeholders": { "size": { "type": "String" }, "limit": { "type": "String" } }
+  },
+  "attachmentUnreadableImage": "无法读取此图片格式（{format}）。请先另存为 JPEG 或 PNG。",
+  "@attachmentUnreadableImage": {
+    "placeholders": { "format": { "type": "String" } }
+  },
+  "attachmentLocationRedacted": "{count, plural, =1{Android 未提供此照片的拍摄位置。你可以手动设置位置。} other{Android 未提供这些照片的拍摄位置。你可以手动设置位置。}}",
+  "@attachmentLocationRedacted": {
+    "description": "Shown after adding photos whose EXIF coordinates the system removed before the app saw them. Android does this to apps without ACCESS_MEDIA_LOCATION, and it is worth saying because the alternative is a photo that attaches itself with no place and no reason given.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "attachmentUnreadable": "无法读取该文件。",
+  "attachmentRename": "重命名",
+  "attachmentNameLabel": "名称",
+  "attachmentOpen": "打开",
+  "attachmentOpenNoApp": "此设备上没有可打开该文件的应用。但你仍可将其分享给支持该文件的应用。",
+  "attachmentMore": "更多",
+  "attachmentShare": "分享",
+  "attachmentDelete": "删除",
+  "attachmentDeleteQuestion": "删除此附件？",
+  "attachmentDeleteBody": "该文件仅存储在此数据库中。此处删除后将永久移除。",
+  "attachmentPositionExif": "使用照片中的位置",
+  "attachmentPositionPicked": "使用地图上选择的位置",
+  "attachmentPositionNone": "无位置",
+  "attachmentPositionSet": "在地图上设置",
+  "attachmentPositionClear": "移除位置",
+  "photosSection": "照片",
+  "photoLocationTitle": "读取照片拍摄位置",
+  "photoLocationSubtitle": "除非获得许可，否则 Android 会隐藏照片的拍摄位置。开启后会请求该权限；关闭后，即使 Android 提供位置，也会在附加照片时将其移除。",
+  "@photoLocationSubtitle": {
+    "description": "Subtitle of the ACCESS_MEDIA_LOCATION switch in settings. The second half is not belt and braces: a granted permission cannot be handed back from inside an app, so with the switch off the position still arrives and the app drops it."
+  },
+  "photoLocationStillGranted": "照片将不附带位置信息。Android 会保留此权限，直到你在系统设置中撤销它。",
+  "@photoLocationStillGranted": {
+    "description": "Shown when the switch is turned off while the Android permission is still granted — an app cannot revoke its own, so the system screen is the only way, and it is offered beside this."
+  },
+  "photoLocationDenied": "Android 未允许此权限。照片将在不附带位置的情况下添加，你可以手动设置位置。",
+  "photoLocationBlocked": "Android 不会再次询问。你仍可在系统设置中此应用的页面上允许该权限。",
+  "photoLocationOpenSettings": "打开设置",
+  "attachmentPhotoOpenFailed": "无法打开该文件。",
+  "pdfSectionPhotos": "照片",
+  "pdfPhotos": "{count, plural, =1{1 张照片} other{{count} 张照片}}",
+  "@pdfPhotos": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "pdfPhotoUnnamed": "照片",
+  "attachmentSaved": "文件已保存。",
+  "attachmentsTripTitle": "旅行文档",
+  "attachmentsTripAdd": "添加旅行文档",
+  "galleryTitle": "照片",
+  "galleryPrevious": "上一张照片",
+  "galleryNext": "下一张照片",
+  "coverSet": "设为旅行封面",
+  "coverRemove": "取消旅行封面",
+  "photosCount": "{count, plural, =1{1 张照片} other{{count} 张照片}}",
+  "@photosCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "documentsCount": "{count, plural, =1{1 个文档} other{{count} 个文档}}",
+  "@documentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "documentsTitle": "文档",
+  "photosTitle": "照片"
+}

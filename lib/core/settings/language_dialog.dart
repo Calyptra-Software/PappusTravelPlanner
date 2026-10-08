@@ -13,6 +13,8 @@ String currentLanguageLabel(BuildContext context, WidgetRef ref) {
       return l10n.languageEnglish;
     case 'de':
       return l10n.languageGerman;
+    case 'zh':
+      return l10n.languageChinese;
     default:
       return l10n.languageSystem;
   }
@@ -51,6 +53,10 @@ Future<void> showLanguageDialog(BuildContext context, WidgetRef ref) {
               RadioListTile<String?>(
                 title: Text(l10n.languageGerman),
                 value: 'de',
+              ),
+              RadioListTile<String?>(
+                title: Text(l10n.languageChinese),
+                value: 'zh',
               ),
             ],
           ),
