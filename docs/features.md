@@ -751,7 +751,7 @@ trips leaves the device unless you export it yourself.
 
 ## The app itself
 
-**Languages and theme.** English and German, and a light / dark / system theme, both
+**Languages and theme.** English, German, and Chinese, and a light / dark / system theme, both
 switchable in-app. Dates and money use locale-correct formatting, and the connection search
 asks the routing service for its results in the app's language too.
 

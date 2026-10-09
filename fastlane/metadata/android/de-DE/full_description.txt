@@ -19,6 +19,6 @@ Du kannst alle Arten von Reisen planen: Ein Nachmittag unterwegs, der tägliche 
 • Checklisten je Reise, verschiebbar und in die nächste kopierbar.
 • Teilen und exportieren — ein verlustfreies .tpt-Bündel für eine andere Kopie der App (Anhänge inbegriffen), ein druckbares PDF mit den Abschnitten, die du ankreuzt, oder eine .ics-Datei für den Kalender, den du ohnehin benutzt.
 • Ein Android-Widget für den Startbildschirm — die laufende oder nächste Reise, ein Countdown und der heutige Plan mit denselben Verspätungsmarken wie im Tagesablauf; ein Tippen öffnet den Eintrag.
-• Englisch und Deutsch, dazu ein helles, dunkles oder dem System folgendes Erscheinungsbild.
+• Englisch, Deutsch und Chinesisch, dazu ein helles, dunkles oder dem System folgendes Erscheinungsbild.
 
 Freie und offene Software unter der GPL-3.0-or-later. Dieselbe Codebasis läuft auch auf Linux, Windows, macOS, im Browser und auf iOS.
