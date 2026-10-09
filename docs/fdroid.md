@@ -34,6 +34,12 @@ as the fallback for every version. It is *not* per-version here on purpose: with
 `--split-per-abi` a release carries three versionCodes (1012, 2012, 4012 for 1.11.0), so
 per-version files would mean writing the same text three times every release.
 
+Only `en-US` and `de-DE` have one, and `zh-CN` deliberately does not. Because
+`default.txt` applies to every version, a Chinese one that was not rewritten at a release
+would go on showing the notes of whichever release it was last written for, and nobody
+here can write it. Without the file, F-Droid has no Chinese changelog to offer, and the
+client shows another language's.
+
 ## Things that would break the build, and why they do not
 
 - **Google Play Services.** `third_party/geolocator_android` exists so no proprietary code

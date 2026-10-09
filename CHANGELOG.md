@@ -15,6 +15,8 @@ exact commits.
   position just off the coast counts for the nearest country when no other is close.
 - **A country reached only at one end of a connection now counts in the all-trips
   statistics too.** Before, it counted on the trip's own Countries tab but not in the total.
+- **The app is available in Simplified Chinese.** Choose it under Settings → Language, or
+  let the app follow the system language.
 
 ## 1.13.2 — 2026-10-04
 
@@ -163,7 +165,6 @@ exact commits.
   version, and *Settings → Database → Import database…* to bring everything back.
   Home-screen widgets have to be added again afterwards. Nothing on Linux, Windows, macOS
   or the web is affected — this is an Android install mechanism and nothing else.
-
 - **The Android app no longer contains any Google Play Services code.** Where the device
   is now comes from Android itself rather than from Google's location library, which was
   being linked in by the plugin the app uses for it. Nothing about the locate button
@@ -179,7 +180,6 @@ exact commits.
   alone and a first fix can take longer than it used to. It is also what
   makes a listing on F-Droid possible, which does not accept apps carrying proprietary
   code.
-
 - **A photo can bring the place it was taken, on Android too.** Android takes a photo's
   coordinates out before handing it to an app, so one attached here arrived with no place
   and a note saying why. *Settings → Photos → Read where a photo was taken* asks for the
@@ -203,7 +203,6 @@ exact commits.
   one of them: the dialogs let you select several while the code behind them expected
   exactly one. They ask for a single file now, which is what they always meant. Attaching
   photos and documents is unaffected — taking several at once is the point there.
-
 - **The map picker's grey dots can be seen in a dark theme.** The dots marking where the
   trip's other positions already are were tinted by the app's theme and half transparent,
   which over the map's pale tiles left them all but invisible in dark mode — the layer read

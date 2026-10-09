@@ -90,7 +90,7 @@ Every other platform, and Android, Linux or Windows if you would rather not run 
   calendar you already use.
 - **An Android home-screen widget** — your current or next trip, a countdown, and today's
   plan with the same delay marks the timeline uses; tapping a row opens that entry.
-- **English and German**, and a light / dark / system theme.
+- **English, German, and Chinese**, and a light / dark / system theme.
 
 **[The long version, with the reasoning behind each of these, is in
 `docs/features.md`.](docs/features.md)** What changed per release is in
