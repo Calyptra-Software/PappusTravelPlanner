@@ -15,7 +15,8 @@ exact commits.
   position just off the coast counts for the nearest country when no other is close.
 - **A country reached only at one end of a connection now counts in the all-trips
   statistics too.** Before, it counted on the trip's own Countries tab but not in the total.
-- **The app is available in Simplified Chinese.** Choose it under Settings → Language, or let the app follow the system language.
+- **The app is available in Simplified Chinese.** Choose it under Settings → Language, or
+  let the app follow the system language.
 
 ## 1.13.2 — 2026-10-04
 

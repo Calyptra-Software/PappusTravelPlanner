@@ -30,8 +30,16 @@ Regenerate code after editing anything under generation:
 - **`dart run build_runner build`** after changing any Drift table/DAO (`lib/data/database/`)
   or any `@riverpod`-annotated provider. Generated `*.g.dart` files are committed alongside
   their sources — never edit them by hand.
-- **`flutter gen-l10n`** after editing `lib/l10n/app_en.arb` / `app_de.arb`. `app_en.arb` is
-  the template; every key added there must also be added to `app_de.arb`.
+- **`flutter gen-l10n`** after editing `lib/l10n/app_en.arb` / `app_de.arb` / `app_zh.arb`.
+  `app_en.arb` is the template; every key added there must also be added to `app_de.arb`.
+  **`app_zh.arb` (Simplified Chinese) is the exception**, because nobody maintaining this
+  repository reads Chinese: a new key is left *out* of it rather than translated, so
+  `gen-l10n` warns about an untranslated message and the app shows the English text, and
+  the pull request mentions @Florlet, who contributed the translation and offered to fill
+  the gaps. An English text whose *meaning* changes is the same case, only worse, since
+  the Chinese one is then wrong rather than missing — so say so in the pull request too.
+  The `zh-CN` store listing under `fastlane/metadata/android/` follows the same rule, and
+  has no `changelogs/default.txt` on purpose (`docs/fdroid.md`).
 
 **A change a user can notice gets a `CHANGELOG.md` entry in the same pull request**, under
 `## Unreleased` at the top (create the heading if the last release took it). That covers
