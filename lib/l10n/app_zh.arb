@@ -184,7 +184,7 @@
   "add": "添加",
   "search": "搜索",
   "searchNoMatches": "没有匹配项",
-  "searchAdd": "添加“{query}”",
+  "searchAdd": "添加「{query}」",
   "@searchAdd": {
     "description": "Row in a search picker that adds what was typed as a new entry",
     "placeholders": { "query": { "type": "String" } }
@@ -237,7 +237,7 @@
   "modeTrain": "火车",
   "modeTram": "有轨电车",
   "modeSubway": "地铁",
-  "modeFerry": "渡轮",
+  "modeFerry": "轮渡",
   "modeFlight": "飞机",
   "modeOther": "其他",
   "modeSki": "滑雪",
@@ -304,20 +304,20 @@
   "transportModeHint": "例如：缆车",
   "transportModeChooseIcon": "选择图标",
   "transportModeDeleteConfirmTitle": "删除交通方式？",
-  "transportModeDeleteConfirmBody": "「{mode}」将从交通方式列表中移除。使用它的现有交通线路会保留路线，但不再有交通方式。",
+  "transportModeDeleteConfirmBody": "「{mode}」将从交通方式列表中移除。使用该方式的现有交通路段会保留路线，但会失去交通方式。",
   "@transportModeDeleteConfirmBody": {
     "placeholders": { "mode": { "type": "String" } }
   },
   "noTransportModes": "还没有交通方式",
   "costPaidBy": "付款人",
   "costPaid": "已付款",
-  "costPaidFor": "付款对象",
-  "costInvited": "已邀请",
-  "costInvitedBy": "由 {payer} 邀请",
+  "costPaidFor": "分摊成员",
+  "costInvited": "请客",
+  "costInvitedBy": "由 {payer} 请客",
   "@costInvitedBy": {
     "placeholders": { "payer": { "type": "String" } }
   },
-  "costInvitedHint": "受邀者无需付款。点按上方的姓名可只邀请其中几位。",
+  "costInvitedHint": "被请客的人无需分摊。点按上方的姓名可只请其中几位。",
   "costPaidByNone": "未指定",
   "costPaidByName": "由 {name} 付款",
   "@costPaidByName": {
@@ -435,7 +435,7 @@
   "@mapNothingToShow": {
     "description": "Shown when no entry of the trip carries coordinates."
   },
-  "mapNothingToShowHint": "地点和路线获得坐标后会显示在这里——导入的路线自带坐标。",
+  "mapNothingToShowHint": "地点和路段获得坐标后会显示在这里——导入的路线自带坐标。",
   "@mapNothingToShowHint": {
     "description": "Explains how an entry comes to have coordinates."
   },
@@ -493,7 +493,7 @@
   "@trackSourceImported": {
     "description": "A line that came out of a GPX file."
   },
-  "trackSourceRouted": "计算路线",
+  "trackSourceRouted": "计算轨迹",
   "@trackSourceRouted": {
     "description": "A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it."
   },
@@ -562,7 +562,7 @@
     "description": "Says what the import will do, since it changes entries and not only the map.",
     "placeholders": { "legs": { "type": "int" }, "ends": { "type": "int" } }
   },
-  "trackNoLegsPicked": "请至少选择一条交通路线",
+  "trackNoLegsPicked": "请至少选择一条交通路段",
   "@trackNoLegsPicked": {
     "description": "Shown when the selection holds only places, which cannot carry a line."
   },
@@ -735,12 +735,12 @@
   "statsByPerson": "按成员",
   "statsScopePaid": "已付",
   "statsScopeShare": "分摊",
-  "statsScopeBalances": "余额",
+  "statsScopeBalances": "结余",
   "statsPaidShort": "已付",
   "statsShareShort": "分摊",
   "statsSettleUp": "结清",
   "statsSettledUp": "大家都已结清——无需结算。",
-  "statsGetsBack": "应收回",
+  "statsGetsBack": "应收",
   "statsOwes": "应付",
   "statsEven": "已结清",
   "statsExpenses": "{count, plural, =1{1 笔费用} other{{count} 笔费用}}",
@@ -780,11 +780,11 @@
   "@statsSettlementReceived": {
     "placeholders": { "amount": { "type": "String" } }
   },
-  "statsInvitedTo": "受邀承担 {amount}",
+  "statsInvitedTo": "被请客 {amount}",
   "@statsInvitedTo": {
     "placeholders": { "amount": { "type": "String" } }
   },
-  "statsInvitedOthers": "邀请他人承担 {amount}",
+  "statsInvitedOthers": "请客 {amount}",
   "@statsInvitedOthers": {
     "placeholders": { "amount": { "type": "String" } }
   },
@@ -836,7 +836,7 @@
     "placeholders": { "trip": { "type": "String" } }
   },
   "moveOrCopy": "移动或复制",
-  "moveOrCopyHint": "拿起此条目，再选择放置位置——其他日期或者某一分支选项。",
+  "moveOrCopyHint": "拿起此条目，再选择放置位置——其他日期或某个选项。",
   "moveToDots": "移动到…",
   "copyToDots": "复制到…",
   "duplicateEntry": "创建副本",
@@ -862,8 +862,8 @@
   },
   "alternatives": "备选方案",
   "planAlternatives": "规划备选方案",
-  "planAlternativesHint": "将此条目转为分支：规划多个选项，再选定最终采用的选项。",
-  "itemInOptionHint": "属于某个分支——仅在该分支被选用时计入旅行。",
+  "planAlternativesHint": "将此条目转为分支：规划多个选项，再选定最终采用的一项。",
+  "itemInOptionHint": "属于某个选项——仅在该选项被选用时计入旅行。",
   "decisionDefaultLabel": "分支",
   "decisionActions": "分支操作",
   "decisionRename": "重命名分支",
@@ -871,8 +871,8 @@
   "decisionNameHint": "例如：周六下午",
   "decisionDelete": "删除分支",
   "decisionDeleteQuestion": "删除此分支？",
-  "decisionDeleteBody": "所有分支及其条目和费用都将被删除。",
-  "optionLetter": "分支 {letter}",
+  "decisionDeleteBody": "所有选项及其条目和费用都将被删除。",
+  "optionLetter": "选项 {letter}",
   "@optionLetter": {
     "placeholders": { "letter": { "type": "String" } }
   },
@@ -954,7 +954,7 @@
     "placeholders": { "minutes": { "type": "int" } }
   },
   "connectionWheelchair": "无障碍通行",
-  "connectionWheelchairHint": "仅显示无台阶的步行和换乘路线，以及标注为无障碍的班次。许多交通网络并未公布此类信息，因此可能查不到或结果很少。",
+  "connectionWheelchairHint": "仅显示无台阶的步行和换乘，以及标注为无障碍的班次。许多交通网络并未公布此类信息，因此可能查不到或结果很少。",
   "connectionNoAccessibleConnections": "未找到无障碍路线",
   "connectionByBike": "骑行出行",
   "connectionByBikeHint": "全程骑行，或骑到首个站点。",
@@ -1059,7 +1059,7 @@
   "connectionModeRegional": "区域列车",
   "connectionModeCity": "地铁与有轨电车",
   "connectionModeBus": "公交车与长途客车",
-  "connectionModeFerry": "渡轮",
+  "connectionModeFerry": "轮渡",
   "connectionModeAir": "航班",
   "connectionModeOther": "缆车及其他",
   "connectionAddToDay": "添加到当天",

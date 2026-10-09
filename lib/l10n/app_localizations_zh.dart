@@ -451,7 +451,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String searchAdd(String query) {
-    return '添加“$query”';
+    return '添加「$query」';
   }
 
   @override
@@ -593,7 +593,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get modeSubway => '地铁';
 
   @override
-  String get modeFerry => '渡轮';
+  String get modeFerry => '轮渡';
 
   @override
   String get modeFlight => '飞机';
@@ -761,7 +761,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String transportModeDeleteConfirmBody(String mode) {
-    return '「$mode」将从交通方式列表中移除。使用它的现有交通线路会保留路线，但不再有交通方式。';
+    return '「$mode」将从交通方式列表中移除。使用该方式的现有交通路段会保留路线，但会失去交通方式。';
   }
 
   @override
@@ -774,18 +774,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get costPaid => '已付款';
 
   @override
-  String get costPaidFor => '付款对象';
+  String get costPaidFor => '分摊成员';
 
   @override
-  String get costInvited => '已邀请';
+  String get costInvited => '请客';
 
   @override
   String costInvitedBy(String payer) {
-    return '由 $payer 邀请';
+    return '由 $payer 请客';
   }
 
   @override
-  String get costInvitedHint => '受邀者无需付款。点按上方的姓名可只邀请其中几位。';
+  String get costInvitedHint => '被请客的人无需分摊。点按上方的姓名可只请其中几位。';
 
   @override
   String get costPaidByNone => '未指定';
@@ -1012,7 +1012,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapNothingToShow => '还没有可显示的内容';
 
   @override
-  String get mapNothingToShowHint => '地点和路线获得坐标后会显示在这里——导入的路线自带坐标。';
+  String get mapNothingToShowHint => '地点和路段获得坐标后会显示在这里——导入的路线自带坐标。';
 
   @override
   String mapTripsHere(int count) {
@@ -1070,7 +1070,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trackSourceImported => '已导入';
 
   @override
-  String get trackSourceRouted => '计算路线';
+  String get trackSourceRouted => '计算轨迹';
 
   @override
   String get trackNotDrawable => '无可绘制内容';
@@ -1147,7 +1147,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get trackNoLegsPicked => '请至少选择一条交通路线';
+  String get trackNoLegsPicked => '请至少选择一条交通路段';
 
   @override
   String get trackImported => '轨迹已导入';
@@ -1336,7 +1336,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statsScopeShare => '分摊';
 
   @override
-  String get statsScopeBalances => '余额';
+  String get statsScopeBalances => '结余';
 
   @override
   String get statsPaidShort => '已付';
@@ -1351,7 +1351,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statsSettledUp => '大家都已结清——无需结算。';
 
   @override
-  String get statsGetsBack => '应收回';
+  String get statsGetsBack => '应收';
 
   @override
   String get statsOwes => '应付';
@@ -1400,12 +1400,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String statsInvitedTo(String amount) {
-    return '受邀承担 $amount';
+    return '被请客 $amount';
   }
 
   @override
   String statsInvitedOthers(String amount) {
-    return '邀请他人承担 $amount';
+    return '请客 $amount';
   }
 
   @override
@@ -1490,7 +1490,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get moveOrCopy => '移动或复制';
 
   @override
-  String get moveOrCopyHint => '拿起此条目，再选择放置位置——其他日期或者某一分支选项。';
+  String get moveOrCopyHint => '拿起此条目，再选择放置位置——其他日期或某个选项。';
 
   @override
   String get moveToDots => '移动到…';
@@ -1538,10 +1538,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get planAlternatives => '规划备选方案';
 
   @override
-  String get planAlternativesHint => '将此条目转为分支：规划多个选项，再选定最终采用的选项。';
+  String get planAlternativesHint => '将此条目转为分支：规划多个选项，再选定最终采用的一项。';
 
   @override
-  String get itemInOptionHint => '属于某个分支——仅在该分支被选用时计入旅行。';
+  String get itemInOptionHint => '属于某个选项——仅在该选项被选用时计入旅行。';
 
   @override
   String get decisionDefaultLabel => '分支';
@@ -1565,11 +1565,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get decisionDeleteQuestion => '删除此分支？';
 
   @override
-  String get decisionDeleteBody => '所有分支及其条目和费用都将被删除。';
+  String get decisionDeleteBody => '所有选项及其条目和费用都将被删除。';
 
   @override
   String optionLetter(String letter) {
-    return '分支 $letter';
+    return '选项 $letter';
   }
 
   @override
@@ -1777,7 +1777,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectionWheelchairHint =>
-      '仅显示无台阶的步行和换乘路线，以及标注为无障碍的班次。许多交通网络并未公布此类信息，因此可能查不到或结果很少。';
+      '仅显示无台阶的步行和换乘，以及标注为无障碍的班次。许多交通网络并未公布此类信息，因此可能查不到或结果很少。';
 
   @override
   String get connectionNoAccessibleConnections => '未找到无障碍路线';
@@ -1952,7 +1952,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connectionModeBus => '公交车与长途客车';
 
   @override
-  String get connectionModeFerry => '渡轮';
+  String get connectionModeFerry => '轮渡';
 
   @override
   String get connectionModeAir => '航班';
