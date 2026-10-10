@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **The connection search can time each change by the actual walk between the stops.**
+  The new search option uses OpenStreetMap instead of standard transfer times, so tight
+  cross-platform changes are found that were dropped before. It is off by default.
 - **A handover taken from an entry's coordinates can be moved again when dividing a
   recording.** Tapping to move one used to throw it back to the recording's first point,
   after which it could not be moved at all. Handovers are now also drawn on the line, where

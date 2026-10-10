@@ -734,6 +734,49 @@ void main() {
     expect(prefs.getBool('connection_wheelchair'), isTrue);
   });
 
+  testWidgets('timing changes by the walk reaches the search, and sticks', (
+    tester,
+  ) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    await tester.tap(find.text('Time changes by the actual walk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Search'));
+    await tester.pumpAndSettle();
+
+    expect(search.calls.last.options.routedTransfers, isTrue);
+    expect(find.textContaining('changes timed by walk'), findsOneWidget);
+    expect(prefs.getBool('connection_routed_transfers'), isTrue);
+  });
+
+  testWidgets('step-free travel holds the routed changes on', (tester) async {
+    await pump(tester);
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+    await pickInto(tester, 'From');
+    await pickInto(tester, 'To');
+
+    await openOptions(tester);
+    await tester.tap(find.text('Wheelchair accessible'));
+    await tester.pumpAndSettle();
+
+    final routed = tester.widget<SwitchListTile>(
+      find.widgetWithText(SwitchListTile, 'Time changes by the actual walk'),
+    );
+    // Shown as on, and not to be switched off: the client sends it anyway.
+    expect(routed.value, isTrue);
+    expect(routed.onChanged, isNull);
+    expect(find.text('Always on for step-free travel.'), findsOneWidget);
+  });
+
   testWidgets('requiring step-free travel says why nothing was found', (
     tester,
   ) async {

@@ -58,6 +58,7 @@ class JourneySearchOptions {
     this.minTransferMinutes = 0,
     this.walkingSpeedKmh = kNormalWalkingSpeedKmh,
     this.wheelchair = false,
+    this.routedTransfers = false,
     this.maxTransfers,
     this.byBike = false,
     this.bikeOnBoard = false,
@@ -89,6 +90,17 @@ class JourneySearchOptions {
   /// see the client, where it is the pedestrian profile that also filters the
   /// vehicles.
   final bool wheelchair;
+
+  /// Whether a change is timed by the walk between the two stops, routed over
+  /// OpenStreetMap, rather than by the service's precomputed footpaths.
+  ///
+  /// The precomputed ones can overrule a timetable built around a
+  /// cross-platform change: at Wandsbek-Gartenstadt the U1 and the U3 wait for
+  /// each other, yet they put three minutes on the change (one when routed), so
+  /// the one-minute connection is dropped for one ten minutes slower. Off by default, as it is in the service, because a routed
+  /// path is only as good as the map under it. [wheelchair] implies it (see the
+  /// client), whatever this says.
+  final bool routedTransfers;
 
   /// The most interchanges to accept; `0` is "direct only", null no limit.
   final int? maxTransfers;
@@ -123,6 +135,7 @@ class JourneySearchOptions {
       minTransferMinutes == 0 &&
       walkingSpeedKmh == kNormalWalkingSpeedKmh &&
       !wheelchair &&
+      !routedTransfers &&
       maxTransfers == null &&
       !byBike &&
       !bikeOnBoard &&
@@ -141,6 +154,7 @@ class JourneySearchOptions {
     int? minTransferMinutes,
     double? walkingSpeedKmh,
     bool? wheelchair,
+    bool? routedTransfers,
     int? maxTransfers,
     bool clearMaxTransfers = false,
     bool? byBike,
@@ -155,6 +169,7 @@ class JourneySearchOptions {
     minTransferMinutes: minTransferMinutes ?? this.minTransferMinutes,
     walkingSpeedKmh: walkingSpeedKmh ?? this.walkingSpeedKmh,
     wheelchair: wheelchair ?? this.wheelchair,
+    routedTransfers: routedTransfers ?? this.routedTransfers,
     maxTransfers: clearMaxTransfers ? null : maxTransfers ?? this.maxTransfers,
     byBike: byBike ?? this.byBike,
     // Leaving the bike behind takes it off the train with it.
@@ -182,6 +197,7 @@ class JourneySearchOptions {
       other.minTransferMinutes == minTransferMinutes &&
       other.walkingSpeedKmh == walkingSpeedKmh &&
       other.wheelchair == wheelchair &&
+      other.routedTransfers == routedTransfers &&
       other.maxTransfers == maxTransfers &&
       other.byBike == byBike &&
       other.bikeOnBoard == bikeOnBoard &&
@@ -196,6 +212,7 @@ class JourneySearchOptions {
     minTransferMinutes,
     walkingSpeedKmh,
     wheelchair,
+    routedTransfers,
     maxTransfers,
     byBike,
     bikeOnBoard,

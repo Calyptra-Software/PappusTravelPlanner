@@ -3112,6 +3112,30 @@ abstract class AppLocalizations {
   /// **'≤{minutes} min on your own'**
   String connectionSummaryOwnWay(int minutes);
 
+  /// No description provided for @connectionRoutedTransfers.
+  ///
+  /// In en, this message translates to:
+  /// **'Time changes by the actual walk'**
+  String get connectionRoutedTransfers;
+
+  /// No description provided for @connectionRoutedTransfersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Work out each change from the actual path between the stops on OpenStreetMap, instead of precomputed standard times. Finds tight cross-platform changes; only as accurate as the map.'**
+  String get connectionRoutedTransfersHint;
+
+  /// No description provided for @connectionRoutedTransfersImplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Always on for step-free travel.'**
+  String get connectionRoutedTransfersImplied;
+
+  /// No description provided for @connectionSummaryRoutedTransfers.
+  ///
+  /// In en, this message translates to:
+  /// **'changes timed by walk'**
+  String get connectionSummaryRoutedTransfers;
+
   /// No description provided for @connectionWheelchair.
   ///
   /// In en, this message translates to:

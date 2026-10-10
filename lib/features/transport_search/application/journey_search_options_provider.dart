@@ -26,6 +26,7 @@ class JourneySearchOptionsController extends Notifier<JourneySearchOptions> {
   static const _minTransferKey = 'connection_min_transfer_minutes';
   static const _speedKey = 'connection_walking_speed_kmh';
   static const _wheelchairKey = 'connection_wheelchair';
+  static const _routedTransfersKey = 'connection_routed_transfers';
   static const _maxTransfersKey = 'connection_max_transfers';
   static const _byBikeKey = 'connection_by_bike';
   static const _bikeOnBoardKey = 'connection_bike_on_board';
@@ -44,6 +45,8 @@ class JourneySearchOptionsController extends Notifier<JourneySearchOptions> {
           prefs.getInt(_minTransferKey) ?? defaults.minTransferMinutes,
       walkingSpeedKmh: prefs.getDouble(_speedKey) ?? defaults.walkingSpeedKmh,
       wheelchair: prefs.getBool(_wheelchairKey) ?? defaults.wheelchair,
+      routedTransfers:
+          prefs.getBool(_routedTransfersKey) ?? defaults.routedTransfers,
       maxTransfers: prefs.getInt(_maxTransfersKey),
       byBike: prefs.getBool(_byBikeKey) ?? defaults.byBike,
       bikeOnBoard: prefs.getBool(_bikeOnBoardKey) ?? defaults.bikeOnBoard,
@@ -75,6 +78,7 @@ class JourneySearchOptionsController extends Notifier<JourneySearchOptions> {
     await prefs.setInt(_minTransferKey, options.minTransferMinutes);
     await prefs.setDouble(_speedKey, options.walkingSpeedKmh);
     await prefs.setBool(_wheelchairKey, options.wheelchair);
+    await prefs.setBool(_routedTransfersKey, options.routedTransfers);
     await prefs.setBool(_byBikeKey, options.byBike);
     await prefs.setBool(_bikeOnBoardKey, options.bikeOnBoard);
     await prefs.setDouble(_cyclingSpeedKey, options.cyclingSpeedKmh);

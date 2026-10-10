@@ -130,6 +130,7 @@ class MotisTransportSearch implements TransportSearch {
         'maxTransfers': '${options.maxTransfers}',
       ..._walkingParams(options),
       ..._wheelchairParams(options),
+      ..._transferParams(options),
       ..._bikeParams(options),
       ..._viaParams(via),
       // The cursor carries the window; the rest of the query must be repeated
@@ -185,8 +186,9 @@ class MotisTransportSearch implements TransportSearch {
   /// without the other is a half-answer wearing an accessibility label; they are
   /// sent together, exactly as the official MOTIS UI couples its two switches.
   ///
-  /// Nothing at all when it is off: the service's own `FOOT` and precomputed
-  /// transfers, which is what every other search here has always used.
+  /// The second parameter is sent by [_transferParams], which is where every
+  /// reason for routing the transfers meets; nothing here when it is off, so
+  /// the service's own `FOOT` profile applies.
   ///
   /// A caveat the UI has to carry, like bike carriage: GTFS `wheelchair_
   /// accessible` counts only an explicit "yes" (`1`), so a feed that simply
@@ -195,8 +197,22 @@ class MotisTransportSearch implements TransportSearch {
   /// minutes), Amsterdam→Utrecht from 5 to **none at all**.
   static Map<String, String> _wheelchairParams(JourneySearchOptions options) {
     if (!options.wheelchair) return const {};
-    return {'pedestrianProfile': 'WHEELCHAIR', 'useRoutedTransfers': 'true'};
+    return {'pedestrianProfile': 'WHEELCHAIR'};
   }
+
+  /// Whether the changes are timed by footpaths routed over OpenStreetMap:
+  /// asked for in its own right ([JourneySearchOptions.routedTransfers]) or
+  /// implied by step-free travel, which is a half-answer without it (see
+  /// [_wheelchairParams]).
+  ///
+  /// Nothing when neither applies: the service's precomputed transfers, its
+  /// own default. Verified live that a routed change is still stretched by
+  /// `transferTimeFactor` and not by `pedestrianSpeed` — exactly as a
+  /// precomputed one is — so [_walkingParams] needs no second case for it.
+  static Map<String, String> _transferParams(JourneySearchOptions options) =>
+      options.wheelchair || options.routedTransfers
+      ? const {'useRoutedTransfers': 'true'}
+      : const {};
 
   /// Everything travelling with a bike turns into.
   ///
@@ -237,8 +253,9 @@ class MotisTransportSearch implements TransportSearch {
   ///
   /// - `pedestrianSpeed` (m/s) governs the street legs — to the first stop,
   ///   from the last, and any direct walk.
-  /// - `transferTimeFactor` governs the footpaths *inside* stations, which are
-  ///   precomputed and which `pedestrianSpeed` does not touch at all. Sent only
+  /// - `transferTimeFactor` governs the footpaths *inside* stations — the
+  ///   precomputed ones and the routed ones of [_transferParams] alike — which
+  ///   `pedestrianSpeed` does not touch at all. Sent only
   ///   when it would **lengthen** them: the spec declares factors below 1.0
   ///   unsupported, and buying tighter changes than the timetable's own minimum
   ///   is not a trade worth making on undefined behaviour.
