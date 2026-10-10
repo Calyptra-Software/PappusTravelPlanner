@@ -31,6 +31,7 @@ import '../../itinerary/day_blocks.dart';
 import '../../itinerary/presentation/item_form_sheet.dart';
 import '../../itinerary/widgets/alternative_card.dart';
 import '../../itinerary/widgets/itinerary_timeline.dart';
+import '../../itinerary/widgets/transport_mode.dart';
 import '../../sharing/application/pdf_sections_provider.dart';
 import '../../sharing/presentation/pdf_sections_sheet.dart';
 import '../../sharing/trip_bundle.dart';
@@ -280,7 +281,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final localeName = Localizations.localeOf(context).languageCode;
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final bundle = await ref.read(repositoryProvider).tripBundle(tripId);
+      final repository = ref.read(repositoryProvider);
+      final bundle = await repository.tripBundle(tripId);
       if (bundle == null) return;
       if (!context.mounted) return;
       final sections = await showPdfSectionsSheet(
@@ -292,12 +294,14 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       if (sections == null) return;
       await ref.read(pdfSectionsProvider.notifier).setSections(sections);
       final fonts = await TripPdfFonts.load();
+      final modes = await repository.transportModes();
       final bytes = await buildTripPdf(
         bundle: bundle,
         l10n: l10n,
         localeName: localeName,
         sections: sections,
         fonts: fonts,
+        modeIcons: transportModeIconsByKey(modes),
       );
       await _shareBytes(
         messenger,

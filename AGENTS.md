@@ -807,6 +807,25 @@ UI (features/*/presentation, *widgets)
   helpers the builder lays out with (`countedBundleCosts`, `bundleItemIsLive`,
   `printableChecklists`), so the picker's numbers cannot drift from the document's contents.
   A section unavailable on this trip keeps its stored setting for the next one.
+- **The PDF draws a day the way the timeline does**: a rail, a place as a dot in the trip's
+  accent, a leg as its mode's icon in a disc. The rail runs from a day's first node to its
+  last, each row drawing its own piece, and a decision's accent bar is drawn per row in the
+  text column so that it neither breaks the rail nor is broken by it. The icon is the one
+  *this* database gives the mode (`modeIcons`, from `transportModeIconsByKey`), since a
+  bundle carries a custom mode's icon but not one chosen for a built-in;
+  `pdfTransportModeIcon` falls back to the bundle's, then to the built-in's own.
+  **The icons need a font of their own, and two traps decided what it is.** Flutter's
+  Material Icons font is CFF-based (`OTTO`), and package:pdf parses TrueType outlines only —
+  it falls back to its Latin-1 standard font and throws on the code point — so
+  `assets/fonts/build_pdf_icons.py` converts exactly the `Icons.*` that `transport_mode.dart`
+  names out of the SDK's own font into `MaterialIconsPdf.ttf` (same glyphs, same code
+  points, CC BY 4.0, ~8 KB). Run it again when an icon joins `kTransportModeIcons`;
+  `trip_pdf_test.dart` fails until then. The second trap is the **left side bearing**: a
+  TrueType renderer puts a glyph's origin at `xMin − lsb`, so an `hmtx` that says 0 draws
+  every glyph shifted left by its own `xMin`. The CFF font's `hmtx` says 0, and so did
+  `build_transport_glyphs.py` — which means the app itself drew the horse and the three
+  lifts up to 15% of their size left of center, in Flutter as much as in a PDF viewer, until
+  both scripts were made to write `lsb = xMin`. A test asserts it for both fonts.
 
 - **The map draws the plan, and the ground it draws on is swappable.** `features/map/` holds
   the pure `map_features.dart` (items → pins and lines, testable without a tile server),

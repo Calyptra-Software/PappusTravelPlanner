@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **The PDF lays each day out along a line, as the app does.** Places sit on it as dots and
+  connections as the icon of their transport mode, including an icon you chose yourself.
+- **The horse, gondola, chairlift and T-bar icons are centered.** They used to sit to the
+  left of where other transport icons are drawn.
 - **A journey can be replanned from a change.** After a missed connection, *Replan from
   here* on the change searches the rest of the journey from where and when you arrived, and
   replaces everything after it in one step.

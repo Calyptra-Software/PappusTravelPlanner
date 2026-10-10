@@ -1,5 +1,5 @@
 /// The licenses of the things that ship *inside* the binary but are not Dart
-/// packages — the two bundled fonts.
+/// packages — the bundled fonts and the country outlines.
 ///
 /// Flutter's license page is built from `LicenseRegistry`, which knows every
 /// package's `LICENSE` file and nothing else. Roboto is bundled here as a real
@@ -28,6 +28,12 @@ void registerBundledFontLicenses() {
       const ['TransportGlyphs'],
       await rootBundle.loadString(
         'assets/fonts/TransportGlyphs-ATTRIBUTION.txt',
+      ),
+    );
+    yield LicenseEntryWithLineBreaks(
+      const ['Material Icons (PDF export)'],
+      await rootBundle.loadString(
+        'assets/fonts/MaterialIconsPdf-ATTRIBUTION.txt',
       ),
     );
   });

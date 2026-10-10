@@ -174,6 +174,14 @@ extension TransportModeUi on TransportMode {
   }
 }
 
+/// The icon each of [modes] is drawn with, keyed the way a sharing bundle names
+/// a leg's mode: a built-in's `builtinKey`, else a custom mode's name. Lets a
+/// view built from a bundle (the PDF) wear this database's icons, including one
+/// the user chose for a built-in, which the bundle does not carry.
+Map<String, IconData> transportModeIconsByKey(
+  Iterable<TransportModeRow> modes,
+) => {for (final m in modes) ?(m.builtinKey ?? m.name): m.icon};
+
 /// UI mapping for a persisted [TransportModeRow] — the icon and label to draw
 /// for it. A pristine built-in (no [name], no chosen [iconId]) falls back to its
 /// [builtinKey]'s localized label and default icon; a custom mode or a renamed /

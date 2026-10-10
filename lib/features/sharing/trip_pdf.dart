@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/widgets.dart' show IconData;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../../core/format/date_format.dart';
 import '../../core/format/money_format.dart';
+import '../../core/icons/transport_glyphs.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
 import '../itinerary/widgets/transport_mode.dart';
@@ -33,13 +35,21 @@ import 'trip_pdf_sections.dart';
 /// sign above all — render correctly; without them the document falls back to
 /// Helvetica and non-Latin-1 characters come out blank. The app loads
 /// [TripPdfFonts.load] once; a caller may pass null (e.g. a layout smoke test)
-/// to accept that fallback.
+/// to accept that fallback, in which case a leg's node on the rail is drawn
+/// without its icon.
+///
+/// [modeIcons] is the icon each transport mode wears in this database, keyed by
+/// the bundle's portable mode key (see [transportModeIconsByKey]). A bundle
+/// carries a custom mode's icon but not one chosen for a built-in, so without
+/// this a re-iconed train would print with the default one; see
+/// [pdfTransportModeIcon] for the order the sources are asked in.
 Future<Uint8List> buildTripPdf({
   required TripBundle bundle,
   required AppLocalizations l10n,
   required String localeName,
   Set<PdfSection> sections = kAllPdfSections,
   TripPdfFonts? fonts,
+  Map<String, IconData> modeIcons = const {},
   DateTime? exportedAt,
 }) async {
   final builder = _TripPdfBuilder(
@@ -48,6 +58,7 @@ Future<Uint8List> buildTripPdf({
     localeName: localeName,
     sections: sections,
     fonts: fonts,
+    modeIcons: modeIcons,
     exportedAt: exportedAt ?? DateTime.now(),
   );
   return builder.build();
@@ -56,18 +67,58 @@ Future<Uint8List> buildTripPdf({
 /// The TrueType fonts embedded in an exported PDF. Bundled with the app (Roboto,
 /// Apache-2.0) because the built-in PDF fonts can't draw the € sign and other
 /// non-Latin-1 glyphs, and the offline app can't fetch a webfont at export time.
+///
+/// The two icon fonts draw a leg's transport mode on the rail. [icons] is not
+/// the Material Icons font the app draws with: that one is CFF-based, and
+/// package:pdf parses TrueType outlines only, so `build_pdf_icons.py` converts
+/// the transport icons out of it. [transportGlyphs] is the app's own font,
+/// TrueType already.
 class TripPdfFonts {
-  const TripPdfFonts({required this.regular, required this.bold});
+  const TripPdfFonts({
+    required this.regular,
+    required this.bold,
+    required this.icons,
+    required this.transportGlyphs,
+  });
 
   final pw.Font regular;
   final pw.Font bold;
+  final pw.Font icons;
+  final pw.Font transportGlyphs;
 
-  /// Loads the bundled Roboto faces from the asset bundle. Call once per export.
+  /// Loads the bundled faces from the asset bundle. Call once per export.
   static Future<TripPdfFonts> load() async {
-    final regular = await rootBundle.load('assets/fonts/Roboto-Regular.ttf');
-    final bold = await rootBundle.load('assets/fonts/Roboto-Bold.ttf');
-    return TripPdfFonts(regular: pw.Font.ttf(regular), bold: pw.Font.ttf(bold));
+    Future<pw.Font> font(String name) async =>
+        pw.Font.ttf(await rootBundle.load('assets/fonts/$name'));
+    return TripPdfFonts(
+      regular: await font('Roboto-Regular.ttf'),
+      bold: await font('Roboto-Bold.ttf'),
+      icons: await font('MaterialIconsPdf.ttf'),
+      transportGlyphs: await font('TransportGlyphs.ttf'),
+    );
   }
+
+  /// The face that holds [icon]'s glyph.
+  pw.Font fontFor(IconData icon) =>
+      icon.fontFamily == kTransportGlyphsFamily ? transportGlyphs : icons;
+}
+
+/// The icon a leg of mode [key] is drawn with: what this database gives the
+/// mode ([localIcons]), else the custom mode's icon the bundle carries, else
+/// the built-in's own, else the generic one — the one a leg with no mode wears
+/// in the app too. The first source wins because the PDF is printed from this
+/// device's app, which shows its own choice; the bundle's is there for a trip
+/// whose custom mode does not exist here.
+IconData pdfTransportModeIcon(
+  String? key,
+  TripBundle bundle, {
+  Map<String, IconData> localIcons = const {},
+}) {
+  if (key == null) return kDefaultTransportModeIcon;
+  return localIcons[key] ??
+      kTransportModeIcons[bundle.modeIcons[key]] ??
+      builtinTransportModeFor(key)?.icon ??
+      kDefaultTransportModeIcon;
 }
 
 class _TripPdfBuilder {
@@ -77,6 +128,7 @@ class _TripPdfBuilder {
     required this.localeName,
     required this.sections,
     required this.fonts,
+    required this.modeIcons,
     required this.exportedAt,
   }) : accent = PdfColor.fromInt(bundle.trip.colorValue),
        chosenBranchIds = chosenBranchLocalIds(bundle);
@@ -86,6 +138,7 @@ class _TripPdfBuilder {
   final String localeName;
   final Set<PdfSection> sections;
   final TripPdfFonts? fonts;
+  final Map<String, IconData> modeIcons;
   final DateTime exportedAt;
   final PdfColor accent;
 
@@ -223,20 +276,26 @@ class _TripPdfBuilder {
   }
 
   pw.Widget _dayBlock(DateTime day) {
-    final entries = <({int order, pw.Widget widget})>[];
+    final entries = <({int order, List<_DayLine> lines})>[];
 
     for (final item in bundle.items) {
       if (item.alternativeLocalId != null) continue;
       if (normalizeDay(item.date) != day) continue;
-      entries.add((order: item.sortOrder, widget: _itemRow(item)));
+      entries.add((order: item.sortOrder, lines: [_itemLine(item)]));
     }
 
     for (final set in bundle.alternativeSets) {
       if (normalizeDay(set.date) != day) continue;
-      entries.add((order: set.sortOrder, widget: _decisionRow(set)));
+      entries.add((order: set.sortOrder, lines: _decisionLines(set)));
     }
 
     entries.sort((a, b) => a.order.compareTo(b.order));
+    final lines = [for (final e in entries) ...e.lines];
+
+    // The rail runs from the first node to the last, as a line strung between
+    // the entries rather than a ruler down the page.
+    final firstNode = lines.indexWhere((l) => l.node != null);
+    final lastNode = lines.lastIndexWhere((l) => l.node != null);
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -250,17 +309,138 @@ class _TripPdfBuilder {
           ),
         ),
         pw.SizedBox(height: 4),
-        if (entries.isEmpty)
+        if (lines.isEmpty)
           pw.Text('—', style: const pw.TextStyle(fontSize: 10, color: _faint))
         else
-          for (final e in entries) e.widget,
+          for (var i = 0; i < lines.length; i++)
+            _lineRow(
+              lines[i],
+              railAbove: i > firstNode && i <= lastNode,
+              railBelow: i >= firstNode && i < lastNode,
+            ),
       ],
+    );
+  }
+
+  // The day's columns: the time, then the rail's gutter, then the text. The
+  // node is centered on the first line of a 10pt title.
+  static const double _timeWidth = 74;
+  static const double _gutterWidth = 18;
+  static const double _railWidth = 1.2;
+  static const double _linePadding = 3;
+  static const double _nodeBox = 12;
+  static const double _nodeCenter = _linePadding + _nodeBox / 2;
+  static const _railColor = PdfColors.grey400;
+
+  /// One [_DayLine] with its piece of the rail: from the top of the row down to
+  /// the node ([railAbove]), on from the node to the bottom ([railBelow]), or
+  /// right through a row with no node of its own (a decision's label).
+  pw.Widget _lineRow(
+    _DayLine line, {
+    required bool railAbove,
+    required bool railBelow,
+  }) {
+    const left = _timeWidth + (_gutterWidth - _railWidth) / 2;
+    pw.Widget rail(double height) =>
+        pw.Container(width: _railWidth, height: height, color: _railColor);
+    final hasNode = line.node != null;
+
+    return pw.Stack(
+      children: [
+        if (railAbove && railBelow)
+          pw.Positioned(
+            left: left,
+            top: 0,
+            bottom: 0,
+            child: pw.Container(width: _railWidth, color: _railColor),
+          )
+        else if (railAbove && hasNode)
+          pw.Positioned(left: left, top: 0, child: rail(_nodeCenter))
+        else if (railBelow && hasNode)
+          pw.Positioned(
+            left: left,
+            top: _nodeCenter,
+            bottom: 0,
+            child: pw.Container(width: _railWidth, color: _railColor),
+          ),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              width: _timeWidth,
+              padding: const pw.EdgeInsets.only(top: _linePadding + 1),
+              child: pw.Text(
+                line.time,
+                style: const pw.TextStyle(fontSize: 9, color: _muted),
+              ),
+            ),
+            pw.Container(
+              width: _gutterWidth,
+              height: _nodeBox,
+              margin: const pw.EdgeInsets.only(top: _linePadding),
+              alignment: pw.Alignment.center,
+              child: line.node,
+            ),
+            pw.SizedBox(width: 4),
+            pw.Expanded(
+              child: pw.Container(
+                padding: pw.EdgeInsets.only(
+                  left: line.inDecision ? 6 : 0,
+                  top: _linePadding,
+                  bottom: _linePadding,
+                ),
+                // The decision's accent bar, drawn per row so that it runs
+                // unbroken down the rows the decision is made of.
+                decoration: line.inDecision
+                    ? pw.BoxDecoration(
+                        border: pw.Border(
+                          left: pw.BorderSide(color: accent, width: 2),
+                        ),
+                      )
+                    : null,
+                child: line.content,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// A place's node: a dot in the trip's accent, as on the app's timeline.
+  pw.Widget _placeNode() => pw.Container(
+    width: 7,
+    height: 7,
+    decoration: pw.BoxDecoration(color: accent, shape: pw.BoxShape.circle),
+  );
+
+  /// A leg's node: its mode's icon in a disc, as on the app's timeline. The
+  /// disc is drawn without the icon when no icon font was handed in.
+  pw.Widget _transportNode(BundleItem item) {
+    final icon = pdfTransportModeIcon(item.mode, bundle, localIcons: modeIcons);
+    final font = fonts;
+    return pw.Container(
+      width: _nodeBox,
+      height: _nodeBox,
+      alignment: pw.Alignment.center,
+      decoration: const pw.BoxDecoration(
+        color: PdfColors.grey200,
+        shape: pw.BoxShape.circle,
+      ),
+      child: font == null
+          ? null
+          : pw.Icon(
+              pw.IconData(icon.codePoint),
+              font: font.fontFor(icon),
+              size: 8.5,
+              color: PdfColors.grey800,
+            ),
     );
   }
 
   /// A decision: its chosen option's entries, plus a note of the alternatives
   /// that were considered but not counted.
-  pw.Widget _decisionRow(BundleAlternativeSet set) {
+  List<_DayLine> _decisionLines(BundleAlternativeSet set) {
     final chosen = set.alternatives.firstWhere(
       (a) => a.chosen,
       orElse: () => set.alternatives.first,
@@ -278,42 +458,38 @@ class _TripPdfBuilder {
           a.label!.trim(),
     ];
 
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 2),
-      padding: const pw.EdgeInsets.only(left: 6),
-      decoration: pw.BoxDecoration(
-        border: pw.Border(left: pw.BorderSide(color: accent, width: 2)),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          if (set.label != null && set.label!.trim().isNotEmpty)
-            pw.Text(
-              set.label!.trim(),
-              style: pw.TextStyle(
-                fontSize: 10,
-                fontWeight: pw.FontWeight.bold,
-                color: _muted,
-              ),
+    _DayLine note(pw.Widget content) =>
+        (node: null, time: '', content: content, inDecision: true);
+
+    return [
+      if (set.label != null && set.label!.trim().isNotEmpty)
+        note(
+          pw.Text(
+            set.label!.trim(),
+            style: pw.TextStyle(
+              fontSize: 10,
+              fontWeight: pw.FontWeight.bold,
+              color: _muted,
             ),
-          if (chosenItems.isEmpty)
-            pw.Text('—', style: const pw.TextStyle(fontSize: 10, color: _faint))
-          else
-            for (final item in chosenItems) _itemRow(item),
-          if (otherLabels.isNotEmpty)
-            pw.Padding(
-              padding: const pw.EdgeInsets.only(top: 2, bottom: 4),
-              child: pw.Text(
-                l10n.pdfOtherOptions(otherLabels.join(', ')),
-                style: const pw.TextStyle(fontSize: 8, color: _faint),
-              ),
-            ),
-        ],
-      ),
-    );
+          ),
+        ),
+      if (chosenItems.isEmpty)
+        note(
+          pw.Text('—', style: const pw.TextStyle(fontSize: 10, color: _faint)),
+        )
+      else
+        for (final item in chosenItems) _itemLine(item, inDecision: true),
+      if (otherLabels.isNotEmpty)
+        note(
+          pw.Text(
+            l10n.pdfOtherOptions(otherLabels.join(', ')),
+            style: const pw.TextStyle(fontSize: 8, color: _faint),
+          ),
+        ),
+    ];
   }
 
-  pw.Widget _itemRow(BundleItem item) {
+  _DayLine _itemLine(BundleItem item, {bool inDecision = false}) {
     final time = formatTimeRange(
       item.startMinutes,
       item.endMinutes,
@@ -339,45 +515,33 @@ class _TripPdfBuilder {
 
     final costs = _costLabelsForItem(item.localId);
 
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 3),
-      child: pw.Row(
+    return (
+      node: isTransport ? _transportNode(item) : _placeNode(),
+      time: time,
+      inDecision: inDecision,
+      content: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.SizedBox(
-            width: 74,
-            child: pw.Text(
-              time,
+          pw.Text(
+            title.isEmpty ? '—' : title,
+            style: pw.TextStyle(
+              fontSize: 10,
+              fontWeight: isTransport
+                  ? pw.FontWeight.normal
+                  : pw.FontWeight.bold,
+              color: isTransport ? _muted : PdfColors.black,
+            ),
+          ),
+          for (final part in subtitleParts)
+            pw.Text(
+              part,
               style: const pw.TextStyle(fontSize: 9, color: _muted),
             ),
-          ),
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  title.isEmpty ? '—' : title,
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: isTransport
-                        ? pw.FontWeight.normal
-                        : pw.FontWeight.bold,
-                    color: isTransport ? _muted : PdfColors.black,
-                  ),
-                ),
-                for (final part in subtitleParts)
-                  pw.Text(
-                    part,
-                    style: const pw.TextStyle(fontSize: 9, color: _muted),
-                  ),
-                if (costs.isNotEmpty)
-                  pw.Text(
-                    costs.join('  ·  '),
-                    style: const pw.TextStyle(fontSize: 9, color: _faint),
-                  ),
-              ],
+          if (costs.isNotEmpty)
+            pw.Text(
+              costs.join('  ·  '),
+              style: const pw.TextStyle(fontSize: 9, color: _faint),
             ),
-          ),
         ],
       ),
     );
@@ -732,3 +896,14 @@ class _TripPdfBuilder {
     ),
   );
 }
+
+/// One line of a day as the PDF lays it out: what sits on the rail ([node],
+/// null for a line between entries such as a decision's label), the [time]
+/// beside it, the text, and whether it belongs to a decision, which marks its
+/// rows with the accent bar.
+typedef _DayLine = ({
+  pw.Widget? node,
+  String time,
+  pw.Widget content,
+  bool inDecision,
+});
