@@ -156,14 +156,19 @@ flutter:
   # by the PDF export as raw bytes, since the standard PDF font can't draw the €
   # sign or other non-Latin-1 glyphs, and the offline app can't fetch a webfont.
   # Declared as plain assets (read via rootBundle), not a Flutter `fonts:` family.
+  # MaterialIconsPdf.ttf likewise: the transport-mode icons for the PDF, as
+  # TrueType, which package:pdf can embed and Flutter's own Material Icons
+  # font is not (regenerate with assets/fonts/build_pdf_icons.py).
   assets:
     - assets/fonts/Roboto-Regular.ttf
     - assets/fonts/Roboto-Bold.ttf
+    - assets/fonts/MaterialIconsPdf.ttf
     # The bundled fonts' terms, shown on the About screen's licence page
     # (core/licenses.dart) — a font ships inside the binary, so its licence has
     # to ship with it.
     - assets/fonts/Roboto-LICENSE.txt
     - assets/fonts/TransportGlyphs-ATTRIBUTION.txt
+    - assets/fonts/MaterialIconsPdf-ATTRIBUTION.txt
     # The mark, shown above the licence page's title. 256 px because it is drawn
     # at 72 dp — big enough for a 3x screen, and small enough that the binary
     # does not carry a launcher-sized bitmap for one icon.

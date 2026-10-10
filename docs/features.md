@@ -717,7 +717,8 @@ This is the only export that round-trips.
 Turn a trip into paper for people who do not use the app. A header with the dates, notes,
 and participants is always printed; beyond that you tick which of the **itinerary**, the
 **expense summary** (per-currency total, breakdown, and settlements) and the **checklists**
-to include.
+to include. The itinerary is drawn along a line as in the app, each connection marked with
+the icon of its transport mode.
 
 Each row says what it would print — e.g., "5 days · 18 entries" — sections this trip has nothing
 for are grayed out rather than offered as a switch that yields no pages, and the choice is

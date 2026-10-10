@@ -1,11 +1,15 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
 import 'package:travelplanner/features/sharing/trip_bundle.dart';
 import 'package:travelplanner/features/sharing/trip_pdf.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -27,6 +31,8 @@ void main() {
     fonts = TripPdfFonts(
       regular: face('Roboto-Regular.ttf'),
       bold: face('Roboto-Bold.ttf'),
+      icons: face('MaterialIconsPdf.ttf'),
+      transportGlyphs: face('TransportGlyphs.ttf'),
     );
   });
 
@@ -237,6 +243,132 @@ void main() {
     // The builder must not throw when only some items are live; producing a
     // valid document is the observable assertion here.
     expectPdf(bytes);
+  });
+
+  group('transport mode icons', () {
+    test('every icon a mode can wear has a glyph in the font the PDF draws '
+        'it from', () {
+      // Fails when an icon joins kTransportModeIcons without
+      // assets/fonts/build_pdf_icons.py being run again: the PDF would then
+      // print an empty disc where the app shows the icon.
+      TtfParser parser(String name) => TtfParser(
+        ByteData.view(File('assets/fonts/$name').readAsBytesSync().buffer),
+      );
+      final material = parser('MaterialIconsPdf.ttf');
+      final glyphs = parser('TransportGlyphs.ttf');
+      for (final icon in [
+        ...kTransportModeIcons.values,
+        kDefaultTransportModeIcon,
+      ]) {
+        final face = identical(fonts.fontFor(icon), fonts.transportGlyphs)
+            ? glyphs
+            : material;
+        expect(
+          face.charToGlyphIndexMap[icon.codePoint] ?? 0,
+          greaterThan(0),
+          reason:
+              'U+${icon.codePoint.toRadixString(16)} '
+              '(${icon.fontFamily}) has no glyph',
+        );
+      }
+    });
+
+    test("every icon glyph's left side bearing is its outline's left edge", () {
+      // A TrueType renderer puts a glyph's origin at xMin - lsb, so a bearing
+      // of 0 under an outline starting further right draws the icon off
+      // center — by up to a sixth of its size, which in a 12pt disc shows.
+      // Both build scripts once wrote 0.
+      for (final name in ['MaterialIconsPdf.ttf', 'TransportGlyphs.ttf']) {
+        final parser = TtfParser(
+          ByteData.view(File('assets/fonts/$name').readAsBytesSync().buffer),
+        );
+        for (final index in parser.charToGlyphIndexMap.values) {
+          final metrics = parser.glyphInfoMap[index]!;
+          expect(
+            metrics.leftBearing,
+            closeTo(metrics.left, 1e-9),
+            reason: '$name glyph $index',
+          );
+        }
+      }
+    });
+
+    test('the glyphs of the TransportGlyphs font are drawn from that font', () {
+      expect(fonts.fontFor(kTransportModeIcons[30]!), fonts.transportGlyphs);
+      expect(fonts.fontFor(kTransportModeIcons[14]!), fonts.icons);
+    });
+
+    test("a mode's icon is this database's, else the bundle's, else the "
+        "built-in's own", () {
+      final bundle = TripBundle(
+        schemaVersion: 19,
+        trip: BundleTrip(
+          title: 'T',
+          destination: '',
+          colorValue: 0xFF00695C,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+        modeIcons: const {'Rickshaw': 34},
+      );
+      // A built-in the user re-iconed: the bundle cannot say so.
+      expect(
+        pdfTransportModeIcon(
+          'train',
+          bundle,
+          localIcons: {'train': kTransportModeIcons[15]!},
+        ),
+        kTransportModeIcons[15],
+      );
+      expect(pdfTransportModeIcon('train', bundle), TransportMode.train.icon);
+      // A custom mode this database does not have keeps the bundle's icon...
+      expect(pdfTransportModeIcon('Rickshaw', bundle), kTransportModeIcons[34]);
+      // ...unless one of the same name here wears another.
+      expect(
+        pdfTransportModeIcon(
+          'Rickshaw',
+          bundle,
+          localIcons: {'Rickshaw': kTransportModeIcons[9]!},
+        ),
+        kTransportModeIcons[9],
+      );
+      expect(
+        pdfTransportModeIcon('Unknown', bundle),
+        kDefaultTransportModeIcon,
+      );
+      expect(pdfTransportModeIcon(null, bundle), kDefaultTransportModeIcon);
+    });
+
+    test('transportModeIconsByKey keys the modes the way a bundle does', () {
+      final icons = transportModeIconsByKey(const [
+        TransportModeRow(id: 1, builtinKey: 'train', sortOrder: 0),
+        // Renamed and re-iconed built-in: still keyed by its builtinKey.
+        TransportModeRow(
+          id: 2,
+          builtinKey: 'bus',
+          name: 'Coach',
+          iconId: 11,
+          sortOrder: 1,
+        ),
+        TransportModeRow(id: 3, name: 'Rickshaw', iconId: 34, sortOrder: 2),
+      ]);
+      expect(icons, {
+        'train': TransportMode.train.icon,
+        'bus': kTransportModeIcons[11],
+        'Rickshaw': kTransportModeIcons[34],
+      });
+    });
+
+    test('a trip with a leg embeds the icon font', () async {
+      // The sample's train leg is drawn with a Material icon, so the subset
+      // font has to be in the document.
+      final bytes = await buildTripPdf(
+        bundle: sample(),
+        l10n: l10n,
+        localeName: 'en',
+        fonts: fonts,
+      );
+      expect(latin1.decode(bytes), contains('MaterialIconsPdf'));
+    });
   });
 }
 

@@ -57,7 +57,15 @@ def main(out_path):
     for name, d in GLYPHS.items():
         glyphs[name] = build_glyph(d)
     fb.setupGlyf(glyphs)
-    fb.setupHorizontalMetrics({n: (EM, 0) for n in order})
+    # The left side bearing must be the outline's xMin: a TrueType renderer puts
+    # the origin at xMin - lsb, so a bearing of 0 draws each glyph shifted left
+    # by its own xMin instead of centered in the em square.
+    def lsb(glyph):
+        if glyph.numberOfContours <= 0:
+            return 0
+        return glyph.coordinates.calcIntBounds()[0]
+
+    fb.setupHorizontalMetrics({n: (EM, lsb(glyphs[n])) for n in order})
     fb.setupHorizontalHeader(ascent=EM, descent=0)
     fb.setupNameTable(
         {
