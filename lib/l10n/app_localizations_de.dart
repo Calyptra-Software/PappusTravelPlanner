@@ -1809,6 +1809,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get connectionReplanFromHere => 'Ab hier neu planen';
+
+  @override
   String get connectionRoutedTransfers => 'Umstiege nach Fußweg berechnen';
 
   @override

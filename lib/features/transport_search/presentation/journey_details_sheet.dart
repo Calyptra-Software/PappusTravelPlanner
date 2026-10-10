@@ -103,6 +103,10 @@ class JourneyDetailsSheet extends ConsumerWidget {
               leg,
               intoRoutine: isRoutine,
             ),
+      onReplanFrom: planned == null || planned.legs.length < 2
+          ? null
+          : (arriving) =>
+                _replanFrom(context, journey, arriving, intoRoutine: isRoutine),
     );
   }
 
@@ -166,6 +170,30 @@ class JourneyDetailsSheet extends ConsumerWidget {
       journey,
       intoRoutine: intoRoutine,
       departFromMinutes: departureSeedMinutes(run, leg),
+    );
+  }
+
+  /// The same search for **the rest of the run** after [arriving], from the
+  /// change it arrives at: the connection there was missed, so everything from
+  /// here to the destination has to move, and nothing before it.
+  ///
+  /// It starts from the arrival, actual or planned (`arrivalSeedMinutes`), not
+  /// from the departure that was just missed. Like the leg's own search, only
+  /// the legs searched for are replaced, and the group, its ticket and its slot
+  /// survive.
+  Future<void> _replanFrom(
+    BuildContext context,
+    List<ItineraryItem> run,
+    ItineraryItem arriving, {
+    bool intoRoutine = false,
+  }) async {
+    final rest = journeyAfter(run, arriving);
+    if (rest == null) return;
+    await _findConnection(
+      context,
+      rest,
+      intoRoutine: intoRoutine,
+      departFromMinutes: arrivalSeedMinutes(arriving, rest.date),
     );
   }
 }

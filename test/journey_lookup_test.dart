@@ -80,6 +80,7 @@ void main() {
   Future<List<ItineraryItem>> plan({
     bool addressable = true,
     int? groupId = 1,
+    bool withWalk = false,
   }) async {
     await db.itineraryDao.addItem(
       ItineraryItemsCompanion.insert(
@@ -104,6 +105,28 @@ void main() {
         toLon: addressable ? const Value(10.006909) : const Value.absent(),
       ),
     );
+    // The walk the router puts between the two trains: part of the change, so
+    // part of what a change replans.
+    if (withWalk) {
+      await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          groupId: Value(groupId),
+          // The seeded built-in walk: what makes it a walk to the sheet.
+          mode: const Value(1),
+          startMinutes: const Value(468),
+          endMinutes: const Value(473),
+          fromLocation: const Value('Hamburg Hbf'),
+          toLocation: const Value('Hauptbahnhof Nord'),
+          fromLat: const Value(53.552734),
+          fromLon: const Value(10.006909),
+          toLat: const Value(53.554108),
+          toLon: const Value(10.005139),
+        ),
+      );
+    }
     await db.itineraryDao.addItem(
       ItineraryItemsCompanion.insert(
         tripId: 1,
@@ -154,7 +177,11 @@ void main() {
           tripProvider(
             1,
           ).overrideWith((ref) => Stream.value(trip.copyWith(kind: kind))),
-          transportModesByIdProvider.overrideWith((ref) => const {}),
+          transportModesByIdProvider.overrideWith(
+            (ref) => const {
+              1: TransportModeRow(id: 1, builtinKey: 'walk', sortOrder: 0),
+            },
+          ),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -390,6 +417,84 @@ void main() {
       // 08:04, where the traveller really is — not the 08:08 the plan hoped for.
       expect(inForm(find.text('8:04 AM')), findsOneWidget);
       expect(inForm(find.text('8:08 AM')), findsNothing);
+    });
+  });
+
+  group('the rest of a run, from a change', () {
+    Finder replanButton() => find.text('Replan from here');
+
+    testWidgets('the change between two legs offers it', (tester) async {
+      final items = await plan(withWalk: true);
+      await pump(tester, items);
+      // RB81 → walk → U2 is one change: the walk is folded into it.
+      expect(replanButton(), findsOneWidget);
+    });
+
+    testWidgets('a run of one leg has no change to replan from', (
+      tester,
+    ) async {
+      final items = await plan();
+      await pump(tester, [items.first]);
+      expect(replanButton(), findsNothing);
+    });
+
+    testWidgets('searches from the change to the end, from the arrival', (
+      tester,
+    ) async {
+      final items = await plan(withWalk: true);
+      await pump(tester, items);
+
+      await tester.tap(replanButton());
+      await tester.pumpAndSettle();
+
+      // From where the RB81 set the traveller down, to where the run ends, and
+      // from its planned arrival (07:48) — not the 08:08 just missed.
+      expect(inForm(find.text('Hamburg Hbf')), findsOneWidget);
+      expect(inForm(find.text('Schlump')), findsOneWidget);
+      expect(inForm(find.text('7:48 AM')), findsOneWidget);
+      expect(inForm(find.text('8:08 AM')), findsNothing);
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+      expect(search.lastFrom, '53.552734,10.006909');
+      expect(search.lastTo, 'de-DELFI_schlump');
+
+      await tester.tap(inForm(find.textContaining('RB81')).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Use this'));
+      await tester.pumpAndSettle();
+
+      final after = await legs();
+      // The walk and the U2 made way for the one leg found; the RB81 already
+      // travelled is untouched.
+      expect(after, hasLength(2));
+      final kept = after.firstWhere((l) => l.id == items.first.id);
+      expect(kept.title, 'RB81');
+      expect(kept.sourceTripId, isNull);
+      final swapped = after.firstWhere((l) => l.id != items.first.id);
+      expect(swapped.sourceTripId, 'run-1');
+      expect(swapped.groupId, 1, reason: 'still one journey, one ticket');
+      expect(swapped.sortOrder, items[1].sortOrder, reason: 'the walk\'s slot');
+      expect(swapped.toPlaceId, 'de-DELFI_schlump');
+    });
+
+    testWidgets('a recorded arrival is where it starts instead', (
+      tester,
+    ) async {
+      final items = await plan(withWalk: true);
+      await db.itineraryDao.setLiveTimes(
+        items.first.id,
+        actualStart: 466,
+        actualEnd: 484,
+        stopovers: null,
+      );
+      await pump(tester, await legs());
+
+      await tester.tap(replanButton());
+      await tester.pumpAndSettle();
+
+      expect(inForm(find.text('8:04 AM')), findsOneWidget);
+      expect(inForm(find.text('7:48 AM')), findsNothing);
     });
   });
 

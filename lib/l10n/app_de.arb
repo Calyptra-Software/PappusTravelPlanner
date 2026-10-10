@@ -630,6 +630,7 @@
   "@connectionSummaryOwnWay": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "connectionReplanFromHere": "Ab hier neu planen",
   "connectionRoutedTransfers": "Umstiege nach Fußweg berechnen",
   "connectionRoutedTransfersHint": "Jeden Umstieg aus dem tatsächlichen Weg zwischen den Haltestellen auf OpenStreetMap berechnen statt mit vorberechneten Standardzeiten. Findet knappe Umstiege am selben Bahnsteig; nur so genau wie die Karte.",
   "connectionRoutedTransfersImplied": "Bei barrierefreien Verbindungen immer an.",

@@ -152,11 +152,54 @@ int? departureSeedMinutes(List<ItineraryItem> run, ItineraryItem leg) {
   final legs = _runLegs(run);
   final index = legs.indexWhere((item) => item.id == leg.id);
   if (index <= 0) return null;
-  final before = legs[index - 1];
-  final arrival = before.times.actualEnd;
+  return _arrivalOn(legs[index - 1], legs[index - 1].times.actualEnd, leg.date);
+}
+
+/// What is left of [run] once [arriving] has set the traveller down: every leg
+/// after it, as one journey — the walk to the next platform included, since that
+/// is part of the change and not of the leg before it — or null when nothing
+/// follows.
+///
+/// This is the question a connection missed at a change asks. Replacing the next
+/// leg alone would keep everything after it standing even where it no longer
+/// fits, and replacing the whole run would search again from a station the
+/// traveller has long left. The rest keeps the run's group, so the ticket and
+/// the slot survive the swap exactly as they do for the whole journey; its start
+/// is addressed by the coordinates of the change (an inner leg carries no id),
+/// its end by whatever the run's last leg was searched with.
+PlannedJourney? journeyAfter(List<ItineraryItem> run, ItineraryItem arriving) {
+  final legs = _runLegs(run);
+  final index = legs.indexWhere((item) => item.id == arriving.id);
+  if (index < 0 || index == legs.length - 1) return null;
+  return PlannedJourney(
+    groupId: arriving.groupId,
+    legs: legs.sublist(index + 1),
+  );
+}
+
+/// When the traveller is standing at the change after [arriving], in minutes
+/// since midnight of [day] — the minute to search the rest of the journey from
+/// ([journeyAfter]).
+///
+/// The **actual** arrival when one has been recorded, as for
+/// [departureSeedMinutes], and otherwise the **planned** arrival — not the
+/// planned departure of the next leg, which is the connection that has just been
+/// missed: searching from it would offer that very train again, and starting at
+/// the arrival keeps it in the results whenever it can still be made. A delay
+/// the service does not know about is typed into the time field once; the form
+/// shows this as a seed and nothing more. Null when the arrival is not on [day],
+/// by the same rule as [departureSeedMinutes].
+int? arrivalSeedMinutes(ItineraryItem arriving, DateTime day) {
+  final times = arriving.times;
+  return _arrivalOn(arriving, times.actualEnd ?? times.plannedEnd, day);
+}
+
+/// [arrival], a time on [leg]'s own minute line, as minutes since midnight of
+/// [day] — or null when it is unset or falls on another day.
+int? _arrivalOn(ItineraryItem leg, int? arrival, DateTime day) {
   if (arrival == null) return null;
-  final arrivalDay = addDays(before.date, dayOfLine(arrival));
-  if (!_sameDay(arrivalDay, leg.date)) return null;
+  final arrivalDay = addDays(leg.date, dayOfLine(arrival));
+  if (!_sameDay(arrivalDay, day)) return null;
   return minuteOfLine(arrival);
 }
 

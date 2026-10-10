@@ -32,6 +32,7 @@ class LegRow extends PreviewRow {
 /// again, and how long there is between the two.
 class ChangeRow extends PreviewRow {
   const ChangeRow({
+    required this.arriving,
     required this.place,
     required this.minutes,
     this.toPlace,
@@ -39,6 +40,11 @@ class ChangeRow extends PreviewRow {
     this.ownSteamMinutes,
     this.ownSteamMode,
   });
+
+  /// The service the change begins with — the one that sets the traveller down
+  /// at [place]. What a change is replanned *from*: everything after it is the
+  /// rest of the journey.
+  final ViewLeg arriving;
 
   /// Where the arriving service sets the traveller down.
   final String place;
@@ -117,6 +123,7 @@ ChangeRow _change(ViewLeg from, ViewLeg to, List<ViewLeg> between) {
     (sum, leg) => sum + (leg.duration?.inMinutes ?? 0),
   );
   return ChangeRow(
+    arriving: from,
     place: arrival.name,
     toPlace: departure.name == arrival.name ? null : departure.name,
     minutes: planned,

@@ -547,6 +547,40 @@ void main() {
       expect(departureSeedMinutes([first, second], second), 12);
     });
 
+    test('the rest of a run is every leg after the arriving one', () {
+      final first = inRun(sortOrder: 0, start: 452);
+      final walk = inRun(sortOrder: 1, start: 468);
+      final last = inRun(sortOrder: 2, start: 488);
+
+      // Handed over out of order: the run is read in day order regardless.
+      final rest = journeyAfter([last, first, walk], first)!;
+      expect(rest.legIds, [walk.id, last.id]);
+      expect(rest.groupId, 4, reason: 'the swap keeps the ticket');
+      expect(journeyAfter([first, walk, last], last), isNull);
+    });
+
+    test('the rest starts at the arrival, planned when nothing is recorded', () {
+      ItineraryItem arriving({int? actualEnd}) => ItineraryItem(
+        id: nextId++,
+        tripId: 1,
+        date: DateTime(2026, 8, 3),
+        sortOrder: 0,
+        kind: ItemKind.transport,
+        groupId: 4,
+        startMinutes: 452,
+        endMinutes: 468,
+        actualEndMinutes: actualEnd,
+        endDayOffset: 0,
+        chordDisplay: TrackDisplay.auto,
+      );
+      final day = DateTime(2026, 8, 3);
+
+      expect(arrivalSeedMinutes(arriving(), day), 468);
+      expect(arrivalSeedMinutes(arriving(actualEnd: 484), day), 484);
+      // Not on the day the rest is searched on: no seed rather than a wrong one.
+      expect(arrivalSeedMinutes(arriving(), DateTime(2026, 8, 4)), isNull);
+    });
+
     test('a leg on another day is not the leg before it either', () {
       final first = inRun(
         sortOrder: 0,
