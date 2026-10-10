@@ -260,8 +260,9 @@ service publishes them.
 
 The search options are remembered for next time and cover what actually decides whether a
 connection is usable: which **means of transport** may be used, the **shortest change**
-you want planned for, **how fast you walk** (or cycle), whether you have a **bike** with
-you and whether it comes on board, whether the journey must be **step-free**, how long you
+you want planned for, whether a change is timed by the **actual walk** between the stops
+(OpenStreetMap) rather than by standard times, **how fast you walk** (or cycle), whether
+you have a **bike** with you and whether it comes on board, whether the journey must be **step-free**, how long you
 spend **getting to and from stops**, and the **most changes** to accept — down to *direct
 connections only*, so a search never books you a three-minute sprint across a terminus. A
 **via stop** can be required as well, with a minimum time to stay there.

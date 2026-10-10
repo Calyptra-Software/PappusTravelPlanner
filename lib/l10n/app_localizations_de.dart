@@ -1809,6 +1809,20 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get connectionRoutedTransfers => 'Umstiege nach Fußweg berechnen';
+
+  @override
+  String get connectionRoutedTransfersHint =>
+      'Jeden Umstieg aus dem tatsächlichen Weg zwischen den Haltestellen auf OpenStreetMap berechnen statt mit vorberechneten Standardzeiten. Findet knappe Umstiege am selben Bahnsteig; nur so genau wie die Karte.';
+
+  @override
+  String get connectionRoutedTransfersImplied =>
+      'Bei barrierefreien Verbindungen immer an.';
+
+  @override
+  String get connectionSummaryRoutedTransfers => 'Umstiege nach Fußweg';
+
+  @override
   String get connectionWheelchair => 'Barrierefrei';
 
   @override

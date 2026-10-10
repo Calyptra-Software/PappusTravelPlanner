@@ -919,6 +919,32 @@ void main() {
       expect(q['useRoutedTransfers'], 'true');
     });
 
+    test('routed changes can be asked for without step-free travel', () async {
+      late http.Request seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req;
+          return http.Response(
+            _fixture('motis_plan_overnight.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await client.journeys(
+        fromId: 'A',
+        toId: 'B',
+        time: DateTime.utc(2026, 7, 27, 18),
+        options: const JourneySearchOptions(routedTransfers: true),
+      );
+
+      final q = seen.url.queryParameters;
+      expect(q['useRoutedTransfers'], 'true');
+      // Routing the changes says nothing about who walks them.
+      expect(q, isNot(contains('pedestrianProfile')));
+    });
+
     test('nothing said about accessibility when it is not asked for', () async {
       late http.Request seen;
       final client = MotisTransportSearch(

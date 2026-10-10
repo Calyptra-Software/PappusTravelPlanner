@@ -953,6 +953,10 @@
   "@connectionSummaryOwnWay": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "connectionRoutedTransfers": "Time changes by the actual walk",
+  "connectionRoutedTransfersHint": "Work out each change from the actual path between the stops on OpenStreetMap, instead of precomputed standard times. Finds tight cross-platform changes; only as accurate as the map.",
+  "connectionRoutedTransfersImplied": "Always on for step-free travel.",
+  "connectionSummaryRoutedTransfers": "changes timed by walk",
   "connectionWheelchair": "Wheelchair accessible",
   "connectionWheelchairHint": "Step-free walking and changes, and only services marked as accessible. Many networks publish nothing about this, and then little or nothing is found.",
   "connectionNoAccessibleConnections": "No step-free connections found",

@@ -1773,6 +1773,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get connectionRoutedTransfers => 'Time changes by the actual walk';
+
+  @override
+  String get connectionRoutedTransfersHint =>
+      'Work out each change from the actual path between the stops on OpenStreetMap, instead of precomputed standard times. Finds tight cross-platform changes; only as accurate as the map.';
+
+  @override
+  String get connectionRoutedTransfersImplied =>
+      'Always on for step-free travel.';
+
+  @override
+  String get connectionSummaryRoutedTransfers => 'changes timed by walk';
+
+  @override
   String get connectionWheelchair => '无障碍通行';
 
   @override

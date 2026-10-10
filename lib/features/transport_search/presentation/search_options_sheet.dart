@@ -39,6 +39,9 @@ String searchOptionsSummary(
   if (options.walkingSpeedKmh != kNormalWalkingSpeedKmh)
     l10n.connectionSpeedValue(formatWalkingSpeed(options.walkingSpeedKmh)),
   if (options.wheelchair) l10n.connectionWheelchair,
+  // Step-free travel already routes the changes; naming it twice says nothing.
+  if (options.routedTransfers && !options.wheelchair)
+    l10n.connectionSummaryRoutedTransfers,
   if (options.byBike)
     options.bikeOnBoard ? l10n.connectionBikeOnBoard : l10n.connectionByBike,
   if (options.maxTransfers != null)
@@ -202,6 +205,26 @@ class _SearchOptionsSheetState extends State<_SearchOptionsSheet> {
                 ),
               ),
               const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                visualDensity: VisualDensity.compact,
+                secondary: const Icon(Icons.transfer_within_a_station),
+                title: Text(l10n.connectionRoutedTransfers),
+                // Step-free travel cannot be had without it, so while that is
+                // on the switch reads as on and says why it cannot be turned
+                // off, rather than offering an off that would be ignored.
+                subtitle: Text(
+                  _draft.wheelchair
+                      ? l10n.connectionRoutedTransfersImplied
+                      : l10n.connectionRoutedTransfersHint,
+                ),
+                value: _draft.routedTransfers || _draft.wheelchair,
+                onChanged: _draft.wheelchair
+                    ? null
+                    : (on) => setState(
+                        () => _draft = _draft.copyWith(routedTransfers: on),
+                      ),
+              ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 visualDensity: VisualDensity.compact,
