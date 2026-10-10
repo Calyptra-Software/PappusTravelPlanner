@@ -3112,6 +3112,12 @@ abstract class AppLocalizations {
   /// **'≤{minutes} min on your own'**
   String connectionSummaryOwnWay(int minutes);
 
+  /// No description provided for @connectionReplanFromHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Replan from here'**
+  String get connectionReplanFromHere;
+
   /// No description provided for @connectionRoutedTransfers.
   ///
   /// In en, this message translates to:

@@ -1773,6 +1773,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get connectionReplanFromHere => 'Replan from here';
+
+  @override
   String get connectionRoutedTransfers => 'Time changes by the actual walk';
 
   @override

@@ -325,6 +325,19 @@ UI (features/*/presentation, *widgets)
   never read as the small hours of the wrong day. It seeds
   a form the user reads and can change; nothing here decides anything. Offered only on a run of
   two or more legs, since on one leg it would be the journey's own button twice.
+- **The rest of a run is replanned from the change it went wrong at** (*Replan from here*
+  on the journey sheet's `ChangeRow`, `JourneySheet.onReplanFrom`). A missed connection
+  asks about everything after the change, and neither of the other two buttons answers
+  that: the leg's own search keeps every later leg standing whether it still fits or not,
+  and the journey's searches again from a station already left. The unit is offered where
+  it begins, which is why the button sits on the change and not on a leg.
+  `journeyAfter` hands over every leg after the arriving one, the walk to the next platform
+  included (it is part of the change), as a `PlannedJourney` under the run's group, so the
+  swap goes through the same `replaceJourney` and keeps the ticket and the slot. Its start
+  is the change's coordinates, its end the run's own id. The time is the **arrival**
+  (`arrivalSeedMinutes`): the actual one when recorded, else the planned one, and never the
+  departure just missed, since searching from that offers the gone train again. The leg's
+  own button stays beside it; "only this leg" is still a question, just a rarer one.
 - **A lone leg is looked up from its own sheet**, not the journey sheet: the item form's
   "search online" button, which for a *new* leg adds a run and on an **existing** one replaces
   it (`ItemFormSheet._canReplaceLeg`). That is the entry point a hand-entered leg has, since

@@ -29,6 +29,7 @@ class JourneySheet extends StatelessWidget {
     this.onConfirm,
     this.onFindConnection,
     this.onFindLegConnection,
+    this.onReplanFrom,
   });
 
   final JourneyView view;
@@ -74,6 +75,15 @@ class JourneySheet extends StatelessWidget {
   /// Null on a preview, on a routine, and on a run of one leg — where the
   /// journey's own button already is the leg's.
   final ValueChanged<ItineraryItem>? onFindLegConnection;
+
+  /// Asks the timetable about **the rest of the journey** from a change, offered
+  /// on the change itself and handed the leg that arrives there. This is the
+  /// question a missed connection raises: the next leg alone would leave every
+  /// leg after it standing whether it still fits or not, and the whole run would
+  /// search again from where the journey started.
+  ///
+  /// Null wherever [onFindLegConnection] is, and for the same reasons.
+  final ValueChanged<ItineraryItem>? onReplanFrom;
 
   @override
   Widget build(BuildContext context) {
@@ -163,9 +173,11 @@ class JourneySheet extends StatelessWidget {
                       item: itemsById[leg.itemId],
                       onFindConnection: onFindLegConnection,
                     ),
-                    ChangeRow() => _ChangeTile(
+                    ChangeRow(:final arriving) => _ChangeTile(
                       change: row,
                       modesById: modesById,
+                      arrivingItem: itemsById[arriving.itemId],
+                      onReplan: onReplanFrom,
                     ),
                   },
               ],
@@ -556,10 +568,23 @@ class _EndLine extends StatelessWidget {
 /// A change between two services: how long there is, where, and how much of it
 /// is spent walking to the next platform.
 class _ChangeTile extends StatelessWidget {
-  const _ChangeTile({required this.change, required this.modesById});
+  const _ChangeTile({
+    required this.change,
+    required this.modesById,
+    this.arrivingItem,
+    this.onReplan,
+  });
 
   final ChangeRow change;
   final Map<int, TransportModeRow> modesById;
+
+  /// The itinerary row of the leg arriving at this change, when the trip holds
+  /// it.
+  final ItineraryItem? arrivingItem;
+
+  /// Replans the rest of the journey from here — see
+  /// [JourneySheet.onReplanFrom].
+  final ValueChanged<ItineraryItem>? onReplan;
 
   @override
   Widget build(BuildContext context) {
@@ -569,6 +594,8 @@ class _ChangeTile extends StatelessWidget {
     final minutes = change.minutes;
     final actual = change.actualMinutes;
     final ownSteam = change.ownSteamMinutes;
+    final arriving = arrivingItem;
+    final replan = onReplan;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
@@ -638,6 +665,22 @@ class _ChangeTile extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                // Worded rather than an icon beside the leg's own search: the
+                // two look alike and replace different things, so this one says
+                // what it covers.
+                if (arriving != null && replan != null)
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      icon: const Icon(Icons.alt_route, size: 18),
+                      label: Text(l10n.connectionReplanFromHere),
+                      onPressed: () => replan(arriving),
                     ),
                   ),
               ],

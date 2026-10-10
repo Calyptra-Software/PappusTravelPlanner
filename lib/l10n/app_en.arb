@@ -953,6 +953,7 @@
   "@connectionSummaryOwnWay": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "connectionReplanFromHere": "Replan from here",
   "connectionRoutedTransfers": "Time changes by the actual walk",
   "connectionRoutedTransfersHint": "Work out each change from the actual path between the stops on OpenStreetMap, instead of precomputed standard times. Finds tight cross-platform changes; only as accurate as the map.",
   "connectionRoutedTransfersImplied": "Always on for step-free travel.",

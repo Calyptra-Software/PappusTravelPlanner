@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **A journey can be replanned from a change.** After a missed connection, *Replan from
+  here* on the change searches the rest of the journey from where and when you arrived, and
+  replaces everything after it in one step.
 - **The connection search can time each change by the actual walk between the stops.**
   The new search option uses OpenStreetMap instead of standard transfer times, so tight
   cross-platform changes are found that were dropped before. It is off by default.

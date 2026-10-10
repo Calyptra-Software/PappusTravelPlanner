@@ -297,10 +297,11 @@ the service has been **canceled**.
 
 ### Asking the timetable again
 
-A journey can be looked up again later from the sheet that shows it, and a single leg from
-its own card — because the questions differ. "Is there a better way to make this journey"
-is asked of the whole run; "the train in came twenty late and the connection is gone" is
-asked of the rest of it, and only that leg is replaced.
+A journey can be looked up again later from the sheet that shows it: the whole run from the
+button at its foot, everything after a change with **Replan from here** on that change, and
+a single leg from its own card. A missed connection is the middle case: the search starts
+where the train in arrived, at the time it arrived (planned, or actual once recorded), and
+replaces the rest of the journey while leaving the legs already traveled alone.
 
 Either way it opens the ordinary search form, pre-filled — the question is rarely quite the
 old one, and a list of departures is what a traveler picks from. The shared ticket, the
