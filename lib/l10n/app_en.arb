@@ -615,6 +615,16 @@
     "description": "A row offering the recording's arrival time as a leg's actual arrival.",
     "placeholders": { "entry": { "type": "String" } }
   },
+  "trackActualStart": "{entry}: start",
+  "@trackActualStart": {
+    "description": "A row offering the arrival read off the recording as a place's actual start.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualEnd": "{entry}: end",
+  "@trackActualEnd": {
+    "description": "A row offering the departure read off the recording as a place's actual end.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
   "trackActualReplaces": "{time}, replaces {existing}",
   "@trackActualReplaces": {
     "description": "Subtitle of a row whose leg already holds a different actual time; unticked by default.",

@@ -1280,8 +1280,14 @@ UI (features/*/presentation, *widgets)
   offered only once every handover is placed, since a leg's are read at its cuts; and a line
   is timed **all or nothing** (`GpxTrack.times`) — one point without a time, a time with no
   zone, or times running backwards leave it untimed, and a `<rte>` is never timed, since a
-  time on a route is a schedule somebody computed. Places are not given times: what a stretch
-  of line measures is a leg.
+  time on a route is a schedule somebody computed. **A place takes the times of the handover
+  it stands at**, the rule that already gives it that handover's position: arrived with the
+  leg before, left with the leg after — the same two numbers, nothing measured anew. Several
+  places at one handover cannot be told apart by a line, so the first takes the arrival and
+  the last the departure; one before the first leg takes only when it was left, since a
+  recording starting there says nothing about when anybody got there, and one after the last
+  leg only when it was reached. A visit spent walking about reads short, as the legs either
+  side of it read long — the division gave that walking to them, and the times follow it.
 - **A recording covers one path through the plan, because a decision is a fork.** The
   entry picker is handed `buildTrackEntryPath` (`features/map/track_entry_path.dart`,
   pure) rather than `itemsFor` as it comes, for two reasons that turn out to be one. The

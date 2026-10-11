@@ -354,6 +354,38 @@ void main() {
       await drain(tester);
     });
 
+    testWidgets('a place at a handover is offered its start and end', (
+      tester,
+    ) async {
+      final cafe = ItineraryItem(
+        id: 9,
+        tripId: 1,
+        date: DateTime(2026, 5, 1),
+        sortOrder: 2,
+        kind: ItemKind.place,
+        title: 'Café',
+        endDayOffset: 0,
+        chordDisplay: TrackDisplay.auto,
+      );
+      await pump(
+        tester,
+        selection: [leg(1, 'A → B'), cafe, leg(2, 'B → C')],
+        times: [onTheDay],
+      );
+      await tapMap(tester, 0);
+      expect(find.text('6 actual times from the recording'), findsOneWidget);
+
+      await tester.tap(find.text('6 actual times from the recording'));
+      await tester.pumpAndSettle();
+      // In the item form's words for a place, not a leg's.
+      expect(find.text('Café: start'), findsOneWidget);
+      expect(find.text('Café: end'), findsOneWidget);
+
+      await tester.tapAt(const Offset(500, 20));
+      await tester.pumpAndSettle();
+      await drain(tester);
+    });
+
     testWidgets('a routine is offered none', (tester) async {
       await pump(
         tester,

@@ -31,6 +31,16 @@ void main() {
     chordDisplay: TrackDisplay.auto,
   );
 
+  ItineraryItem place(int id) => ItineraryItem(
+    id: id,
+    tripId: 1,
+    date: DateTime(2026, 5, 1),
+    sortOrder: id,
+    kind: ItemKind.place,
+    endDayOffset: 0,
+    chordDisplay: TrackDisplay.auto,
+  );
+
   /// A point [step] places north of the start, each about 111 m apart — so
   /// two different steps are always outside the stationary radius.
   LatLng at(int step) => LatLng(53.5 + step * 0.001, 9.9);
@@ -186,6 +196,59 @@ void main() {
         offset,
       );
       expect([for (final p in proposals) p.minutes], [8 * 60 + 3, 8 * 60 + 5]);
+    });
+  });
+
+  group('places take the times of their handover', () {
+    List<(int, TrackEnd, int)> propose(List<ItineraryItem> selection) {
+      final legs = [
+        for (final item in selection)
+          if (item.kind == ItemKind.transport) item,
+      ];
+      return [
+        for (final p in actualTimeProposals(
+          legs,
+          legInstants(points, times, const [6]),
+          offset,
+          selection: selection,
+        ))
+          (p.item.id, p.end, p.minutes),
+      ];
+    }
+
+    test('arrived with the leg before, left with the leg after', () {
+      expect(propose([place(10), leg(1), place(11), leg(2), place(12)]), [
+        // Before the first leg: only when it was left.
+        (10, TrackEnd.to, 8 * 60 + 2),
+        (1, TrackEnd.from, 8 * 60 + 2),
+        (1, TrackEnd.to, 8 * 60 + 5),
+        // At the change: the whole stay.
+        (11, TrackEnd.from, 8 * 60 + 5),
+        (11, TrackEnd.to, 8 * 60 + 7),
+        (2, TrackEnd.from, 8 * 60 + 7),
+        (2, TrackEnd.to, 8 * 60 + 9),
+        // After the last leg: only when it was reached.
+        (12, TrackEnd.from, 8 * 60 + 9),
+      ]);
+    });
+
+    test('two places at one handover share it, end to end', () {
+      // The line cannot say when the café was left for the museum.
+      final proposals = propose([leg(1), place(11), place(12), leg(2)]);
+      expect(proposals.where((p) => p.$1 == 11), [
+        (11, TrackEnd.from, 8 * 60 + 5),
+      ]);
+      expect(proposals.where((p) => p.$1 == 12), [
+        (12, TrackEnd.to, 8 * 60 + 7),
+      ]);
+    });
+
+    test('only the place next to the first leg is given its departure', () {
+      final proposals = propose([place(10), place(11), leg(1), leg(2)]);
+      expect(proposals.where((p) => p.$1 == 10), isEmpty);
+      expect(proposals.where((p) => p.$1 == 11), [
+        (11, TrackEnd.to, 8 * 60 + 2),
+      ]);
     });
   });
 }

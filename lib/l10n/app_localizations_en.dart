@@ -1215,6 +1215,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String trackActualStart(String entry) {
+    return '$entry: start';
+  }
+
+  @override
+  String trackActualEnd(String entry) {
+    return '$entry: end';
+  }
+
+  @override
   String trackActualReplaces(String time, String existing) {
     return '$time, replaces $existing';
   }

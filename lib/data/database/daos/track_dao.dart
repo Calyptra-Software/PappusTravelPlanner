@@ -119,9 +119,9 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
   /// against", and it cannot go on describing an end whose position now comes
   /// from somewhere else.
   ///
-  /// [times] are actual departures ([TrackEnd.from]) and arrivals
-  /// ([TrackEnd.to]) read off the recording, as minutes since midnight — what
-  /// the user left ticked of `actualTimeProposals`. Never onto a **routine**,
+  /// [times] are actual starts ([TrackEnd.from]) and ends ([TrackEnd.to]) read
+  /// off the recording, as minutes since midnight — what the user left ticked
+  /// of `actualTimeProposals`, for legs and places alike. Never onto a **routine**,
   /// checked here rather than trusted to the screen: a delay measured on one
   /// Tuesday is not part of a plan.
   Future<void> importTrackAcross({
@@ -144,7 +144,8 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
           TrackEnd.to => ItineraryItemsCompanion(
             actualEndMinutes: Value(time.minutes),
           ),
-          // A place's times are not what a stretch of line measures.
+          // A place's start and end arrive as `from` and `to`, like a leg's:
+          // `place` names its one position, and there is no one time.
           TrackEnd.place => null,
         };
         if (companion == null) continue;

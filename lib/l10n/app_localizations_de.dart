@@ -1223,6 +1223,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String trackActualStart(String entry) {
+    return '$entry: Beginn';
+  }
+
+  @override
+  String trackActualEnd(String entry) {
+    return '$entry: Ende';
+  }
+
+  @override
   String trackActualReplaces(String time, String existing) {
     return '$time, ersetzt $existing';
   }

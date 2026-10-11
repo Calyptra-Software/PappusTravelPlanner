@@ -7,6 +7,7 @@ import '../../../core/format/date_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
+import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
 import '../finite_camera.dart';
@@ -194,6 +195,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
       _plan.legs,
       legInstants(_flat, _flatTimes, [for (final cut in _cuts) cut!]),
       offset,
+      selection: widget.selection,
     );
   }
 
@@ -370,6 +372,12 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   String _label(ItineraryItem leg, AppLocalizations l10n) {
     final title = leg.title?.trim();
     if (title != null && title.isNotEmpty) return title;
+    if (leg.kind == ItemKind.place) {
+      final location = leg.location?.trim();
+      return location == null || location.isEmpty
+          ? l10n.untitledEntry
+          : location;
+    }
     final from = leg.fromLocation?.trim();
     final to = leg.toLocation?.trim();
     if (from != null && to != null && from.isNotEmpty && to.isNotEmpty) {
@@ -848,10 +856,15 @@ class _ActualTimesSheetState extends State<_ActualTimesSheet> {
                     CheckboxListTile(
                       contentPadding: EdgeInsets.zero,
                       value: widget.isChosen(p, _choices),
+                      // The words the item form uses for the same two fields.
                       title: Text(
-                        (p.end == TrackEnd.from
-                            ? l10n.trackActualDeparture
-                            : l10n.trackActualArrival)(widget.label(p.item)),
+                        (switch ((p.item.kind, p.end)) {
+                          (ItemKind.place, TrackEnd.from) =>
+                            l10n.trackActualStart,
+                          (ItemKind.place, _) => l10n.trackActualEnd,
+                          (_, TrackEnd.from) => l10n.trackActualDeparture,
+                          _ => l10n.trackActualArrival,
+                        })(widget.label(p.item)),
                       ),
                       subtitle: Text(
                         p.existing == null

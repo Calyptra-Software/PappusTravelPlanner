@@ -419,6 +419,8 @@
   "trackRecordingZoneHint": "Die Datei speichert UTC. Wähle die Zeitzone, in der die Zeiten der Einträge stehen.",
   "trackActualDeparture": "{entry}: Abfahrt",
   "trackActualArrival": "{entry}: Ankunft",
+  "trackActualStart": "{entry}: Beginn",
+  "trackActualEnd": "{entry}: Ende",
   "trackActualReplaces": "{time}, ersetzt {existing}",
   "trackActualNone": "Nichts zu übernehmen: Die Aufzeichnung stimmt mit den Einträgen überein oder liegt an anderen Tagen.",
   "mapZoomIn": "Vergrößern",

@@ -2074,6 +2074,18 @@ abstract class AppLocalizations {
   /// **'{entry}: arrival'**
   String trackActualArrival(String entry);
 
+  /// A row offering the arrival read off the recording as a place's actual start.
+  ///
+  /// In en, this message translates to:
+  /// **'{entry}: start'**
+  String trackActualStart(String entry);
+
+  /// A row offering the departure read off the recording as a place's actual end.
+  ///
+  /// In en, this message translates to:
+  /// **'{entry}: end'**
+  String trackActualEnd(String entry);
+
   /// Subtitle of a row whose leg already holds a different actual time; unticked by default.
   ///
   /// In en, this message translates to:

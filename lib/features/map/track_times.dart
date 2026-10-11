@@ -10,7 +10,8 @@ import 'track_import_plan.dart' show TrackEnd;
 /// Two things, both read once during the import and neither stored: **which
 /// days** the recording was made on, so a file from the wrong outing is noticed
 /// before it is cut up; and **when each leg actually began and ended**, offered
-/// as the leg's actual times. Pure, like the division itself (`track_split.dart`).
+/// as the leg's actual times — and as those of the places at its handovers.
+/// Pure, like the division itself (`track_split.dart`).
 ///
 /// The one thing this file cannot know is the zone. A GPX file stores UTC and
 /// the app stores wall-clock times with no zone at all, so every conversion
@@ -144,10 +145,11 @@ class ActualTimeProposal {
     required this.minutes,
   });
 
-  /// The leg it belongs to.
+  /// The entry it belongs to — a leg, or a place standing at a handover.
   final ItineraryItem item;
 
-  /// [TrackEnd.from] for the actual departure, [TrackEnd.to] for the arrival.
+  /// [TrackEnd.from] for the actual start (a leg's departure, the arrival at a
+  /// place), [TrackEnd.to] for the actual end.
   final TrackEnd end;
 
   /// What would be written: minutes since midnight, as the column stores them.
@@ -164,7 +166,21 @@ class ActualTimeProposal {
 }
 
 /// The actual times the recording can supply for [legs], given
-/// [instants] from [legInstants] read at [offset].
+/// [instants] from [legInstants] read at [offset] — and, when the whole
+/// [selection] is handed over, for the places in it.
+///
+/// **A place takes the times of the handover it stands at**, which is the rule
+/// that already gives it its position (`trackImportEnds`): one between two legs
+/// was arrived at when the leg before it arrived and left when the leg after it
+/// departed, so its start and end are those two numbers and nothing measured
+/// anew. Several places between the same two legs cannot be told apart by a
+/// line, so the first takes the arrival and the last the departure, and what
+/// lies between them is left as it was. A place before the first leg takes
+/// only its end — the recording starting there says when it was left, not
+/// when anybody got there — and one after the last leg only its start, by the
+/// same reasoning. A visit spent walking around rather than standing still is
+/// read short, exactly as the legs on either side of it read long: the line
+/// gave that walking to them, and the times follow the line.
 ///
 /// Leaves out, in order:
 ///
@@ -174,61 +190,113 @@ class ActualTimeProposal {
 ///   recording from another day, or one more than twelve hours from the plan,
 ///   would be written as a plausible time on the wrong day. Written only where
 ///   storing it and reading it again lands on the minute it was measured at;
-/// * one that would put the leg's end **before its start** against an actual
-///   time already entered on its other end;
+/// * one that would put the entry's end **before its start** against an
+///   actual time already entered on its other end;
 /// * one **within [kSameTimeToleranceMinutes]** of what is already there,
 ///   which is the recording agreeing and nothing to ask about.
+///
+/// In the order the entries read in, each one's start before its end.
 List<ActualTimeProposal> actualTimeProposals(
   List<ItineraryItem> legs,
   List<({DateTime? departed, DateTime? arrived})> instants,
-  Duration offset,
-) {
+  Duration offset, {
+  List<ItineraryItem> selection = const [],
+}) {
   final out = <ActualTimeProposal>[];
-  for (var i = 0; i < legs.length && i < instants.length; i++) {
-    final leg = legs[i];
-    final times = leg.times;
-    final departed = _onLine(instants[i].departed, leg.date, offset);
-    final arrived = _onLine(instants[i].arrived, leg.date, offset);
+  final order = selection.isEmpty ? legs : selection;
+  final legIndex = {for (var i = 0; i < legs.length; i++) legs[i].id: i};
 
-    if (departed != null) {
-      final read = entryTimes(
-        startMinutes: leg.startMinutes,
-        endMinutes: leg.endMinutes,
-        endDayOffset: leg.endDayOffset,
-        actualStartMinutes: minuteOfLine(departed),
-      ).actualStart;
-      final against = times.actualEnd;
-      if (read == departed &&
-          (against == null || against >= departed) &&
-          !_agrees(times.actualStart, departed)) {
-        out.add(
-          ActualTimeProposal(
-            item: leg,
-            end: TrackEnd.from,
-            minutes: minuteOfLine(departed),
-          ),
-        );
-      }
+  var places = <ItineraryItem>[];
+  int? before;
+  void placesUpTo(int? after) {
+    for (var i = 0; i < places.length; i++) {
+      out.addAll(
+        _propose(
+          places[i],
+          started: i == 0 && before != null ? instants[before].arrived : null,
+          ended: i == places.length - 1 && after != null
+              ? instants[after].departed
+              : null,
+          offset: offset,
+        ),
+      );
     }
-    if (arrived != null) {
-      final read = entryTimes(
-        startMinutes: leg.startMinutes,
-        endMinutes: leg.endMinutes,
-        endDayOffset: leg.endDayOffset,
-        actualEndMinutes: minuteOfLine(arrived),
-      ).actualEnd;
-      final against = times.actualStart;
-      if (read == arrived &&
-          (against == null || against <= arrived) &&
-          !_agrees(times.actualEnd, arrived)) {
-        out.add(
-          ActualTimeProposal(
-            item: leg,
-            end: TrackEnd.to,
-            minutes: minuteOfLine(arrived),
-          ),
-        );
-      }
+    places = [];
+  }
+
+  for (final item in order) {
+    final index = legIndex[item.id];
+    if (index == null) {
+      places.add(item);
+      continue;
+    }
+    if (index >= instants.length) continue;
+    placesUpTo(index);
+    out.addAll(
+      _propose(
+        item,
+        started: instants[index].departed,
+        ended: instants[index].arrived,
+        offset: offset,
+      ),
+    );
+    before = index;
+  }
+  placesUpTo(null);
+  return out;
+}
+
+/// The proposals for one entry whose start was measured at [started] and end
+/// at [ended] — see [actualTimeProposals] for what is left out.
+List<ActualTimeProposal> _propose(
+  ItineraryItem item, {
+  required DateTime? started,
+  required DateTime? ended,
+  required Duration offset,
+}) {
+  final out = <ActualTimeProposal>[];
+  final times = item.times;
+  final start = _onLine(started, item.date, offset);
+  final end = _onLine(ended, item.date, offset);
+
+  if (start != null) {
+    final read = entryTimes(
+      startMinutes: item.startMinutes,
+      endMinutes: item.endMinutes,
+      endDayOffset: item.endDayOffset,
+      actualStartMinutes: minuteOfLine(start),
+    ).actualStart;
+    final against = times.actualEnd;
+    if (read == start &&
+        (against == null || against >= start) &&
+        !_agrees(times.actualStart, start)) {
+      out.add(
+        ActualTimeProposal(
+          item: item,
+          end: TrackEnd.from,
+          minutes: minuteOfLine(start),
+        ),
+      );
+    }
+  }
+  if (end != null) {
+    final read = entryTimes(
+      startMinutes: item.startMinutes,
+      endMinutes: item.endMinutes,
+      endDayOffset: item.endDayOffset,
+      actualEndMinutes: minuteOfLine(end),
+    ).actualEnd;
+    final against = times.actualStart;
+    if (read == end &&
+        (against == null || against <= end) &&
+        !_agrees(times.actualEnd, end)) {
+      out.add(
+        ActualTimeProposal(
+          item: item,
+          end: TrackEnd.to,
+          minutes: minuteOfLine(end),
+        ),
+      );
     }
   }
   return out;

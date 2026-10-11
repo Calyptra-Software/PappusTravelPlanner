@@ -447,7 +447,8 @@ yourself is left alone.
 
 When the recording carries **timestamps**, the import also offers each leg's actual departure
 and arrival, as read from the recording; time spent standing at a change counts for neither
-leg. Tap the line *… actual times from the recording* to see them. Empty fields are filled in;
+leg. A place between two legs gets the arrival of the one before as its start and the departure
+of the one after as its end. Tap the line *… actual times from the recording* to see them. Empty fields are filled in;
 a time you already entered (or the live data filled) is replaced only if you tick it. GPX
 stores UTC, so pick the time zone your trip's times are in there; it starts at your device's.
 A recording made on other days than the entries is pointed out. Routines take no times.
