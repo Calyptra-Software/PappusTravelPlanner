@@ -1840,6 +1840,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connectionSearchError => '无法访问路线查询服务';
 
   @override
+  String get connectionSearchNoTimetable =>
+      'The connection service has no timetable for this date';
+
+  @override
+  String get connectionSearchUnknownPlace =>
+      'The connection service doesn\'t know one of the places';
+
+  @override
+  String get connectionSearchFailed =>
+      'The connection service answered with an error';
+
+  @override
   String get connectionRetry => '重试';
 
   @override
@@ -2183,13 +2195,26 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get connectionsNotFound => '未找到路线——计划已按原样复制。';
-
-  @override
   String get connectionsNotTaken => '有一段路线无法沿用——计划已保留。';
 
   @override
   String get connectionsOffline => '无法连接到路线服务。计划已按原样复制。';
+
+  @override
+  String get connectionsNoTimetable =>
+      'The routing service has no timetable for this date. The plan was copied as it stands.';
+
+  @override
+  String get connectionsServiceFailed =>
+      'The routing service answered with an error. The plan was copied as it stands.';
+
+  @override
+  String get connectionsUnknownPlaceTitle => 'Place not found';
+
+  @override
+  String connectionsUnknownPlaceBody(String route) {
+    return 'The routing service doesn\'t know one of the places of $route. The plan stays as it was copied.';
+  }
 
   @override
   String get connectionsKeepPlan => '保留计划';
@@ -2202,6 +2227,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectionsFindForLeg => '查找路线';
+
+  @override
+  String get connectionsNotFoundTitle => 'No connection found';
+
+  @override
+  String connectionsNotFoundBody(String route, String when) {
+    return 'Nothing was found for $route on $when. The plan stays as it was copied.';
+  }
+
+  @override
+  String get connectionsAdjustSearch => 'Adjust search…';
 
   @override
   String get filterRoutineLabel => '来自模板行程';

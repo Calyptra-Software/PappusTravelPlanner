@@ -47,7 +47,7 @@ final geocodeProvider = FutureProvider.autoDispose
       await Future<void>.delayed(const Duration(milliseconds: 300));
       if (superseded) return const [];
       return ref.watch(transportSearchProvider).searchPlaces(trimmed);
-    });
+    }, retry: noAutomaticRetry);
 
 /// The parameters of a journey search — a value type, so two identical searches
 /// share one cached result. [JourneySearchOptions] and [ViaStops] compare by
@@ -83,7 +83,22 @@ typedef JourneyQuery = ({
 final journeyResultsProvider = AsyncNotifierProvider.autoDispose
     .family<JourneyResultsController, JourneyResults, JourneyQuery>(
       JourneyResultsController.new,
+      retry: noAutomaticRetry,
     );
+
+/// The `retry` of every provider that asks the router something: never.
+///
+/// Riverpod 3 retries a provider that fails, by default ten times over about
+/// 38 seconds, with the provider *loading* throughout. For a search that meant
+/// a spinner for half a minute in front of an answer the router had given in
+/// 0.15 s — "no timetable for that date" — and eleven requests to somebody
+/// else's donated server where one was asked for, which is exactly what its
+/// usage policy rules out: a request is made on a button, never on a timer.
+/// Without a network every attempt waits out the 15 s timeout, so the same
+/// spinner ran for over three minutes. A failure is therefore shown at once,
+/// and asking again is the *Retry* button's job, offered where a second answer
+/// can differ.
+Duration? noAutomaticRetry(int retryCount, Object error) => null;
 
 class JourneyResultsController extends AsyncNotifier<JourneyResults> {
   JourneyResultsController(this.query);
@@ -94,31 +109,35 @@ class JourneyResultsController extends AsyncNotifier<JourneyResults> {
   Future<JourneyResults> build() => _fetch();
 
   /// Loads the window before the ones on screen. See [_loadMore].
-  Future<bool> loadEarlier() => _loadMore(earlier: true);
+  Future<TransportSearchFailure?> loadEarlier() => _loadMore(earlier: true);
 
   /// Loads the window after the ones on screen. See [_loadMore].
-  Future<bool> loadLater() => _loadMore(earlier: false);
+  Future<TransportSearchFailure?> loadLater() => _loadMore(earlier: false);
 
-  /// Fetches a neighbouring window and joins it on, answering whether it
-  /// arrived.
+  /// Fetches a neighbouring window and joins it on, answering what went wrong
+  /// if it failed and null otherwise — which includes there being no window to
+  /// fetch. The *kind* of failure, because paging is exactly how a search runs
+  /// into the edge of the timetable: "earlier" on its first day asks about a
+  /// day the router holds nothing for, which is not the service being out of
+  /// reach.
   ///
   /// A failure here is deliberately **not** put into `state`: the journeys
   /// already found are what the user is reading, and replacing them with an
   /// error because one further window couldn't be fetched would throw away the
   /// results to report a failure of something else. The caller shows the
   /// failure instead, and the button is still there to tap again.
-  Future<bool> _loadMore({required bool earlier}) async {
+  Future<TransportSearchFailure?> _loadMore({required bool earlier}) async {
     final current = state.value;
     final cursor = earlier ? current?.earlierCursor : current?.laterCursor;
-    if (current == null || cursor == null) return false;
+    if (current == null || cursor == null) return null;
     try {
       final page = await _fetch(pageCursor: cursor);
       // The sheet can be closed mid-flight; this provider is autoDispose.
-      if (!ref.mounted) return false;
+      if (!ref.mounted) return null;
       state = AsyncData(current.merge(page, earlier: earlier));
-      return true;
-    } catch (_) {
-      return false;
+      return null;
+    } catch (error) {
+      return searchFailureOf(error);
     }
   }
 

@@ -1152,4 +1152,78 @@ void main() {
       );
     });
   });
+
+  group('a failed search says what it was', () {
+    /// Searches against a server that answers [status] with [body] — the
+    /// bodies are what Transitous actually sent, measured in October 2026.
+    Future<TransportSearchFailure> failureFor(int status, String body) async {
+      final client = MotisTransportSearch(
+        httpClient: MockClient(
+          (_) async => http.Response(body, status, headers: _jsonUtf8),
+        ),
+      );
+      try {
+        await client.journeys(
+          fromId: '53.60486,10.154396',
+          toId: '53.56785,9.969647',
+          time: DateTime.utc(2026, 9, 8, 23, 30),
+        );
+      } catch (error) {
+        return searchFailureOf(error);
+      }
+      fail('the search should have failed');
+    }
+
+    test('a date outside the timetable is not "unreachable"', () async {
+      expect(
+        await failureFor(
+          400,
+          '{"error":"query time 2026-09-08 23:30 is outside of loaded '
+          'timetable window [2026-09-09 00:00, 2027-10-10 00:00["}',
+        ),
+        TransportSearchFailure.outsideTimetable,
+      );
+    });
+
+    test('an unknown stop is named as one', () async {
+      expect(
+        await failureFor(
+          404,
+          '{"error":"Could not find timetable location '
+          '\\"de-DELFI_doesnotexist\\""}',
+        ),
+        TransportSearchFailure.unknownLocation,
+      );
+    });
+
+    test('a refusal in other words is an error, not a lost signal', () async {
+      expect(
+        await failureFor(503, '<html>Service Unavailable</html>'),
+        TransportSearchFailure.failed,
+      );
+      expect(
+        await failureFor(400, '{"error":"something new"}'),
+        TransportSearchFailure.failed,
+      );
+    });
+
+    test('no answer at all is "unreachable"', () async {
+      final client = MotisTransportSearch(
+        httpClient: MockClient(
+          (_) async => throw http.ClientException('no route to host'),
+        ),
+      );
+      final error = await client
+          .journeys(fromId: 'a', toId: 'b', time: DateTime.utc(2026, 10, 11))
+          .then<Object?>((_) => null, onError: (Object e) => e);
+      expect(searchFailureOf(error!), TransportSearchFailure.unreachable);
+    });
+
+    test('anything other than a search failure counts as an error', () {
+      expect(
+        searchFailureOf(const FormatException('truncated')),
+        TransportSearchFailure.failed,
+      );
+    });
+  });
 }

@@ -608,7 +608,50 @@ void main() {
 
     expect(find.text("Couldn't reach the connection service"), findsOneWidget);
     expect(find.text('No connections found'), findsNothing);
+    expect(find.text('Retry'), findsOneWidget);
     expect(await legs(), hasLength(2));
+  });
+
+  testWidgets('a date without a timetable is not reported as out of reach', (
+    tester,
+  ) async {
+    search.failure = const TransportSearchException(
+      'MOTIS request failed (400)',
+      statusCode: 400,
+      serverMessage:
+          'query time 2026-08-03 05:32 is outside of loaded timetable window '
+          '[2026-09-09 00:00, 2027-10-10 00:00[',
+    );
+    await pump(tester, await plan());
+    await openAndSearch(tester);
+
+    expect(
+      find.text('The connection service has no timetable for this date'),
+      findsOneWidget,
+    );
+    expect(find.text("Couldn't reach the connection service"), findsNothing);
+    // The same question gets the same answer; the form is the way on.
+    expect(find.text('Retry'), findsNothing);
+    expect(await legs(), hasLength(2));
+  });
+
+  testWidgets('a failed search is asked once, not retried behind a spinner', (
+    tester,
+  ) async {
+    // Riverpod 3 retries a failing provider by default — ten more requests
+    // over about 38 s, with the results loading all the while. `pumpAndSettle`
+    // runs those timers out, so they would show up here as calls.
+    search.fails = true;
+    await pump(tester, await plan());
+    await openAndSearch(tester);
+
+    expect(find.text("Couldn't reach the connection service"), findsOneWidget);
+    expect(search.calls, 1);
+
+    // Asking again is the button's job, and it asks exactly once more.
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(search.calls, 2);
   });
 }
 
@@ -618,6 +661,13 @@ void main() {
 class _FakeSearch implements TransportSearch {
   bool findsNothing = false;
   bool fails = false;
+
+  /// Thrown instead of answering, when set — a refusal rather than [fails]'s
+  /// lost connection.
+  TransportSearchException? failure;
+
+  /// How many journey requests reached the "server".
+  int calls = 0;
   bool? lastArriveBy;
   String? lastFrom;
   String? lastTo;
@@ -633,11 +683,13 @@ class _FakeSearch implements TransportSearch {
     ViaStops via = ViaStops.none,
     String? pageCursor,
   }) async {
+    calls++;
     lastFrom = fromId;
     lastTo = toId;
     lastTime = time;
     lastArriveBy = arriveBy;
     if (fails) throw const TransportSearchException('offline');
+    if (failure != null) throw failure!;
     if (findsNothing) return const JourneyResults(options: []);
     final asked = DateTime.utc(time.year, time.month, time.day);
     final leg = JourneyLeg(

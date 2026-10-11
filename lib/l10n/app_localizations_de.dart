@@ -1880,6 +1880,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionSearchError => 'Verbindungsdienst nicht erreichbar';
 
   @override
+  String get connectionSearchNoTimetable =>
+      'Der Verbindungsdienst hat für dieses Datum keinen Fahrplan';
+
+  @override
+  String get connectionSearchUnknownPlace =>
+      'Der Verbindungsdienst kennt einen der Orte nicht';
+
+  @override
+  String get connectionSearchFailed =>
+      'Der Verbindungsdienst hat mit einem Fehler geantwortet';
+
+  @override
   String get connectionRetry => 'Erneut versuchen';
 
   @override
@@ -2229,16 +2241,28 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get connectionsNotFound =>
-      'Keine Verbindung gefunden — der Plan wurde unverändert übernommen.';
-
-  @override
   String get connectionsNotTaken =>
       'Eine Verbindung konnte nicht übernommen werden — der Plan bleibt bestehen.';
 
   @override
   String get connectionsOffline =>
       'Der Routing-Dienst war nicht erreichbar. Der Plan wurde unverändert übernommen.';
+
+  @override
+  String get connectionsNoTimetable =>
+      'Der Routing-Dienst hat für dieses Datum keinen Fahrplan. Der Plan wurde unverändert übernommen.';
+
+  @override
+  String get connectionsServiceFailed =>
+      'Der Routing-Dienst hat mit einem Fehler geantwortet. Der Plan wurde unverändert übernommen.';
+
+  @override
+  String get connectionsUnknownPlaceTitle => 'Ort nicht gefunden';
+
+  @override
+  String connectionsUnknownPlaceBody(String route) {
+    return 'Der Routing-Dienst kennt einen der Orte von $route nicht. Der Plan bleibt so, wie er kopiert wurde.';
+  }
 
   @override
   String get connectionsKeepPlan => 'Plan behalten';
@@ -2251,6 +2275,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get connectionsFindForLeg => 'Verbindung suchen';
+
+  @override
+  String get connectionsNotFoundTitle => 'Keine Verbindung gefunden';
+
+  @override
+  String connectionsNotFoundBody(String route, String when) {
+    return 'Für $route am $when wurde nichts gefunden. Der Plan bleibt so, wie er kopiert wurde.';
+  }
+
+  @override
+  String get connectionsAdjustSearch => 'Suche anpassen…';
 
   @override
   String get filterRoutineLabel => 'Aus Routine';

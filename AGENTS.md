@@ -244,7 +244,21 @@ UI (features/*/presentation, *widgets)
   The lookup **says nothing when it works**: the connection it took is in the trip the user
   is one tap from opening, so announcing it only queues a message in front of that tap. Declining, finding nothing, or losing the
   network all leave the copied plan standing — and "no train" is never reported when it was
-  "no signal". A run whose id has been lost — a leading walk deleted, an end leg replaced — falls
+  "no signal". Each offer has a **third answer**, *Adjust search…*
+  (`showConnectionOfferSheet`), opening the ordinary search form on that run as a `ReplaceRun`,
+  and a journey with nothing found is said so **at that journey**, in a dialog with the same
+  door, rather than counted into a snack bar after the round: the connection found is often
+  the one before the train wanted, and "keep the plan" is then no better an answer than "use
+  this", since the copied legs carry no live times either way. The form is opened over the
+  routine list or the overview, where nothing watches the new trip's entries, so *Choose on
+  map* frames itself on the form's own ends only. **A failure is named by what the router
+  said** (`TransportSearchException.failure`, from the `error` text in its body): no answer,
+  a date outside its timetable window (a 400 — the window starts about a month back, and a day
+  just inside it answers 200 with nothing at all), an end it does not know (a 404), or
+  anything else. They all used to read "couldn't reach the service", which sent somebody
+  looking for a signal over a date picked a month back. Words not recognized fall back to
+  "answered with an error", still true of them; only the first and the last end the round,
+  the last because asking a struggling donated server again is the wrong reflex. A run whose id has been lost — a leading walk deleted, an end leg replaced — falls
   back to the **coordinates** the leg still carries, since the router takes a coordinate
   anywhere it takes a stop id; the id is preferred only because it starts on the platform
   rather than outside the station. Without that fallback the ids' living on the outer legs
@@ -532,7 +546,12 @@ UI (features/*/presentation, *widgets)
   outlive the sheet — an imported connection stays in the trip, the PDF, and the `.ics` long
   after the search that found it. The rest of the policy is why the client looks the way it
   does: `detailedLegs=false`, a debounced and cached geocode, journeys only on an explicit
-  button, live refresh one leg at a time and never on a timer. `staging.api.transitous.org`
+  button, live refresh one leg at a time and never on a timer. That includes **Riverpod's own retry**:
+  version 3 retries a failing provider ten times over about 38 s by default, loading all the
+  while, so every provider that asks the router carries `retry: noAutomaticRetry`
+  (`transport_search_providers.dart`) — measured, a refused search sent eleven requests and
+  showed a spinner for half a minute in front of an answer given in 0.15 s. A new provider
+  that talks to the network needs the same line. `staging.api.transitous.org`
   and the `*.motis-project.*` hosts are off limits outright. Being an open-source,
   non-commercial app is a *condition* of using the API, not a coincidence.
 - **A journey is read the same way before and after it is imported.** A connection found by
