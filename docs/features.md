@@ -445,6 +445,13 @@ standing between two legs is their handover, so it gets the same spot they do, a
 end of the run gets where the recording started or finished. Anything you had already placed
 yourself is left alone.
 
+When the recording carries **timestamps**, the import also offers each leg's actual departure
+and arrival, as read from the recording; time spent standing at a change counts for neither
+leg. Tap the line *… actual times from the recording* to see them. Empty fields are filled in;
+a time you already entered (or the live data filled) is replaced only if you tick it. GPX
+stores UTC, so pick the time zone your trip's times are in there; it starts at your device's.
+A recording made on other days than the entries is pointed out. Routines take no times.
+
 The list follows **one path** through the plan: where a day forks into alternatives, it shows
 a single option — the one the trip follows — with a menu on the decision's row to pick another.
 Picking one there only says which option the line covered; it does not choose it for the trip,

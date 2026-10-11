@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
@@ -336,6 +336,51 @@ void main() {
       );
 
       expect(await db.trackDao.watchTracksForItem(leg).first, isEmpty);
+    });
+  });
+
+  group('actual times from a recording', () {
+    test('are written with the line, in one go', () async {
+      final trip = await makeTrip();
+      final leg = await makeLeg(trip);
+
+      await db.trackDao.importTrackAcross(
+        name: 'Walk',
+        pieces: [(itemId: leg, points: line)],
+        ends: const [],
+        times: [
+          (itemId: leg, end: TrackEnd.from, minutes: 8 * 60 + 2),
+          (itemId: leg, end: TrackEnd.to, minutes: 8 * 60 + 40),
+        ],
+      );
+
+      final row = await (db.select(
+        db.itineraryItems,
+      )..where((i) => i.id.equals(leg))).getSingle();
+      expect(row.actualStartMinutes, 8 * 60 + 2);
+      expect(row.actualEndMinutes, 8 * 60 + 40);
+      // The plan is not what a recording measures.
+      expect(row.startMinutes, isNull);
+    });
+
+    test('never onto a routine, whatever the caller asks', () async {
+      // A delay measured on one Tuesday is not part of a plan.
+      final routine = await makeTrip(kind: TripKind.routine);
+      final leg = await makeLeg(routine, date: kRoutineAnchorDay);
+
+      await db.trackDao.importTrackAcross(
+        name: 'Walk',
+        pieces: [(itemId: leg, points: line)],
+        ends: const [],
+        times: [(itemId: leg, end: TrackEnd.from, minutes: 8 * 60)],
+      );
+
+      final row = await (db.select(
+        db.itineraryItems,
+      )..where((i) => i.id.equals(leg))).getSingle();
+      expect(row.actualStartMinutes, isNull);
+      // The line itself still lands: only the times are refused.
+      expect(await db.trackDao.watchTracksForItem(leg).first, hasLength(1));
     });
   });
 

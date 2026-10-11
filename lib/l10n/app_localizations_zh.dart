@@ -1159,6 +1159,57 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trackInvalidFile => '该文件不是可读取的 GPX';
 
   @override
+  String trackRecordedOtherDay(String recorded, String planned) {
+    return 'Recorded on $recorded, but the entries are on $planned';
+  }
+
+  @override
+  String trackActualTimesSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count actual times from the recording',
+      one: '1 actual time from the recording',
+      zero: 'No actual times from the recording',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trackActualTimesTitle => 'Actual times from the recording';
+
+  @override
+  String trackRecordingSpan(String span) {
+    return 'Recorded $span';
+  }
+
+  @override
+  String get trackRecordingZone => 'Time zone';
+
+  @override
+  String get trackRecordingZoneHint =>
+      'The file stores UTC. Pick the zone the entries\' times are in.';
+
+  @override
+  String trackActualDeparture(String entry) {
+    return '$entry: departure';
+  }
+
+  @override
+  String trackActualArrival(String entry) {
+    return '$entry: arrival';
+  }
+
+  @override
+  String trackActualReplaces(String time, String existing) {
+    return '$time, replaces $existing';
+  }
+
+  @override
+  String get trackActualNone =>
+      'Nothing to take over: the recording agrees with what is entered, or falls on other days.';
+
+  @override
   String get mapZoomIn => '放大';
 
   @override

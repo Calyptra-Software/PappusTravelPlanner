@@ -1180,6 +1180,58 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trackInvalidFile => 'Diese Datei ist kein lesbares GPX';
 
   @override
+  String trackRecordedOtherDay(String recorded, String planned) {
+    return 'Aufgezeichnet am $recorded, die Einträge liegen aber am $planned';
+  }
+
+  @override
+  String trackActualTimesSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tatsächliche Zeiten aus der Aufzeichnung',
+      one: '1 tatsächliche Zeit aus der Aufzeichnung',
+      zero: 'Keine tatsächlichen Zeiten aus der Aufzeichnung',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get trackActualTimesTitle =>
+      'Tatsächliche Zeiten aus der Aufzeichnung';
+
+  @override
+  String trackRecordingSpan(String span) {
+    return 'Aufgezeichnet $span';
+  }
+
+  @override
+  String get trackRecordingZone => 'Zeitzone';
+
+  @override
+  String get trackRecordingZoneHint =>
+      'Die Datei speichert UTC. Wähle die Zeitzone, in der die Zeiten der Einträge stehen.';
+
+  @override
+  String trackActualDeparture(String entry) {
+    return '$entry: Abfahrt';
+  }
+
+  @override
+  String trackActualArrival(String entry) {
+    return '$entry: Ankunft';
+  }
+
+  @override
+  String trackActualReplaces(String time, String existing) {
+    return '$time, ersetzt $existing';
+  }
+
+  @override
+  String get trackActualNone =>
+      'Nichts zu übernehmen: Die Aufzeichnung stimmt mit den Einträgen überein oder liegt an anderen Tagen.';
+
+  @override
   String get mapZoomIn => 'Vergrößern';
 
   @override

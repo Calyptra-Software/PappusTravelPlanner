@@ -2026,6 +2026,66 @@ abstract class AppLocalizations {
   /// **'That file is not readable GPX'**
   String get trackInvalidFile;
 
+  /// Warning on the GPX import screen when the recording's timestamps share no day with the selected entries. Both placeholders are formatted dates or date ranges.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded on {recorded}, but the entries are on {planned}'**
+  String trackRecordedOtherDay(String recorded, String planned);
+
+  /// Row on the GPX import screen opening the list of actual departure/arrival times read off the recording; count is how many are ticked to be written.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No actual times from the recording} =1{1 actual time from the recording} other{{count} actual times from the recording}}'**
+  String trackActualTimesSummary(int count);
+
+  /// Title of the sheet listing the actual times a GPX import can write onto the legs.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual times from the recording'**
+  String get trackActualTimesTitle;
+
+  /// When the GPX recording ran, in the chosen time zone, e.g. 'Recorded 09:12 – 11:47'.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded {span}'**
+  String trackRecordingSpan(String span);
+
+  /// Label of the UTC-offset picker on the GPX import's actual-times sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get trackRecordingZone;
+
+  /// Explains the time-zone picker: GPX times are UTC, the app's are wall-clock times.
+  ///
+  /// In en, this message translates to:
+  /// **'The file stores UTC. Pick the zone the entries\' times are in.'**
+  String get trackRecordingZoneHint;
+
+  /// A row offering the recording's departure time as a leg's actual departure.
+  ///
+  /// In en, this message translates to:
+  /// **'{entry}: departure'**
+  String trackActualDeparture(String entry);
+
+  /// A row offering the recording's arrival time as a leg's actual arrival.
+  ///
+  /// In en, this message translates to:
+  /// **'{entry}: arrival'**
+  String trackActualArrival(String entry);
+
+  /// Subtitle of a row whose leg already holds a different actual time; unticked by default.
+  ///
+  /// In en, this message translates to:
+  /// **'{time}, replaces {existing}'**
+  String trackActualReplaces(String time, String existing);
+
+  /// Shown on the actual-times sheet when the recording offers no time to write.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to take over: the recording agrees with what is entered, or falls on other days.'**
+  String get trackActualNone;
+
   /// Tooltip of the map's zoom-in button.
   ///
   /// In en, this message translates to:

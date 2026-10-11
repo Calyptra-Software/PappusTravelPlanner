@@ -3,13 +3,16 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/format/date_format.dart';
 import '../../../core/providers.dart';
+import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
 import '../finite_camera.dart';
 import '../track_import_plan.dart';
 import '../track_split.dart';
+import '../track_times.dart';
 import '../widgets/map_overlays.dart';
 
 /// Colours for the stretches, chosen here rather than taken from the theme.
@@ -66,15 +69,30 @@ const Color kTrackUndividedColor = Color(0xFF9E9E9E);
 /// `onTap`: flutter_map's gesture handling wraps its children, so a
 /// `GestureDetector` placed among them never wins the arena and no tap arrives
 /// at all. Both of those were tried; neither is worth trying again.
+///
+/// Where the recording carries times ([times], parallel to [lines]) and
+/// [readTimes] allows it, the panel says two more things: that the recording
+/// was made on **other days** than the entries, if it was, and which **actual
+/// times** it can write — a list behind one row, with the zone the UTC of the
+/// file is read in beside it (`track_times.dart`). Times only fill what is
+/// empty unless a row is ticked by hand, and are offered only once every
+/// handover is placed, since a leg's times are read at its cuts.
 Future<bool?> importTrackAcrossEntries(
   BuildContext context, {
   required List<List<LatLng>> lines,
+  List<List<DateTime>?> times = const [],
   required String? name,
   required List<ItineraryItem> selection,
+  bool readTimes = true,
 }) => Navigator.of(context).push<bool>(
   MaterialPageRoute(
-    builder: (_) =>
-        TrackImportScreen(lines: lines, name: name, selection: selection),
+    builder: (_) => TrackImportScreen(
+      lines: lines,
+      times: times,
+      name: name,
+      selection: selection,
+      readTimes: readTimes,
+    ),
   ),
 );
 
@@ -82,12 +100,23 @@ class TrackImportScreen extends ConsumerStatefulWidget {
   const TrackImportScreen({
     super.key,
     required this.lines,
+    this.times = const [],
     required this.name,
     required this.selection,
+    this.readTimes = true,
   });
 
   /// The recording, one list per `<trkseg>` — a pause is a hole that survives.
   final List<List<LatLng>> lines;
+
+  /// When each point of [lines] was recorded, line by line, or null for a line
+  /// without times (`GpxTrack.times`). Shorter than [lines], or empty, where
+  /// nothing is known.
+  final List<List<DateTime>?> times;
+
+  /// Whether the times may be read at all — false for a routine, whose
+  /// entries stand on no real day.
+  final bool readTimes;
   final String? name;
 
   /// The contiguous run of entries the recording covers, in the order the day
@@ -124,6 +153,17 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   /// against, and the same order the cutting walks.
   late List<LatLng> _flat;
 
+  /// When each point of [_flat] was recorded, null where its line has no
+  /// times. Empty when the recording has none, or they are not to be read.
+  late List<DateTime?> _flatTimes;
+
+  /// The zone the recording's UTC is read in — see `track_times.dart`.
+  Duration _offset = Duration.zero;
+
+  /// Ticks the user changed on the actual-times sheet, by leg and end. A row
+  /// not in here is at its default (`ActualTimeProposal.selectedByDefault`).
+  Map<(int, TrackEnd), bool> _timeChoices = const {};
+
   @override
   void initState() {
     super.initState();
@@ -132,7 +172,93 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     _flat = [for (final line in widget.lines) ...line];
     _cuts = trackCutIndices(_flat, _boundaries);
     _selected = _open ?? (_boundaries.isEmpty ? null : 0);
+    _flatTimes = [
+      for (var i = 0; i < widget.lines.length; i++)
+        for (var j = 0; j < widget.lines[i].length; j++)
+          (i < widget.times.length ? widget.times[i] : null)?[j],
+    ];
+    if (!widget.readTimes || _flatTimes.every((t) => t == null)) {
+      _flatTimes = const [];
+    }
+    final firstTime = _flatTimes.nonNulls.firstOrNull;
+    if (firstTime != null) _offset = defaultRecordingOffset(firstTime);
   }
+
+  /// The actual times the recording can supply at the current division, or
+  /// none while a handover is still open — a leg's times are read at its cuts.
+  List<ActualTimeProposal> _proposalsAt(Duration offset) {
+    if (_flatTimes.isEmpty || !_complete || _plan.legs.isEmpty) {
+      return const [];
+    }
+    return actualTimeProposals(
+      _plan.legs,
+      legInstants(_flat, _flatTimes, [for (final cut in _cuts) cut!]),
+      offset,
+    );
+  }
+
+  bool _isChosen(ActualTimeProposal p, Map<(int, TrackEnd), bool> choices) =>
+      choices[(p.item.id, p.end)] ?? p.selectedByDefault;
+
+  /// The warning, when the recording shares no day with the entries.
+  String? _otherDayWarning(AppLocalizations l10n) {
+    final recorded = recordingDays(
+      _flatTimes.nonNulls.firstOrNull,
+      _flatTimes.nonNulls.lastOrNull,
+      _offset,
+    );
+    if (recorded == null || !recordingOnOtherDays(recorded, widget.selection)) {
+      return null;
+    }
+    final locale = l10n.localeName;
+    DateTime earlier(DateTime a, DateTime b) => daysBetween(a, b) < 0 ? b : a;
+    DateTime later(DateTime a, DateTime b) => daysBetween(a, b) > 0 ? b : a;
+    final plannedFrom = widget.selection.map((e) => e.date).reduce(earlier);
+    final plannedTo = widget.selection
+        .map((e) => addDays(e.date, e.endDayOffset))
+        .reduce(later);
+    return l10n.trackRecordedOtherDay(
+      _days(l10n, locale, recorded.from, recorded.to),
+      _days(l10n, locale, plannedFrom, plannedTo),
+    );
+  }
+
+  String _days(
+    AppLocalizations l10n,
+    String locale,
+    DateTime from,
+    DateTime to,
+  ) => daysBetween(from, to) == 0
+      ? formatFullDate(from, locale)
+      : formatDateRange(l10n, locale, from, to);
+
+  /// When the recording ran, read at [offset]: "09:12 – 11:47", with the
+  /// day mark the timeline uses when it ran past midnight.
+  String _span(Duration offset) {
+    final first = wallClock(_flatTimes.nonNulls.first, offset);
+    final last = wallClock(_flatTimes.nonNulls.last, offset);
+    return formatTimeRange(
+      first.hour * 60 + first.minute,
+      last.hour * 60 + last.minute,
+      endDayOffset: daysBetween(first, last),
+    );
+  }
+
+  Future<void> _showTimes(AppLocalizations l10n) => showAppSheet<void>(
+    context,
+    builder: (_) => _ActualTimesSheet(
+      offset: _offset,
+      choices: _timeChoices,
+      proposalsAt: _proposalsAt,
+      isChosen: _isChosen,
+      span: _span,
+      label: (item) => _label(item, l10n),
+      onChanged: (offset, choices) => setState(() {
+        _offset = offset;
+        _timeChoices = choices;
+      }),
+    ),
+  );
 
   /// The first handover nobody has said anything about, or null once they are
   /// all placed.
@@ -230,6 +356,11 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                 (itemId: _plan.legs[i].id, points: line),
           ],
           ends: ends,
+          times: [
+            for (final p in _proposalsAt(_offset))
+              if (_isChosen(p, _timeChoices))
+                (itemId: p.item.id, end: p.end, minutes: p.minutes),
+          ],
         );
     navigator.pop(true);
   }
@@ -255,6 +386,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     final selected = _selected;
     final placed = _placedPrefix;
     final stretches = splitTracksAt(widget.lines, placed);
+    final proposals = _proposalsAt(_offset);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.trackImportTitle)),
@@ -368,6 +500,17 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                     _label(_plan.legs[selected], l10n),
                     _label(_plan.legs[selected + 1], l10n),
                   ),
+            warning: _otherDayWarning(l10n),
+            // Offered once the division is complete: before that there is no
+            // stretch to read a leg's times off.
+            times: _flatTimes.isEmpty || !_complete || _plan.legs.isEmpty
+                ? null
+                : (
+                    l10n.trackActualTimesSummary(
+                      proposals.where((p) => _isChosen(p, _timeChoices)).length,
+                    ),
+                    () => _showTimes(l10n),
+                  ),
             handovers: [for (final cut in _cuts) cut != null],
             selected: selected,
             onSelect: (index) => setState(() => _selected = index),
@@ -408,6 +551,8 @@ class _Panel extends StatelessWidget {
     required this.l10n,
     required this.theme,
     required this.question,
+    this.warning,
+    this.times,
     required this.handovers,
     required this.selected,
     required this.onSelect,
@@ -419,6 +564,13 @@ class _Panel extends StatelessWidget {
   final AppLocalizations l10n;
   final ThemeData theme;
   final String? question;
+
+  /// The recording was made on other days than the entries — said, not
+  /// refused.
+  final String? warning;
+
+  /// The row opening the actual-times sheet: what it says, and the tap.
+  final (String, VoidCallback)? times;
 
   /// One per handover, saying whether it has been placed.
   final List<bool> handovers;
@@ -489,6 +641,47 @@ class _Panel extends StatelessWidget {
                 ),
               ),
             ],
+            if (warning case final warning?) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber,
+                    size: 18,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      warning,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (times case (final text, final onTap)) ...[
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.schedule, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(text, style: theme.textTheme.bodyMedium),
+                      ),
+                      const Icon(Icons.chevron_right, size: 18),
+                    ],
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Row(
               children: [
@@ -549,4 +742,151 @@ class _Handover extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// The actual times a recording can write, and the zone it is read in.
+///
+/// Its own state rather than the screen's, since a sheet is a route of its own
+/// and does not rebuild with the screen; every change is reported back through
+/// [onChanged], so closing it however it is closed keeps what was set.
+class _ActualTimesSheet extends StatefulWidget {
+  const _ActualTimesSheet({
+    required this.offset,
+    required this.choices,
+    required this.proposalsAt,
+    required this.isChosen,
+    required this.span,
+    required this.label,
+    required this.onChanged,
+  });
+
+  final Duration offset;
+  final Map<(int, TrackEnd), bool> choices;
+  final List<ActualTimeProposal> Function(Duration offset) proposalsAt;
+  final bool Function(ActualTimeProposal, Map<(int, TrackEnd), bool>) isChosen;
+  final String Function(Duration offset) span;
+  final String Function(ItineraryItem) label;
+  final void Function(Duration offset, Map<(int, TrackEnd), bool> choices)
+  onChanged;
+
+  @override
+  State<_ActualTimesSheet> createState() => _ActualTimesSheetState();
+}
+
+class _ActualTimesSheetState extends State<_ActualTimesSheet> {
+  late Duration _offset = widget.offset;
+  late Map<(int, TrackEnd), bool> _choices = {...widget.choices};
+
+  void _changed() => widget.onChanged(_offset, {..._choices});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final proposals = widget.proposalsAt(_offset);
+    // Every quarter hour from UTC−12 to UTC+14, which covers every zone in
+    // use — plus the device's own, should it ever not fall on one.
+    final offsets = {
+      for (var m = -12 * 60; m <= 14 * 60; m += 15) m,
+      _offset.inMinutes,
+    }.toList()..sort();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.trackActualTimesTitle, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(
+            l10n.trackRecordingSpan(widget.span(_offset)),
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(l10n.trackRecordingZone),
+              const SizedBox(width: 16),
+              DropdownButton<int>(
+                value: _offset.inMinutes,
+                items: [
+                  for (final m in offsets)
+                    DropdownMenuItem(value: m, child: Text(formatUtcOffset(m))),
+                ],
+                onChanged: (m) {
+                  if (m == null) return;
+                  setState(() => _offset = Duration(minutes: m));
+                  _changed();
+                },
+              ),
+            ],
+          ),
+          Text(
+            l10n.trackRecordingZoneHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const Divider(height: 24),
+          if (proposals.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                l10n.trackActualNone,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  for (final p in proposals)
+                    CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: widget.isChosen(p, _choices),
+                      title: Text(
+                        (p.end == TrackEnd.from
+                            ? l10n.trackActualDeparture
+                            : l10n.trackActualArrival)(widget.label(p.item)),
+                      ),
+                      subtitle: Text(
+                        p.existing == null
+                            ? formatMinutes(p.minutes)
+                            : l10n.trackActualReplaces(
+                                formatMinutes(p.minutes),
+                                formatMinutes(p.existing),
+                              ),
+                      ),
+                      onChanged: (value) {
+                        setState(
+                          () => _choices = {
+                            ..._choices,
+                            (p.item.id, p.end): value ?? false,
+                          },
+                        );
+                        _changed();
+                      },
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// An offset from UTC as the picker names it: "UTC+02:00", "UTC−03:30", "UTC".
+@visibleForTesting
+String formatUtcOffset(int minutes) {
+  if (minutes == 0) return 'UTC';
+  final sign = minutes > 0 ? '+' : '\u2212';
+  final abs = minutes.abs();
+  final h = (abs ~/ 60).toString().padLeft(2, '0');
+  final m = (abs % 60).toString().padLeft(2, '0');
+  return 'UTC$sign$h:$m';
 }

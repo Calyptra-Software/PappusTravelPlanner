@@ -1155,9 +1155,10 @@ UI (features/*/presentation, *widgets)
   route and a path a router computes later are the same row wearing different `TrackSource`
   values, which is why the enum names all three though only the first can be made today: a
   table that could not say "this one was actually walked" would have to be migrated to say
-  it. Elevation, timestamps and the file's markup are dropped on the way in (`parseGpx`),
-  each for a stated reason — the app has no reading for a profile, and the file remains where
-  those live. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
+  it. Elevation and the file's markup are dropped on the way in (`parseGpx`), each for a
+  stated reason — the app has no reading for a profile, and the file remains where those
+  live. Timestamps are *read* but never stored: the import uses them once (below) and they
+  leave with the file. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
@@ -1248,6 +1249,39 @@ UI (features/*/presentation, *widgets)
   the rule that governs moving one. One flow, two doors — the trip's ⋮ menu (nothing ticked)
   and a leg's form (that leg ticked) — because a recording rarely stops at one entry, and
   the unit an act applies to is the unit it is offered on.
+- **A recording's timestamps are a measurement, so they fill what is empty and ask about the
+  rest** (`features/map/track_times.dart`, pure). They are read for two things and nothing
+  else. *Which days* it was made on: a recording sharing no day with the ticked entries
+  (`recordingOnOtherDays`, the days an overnight entry covers included) is said to be one
+  under the map — a warning and not a refusal, since attaching last week's scouting walk to
+  tomorrow is reasonable on purpose. And *when each leg actually ran*: `legInstants` reads a
+  leg's departure where the recording last stood within `kStationaryRadiusMeters` of the
+  stretch's start and its arrival where it first came within it of the stretch's end, so ten
+  minutes on a platform belong to neither leg — a heuristic, named as one, because a
+  handover is one point of the line and a change is not one moment. What the user had already
+  entered, by hand or from the live data, is a statement the file is a witness against and
+  does not overrule by default: such a row is listed with the old value beside it and arrives
+  **unticked**, while an empty field arrives ticked, and one within
+  `kSameTimeToleranceMinutes` is not asked about at all. Live data being a prognosis when it
+  was read before the train arrived is the case the opt-in exists for. **Planned** times are
+  never written — a recording measures what happened.
+  Three rules keep this honest. **The zone is shown, not assumed**: the file stores UTC and
+  the app stores wall-clock time with no zone, so the screen reads the file at an offset the
+  user sees and can change on the times sheet, starting from the device's own at the moment
+  of the recording — right for an import made where the trip happened, wrong by exactly the
+  difference for one made at home afterwards. Proper zones are a separate piece of work;
+  when entries carry one, it should become this default. **A time is written only where it
+  reads back as the moment it was measured** (`actualTimeProposals`): the column holds a time
+  of day and `entry_times.dart` finds its day, so a recording from another day, or one more
+  than twelve hours from the plan, would land as a plausible time on the wrong day — those
+  are left out rather than written, as is one that would put an end before an actual start
+  already entered. **A routine takes none**, enforced in `TrackDao.importTrackAcross` and
+  not only by the screen: a delay measured on one Tuesday is not part of a plan. Times are
+  offered only once every handover is placed, since a leg's are read at its cuts; and a line
+  is timed **all or nothing** (`GpxTrack.times`) — one point without a time, a time with no
+  zone, or times running backwards leave it untimed, and a `<rte>` is never timed, since a
+  time on a route is a schedule somebody computed. Places are not given times: what a stretch
+  of line measures is a leg.
 - **A recording covers one path through the plan, because a decision is a fork.** The
   entry picker is handed `buildTrackEntryPath` (`features/map/track_entry_path.dart`,
   pure) rather than `itemsFor` as it comes, for two reasons that turn out to be one. The

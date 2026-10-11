@@ -127,4 +127,65 @@ void main() {
       );
     });
   });
+
+  group('times are read, all or nothing per line', () {
+    String segment(List<String?> times) {
+      final points = [
+        for (var i = 0; i < times.length; i++)
+          '<trkpt lat="1.$i" lon="2.0">'
+              '${times[i] == null ? '' : '<time>${times[i]}</time>'}'
+              '</trkpt>',
+      ];
+      return '<gpx version="1.1"><trk><trkseg>${points.join()}'
+          '</trkseg></trk></gpx>';
+    }
+
+    test('every point timed, and an offset read as the instant it names', () {
+      final tracks = parseGpx(
+        segment(['2026-08-14T06:12:00Z', '2026-08-14T08:13:30+02:00']),
+      );
+      expect(tracks.single.times, [
+        DateTime.utc(2026, 8, 14, 6, 12),
+        DateTime.utc(2026, 8, 14, 6, 13, 30),
+      ]);
+    });
+
+    test('one point without a time leaves the line without times', () {
+      // A line timed in places would read its legs' times by guesswork.
+      final tracks = parseGpx(segment(['2026-08-14T06:12:00Z', null]));
+      expect(tracks.single.times, isNull);
+      expect(tracks.single.points, hasLength(2));
+    });
+
+    test('a time that names no zone is not read as UTC', () {
+      // The writer's local clock, off by an offset nobody knows.
+      final tracks = parseGpx(
+        segment(['2026-08-14T06:12:00', '2026-08-14T06:13:00']),
+      );
+      expect(tracks.single.times, isNull);
+    });
+
+    test('times running backwards are not a recording', () {
+      final tracks = parseGpx(
+        segment(['2026-08-14T06:13:00Z', '2026-08-14T06:12:00Z']),
+      );
+      expect(tracks.single.times, isNull);
+    });
+
+    test('a route carries no times, even when it has some', () {
+      // A time on a route is a schedule somebody computed.
+      final tracks = parseGpx('''
+<gpx version="1.1"><rte>
+  <rtept lat="50.1" lon="8.6"><time>2026-08-14T06:12:00Z</time></rtept>
+  <rtept lat="50.2" lon="8.7"><time>2026-08-14T06:20:00Z</time></rtept>
+</rte></gpx>
+''');
+      expect(tracks.single.times, isNull);
+    });
+
+    test('the first walk\'s untimed points leave it without times', () {
+      // The file at the top times only its first point.
+      expect(parseGpx(walk).every((t) => t.times == null), isTrue);
+    });
+  });
 }

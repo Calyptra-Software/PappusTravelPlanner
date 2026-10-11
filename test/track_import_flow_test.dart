@@ -111,4 +111,58 @@ void main() {
     expect(find.text('Which entries does it cover?'), findsOneWidget);
     expect(find.text('A → B'), findsOneWidget);
   });
+
+  Future<ItineraryItem> theLeg() => db.select(db.itineraryItems).getSingle();
+
+  /// Picks the one leg and confirms the import, with nothing else changed.
+  Future<void> importTheLeg(WidgetTester tester) async {
+    await tester.tap(find.text('A → B'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+  }
+
+  // Noon UTC, so the device's wall clock is on 1 May in any zone from UTC−11
+  // to UTC+11 — the default offset the screen reads the file at.
+  final departed = DateTime.utc(2026, 5, 1, 12);
+  final arrived = DateTime.utc(2026, 5, 1, 12, 40);
+  int wall(DateTime utc) {
+    final local = utc.toLocal();
+    return local.hour * 60 + local.minute;
+  }
+
+  final timed = '''
+<gpx version="1.1"><trk><name>Walk</name><trkseg>
+  <trkpt lat="53.50" lon="9.9"><time>2026-05-01T12:00:00Z</time></trkpt>
+  <trkpt lat="53.51" lon="9.9"><time>2026-05-01T12:40:00Z</time></trkpt>
+</trkseg></trk></gpx>
+''';
+
+  testWidgets('a timed recording fills the leg\'s empty actual times', (
+    tester,
+  ) async {
+    await run(tester, () async => timed);
+    await importTheLeg(tester);
+
+    final leg = await tester.runAsync(theLeg);
+    expect(leg!.actualStartMinutes, wall(departed));
+    expect(leg.actualEndMinutes, wall(arrived));
+  });
+
+  testWidgets('a time already entered is kept unless ticked', (tester) async {
+    // Far enough from the recording to be asked about, so it is listed —
+    // unticked, since somebody entered it.
+    await (db.update(db.itineraryItems)).write(
+      ItineraryItemsCompanion(actualStartMinutes: Value(wall(departed) - 30)),
+    );
+    await run(tester, () async => timed);
+    await importTheLeg(tester);
+
+    final leg = await tester.runAsync(theLeg);
+    expect(leg!.actualStartMinutes, wall(departed) - 30);
+    expect(leg.actualEndMinutes, wall(arrived));
+  });
 }
