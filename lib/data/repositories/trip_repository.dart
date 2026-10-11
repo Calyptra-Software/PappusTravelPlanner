@@ -183,13 +183,19 @@ class TripRepository {
   Future<void> deleteTracksForItem(int itemId) =>
       _db.trackDao.deleteTracksForItem(itemId);
 
-  /// One recording across the entries it covered, with the coordinates the
-  /// import learned on the way.
+  /// One recording across the entries it covered, with the coordinates and
+  /// the actual times the import learned on the way.
   Future<void> importTrackAcross({
     required String? name,
     required List<({int itemId, List<LatLng> points})> pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
-  }) => _db.trackDao.importTrackAcross(name: name, pieces: pieces, ends: ends);
+    List<({int itemId, TrackEnd end, int minutes})> times = const [],
+  }) => _db.trackDao.importTrackAcross(
+    name: name,
+    pieces: pieces,
+    ends: ends,
+    times: times,
+  );
 
   // --- attachments ---
 

@@ -118,13 +118,41 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
   /// governs moving one: that column means "the id the search was issued
   /// against", and it cannot go on describing an end whose position now comes
   /// from somewhere else.
+  ///
+  /// [times] are actual starts ([TrackEnd.from]) and ends ([TrackEnd.to]) read
+  /// off the recording, as minutes since midnight — what the user left ticked
+  /// of `actualTimeProposals`, for legs and places alike. Never onto a **routine**,
+  /// checked here rather than trusted to the screen: a delay measured on one
+  /// Tuesday is not part of a plan.
   Future<void> importTrackAcross({
     required String? name,
     required List<({int itemId, List<LatLng> points})> pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
+    List<({int itemId, TrackEnd end, int minutes})> times = const [],
     TrackSource source = TrackSource.imported,
   }) {
     return transaction(() async {
+      final onRoutines = await _itemsOfRoutines({
+        for (final time in times) time.itemId,
+      });
+      for (final time in times) {
+        if (onRoutines.contains(time.itemId)) continue;
+        final companion = switch (time.end) {
+          TrackEnd.from => ItineraryItemsCompanion(
+            actualStartMinutes: Value(time.minutes),
+          ),
+          TrackEnd.to => ItineraryItemsCompanion(
+            actualEndMinutes: Value(time.minutes),
+          ),
+          // A place's start and end arrive as `from` and `to`, like a leg's:
+          // `place` names its one position, and there is no one time.
+          TrackEnd.place => null,
+        };
+        if (companion == null) continue;
+        await (update(
+          itineraryItems,
+        )..where((i) => i.id.equals(time.itemId))).write(companion);
+      }
       for (final end in ends) {
         await (update(
           itineraryItems,
@@ -153,6 +181,22 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
         ], source: source);
       }
     });
+  }
+
+  /// Which of [itemIds] belong to a routine.
+  Future<Set<int>> _itemsOfRoutines(Set<int> itemIds) async {
+    if (itemIds.isEmpty) return const {};
+    final trips = attachedDatabase.trips;
+    final query =
+        selectOnly(
+            itineraryItems,
+          ).join([innerJoin(trips, trips.id.equalsExp(itineraryItems.tripId))])
+          ..addColumns([itineraryItems.id])
+          ..where(
+            itineraryItems.id.isIn(itemIds) &
+                trips.kind.equalsValue(TripKind.routine),
+          );
+    return {for (final row in await query.get()) row.read(itineraryItems.id)!};
   }
 
   /// Overrules — or stops overruling — the map's own rule for one line.

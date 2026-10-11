@@ -578,6 +578,62 @@
   "@trackInvalidFile": {
     "description": "Shown when the picked file could not be parsed as GPX."
   },
+  "trackRecordedOtherDay": "Recorded on {recorded}, but the entries are on {planned}",
+  "@trackRecordedOtherDay": {
+    "description": "Warning on the GPX import screen when the recording's timestamps share no day with the selected entries. Both placeholders are formatted dates or date ranges.",
+    "placeholders": { "recorded": { "type": "String" }, "planned": { "type": "String" } }
+  },
+  "trackActualTimesSummary": "{count, plural, =0{No actual times from the recording} =1{1 actual time from the recording} other{{count} actual times from the recording}}",
+  "@trackActualTimesSummary": {
+    "description": "Row on the GPX import screen opening the list of actual departure/arrival times read off the recording; count is how many are ticked to be written.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "trackActualTimesTitle": "Actual times from the recording",
+  "@trackActualTimesTitle": {
+    "description": "Title of the sheet listing the actual times a GPX import can write onto the legs."
+  },
+  "trackRecordingSpan": "Recorded {span}",
+  "@trackRecordingSpan": {
+    "description": "When the GPX recording ran, in the chosen time zone, e.g. 'Recorded 09:12 – 11:47'.",
+    "placeholders": { "span": { "type": "String" } }
+  },
+  "trackRecordingZone": "Time zone",
+  "@trackRecordingZone": {
+    "description": "Label of the UTC-offset picker on the GPX import's actual-times sheet."
+  },
+  "trackRecordingZoneHint": "The file stores UTC. Pick the zone the entries' times are in.",
+  "@trackRecordingZoneHint": {
+    "description": "Explains the time-zone picker: GPX times are UTC, the app's are wall-clock times."
+  },
+  "trackActualDeparture": "{entry}: departure",
+  "@trackActualDeparture": {
+    "description": "A row offering the recording's departure time as a leg's actual departure.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualArrival": "{entry}: arrival",
+  "@trackActualArrival": {
+    "description": "A row offering the recording's arrival time as a leg's actual arrival.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualStart": "{entry}: start",
+  "@trackActualStart": {
+    "description": "A row offering the arrival read off the recording as a place's actual start.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualEnd": "{entry}: end",
+  "@trackActualEnd": {
+    "description": "A row offering the departure read off the recording as a place's actual end.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualReplaces": "{time}, replaces {existing}",
+  "@trackActualReplaces": {
+    "description": "Subtitle of a row whose leg already holds a different actual time; unticked by default.",
+    "placeholders": { "time": { "type": "String" }, "existing": { "type": "String" } }
+  },
+  "trackActualNone": "Nothing to take over: the recording agrees with what is entered, or falls on other days.",
+  "@trackActualNone": {
+    "description": "Shown on the actual-times sheet when the recording offers no time to write."
+  },
   "mapZoomIn": "Zoom in",
   "@mapZoomIn": {
     "description": "Tooltip of the map's zoom-in button."

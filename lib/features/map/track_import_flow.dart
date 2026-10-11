@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/providers.dart';
+import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
 import 'gpx.dart';
 import 'presentation/track_import_screen.dart';
@@ -53,6 +54,7 @@ Future<bool> startTrackImport(
   // decisions come along because the picker shows *one path* through the plan
   // — a recording followed one option of a fork, not all of them.
   final repo = ref.read(repositoryProvider);
+  final trip = await repo.findTrip(tripId);
   final items = await repo.itemsFor(tripId);
   final sets = await repo.alternativeSetsFor(tripId);
   final branchesBySet = await repo.alternativeBranchesFor(tripId);
@@ -70,8 +72,12 @@ Future<bool> startTrackImport(
   final imported = await importTrackAcrossEntries(
     context,
     lines: [for (final track in read) track.points],
+    times: [for (final track in read) track.times],
     name: read.map((t) => t.name).nonNulls.firstOrNull,
     selection: selection,
+    // A routine's entries sit on a sort origin, not on a day anybody
+    // travelled, so the recording's dates and times say nothing about them.
+    readTimes: trip?.kind != TripKind.routine,
   );
   if (imported != true) return false;
   messenger.showSnackBar(SnackBar(content: Text(l10n.trackImported)));

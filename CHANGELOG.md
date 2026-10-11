@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **A GPX recording with timestamps fills in actual times.** The import offers each leg's
+  departure and arrival as recorded, and the places between legs their start and end. It fills
+  only empty fields unless you tick otherwise, and points it out when the file was recorded on
+  other days than the entries.
 - **A connection offered for a routine's journey can be searched again on the spot.** Besides
   taking it or keeping the plan, *Adjust search…* opens the search for that journey. Where
   nothing was found, the journey now says so itself, with the same way into the search.

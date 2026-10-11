@@ -49,6 +49,8 @@ void main() {
   Future<void> pump(
     WidgetTester tester, {
     List<ItineraryItem>? selection,
+    List<List<DateTime>?> times = const [],
+    bool readTimes = true,
   }) async {
     tester.view.physicalSize = const Size(1000, 1400);
     tester.view.devicePixelRatio = 1.0;
@@ -67,6 +69,8 @@ void main() {
           supportedLocales: AppLocalizations.supportedLocales,
           home: TrackImportScreen(
             lines: [line],
+            times: times,
+            readTimes: readTimes,
             name: 'Walk',
             selection: selection ?? [leg(1, 'A → B'), leg(2, 'B → C')],
           ),
@@ -304,5 +308,125 @@ void main() {
     expect(handovers(tester).first, isNot(moved), reason: 'and moves again');
 
     await drain(tester);
+  });
+
+  group('times from the recording', () {
+    // A minute per point, from noon UTC on the legs' own day — in any zone
+    // from UTC−11 to UTC+11 the device's wall clock stays on 1 May.
+    List<DateTime> minutes(DateTime from) => [
+      for (var i = 0; i < line.length; i++) from.add(Duration(minutes: i)),
+    ];
+    final onTheDay = minutes(DateTime.utc(2026, 5, 1, 12));
+
+    testWidgets('a leg is offered its departure and its arrival', (
+      tester,
+    ) async {
+      await pump(tester, selection: [leg(1, 'A → B')], times: [onTheDay]);
+
+      expect(find.text('2 actual times from the recording'), findsOneWidget);
+
+      await tester.tap(find.text('2 actual times from the recording'));
+      await tester.pumpAndSettle();
+      expect(find.text('Actual times from the recording'), findsOneWidget);
+      expect(find.text('A → B: departure'), findsOneWidget);
+      expect(find.text('A → B: arrival'), findsOneWidget);
+
+      // Unticking one is remembered once the sheet is gone.
+      await tester.tap(find.text('A → B: departure'));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(500, 20));
+      await tester.pumpAndSettle();
+      expect(find.text('1 actual time from the recording'), findsOneWidget);
+
+      await drain(tester);
+    });
+
+    testWidgets('nothing is offered before every handover is placed', (
+      tester,
+    ) async {
+      // A leg's times are read at its cuts, and one of them is not there yet.
+      await pump(tester, times: [onTheDay]);
+      expect(find.textContaining('from the recording'), findsNothing);
+
+      await tapMap(tester, 0);
+      expect(find.text('4 actual times from the recording'), findsOneWidget);
+
+      await drain(tester);
+    });
+
+    testWidgets('a place at a handover is offered its start and end', (
+      tester,
+    ) async {
+      final cafe = ItineraryItem(
+        id: 9,
+        tripId: 1,
+        date: DateTime(2026, 5, 1),
+        sortOrder: 2,
+        kind: ItemKind.place,
+        title: 'Café',
+        endDayOffset: 0,
+        chordDisplay: TrackDisplay.auto,
+      );
+      await pump(
+        tester,
+        selection: [leg(1, 'A → B'), cafe, leg(2, 'B → C')],
+        times: [onTheDay],
+      );
+      await tapMap(tester, 0);
+      expect(find.text('6 actual times from the recording'), findsOneWidget);
+
+      await tester.tap(find.text('6 actual times from the recording'));
+      await tester.pumpAndSettle();
+      // In the item form's words for a place, not a leg's.
+      expect(find.text('Café: start'), findsOneWidget);
+      expect(find.text('Café: end'), findsOneWidget);
+
+      await tester.tapAt(const Offset(500, 20));
+      await tester.pumpAndSettle();
+      await drain(tester);
+    });
+
+    testWidgets('a routine is offered none', (tester) async {
+      await pump(
+        tester,
+        selection: [leg(1, 'A → B')],
+        times: [onTheDay],
+        readTimes: false,
+      );
+      expect(find.textContaining('from the recording'), findsNothing);
+
+      await drain(tester);
+    });
+
+    testWidgets('a recording from another day is said to be one', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        selection: [leg(1, 'A → B')],
+        times: [minutes(DateTime.utc(2026, 6, 14, 12))],
+      );
+      expect(find.textContaining('Recorded on June 14, 2026'), findsOneWidget);
+      // A warning, not a refusal.
+      expect(confirmable(tester), isTrue);
+
+      await drain(tester);
+    });
+
+    testWidgets('a recording without times says nothing about them', (
+      tester,
+    ) async {
+      await pump(tester, selection: [leg(1, 'A → B')]);
+      expect(find.textContaining('from the recording'), findsNothing);
+      expect(find.textContaining('Recorded on'), findsNothing);
+
+      await drain(tester);
+    });
+  });
+
+  test('an offset is named the way the picker lists it', () {
+    expect(formatUtcOffset(0), 'UTC');
+    expect(formatUtcOffset(120), 'UTC+02:00');
+    expect(formatUtcOffset(-210), 'UTC\u221203:30');
   });
 }
