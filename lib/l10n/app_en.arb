@@ -974,6 +974,9 @@
   "connectionEarlier": "Earlier",
   "connectionLater": "Later",
   "connectionSearchError": "Couldn't reach the connection service",
+  "connectionSearchNoTimetable": "The connection service has no timetable for this date",
+  "connectionSearchUnknownPlace": "The connection service doesn't know one of the places",
+  "connectionSearchFailed": "The connection service answered with an error",
   "connectionRetry": "Retry",
   "connectionChanges": "{count, plural, =0{Direct} =1{1 change} other{{count} changes}}",
   "@connectionChanges": {
@@ -1194,13 +1197,25 @@
   "@routineDayNumber": {
     "placeholders": { "number": { "type": "int" } }
   },
-  "connectionsNotFound": "No connection found — the plan was copied as it stands.",
   "connectionsNotTaken": "A connection couldn't be taken over — the plan was kept.",
   "connectionsOffline": "Couldn't reach the routing service. The plan was copied as it stands.",
+  "connectionsNoTimetable": "The routing service has no timetable for this date. The plan was copied as it stands.",
+  "connectionsServiceFailed": "The routing service answered with an error. The plan was copied as it stands.",
+  "connectionsUnknownPlaceTitle": "Place not found",
+  "connectionsUnknownPlaceBody": "The routing service doesn't know one of the places of {route}. The plan stays as it was copied.",
+  "@connectionsUnknownPlaceBody": {
+    "placeholders": { "route": { "type": "String" } }
+  },
   "connectionsKeepPlan": "Keep the plan",
   "connectionsUseThis": "Use this",
   "connectionsSearching": "Looking up connections…",
   "connectionsFindForLeg": "Find connection",
+  "connectionsNotFoundTitle": "No connection found",
+  "connectionsNotFoundBody": "Nothing was found for {route} on {when}. The plan stays as it was copied.",
+  "@connectionsNotFoundBody": {
+    "placeholders": { "route": { "type": "String" }, "when": { "type": "String" } }
+  },
+  "connectionsAdjustSearch": "Adjust search…",
   "filterRoutineLabel": "From routine",
   "filterRoutineAny": "Any routine",
   "tagsLabel": "Tags",

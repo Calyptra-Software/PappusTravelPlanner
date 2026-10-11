@@ -1189,7 +1189,6 @@
   "@routineDayNumber": {
     "placeholders": { "number": { "type": "int" } }
   },
-  "connectionsNotFound": "未找到路线——计划已按原样复制。",
   "connectionsNotTaken": "有一段路线无法沿用——计划已保留。",
   "connectionsOffline": "无法连接到路线服务。计划已按原样复制。",
   "connectionsKeepPlan": "保留计划",

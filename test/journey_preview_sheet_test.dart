@@ -136,4 +136,80 @@ void main() {
     // The sheet is gone; the caller was told to go ahead.
     expect(find.text('Add to day'), findsNothing);
   });
+
+  group('a routine\'s offer', () {
+    /// Opens the offer a routine's lookup shows; the returned function reads
+    /// what it resolved to once the sheet has closed.
+    Future<ConnectionOfferAnswer? Function()> offer(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      ConnectionOfferAnswer? result;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () async {
+                  result = await showConnectionOfferSheet(
+                    context,
+                    option: _journey(),
+                    confirmLabel: 'Use this',
+                    cancelLabel: 'Keep the plan',
+                  );
+                },
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      return () => result;
+    }
+
+    testWidgets('offers adjusting the search beside the two answers', (
+      tester,
+    ) async {
+      await offer(tester);
+      expect(find.text('Use this'), findsOneWidget);
+      expect(find.text('Keep the plan'), findsOneWidget);
+      expect(find.text('Adjust search…'), findsOneWidget);
+    });
+
+    for (final (button, expected) in [
+      ('Use this', ConnectionOfferAnswer.use),
+      ('Keep the plan', ConnectionOfferAnswer.keep),
+      ('Adjust search…', ConnectionOfferAnswer.adjust),
+    ]) {
+      testWidgets('"$button" answers ${expected.name}', (tester) async {
+        final result = await offer(tester);
+        await tester.tap(find.text(button));
+        await tester.pumpAndSettle();
+        expect(find.text('Use this'), findsNothing);
+        expect(result(), expected);
+      });
+    }
+
+    testWidgets('swiping it away keeps the plan', (tester) async {
+      final result = await offer(tester);
+      // Tapping the scrim dismisses the sheet without an answer.
+      await tester.tapAt(const Offset(500, 10));
+      await tester.pumpAndSettle();
+      expect(result(), ConnectionOfferAnswer.keep);
+    });
+
+    testWidgets('a plain preview offers no search to adjust', (tester) async {
+      await pump(tester, _journey());
+      expect(find.text('Adjust search…'), findsNothing);
+    });
+  });
 }

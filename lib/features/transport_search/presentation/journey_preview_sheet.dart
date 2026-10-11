@@ -43,3 +43,50 @@ Future<bool> showJourneyPreviewSheet(
   );
   return confirmed ?? false;
 }
+
+/// What [showConnectionOfferSheet] was answered with.
+enum ConnectionOfferAnswer {
+  /// Take the connection on offer.
+  use,
+
+  /// Leave the run as the plan has it. Also what swiping the sheet away means:
+  /// the plan is already written, so not answering changes nothing.
+  keep,
+
+  /// Neither: open the search form on this run and ask again — another train,
+  /// another hour, a via stop.
+  adjust,
+}
+
+/// Offers [option] as the replacement for a run the trip already holds, with a
+/// third way out besides taking it and keeping the plan: adjusting the search.
+///
+/// This is the preview a routine's lookup shows for each journey it stamped out.
+/// There "keep the plan" and "use this" are rarely the only two answers worth
+/// giving — the connection found may be the one before the train the traveler
+/// actually wants, and the copied plan has no live times either way — and
+/// without a third button the way to the right one led out of this flow and
+/// back in through the trip's journey sheet.
+Future<ConnectionOfferAnswer> showConnectionOfferSheet(
+  BuildContext context, {
+  required JourneyOption option,
+  required String confirmLabel,
+  required String cancelLabel,
+}) async {
+  final answer = await showAppSheet<ConnectionOfferAnswer>(
+    context,
+    builder: (sheetContext) {
+      void reply(ConnectionOfferAnswer value) =>
+          Navigator.of(sheetContext).pop(value);
+      return JourneySheet(
+        view: journeyViewFromOption(option),
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        onConfirm: () => reply(ConnectionOfferAnswer.use),
+        onCancel: () => reply(ConnectionOfferAnswer.keep),
+        onAdjustSearch: () => reply(ConnectionOfferAnswer.adjust),
+      );
+    },
+  );
+  return answer ?? ConnectionOfferAnswer.keep;
+}

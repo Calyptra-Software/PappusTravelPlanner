@@ -1870,6 +1870,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionSearchError => 'Couldn\'t reach the connection service';
 
   @override
+  String get connectionSearchNoTimetable =>
+      'The connection service has no timetable for this date';
+
+  @override
+  String get connectionSearchUnknownPlace =>
+      'The connection service doesn\'t know one of the places';
+
+  @override
+  String get connectionSearchFailed =>
+      'The connection service answered with an error';
+
+  @override
   String get connectionRetry => 'Retry';
 
   @override
@@ -2219,16 +2231,28 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get connectionsNotFound =>
-      'No connection found — the plan was copied as it stands.';
-
-  @override
   String get connectionsNotTaken =>
       'A connection couldn\'t be taken over — the plan was kept.';
 
   @override
   String get connectionsOffline =>
       'Couldn\'t reach the routing service. The plan was copied as it stands.';
+
+  @override
+  String get connectionsNoTimetable =>
+      'The routing service has no timetable for this date. The plan was copied as it stands.';
+
+  @override
+  String get connectionsServiceFailed =>
+      'The routing service answered with an error. The plan was copied as it stands.';
+
+  @override
+  String get connectionsUnknownPlaceTitle => 'Place not found';
+
+  @override
+  String connectionsUnknownPlaceBody(String route) {
+    return 'The routing service doesn\'t know one of the places of $route. The plan stays as it was copied.';
+  }
 
   @override
   String get connectionsKeepPlan => 'Keep the plan';
@@ -2241,6 +2265,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectionsFindForLeg => 'Find connection';
+
+  @override
+  String get connectionsNotFoundTitle => 'No connection found';
+
+  @override
+  String connectionsNotFoundBody(String route, String when) {
+    return 'Nothing was found for $route on $when. The plan stays as it was copied.';
+  }
+
+  @override
+  String get connectionsAdjustSearch => 'Adjust search…';
 
   @override
   String get filterRoutineLabel => 'From routine';

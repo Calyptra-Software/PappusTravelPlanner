@@ -5,6 +5,14 @@ exact commits.
 
 ## Unreleased
 
+- **A connection offered for a routine's journey can be searched again on the spot.** Besides
+  taking it or keeping the plan, *Adjust search…* opens the search for that journey. Where
+  nothing was found, the journey now says so itself, with the same way into the search.
+- **A failed connection search says why.** A date the routing service has no timetable for
+  (more than about a month back), a place it doesn't know, and an error on its side used to
+  be reported as "couldn't reach the routing service".
+- **A failed connection or place search is reported at once.** It used to be retried in the
+  background for about 40 seconds behind a spinner, sending eleven requests instead of one.
 - **The PDF lays each day out along a line, as the app does.** Places sit on it as dots and
   connections as the icon of their transport mode, including an icon you chose yourself.
 - **The horse, gondola, chairlift and T-bar icons are centered.** They used to sit to the

@@ -311,9 +311,11 @@ group, and the entry's place in the day all survive the swap.
 
 Stamping out a routine that contains a searched journey copies the plan first — instant,
 offline, correct on its own — and *then* looks the connection up for the day it now sits
-on, offering the day's actual departure to swap in.
+on, offering the day's actual departure to swap in. If it is not the one you want, *Adjust
+search…* opens the connection search for that journey, with its ends and time filled in.
 
-Declining it, finding nothing, or having no signal all leave the copied plan standing. And
+Declining it, finding nothing, or having no signal all leave the copied plan standing. A
+journey for which nothing was found says so, with the same way into the search. And
 "no train" is never reported when it was "no network".
 
 ---

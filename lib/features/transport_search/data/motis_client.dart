@@ -330,9 +330,25 @@ class MotisTransportSearch implements TransportSearch {
       throw TransportSearchException(
         'MOTIS request failed (${response.statusCode})',
         statusCode: response.statusCode,
+        serverMessage: _errorText(response.bodyBytes),
       );
     }
     return jsonDecode(utf8.decode(response.bodyBytes));
+  }
+
+  /// The `error` text MOTIS puts in the body of a refusal — `query time … is
+  /// outside of loaded timetable window …` — or null when the body says
+  /// nothing readable.
+  static String? _errorText(List<int> body) {
+    try {
+      final decoded = jsonDecode(utf8.decode(body));
+      if (decoded is Map && decoded['error'] is String) {
+        return decoded['error'] as String;
+      }
+    } on FormatException {
+      // A proxy's HTML error page, or nothing at all.
+    }
+    return null;
   }
 
   /// Formats [time] as UTC RFC 3339 with **seconds** precision (`...:00Z`).
@@ -357,11 +373,66 @@ class MotisTransportSearch implements TransportSearch {
 /// this to a friendly, retryable state; it never propagates to the rest of the
 /// (offline) app.
 class TransportSearchException implements Exception {
-  const TransportSearchException(this.message, {this.statusCode});
+  const TransportSearchException(
+    this.message, {
+    this.statusCode,
+    this.serverMessage,
+  });
 
   final String message;
+
+  /// The HTTP status of a refusal; null when no answer arrived at all.
   final int? statusCode;
+
+  /// What the service said about the refusal, when it said anything.
+  final String? serverMessage;
+
+  /// Which of the failures a user is told apart this one is.
+  ///
+  /// Read off the service's own words rather than the status code alone, since
+  /// the code does not say enough: a date outside the timetable and a malformed
+  /// query are both a 400, and a 404 means a stop the router does not know on
+  /// `/plan` but a rotated trip id on `/trip`. Words this does not recognize
+  /// fall back to [TransportSearchFailure.failed], which is still true of them
+  /// — where reporting every refusal as "unreachable" was not, and told the
+  /// user to look for a signal that was never missing.
+  TransportSearchFailure get failure {
+    if (statusCode == null) return TransportSearchFailure.unreachable;
+    final said = serverMessage ?? '';
+    if (said.contains('outside of loaded timetable window')) {
+      return TransportSearchFailure.outsideTimetable;
+    }
+    if (said.contains('Could not find timetable location')) {
+      return TransportSearchFailure.unknownLocation;
+    }
+    return TransportSearchFailure.failed;
+  }
 
   @override
   String toString() => 'TransportSearchException: $message';
 }
+
+/// The failures of a connection search that call for different words.
+enum TransportSearchFailure {
+  /// No answer arrived: no network, a timeout, a TLS or DNS failure.
+  unreachable,
+
+  /// The router answered that the date lies outside the timetable it holds —
+  /// which it says about anything more than about a month in the past.
+  outsideTimetable,
+
+  /// The router does not know one of the ends it was asked about.
+  unknownLocation,
+
+  /// Any other refusal, or an answer that could not be read.
+  failed,
+}
+
+/// The failure [error] stands for, wherever a search was awaited: a
+/// [TransportSearchException] says which, and anything else — an answer that
+/// would not parse — is [TransportSearchFailure.failed], since the service did
+/// answer.
+TransportSearchFailure searchFailureOf(Object error) =>
+    error is TransportSearchException
+    ? error.failure
+    : TransportSearchFailure.failed;

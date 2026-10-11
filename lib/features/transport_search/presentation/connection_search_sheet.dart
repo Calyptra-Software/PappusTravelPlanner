@@ -19,6 +19,7 @@ import '../application/journey_search_options_provider.dart';
 import '../application/transport_search_controller.dart';
 import '../application/transport_search_providers.dart';
 import '../data/journey_mapper.dart' show localParts;
+import '../data/motis_client.dart' show TransportSearchFailure, searchFailureOf;
 import '../domain/journey.dart';
 import '../domain/transit_mode.dart';
 import '../domain/transport_place.dart';
@@ -728,11 +729,23 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
         padding: EdgeInsets.all(24),
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, _) => _ErrorRow(
-        message: l10n.connectionSearchError,
-        actionLabel: l10n.connectionRetry,
-        onAction: () => ref.invalidate(journeyResultsProvider(query)),
-      ),
+      error: (error, _) {
+        final failure = searchFailureOf(error);
+        // Retrying is offered only where the same question can get another
+        // answer. A date outside the timetable or an end the router does not
+        // know is answered identically every time; the form above is the way
+        // on from those.
+        final retryable =
+            failure == TransportSearchFailure.unreachable ||
+            failure == TransportSearchFailure.failed;
+        return _ErrorRow(
+          message: _searchFailureText(l10n, failure),
+          actionLabel: retryable ? l10n.connectionRetry : null,
+          onAction: retryable
+              ? () => ref.invalidate(journeyResultsProvider(query))
+              : null,
+        );
+      },
       data: (results) => AbsorbPointer(
         absorbing: _importing,
         child: ListView(
@@ -858,14 +871,14 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
     final messenger = ScaffoldMessenger.of(context);
     final controller = ref.read(journeyResultsProvider(query).notifier);
     setState(() => _pagingEarlier = earlier);
-    final loaded = earlier
+    final failure = earlier
         ? await controller.loadEarlier()
         : await controller.loadLater();
     if (!mounted) return;
     setState(() => _pagingEarlier = null);
-    if (!loaded) {
+    if (failure != null) {
       messenger.showSnackBar(
-        SnackBar(content: Text(l10n.connectionSearchError)),
+        SnackBar(content: Text(_searchFailureText(l10n, failure))),
       );
     }
   }
@@ -999,6 +1012,19 @@ class _ResultCard extends StatelessWidget {
     );
   }
 }
+
+/// What a failed search is called, by what it was: no answer at all, a date
+/// the router holds no timetable for, an end it does not know, or a refusal
+/// beyond those. Only the first is "couldn't reach the service".
+String _searchFailureText(
+  AppLocalizations l10n,
+  TransportSearchFailure failure,
+) => switch (failure) {
+  TransportSearchFailure.unreachable => l10n.connectionSearchError,
+  TransportSearchFailure.outsideTimetable => l10n.connectionSearchNoTimetable,
+  TransportSearchFailure.unknownLocation => l10n.connectionSearchUnknownPlace,
+  TransportSearchFailure.failed => l10n.connectionSearchFailed,
+};
 
 class _ErrorRow extends StatelessWidget {
   const _ErrorRow({

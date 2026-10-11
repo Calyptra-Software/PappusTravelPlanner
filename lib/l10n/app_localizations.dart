@@ -3238,6 +3238,24 @@ abstract class AppLocalizations {
   /// **'Couldn\'t reach the connection service'**
   String get connectionSearchError;
 
+  /// No description provided for @connectionSearchNoTimetable.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection service has no timetable for this date'**
+  String get connectionSearchNoTimetable;
+
+  /// No description provided for @connectionSearchUnknownPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection service doesn\'t know one of the places'**
+  String get connectionSearchUnknownPlace;
+
+  /// No description provided for @connectionSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The connection service answered with an error'**
+  String get connectionSearchFailed;
+
   /// No description provided for @connectionRetry.
   ///
   /// In en, this message translates to:
@@ -3766,12 +3784,6 @@ abstract class AppLocalizations {
   /// **'Day {number}'**
   String routineDayNumber(int number);
 
-  /// No description provided for @connectionsNotFound.
-  ///
-  /// In en, this message translates to:
-  /// **'No connection found — the plan was copied as it stands.'**
-  String get connectionsNotFound;
-
   /// No description provided for @connectionsNotTaken.
   ///
   /// In en, this message translates to:
@@ -3783,6 +3795,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t reach the routing service. The plan was copied as it stands.'**
   String get connectionsOffline;
+
+  /// No description provided for @connectionsNoTimetable.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing service has no timetable for this date. The plan was copied as it stands.'**
+  String get connectionsNoTimetable;
+
+  /// No description provided for @connectionsServiceFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing service answered with an error. The plan was copied as it stands.'**
+  String get connectionsServiceFailed;
+
+  /// No description provided for @connectionsUnknownPlaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Place not found'**
+  String get connectionsUnknownPlaceTitle;
+
+  /// No description provided for @connectionsUnknownPlaceBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing service doesn\'t know one of the places of {route}. The plan stays as it was copied.'**
+  String connectionsUnknownPlaceBody(String route);
 
   /// No description provided for @connectionsKeepPlan.
   ///
@@ -3807,6 +3843,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Find connection'**
   String get connectionsFindForLeg;
+
+  /// No description provided for @connectionsNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection found'**
+  String get connectionsNotFoundTitle;
+
+  /// No description provided for @connectionsNotFoundBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was found for {route} on {when}. The plan stays as it was copied.'**
+  String connectionsNotFoundBody(String route, String when);
+
+  /// No description provided for @connectionsAdjustSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust search…'**
+  String get connectionsAdjustSearch;
 
   /// No description provided for @filterRoutineLabel.
   ///
