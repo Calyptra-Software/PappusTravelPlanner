@@ -578,6 +578,62 @@
   "@trackInvalidFile": {
     "description": "Shown when the picked file could not be parsed as GPX."
   },
+  "trackRecordedOtherDay": "录制日期为 {recorded}，但条目日期为 {planned}",
+  "@trackRecordedOtherDay": {
+    "description": "Warning on the GPX import screen when the recording's timestamps share no day with the selected entries. Both placeholders are formatted dates or date ranges.",
+    "placeholders": { "recorded": { "type": "String" }, "planned": { "type": "String" } }
+  },
+  "trackActualTimesSummary": "{count, plural, =0{录制中没有实际时间} =1{录制中有 1 个实际时间} other{录制中有 {count} 个实际时间}}",
+  "@trackActualTimesSummary": {
+    "description": "Row on the GPX import screen opening the list of actual departure/arrival times read off the recording; count is how many are ticked to be written.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "trackActualTimesTitle": "录制得到的的实际时间",
+  "@trackActualTimesTitle": {
+    "description": "Title of the sheet listing the actual times a GPX import can write onto the legs."
+  },
+  "trackRecordingSpan": "录制时段：{span}",
+  "@trackRecordingSpan": {
+    "description": "When the GPX recording ran, in the chosen time zone, e.g. 'Recorded 09:12 – 11:47'.",
+    "placeholders": { "span": { "type": "String" } }
+  },
+  "trackRecordingZone": "时区",
+  "@trackRecordingZone": {
+    "description": "Label of the UTC-offset picker on the GPX import's actual-times sheet."
+  },
+  "trackRecordingZoneHint": "文件记录的是 UTC 时间，请选择条目时间所在的时区。",
+  "@trackRecordingZoneHint": {
+    "description": "Explains the time-zone picker: GPX times are UTC, the app's are wall-clock times."
+  },
+  "trackActualDeparture": "{entry}：出发",
+  "@trackActualDeparture": {
+    "description": "A row offering the recording's departure time as a leg's actual departure.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualArrival": "{entry}：到达",
+  "@trackActualArrival": {
+    "description": "A row offering the recording's arrival time as a leg's actual arrival.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualStart": "{entry}：开始",
+  "@trackActualStart": {
+    "description": "A row offering the arrival read off the recording as a place's actual start.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualEnd": "{entry}：结束",
+  "@trackActualEnd": {
+    "description": "A row offering the departure read off the recording as a place's actual end.",
+    "placeholders": { "entry": { "type": "String" } }
+  },
+  "trackActualReplaces": "{time}，替换 {existing}",
+  "@trackActualReplaces": {
+    "description": "Subtitle of a row whose leg already holds a different actual time; unticked by default.",
+    "placeholders": { "time": { "type": "String" }, "existing": { "type": "String" } }
+  },
+  "trackActualNone": "没有可写入的时间：录制与已输入的时间一致，或落在其他日期。",
+  "@trackActualNone": {
+    "description": "Shown on the actual-times sheet when the recording offers no time to write."
+  },
   "mapZoomIn": "放大",
   "@mapZoomIn": {
     "description": "Tooltip of the map's zoom-in button."
@@ -953,6 +1009,11 @@
   "@connectionSummaryOwnWay": {
     "placeholders": { "minutes": { "type": "int" } }
   },
+  "connectionReplanFromHere": "从这里重新规划",
+  "connectionRoutedTransfers": "换乘时间按实际步行计算",
+  "connectionRoutedTransfersHint": "按 OpenStreetMap 上两站之间的实际步行路径计算每次换乘的时间，而不用预先算好的标准换乘时间。能找出同站台快速换乘；准确度取决于地图数据。",
+  "connectionRoutedTransfersImplied": "无障碍通行时始终开启。",
+  "connectionSummaryRoutedTransfers": "换乘按步行计算",
   "connectionWheelchair": "无障碍通行",
   "connectionWheelchairHint": "仅显示无台阶的步行和换乘，以及标注为无障碍的班次。许多交通网络并未公布此类信息，因此可能查不到或结果很少。",
   "connectionNoAccessibleConnections": "未找到无障碍路线",
@@ -969,6 +1030,9 @@
   "connectionEarlier": "更早",
   "connectionLater": "更晚",
   "connectionSearchError": "无法访问路线查询服务",
+  "connectionSearchNoTimetable": "路线服务没有该日期的时刻表",
+  "connectionSearchUnknownPlace": "路线服务不认识其中一个地点",
+  "connectionSearchFailed": "路线服务返回了错误",
   "connectionRetry": "重试",
   "connectionChanges": "{count, plural, =0{直达} =1{1 次换乘} other{{count} 次换乘}}",
   "@connectionChanges": {
@@ -1191,10 +1255,23 @@
   },
   "connectionsNotTaken": "有一段路线无法沿用——计划已保留。",
   "connectionsOffline": "无法连接到路线服务。计划已按原样复制。",
+  "connectionsNoTimetable": "路线服务没有该日期的时刻表。计划已按原样复制。",
+  "connectionsServiceFailed": "路线服务返回了错误。计划已按原样复制。",
+  "connectionsUnknownPlaceTitle": "找不到地点",
+  "connectionsUnknownPlaceBody": "路线服务不认识 {route} 中的某个地点。计划保持复制时的状态。",
+  "@connectionsUnknownPlaceBody": {
+    "placeholders": { "route": { "type": "String" } }
+  },
   "connectionsKeepPlan": "保留计划",
   "connectionsUseThis": "使用此路线",
   "connectionsSearching": "正在查询路线…",
   "connectionsFindForLeg": "查找路线",
+  "connectionsNotFoundTitle": "未找到路线",
+  "connectionsNotFoundBody": "在 {when} 未找到 {route} 的路线。计划保持复制时的状态。",
+  "@connectionsNotFoundBody": {
+    "placeholders": { "route": { "type": "String" }, "when": { "type": "String" } }
+  },
+"connectionsAdjustSearch": "调整搜索…",
   "filterRoutineLabel": "来自模板行程",
   "filterRoutineAny": "任意模板行程",
   "tagsLabel": "标签",
