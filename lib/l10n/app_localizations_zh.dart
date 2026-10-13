@@ -1160,7 +1160,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String trackRecordedOtherDay(String recorded, String planned) {
-    return 'Recorded on $recorded, but the entries are on $planned';
+    return '记录日期为 $recorded，但条目日期为 $planned';
   }
 
   @override
@@ -1168,56 +1168,54 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count actual times from the recording',
-      one: '1 actual time from the recording',
-      zero: 'No actual times from the recording',
+      other: '记录中有 $count 个实际时间',
+      one: '记录中有 1 个实际时间',
+      zero: '记录中没有实际时间',
     );
     return '$_temp0';
   }
 
   @override
-  String get trackActualTimesTitle => 'Actual times from the recording';
+  String get trackActualTimesTitle => '记录得到的实际时间';
 
   @override
   String trackRecordingSpan(String span) {
-    return 'Recorded $span';
+    return '记录时段：$span';
   }
 
   @override
-  String get trackRecordingZone => 'Time zone';
+  String get trackRecordingZone => '时区';
 
   @override
-  String get trackRecordingZoneHint =>
-      'The file stores UTC. Pick the zone the entries\' times are in.';
+  String get trackRecordingZoneHint => '文件记录的是 UTC 时间，请选择条目时间所在的时区。';
 
   @override
   String trackActualDeparture(String entry) {
-    return '$entry: departure';
+    return '$entry：出发';
   }
 
   @override
   String trackActualArrival(String entry) {
-    return '$entry: arrival';
+    return '$entry：到达';
   }
 
   @override
   String trackActualStart(String entry) {
-    return '$entry: start';
+    return '$entry：开始';
   }
 
   @override
   String trackActualEnd(String entry) {
-    return '$entry: end';
+    return '$entry：结束';
   }
 
   @override
   String trackActualReplaces(String time, String existing) {
-    return '$time, replaces $existing';
+    return '$time，替换 $existing';
   }
 
   @override
-  String get trackActualNone =>
-      'Nothing to take over: the recording agrees with what is entered, or falls on other days.';
+  String get trackActualNone => '没有可写入的时间：记录与已输入的时间一致，或落在其他日期。';
 
   @override
   String get mapZoomIn => '放大';
@@ -1834,21 +1832,20 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get connectionReplanFromHere => 'Replan from here';
+  String get connectionReplanFromHere => '从这里重新规划';
 
   @override
-  String get connectionRoutedTransfers => 'Time changes by the actual walk';
+  String get connectionRoutedTransfers => '换乘时间按实际步行计算';
 
   @override
   String get connectionRoutedTransfersHint =>
-      'Work out each change from the actual path between the stops on OpenStreetMap, instead of precomputed standard times. Finds tight cross-platform changes; only as accurate as the map.';
+      '按 OpenStreetMap 上两站之间的实际步行路径计算每次换乘的时间，而不用预先算好的标准换乘时间。能找出同站台快速换乘；准确度取决于地图数据。';
 
   @override
-  String get connectionRoutedTransfersImplied =>
-      'Always on for step-free travel.';
+  String get connectionRoutedTransfersImplied => '无障碍通行时始终开启。';
 
   @override
-  String get connectionSummaryRoutedTransfers => 'changes timed by walk';
+  String get connectionSummaryRoutedTransfers => '换乘按步行计算';
 
   @override
   String get connectionWheelchair => '无障碍通行';
@@ -1901,16 +1898,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connectionSearchError => '无法访问路线查询服务';
 
   @override
-  String get connectionSearchNoTimetable =>
-      'The connection service has no timetable for this date';
+  String get connectionSearchNoTimetable => '路线服务没有该日期的时刻表';
 
   @override
-  String get connectionSearchUnknownPlace =>
-      'The connection service doesn\'t know one of the places';
+  String get connectionSearchUnknownPlace => '路线服务不认识其中一个地点';
 
   @override
-  String get connectionSearchFailed =>
-      'The connection service answered with an error';
+  String get connectionSearchFailed => '路线服务返回了错误';
 
   @override
   String get connectionRetry => '重试';
@@ -2262,19 +2256,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connectionsOffline => '无法连接到路线服务。计划已按原样复制。';
 
   @override
-  String get connectionsNoTimetable =>
-      'The routing service has no timetable for this date. The plan was copied as it stands.';
+  String get connectionsNoTimetable => '路线服务没有该日期的时刻表。计划已按原样复制。';
 
   @override
-  String get connectionsServiceFailed =>
-      'The routing service answered with an error. The plan was copied as it stands.';
+  String get connectionsServiceFailed => '路线服务返回了错误。计划已按原样复制。';
 
   @override
-  String get connectionsUnknownPlaceTitle => 'Place not found';
+  String get connectionsUnknownPlaceTitle => '找不到地点';
 
   @override
   String connectionsUnknownPlaceBody(String route) {
-    return 'The routing service doesn\'t know one of the places of $route. The plan stays as it was copied.';
+    return '路线服务不认识 $route 中的某个地点。计划保持复制时的状态。';
   }
 
   @override
@@ -2290,15 +2282,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connectionsFindForLeg => '查找路线';
 
   @override
-  String get connectionsNotFoundTitle => 'No connection found';
+  String get connectionsNotFoundTitle => '未找到路线';
 
   @override
   String connectionsNotFoundBody(String route, String when) {
-    return 'Nothing was found for $route on $when. The plan stays as it was copied.';
+    return '在 $when 未找到 $route 的路线。计划保持复制时的状态。';
   }
 
   @override
-  String get connectionsAdjustSearch => 'Adjust search…';
+  String get connectionsAdjustSearch => '调整搜索…';
 
   @override
   String get filterRoutineLabel => '来自模板行程';
