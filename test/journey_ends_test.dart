@@ -165,4 +165,105 @@ void main() {
     expect(results.direct.single.legs.single.from.name, 'Schlump');
     expect(results.laterCursor, 'c'); // the cursors ride through untouched
   });
+
+  group('a walk to nowhere at a coordinate end', () {
+    // Farmsen's platform, and the query issued from exactly that point — what
+    // searching one leg of an imported run again sends.
+    const lat = 53.607147;
+    const lon = 10.117572;
+    LegPoint at(String name, DateTime utc, {String? stopId, double? dLat}) =>
+        LegPoint(
+          name: name,
+          scheduled: utc,
+          stopId: stopId,
+          lat: lat + (dLat ?? 0),
+          lon: lon,
+          timeZone: stopId == null ? null : 'Europe/Berlin',
+        );
+    final t3 = DateTime.utc(2026, 8, 19, 7, 51);
+
+    test('is dropped at either end, and the times follow the legs left', () {
+      final start = DateTime.utc(2026, 8, 19, 7, 29);
+      final train = _leg(
+        at('Farmsen', t0, stopId: 'farmsen'),
+        LegPoint(
+          name: 'Jungfernstieg',
+          scheduled: t2,
+          stopId: 'jungfernstieg',
+          lat: 53.552425,
+          lon: 9.993695,
+          timeZone: 'Europe/Berlin',
+        ),
+        mode: TransitMode.subway,
+      );
+      final option = resolvedOptionEnds(
+        _option([
+          _leg(at('START', start), at('Farmsen', t0, stopId: 'farmsen')),
+          train,
+          _leg(
+            LegPoint(
+              name: 'Jungfernstieg',
+              scheduled: t2,
+              stopId: 'jungfernstieg',
+              lat: 53.552425,
+              lon: 9.993695,
+            ),
+            LegPoint(name: 'END', scheduled: t3, lat: 53.552425, lon: 9.993695),
+          ),
+        ]),
+        fromName: 'Farmsen',
+        toName: 'Jungfernstieg',
+      );
+
+      expect(option.legs, hasLength(1));
+      expect(option.legs.single.mode, TransitMode.subway);
+      expect(option.departure, t0);
+      expect(option.arrival, t2);
+      expect(option.duration, t2.difference(t0));
+      // The stop names its own end; nothing is left to rename.
+      expect(option.legs.single.from.name, 'Farmsen');
+    });
+
+    test('a walk that goes somewhere stays', () {
+      // About 30 m north: a first mile, however short, is still a way to go.
+      final option = resolvedOptionEnds(
+        _option([
+          _leg(at('START', t0, dLat: 0.0003), at('Farmsen', t1, stopId: 'f')),
+          _leg(
+            at('Farmsen', t1, stopId: 'f'),
+            _stop('Jungfernstieg', t2),
+            mode: TransitMode.subway,
+          ),
+        ]),
+        fromName: 'Home',
+      );
+      expect(option.legs, hasLength(2));
+      expect(option.legs.first.from.name, 'Home');
+    });
+
+    test('a change between two stops on one spot is still a change', () {
+      // Only a coordinate end goes nowhere; both ends of this one are stops.
+      final option = resolvedOptionEnds(
+        _option([
+          _leg(
+            at('Farmsen', t0, stopId: 'bus'),
+            at('Farmsen', t1, stopId: 'u'),
+          ),
+          _leg(
+            at('Farmsen', t1, stopId: 'u'),
+            _stop('Jungfernstieg', t2),
+            mode: TransitMode.subway,
+          ),
+        ]),
+      );
+      expect(option.legs, hasLength(2));
+    });
+
+    test('a journey of nothing but that walk is left whole', () {
+      final option = resolvedOptionEnds(
+        _option([_leg(at('START', t0), at('END', t1))]),
+      );
+      expect(option.legs, hasLength(1));
+    });
+  });
 }

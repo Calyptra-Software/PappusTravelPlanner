@@ -23,13 +23,31 @@
 /// and only ever for an end with no `stopId`. What the service itself said
 /// always stands.
 ///
+/// A third thing a coordinate end brings is a walk to nowhere. The router always
+/// walks from the point to the nearest stop and from the last stop to the point,
+/// and when the point *is* the stop — which it is whenever one leg of an
+/// imported run is searched again from the coordinates that leg carries — that
+/// walk is `distance: 0.0` and still rounded up to a minute: a "walk" from
+/// Farmsen to Farmsen, written into the timeline and a minute added to the
+/// journey. Such a leg is dropped here ([kStandingWalkMeters]), and the
+/// option's times are taken from the legs that are left.
+///
 /// Pure, and applied at the two places a search's answer arrives — the results
 /// controller and `searchPlannedJourney` — so everything downstream (the result
 /// rows, the preview, the journey sheet, the import) reads one already-resolved
 /// answer rather than each repairing it.
 library;
 
+import 'dart:math' as math;
+
 import 'journey.dart';
+import 'transit_mode.dart';
+
+/// How far apart the two ends of a walk at a coordinate end of a journey may
+/// lie for it to be no walk at all. The router answers a point that is a stop's
+/// own position with `distance: 0.0`; a metre is there only so a coordinate
+/// rounded on its way through the app still counts as the same spot.
+const double kStandingWalkMeters = 1;
 
 /// [results] with every option's ends resolved. [fromName] / [toName] are the
 /// names the search was **issued** with — the place the user picked, or the
@@ -62,6 +80,7 @@ JourneyOption resolvedOptionEnds(
   String? fromName,
   String? toName,
 }) {
+  option = _withoutStandingWalks(option);
   if (option.legs.isEmpty) return option;
   final zones = _zonesAcross(option.legs);
   final last = option.legs.length - 1;
@@ -78,6 +97,61 @@ JourneyOption resolvedOptionEnds(
         ),
       ),
   ]);
+}
+
+/// [option] without a walk at either coordinate end that goes nowhere: an
+/// own-steam leg whose open end (no `stopId`) lies on the stop at its other end.
+///
+/// Only at the outer ends, and only where the end is the query's coordinate:
+/// a walk between two stops is a change, which the router means and the journey
+/// sheet reads. Never down to nothing either — a journey of nothing but such a
+/// walk is the answer to "from here to here", and leaving it whole is truer than
+/// leaving no legs. The departure and arrival then come from the legs that are
+/// left, so the result row says the same as the legs beneath it.
+JourneyOption _withoutStandingWalks(JourneyOption option) {
+  var legs = option.legs;
+  if (legs.length > 1 && _standing(legs.first, legs.first.from)) {
+    legs = legs.sublist(1);
+  }
+  if (legs.length > 1 && _standing(legs.last, legs.last.to)) {
+    legs = legs.sublist(0, legs.length - 1);
+  }
+  if (identical(legs, option.legs)) return option;
+  final departure = legs.first.from.actual ?? legs.first.from.scheduled;
+  final arrival = legs.last.to.actual ?? legs.last.to.scheduled;
+  return JourneyOption(
+    departure: departure,
+    arrival: arrival,
+    duration: arrival.difference(departure),
+    transfers: option.transfers,
+    legs: legs,
+  );
+}
+
+/// Whether [leg] is a walk (or ride) whose coordinate end [open] stands on the
+/// stop at its other end.
+bool _standing(JourneyLeg leg, LegPoint open) {
+  if (!leg.mode.isOwnSteam || open.stopId != null) return false;
+  final a = leg.from;
+  final b = leg.to;
+  if (a.lat == null || a.lon == null || b.lat == null || b.lon == null) {
+    return false;
+  }
+  return _meters(a.lat!, a.lon!, b.lat!, b.lon!) <= kStandingWalkMeters;
+}
+
+/// The distance between two positions along the earth's surface, in metres.
+double _meters(double lat1, double lon1, double lat2, double lon2) {
+  const radius = 6371000.0;
+  double rad(double degrees) => degrees * math.pi / 180;
+  final dLat = rad(lat2 - lat1);
+  final dLon = rad(lon2 - lon1);
+  final h =
+      math.pow(math.sin(dLat / 2), 2) +
+      math.cos(rad(lat1)) *
+          math.cos(rad(lat2)) *
+          math.pow(math.sin(dLon / 2), 2);
+  return 2 * radius * math.asin(math.min(1, math.sqrt(h)));
 }
 
 /// The name to put on [point], or null to leave it as the router gave it: an

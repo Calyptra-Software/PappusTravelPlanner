@@ -593,6 +593,13 @@ UI (features/*/presentation, *widgets)
   `localParts` falls back to the **device's** zone: a guess too, but the one that
   is right for a hop, and wrong only for a traveller who has not yet changed
   their clock, where UTC was wrong for everybody outside it.
+  A coordinate end brings a third thing, a **walk to nowhere**: the router always walks from
+  the point to the nearest stop and from the last stop to the point, and when the point *is*
+  the stop (one leg of an imported run searched again from the coordinates it carries) that
+  walk is `distance: 0.0` and still a minute long. `resolvedOptionEnds` drops such a leg at
+  either outer end, own-steam with its open end within `kStandingWalkMeters` of the stop,
+  and dates the option by the legs left. Only there: a walk between two stops on one spot
+  is a change the router means.
 - **A connection is planned where the button that searched for it plans everything else.**
   The search is reached from the item form, which is reached from a day's *Add transport* or
   from one **option's**, so the option rides along — `ItemFormSheet` → `showConnectionSearchSheet`
