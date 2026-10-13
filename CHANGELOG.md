@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **Searching one leg of a journey again no longer adds walks that go nowhere.** A
+  zero-meter walk before and after the connection, each a minute long, is now left out.
 - **A GPX recording with timestamps fills in actual times.** The import offers each leg's
   departure and arrival as recorded, and the places between legs their start and end. It fills
   only empty fields unless you tick otherwise, and points it out when the file was recorded on
