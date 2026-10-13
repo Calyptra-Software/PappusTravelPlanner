@@ -578,21 +578,21 @@
   "@trackInvalidFile": {
     "description": "Shown when the picked file could not be parsed as GPX."
   },
-  "trackRecordedOtherDay": "录制日期为 {recorded}，但条目日期为 {planned}",
+  "trackRecordedOtherDay": "记录日期为 {recorded}，但条目日期为 {planned}",
   "@trackRecordedOtherDay": {
     "description": "Warning on the GPX import screen when the recording's timestamps share no day with the selected entries. Both placeholders are formatted dates or date ranges.",
     "placeholders": { "recorded": { "type": "String" }, "planned": { "type": "String" } }
   },
-  "trackActualTimesSummary": "{count, plural, =0{录制中没有实际时间} =1{录制中有 1 个实际时间} other{录制中有 {count} 个实际时间}}",
+  "trackActualTimesSummary": "{count, plural, =0{记录中没有实际时间} =1{记录中有 1 个实际时间} other{记录中有 {count} 个实际时间}}",
   "@trackActualTimesSummary": {
     "description": "Row on the GPX import screen opening the list of actual departure/arrival times read off the recording; count is how many are ticked to be written.",
     "placeholders": { "count": { "type": "int" } }
   },
-  "trackActualTimesTitle": "录制得到的的实际时间",
+  "trackActualTimesTitle": "记录得到的实际时间",
   "@trackActualTimesTitle": {
     "description": "Title of the sheet listing the actual times a GPX import can write onto the legs."
   },
-  "trackRecordingSpan": "录制时段：{span}",
+  "trackRecordingSpan": "记录时段：{span}",
   "@trackRecordingSpan": {
     "description": "When the GPX recording ran, in the chosen time zone, e.g. 'Recorded 09:12 – 11:47'.",
     "placeholders": { "span": { "type": "String" } }
@@ -630,7 +630,7 @@
     "description": "Subtitle of a row whose leg already holds a different actual time; unticked by default.",
     "placeholders": { "time": { "type": "String" }, "existing": { "type": "String" } }
   },
-  "trackActualNone": "没有可写入的时间：录制与已输入的时间一致，或落在其他日期。",
+  "trackActualNone": "没有可写入的时间：记录与已输入的时间一致，或落在其他日期。",
   "@trackActualNone": {
     "description": "Shown on the actual-times sheet when the recording offers no time to write."
   },
@@ -1271,7 +1271,7 @@
   "@connectionsNotFoundBody": {
     "placeholders": { "route": { "type": "String" }, "when": { "type": "String" } }
   },
-"connectionsAdjustSearch": "调整搜索…",
+  "connectionsAdjustSearch": "调整搜索…",
   "filterRoutineLabel": "来自模板行程",
   "filterRoutineAny": "任意模板行程",
   "tagsLabel": "标签",

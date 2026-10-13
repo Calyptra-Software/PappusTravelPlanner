@@ -1160,7 +1160,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String trackRecordedOtherDay(String recorded, String planned) {
-    return '录制日期为 $recorded，但条目日期为 $planned';
+    return '记录日期为 $recorded，但条目日期为 $planned';
   }
 
   @override
@@ -1168,19 +1168,19 @@ class AppLocalizationsZh extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '录制中有 $count 个实际时间',
-      one: '录制中有 1 个实际时间',
-      zero: '录制中没有实际时间',
+      other: '记录中有 $count 个实际时间',
+      one: '记录中有 1 个实际时间',
+      zero: '记录中没有实际时间',
     );
     return '$_temp0';
   }
 
   @override
-  String get trackActualTimesTitle => '录制得到的的实际时间';
+  String get trackActualTimesTitle => '记录得到的实际时间';
 
   @override
   String trackRecordingSpan(String span) {
-    return '录制时段：$span';
+    return '记录时段：$span';
   }
 
   @override
@@ -1215,7 +1215,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get trackActualNone => '没有可写入的时间：录制与已输入的时间一致，或落在其他日期。';
+  String get trackActualNone => '没有可写入的时间：记录与已输入的时间一致，或落在其他日期。';
 
   @override
   String get mapZoomIn => '放大';
