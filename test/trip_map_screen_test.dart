@@ -188,6 +188,107 @@ void main() {
     await tester.pump(kTileUpdateThrottle);
   });
 
+  group('the opening view holds what arrives after the entries', () {
+    // The entries' stream answers first and the map is framed on them; the
+    // lines and the photographs answer a frame later, as they do in the app,
+    // where the trip screen beneath already holds the entries open.
+
+    /// A round walk: its ends lie side by side, so a view fitted to them alone
+    /// shows a street corner and none of the walk.
+    final roundWalk = ItineraryItem(
+      id: 3,
+      tripId: tripId,
+      date: DateTime(2026, 5, 1),
+      sortOrder: 0,
+      kind: ItemKind.transport,
+      endDayOffset: 0,
+      chordDisplay: TrackDisplay.auto,
+      fromLat: 47.2650,
+      fromLon: 11.3930,
+      toLat: 47.2652,
+      toLon: 11.3933,
+    );
+    const summit = LatLng(47.3000, 11.4400);
+    const walked = {
+      3: [
+        TrackLine(
+          id: 11,
+          points: [LatLng(47.2650, 11.3930), summit, LatLng(47.2652, 11.3933)],
+          source: TrackSource.recorded,
+        ),
+      ],
+    };
+
+    LatLngBounds visible(WidgetTester tester) =>
+        MapCamera.of(tester.element(polylineLayer)).visibleBounds;
+
+    testWidgets('a recorded line is framed whole', (tester) async {
+      await pumpMap(tester, items: [roundWalk], tracks: walked);
+      expect(
+        visible(tester).contains(summit),
+        isFalse,
+        reason: 'framed on the ends alone, before the line arrived',
+      );
+
+      // The line arrives, and the fit follows it a frame later.
+      await tester.pump();
+      await tester.pump();
+
+      expect(visible(tester).contains(summit), isTrue);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a photograph is framed with the plan', (tester) async {
+      // A single place has no extent, so the map opens on it at street level;
+      // the photograph taken a valley over then gives the view one.
+      const valleyOver = LatLng(50.3000, 8.9000);
+      await pumpMap(
+        tester,
+        items: [place(id: 1, lat: 50.1109, lon: 8.6821)],
+        photos: [
+          Attachment(
+            id: 11,
+            itemId: 1,
+            kind: AttachmentKind.photo,
+            mimeType: 'image/jpeg',
+            name: 'Feldberg.jpg',
+            byteSize: 1024,
+            lat: valleyOver.latitude,
+            lon: valleyOver.longitude,
+            sortOrder: 0,
+            createdAt: DateTime(2026, 5, 1),
+          ),
+        ],
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(visible(tester).contains(valleyOver), isTrue);
+      expect(visible(tester).contains(const LatLng(50.1109, 8.6821)), isTrue);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+
+    testWidgets('a camera somebody has moved is left where they put it', (
+      tester,
+    ) async {
+      await pumpMap(tester, items: [roundWalk], tracks: walked);
+      // Taken hold of before the line arrives: the late fit would now be the
+      // map pulling the view back from them.
+      await tester.drag(find.byType(FlutterMap), const Offset(20, 0));
+      await tester.pump();
+      await tester.pump();
+
+      expect(visible(tester).contains(summit), isFalse);
+
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    });
+  });
+
   testWidgets('a leg is drawn in the trip\'s own accent, not the theme\'s', (
     tester,
   ) async {
@@ -258,8 +359,9 @@ void main() {
     const second = [LatLng(53.5570, 10.0050), LatLng(53.5600, 10.0100)];
 
     /// A line running the leg's whole length, so that the camera — framed on
-    /// the first build, when the tracks had not arrived yet, and never re-fitted
-    /// — is centred on it and a tap in the middle of the map lands on it.
+    /// the ends at first, and on the lines once they have arrived, which span
+    /// the same box — is centred on it and a tap in the middle of the map lands
+    /// on it.
     const whole = [LatLng(53.5511, 9.9937), LatLng(53.5600, 10.0100)];
 
     testWidgets('every stored line is drawn as itself and can be hit', (

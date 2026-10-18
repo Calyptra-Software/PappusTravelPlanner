@@ -5,6 +5,7 @@ exact commits.
 
 ## Unreleased
 
+- **A trip's map opens on everything it draws**, recorded lines and photographs included.
 - **Searching one leg of a journey again no longer adds walks that go nowhere.** A
   zero-meter walk before and after the connection, each a minute long, is now left out.
 - **A GPX recording with timestamps fills in actual times.** The import offers each leg's

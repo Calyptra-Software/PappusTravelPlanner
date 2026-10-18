@@ -878,6 +878,15 @@ UI (features/*/presentation, *widgets)
   rule the all-trips map inherits, so every line there identifies itself. Each line carries a
   casing (`borderStrokeWidth`) in the surface color: a user-chosen accent will land on tiles
   it disappears against otherwise, which is why paper maps do the same.
+- **The trip map is framed once more when its late streams answer, and never after.** The
+  entries are open before the map is (the trip screen beneath holds them), while
+  `tripTracksProvider`, `tripPhotoMarkersProvider` and the decisions open with it, so
+  `initialCameraFit` saw the ends of a round walk and not the walk, and no photograph at all.
+  `_MapView.complete` says when all three have answered, and `didUpdateWidget` fits
+  `allPoints` then — unless a pointer has touched the screen since it opened (`_handsOn`, a
+  `Listener` over the whole stack, buttons included): the late fit is the opening view
+  arriving whole, and after somebody has moved the camera it would be pulling it back. A
+  rebuild is not an act, so later edits never re-frame — the rule the all-trips map follows.
 - **A position is pointed at, never derived.** `map_picker_screen.dart` opens the map on a
   full-screen route — a sheet answers a vertical drag by closing, which is the same gesture
   as panning. A **tap** drops the marker, the readout says where it landed, and *Use this
