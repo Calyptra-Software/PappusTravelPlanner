@@ -323,7 +323,8 @@ journey for which nothing was found says so, with the same way into the search. 
 ## The map
 
 Every trip has a map, reached from the map button on the trip screen. Places appear as
-pins and transport legs as lines between their ends.
+pins and transport legs as lines between their ends. It opens on everything it draws,
+recorded lines and photographs included.
 
 Two things it deliberately does not do: a leg is drawn **only when both of its ends have a
 position**, and nothing is drawn between one place and the next. On today, the entry that

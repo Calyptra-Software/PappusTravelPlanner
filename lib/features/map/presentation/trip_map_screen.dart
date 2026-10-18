@@ -62,12 +62,12 @@ class TripMapScreen extends ConsumerWidget {
         error: (error, _) => Center(child: Text(l10n.genericError('$error'))),
         data: (items) {
           final live = liveItems(items, chosen);
+          final tracksAsync = ref.watch(tripTracksProvider(tripId));
+          final photosAsync = ref.watch(tripPhotoMarkersProvider(tripId));
           // Read once and used twice: the marker needs its thumbnail, and the
           // pure layer needs the rows to decide which of them the plan still
           // admits to.
-          final photos =
-              ref.watch(tripPhotoMarkersProvider(tripId)).value ??
-              const <Attachment>[];
+          final photos = photosAsync.value ?? const <Attachment>[];
           final features = tripMapFeatures(
             live,
             happeningItemId: _happeningItemId(live, now),
@@ -75,7 +75,7 @@ class TripMapScreen extends ConsumerWidget {
             // straight segment between its ends was only ever the best the plan
             // could say. Empty while the stream is still opening, so the map
             // draws the plan first and sharpens rather than waiting.
-            tracks: ref.watch(tripTracksProvider(tripId)).value ?? const {},
+            tracks: tracksAsync.value ?? const {},
             // The pictures that carry a position. Unfiltered on the way in —
             // which of them belong to the plan as it stands is decided by
             // `tripMapFeatures` against the same live entries everything else
@@ -86,6 +86,14 @@ class TripMapScreen extends ConsumerWidget {
           return _MapView(
             tripId: tripId,
             features: features,
+            // The entries are usually there at once — the trip screen beneath
+            // keeps their stream open — while the lines, the pictures and the
+            // decisions open theirs with the map. Everything they add is drawn,
+            // so it has to be framed too, once they have answered.
+            complete:
+                _answered(tracksAsync) &&
+                _answered(photosAsync) &&
+                _answered(ref.watch(alternativeBranchesProvider(tripId))),
             itemsById: {for (final item in live) item.id: item},
             // Keyed by id so a marker, which carries one and nothing else, can
             // find the thumbnail it is drawn from — the same arrangement the
@@ -103,6 +111,11 @@ class TripMapScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Whether [value] has said what it holds: a value, or an error, which will
+  /// not turn into one by waiting.
+  static bool _answered(AsyncValue<Object?> value) =>
+      value.hasValue || value.hasError;
 
   /// Which entry is under way, by the same rule the timeline uses.
   ///
@@ -128,6 +141,7 @@ class _MapView extends ConsumerStatefulWidget {
   const _MapView({
     required this.tripId,
     required this.features,
+    required this.complete,
     required this.itemsById,
     required this.photosById,
     required this.basemap,
@@ -138,6 +152,10 @@ class _MapView extends ConsumerStatefulWidget {
   /// picker it opens can start where this trip is.
   final int tripId;
   final TripMapFeatures features;
+
+  /// Whether [features] holds everything the trip will draw, or is still
+  /// waiting for its lines, its pictures or its decisions to arrive.
+  final bool complete;
 
   /// The entries the markers stand for, keyed by id. A marker carries an id and
   /// nothing else, so what to *say* about it is looked up here rather than
@@ -166,11 +184,59 @@ class _MapViewState extends ConsumerState<_MapView> {
   /// gesture around it reads it — the same arrangement the all-trips map uses.
   final _lineHits = ValueNotifier<LayerHitResult<MapPath>?>(null);
 
+  /// Whether the camera has been framed on everything the trip draws.
+  ///
+  /// The opening view is fitted to what is there on the first build, which is
+  /// often the entries alone: the recorded lines and the photographs arrive a
+  /// moment later. A round walk is the case that made this matter — its two
+  /// ends lie side by side, so a view fitted to them shows a street corner and
+  /// none of the walk — and a photograph taken a valley over was simply off
+  /// screen. So the view is fitted once more when the rest has arrived, and
+  /// never after: a rebuild is not an act, and a map that re-framed itself on
+  /// every edit would take the view away from whoever is looking at it.
+  bool _framedComplete = false;
+
+  /// Whether anybody has put a finger, a pointer or a wheel on the map since
+  /// it opened. The late fit is the opening view arriving complete; once
+  /// somebody has moved the camera themselves, it would be the map pulling it
+  /// back from them. Counted over the whole screen, buttons included, since
+  /// zooming and centering on oneself are moves of the camera too.
+  bool _handsOn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Complete from the start: `initialCameraFit` already frames it all.
+    _framedComplete = widget.complete;
+  }
+
+  @override
+  void didUpdateWidget(_MapView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_framedComplete || !widget.complete) return;
+    _framedComplete = true;
+    if (_handsOn) return;
+    final points = widget.features.allPoints;
+    if (points.length < 2) return;
+    // Deferred, because the camera cannot be moved during a build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _handsOn) return;
+      _controller.fitCamera(_fitTo(points));
+    });
+  }
+
   @override
   void dispose() {
     _lineHits.dispose();
     super.dispose();
   }
+
+  /// The view that holds all of [points], with room around them for the marks
+  /// drawn at the edge.
+  static CameraFit _fitTo(List<LatLng> points) => CameraFit.bounds(
+    bounds: LatLngBounds.fromPoints(points),
+    padding: const EdgeInsets.all(48),
+  );
 
   /// What a marker is for: the entry behind it, in words.
   ///
@@ -362,173 +428,176 @@ class _MapViewState extends ConsumerState<_MapView> {
     // it is why the line reads as drawn *on* the map rather than as part of it.
     final casing = theme.colorScheme.surface;
 
-    return Stack(
-      // The map *fills* the stack; it does not size it. A stack measures its
-      // non-positioned children to find its own size, so a loosely constrained
-      // map has to be laid out for that — and every layout of a `FlutterMap`
-      // re-runs its layout callback, which rebuilds every layer inside it,
-      // markers included. Expanding hands the map tight constraints instead, so
-      // the rebuild happens when the size actually changes rather than whenever
-      // something above asks how big the map would like to be.
-      fit: StackFit.expand,
-      children: [
-        FlutterMap(
-          mapController: _controller,
-          options: MapOptions(
-            minZoom: kMinMapZoom,
-            // A pinch can hand flutter_map a camera with a NaN in it, which makes
-            // every marker read as visible in every neighboring world and hangs
-            // the frame. See finite_camera.dart.
-            cameraConstraint: const FiniteCamera(),
-            // Framed to hold everything the trip touches. A single point has no
-            // extent to fit, so it is centred at a street-level zoom instead.
-            initialCameraFit: points.length > 1
-                ? CameraFit.bounds(
-                    bounds: LatLngBounds.fromPoints(points),
-                    padding: const EdgeInsets.all(48),
-                  )
-                : null,
-            initialCenter: points.isEmpty ? const LatLng(0, 0) : points.first,
-            initialZoom: 13,
-            maxZoom: maxZoomOf(basemap),
-            interactionOptions: const InteractionOptions(
-              // No rotation: every label the app draws is horizontal, and a map
-              // turned by accident is a map the user has to put back.
-              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-            ),
-          ),
-          children: [
-            basemapTileLayer(basemap, ref.watch(appVersionProvider)),
-            GestureDetector(
-              onTap: () {
-                final hit = _lineHits.value;
-                if (hit == null) return;
-                _showLines(pathsUnderTap(hit.hitValues, features.paths));
-              },
-              child: PolylineLayer(
-                hitNotifier: _lineHits,
-                // Wider than the line is drawn: what "on this line" means has
-                // to be a fingertip, and flutter_map's default hitbox is the
-                // stroke itself. The same constant the all-trips map uses, for
-                // the same reason.
-                minimumHitbox: kLineHitbox,
-                polylines: [
-                  for (final path in features.paths)
-                    for (final segment in path.segments)
-                      Polyline(
-                        points: segment,
-                        strokeWidth: path.happening ? 5 : 3.5,
-                        // Broken for a line the router computed rather than one
-                        // anybody followed — see `MapPath.dashed`.
-                        pattern: path.dashed
-                            ? StrokePattern.dashed(segments: const [7, 5])
-                            : const StrokePattern.solid(),
-
-                        // Red for the leg under way, as everywhere else in the
-                        // app; the entry's own color, or the trip's, for the rest.
-                        color: colorOf(
-                          path.colorValue,
-                          happening: path.happening,
-                        ),
-                        borderStrokeWidth: 2,
-                        borderColor: casing,
-                        // Simplification is flutter_map's own, per frame: a
-                        // great-circle arc carries vertices that are invisible at
-                        // low zoom and matter when zoomed in.
-                        useStrokeWidthInMeter: false,
-                        // What a tap on this line means: this entry, and this
-                        // one of its lines. A path is one stored line (or the
-                        // straight segment where there is none), so the answer
-                        // is as fine as what was drawn.
-                        hitValue: path,
-                      ),
-                ],
+    // Seen before the map or a button acts on it, so a late fit queued in the
+    // same frame already knows to stand down.
+    return Listener(
+      onPointerDown: (_) => _handsOn = true,
+      onPointerSignal: (_) => _handsOn = true,
+      child: Stack(
+        // The map *fills* the stack; it does not size it. A stack measures its
+        // non-positioned children to find its own size, so a loosely constrained
+        // map has to be laid out for that — and every layout of a `FlutterMap`
+        // re-runs its layout callback, which rebuilds every layer inside it,
+        // markers included. Expanding hands the map tight constraints instead, so
+        // the rebuild happens when the size actually changes rather than whenever
+        // something above asks how big the map would like to be.
+        fit: StackFit.expand,
+        children: [
+          FlutterMap(
+            mapController: _controller,
+            options: MapOptions(
+              minZoom: kMinMapZoom,
+              // A pinch can hand flutter_map a camera with a NaN in it, which makes
+              // every marker read as visible in every neighboring world and hangs
+              // the frame. See finite_camera.dart.
+              cameraConstraint: const FiniteCamera(),
+              // Framed to hold everything the trip touches — what has arrived by
+              // now, and the rest once it has (`didUpdateWidget`). A single point
+              // has no extent to fit, so it is centred at a street-level zoom
+              // instead.
+              initialCameraFit: points.length > 1 ? _fitTo(points) : null,
+              initialCenter: points.isEmpty ? const LatLng(0, 0) : points.first,
+              initialZoom: 13,
+              maxZoom: maxZoomOf(basemap),
+              interactionOptions: const InteractionOptions(
+                // No rotation: every label the app draws is horizontal, and a map
+                // turned by accident is a map the user has to put back.
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
             ),
-            MarkerLayer(
-              markers: [
-                // One badge per entry, not per line: a leg recorded in three
-                // segments is one leg, and it is `badged` that says which of
-                // its paths wears the icon — the longest, where the icon sat
-                // when a leg was a single path. Every path wearing one also
-                // costs the line its taps, since a marker wins the hit test
-                // against the line under it.
-                for (final path in features.paths)
-                  if (path.badged)
-                    Marker(
-                      point: path.anchor,
-                      width: 28,
-                      height: 28,
-                      child: _Tappable(
-                        // The badge is the *entry's* mark, so it answers for
-                        // the entry and marks no line — which is exactly what
-                        // it means when a leg's lines are listed unmarked.
-                        onTap: () => _showItem(path.itemId),
-                        child: _ModeBadge(
+            children: [
+              basemapTileLayer(basemap, ref.watch(appVersionProvider)),
+              GestureDetector(
+                onTap: () {
+                  final hit = _lineHits.value;
+                  if (hit == null) return;
+                  _showLines(pathsUnderTap(hit.hitValues, features.paths));
+                },
+                child: PolylineLayer(
+                  hitNotifier: _lineHits,
+                  // Wider than the line is drawn: what "on this line" means has
+                  // to be a fingertip, and flutter_map's default hitbox is the
+                  // stroke itself. The same constant the all-trips map uses, for
+                  // the same reason.
+                  minimumHitbox: kLineHitbox,
+                  polylines: [
+                    for (final path in features.paths)
+                      for (final segment in path.segments)
+                        Polyline(
+                          points: segment,
+                          strokeWidth: path.happening ? 5 : 3.5,
+                          // Broken for a line the router computed rather than one
+                          // anybody followed — see `MapPath.dashed`.
+                          pattern: path.dashed
+                              ? StrokePattern.dashed(segments: const [7, 5])
+                              : const StrokePattern.solid(),
+
+                          // Red for the leg under way, as everywhere else in the
+                          // app; the entry's own color, or the trip's, for the rest.
                           color: colorOf(
                             path.colorValue,
                             happening: path.happening,
                           ),
-                          // The row's own icon, which for a built-in falls back
-                          // to that built-in's default — the same resolution
-                          // the timeline tile uses. Reading `iconId` directly
-                          // instead gives every built-in the generic three
-                          // dots, since a seeded row carries no id of its own.
-                          icon:
-                              modes[path.modeId]?.icon ??
-                              kDefaultTransportModeIcon,
+                          borderStrokeWidth: 2,
+                          borderColor: casing,
+                          // Simplification is flutter_map's own, per frame: a
+                          // great-circle arc carries vertices that are invisible at
+                          // low zoom and matter when zoomed in.
+                          useStrokeWidthInMeter: false,
+                          // What a tap on this line means: this entry, and this
+                          // one of its lines. A path is one stored line (or the
+                          // straight segment where there is none), so the answer
+                          // is as fine as what was drawn.
+                          hitValue: path,
+                        ),
+                  ],
+                ),
+              ),
+              MarkerLayer(
+                markers: [
+                  // One badge per entry, not per line: a leg recorded in three
+                  // segments is one leg, and it is `badged` that says which of
+                  // its paths wears the icon — the longest, where the icon sat
+                  // when a leg was a single path. Every path wearing one also
+                  // costs the line its taps, since a marker wins the hit test
+                  // against the line under it.
+                  for (final path in features.paths)
+                    if (path.badged)
+                      Marker(
+                        point: path.anchor,
+                        width: 28,
+                        height: 28,
+                        child: _Tappable(
+                          // The badge is the *entry's* mark, so it answers for
+                          // the entry and marks no line — which is exactly what
+                          // it means when a leg's lines are listed unmarked.
+                          onTap: () => _showItem(path.itemId),
+                          child: _ModeBadge(
+                            color: colorOf(
+                              path.colorValue,
+                              happening: path.happening,
+                            ),
+                            // The row's own icon, which for a built-in falls back
+                            // to that built-in's default — the same resolution
+                            // the timeline tile uses. Reading `iconId` directly
+                            // instead gives every built-in the generic three
+                            // dots, since a seeded row carries no id of its own.
+                            icon:
+                                modes[path.modeId]?.icon ??
+                                kDefaultTransportModeIcon,
+                          ),
                         ),
                       ),
-                    ),
-              ],
-            ),
-            // The places, in a layer of their own so that they can be gathered
-            // against the camera — see `_PinMarkers`.
-            _PinMarkers(
-              pins: features.pins,
-              colorOf: colorOf,
-              onTap: _showPins,
-            ),
-            // Photos in a layer of their own, above the plan rather than
-            // among it: a picture is bigger than a pin and would cover the
-            // entry it is about if the two were interleaved by list order.
-            // Still below the device's mark, which has to stay findable.
-            _PhotoMarkers(
-              photos: features.photos,
-              photosById: widget.photosById,
-              colorOf: colorOf,
-              onTap: _showPhotos,
-            ),
-            // Above the plan's own marks: the question it answers ("where am I
-            // in all this") is asked *of* them, so it must not end up under one.
-            const DeviceLocationLayer(),
-          ],
-        ),
-        Positioned(
-          top: 12,
-          right: 12 + MediaQuery.paddingOf(context).right,
-          child: Column(
-            children: [
-              MapZoomButtons(
-                controller: _controller,
-                basemap: basemap,
-                zoomInTooltip: l10n.mapZoomIn,
-                zoomOutTooltip: l10n.mapZoomOut,
+                ],
               ),
-              const SizedBox(height: 8),
-              MapLocationButton(
-                onCenter: (fix) => centerOnFix(_controller, fix),
+              // The places, in a layer of their own so that they can be gathered
+              // against the camera — see `_PinMarkers`.
+              _PinMarkers(
+                pins: features.pins,
+                colorOf: colorOf,
+                onTap: _showPins,
               ),
+              // Photos in a layer of their own, above the plan rather than
+              // among it: a picture is bigger than a pin and would cover the
+              // entry it is about if the two were interleaved by list order.
+              // Still below the device's mark, which has to stay findable.
+              _PhotoMarkers(
+                photos: features.photos,
+                photosById: widget.photosById,
+                colorOf: colorOf,
+                onTap: _showPhotos,
+              ),
+              // Above the plan's own marks: the question it answers ("where am I
+              // in all this") is asked *of* them, so it must not end up under one.
+              const DeviceLocationLayer(),
             ],
           ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: MapAttributionBar(basemap: basemap),
-        ),
-      ],
+          Positioned(
+            top: 12,
+            right: 12 + MediaQuery.paddingOf(context).right,
+            child: Column(
+              children: [
+                MapZoomButtons(
+                  controller: _controller,
+                  basemap: basemap,
+                  zoomInTooltip: l10n.mapZoomIn,
+                  zoomOutTooltip: l10n.mapZoomOut,
+                ),
+                const SizedBox(height: 8),
+                MapLocationButton(
+                  onCenter: (fix) => centerOnFix(_controller, fix),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: MapAttributionBar(basemap: basemap),
+          ),
+        ],
+      ),
     );
   }
 }
