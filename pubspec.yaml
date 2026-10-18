@@ -24,7 +24,7 @@ dependencies:
   # State management and routing.
   flutter_riverpod: ^3.4.3
   riverpod_annotation: ^4.0.3
-  go_router: ^18.0.2
+  go_router: ^18.1.0
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
   drift: ^2.35.2
@@ -59,7 +59,7 @@ dependencies:
   home_widget: ^0.10.0 # Android home-screen widget
   pdf: ^3.13.1 # exporting a trip as a printable PDF
   http: ^1.2.2 # connection search against the MOTIS API (Transitous)
-  timezone: ^0.11.1 # UTC->wall-clock for imported connections (per-stop IANA tz)
+  timezone: ^0.11.2 # UTC->wall-clock for imported connections (per-stop IANA tz)
   # Both are here for the Transitous usage policy: it asks every request to
   # carry the client's version, and the data sources to be linked (not merely
   # named) somewhere visible. See core/app_info.dart and core/widgets/attribution.dart.
@@ -81,7 +81,7 @@ dependencies:
   # to JPEG and reading a picture's own EXIF position. Pure Dart, which is the
   # same reason flutter_map was chosen — a native codec plugin has no Linux and
   # no web, and this runs on all six targets. See features/attachments/.
-  image: ^4.10.1
+  image: ^4.12.0
   # Where the device says it is, for the map's "you are here" — the app's first
   # and only runtime permission, asked for on a button press and never at
   # launch. Endorsed on all six targets (Linux goes through GeoClue over D-Bus),
