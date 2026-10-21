@@ -2463,10 +2463,24 @@ regenerated if `drift`/`sqlite3` are upgraded:
 
 - `web/sqlite3.wasm` — download the tag matching the resolved `sqlite3` version from
   `github.com/simolus3/sqlite3.dart/releases` (e.g. `sqlite3-3.3.4/sqlite3.wasm`).
-- `web/drift_worker.js` — `dart compile js -O2 -o web/drift_worker.js <tmp>` where `<tmp>`
-  is a one-line entrypoint calling `WasmDatabase.workerMainForOpen()` from
+- `web/drift_worker.js` — `dart compile js -O4 --no-source-maps -o web/drift_worker.js <tmp>`
+  where `<tmp>` is a one-line entrypoint calling `WasmDatabase.workerMainForOpen()` from
   `package:drift/wasm.dart` (must be compiled from inside this project so `package:drift`
   resolves).
+
+**`-O4`, the level drift compiles its own released worker at, and not a lower one.** drift
+reads `navigator.locks` through `LockManager? get locks => _navigator.locks`, while
+`package:web` declares that getter non-nullable. At `-O2` dart2js checks the value against
+the declared type, which throws where the API is absent, and then removes the `null` check
+behind it as dead code. `navigator.locks` is absent in every insecure context, which is any
+page served over plain HTTP from anywhere but `localhost` — a phone opening a laptop's
+`http://192.168.…:8000`, say. The shared worker then failed to serve the database, reported
+it on a port nobody was listening to, and the app waited on a spinner with nothing in the
+console. `-O4` omits that check and keeps the `null` test, which is also why `main.dart.js`
+(compiled by Flutter at `-O4`) never showed it. Measured in Firefox over a LAN address:
+`-O2` hangs before `sqlite3.wasm` is ever fetched, `-O4` opens on IndexedDB. The source
+stays fragile at any level that checks interop types; a `has('locks')` test in drift, as
+it already does for `storage`, would remove the dependence on the flag.
 
 The web has no filesystem, so the settings screen hides the desktop open/create actions
 there, but import/export **are** supported: `DatabaseController.exportBytes` /
