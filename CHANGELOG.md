@@ -6,6 +6,8 @@ exact commits.
 ## Unreleased
 
 - **Maps show their tiles in Firefox on the web.** They stayed grey there.
+- **The web app opens its trips when served over plain HTTP from another device**, such as
+  a phone visiting a laptop's address. It used to load forever.
 - **A trip's map opens on everything it draws**, recorded lines and photographs included.
 - **Searching one leg of a journey again no longer adds walks that go nowhere.** A
   zero-meter walk before and after the connection, each a minute long, is now left out.
