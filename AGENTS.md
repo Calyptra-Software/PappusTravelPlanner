@@ -2202,7 +2202,7 @@ Three smaller traps, each found by a test that had to be written twice:
 
 - **A release is a tag, not a build somebody ran.** Pushing `v<version>` to `main` runs
   `.github/workflows/release.yml`: it checks the tag against `pubspec.yaml`, builds the
-  three per-ABI APKs signed from repository secrets and the Linux and Windows packages beside them, and
+  three per-ABI APKs signed from repository secrets and the Linux, Windows and web packages beside them, and
   opens a **draft** release for a human to check the signing fingerprint before publishing. So never build and upload a
   release artifact by hand — the point of the workflow is that the environment which
   produced a published APK is knowable, which is also what a later move to F-Droid's
@@ -2561,3 +2561,20 @@ cover this; the URL is `fontFallbackBaseUrl` in the engine's configuration. The 
 engines contain no such URL (checked in `libflutter.so` and `libflutter_linux_gtk.so`)
 and fall back to the system's fonts. `SECURITY.md` states this as a fact of the web
 build, so serving the fonts locally is the change that would have to edit it.
+
+**A release carries the web app for anyone to host** (`pappus-<version>-web.zip`, the
+`web` job of `release.yml`), built without the side-by-side define so it keeps the
+database name every web install has used. Anyone could already build and host it; the zip
+only makes that easy, and `docs/self-hosting.md` is the price of making it easy: what a
+host must set up and what they take on. One consequence lands here rather than with the
+host: Firefox delivers the app's `User-Agent` to Transitous, so a stranger's instance
+searches under this project's name and repository URL. Its `Referer` tells the two apart,
+and the policy asks that host for contact details of their own, which is why the docs say
+so. The two instructions in those docs were measured before they were written, not taken
+from Flutter's documentation: editing `<base href>` alone serves the app from a path
+(everything, `sqlite3.wasm` and the worker included, loaded under `/pappus/`), and
+`config: { fontFallbackBaseUrl: … }` in `flutter_bootstrap.js` moves every fallback-font
+request off Google. With nothing at that path the requests 404, the characters draw as
+boxes, and the engine gives up retrying after a handful of failures. Neither edit survives
+a rebuild, so if the docs ever promise more than a hand edit, they have to say which build
+flag does it.

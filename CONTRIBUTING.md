@@ -135,7 +135,8 @@ git tag v1.11.0 && git push origin v1.11.0
 
 `.github/workflows/release.yml` takes it from there. It refuses outright if the tag and
 `pubspec.yaml` disagree, builds the three per-ABI APKs signed with the release key from
-the repository secrets, builds the Linux `.tar.gz` and AppImage and the Windows `.zip` beside them, writes
+the repository secrets, builds the Linux `.tar.gz` and AppImage, the Windows `.zip` and the
+web `.zip` beside them, writes
 `SHA256SUMS.txt`, prints the signing certificate into the job summary, and opens a
 **draft** release with notes GitHub generates from the merged
 pull requests.

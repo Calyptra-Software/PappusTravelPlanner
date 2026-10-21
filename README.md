@@ -50,6 +50,9 @@ Keep the unpacked folder together, since `pappus.exe` needs the files beside it;
 from the desktop or the Start menu, create a shortcut to it. The program is not signed, so
 Windows SmartScreen warns on the first start; choose *More info*, then *Run anyway*.
 
+The web app is there as well, as a `.zip` of static files to put on any web server;
+[docs/self-hosting.md](docs/self-hosting.md) says how, and what hosting it involves.
+
 Every other platform, and Android, Linux or Windows if you would rather not run a stranger's binary, is a
 [build from source](#build-from-source) away.
 
