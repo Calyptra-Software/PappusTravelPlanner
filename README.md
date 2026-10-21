@@ -34,24 +34,23 @@ are planned the same way, and differ only in their dates. The primary target is
 
 ## Get the app
 
-Android builds are on the
-[Releases page](https://github.com/Calyptra-Software/PappusTravelPlanner/releases). Take the
-APK matching your device's architecture — `arm64-v8a` for essentially any phone of the last
-decade — and allow your file manager to install it, since it does not come from a store.
-There is no store listing yet.
+Every release on the
+[Releases page](https://github.com/Calyptra-Software/PappusTravelPlanner/releases) has builds
+for four platforms:
 
-Linux builds are on the same page, for x86-64: an AppImage (`chmod +x`, then run it) and
-a `.tar.gz`. Unpack the `.tar.gz` anywhere and run `./pappus`, or run `./install.sh` in it
-to get a menu entry and an icon for your user alone (`./uninstall.sh` undoes that). Either
-download needs glibc 2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
-
-Windows builds are there too, for x64: a `.zip` to unpack anywhere, then run `pappus.exe`.
-Keep the unpacked folder together, since `pappus.exe` needs the files beside it; to start it
-from the desktop or the Start menu, create a shortcut to it. The program is not signed, so
-Windows SmartScreen warns on the first start; choose *More info*, then *Run anyway*.
-
-The web app is there as well, as a `.zip` of static files to put on any web server;
-[docs/self-hosting.md](docs/self-hosting.md) says how, and what hosting it involves.
+- **Android:** take the APK matching your device's architecture — `arm64-v8a` for
+  essentially any phone of the last decade — and allow your file manager to install it,
+  since it does not come from a store. There is no store listing yet.
+- **Linux** (x86-64): an AppImage (`chmod +x`, then run it) and a `.tar.gz`. Unpack the
+  `.tar.gz` anywhere and run `./pappus`, or run `./install.sh` in it to get a menu entry and
+  an icon for your user alone (`./uninstall.sh` undoes that). Either download needs glibc
+  2.35 or newer (Ubuntu 22.04, Debian 12, or later) and GTK 3.
+- **Windows** (x64): a `.zip` to unpack anywhere, then run `pappus.exe`. Keep the unpacked
+  folder together, since `pappus.exe` needs the files beside it; to start it from the
+  desktop or the Start menu, create a shortcut to it. The program is not signed, so Windows
+  SmartScreen warns on the first start; choose *More info*, then *Run anyway*.
+- **Web:** a `.zip` of static files to put on any web server;
+  [docs/self-hosting.md](docs/self-hosting.md) says how, and what hosting it involves.
 
 Every other platform, and Android, Linux or Windows if you would rather not run a stranger's binary, is a
 [build from source](#build-from-source) away.
