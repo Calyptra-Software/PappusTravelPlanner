@@ -124,7 +124,9 @@ boundary.
 `https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`),
 and the map fetches tile images from `https://tile.openstreetmap.org`
 (`lib/features/map/basemap.dart`). A hostile or compromised reply should not be
-able to do more than produce a wrong or empty result, or a wrong picture.
+able to do more than produce a wrong or empty result, or a wrong picture. The
+web build parses a third kind of reply, font files from Google (see below);
+those are read by Flutter's renderer, not by code in this repository.
 
 **It accepts deep links.** `pappus://trip?id=N`, used by the Android home-screen
 widget to open a trip.
@@ -220,6 +222,25 @@ already seen asks for nothing. No coordinate of yours is ever *sent*: a tile is
 addressed by a grid square, and which entries of your trip sit inside it is
 something only your device knows.
 
+**In a browser, the app is identified by the page instead.** A web page cannot
+reliably name itself in a `User-Agent`: Chrome replaces it with its own, and the
+tile server refuses a request that sets one. So the web build sends no
+`User-Agent` with tiles, and one with a connection search only where the browser
+lets it through (Firefox does). Both policies accept the page's `Referer` in its
+place, which means the servers see the address the app is served from.
+
+**The web build fetches fonts from Google when text needs them.** A browser
+renders this app with Flutter's own engine, which cannot use the fonts installed
+on the computer. When text contains characters that the bundled fonts don't
+have, the engine downloads a matching Noto font from `fonts.gstatic.com`. That
+applies to the Chinese interface as a whole, and in any language to an emoji or
+a place name in another script. Google then sees that request: your IP address,
+the address of the page, and which slices of the font were needed, though not
+the text itself. The
+Android, Linux and Windows builds use the system's fonts and make no such
+request; a missing font there shows as empty boxes. Whoever hosts the web build
+can serve the fonts themselves by setting Flutter's `fontFallbackBaseUrl`.
+
 **The map can show where you are, and tells nobody.** Pressing the locate button
 asks the platform for the device's position; the mark it draws is the only thing
 that happens with the answer. It is never stored and never transmitted — and in
@@ -236,7 +257,8 @@ and hands back one file the user chose. The app never enumerates a gallery or a
 directory, and there is no camera capture.
 
 **Nothing else leaves the device.** There is no analytics, no crash reporting,
-and no telemetry of any kind. This app declares four permissions of its own:
+and no telemetry of any kind. A web build also fetches the app itself from
+wherever it is hosted, which is that host's business and not this repository's. This app declares four permissions of its own:
 `INTERNET`; `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`, asked for only
 when the locate button is pressed; and `ACCESS_MEDIA_LOCATION`, asked for only
 when *Read where a photo was taken* is switched on in settings. The two location
