@@ -7,6 +7,12 @@ import 'package:drift_flutter/drift_flutter.dart';
 /// store managed by drift's WebAssembly backend.
 const String kDatabaseFileName = 'pappus';
 
+/// Storage key of the side-by-side CI build. Browser storage belongs to the
+/// origin, so a CI build served where the released one already ran — the same
+/// `localhost` port, say — would otherwise open that database and migrate it
+/// out of the released build's reach.
+const String kCiDatabaseFileName = 'pappus-ci';
+
 final Uri _sqlite3Wasm = Uri.parse('sqlite3.wasm');
 final Uri _driftWorker = Uri.parse('drift_worker.js');
 
@@ -16,21 +22,20 @@ final Uri _driftWorker = Uri.parse('drift_worker.js');
 /// first during an import.
 Uint8List? _pendingImport;
 
-/// The web has no concept of a file path; the default "path" is just the fixed
-/// storage name. The web has no side-by-side build, so [ciBuild] changes
-/// nothing.
+/// The web has no concept of a file path; the default "path" is just the
+/// storage name, one of its own for the side-by-side [ciBuild].
 Future<String> defaultDatabaseFile({bool ciBuild = false}) async =>
-    kDatabaseFileName;
+    ciBuild ? kCiDatabaseFileName : kDatabaseFileName;
 
 /// Opens a Drift executor backed by sqlite3 compiled to WebAssembly, persisting
 /// to the best storage the browser offers (OPFS, falling back to IndexedDB).
 ///
-/// [path] is ignored on the web — storage is keyed by [kDatabaseFileName]. The
+/// [path] is the storage name ([defaultDatabaseFile]), not a file. The
 /// `sqlite3.wasm` and `drift_worker.js` assets are served from the `web/`
 /// directory (see the project's web setup).
 QueryExecutor openExecutor(String path) {
   return driftDatabase(
-    name: kDatabaseFileName,
+    name: path,
     web: DriftWebOptions(
       sqlite3Wasm: _sqlite3Wasm,
       driftWorker: _driftWorker,
@@ -43,34 +48,35 @@ QueryExecutor openExecutor(String path) {
   );
 }
 
-Future<WasmProbeResult> _probe() => WasmDatabase.probe(
+Future<WasmProbeResult> _probe(String name) => WasmDatabase.probe(
   sqlite3Uri: _sqlite3Wasm,
   driftWorkerUri: _driftWorker,
-  databaseName: kDatabaseFileName,
+  databaseName: name,
 );
 
-ExistingDatabase? _existing(WasmProbeResult probe) {
+ExistingDatabase? _existing(WasmProbeResult probe, String name) {
   for (final db in probe.existingDatabases) {
-    if (db.$2 == kDatabaseFileName) return db;
+    if (db.$2 == name) return db;
   }
   return null;
 }
 
-/// Reads the current database out of browser storage as raw sqlite bytes, or
-/// `null` if nothing has been stored yet. The live connection must be closed
-/// first (OPFS grants exclusive access to a single handle).
-Future<Uint8List?> webExportBytes() async {
-  final probe = await _probe();
-  final existing = _existing(probe);
+/// Reads the database stored under [path] out of browser storage as raw sqlite
+/// bytes, or `null` if nothing has been stored yet. The live connection must be
+/// closed first (OPFS grants exclusive access to a single handle).
+Future<Uint8List?> webExportBytes(String path) async {
+  final probe = await _probe(path);
+  final existing = _existing(probe, path);
   if (existing == null) return null;
   return probe.exportDatabase(existing);
 }
 
-/// Deletes the current database from browser storage. The live connection must
-/// be closed first; the next open then seeds from [webSetPendingImport].
-Future<void> webDeleteStorage() async {
-  final probe = await _probe();
-  final existing = _existing(probe);
+/// Deletes the database stored under [path] from browser storage. The live
+/// connection must be closed first; the next open then seeds from
+/// [webSetPendingImport].
+Future<void> webDeleteStorage(String path) async {
+  final probe = await _probe(path);
+  final existing = _existing(probe, path);
   if (existing != null) {
     await probe.deleteDatabase(existing);
   }

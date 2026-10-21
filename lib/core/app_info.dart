@@ -39,8 +39,10 @@ const String kAppIssuesUrl = '$kAppRepositoryUrl/issues';
 /// What an application id gains when the build is the one meant to be
 /// installed *beside* a real one: the Android `applicationId`
 /// (`android/app/build.gradle.kts`, the `pappusSideBySide` property), the
-/// GTK application id (`linux/CMakeLists.txt`, `PAPPUS_SIDE_BY_SIDE`), and the
-/// Windows `InternalName` (`windows/runner/Runner.rc`, the same variable).
+/// GTK application id (`linux/CMakeLists.txt`, `PAPPUS_SIDE_BY_SIDE`), the
+/// Windows `InternalName` (`windows/runner/Runner.rc`, the same variable), and
+/// on the web the id `application_id_web.dart` reports under the define of the
+/// same name.
 const String kCiApplicationIdSuffix = '.ci';
 
 /// Whether [packageName] names the side-by-side CI build.
@@ -49,11 +51,11 @@ const String kCiApplicationIdSuffix = '.ci';
 /// its own: the suffix is what *makes* a build the CI one, so a `--dart-define`
 /// beside it could be set when the build property was not, and the app would
 /// then be wrong about itself in the one field a bug report quotes. Android,
-/// Linux and Windows have such a build — on Linux the id is read off GLib
-/// (`nativeApplicationId`), since `PackageInfo` reports the pubspec name there,
-/// while on Windows `PackageInfo` reports the executable's `InternalName` —
-/// and no other platform's id ends this way, so the answer is simply false
-/// everywhere else.
+/// Linux, Windows and the web have such a build — on Linux the id is read off
+/// GLib (`nativeApplicationId`), since `PackageInfo` reports the pubspec name
+/// there, on Windows `PackageInfo` reports the executable's `InternalName`, and
+/// the web, which has no id at all, reports one from its define — and no other
+/// platform's id ends this way, so the answer is simply false everywhere else.
 ///
 /// Pure, so the rule is testable without a platform channel.
 bool isCiBuild(String packageName) =>

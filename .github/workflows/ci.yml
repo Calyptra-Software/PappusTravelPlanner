@@ -286,3 +286,77 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 14
+
+  # The web counterpart of the three artifacts above, and the only job that
+  # compiles the app with dart2js at all: `flutter test` runs on the VM, which
+  # is how a codec that broke only under JavaScript's numbers once went
+  # unnoticed (AGENTS.md).
+  web:
+    name: Build web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      # web/sqlite3.wasm and web/drift_worker.js are committed, prebuilt, and
+      # tied to the drift and sqlite3 the lockfile resolves. Nothing else
+      # notices them falling behind: the stale pair keeps working until a
+      # protocol change makes it not. Regenerating them must be a no-op, the
+      # same rule the generated Dart sources are held to above. The worker is
+      # dart2js output, so a Flutter upgrade can fail this too; regenerate then.
+      - name: Check the prebuilt web assets are up to date
+        run: |
+          tool/build_web_assets.sh
+          git diff --exit-code web/
+
+      # PAPPUS_SIDE_BY_SIDE gives this build a database of its own
+      # (`pappus-ci`) and makes it call itself the CI build. Browser storage
+      # belongs to the origin, so without it a CI build served where the
+      # released one ran -- the same localhost port -- would open that
+      # database and migrate it on a schema bump. A define rather than an id,
+      # since a web app has none (core/application_id_web.dart).
+      #
+      # --no-web-resources-cdn serves CanvasKit from the build itself instead
+      # of gstatic.com. The fallback fonts are not covered by it (SECURITY.md).
+      - name: Build
+        run: >-
+          flutter build web --release --no-web-resources-cdn
+          --dart-define=PAPPUS_SIDE_BY_SIDE=true
+
+      # The folder as the archive's top entry, as for Windows, with a note
+      # beside it saying how to run it: a web build will not start from
+      # file://, but any static server does, and Python's is on every machine
+      # that has Python.
+      - name: Package
+        run: |
+          folder="pappus-ci-web-$(git rev-parse --short HEAD)"
+          mkdir dist
+          cp -r build/web "dist/$folder"
+          cat > dist/README.txt <<NOTE
+          Serve the folder with any static web server and open it in a browser:
+
+              python3 -m http.server 8000 --directory $folder
+
+          then http://localhost:8000. Opened from another device by IP address
+          the app works too, but without OPFS (it stores in IndexedDB) and
+          without the device's position, which browsers allow only over HTTPS
+          or on localhost. This build keeps its data apart from a released one
+          served at the same address.
+          NOTE
+
+      - name: Upload the build
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-ci-web-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 14

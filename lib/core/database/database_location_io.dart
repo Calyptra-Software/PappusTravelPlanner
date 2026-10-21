@@ -97,6 +97,6 @@ Never _webOnly() => throw UnsupportedError(
 
 /// Web-only storage helpers; native platforms use the file-path operations
 /// above. These exist so the platform-neutral facade presents one API.
-Future<Uint8List?> webExportBytes() => _webOnly();
-Future<void> webDeleteStorage() => _webOnly();
+Future<Uint8List?> webExportBytes(String path) => _webOnly();
+Future<void> webDeleteStorage(String path) => _webOnly();
 void webSetPendingImport(Uint8List? bytes) => _webOnly();

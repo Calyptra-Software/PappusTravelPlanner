@@ -27,7 +27,8 @@ updates:
     groups:
       # Drift, its generator and the sqlite3 bindings move together: the
       # prebuilt web/sqlite3.wasm and web/drift_worker.js are tied to the
-      # resolved versions and must be regenerated when these change (see
+      # resolved versions and must be regenerated when these change, with
+      # tool/build_web_assets.sh; CI's web job fails until they are (see
       # AGENTS.md, "Web").
       drift:
         patterns: ['drift', 'drift_dev', 'drift_flutter', 'sqlite3', 'sqlite3_flutter_libs']
