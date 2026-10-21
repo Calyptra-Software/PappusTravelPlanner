@@ -2533,3 +2533,13 @@ worker) where a deployment sending `Cross-Origin-Opener-Policy: same-origin` and
 production therefore run different storage implementations, and this hang appeared in the
 development one. And drift prints the choice itself (`Using … due to missing browser
 features: …`) whenever anything is missing, which is the first line to look for.
+
+**The web build talks to a host the others never do: `fonts.gstatic.com`.** CanvasKit
+cannot reach the fonts installed on the machine, so for any character the bundled fonts
+lack it downloads a Noto slice from Google — measured: the Chinese interface fetches
+Noto Sans SC at startup, the English one nothing until an emoji or another script turns
+up in the data. `--no-web-resources-cdn` keeps CanvasKit itself local but does **not**
+cover this; the URL is `fontFallbackBaseUrl` in the engine's configuration. The native
+engines contain no such URL (checked in `libflutter.so` and `libflutter_linux_gtk.so`)
+and fall back to the system's fonts. `SECURITY.md` states this as a fact of the web
+build, so serving the fonts locally is the change that would have to edit it.
