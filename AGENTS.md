@@ -2459,18 +2459,36 @@ branch Gradle took, so nothing about switching the flag will silence it.
 
 The database layer is split by platform via conditional imports in
 `lib/core/database/database_location.dart`: native (`_io.dart`) opens a `NativeDatabase` over
-a file path exactly as before; web (`_web.dart`) ignores the path and opens a
+a file path exactly as before; web (`_web.dart`) opens a
 `WasmDatabase` (via `drift_flutter`'s `driftDatabase`) backed by browser storage (OPFS,
-falling back to IndexedDB) keyed by a fixed name. `dart:io`/`path_provider` live only in the
-`_io.dart` branch. Two prebuilt assets in `web/` are **required** for web and must be
-regenerated if `drift`/`sqlite3` are upgraded:
+falling back to IndexedDB) under a name in place of a path (`defaultDatabaseFile`).
+`dart:io`/`path_provider` live only in the `_io.dart` branch. Two prebuilt assets in `web/`
+are **required** for web, and `tool/build_web_assets.sh` regenerates both from the versions
+`pubspec.lock` resolves:
 
-- `web/sqlite3.wasm` — download the tag matching the resolved `sqlite3` version from
-  `github.com/simolus3/sqlite3.dart/releases` (e.g. `sqlite3-3.3.4/sqlite3.wasm`).
-- `web/drift_worker.js` — `dart compile js -O4 --no-source-maps -o web/drift_worker.js <tmp>`
-  where `<tmp>` is a one-line entrypoint calling `WasmDatabase.workerMainForOpen()` from
-  `package:drift/wasm.dart` (must be compiled from inside this project so `package:drift`
-  resolves).
+- `web/sqlite3.wasm` — the release asset of the resolved `sqlite3` version from
+  `github.com/simolus3/sqlite3.dart/releases` (`sqlite3-<version>/sqlite3.wasm`), unchanged.
+- `web/drift_worker.js` — `dart compile js -O4 --no-source-maps` of a one-line entrypoint
+  calling `WasmDatabase.workerMainForOpen()` from `package:drift/wasm.dart`, compiled against
+  this project's package config so it resolves the drift the app is built with.
+
+The `Build web app` job in CI runs the script and fails on any difference, the rule the
+generated Dart sources are held to — a stale pair otherwise keeps working until a protocol
+change makes it not, which is how both once fell a release behind unnoticed. The worker is
+dart2js output, so a **Flutter upgrade** can fail that check with no package having moved;
+the answer is the same, run the script. Measured when it was written: the script reproduced
+both committed files byte for byte.
+
+**The web has a side-by-side build too, and its switch is a define.** Browser storage
+belongs to the *origin*, so two builds served at one address — the same `localhost` port, a
+CI artifact where a release was tried before — share their database, and a schema bump on a
+branch migrates it out of the other's reach. `--dart-define=PAPPUS_SIDE_BY_SIDE=true` makes
+`nativeApplicationId` (`application_id_web.dart`) report a `.ci` id, so `isCiBuild` holds and
+`defaultDatabaseFile` names the store `pappus-ci` (measured in OPFS: `drift_db/pappus-ci`).
+That is the second switch `isCiBuild` refuses elsewhere, taken here because there is nothing
+for it to disagree with: a web app is registered under no id at all. Different origins never
+need it; one origin is the case it is for. The preferences are per origin as well and are
+*not* separated, which costs a shared filter or two and no data.
 
 **`-O4`, the level drift compiles its own released worker at, and not a lower one.** drift
 reads `navigator.locks` through `LockManager? get locks => _navigator.locks`, while

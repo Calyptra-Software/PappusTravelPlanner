@@ -165,9 +165,9 @@ Android emulator first.
 > install, build a single architecture: `flutter build apk --release --target-platform
 > android-x64`, then `adb install …`.
 
-The web build needs two prebuilt assets in `web/`, regenerated whenever `drift` or
-`sqlite3` are upgraded — `sqlite3.wasm` and `drift_worker.js`; the *Web* section of
-[AGENTS.md](AGENTS.md) says where they come from.
+The web build needs two prebuilt assets in `web/`, `sqlite3.wasm` and `drift_worker.js`.
+After `drift` or `sqlite3` are upgraded, regenerate them with `tool/build_web_assets.sh`;
+CI fails until they match.
 
 ## Project structure
 

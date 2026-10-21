@@ -78,7 +78,7 @@ class DatabaseController {
   Future<void> createEmpty() async {
     await _closeLiveDatabase();
     if (kIsWeb) {
-      await webDeleteStorage();
+      await webDeleteStorage(currentPath);
       // Guard against a queued import left over from a failed attempt: the
       // fresh store must seed from nothing.
       webSetPendingImport(null);
@@ -114,7 +114,7 @@ class DatabaseController {
     await _closeLiveDatabase();
     // Clear storage while no connection holds it, then queue the seed bytes
     // before anything reopens the database.
-    await webDeleteStorage();
+    await webDeleteStorage(currentPath);
     webSetPendingImport(bytes);
     _ref.invalidate(databaseProvider);
     _ref.read(databaseProvider);
@@ -128,7 +128,7 @@ class DatabaseController {
       // connection open, then reopen for continued use.
       await _closeLiveDatabase();
       try {
-        final bytes = await webExportBytes();
+        final bytes = await webExportBytes(currentPath);
         if (bytes == null) {
           throw StateError('No database has been created yet.');
         }

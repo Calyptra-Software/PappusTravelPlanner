@@ -9,8 +9,10 @@
 /// directory by, so reading it — rather than a second switch beside it — is
 /// reading the one fact that actually keeps the two builds apart.
 ///
-/// `nativeApplicationId()` returns that id on Linux and null everywhere else,
-/// where the caller falls back to `PackageInfo`.
+/// `nativeApplicationId()` returns that id on Linux, a suffixed one on the web
+/// when the side-by-side build was compiled with its define (a web app has no
+/// id to read; see `application_id_web.dart`), and null everywhere else, where
+/// the caller falls back to `PackageInfo`.
 library;
 
 export 'application_id_io.dart'
