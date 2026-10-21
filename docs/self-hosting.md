@@ -14,6 +14,29 @@ python3 -m http.server 8000 --directory pappus-<version>-web
 
 Then open <http://localhost:8000>.
 
+## Keeping the server running
+
+The server stops when the terminal or SSH session that started it closes. To keep it
+running, start it inside `tmux`:
+
+```bash
+tmux new -s pappus
+python3 -m http.server 8000 --directory pappus-<version>-web
+```
+
+Leave `tmux` with Ctrl+B, then D; the server keeps running. Later, `tmux attach -t pappus`
+returns to it, and Ctrl+C stops it. `tmux kill-session -t pappus` stops the server and ends
+the session in one step, for example when the port is still in use ("Address already in
+use"). Without `tmux` (or `screen`), start the server in the background instead:
+
+```bash
+nohup python3 -m http.server 8000 --directory pappus-<version>-web > http.log 2>&1 &
+```
+
+To update, stop the server and start it again with the new release's folder. Python's
+server speaks plain HTTP only, so for a site on the internet use a web server that serves
+HTTPS (see below).
+
 ## Putting it on a server
 
 - **Serve it over HTTPS.** Over plain HTTP the app works, but browsers then store its data
