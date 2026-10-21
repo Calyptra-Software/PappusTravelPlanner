@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **The web app is attached to each release**, as static files for any web server.
+  [docs/self-hosting.md](docs/self-hosting.md) describes how to host it.
 - **Maps show their tiles in Firefox on the web.** They stayed grey there.
 - **The web app opens its trips when served over plain HTTP from another device**, such as
   a phone visiting a laptop's address. It used to load forever.

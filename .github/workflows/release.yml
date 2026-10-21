@@ -280,10 +280,60 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  # And the web app, as static files for anyone to host. Built from the tag
+  # like the others, so the files a release offers are the files the source
+  # at that tag produces.
+  web:
+    name: Build the web zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Exact, for the reason given on the APK job's copy of this step.
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # Without PAPPUS_SIDE_BY_SIDE, as on Linux and Windows: a release keeps
+      # the database name every web install so far has used. CanvasKit comes
+      # from the build rather than gstatic.com; the fallback fonts still come
+      # from Google unless the host says otherwise (docs/self-hosting.md).
+      #
+      # Built for the root of a domain (`<base href="/">`); hosting it under a
+      # path means editing that one line, which the docs say how to do.
+      - name: Build and package
+        run: |
+          set -euo pipefail
+          version="$(sed -n -E 's/^version: ([^+]+)\+.*/\1/p' pubspec.yaml)"
+          flutter build web --release --no-web-resources-cdn
+          stem="pappus-$version-web"
+          mkdir dist
+          cp -r build/web "dist/$stem"
+          (cd dist && zip -qrX "$stem.zip" "$stem")
+
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum pappus-*.zip | tee SHA256SUMS.txt
+
+      - name: Upload the zip as an artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: pappus-${{ github.ref_name }}-web
+          path: |
+            dist/pappus-*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
+
   publish:
     name: Draft the release
     if: github.ref_type == 'tag'
-    needs: [release, linux, windows]
+    needs: [release, linux, windows, web]
     runs-on: ubuntu-latest
     steps:
       # The gh CLI resolves the repository from the checkout.
@@ -304,10 +354,15 @@ jobs:
           name: pappus-${{ github.ref_name }}-windows
           path: dist/windows
 
+      - uses: actions/download-artifact@v8
+        with:
+          name: pappus-${{ github.ref_name }}-web
+          path: dist/web
+
       # One checksum file for the release, as there was when it held only APKs;
       # each job's own stays in its artifact.
       - name: Merge the checksums
-        run: cat dist/android/SHA256SUMS.txt dist/linux/SHA256SUMS.txt dist/windows/SHA256SUMS.txt | tee dist/SHA256SUMS.txt
+        run: cat dist/android/SHA256SUMS.txt dist/linux/SHA256SUMS.txt dist/windows/SHA256SUMS.txt dist/web/SHA256SUMS.txt | tee dist/SHA256SUMS.txt
 
       # A draft, never a published release. Two reasons: the APKs are unsigned
       # in the sense that matters whenever the secrets are absent, and even
@@ -336,4 +391,5 @@ jobs:
             dist/android/app-*-release.apk \
             dist/linux/pappus-* \
             dist/windows/pappus-* \
+            dist/web/pappus-* \
             dist/SHA256SUMS.txt
