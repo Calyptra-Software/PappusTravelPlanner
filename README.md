@@ -52,8 +52,8 @@ for four platforms:
 - **Web:** a `.zip` of static files to put on any web server;
   [docs/self-hosting.md](docs/self-hosting.md) says how, and what hosting it involves.
 
-Every other platform, and Android, Linux or Windows if you would rather not run a stranger's binary, is a
-[build from source](#build-from-source) away.
+For macOS and iOS, which have no release builds, or to build any of the four yourself, see
+[Build from source](#build-from-source).
 
 ## Features
 
