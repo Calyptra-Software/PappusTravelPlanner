@@ -72,12 +72,13 @@ class MotisTransportSearch implements TransportSearch {
   /// way of contact, which is exactly what the Transitous usage policy asks
   /// every request to carry.
   ///
-  /// Sent on every call — except in a browser, where it cannot be: `User-Agent`
-  /// is a forbidden header name, so the runtime drops it and the request goes
-  /// out with the browser's own. The policy anticipates this and accepts the
-  /// `Referer` instead, on condition that the page serving the app carries
-  /// contact information; that is a duty of the web *deployment*, not of this
-  /// class, and nothing here can discharge it.
+  /// Sent on every call — though in a browser it may not arrive: Chrome drops a
+  /// `User-Agent` set by the page and sends its own, while Firefox sends ours
+  /// after a CORS preflight, which this server allows for any header (the tile
+  /// server does not; see `basemapTileHeaders`). The policy anticipates the
+  /// browser and accepts the `Referer` instead, on condition that the page
+  /// serving the app carries contact information; that is a duty of the web
+  /// *deployment*, not of this class, and nothing here can discharge it.
   final String userAgent;
 
   /// The language names come back in, sent on **every** endpoint.

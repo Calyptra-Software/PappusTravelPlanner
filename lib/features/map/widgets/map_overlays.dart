@@ -9,6 +9,7 @@ library;
 
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 
@@ -47,34 +48,44 @@ double maxZoomOf(Basemap basemap) => switch (basemap) {
 /// Short enough that a deliberate zoom still feels immediate.
 const Duration kTileUpdateThrottle = Duration(milliseconds: 150);
 
+/// What a tile request says about who is asking.
+///
+/// Natively, who we are, as the OpenStreetMap policy requires of an app: this
+/// application's name, its version, and a way to get in touch. Sent as a real
+/// header rather than through `userAgentPackageName`, whose generic format the
+/// policy names as a reason for blocking.
+///
+/// In a browser, nothing — the policy takes the page's `Referer` there instead.
+/// Not because the header would be dropped: Chrome does drop it, but Firefox
+/// sends it, and a header the page sets itself makes the request a CORS
+/// preflight, which `tile.openstreetmap.org` refuses for anything but
+/// `X-Requested-With`. Every tile then failed and the map stayed grey. That is
+/// also why flutter_map adds its own `User-Agent` only off the web.
+Map<String, String> basemapTileHeaders(
+  String appVersion, {
+  bool web = kIsWeb,
+}) => web ? <String, String>{} : {'User-Agent': buildUserAgent(appVersion)};
+
 /// The basemap's tiles, built the same way wherever a map is drawn.
 ///
 /// One place rather than three, because every line of it is a condition rather
 /// than a preference: who we say we are, how often we ask, and that the answers
 /// are cached.
-TileLayer basemapTileLayer(Basemap basemap, String appVersion) =>
-    switch (basemap) {
-      RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
-        urlTemplate: urlTemplate,
-        maxZoom: maxZoom,
-        // Who we are, as the OpenStreetMap policy requires of an app: this
-        // application's name, its version, and a way to get in touch. Sent as a
-        // real header rather than through `userAgentPackageName`, whose generic
-        // format the policy names as a reason for blocking. The browser forbids
-        // setting it at all, which is why a web deployment answers with its
-        // Referer.
-        tileProvider: NetworkTileProvider(
-          headers: {'User-Agent': buildUserAgent(appVersion)},
-        ),
-        tileUpdateTransformer: TileUpdateTransformers.throttle(
-          kTileUpdateThrottle,
-        ),
-        // Caching is left at flutter_map's default, which stores tiles for as
-        // long as the server's own headers say — the conforming caching the
-        // policy asks for, and the reason panning back over ground already seen
-        // costs nobody anything.
-      ),
-    };
+TileLayer basemapTileLayer(
+  Basemap basemap,
+  String appVersion,
+) => switch (basemap) {
+  RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
+    urlTemplate: urlTemplate,
+    maxZoom: maxZoom,
+    tileProvider: NetworkTileProvider(headers: basemapTileHeaders(appVersion)),
+    tileUpdateTransformer: TileUpdateTransformers.throttle(kTileUpdateThrottle),
+    // Caching is left at flutter_map's default, which stores tiles for as
+    // long as the server's own headers say — the conforming caching the
+    // policy asks for, and the reason panning back over ground already seen
+    // costs nobody anything.
+  ),
+};
 
 /// The `+` / `−` pair. Positioned by the caller: the trip map floats it over the
 /// map, and a picker may want it somewhere else entirely.

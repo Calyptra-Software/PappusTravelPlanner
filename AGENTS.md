@@ -538,9 +538,13 @@ UI (features/*/presentation, *widgets)
   the client's **version**, and a way of contact; all three live in `core/app_info.dart`
   (`buildUserAgent`, no Flutter import — the smoke tool is plain Dart), fed the real version
   by `appVersionProvider`, which `main` resolves from `PackageInfo` and overrides into the
-  scope beside the database path. A browser drops that header (`User-Agent` is forbidden
-  there), which the policy answers with the `Referer` — so any public web deployment must
-  carry contact information on the page itself; no Dart change can supply it. It also asks
+  scope beside the database path. A browser may not deliver that header — Chrome drops it,
+  Firefox sends it — which the policy answers with the `Referer`, so any public web
+  deployment must carry contact information on the page itself; no Dart change can supply
+  it. Where Firefox does send it, the request becomes a CORS **preflight**, which Transitous
+  allows for any header and `tile.openstreetmap.org` refuses for all but
+  `X-Requested-With`; so the map's tiles go out **without** one on the web
+  (`basemapTileHeaders`), or every tile fails and the map stays grey. It also asks
   that the data sources be **linked**, not merely credited: `core/widgets/attribution.dart`
   holds both links, under the search where the data is used and in settings, where they
   outlive the sheet — an imported connection stays in the trip, the PDF, and the `.ics` long
