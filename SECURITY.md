@@ -168,13 +168,20 @@ what they claim to be.
 
 Android enforces the fingerprint by itself on every update — a build signed with
 a different key is refused rather than installed — so checking it by hand is for
-the *first* install, and for any copy that did not come from this repository's
-releases page.
+the *first* install, and for any copy that came from neither this repository's
+releases page nor F-Droid.
 
 It is not the same number as the file hashes published alongside a release in
 `SHA256SUMS.txt`. Those are hashes of the release files: they differ from release to
 release and answer whether a download arrived intact. The fingerprints above do
 not change, and answer who signed it.
+
+**F-Droid ships the APKs released here, unchanged.** It builds every release from
+source itself and publishes the APK from this repository only if its own build
+matches it; F-Droid never signs Pappus with a key of its own. So an install from
+F-Droid carries the fingerprint above for 1.11.0 and later, and updates from either
+source install over each other. Checked for 1.13.2, the first version on F-Droid: its three APKs there
+are byte-identical to the ones on the releases page.
 
 **The Linux, Windows and web packages are not signed.** The `.tar.gz`, the AppImage, the
 Windows `.zip` and the web `.zip` carry no signature, which is also why Windows SmartScreen warns before

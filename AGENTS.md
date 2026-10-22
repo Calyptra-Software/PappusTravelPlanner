@@ -1091,7 +1091,8 @@ UI (features/*/presentation, *widgets)
   Only those two are checked: `libflutter.so` and AndroidX's
   `libdatastore_shared_counter.so` arrive prebuilt, with whatever NDK their publishers
   used. The recipe's `ndk:` has to name the same release, so a Flutter upgrade that moves
-  `flutter.ndkVersion` means editing the recipe in the same breath.
+  `flutter.ndkVersion` means a merge request to the recipe in fdroiddata in the same breath
+  (`docs/fdroid.md`).
 - **Every modal sheet is opened by `showAppSheet`** (`core/widgets/app_sheet.dart`),
   which is where four settings that belong together now live. A sheet is `useSafeArea`
   and capped at the screen less the status bar less one touch target, so it stops below

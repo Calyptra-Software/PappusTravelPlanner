@@ -1,0 +1,19 @@
+The two badges in this directory are copies, unchanged, used in README.md.
+
+get-it-on-fdroid.png
+  Source:  https://f-droid.org/badge/get-it-on.png
+           (built from https://gitlab.com/fdroid/artwork/-/tree/master/badge)
+  Author:  Andrew Nayenko, 2016, for the F-Droid project
+  License: CC BY-SA 3.0 or GPL-3.0-or-later (dual), as stated in that repository's
+           REUSE.toml
+
+get-it-on-github.png
+  Source:  https://github.com/Kunzisoft/Github-badge
+  Author:  Kunzisoft, after the F-Droid badge design by @flocke
+           (https://gitlab.com/fdroid/artwork/-/tree/master/badge/src)
+  License: CC BY-SA 3.0, as stated in that repository's README
+  The GitHub logo on it is a trademark of GitHub, Inc., used here only to link to
+  this project's releases on GitHub.
+
+The PNGs are used rather than the SVGs because the SVGs draw their text with a font
+the viewer may not have, and would then render differently from one browser to the next.
