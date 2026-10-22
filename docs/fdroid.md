@@ -1,37 +1,41 @@
-# Getting onto F-Droid
+# F-Droid
 
-Two things live in this repository for F-Droid's sake, and neither of them is read by
-the app:
+Pappus is on F-Droid as [dev.calyptra.pappus](https://f-droid.org/packages/dev.calyptra.pappus/),
+since 1.13.2. Two things decide what appears there, and only one of them lives in this
+repository:
 
 - **`fastlane/metadata/android/`** — the listing. F-Droid pulls the title, the two
   descriptions, the icon, the screenshots and the changelog out of *this* repository, so
   they stay under the maintainer's control and translations arrive without anybody
   editing F-Droid's own data. The layout is the Fastlane/Triple-T one; none of Fastlane
   is needed to produce it.
-- **`fdroid/metadata/dev.calyptra.pappus.yml`** — the build recipe, kept here so it can
-  be reviewed and versioned alongside the thing it builds. F-Droid does *not* read it
-  from here: it has to be copied into a fork of
-  [fdroiddata](https://gitlab.com/fdroid/fdroiddata) and offered as a merge request.
+- **`metadata/dev.calyptra.pappus.yml` in [fdroiddata](https://gitlab.com/fdroid/fdroiddata)**
+  — the build recipe. It is F-Droid's file, not this project's: a copy used to be kept
+  here, but the bot below rewrites the real one on every release, so a copy could only
+  drift from it.
 
-## Submitting
+## Releases reach F-Droid by themselves
 
-1. Fork `gitlab.com/fdroid/fdroiddata`, clone it, branch as `dev.calyptra.pappus`.
-2. Copy `fdroid/metadata/dev.calyptra.pappus.yml` to `metadata/` in that clone.
-3. Check it with `fdroid readmeta`, `fdroid lint dev.calyptra.pappus`, and — the one that
-   matters — a real build, `fdroid build -v -l dev.calyptra.pappus`, ideally in the
-   buildserver VM rather than on the host.
-4. Open the merge request. Expect review, and expect it to take days rather than hours.
+`checkupdates-bot` watches the **git tags**, not the GitHub releases: for a new `v*` tag
+it reads the version out of `pubspec.yaml` (`UpdateCheckData`), copies the last build
+blocks with the new commit and versionCodes, and opens the merge request in fdroiddata
+itself. F-Droid's build server then rebuilds the release, compares it with the APKs on the
+releases page, and publishes them some days later. Cutting a release the usual way
+(`CONTRIBUTING.md`) is all that is needed.
 
-Once it is merged, `checkupdates-bot` watches the **git tags**, not the GitHub releases:
-it reads the version out of `pubspec.yaml` through `UpdateCheckData`, writes new build
-blocks and opens the merge request itself. Cutting a release the usual way
-(`CONTRIBUTING.md`) is all that is needed after that.
+The recipe has to be edited by hand only when what the bot copies stops being true: when
+a Flutter upgrade moves `flutter.ndkVersion` (the recipe's `ndk:` must follow, see below),
+or when the build steps change — the version of Flutter is read out of
+`.github/workflows/release.yml`, so moving that line breaks the recipe too. That is a
+merge request against fdroiddata from a fork. Check it with `fdroid lint
+dev.calyptra.pappus` and a real `fdroid build -v dev.calyptra.pappus:<versionCode>`, which
+compares the result with the published APK just as F-Droid's server will.
 
 ## What each release needs
 
 The changelog is `fastlane/metadata/android/*/changelogs/default.txt`, which F-Droid uses
 as the fallback for every version. It is *not* per-version here on purpose: with
-`--split-per-abi` a release carries three versionCodes (1012, 2012, 4012 for 1.11.0), so
+`--split-per-abi` a release carries three versionCodes (4061, 4062, 4063 for 1.13.2), so
 per-version files would mean writing the same text three times every release.
 
 Only `en-US` and `de-DE` have one, and `zh-CN` deliberately does not. Because
@@ -68,7 +72,8 @@ because it is the same file.
 That was measured before it was promised. Against the published 1.11.1, all three ABIs:
 409 of 409 entries identical, none missing or extra, and `apksigcopier` plus
 `apksigner verify` — which is exactly what `common.verify_apks` does inside `fdroid build` —
-accept the published signature on the locally rebuilt APK.
+accept the published signature on the locally rebuilt APK. The first version F-Droid
+published, 1.13.2, is byte for byte the same three files as the GitHub release.
 
 Four things have to be true for that, and all four are load-bearing rather than incidental:
 

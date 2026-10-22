@@ -34,13 +34,20 @@ are planned the same way, and differ only in their dates. The primary target is
 
 ## Get the app
 
-Every release on the
+<p>
+  <a href="https://f-droid.org/packages/dev.calyptra.pappus/"><img src="docs/badges/get-it-on-fdroid.png" alt="Get it on F-Droid" height="80"></a>
+  <a href="https://github.com/Calyptra-Software/PappusTravelPlanner/releases/latest"><img src="docs/badges/get-it-on-github.png" alt="Get it on GitHub" height="80"></a>
+</p>
+
+On Android, the simplest way is [F-Droid](https://f-droid.org/packages/dev.calyptra.pappus/),
+which keeps the app up to date. Every release on the
 [Releases page](https://github.com/Calyptra-Software/PappusTravelPlanner/releases) has builds
 for four platforms:
 
 - **Android:** take the APK matching your device's architecture — `arm64-v8a` for
   essentially any phone of the last decade — and allow your file manager to install it,
-  since it does not come from a store. There is no store listing yet.
+  since it does not come from a store. F-Droid ships these same files, so you can switch
+  between the two without reinstalling.
 - **Linux** (x86-64): an AppImage (`chmod +x`, then run it) and a `.tar.gz`. Unpack the
   `.tar.gz` anywhere and run `./pappus`, or run `./install.sh` in it to get a menu entry and
   an icon for your user alone (`./uninstall.sh` undoes that). Either download needs glibc

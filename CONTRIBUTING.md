@@ -152,8 +152,8 @@ debug-signed APKs, which are fine for a fork and must not be published. That is 
 *Run workflow* on the Actions tab is for: the same build with no tag and no release, which
 is how the signing setup is checked without inventing a version to throw away.
 
-Getting the app onto F-Droid, and what each release needs once it is there, is
-described in [docs/fdroid.md](docs/fdroid.md).
+What each release needs for F-Droid, and when the build recipe there has to be edited by
+hand, is described in [docs/fdroid.md](docs/fdroid.md).
 
 ## How the code is arranged
 
