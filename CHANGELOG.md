@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.14.0 — 2026-10-23
 
 - **The web app is attached to each release**, as static files for any web server.
   [docs/self-hosting.md](docs/self-hosting.md) describes how to host it.
