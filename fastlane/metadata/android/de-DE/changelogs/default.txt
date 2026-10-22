@@ -1,2 +1,9 @@
-1.13.2:
-• Keine Änderungen an der App; neu gebaut, damit F-Droid sie prüfen kann
+1.14.0:
+• Jetzt auch auf vereinfachtem Chinesisch
+• Reise ab einem verpassten Umstieg neu planen
+• Ist-Zeiten aus GPX-Aufzeichnungen
+• Suche für die Verbindung einer Routine anpassen
+• Fehlgeschlagene Suchen sagen sofort, warum
+• Das PDF zeichnet jeden Tag wie die App
+• Feinere Länderkarte, Länder zuverlässiger erkannt
+• Web-App liegt jedem Release bei, mit Korrekturen

@@ -1,2 +1,9 @@
-1.13.2:
-• No changes to the app; rebuilt so F-Droid can verify it
+1.14.0:
+• Now in Simplified Chinese
+• Replan a journey from a missed change
+• Actual times from GPX recordings
+• Adjust the search for a routine's connection
+• Failed searches say why, at once
+• The PDF draws each day like the app
+• Finer country map, countries recognized more reliably
+• Web app attached to each release, and fixes for it
