@@ -3,6 +3,11 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **A delay that runs past midnight reads as a delay in the connection search results.** The
+  list used to show it as nearly a day early, though the connection's details were right.
+
 ## 1.14.0 — 2026-10-23
 
 - **The web app is attached to each release**, as static files for any web server.
