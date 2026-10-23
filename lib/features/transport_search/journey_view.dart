@@ -196,12 +196,12 @@ JourneyView journeyViewFromOption(JourneyOption option) => JourneyView(
 );
 
 ViewLeg _routedLeg(JourneyLeg leg) {
-  final from = _routedPoint(leg.from);
+  final from = routedViewPoint(leg.from);
   return ViewLeg(
     mode: RoutedMode(leg.mode),
     ownSteam: leg.mode.isOwnSteam,
     from: from,
-    to: _routedPoint(leg.to),
+    to: routedViewPoint(leg.to),
     line: leg.line,
     headsign: leg.headsign,
     stops: [for (final stop in leg.stops) _routedStop(stop, from.date)],
@@ -210,7 +210,9 @@ ViewLeg _routedLeg(JourneyLeg leg) {
   );
 }
 
-ViewPoint _routedPoint(LegPoint point) {
+/// One routed leg end as the view reads it — also what the results list prints a
+/// time from, so the miss beside it is the preview's to the minute.
+ViewPoint routedViewPoint(LegPoint point) {
   final local = localParts(point.scheduled, point.timeZone);
   return ViewPoint(
     name: point.name,

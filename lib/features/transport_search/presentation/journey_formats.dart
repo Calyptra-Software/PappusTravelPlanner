@@ -6,7 +6,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../itinerary/widgets/item_times.dart' show delayColor;
 import '../../itinerary/widgets/transport_mode.dart'
     show TransportModeRowUi, TransportModeUi, kDefaultTransportModeIcon;
-import '../data/journey_mapper.dart' show builtinTransportModeFor, localParts;
+import '../data/journey_mapper.dart' show builtinTransportModeFor;
 import '../domain/journey.dart';
 import '../domain/transit_mode.dart';
 import '../journey_view.dart';
@@ -19,17 +19,12 @@ import '../journey_view.dart';
 /// for it — a coloured signed delta ("(+5)", or green "(+0)" when it is running
 /// to plan). Deliberately the same shape as the itinerary's delay marks: the
 /// planned time is what is printed, the miss rides beside it.
-List<InlineSpan> legTimeSpans(BuildContext context, LegPoint end) {
-  final scheduled = localParts(end.scheduled, end.timeZone);
-  final actual = end.actual;
-  return timeSpans(
-    context,
-    minutes: scheduled.minutes,
-    delay: actual == null
-        ? null
-        : localParts(actual, end.timeZone).minutes - scheduled.minutes,
-  );
-}
+///
+/// Read through [routedViewPoint], so the miss is taken from the UTC instants
+/// exactly as the preview takes it. Subtracting the two times of day instead
+/// read a night train 4 h 23 m late past midnight as 19 h 37 m early.
+List<InlineSpan> legTimeSpans(BuildContext context, LegPoint end) =>
+    pointTimeSpans(context, routedViewPoint(end));
 
 /// The same, for an end of a journey being *read* — routed or stored alike.
 List<InlineSpan> pointTimeSpans(BuildContext context, ViewPoint point) =>
