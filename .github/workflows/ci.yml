@@ -229,10 +229,11 @@ jobs:
       # Both packages, though a reviewer who only wants to run the branch wants
       # the AppImage: the tarball is the only one carrying install.sh, so
       # uploading the AppImage alone left the installer as the one thing in
-      # this repository that no artifact could be used to try. An artifact is
-      # handed out as a zip, which drops the executable bit, so the AppImage
-      # needs a `chmod +x` after unpacking -- as every AppImage downloaded from
-      # anywhere does. Inside the tarball the bits survive, tar keeping them.
+      # this repository that no artifact could be used to try. The artifact zip
+      # stores Unix modes and `unzip` restores them, so the AppImage comes out
+      # of it executable; only one downloaded on its own, from a release, needs
+      # the `chmod +x` the README asks for. Inside the tarball the bits survive
+      # too, tar keeping them.
       - name: Upload the packages
         uses: actions/upload-artifact@v7
         with:
