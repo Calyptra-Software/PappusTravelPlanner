@@ -18,8 +18,9 @@ Future<void> main() async {
   // Loads the IANA timezone database so an imported connection's UTC times can
   // be turned into each stop's local wall-clock (see journey_mapper).
   tzdata.initializeTimeZones();
-  // The bundled fonts' terms, for the license page reachable from About.
-  registerBundledFontLicenses();
+  // What ships inside the app beyond the packages' LICENSE files, for the
+  // license page reachable from About.
+  registerLicenses();
   final prefs = await SharedPreferences.getInstance();
   // This build's version, sent to the connection-search service as its usage
   // policy requires. Read here, once, so the request that needs it can read it

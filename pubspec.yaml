@@ -152,16 +152,12 @@ flutter:
   uses-material-design: true
   generate: true # localizations from lib/l10n/*.arb, see l10n.yaml
 
-  # Roboto (Apache-2.0, bundled with Flutter — see Roboto-LICENSE.txt) is loaded
-  # by the PDF export as raw bytes, since the standard PDF font can't draw the €
-  # sign or other non-Latin-1 glyphs, and the offline app can't fetch a webfont.
-  # Declared as plain assets (read via rootBundle), not a Flutter `fonts:` family.
-  # MaterialIconsPdf.ttf likewise: the transport-mode icons for the PDF, as
-  # TrueType, which package:pdf can embed and Flutter's own Material Icons
-  # font is not (regenerate with assets/fonts/build_pdf_icons.py).
+  # MaterialIconsPdf.ttf is loaded by the PDF export as raw bytes (via
+  # rootBundle): the transport-mode icons for the PDF, as TrueType, which
+  # package:pdf can embed and Flutter's own Material Icons font is not
+  # (regenerate with assets/fonts/build_pdf_icons.py). The PDF's Roboto is read
+  # the same way, from the `fonts:` family below.
   assets:
-    - assets/fonts/Roboto-Regular.ttf
-    - assets/fonts/Roboto-Bold.ttf
     - assets/fonts/MaterialIconsPdf.ttf
     # The bundled fonts' terms, shown on the About screen's licence page
     # (core/licenses.dart) — a font ships inside the binary, so its licence has
@@ -169,6 +165,10 @@ flutter:
     - assets/fonts/Roboto-LICENSE.txt
     - assets/fonts/TransportGlyphs-ATTRIBUTION.txt
     - assets/fonts/MaterialIconsPdf-ATTRIBUTION.txt
+    # The rest of what Flutter's license collection misses (core/licenses.dart):
+    # the Material Icons font, the packages' further license files, and the
+    # Android libraries with their licenses.
+    - assets/licenses/
     # The mark, shown above the licence page's title. 256 px because it is drawn
     # at 72 dp — big enough for a 3x screen, and small enough that the binary
     # does not carry a launcher-sized bitmap for one icon.
@@ -183,6 +183,21 @@ flutter:
   # flutter_launcher_icons, so they are deliberately not bundled here.
 
   fonts:
+    # Roboto (Apache-2.0, the files Flutter ships — see Roboto-LICENSE.txt), for
+    # two reasons. The PDF export embeds Regular and Bold, read as raw bytes,
+    # since the standard PDF font can't draw the € sign or other non-Latin-1
+    # glyphs, and the offline app can't fetch a webfont. And the web engine
+    # downloads Roboto from fonts.gstatic.com at every start unless the font
+    # manifest has a family called exactly `Roboto`; declaring it here keeps
+    # that request away. Android and Linux draw with it too, since Material's
+    # typography asks for Roboto there.
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Roboto-Bold.ttf
+          weight: 700
     # A tiny custom icon font (4 glyphs) for transport modes Material Icons has
     # no symbol for: horse, gondola, chairlift, and T-bar. Regenerate with
     # `python3 assets/fonts/build_transport_glyphs.py assets/fonts/TransportGlyphs.ttf`.

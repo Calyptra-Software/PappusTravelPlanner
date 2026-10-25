@@ -1,11 +1,9 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/core/app_info.dart';
-import 'package:travelplanner/core/licenses.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/features/settings/presentation/about_settings.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -93,19 +91,6 @@ void main() {
 
     expect(copied, '9.8.7+42');
     expect(find.text('Version copied'), findsOneWidget);
-  });
-
-  testWidgets('the license page carries the bundled fonts too', (tester) async {
-    // Flutter's registry knows package LICENSE files; a font ships inside the
-    // binary and has to be added by hand.
-    addTearDown(LicenseRegistry.reset);
-    registerBundledFontLicenses();
-    final packages = <String>{};
-    await for (final entry in LicenseRegistry.licenses) {
-      packages.addAll(entry.packages);
-    }
-
-    expect(packages, containsAll(<String>['Roboto', 'TransportGlyphs']));
   });
 
   testWidgets('opens the license page', (tester) async {

@@ -239,7 +239,8 @@ warranty of merchantability or fitness for a particular purpose. See the
 [LICENSE](LICENSE) file, or <https://www.gnu.org/licenses/>, for the full terms.
 
 The bundled fonts carry their own terms, which travel with them and are shown on the app's
-license page: Roboto is under Apache-2.0 (`assets/fonts/Roboto-LICENSE.txt`), and the four
+license page: Roboto is under Apache-2.0 (`assets/fonts/Roboto-LICENSE.txt`), the Material
+Icons font under CC BY 4.0 (`assets/licenses/MaterialIcons_LICENSE.txt`), and the four
 transport glyphs come from Apache-2.0 and CC0 sources
 (`assets/fonts/TransportGlyphs-ATTRIBUTION.txt`).
 

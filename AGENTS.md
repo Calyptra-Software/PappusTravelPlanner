@@ -2563,6 +2563,17 @@ engines contain no such URL (checked in `libflutter.so` and `libflutter_linux_gt
 and fall back to the system's fonts. `SECURITY.md` states this as a fact of the web
 build, so serving the fonts locally is the change that would have to edit it.
 
+**Roboto is a `fonts:` family, not only a PDF asset, and that keeps the web build off
+Google at startup.** Apart from any fallback, the engine adds Roboto from
+`fonts.gstatic.com` to every start whose font manifest has no family called exactly
+`Roboto` (`if (!hasRoboto) …push("Roboto", fontFallbackBaseUrl + "roboto/v32/…")` in the
+engine's font loading, read in `main.dart.js`). Up to 1.14.0 Roboto was bundled only as
+raw bytes for the PDF, so by that code every web start, in any language, fetched it; the
+"English fetches nothing" measurement above holds only since the family exists. The family in
+`pubspec.yaml` (Regular, Medium, Bold, the SDK's files; a test compares them) is what
+`SECURITY.md`'s "when text needs them" depends on: renaming it, or moving it into a
+package (where it becomes `packages/<name>/Roboto`), brings the request back.
+
 **A release carries the web app for anyone to host** (`pappus-<version>-web.zip`, the
 `web` job of `release.yml`), built without the side-by-side define so it keeps the
 database name every web install has used. Anyone could already build and host it; the zip
