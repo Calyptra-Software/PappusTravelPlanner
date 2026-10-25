@@ -169,6 +169,10 @@ flutter:
     - assets/fonts/Roboto-LICENSE.txt
     - assets/fonts/TransportGlyphs-ATTRIBUTION.txt
     - assets/fonts/MaterialIconsPdf-ATTRIBUTION.txt
+    # The rest of what Flutter's license collection misses (core/licenses.dart):
+    # the Material Icons font, the packages' further license files, and the
+    # Android libraries with their licenses.
+    - assets/licenses/
     # The mark, shown above the licence page's title. 256 px because it is drawn
     # at 72 dp — big enough for a 3x screen, and small enough that the binary
     # does not carry a launcher-sized bitmap for one icon.

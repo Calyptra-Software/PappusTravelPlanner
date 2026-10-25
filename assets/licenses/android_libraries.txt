@@ -1,0 +1,133 @@
+# The Android libraries in the release APK besides the Flutter engine (whose
+# licenses are in the NOTICES of the asset bundle), all under the Apache
+# License 2.0 (Apache-2.0.txt) as their POMs declare it -- listenablefuture
+# through its parent, guava-parent. Gradle pulls them in through the plugins
+# and the home-screen widget, so Flutter's license collection misses them.
+# One group:artifact per line; regenerate after plugin updates from
+#   cd android && ./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath
+# without the io.flutter artifacts and the BOMs. The two libraries that are
+# not Apache-2.0, androidx.datastore:datastore-preferences-external-protobuf
+# and androidx.glance:glance-appwidget-external-protobuf (repackaged Protocol
+# Buffers runtimes, BSD-3-Clause), are registered on their own with
+# protobuf-LICENSE.txt.
+androidx.activity:activity
+androidx.activity:activity-ktx
+androidx.annotation:annotation
+androidx.annotation:annotation-experimental
+androidx.annotation:annotation-jvm
+androidx.appcompat:appcompat
+androidx.appcompat:appcompat-resources
+androidx.arch.core:core-common
+androidx.arch.core:core-runtime
+androidx.asynclayoutinflater:asynclayoutinflater
+androidx.browser:browser
+androidx.collection:collection
+androidx.collection:collection-jvm
+androidx.collection:collection-ktx
+androidx.compose.runtime:runtime
+androidx.compose.runtime:runtime-android
+androidx.compose.ui:ui-geometry
+androidx.compose.ui:ui-geometry-android
+androidx.compose.ui:ui-graphics
+androidx.compose.ui:ui-graphics-android
+androidx.compose.ui:ui-unit
+androidx.compose.ui:ui-unit-android
+androidx.compose.ui:ui-util
+androidx.compose.ui:ui-util-android
+androidx.concurrent:concurrent-futures
+androidx.concurrent:concurrent-futures-ktx
+androidx.coordinatorlayout:coordinatorlayout
+androidx.core:core
+androidx.core:core-ktx
+androidx.core:core-remoteviews
+androidx.core:core-viewtree
+androidx.cursoradapter:cursoradapter
+androidx.customview:customview
+androidx.datastore:datastore
+androidx.datastore:datastore-android
+androidx.datastore:datastore-core
+androidx.datastore:datastore-core-android
+androidx.datastore:datastore-core-okio
+androidx.datastore:datastore-core-okio-jvm
+androidx.datastore:datastore-preferences
+androidx.datastore:datastore-preferences-android
+androidx.datastore:datastore-preferences-core
+androidx.datastore:datastore-preferences-core-android
+androidx.datastore:datastore-preferences-proto
+androidx.documentfile:documentfile
+androidx.drawerlayout:drawerlayout
+androidx.exifinterface:exifinterface
+androidx.fragment:fragment
+androidx.fragment:fragment-ktx
+androidx.glance:glance
+androidx.glance:glance-appwidget
+androidx.glance:glance-appwidget-proto
+androidx.interpolator:interpolator
+androidx.legacy:legacy-support-core-ui
+androidx.legacy:legacy-support-core-utils
+androidx.lifecycle:lifecycle-common
+androidx.lifecycle:lifecycle-common-java8
+androidx.lifecycle:lifecycle-common-jvm
+androidx.lifecycle:lifecycle-livedata
+androidx.lifecycle:lifecycle-livedata-core
+androidx.lifecycle:lifecycle-livedata-core-ktx
+androidx.lifecycle:lifecycle-process
+androidx.lifecycle:lifecycle-runtime
+androidx.lifecycle:lifecycle-runtime-android
+androidx.lifecycle:lifecycle-runtime-ktx
+androidx.lifecycle:lifecycle-runtime-ktx-android
+androidx.lifecycle:lifecycle-service
+androidx.lifecycle:lifecycle-viewmodel
+androidx.lifecycle:lifecycle-viewmodel-android
+androidx.lifecycle:lifecycle-viewmodel-ktx
+androidx.lifecycle:lifecycle-viewmodel-savedstate
+androidx.lifecycle:lifecycle-viewmodel-savedstate-android
+androidx.loader:loader
+androidx.localbroadcastmanager:localbroadcastmanager
+androidx.preference:preference
+androidx.print:print
+androidx.profileinstaller:profileinstaller
+androidx.recyclerview:recyclerview
+androidx.room:room-common
+androidx.room:room-common-jvm
+androidx.room:room-runtime
+androidx.room:room-runtime-android
+androidx.savedstate:savedstate
+androidx.savedstate:savedstate-android
+androidx.savedstate:savedstate-ktx
+androidx.slidingpanelayout:slidingpanelayout
+androidx.sqlite:sqlite
+androidx.sqlite:sqlite-android
+androidx.sqlite:sqlite-framework
+androidx.sqlite:sqlite-framework-android
+androidx.startup:startup-runtime
+androidx.swiperefreshlayout:swiperefreshlayout
+androidx.tracing:tracing
+androidx.tracing:tracing-ktx
+androidx.transition:transition
+androidx.vectordrawable:vectordrawable
+androidx.vectordrawable:vectordrawable-animated
+androidx.versionedparcelable:versionedparcelable
+androidx.viewpager:viewpager
+androidx.window.extensions.core:core
+androidx.window:window
+androidx.window:window-java
+androidx.work:work-runtime
+androidx.work:work-runtime-ktx
+com.getkeepsafe.relinker:relinker
+com.google.guava:listenablefuture
+com.squareup.okio:okio
+com.squareup.okio:okio-jvm
+org.jetbrains.kotlin:kotlin-android-extensions-runtime
+org.jetbrains.kotlin:kotlin-parcelize-runtime
+org.jetbrains.kotlin:kotlin-stdlib
+org.jetbrains.kotlin:kotlin-stdlib-common
+org.jetbrains.kotlin:kotlin-stdlib-jdk7
+org.jetbrains.kotlin:kotlin-stdlib-jdk8
+org.jetbrains.kotlinx:kotlinx-coroutines-android
+org.jetbrains.kotlinx:kotlinx-coroutines-core
+org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm
+org.jetbrains.kotlinx:kotlinx-serialization-core
+org.jetbrains.kotlinx:kotlinx-serialization-core-jvm
+org.jetbrains:annotations
+org.jspecify:jspecify
