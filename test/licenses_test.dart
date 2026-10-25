@@ -54,6 +54,32 @@ void main() {
     );
   });
 
+  test('the bundled Roboto is the one Flutter ships', () {
+    for (final face in ['Regular', 'Medium', 'Bold']) {
+      expect(
+        File('assets/fonts/Roboto-$face.ttf').readAsBytesSync(),
+        File.fromUri(
+          materialFonts.resolve('Roboto-$face.ttf'),
+        ).readAsBytesSync(),
+        reason: face,
+      );
+    }
+  });
+
+  // The web engine downloads Roboto from Google at every start unless the font
+  // manifest has a family called exactly that.
+  test('the app declares the family Roboto with the bundled files', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    expect(pubspec, contains('    - family: Roboto\n'));
+    for (final face in ['Regular', 'Medium', 'Bold']) {
+      expect(
+        pubspec,
+        contains('asset: assets/fonts/Roboto-$face.ttf'),
+        reason: face,
+      );
+    }
+  });
+
   test('the Android list holds Maven coordinates only', () {
     final libraries = androidLibraries(
       File('assets/licenses/android_libraries.txt').readAsStringSync(),
