@@ -42,6 +42,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
+import 'position_feed.dart';
 
 /// One reading: where, and how sure.
 ///
@@ -119,6 +120,49 @@ final class DeviceLocationState {
   static const off = DeviceLocationState();
 }
 
+/// Whether the app may read the device's position now: null when it may, the
+/// reason when it may not.
+///
+/// The permission dialog is shown only where [mayAsk] — on a press, and never
+/// because a screen was opened. Location switched off device-wide is asked
+/// about first, so nobody is put through a dialog that would not have helped.
+///
+/// [abandoned] is asked between the steps, which are seconds wide — the dialog
+/// can be minutes — and once it answers true nothing more is done, the dialog
+/// least of all, and what comes back means nothing: the caller asks the same
+/// question again before reading the answer. Every failure is a
+/// [LocationProblem] rather than an exception, since what a caller does with
+/// either is say a sentence.
+Future<LocationProblem?> checkLocationAccess({
+  required bool mayAsk,
+  bool Function()? abandoned,
+}) async {
+  bool gone() => abandoned?.call() ?? false;
+  try {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      return LocationProblem.serviceOff;
+    }
+    var permission = await Geolocator.checkPermission();
+    if (gone()) return LocationProblem.failed;
+    if (permission == LocationPermission.denied) {
+      // A dialog belongs to the press that asked for it. A resume ends here
+      // instead, leaving the button — off, and saying nothing — as the way to
+      // bring one up.
+      if (!mayAsk) return LocationProblem.denied;
+      permission = await Geolocator.requestPermission();
+    }
+    return switch (permission) {
+      LocationPermission.denied => LocationProblem.denied,
+      LocationPermission.deniedForever => LocationProblem.deniedForever,
+      LocationPermission.always ||
+      LocationPermission.whileInUse ||
+      LocationPermission.unableToDetermine => null,
+    };
+  } on Exception {
+    return LocationProblem.failed;
+  }
+}
+
 /// The device's position, off until somebody asks for it — and on again, by
 /// itself, once somebody has.
 ///
@@ -138,7 +182,10 @@ class DeviceLocationController extends Notifier<DeviceLocationState> {
   /// states: a fresh install has never said anything, which is off.
   static const _key = 'map_show_my_location';
 
-  StreamSubscription<Position>? _subscription;
+  /// This controller's place in the [PositionFeed] — never a platform stream
+  /// of its own, which is what lets a recording take the receiver over while
+  /// the mark goes on being drawn.
+  PositionListening? _subscription;
 
   /// Which start is the current one. Every [_cancel] invalidates the one in
   /// flight, and a start that has been overtaken must do nothing at all: the
@@ -230,52 +277,24 @@ class DeviceLocationController extends Notifier<DeviceLocationState> {
     // happened to be switched off at the time — which is exactly the case where
     // the next map should try again rather than ask again.
     if (byHand) await _remember(true);
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        if (superseded()) return;
-        return _fail(LocationProblem.serviceOff, announce: announce);
-      }
-      var permission = await Geolocator.checkPermission();
-      if (superseded()) return;
-      if (permission == LocationPermission.denied) {
-        // A dialog belongs to the press that asked for it. A resume ends here
-        // instead, leaving the button — off, and saying nothing — as the way to
-        // bring one up.
-        if (!mayAsk) return _fail(LocationProblem.denied, announce: announce);
-        permission = await Geolocator.requestPermission();
-      }
-      // The permission dialog is a screen of its own and the user may well leave
-      // the map behind it, which disposes this provider. Writing state — or
-      // starting a receiver — after that is both an error and a leak. The mark
-      // may equally have been switched off behind it, which `superseded` covers
-      // in the same breath.
-      if (superseded()) return;
-      switch (permission) {
-        case LocationPermission.denied:
-          return _fail(LocationProblem.denied, announce: announce);
-        case LocationPermission.deniedForever:
-          return _fail(LocationProblem.deniedForever, announce: announce);
-        case LocationPermission.always:
-        case LocationPermission.whileInUse:
-        case LocationPermission.unableToDetermine:
-          break;
-      }
-      _subscription =
-          Geolocator.getPositionStream(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.high,
-              // Metres of movement before the next reading is delivered. A receiver
-              // standing still emits a jittering fix several times a second, and
-              // every one of them would redraw a marker layer over a moving map.
-              distanceFilter: 5,
-            ),
-          ).listen(
-            _received,
-            onError: (_) => _fail(LocationProblem.failed, announce: announce),
-          );
-    } on Exception {
-      _fail(LocationProblem.failed, announce: announce);
-    }
+    final problem = await checkLocationAccess(
+      mayAsk: mayAsk,
+      abandoned: superseded,
+    );
+    // The permission dialog is a screen of its own and the user may well leave
+    // the map behind it, which disposes this provider. Writing state — or
+    // starting a receiver — after that is both an error and a leak. The mark
+    // may equally have been switched off behind it, which `superseded` covers
+    // in the same breath.
+    if (superseded()) return;
+    if (problem != null) return _fail(problem, announce: announce);
+    _subscription = ref
+        .read(positionFeedProvider)
+        .listen(
+          PositionDemand.mark,
+          onData: _received,
+          onError: (_) => _fail(LocationProblem.failed, announce: announce),
+        );
   }
 
   void _received(Position position) {
