@@ -201,9 +201,11 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   }
 
   Future<void> _pickTime(_TimeSlot slot) async {
-    // An actual time starts from its planned counterpart, which is the time it
-    // is being corrected against — usually only minutes away from it.
-    final current = _times[slot] ?? _times[slot.planned];
+    // An empty time starts from its counterpart on the other axis: an actual
+    // time from the plan it is being corrected against, a planned one from what
+    // was recorded (a plan filled in after an imported recording) — either way
+    // usually only minutes away, where the current time is any distance off.
+    final current = _times[slot] ?? _times[slot.counterpart];
     final initial = current != null
         ? TimeOfDay(hour: current ~/ 60, minute: current % 60)
         : TimeOfDay.now();
@@ -1205,11 +1207,13 @@ enum _TimeSlot {
   actualStart,
   actualEnd;
 
-  /// The planned time this slot is measured against — itself, for a planned one.
-  _TimeSlot get planned => switch (this) {
+  /// The same end on the other axis: the planned time an actual one is measured
+  /// against, and the actual time a planned one was measured by.
+  _TimeSlot get counterpart => switch (this) {
+    _TimeSlot.plannedStart => _TimeSlot.actualStart,
+    _TimeSlot.plannedEnd => _TimeSlot.actualEnd,
     _TimeSlot.actualStart => _TimeSlot.plannedStart,
     _TimeSlot.actualEnd => _TimeSlot.plannedEnd,
-    _ => this,
   };
 }
 

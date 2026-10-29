@@ -516,6 +516,82 @@ void main() {
       expect(saved.endDayOffset, 1);
     });
 
+    testWidgets('a plan filled in after a recording starts from it', (
+      tester,
+    ) async {
+      // What an imported recording leaves on a leg planned without times: the
+      // actual pair, and nothing planned. Accepting the pickers' defaults
+      // copies it over rather than writing the time the form was opened at.
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          mode: const Value(1),
+          fromLocation: const Value('Hotel'),
+          toLocation: const Value('Hotel'),
+          actualStartMinutes: const Value(18 * 60 + 5),
+          actualEndMinutes: const Value(19 * 60 + 20),
+        ),
+      );
+      await open(tester, await reread(id));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      for (final label in [l10n.timeDeparts, l10n.timeArrives]) {
+        // The first of each pair is the planned row.
+        final field = find.widgetWithText(InkWell, label).first;
+        await tester.ensureVisible(field);
+        await tester.pump();
+        await tester.tap(field);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+      }
+      await save(tester);
+
+      final saved = await reread(id);
+      expect(saved.startMinutes, 18 * 60 + 5);
+      expect(saved.endMinutes, 19 * 60 + 20);
+      expect(saved.endDayOffset, 0);
+    });
+
+    testWidgets('a plan copied from a recording past midnight keeps its day', (
+      tester,
+    ) async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          mode: const Value(1),
+          fromLocation: const Value('Hotel'),
+          toLocation: const Value('Hotel'),
+          actualStartMinutes: const Value(23 * 60 + 40),
+          actualEndMinutes: const Value(25),
+          endDayOffset: const Value(1),
+        ),
+      );
+      await open(tester, await reread(id));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      for (final label in [l10n.timeDeparts, l10n.timeArrives]) {
+        final field = find.widgetWithText(InkWell, label).first;
+        await tester.ensureVisible(field);
+        await tester.pump();
+        await tester.tap(field);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.text('Next day · Tue, Aug 4'), findsOneWidget);
+      await save(tester);
+
+      final saved = await reread(id);
+      expect(saved.startMinutes, 23 * 60 + 40);
+      expect(saved.endMinutes, 25);
+      expect(saved.endDayOffset, 1);
+    });
+
     testWidgets('clearing the end takes its day with it', (tester) async {
       final leg = await handLeg(endDayOffset: 1);
       await open(tester, leg);

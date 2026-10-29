@@ -7,6 +7,9 @@ exact commits.
 
 - **The calendar shows every day once in a month with a daylight-saving change.** October
   2026 showed the 25th twice and every later day one cell early.
+- **An empty planned time offers the actual one when you set it**, the way an empty actual
+  time already offers the planned one, instead of the current time. This helps when planned
+  times are filled in after a recording has been imported.
 - **A delay that runs past midnight reads as a delay in the connection search results.** The
   list used to show it as nearly a day early, though the connection's details were right.
 
