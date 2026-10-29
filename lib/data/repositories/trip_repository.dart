@@ -184,18 +184,55 @@ class TripRepository {
       _db.trackDao.deleteTracksForItem(itemId);
 
   /// One recording across the entries it covered, with the coordinates and
-  /// the actual times the import learned on the way.
+  /// the actual times the import learned on the way. [source] says whether it
+  /// came from a file or from this app's own recorder.
   Future<void> importTrackAcross({
     required String? name,
     required List<({int itemId, List<LatLng> points})> pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
     List<({int itemId, TrackEnd end, int minutes})> times = const [],
+    TrackSource source = TrackSource.imported,
   }) => _db.trackDao.importTrackAcross(
     name: name,
     pieces: pieces,
     ends: ends,
     times: times,
+    source: source,
   );
+
+  // --- recordings ---
+
+  /// Starts recording a track, from [tripId] when one was open.
+  Future<int> startRecording({
+    int? tripId,
+    required DateTime startedAt,
+    required Duration utcOffset,
+  }) => _db.recordingDao.startRecording(
+    tripId: tripId,
+    startedAt: startedAt,
+    utcOffset: utcOffset,
+  );
+
+  Future<void> addRecordingFixes(
+    int recordingId,
+    int segment,
+    List<({LatLng position, DateTime at})> fixes,
+  ) => _db.recordingDao.addFixes(recordingId, segment, fixes);
+
+  Future<void> stopRecording(int id, DateTime at) =>
+      _db.recordingDao.stopRecording(id, at);
+
+  /// Takes a recording up again; the answer is the segment to write into.
+  Future<int> resumeRecording(int id) => _db.recordingDao.resumeRecording(id);
+
+  /// The recordings not yet filed onto a plan.
+  Stream<List<Recording>> watchRecordings() =>
+      _db.recordingDao.watchRecordings();
+
+  Future<List<RecordingFix>> recordingFixes(int id) =>
+      _db.recordingDao.fixesOf(id);
+
+  Future<void> deleteRecording(int id) => _db.recordingDao.deleteRecording(id);
 
   // --- attachments ---
 

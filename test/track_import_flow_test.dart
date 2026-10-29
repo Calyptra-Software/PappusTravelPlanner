@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/map/presentation/track_import_screen.dart';
 import 'package:travelplanner/features/map/track_import_flow.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -164,5 +166,63 @@ void main() {
     final leg = await tester.runAsync(theLeg);
     expect(leg!.actualStartMinutes, wall(departed) - 30);
     expect(leg.actualEndMinutes, wall(arrived));
+  });
+
+  testWidgets('a recording made here is written as recorded, at its own zone', (
+    tester,
+  ) async {
+    // What the app's own recorder hands over: points, their times, and the
+    // offset it noted at the start — here one no test machine runs in, so the
+    // times can only come out like this if the offset was used.
+    final leg = await theLeg();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          appVersionProvider.overrideWithValue('0.0.0-test'),
+        ],
+        child: MaterialApp(
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => importTrackAcrossEntries(
+                  context,
+                  lines: [
+                    [const LatLng(53.50, 9.9), const LatLng(53.51, 9.9)],
+                  ],
+                  times: [
+                    [departed, arrived],
+                  ],
+                  name: null,
+                  selection: [leg],
+                  offset: const Duration(hours: 5, minutes: 45),
+                  source: TrackSource.recorded,
+                ),
+                child: const Text('go'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Import'));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+
+    final written = await tester.runAsync(theLeg);
+    expect(written!.actualStartMinutes, 17 * 60 + 45);
+    expect(written.actualEndMinutes, 18 * 60 + 25);
+    final tracks = await tester.runAsync(() => db.select(db.tracks).get());
+    expect(tracks!.single.source, TrackSource.recorded);
+    expect(tracks.single.name, isNull);
   });
 }
