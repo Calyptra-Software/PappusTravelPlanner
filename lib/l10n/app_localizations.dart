@@ -1912,6 +1912,24 @@ abstract class AppLocalizations {
   /// **'Computed route'**
   String get trackSourceRouted;
 
+  /// Title of the Android notification shown while the app records the device's position as a track.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording a track'**
+  String get recordingNotificationTitle;
+
+  /// Body of the Android notification shown while a track is being recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Pappus is recording your position. Stop it in the app.'**
+  String get recordingNotificationText;
+
+  /// Name of the Android notification channel for the notification shown while a track is recorded; users see it in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Track recording'**
+  String get recordingNotificationChannel;
+
   /// Stands where a line's length would, when the stored line cannot be read or holds fewer than two points — the map draws nothing for it either way.
   ///
   /// In en, this message translates to:

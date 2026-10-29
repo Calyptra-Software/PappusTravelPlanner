@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:travelplanner/features/map/location/position_feed.dart';
@@ -143,5 +144,59 @@ void main() {
     feed.listen(PositionDemand.recording, onData: (_) {});
     await feed.dispose();
     expect(isOpen(streams.single), isFalse);
+  });
+
+  group('settings', () {
+    const notice = RecordingNotice(
+      title: 'Recording a track',
+      text: 'Stop it in the app.',
+      channelName: 'Track recording',
+    );
+    tearDown(() => debugDefaultTargetPlatformOverride = null);
+
+    test('on Android a recording runs in the foreground service', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final settings = positionSettingsFor(
+        PositionDemand.recording,
+        notice: notice,
+      );
+      expect(settings, isA<AndroidSettings>());
+      final config =
+          (settings as AndroidSettings).foregroundNotificationConfig!;
+      expect(config.notificationTitle, 'Recording a track');
+      expect(config.notificationText, 'Stop it in the app.');
+      expect(config.notificationChannelName, 'Track recording');
+      expect(config.notificationIcon.name, 'ic_stat_recording');
+      expect(config.enableWakeLock, isFalse);
+      expect(settings.distanceFilter, 0, reason: 'acceptFix decides');
+    });
+
+    test('the mark never does, on Android or anywhere', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      final mark = positionSettingsFor(PositionDemand.mark, notice: notice);
+      expect(mark, isNot(isA<AndroidSettings>()));
+      expect(mark.distanceFilter, 5);
+    });
+
+    test('elsewhere a recording asks for nothing Android-specific', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      final settings = positionSettingsFor(
+        PositionDemand.recording,
+        notice: notice,
+      );
+      expect(settings, isNot(isA<AndroidSettings>()));
+      expect(settings.distanceFilter, 0);
+    });
+
+    test('the recording reader\'s notice is the one the stream opens with', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      feed.listen(PositionDemand.mark, onData: (_) {});
+      feed.listen(PositionDemand.recording, onData: (_) {}, notice: notice);
+      return pumpEventQueue().then((_) {
+        final config =
+            (opened.last as AndroidSettings).foregroundNotificationConfig;
+        expect(config?.notificationTitle, 'Recording a track');
+      });
+    });
   });
 }

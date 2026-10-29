@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The status-bar icon of the notification shown while a track is recorded:
+     a recording mark, a dot in a ring. Android draws a small icon from its
+     alpha alone, so it is white on nothing; the launcher icon would come out
+     as a white square. Referenced by name from Dart (position_feed.dart), which
+     is why res/raw/keep.xml names it. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M12,2a10,10 0,1 1,0 20a10,10 0,1 1,0 -20zM12,4a8,8 0,1 0,0 16a8,8 0,1 0,0 -16zM12,7a5,5 0,1 1,0 10a5,5 0,1 1,0 -10z" />
+</vector>

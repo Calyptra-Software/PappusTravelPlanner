@@ -497,6 +497,18 @@
   "@trackSourceRouted": {
     "description": "A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it."
   },
+  "recordingNotificationTitle": "Recording a track",
+  "@recordingNotificationTitle": {
+    "description": "Title of the Android notification shown while the app records the device's position as a track."
+  },
+  "recordingNotificationText": "Pappus is recording your position. Stop it in the app.",
+  "@recordingNotificationText": {
+    "description": "Body of the Android notification shown while a track is being recorded."
+  },
+  "recordingNotificationChannel": "Track recording",
+  "@recordingNotificationChannel": {
+    "description": "Name of the Android notification channel for the notification shown while a track is recorded; users see it in the system's notification settings."
+  },
   "trackNotDrawable": "Nothing to draw",
   "@trackNotDrawable": {
     "description": "Stands where a line's length would, when the stored line cannot be read or holds fewer than two points \u2014 the map draws nothing for it either way."

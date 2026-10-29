@@ -1073,6 +1073,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trackSourceRouted => '计算轨迹';
 
   @override
+  String get recordingNotificationTitle => 'Recording a track';
+
+  @override
+  String get recordingNotificationText =>
+      'Pappus is recording your position. Stop it in the app.';
+
+  @override
+  String get recordingNotificationChannel => 'Track recording';
+
+  @override
   String get trackNotDrawable => '无可绘制内容';
 
   @override

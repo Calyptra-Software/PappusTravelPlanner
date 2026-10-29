@@ -1042,7 +1042,25 @@ UI (features/*/presentation, *widgets)
   recording, and watching `repositoryProvider`, so switching the database rebuilds it and
   the recording left running in the old file is found there as one nobody stopped. What it
   keeps is written fix by fix (`Recordings`), unlike the mark's fix, which is still never
-  stored.
+  stored. **On Android a recording runs in `geolocator`'s foreground service**
+  (`positionSettingsFor` returns `AndroidSettings` with a `ForegroundNotificationConfig` for
+  `PositionDemand.recording` only), since without one the system stops delivering positions
+  the moment the app leaves the screen. It is started from the foreground, on the press,
+  which is why no `ACCESS_BACKGROUND_LOCATION` is needed and none is declared, and it ends
+  with the recording's last listener: `StreamHandlerImpl` stops the service when the stream
+  is cancelled. The notification's texts are localized by the recorder (`RecordingNotice`,
+  through `appLocaleFor`, which the home widget shares) because the feed has no widget to
+  ask; its small icon, `res/drawable/ic_stat_recording.xml`, is looked up **by name** on the
+  native side, so `res/raw/keep.xml` keeps it from the release build's resource shrinker,
+  which cannot see a name that lives in Dart. No wake lock (`WAKE_LOCK` stays removed): a
+  fix carries the time it was taken, so one delivered late still lands where it belongs —
+  whether readings are *dropped* while the CPU sleeps is a question for a phone, not for
+  this file. Two facts about the vendored service worth knowing before relying on the
+  notification: its channel is created with `IMPORTANCE_NONE` (upstream too, as of 5.2.1),
+  and the service is **bound** to the plugin (`GeolocatorPlugin.bindForegroundService`),
+  not started, so as the code reads it ends when the Flutter engine detaches — swiping the
+  app away would end a recording, which the database then holds as one nobody stopped. Read
+  off the Java, not yet seen on a phone.
 - **The Android half of `geolocator` is a copy in this repository, without Google
   Play Services.** `third_party/geolocator_android` is the published 5.0.3 with three
   edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,
@@ -1059,8 +1077,9 @@ UI (features/*/presentation, *widgets)
   those three states itself — and, below Android 12, the fused provider:
   `LocationManagerClient` prefers `LocationManager.FUSED_PROVIDER` from 12 onwards and falls
   back to GPS. Everything else is upstream's own code, the foreground service included, so
-  recording a track later needs nothing from Google either. The copy carries no permissions
-  of its own; the four in `SECURITY.md` are still the app's own statement. Keep the edits
+  recording a track needs nothing from Google either. The copy carries no permissions of its
+  own; the six in `SECURITY.md` are the app's own statement, `FOREGROUND_SERVICE_LOCATION`
+  included, which upstream deliberately does not declare (5.1.1+1). Keep the edits
   minimal and the version equal to the upstream release they were taken from — the copy is
   meant to stay a diff that can be rebased, forked, or offered upstream, where the
   maintainer has said he would take a Play-Services-free path as long as GMS stays the
@@ -2129,8 +2148,9 @@ androidx `work-runtime` directly *and* on `androidx.glance:glance-appwidget`, wh
 on it again — neither can be excluded, since three of the plugin's own Kotlin sources
 reference Glance. Its only user is `HomeWidgetBackgroundWorker`, reached solely from
 `HomeWidget.registerInteractivityCallback`, which this app does not use: it pushes a payload
-with `saveWidgetData`/`updateWidget` and answers a tap with a deep link. So the five
-permissions it merged into the manifest are removed with `tools:node="remove"`, and — the
+with `saveWidgetData`/`updateWidget` and answers a tap with a deep link. So four of the five
+permissions it merged into the manifest are removed with `tools:node="remove"` — the fifth,
+`FOREGROUND_SERVICE`, is the app's own since the track recorder, and stays — and — the
 other half, without which the first is a crash rather than a tidy-up — the
 `WorkManagerInitializer` node is removed from `androidx.startup`'s provider, because that
 initializer runs in every process at launch and its `ForceStopRunnable` takes a

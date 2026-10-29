@@ -32,7 +32,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/providers.dart';
+import '../../../core/settings/locale_provider.dart';
 import '../../../data/repositories/trip_repository.dart';
+import '../../../l10n/app_localizations.dart';
 import '../track_recording.dart';
 import 'device_location.dart' show LocationProblem, checkLocationAccess;
 import 'position_feed.dart';
@@ -259,6 +261,7 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
         .read(positionFeedProvider)
         .listen(
           PositionDemand.recording,
+          notice: _notice(),
           onData: _received,
           onError: (_) {
             final id = state.recordingId;
@@ -267,6 +270,17 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
             }
           },
         );
+  }
+
+  /// The notification Android shows while the recording runs, in the
+  /// language the app is shown in.
+  RecordingNotice _notice() {
+    final l10n = lookupAppLocalizations(appLocaleFor(ref.read(localeProvider)));
+    return RecordingNotice(
+      title: l10n.recordingNotificationTitle,
+      text: l10n.recordingNotificationText,
+      channelName: l10n.recordingNotificationChannel,
+    );
   }
 
   /// Stops the receiver and marks the recording stopped, keeping it held.

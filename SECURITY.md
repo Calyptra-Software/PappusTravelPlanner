@@ -253,9 +253,23 @@ asks the platform for the device's position; the mark it draws is the only thing
 that happens with the answer. It is never stored and never transmitted — and in
 particular it is not what the map is fetched with: a tile is addressed by grid
 square, exactly as it is when the mark is off, so centering on yourself asks for
-the same tiles as panning there by hand would. Nothing on the device is followed
-in the background either: the request has no `ACCESS_BACKGROUND_LOCATION` behind
-it, and the receiver is released when the map goes away.
+the same tiles as panning there by hand would. The mark follows nothing in the
+background either: it stops reading the position when the map goes away.
+
+**A track you record stays on the device.** Recording is the one thing that keeps
+reading the position while the app is off screen, and it does so only between
+your pressing record and your stopping it. Each position it keeps is written into
+the app's database at once, so that what was recorded survives the app being
+closed by the system, and it stays there until you file it onto a trip, as a
+line, or throw it away. It is never sent anywhere. Like any line in a trip, a
+filed recording leaves the device only in a file you export or share yourself,
+and only as a line: the times of the positions are read once, to fill in when
+your legs ran, and are not kept. A recording not filed yet is part of the
+database, though, so a copy of the database you export carries it, times
+included. On Android the recording runs in a foreground service, which is what
+lets it continue with the screen off. It is started from the app, on the press,
+so it needs no `ACCESS_BACKGROUND_LOCATION`, and the app does not declare that
+permission.
 
 **Attaching a file asks for no permission** — with the one exception above, and
 only once it has been switched on. The picker runs in the system's own process
@@ -265,24 +279,32 @@ directory, and there is no camera capture.
 
 **Nothing else leaves the device.** There is no analytics, no crash reporting,
 and no telemetry of any kind. A web build also fetches the app itself from
-wherever it is hosted, which is that host's business and not this repository's. This app declares four permissions of its own:
+wherever it is hosted, which is that host's business and not this repository's. This app declares six permissions of its own:
 `INTERNET`; `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`, asked for only
-when the locate button is pressed; and `ACCESS_MEDIA_LOCATION`, asked for only
-when *Read where a photo was taken* is switched on in settings. The two location
-permissions are both declared so that the system dialog can offer the choice
-between an exact and an approximate position; the app works either way. The media
+when the locate button or the record button is pressed;
+`FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_LOCATION`, which let a track recording
+go on while the app is off screen and are used for nothing else; and
+`ACCESS_MEDIA_LOCATION`, asked for only when *Read where a photo was taken* is
+switched on in settings. The two location permissions are both declared so that
+the system dialog can offer the choice between an exact and an approximate
+position; the app works either way. The two foreground-service ones are not
+shown in any dialog, since Android grants them at install; they do not give the
+app the position, and a location service started without the location
+permission has nothing to read (Android 14 and later refuse to start one at
+all). The media
 one is granted to nobody until it is asked for, and the app works without it — a
 photograph simply attaches without the place it was taken.
 
-**Four is also what the installed APK declares**, which is the list Android
-shows you, and it stays four on purpose. Libraries merge their own permissions
+**Six is also what the installed APK declares**, which is the list Android
+shows you, and it stays six on purpose. Libraries merge their own permissions
 into the manifest, and androidx `work-runtime` merged in five: `WAKE_LOCK`,
 `ACCESS_NETWORK_STATE`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, and a
 signature-level one androidx `core` generates. It arrives with the home-screen
-widget's plugin and nothing here ever schedules background work, so all five are
-taken back out in `android/app/src/main/AndroidManifest.xml`, and WorkManager is
-kept from starting itself along with them. The app does not run a foreground
-service, does not start at boot, and does not hold a wake lock.
+widget's plugin and nothing here ever schedules background work, so four of them
+are taken back out in `android/app/src/main/AndroidManifest.xml`, and WorkManager
+is kept from starting itself along with them; `FOREGROUND_SERVICE` stays, as the
+app's own. The app runs a foreground service only while a track is being
+recorded, does not start at boot, and does not hold a wake lock.
 
 The Android build also links **no Google Play Services code at all**. Positioning
 goes through Android's own `LocationManager`, using a copy of the `geolocator`

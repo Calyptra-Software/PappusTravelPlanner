@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **The Android app declares two more permissions, `FOREGROUND_SERVICE` and
+  `FOREGROUND_SERVICE_LOCATION`.** They let a track recording continue with the screen off,
+  and are used only while one runs.
 - **The calendar shows every day once in a month with a daylight-saving change.** October
   2026 showed the 25th twice and every later day one cell early.
 - **An empty planned time offers the actual one when you set it**, the way an empty actual

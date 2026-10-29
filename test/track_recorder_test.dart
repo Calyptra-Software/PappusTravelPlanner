@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:geolocator/geolocator.dart';
@@ -286,6 +287,26 @@ void main() {
       },
     );
   });
+
+  test(
+    'on Android it says so in a notification, in the app\'s language',
+    () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.android;
+      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+      await prefs.setString('locale_code', 'de');
+      final (_, recorder) = open();
+
+      await recorder.start();
+      await pumpEventQueue();
+
+      final settings = platform.requestedSettings.single as AndroidSettings;
+      final config = settings.foregroundNotificationConfig!;
+      expect(config.notificationTitle, 'Track wird aufgezeichnet');
+      expect(config.notificationChannelName, 'Track-Aufzeichnung');
+      // Before the stop: tests otherwise end with the override still set.
+      await recorder.stop();
+    },
+  );
 
   test('a failing receiver stops the recording and says so', () async {
     final (container, recorder) = open();

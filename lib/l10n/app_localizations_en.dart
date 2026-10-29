@@ -1084,6 +1084,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get trackSourceRouted => 'Computed route';
 
   @override
+  String get recordingNotificationTitle => 'Recording a track';
+
+  @override
+  String get recordingNotificationText =>
+      'Pappus is recording your position. Stop it in the app.';
+
+  @override
+  String get recordingNotificationChannel => 'Track recording';
+
+  @override
   String get trackNotDrawable => 'Nothing to draw';
 
   @override

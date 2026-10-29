@@ -21,6 +21,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 
@@ -37,6 +38,29 @@ enum PositionDemand {
   recording,
 }
 
+/// What Android shows while a recording keeps the receiver running, in the
+/// user's language. A reader brings it along because the feed has no widget to
+/// look a text up from.
+final class RecordingNotice {
+  const RecordingNotice({
+    required this.title,
+    required this.text,
+    required this.channelName,
+  });
+
+  final String title;
+  final String text;
+
+  /// The name the notification's channel has in the system settings.
+  final String channelName;
+}
+
+/// The small icon of that notification: `res/drawable/ic_stat_recording.xml`,
+/// a white mark on nothing, which is what Android draws a status-bar icon
+/// from. Looked up by name on the native side, which is why
+/// `res/raw/keep.xml` keeps it from the resource shrinker.
+const _recordingIcon = AndroidResource(name: 'ic_stat_recording');
+
 /// The settings the platform stream is opened with for [demand].
 ///
 /// For the mark, readings only once the device has moved a few meters: a
@@ -45,11 +69,40 @@ enum PositionDemand {
 /// recording, every reading — which of them are kept is `acceptFix`'s decision,
 /// and it takes the receiver's own uncertainty into account, which a fixed
 /// distance filter cannot.
-LocationSettings positionSettingsFor(PositionDemand demand) => switch (demand) {
+///
+/// On **Android** a recording runs the receiver in `geolocator`'s foreground
+/// service, with [notice] as its notification: without it, the system stops
+/// delivering positions to an app the moment it is no longer on screen, and a
+/// recording would end with the phone going into a pocket. It needs no
+/// `ACCESS_BACKGROUND_LOCATION`, because the service is started from the
+/// foreground, on a press — which is also why the mark never asks for one: it
+/// exists while a map is on screen and has nothing to keep alive. One reading a
+/// second, the receiver's own pace for a walk, and no wake lock: the fixes
+/// carry the time they were taken, so a reading delivered late after the CPU
+/// slept still lands at the moment it was measured.
+LocationSettings positionSettingsFor(
+  PositionDemand demand, {
+  RecordingNotice? notice,
+}) => switch (demand) {
   PositionDemand.mark => const LocationSettings(
     accuracy: LocationAccuracy.high,
     distanceFilter: 5,
   ),
+  PositionDemand.recording
+      when !kIsWeb && defaultTargetPlatform == TargetPlatform.android =>
+    AndroidSettings(
+      accuracy: LocationAccuracy.high,
+      intervalDuration: const Duration(seconds: 1),
+      foregroundNotificationConfig: notice == null
+          ? null
+          : ForegroundNotificationConfig(
+              notificationTitle: notice.title,
+              notificationText: notice.text,
+              notificationChannelName: notice.channelName,
+              notificationIcon: _recordingIcon,
+              setOngoing: true,
+            ),
+    ),
   PositionDemand.recording => const LocationSettings(
     accuracy: LocationAccuracy.high,
   ),
@@ -57,10 +110,20 @@ LocationSettings positionSettingsFor(PositionDemand demand) => switch (demand) {
 
 /// One reader's place in the feed. Cancelling it is the only way to leave.
 final class PositionListening {
-  PositionListening._(this._feed, this.demand, this._onData, this._onError);
+  PositionListening._(
+    this._feed,
+    this.demand,
+    this.notice,
+    this._onData,
+    this._onError,
+  );
 
   final PositionFeed _feed;
   final PositionDemand demand;
+
+  /// What to show while this reader keeps the receiver running, where the
+  /// platform shows anything — see [positionSettingsFor].
+  final RecordingNotice? notice;
   final void Function(Position) _onData;
   final void Function(Object error)? _onError;
 
@@ -106,13 +169,15 @@ class PositionFeed {
   PositionDemand? get openFor => _openFor;
 
   /// Delivers every reading to [onData] until the answer is cancelled, and a
-  /// failure of the platform stream to [onError].
+  /// failure of the platform stream to [onError]. A recording brings its
+  /// [notice] along.
   PositionListening listen(
     PositionDemand demand, {
     required void Function(Position) onData,
     void Function(Object error)? onError,
+    RecordingNotice? notice,
   }) {
-    final reader = PositionListening._(this, demand, onData, onError);
+    final reader = PositionListening._(this, demand, notice, onData, onError);
     _readers.add(reader);
     _reconcile();
     return reader;
@@ -160,7 +225,12 @@ class PositionFeed {
 
   void _openNow(PositionDemand demand) {
     _openFor = demand;
-    _platform = _open(positionSettingsFor(demand)).listen(
+    final notice = _readers
+        .where((reader) => reader.demand == demand)
+        .map((reader) => reader.notice)
+        .nonNulls
+        .firstOrNull;
+    _platform = _open(positionSettingsFor(demand, notice: notice)).listen(
       (position) {
         // A copy: a reader may cancel itself from inside its own callback.
         for (final reader in [..._readers]) {
