@@ -3,6 +3,8 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/trip_kind.dart';
 
+import 'support/dst.dart';
+
 /// What a trip's kind decides, without a database.
 ///
 /// There is deliberately very little of it. A trip's *scale* is not a kind — a
@@ -158,7 +160,7 @@ void main() {
         routineDayOn(DateTime(2026, 10, 24), DateTime(1970, 1, 2)),
         DateTime(2026, 10, 25),
       );
-    });
+    }, skip: skipWithoutEuropeanDst);
 
     test('a start date carrying a time is normalized first', () {
       expect(

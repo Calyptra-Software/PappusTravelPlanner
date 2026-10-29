@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/core/format/date_format.dart';
 
+import 'support/dst.dart';
+
 /// Every date in this app is a *civil* date — a day, not an instant — and the
 /// arithmetic has to agree, because a local day is 23 or 25 hours across a
 /// daylight-saving change. That is exactly the size of error that moves a
@@ -20,12 +22,12 @@ void main() {
       expect(addDays(DateTime(2026, 3, 28), 1), DateTime(2026, 3, 29));
       expect(addDays(DateTime(2026, 3, 28), 2), DateTime(2026, 3, 30));
       expect(addDays(DateTime(2026, 3, 29), 1), DateTime(2026, 3, 30));
-    });
+    }, skip: skipWithoutEuropeanDst);
 
     test('crosses an autumn fall-back without gaining one', () {
       expect(addDays(DateTime(2026, 10, 24), 1), DateTime(2026, 10, 25));
       expect(addDays(DateTime(2026, 10, 25), 1), DateTime(2026, 10, 26));
-    });
+    }, skip: skipWithoutEuropeanDst);
 
     test('the result is always a midnight, whatever went in', () {
       expect(addDays(DateTime(2026, 7, 30, 18, 42), 1), DateTime(2026, 7, 31));
@@ -42,7 +44,7 @@ void main() {
     test('a short day still counts as one', () {
       expect(daysBetween(DateTime(2026, 3, 28), DateTime(2026, 3, 29)), 1);
       expect(daysBetween(DateTime(2026, 3, 28), DateTime(2026, 3, 30)), 2);
-    });
+    }, skip: skipWithoutEuropeanDst);
 
     test('ignores the time of day at either end', () {
       expect(
@@ -67,7 +69,7 @@ void main() {
 
     test('a DST day does not shorten the trip', () {
       expect(tripDayCount(DateTime(2026, 3, 28), DateTime(2026, 3, 30)), 3);
-    });
+    }, skip: skipWithoutEuropeanDst);
 
     test('is unanswerable without both dates', () {
       expect(tripDayCount(null, DateTime(2026, 7, 30)), isNull);

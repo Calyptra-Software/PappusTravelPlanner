@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:travelplanner/core/format/civil_date.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/calendar_layout.dart';
+
+import 'support/dst.dart';
 
 void main() {
   Trip trip({required int id, DateTime? start, DateTime? end}) => Trip(
@@ -119,6 +122,59 @@ void main() {
       expect(week.spans.every((s) => s.lane == 0), isTrue);
       expect(week.laneCount, 1);
     });
+
+    // Central Europe falls back on 2026-10-25 and springs forward on
+    // 2026-03-29, so those local days are 25 and 23 hours. Counted in
+    // `Duration`s, October's grid showed the 25th twice and every later cell
+    // a day early. Like `civil_date_test.dart`, these only bite in a zone
+    // with daylight saving: run with `TZ=Europe/Berlin`.
+    test('every cell is a midnight, one calendar day after the last', () {
+      for (final month in [DateTime(2026, 3), DateTime(2026, 10)]) {
+        final days = [
+          for (final w in buildMonthGrid(month, [], mondayFirst)) ...w.days,
+        ];
+        for (var i = 0; i < days.length; i++) {
+          expect(days[i], addDays(days.first, i), reason: '$month, cell $i');
+          expect(days[i].hour, 0, reason: '$month, cell $i');
+        }
+      }
+    }, skip: skipWithoutEuropeanDst);
+
+    test('the week after a fall-back starts on Monday the 26th', () {
+      final weeks = buildMonthGrid(DateTime(2026, 10), [], mondayFirst);
+      expect(weeks[3].days.last, DateTime(2026, 10, 25));
+      expect(weeks[4].days.first, DateTime(2026, 10, 26));
+      expect(weeks[4].days.first.weekday, DateTime.monday);
+    }, skip: skipWithoutEuropeanDst);
+
+    test('a one-day trip after a spring-forward is drawn in its week', () {
+      // Monday 2026-03-30 opens the week after the 23-hour Sunday.
+      final weeks = buildMonthGrid(DateTime(2026, 3), [
+        trip(id: 1, start: DateTime(2026, 3, 30)),
+      ], mondayFirst);
+      final week = weeks.firstWhere(
+        (w) => w.days.first == DateTime(2026, 3, 30),
+      );
+      expect(week.spans, hasLength(1));
+      final span = week.spans.single;
+      expect((span.startCol, span.endCol), (0, 0));
+      expect(span.continuesLeft, isFalse);
+      expect(span.continuesRight, isFalse);
+    }, skip: skipWithoutEuropeanDst);
+
+    test('a trip across a fall-back is clipped at the right columns', () {
+      // Sat 24 → Tue 27 October: two days in each of two weeks.
+      final weeks = buildMonthGrid(DateTime(2026, 10), [
+        trip(id: 1, start: DateTime(2026, 10, 24), end: DateTime(2026, 10, 27)),
+      ], mondayFirst);
+      final before = weeks[3].spans.single;
+      final after = weeks[4].spans.single;
+      expect((before.startCol, before.endCol), (5, 6));
+      expect(before.continuesRight, isTrue);
+      expect((after.startCol, after.endCol), (0, 1));
+      expect(after.continuesLeft, isTrue);
+      expect(after.continuesRight, isFalse);
+    }, skip: skipWithoutEuropeanDst);
   });
 
   group('overflowByColumn', () {
