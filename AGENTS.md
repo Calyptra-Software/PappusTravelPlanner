@@ -2161,6 +2161,14 @@ so the browser can paint the "reading" message before `compute` blocks its one t
 guarded by `kIsWeb`, because awaiting a frame from inside a callback is exactly what
 deadlocks a widget test and there is nothing to gain from it where the work is off-thread.
 
+**Date arithmetic is only tested where a day can be 23 hours long.** `flutter test` runs
+in the machine's zone, and in UTC a `Duration` of days is always right, so the month
+calendar once showed 25 October twice with every test green. CI therefore runs the suite
+under `TZ=Europe/Berlin`, and a test that checks something only across a daylight-saving
+change passes `skip: skipWithoutEuropeanDst` (`test/support/dst.dart`): elsewhere it says it
+was skipped instead of passing without testing anything. Run such a file locally with
+`TZ=Europe/Berlin flutter test …` if the machine is set to another zone.
+
 Three smaller traps, each found by a test that had to be written twice:
 
 - **A stubbed stream has to replay its last value.** A `StreamController.broadcast` gives a

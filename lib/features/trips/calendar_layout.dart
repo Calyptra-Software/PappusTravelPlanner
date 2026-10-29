@@ -66,7 +66,7 @@ DateTime monthGridStart(DateTime month, int firstWeekday) {
   // Dart weekday is 1=Mon…7=Sun; convert to 0=Sun…6=Sat to match firstWeekday.
   final dow = first.weekday % 7;
   final back = (dow - firstWeekday + 7) % 7;
-  return first.subtract(Duration(days: back));
+  return addDays(first, -back);
 }
 
 /// Builds the weeks of [month]'s grid, laying out [trips] into non-overlapping
@@ -89,9 +89,12 @@ List<CalendarWeek> buildMonthGrid(
   }
 
   for (var w = 0; w < 6; w++) {
-    final weekStart = gridStart.add(Duration(days: w * 7));
-    final weekEnd = weekStart.add(const Duration(days: 6));
-    final days = [for (var d = 0; d < 7; d++) weekStart.add(Duration(days: d))];
+    // Calendar days, not `Duration`s: across a daylight-saving change a day
+    // is 23 or 25 hours, so `add(Duration(days: n))` lands an hour off
+    // midnight and, in autumn, on the day before.
+    final weekStart = addDays(gridStart, w * 7);
+    final weekEnd = addDays(weekStart, 6);
+    final days = [for (var d = 0; d < 7; d++) addDays(weekStart, d)];
 
     // Trips intersecting this week, clipped to it.
     final clipped = <CalendarSpan>[];
@@ -99,10 +102,8 @@ List<CalendarWeek> buildMonthGrid(
       if (s.end.isBefore(weekStart) || s.start.isAfter(weekEnd)) continue;
       final startCol = s.start.isBefore(weekStart)
           ? 0
-          : s.start.difference(weekStart).inDays;
-      final endCol = s.end.isAfter(weekEnd)
-          ? 6
-          : s.end.difference(weekStart).inDays;
+          : daysBetween(weekStart, s.start);
+      final endCol = s.end.isAfter(weekEnd) ? 6 : daysBetween(weekStart, s.end);
       clipped.add(
         CalendarSpan(
           trip: s.trip,

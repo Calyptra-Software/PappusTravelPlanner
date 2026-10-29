@@ -6,6 +6,7 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 
 import 'currency_fixture.dart';
+import 'support/dst.dart';
 
 /// A routine's occurrences are virtual until one is touched. These cover what
 /// happens at that moment — what travels into the outing, and what deliberately
@@ -325,7 +326,7 @@ void main() {
         DateTime(2026, 3, 29),
         DateTime(2026, 3, 30),
       ]);
-    });
+    }, skip: skipWithoutEuropeanDst);
 
     test('an empty routine is still a plan for one day', () async {
       final routineId = await makeRoutine();
