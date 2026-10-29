@@ -581,14 +581,13 @@ class VisitedCountries extends Table {
 /// Persisted by integer index like every other stored enum here, so only ever
 /// append new values at the end.
 enum TrackSource {
-  /// Read out of a GPX file the user picked. What most tracks are, and the only
-  /// one the app can make today.
+  /// Read out of a GPX file the user picked.
   imported,
 
-  /// Recorded by this app from the device's own position. Not built yet — it
-  /// needs the first runtime permission in the app — but named here because the
-  /// distinction is about the *line*, and a table that cannot express it would
-  /// have to be migrated to say "this one was actually walked".
+  /// Recorded by this app from the device's own position. Named before anything
+  /// could make it, because the distinction is about the *line*, and a table
+  /// that cannot express it would have to be migrated to say "this one was
+  /// actually walked".
   recorded,
 
   /// Computed by a router: the road or path between two ends, rather than a
@@ -652,7 +651,7 @@ class Tracks extends Table {
       integer().references(ItineraryItems, #id, onDelete: KeyAction.cascade)();
 
   /// Where the line came from. Defaults to [TrackSource.imported], which is
-  /// what every row written today is.
+  /// what the first rows ever written were; every other writer names its own.
   IntColumn get source =>
       intEnum<TrackSource>().withDefault(const Constant(0))();
 
