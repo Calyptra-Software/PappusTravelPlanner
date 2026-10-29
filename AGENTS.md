@@ -1025,6 +1025,24 @@ UI (features/*/presentation, *widgets)
   is still a pointing act — but only the reading the press was waiting for is
   taken, and a map tap made while waiting wins, or a choice made at a doorway
   would follow its owner down the street.
+- **The position comes from one stream, so nothing opens its own.** `geolocator` hands
+  the stream it opened first to every later caller, *with the settings it was opened with*,
+  until its last listener goes — so a second `getPositionStream` with other settings does
+  not fail, it silently answers with the first. `PositionFeed`
+  (`features/map/location/position_feed.dart`, `positionFeedProvider`) is therefore the
+  only caller: the map's mark and the track recorder each listen there with a
+  `PositionDemand`, and the feed holds one platform subscription opened for the most
+  demanding reader present, closing and reopening it when that changes. A recording
+  started under a mark the remembered switch put back on would otherwise have run on the
+  mark's settings. Opening is synchronous when nothing has to be closed first, so a
+  reading delivered in the same breath as a listen is not lost; only a change of settings
+  waits for the close. The permission check is shared the same way
+  (`checkLocationAccess`). `TrackRecorderController` (`track_recorder.dart`) is the other
+  reader: **not** `autoDispose`, since leaving a map is the ordinary thing to do while
+  recording, and watching `repositoryProvider`, so switching the database rebuilds it and
+  the recording left running in the old file is found there as one nobody stopped. What it
+  keeps is written fix by fix (`Recordings`), unlike the mark's fix, which is still never
+  stored.
 - **The Android half of `geolocator` is a copy in this repository, without Google
   Play Services.** `third_party/geolocator_android` is the published 5.0.3 with three
   edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,

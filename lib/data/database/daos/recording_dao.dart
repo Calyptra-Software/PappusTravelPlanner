@@ -87,6 +87,10 @@ class RecordingDao extends DatabaseAccessor<AppDatabase>
     recordings,
   )..orderBy([(r) => OrderingTerm(expression: r.startedAt)])).watch();
 
+  /// Recording [id], or null when there is none.
+  Future<Recording?> recordingOf(int id) =>
+      (select(recordings)..where((r) => r.id.equals(id))).getSingleOrNull();
+
   /// The fixes of recording [id], in the order they were taken.
   Future<List<RecordingFix>> fixesOf(int id) =>
       (select(recordingFixes)
