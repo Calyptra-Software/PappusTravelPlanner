@@ -675,6 +675,85 @@ class Tracks extends Table {
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
 }
 
+/// A recording the app is making, or has made and not yet filed onto a plan.
+///
+/// The one place the app writes down where the device *was*. Everywhere else a
+/// fix is a measurement that lives in `deviceLocationProvider` and dies with it;
+/// a recording is that measurement turned into something to keep, and it has to
+/// be kept **as it is made**. A walk of three hours that is gone because Android
+/// stopped the app in the background is the failure this feature can least
+/// afford, so every accepted fix is written as it arrives ([RecordingFixes]),
+/// and a recording that was running when the app died is still here when it
+/// starts again — stopped by nobody, which is how it is recognized.
+///
+/// A buffer, not a line. What a recording becomes is one or more [Tracks] rows
+/// of [TrackSource.recorded], written by the ordinary import once the user has
+/// said which entries it covered — after which this row is deleted. That is
+/// why the fixes carry their **times** while a track does not: the import reads
+/// them for the days and the actual times (`track_times.dart`) and lets them
+/// go, the rule `parseGpx` already follows for a file.
+///
+/// Not part of any trip. A recording is made before anybody has decided what it
+/// was, often without a plan to file it under, so it stays outside the
+/// trip-level copies and the `.tpt` bundle. It does live in the database file,
+/// so a database exported mid-walk carries it.
+class Recordings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// The trip it was started from, so filing it can start there. A hint and not
+  /// an owner: `setNull`, since deleting a trip must not delete a walk nobody
+  /// has filed anywhere yet.
+  IntColumn get tripId => integer().nullable().references(
+    Trips,
+    #id,
+    onDelete: KeyAction.setNull,
+  )();
+
+  /// When it was started, in milliseconds since the epoch (UTC).
+  IntColumn get startedAt => integer()();
+
+  /// The device's offset from UTC when it was started, in minutes.
+  ///
+  /// The import reads a recording's UTC instants as wall-clock times at an
+  /// offset, which for a file is a guess the user can correct. Here it is
+  /// known — the device was there — but only *at the time*: computed again
+  /// when the recording is filed, it would be the zone of wherever the user is
+  /// by then. Taken once, at the start; a recording that crosses a zone keeps
+  /// the first one, and the import still shows it and lets it be changed.
+  IntColumn get utcOffsetMinutes => integer()();
+
+  /// When it was stopped, in milliseconds since the epoch (UTC), or null while
+  /// it runs — and while it *ran* when the app was stopped from outside, which
+  /// a fresh start tells apart from a running one by there being no recorder.
+  IntColumn get stoppedAt => integer().nullable()();
+}
+
+/// One accepted reading of a [Recordings] row, in the order it was taken.
+///
+/// A row per fix rather than a packed line rewritten as it grows: appending is
+/// what makes every reading safe the moment it is taken, and the packed format
+/// of [Tracks.points] has nowhere to put a time. The rows are short-lived —
+/// they go with their recording once it is filed — so their size is never a
+/// cost anybody carries.
+@DataClassName('RecordingFix')
+class RecordingFixes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get recordingId =>
+      integer().references(Recordings, #id, onDelete: KeyAction.cascade)();
+
+  /// Which stretch of the recording this belongs to. A pause, or a restart after
+  /// the app was stopped, begins the next one, so the line keeps the gap the
+  /// way a GPX `<trkseg>` does: joining them would draw a line across ground
+  /// nobody covered.
+  IntColumn get segment => integer().withDefault(const Constant(0))();
+
+  RealColumn get lat => real()();
+  RealColumn get lon => real()();
+
+  /// When the fix was taken, in milliseconds since the epoch (UTC).
+  IntColumn get recordedAt => integer()();
+}
+
 /// The modes of transport a leg can use, managed in settings and reused in the
 /// item form's mode dropdown — the transport counterpart to [CostReasons], but
 /// referenced by row id ([ItineraryItems.mode]) rather than by text, since a

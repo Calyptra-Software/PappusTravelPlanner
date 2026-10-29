@@ -7822,7 +7822,7 @@ class Track extends DataClass implements Insertable<Track> {
   final int itemId;
 
   /// Where the line came from. Defaults to [TrackSource.imported], which is
-  /// what every row written today is.
+  /// what the first rows ever written were; every other writer names its own.
   final TrackSource source;
 
   /// The name the file gave this line, when it had one. Not defaulted to
@@ -9463,6 +9463,797 @@ class AttachmentBlobsCompanion extends UpdateCompanion<AttachmentBlob> {
   }
 }
 
+class $RecordingsTable extends Recordings
+    with TableInfo<$RecordingsTable, Recording> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecordingsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _tripIdMeta = const VerificationMeta('tripId');
+  @override
+  late final GeneratedColumn<int> tripId = GeneratedColumn<int>(
+    'trip_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES trips (id) ON DELETE SET NULL',
+    ),
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<int> startedAt = GeneratedColumn<int>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _utcOffsetMinutesMeta = const VerificationMeta(
+    'utcOffsetMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> utcOffsetMinutes = GeneratedColumn<int>(
+    'utc_offset_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stoppedAtMeta = const VerificationMeta(
+    'stoppedAt',
+  );
+  @override
+  late final GeneratedColumn<int> stoppedAt = GeneratedColumn<int>(
+    'stopped_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    tripId,
+    startedAt,
+    utcOffsetMinutes,
+    stoppedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recordings';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Recording> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('trip_id')) {
+      context.handle(
+        _tripIdMeta,
+        tripId.isAcceptableOrUnknown(data['trip_id']!, _tripIdMeta),
+      );
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    if (data.containsKey('utc_offset_minutes')) {
+      context.handle(
+        _utcOffsetMinutesMeta,
+        utcOffsetMinutes.isAcceptableOrUnknown(
+          data['utc_offset_minutes']!,
+          _utcOffsetMinutesMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_utcOffsetMinutesMeta);
+    }
+    if (data.containsKey('stopped_at')) {
+      context.handle(
+        _stoppedAtMeta,
+        stoppedAt.isAcceptableOrUnknown(data['stopped_at']!, _stoppedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Recording map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Recording(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      tripId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}trip_id'],
+      ),
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}started_at'],
+      )!,
+      utcOffsetMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}utc_offset_minutes'],
+      )!,
+      stoppedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}stopped_at'],
+      ),
+    );
+  }
+
+  @override
+  $RecordingsTable createAlias(String alias) {
+    return $RecordingsTable(attachedDatabase, alias);
+  }
+}
+
+class Recording extends DataClass implements Insertable<Recording> {
+  final int id;
+
+  /// The trip it was started from, so filing it can start there. A hint and not
+  /// an owner: `setNull`, since deleting a trip must not delete a walk nobody
+  /// has filed anywhere yet.
+  final int? tripId;
+
+  /// When it was started, in milliseconds since the epoch (UTC).
+  final int startedAt;
+
+  /// The device's offset from UTC when it was started, in minutes.
+  ///
+  /// The import reads a recording's UTC instants as wall-clock times at an
+  /// offset, which for a file is a guess the user can correct. Here it is
+  /// known — the device was there — but only *at the time*: computed again
+  /// when the recording is filed, it would be the zone of wherever the user is
+  /// by then. Taken once, at the start; a recording that crosses a zone keeps
+  /// the first one, and the import still shows it and lets it be changed.
+  final int utcOffsetMinutes;
+
+  /// When it was stopped, in milliseconds since the epoch (UTC), or null while
+  /// it runs — and while it *ran* when the app was stopped from outside, which
+  /// a fresh start tells apart from a running one by there being no recorder.
+  final int? stoppedAt;
+  const Recording({
+    required this.id,
+    this.tripId,
+    required this.startedAt,
+    required this.utcOffsetMinutes,
+    this.stoppedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || tripId != null) {
+      map['trip_id'] = Variable<int>(tripId);
+    }
+    map['started_at'] = Variable<int>(startedAt);
+    map['utc_offset_minutes'] = Variable<int>(utcOffsetMinutes);
+    if (!nullToAbsent || stoppedAt != null) {
+      map['stopped_at'] = Variable<int>(stoppedAt);
+    }
+    return map;
+  }
+
+  RecordingsCompanion toCompanion(bool nullToAbsent) {
+    return RecordingsCompanion(
+      id: Value(id),
+      tripId: tripId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tripId),
+      startedAt: Value(startedAt),
+      utcOffsetMinutes: Value(utcOffsetMinutes),
+      stoppedAt: stoppedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(stoppedAt),
+    );
+  }
+
+  factory Recording.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Recording(
+      id: serializer.fromJson<int>(json['id']),
+      tripId: serializer.fromJson<int?>(json['tripId']),
+      startedAt: serializer.fromJson<int>(json['startedAt']),
+      utcOffsetMinutes: serializer.fromJson<int>(json['utcOffsetMinutes']),
+      stoppedAt: serializer.fromJson<int?>(json['stoppedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'tripId': serializer.toJson<int?>(tripId),
+      'startedAt': serializer.toJson<int>(startedAt),
+      'utcOffsetMinutes': serializer.toJson<int>(utcOffsetMinutes),
+      'stoppedAt': serializer.toJson<int?>(stoppedAt),
+    };
+  }
+
+  Recording copyWith({
+    int? id,
+    Value<int?> tripId = const Value.absent(),
+    int? startedAt,
+    int? utcOffsetMinutes,
+    Value<int?> stoppedAt = const Value.absent(),
+  }) => Recording(
+    id: id ?? this.id,
+    tripId: tripId.present ? tripId.value : this.tripId,
+    startedAt: startedAt ?? this.startedAt,
+    utcOffsetMinutes: utcOffsetMinutes ?? this.utcOffsetMinutes,
+    stoppedAt: stoppedAt.present ? stoppedAt.value : this.stoppedAt,
+  );
+  Recording copyWithCompanion(RecordingsCompanion data) {
+    return Recording(
+      id: data.id.present ? data.id.value : this.id,
+      tripId: data.tripId.present ? data.tripId.value : this.tripId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+      utcOffsetMinutes: data.utcOffsetMinutes.present
+          ? data.utcOffsetMinutes.value
+          : this.utcOffsetMinutes,
+      stoppedAt: data.stoppedAt.present ? data.stoppedAt.value : this.stoppedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Recording(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('utcOffsetMinutes: $utcOffsetMinutes, ')
+          ..write('stoppedAt: $stoppedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, tripId, startedAt, utcOffsetMinutes, stoppedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Recording &&
+          other.id == this.id &&
+          other.tripId == this.tripId &&
+          other.startedAt == this.startedAt &&
+          other.utcOffsetMinutes == this.utcOffsetMinutes &&
+          other.stoppedAt == this.stoppedAt);
+}
+
+class RecordingsCompanion extends UpdateCompanion<Recording> {
+  final Value<int> id;
+  final Value<int?> tripId;
+  final Value<int> startedAt;
+  final Value<int> utcOffsetMinutes;
+  final Value<int?> stoppedAt;
+  const RecordingsCompanion({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.utcOffsetMinutes = const Value.absent(),
+    this.stoppedAt = const Value.absent(),
+  });
+  RecordingsCompanion.insert({
+    this.id = const Value.absent(),
+    this.tripId = const Value.absent(),
+    required int startedAt,
+    required int utcOffsetMinutes,
+    this.stoppedAt = const Value.absent(),
+  }) : startedAt = Value(startedAt),
+       utcOffsetMinutes = Value(utcOffsetMinutes);
+  static Insertable<Recording> custom({
+    Expression<int>? id,
+    Expression<int>? tripId,
+    Expression<int>? startedAt,
+    Expression<int>? utcOffsetMinutes,
+    Expression<int>? stoppedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (tripId != null) 'trip_id': tripId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (utcOffsetMinutes != null) 'utc_offset_minutes': utcOffsetMinutes,
+      if (stoppedAt != null) 'stopped_at': stoppedAt,
+    });
+  }
+
+  RecordingsCompanion copyWith({
+    Value<int>? id,
+    Value<int?>? tripId,
+    Value<int>? startedAt,
+    Value<int>? utcOffsetMinutes,
+    Value<int?>? stoppedAt,
+  }) {
+    return RecordingsCompanion(
+      id: id ?? this.id,
+      tripId: tripId ?? this.tripId,
+      startedAt: startedAt ?? this.startedAt,
+      utcOffsetMinutes: utcOffsetMinutes ?? this.utcOffsetMinutes,
+      stoppedAt: stoppedAt ?? this.stoppedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (tripId.present) {
+      map['trip_id'] = Variable<int>(tripId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<int>(startedAt.value);
+    }
+    if (utcOffsetMinutes.present) {
+      map['utc_offset_minutes'] = Variable<int>(utcOffsetMinutes.value);
+    }
+    if (stoppedAt.present) {
+      map['stopped_at'] = Variable<int>(stoppedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecordingsCompanion(')
+          ..write('id: $id, ')
+          ..write('tripId: $tripId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('utcOffsetMinutes: $utcOffsetMinutes, ')
+          ..write('stoppedAt: $stoppedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RecordingFixesTable extends RecordingFixes
+    with TableInfo<$RecordingFixesTable, RecordingFix> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RecordingFixesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _recordingIdMeta = const VerificationMeta(
+    'recordingId',
+  );
+  @override
+  late final GeneratedColumn<int> recordingId = GeneratedColumn<int>(
+    'recording_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES recordings (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _segmentMeta = const VerificationMeta(
+    'segment',
+  );
+  @override
+  late final GeneratedColumn<int> segment = GeneratedColumn<int>(
+    'segment',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _latMeta = const VerificationMeta('lat');
+  @override
+  late final GeneratedColumn<double> lat = GeneratedColumn<double>(
+    'lat',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lonMeta = const VerificationMeta('lon');
+  @override
+  late final GeneratedColumn<double> lon = GeneratedColumn<double>(
+    'lon',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<int> recordedAt = GeneratedColumn<int>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    recordingId,
+    segment,
+    lat,
+    lon,
+    recordedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'recording_fixes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<RecordingFix> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('recording_id')) {
+      context.handle(
+        _recordingIdMeta,
+        recordingId.isAcceptableOrUnknown(
+          data['recording_id']!,
+          _recordingIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_recordingIdMeta);
+    }
+    if (data.containsKey('segment')) {
+      context.handle(
+        _segmentMeta,
+        segment.isAcceptableOrUnknown(data['segment']!, _segmentMeta),
+      );
+    }
+    if (data.containsKey('lat')) {
+      context.handle(
+        _latMeta,
+        lat.isAcceptableOrUnknown(data['lat']!, _latMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_latMeta);
+    }
+    if (data.containsKey('lon')) {
+      context.handle(
+        _lonMeta,
+        lon.isAcceptableOrUnknown(data['lon']!, _lonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_lonMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  RecordingFix map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return RecordingFix(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      recordingId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recording_id'],
+      )!,
+      segment: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}segment'],
+      )!,
+      lat: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lat'],
+      )!,
+      lon: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}lon'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+    );
+  }
+
+  @override
+  $RecordingFixesTable createAlias(String alias) {
+    return $RecordingFixesTable(attachedDatabase, alias);
+  }
+}
+
+class RecordingFix extends DataClass implements Insertable<RecordingFix> {
+  final int id;
+  final int recordingId;
+
+  /// Which stretch of the recording this belongs to. A pause, or a restart after
+  /// the app was stopped, begins the next one, so the line keeps the gap the
+  /// way a GPX `<trkseg>` does: joining them would draw a line across ground
+  /// nobody covered.
+  final int segment;
+  final double lat;
+  final double lon;
+
+  /// When the fix was taken, in milliseconds since the epoch (UTC).
+  final int recordedAt;
+  const RecordingFix({
+    required this.id,
+    required this.recordingId,
+    required this.segment,
+    required this.lat,
+    required this.lon,
+    required this.recordedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['recording_id'] = Variable<int>(recordingId);
+    map['segment'] = Variable<int>(segment);
+    map['lat'] = Variable<double>(lat);
+    map['lon'] = Variable<double>(lon);
+    map['recorded_at'] = Variable<int>(recordedAt);
+    return map;
+  }
+
+  RecordingFixesCompanion toCompanion(bool nullToAbsent) {
+    return RecordingFixesCompanion(
+      id: Value(id),
+      recordingId: Value(recordingId),
+      segment: Value(segment),
+      lat: Value(lat),
+      lon: Value(lon),
+      recordedAt: Value(recordedAt),
+    );
+  }
+
+  factory RecordingFix.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return RecordingFix(
+      id: serializer.fromJson<int>(json['id']),
+      recordingId: serializer.fromJson<int>(json['recordingId']),
+      segment: serializer.fromJson<int>(json['segment']),
+      lat: serializer.fromJson<double>(json['lat']),
+      lon: serializer.fromJson<double>(json['lon']),
+      recordedAt: serializer.fromJson<int>(json['recordedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'recordingId': serializer.toJson<int>(recordingId),
+      'segment': serializer.toJson<int>(segment),
+      'lat': serializer.toJson<double>(lat),
+      'lon': serializer.toJson<double>(lon),
+      'recordedAt': serializer.toJson<int>(recordedAt),
+    };
+  }
+
+  RecordingFix copyWith({
+    int? id,
+    int? recordingId,
+    int? segment,
+    double? lat,
+    double? lon,
+    int? recordedAt,
+  }) => RecordingFix(
+    id: id ?? this.id,
+    recordingId: recordingId ?? this.recordingId,
+    segment: segment ?? this.segment,
+    lat: lat ?? this.lat,
+    lon: lon ?? this.lon,
+    recordedAt: recordedAt ?? this.recordedAt,
+  );
+  RecordingFix copyWithCompanion(RecordingFixesCompanion data) {
+    return RecordingFix(
+      id: data.id.present ? data.id.value : this.id,
+      recordingId: data.recordingId.present
+          ? data.recordingId.value
+          : this.recordingId,
+      segment: data.segment.present ? data.segment.value : this.segment,
+      lat: data.lat.present ? data.lat.value : this.lat,
+      lon: data.lon.present ? data.lon.value : this.lon,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecordingFix(')
+          ..write('id: $id, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('segment: $segment, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
+          ..write('recordedAt: $recordedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, recordingId, segment, lat, lon, recordedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is RecordingFix &&
+          other.id == this.id &&
+          other.recordingId == this.recordingId &&
+          other.segment == this.segment &&
+          other.lat == this.lat &&
+          other.lon == this.lon &&
+          other.recordedAt == this.recordedAt);
+}
+
+class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
+  final Value<int> id;
+  final Value<int> recordingId;
+  final Value<int> segment;
+  final Value<double> lat;
+  final Value<double> lon;
+  final Value<int> recordedAt;
+  const RecordingFixesCompanion({
+    this.id = const Value.absent(),
+    this.recordingId = const Value.absent(),
+    this.segment = const Value.absent(),
+    this.lat = const Value.absent(),
+    this.lon = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+  });
+  RecordingFixesCompanion.insert({
+    this.id = const Value.absent(),
+    required int recordingId,
+    this.segment = const Value.absent(),
+    required double lat,
+    required double lon,
+    required int recordedAt,
+  }) : recordingId = Value(recordingId),
+       lat = Value(lat),
+       lon = Value(lon),
+       recordedAt = Value(recordedAt);
+  static Insertable<RecordingFix> custom({
+    Expression<int>? id,
+    Expression<int>? recordingId,
+    Expression<int>? segment,
+    Expression<double>? lat,
+    Expression<double>? lon,
+    Expression<int>? recordedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (recordingId != null) 'recording_id': recordingId,
+      if (segment != null) 'segment': segment,
+      if (lat != null) 'lat': lat,
+      if (lon != null) 'lon': lon,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+    });
+  }
+
+  RecordingFixesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? recordingId,
+    Value<int>? segment,
+    Value<double>? lat,
+    Value<double>? lon,
+    Value<int>? recordedAt,
+  }) {
+    return RecordingFixesCompanion(
+      id: id ?? this.id,
+      recordingId: recordingId ?? this.recordingId,
+      segment: segment ?? this.segment,
+      lat: lat ?? this.lat,
+      lon: lon ?? this.lon,
+      recordedAt: recordedAt ?? this.recordedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (recordingId.present) {
+      map['recording_id'] = Variable<int>(recordingId.value);
+    }
+    if (segment.present) {
+      map['segment'] = Variable<int>(segment.value);
+    }
+    if (lat.present) {
+      map['lat'] = Variable<double>(lat.value);
+    }
+    if (lon.present) {
+      map['lon'] = Variable<double>(lon.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<int>(recordedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RecordingFixesCompanion(')
+          ..write('id: $id, ')
+          ..write('recordingId: $recordingId, ')
+          ..write('segment: $segment, ')
+          ..write('lat: $lat, ')
+          ..write('lon: $lon, ')
+          ..write('recordedAt: $recordedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -9496,6 +10287,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AttachmentBlobsTable attachmentBlobs = $AttachmentBlobsTable(
     this,
   );
+  late final $RecordingsTable recordings = $RecordingsTable(this);
+  late final $RecordingFixesTable recordingFixes = $RecordingFixesTable(this);
   late final TripDao tripDao = TripDao(this as AppDatabase);
   late final ItineraryDao itineraryDao = ItineraryDao(this as AppDatabase);
   late final CostDao costDao = CostDao(this as AppDatabase);
@@ -9507,6 +10300,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final RoutineDao routineDao = RoutineDao(this as AppDatabase);
   late final TagDao tagDao = TagDao(this as AppDatabase);
   late final TrackDao trackDao = TrackDao(this as AppDatabase);
+  late final RecordingDao recordingDao = RecordingDao(this as AppDatabase);
   late final AttachmentDao attachmentDao = AttachmentDao(this as AppDatabase);
   late final VisitedCountryDao visitedCountryDao = VisitedCountryDao(
     this as AppDatabase,
@@ -9542,6 +10336,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     visitedCountries,
     attachments,
     attachmentBlobs,
+    recordings,
+    recordingFixes,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -9719,6 +10515,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('attachment_blobs', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'trips',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('recordings', kind: UpdateKind.update)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'recordings',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('recording_fixes', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -9940,6 +10750,24 @@ final class $$TripsTableReferences
     ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_attachmentsRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$RecordingsTable, List<Recording>>
+  _recordingsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.recordings,
+    aliasName: 'trips__id__recordings__trip_id',
+  );
+
+  $$RecordingsTableProcessedTableManager get recordingsRefs {
+    final manager = $$RecordingsTableTableManager(
+      $_db,
+      $_db.recordings,
+    ).filter((f) => f.tripId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_recordingsRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -10254,6 +11082,31 @@ class $$TripsTableFilterComposer extends Composer<_$AppDatabase, $TripsTable> {
           }) => $$AttachmentsTableFilterComposer(
             $db: $db,
             $table: $db.attachments,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> recordingsRefs(
+    Expression<bool> Function($$RecordingsTableFilterComposer f) f,
+  ) {
+    final $$RecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.recordings,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -10659,6 +11512,31 @@ class $$TripsTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> recordingsRefs<T extends Object>(
+    Expression<T> Function($$RecordingsTableAnnotationComposer a) f,
+  ) {
+    final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.tripId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TripsTableTableManager
@@ -10685,6 +11563,7 @@ class $$TripsTableTableManager
             bool checklistsRefs,
             bool collapsedDaysRefs,
             bool attachmentsRefs,
+            bool recordingsRefs,
           })
         > {
   $$TripsTableTableManager(_$AppDatabase db, $TripsTable table)
@@ -10778,6 +11657,7 @@ class $$TripsTableTableManager
                 checklistsRefs = false,
                 collapsedDaysRefs = false,
                 attachmentsRefs = false,
+                recordingsRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -10791,6 +11671,7 @@ class $$TripsTableTableManager
                     if (checklistsRefs) db.checklists,
                     if (collapsedDaysRefs) db.collapsedDays,
                     if (attachmentsRefs) db.attachments,
+                    if (recordingsRefs) db.recordings,
                   ],
                   addJoins:
                       <
@@ -10995,6 +11876,23 @@ class $$TripsTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (recordingsRefs)
+                        await $_getPrefetchedData<Trip, $TripsTable, Recording>(
+                          currentTable: table,
+                          referencedTable: $$TripsTableReferences
+                              ._recordingsRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TripsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).recordingsRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.tripId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -11026,6 +11924,7 @@ typedef $$TripsTableProcessedTableManager =
         bool checklistsRefs,
         bool collapsedDaysRefs,
         bool attachmentsRefs,
+        bool recordingsRefs,
       })
     >;
 typedef $$ItemGroupsTableCreateCompanionBuilder =
@@ -19734,6 +20633,752 @@ typedef $$AttachmentBlobsTableProcessedTableManager =
       AttachmentBlob,
       PrefetchHooks Function({bool attachmentId})
     >;
+typedef $$RecordingsTableCreateCompanionBuilder =
+    RecordingsCompanion Function({
+      Value<int> id,
+      Value<int?> tripId,
+      required int startedAt,
+      required int utcOffsetMinutes,
+      Value<int?> stoppedAt,
+    });
+typedef $$RecordingsTableUpdateCompanionBuilder =
+    RecordingsCompanion Function({
+      Value<int> id,
+      Value<int?> tripId,
+      Value<int> startedAt,
+      Value<int> utcOffsetMinutes,
+      Value<int?> stoppedAt,
+    });
+
+final class $$RecordingsTableReferences
+    extends BaseReferences<_$AppDatabase, $RecordingsTable, Recording> {
+  $$RecordingsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TripsTable _tripIdTable(_$AppDatabase db) =>
+      db.trips.createAlias('recordings__trip_id__trips__id');
+
+  $$TripsTableProcessedTableManager? get tripId {
+    final $_column = $_itemColumn<int>('trip_id');
+    if ($_column == null) return null;
+    final manager = $$TripsTableTableManager(
+      $_db,
+      $_db.trips,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tripIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$RecordingFixesTable, List<RecordingFix>>
+  _recordingFixesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.recordingFixes,
+    aliasName: 'recordings__id__recording_fixes__recording_id',
+  );
+
+  $$RecordingFixesTableProcessedTableManager get recordingFixesRefs {
+    final manager = $$RecordingFixesTableTableManager(
+      $_db,
+      $_db.recordingFixes,
+    ).filter((f) => f.recordingId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_recordingFixesRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$RecordingsTableFilterComposer
+    extends Composer<_$AppDatabase, $RecordingsTable> {
+  $$RecordingsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get utcOffsetMinutes => $composableBuilder(
+    column: $table.utcOffsetMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get stoppedAt => $composableBuilder(
+    column: $table.stoppedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TripsTableFilterComposer get tripId {
+    final $$TripsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableFilterComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<bool> recordingFixesRefs(
+    Expression<bool> Function($$RecordingFixesTableFilterComposer f) f,
+  ) {
+    final $$RecordingFixesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.recordingFixes,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingFixesTableFilterComposer(
+            $db: $db,
+            $table: $db.recordingFixes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$RecordingsTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecordingsTable> {
+  $$RecordingsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get utcOffsetMinutes => $composableBuilder(
+    column: $table.utcOffsetMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get stoppedAt => $composableBuilder(
+    column: $table.stoppedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TripsTableOrderingComposer get tripId {
+    final $$TripsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableOrderingComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RecordingsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecordingsTable> {
+  $$RecordingsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+
+  GeneratedColumn<int> get utcOffsetMinutes => $composableBuilder(
+    column: $table.utcOffsetMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get stoppedAt =>
+      $composableBuilder(column: $table.stoppedAt, builder: (column) => column);
+
+  $$TripsTableAnnotationComposer get tripId {
+    final $$TripsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tripId,
+      referencedTable: $db.trips,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.trips,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  Expression<T> recordingFixesRefs<T extends Object>(
+    Expression<T> Function($$RecordingFixesTableAnnotationComposer a) f,
+  ) {
+    final $$RecordingFixesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.recordingFixes,
+      getReferencedColumn: (t) => t.recordingId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingFixesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordingFixes,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$RecordingsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecordingsTable,
+          Recording,
+          $$RecordingsTableFilterComposer,
+          $$RecordingsTableOrderingComposer,
+          $$RecordingsTableAnnotationComposer,
+          $$RecordingsTableCreateCompanionBuilder,
+          $$RecordingsTableUpdateCompanionBuilder,
+          (Recording, $$RecordingsTableReferences),
+          Recording,
+          PrefetchHooks Function({bool tripId, bool recordingFixesRefs})
+        > {
+  $$RecordingsTableTableManager(_$AppDatabase db, $RecordingsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecordingsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RecordingsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RecordingsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> tripId = const Value.absent(),
+                Value<int> startedAt = const Value.absent(),
+                Value<int> utcOffsetMinutes = const Value.absent(),
+                Value<int?> stoppedAt = const Value.absent(),
+              }) => RecordingsCompanion(
+                id: id,
+                tripId: tripId,
+                startedAt: startedAt,
+                utcOffsetMinutes: utcOffsetMinutes,
+                stoppedAt: stoppedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int?> tripId = const Value.absent(),
+                required int startedAt,
+                required int utcOffsetMinutes,
+                Value<int?> stoppedAt = const Value.absent(),
+              }) => RecordingsCompanion.insert(
+                id: id,
+                tripId: tripId,
+                startedAt: startedAt,
+                utcOffsetMinutes: utcOffsetMinutes,
+                stoppedAt: stoppedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RecordingsTable, Recording>(table),
+                  $$RecordingsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback:
+              ({tripId = false, recordingFixesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (recordingFixesRefs) db.recordingFixes,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (tripId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.tripId,
+                                    referencedTable: $$RecordingsTableReferences
+                                        ._tripIdTable(db),
+                                    referencedColumn:
+                                        $$RecordingsTableReferences
+                                            ._tripIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (recordingFixesRefs)
+                        await $_getPrefetchedData<
+                          Recording,
+                          $RecordingsTable,
+                          RecordingFix
+                        >(
+                          currentTable: table,
+                          referencedTable: $$RecordingsTableReferences
+                              ._recordingFixesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$RecordingsTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).recordingFixesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.recordingId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$RecordingsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RecordingsTable,
+      Recording,
+      $$RecordingsTableFilterComposer,
+      $$RecordingsTableOrderingComposer,
+      $$RecordingsTableAnnotationComposer,
+      $$RecordingsTableCreateCompanionBuilder,
+      $$RecordingsTableUpdateCompanionBuilder,
+      (Recording, $$RecordingsTableReferences),
+      Recording,
+      PrefetchHooks Function({bool tripId, bool recordingFixesRefs})
+    >;
+typedef $$RecordingFixesTableCreateCompanionBuilder =
+    RecordingFixesCompanion Function({
+      Value<int> id,
+      required int recordingId,
+      Value<int> segment,
+      required double lat,
+      required double lon,
+      required int recordedAt,
+    });
+typedef $$RecordingFixesTableUpdateCompanionBuilder =
+    RecordingFixesCompanion Function({
+      Value<int> id,
+      Value<int> recordingId,
+      Value<int> segment,
+      Value<double> lat,
+      Value<double> lon,
+      Value<int> recordedAt,
+    });
+
+final class $$RecordingFixesTableReferences
+    extends BaseReferences<_$AppDatabase, $RecordingFixesTable, RecordingFix> {
+  $$RecordingFixesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $RecordingsTable _recordingIdTable(_$AppDatabase db) => db.recordings
+      .createAlias('recording_fixes__recording_id__recordings__id');
+
+  $$RecordingsTableProcessedTableManager get recordingId {
+    final $_column = $_itemColumn<int>('recording_id')!;
+
+    final manager = $$RecordingsTableTableManager(
+      $_db,
+      $_db.recordings,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_recordingIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$RecordingFixesTableFilterComposer
+    extends Composer<_$AppDatabase, $RecordingFixesTable> {
+  $$RecordingFixesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get segment => $composableBuilder(
+    column: $table.segment,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$RecordingsTableFilterComposer get recordingId {
+    final $$RecordingsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableFilterComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RecordingFixesTableOrderingComposer
+    extends Composer<_$AppDatabase, $RecordingFixesTable> {
+  $$RecordingFixesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get segment => $composableBuilder(
+    column: $table.segment,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lat => $composableBuilder(
+    column: $table.lat,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get lon => $composableBuilder(
+    column: $table.lon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$RecordingsTableOrderingComposer get recordingId {
+    final $$RecordingsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableOrderingComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RecordingFixesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RecordingFixesTable> {
+  $$RecordingFixesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get segment =>
+      $composableBuilder(column: $table.segment, builder: (column) => column);
+
+  GeneratedColumn<double> get lat =>
+      $composableBuilder(column: $table.lat, builder: (column) => column);
+
+  GeneratedColumn<double> get lon =>
+      $composableBuilder(column: $table.lon, builder: (column) => column);
+
+  GeneratedColumn<int> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+
+  $$RecordingsTableAnnotationComposer get recordingId {
+    final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.recordingId,
+      referencedTable: $db.recordings,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$RecordingsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.recordings,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$RecordingFixesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $RecordingFixesTable,
+          RecordingFix,
+          $$RecordingFixesTableFilterComposer,
+          $$RecordingFixesTableOrderingComposer,
+          $$RecordingFixesTableAnnotationComposer,
+          $$RecordingFixesTableCreateCompanionBuilder,
+          $$RecordingFixesTableUpdateCompanionBuilder,
+          (RecordingFix, $$RecordingFixesTableReferences),
+          RecordingFix,
+          PrefetchHooks Function({bool recordingId})
+        > {
+  $$RecordingFixesTableTableManager(
+    _$AppDatabase db,
+    $RecordingFixesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RecordingFixesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RecordingFixesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RecordingFixesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> recordingId = const Value.absent(),
+                Value<int> segment = const Value.absent(),
+                Value<double> lat = const Value.absent(),
+                Value<double> lon = const Value.absent(),
+                Value<int> recordedAt = const Value.absent(),
+              }) => RecordingFixesCompanion(
+                id: id,
+                recordingId: recordingId,
+                segment: segment,
+                lat: lat,
+                lon: lon,
+                recordedAt: recordedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int recordingId,
+                Value<int> segment = const Value.absent(),
+                required double lat,
+                required double lon,
+                required int recordedAt,
+              }) => RecordingFixesCompanion.insert(
+                id: id,
+                recordingId: recordingId,
+                segment: segment,
+                lat: lat,
+                lon: lon,
+                recordedAt: recordedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$RecordingFixesTable, RecordingFix>(table),
+                  $$RecordingFixesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({recordingId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (recordingId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.recordingId,
+                                referencedTable: $$RecordingFixesTableReferences
+                                    ._recordingIdTable(db),
+                                referencedColumn:
+                                    $$RecordingFixesTableReferences
+                                        ._recordingIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$RecordingFixesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $RecordingFixesTable,
+      RecordingFix,
+      $$RecordingFixesTableFilterComposer,
+      $$RecordingFixesTableOrderingComposer,
+      $$RecordingFixesTableAnnotationComposer,
+      $$RecordingFixesTableCreateCompanionBuilder,
+      $$RecordingFixesTableUpdateCompanionBuilder,
+      (RecordingFix, $$RecordingFixesTableReferences),
+      RecordingFix,
+      PrefetchHooks Function({bool recordingId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -19779,4 +21424,8 @@ class $AppDatabaseManager {
       $$AttachmentsTableTableManager(_db, _db.attachments);
   $$AttachmentBlobsTableTableManager get attachmentBlobs =>
       $$AttachmentBlobsTableTableManager(_db, _db.attachmentBlobs);
+  $$RecordingsTableTableManager get recordings =>
+      $$RecordingsTableTableManager(_db, _db.recordings);
+  $$RecordingFixesTableTableManager get recordingFixes =>
+      $$RecordingFixesTableTableManager(_db, _db.recordingFixes);
 }

@@ -718,7 +718,9 @@ UI (features/*/presentation, *widgets)
   `TransportModes` (the built-in-plus-custom transport modes, above), `People` (reusable payer/
   beneficiary names; one flagged `isMe`), `TripParticipants`, and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
-  per trip), and `CollapsedDays` (persists which itinerary days are collapsed).
+  per trip), `CollapsedDays` (persists which itinerary days are collapsed), and
+  `Recordings` / `RecordingFixes` (a track the app is recording, kept fix by fix until the
+  import files it as `Tracks` rows — a buffer outside every trip, see the table docs).
 - **Expense splitting** lives in `lib/features/costs/trip_stats.dart` as pure functions
   (`computeTripStats`) so the per-currency category breakdown, per-person paid/share/balance,
   and minimal settle-up transfers are unit-testable without a database. A cost splits among
@@ -2081,7 +2083,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 40) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 41) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget
