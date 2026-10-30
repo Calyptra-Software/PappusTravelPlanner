@@ -20,6 +20,11 @@
 ///   it watches [repositoryProvider], so pointing the app at another file
 ///   rebuilds it, and the recording left running in the old file is found there
 ///   again as one nobody stopped.
+/// * **What is held is found again.** A recording that was never filed —
+///   stopped and left, or still running when the app was closed — is taken up
+///   by [TrackRecorderController.build] from the database, so the state here is
+///   the one answer to "is there a recording" that the map's button and band
+///   read. It is held, never resumed: nothing starts unasked.
 /// * **One receiver.** The position comes through the [PositionFeed], never a
 ///   platform stream of its own, so starting a recording under a map's mark
 ///   reopens the one stream with the recording's settings instead of quietly
@@ -54,9 +59,12 @@ final recorderClockProvider = Provider<DateTime Function()>(
 final class TrackRecorderState {
   const TrackRecorderState({
     this.recordingId,
+    this.tripId,
     this.running = false,
     this.starting = false,
+    this.interrupted = false,
     this.startedAt,
+    this.utcOffset,
     this.lines = const [],
     this.meters = 0,
     this.problem,
@@ -65,6 +73,10 @@ final class TrackRecorderState {
   /// The recording being made or held, or null when there is none.
   final int? recordingId;
 
+  /// The trip it was started from, or null when there is none (any more) —
+  /// where it is offered, not a claim about where it belongs.
+  final int? tripId;
+
   /// Whether fixes are being taken. False for a recording that is held —
   /// paused, or stopped and not yet filed.
   final bool running;
@@ -72,8 +84,16 @@ final class TrackRecorderState {
   /// A start pressed and not yet answered: the permission is being asked for.
   final bool starting;
 
+  /// Held because the app was stopped while it ran, rather than by a press —
+  /// found again at the next launch with no stop recorded.
+  final bool interrupted;
+
   /// When the recording was started (UTC).
   final DateTime? startedAt;
+
+  /// The device's offset from UTC when it was started, the zone its times are
+  /// first read in when it is filed.
+  final Duration? utcOffset;
 
   /// What has been kept, one list per segment, for drawing while it is made.
   /// The last one is the segment being recorded, empty until its first fix.
@@ -117,11 +137,47 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
   /// meanwhile must win over the answer that arrives afterwards.
   int _generation = 0;
 
+  /// The look for a recording left in the database, which every press waits
+  /// for: a start must not begin a second recording beside one about to be
+  /// found.
+  Future<void> _adopting = Future.value();
+
   @override
   TrackRecorderState build() {
     _repo = ref.watch(repositoryProvider);
     ref.onDispose(_cancel);
+    _adopting = _adopt();
     return TrackRecorderState.idle;
+  }
+
+  /// Takes up a recording nobody filed, held. The oldest, if there are several,
+  /// which one at a time should never leave behind.
+  Future<void> _adopt() async {
+    final generation = _generation;
+    bool superseded() => !ref.mounted || generation != _generation;
+    try {
+      final rows = await _repo.unfiledRecordings();
+      if (rows.isEmpty || superseded()) return;
+      final row = rows.first;
+      final stored = recordedLines(await _repo.recordingFixes(row.id));
+      if (superseded()) return;
+      state = TrackRecorderState(
+        recordingId: row.id,
+        tripId: row.tripId,
+        interrupted: row.stoppedAt == null,
+        startedAt: DateTime.fromMillisecondsSinceEpoch(
+          row.startedAt,
+          isUtc: true,
+        ),
+        utcOffset: Duration(minutes: row.utcOffsetMinutes),
+        lines: [for (final line in stored) line.points],
+        meters: recordedDistanceMeters(stored),
+      );
+    } on Object catch (error, stack) {
+      // Every press waits for this, so it may not fail: a recording that
+      // cannot be read back is reported and left where it is.
+      _report(error, stack);
+    }
   }
 
   DateTime _now() => ref.read(recorderClockProvider)().toUtc();
@@ -138,12 +194,13 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
   /// Does nothing while a recording is held: there is one at a time, and the
   /// held one is resumed, filed or thrown away first.
   Future<void> start({int? tripId}) async {
-    if (state.recordingId != null || state.starting) return;
+    await _adopting;
+    if (!ref.mounted || state.recordingId != null || state.starting) return;
     _cancel();
     final generation = _generation;
     bool superseded() => !ref.mounted || generation != _generation;
 
-    state = const TrackRecorderState(starting: true);
+    state = TrackRecorderState(starting: true, tripId: tripId);
     final problem = await checkLocationAccess(
       mayAsk: true,
       abandoned: superseded,
@@ -160,10 +217,11 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     await ref.read(notificationPermissionProvider).request();
     if (superseded()) return;
     final startedAt = _now();
+    final utcOffset = startedAt.toLocal().timeZoneOffset;
     final id = await _repo.startRecording(
       tripId: tripId,
       startedAt: startedAt,
-      utcOffset: startedAt.toLocal().timeZoneOffset,
+      utcOffset: utcOffset,
     );
     if (superseded()) {
       // Stopped while the row was being written: there is nothing in it, and
@@ -176,8 +234,10 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     _last = null;
     state = TrackRecorderState(
       recordingId: id,
+      tripId: tripId,
       running: true,
       startedAt: startedAt,
+      utcOffset: utcOffset,
       lines: const [<LatLng>[]],
     );
     _listen();
@@ -202,6 +262,8 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
   /// which is how a recording the app was stopped in the middle of is
   /// continued. Its next fixes go into a new segment, so the gap stays a gap.
   Future<void> resume({int? recordingId}) async {
+    await _adopting;
+    if (!ref.mounted) return;
     final id = recordingId ?? state.recordingId;
     if (id == null || state.running || state.starting) return;
     _cancel();
@@ -217,7 +279,10 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     if (problem != null) {
       state = TrackRecorderState(
         recordingId: held.recordingId,
+        tripId: held.tripId,
+        interrupted: held.interrupted,
         startedAt: held.startedAt,
+        utcOffset: held.utcOffset,
         lines: held.lines,
         meters: held.meters,
         problem: problem,
@@ -225,20 +290,24 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
       return;
     }
 
+    var tripId = held.tripId;
     var lines = held.lines;
     var meters = held.meters;
     var startedAt = held.startedAt;
+    var utcOffset = held.utcOffset;
     if (id != held.recordingId) {
       final row = await _repo.recordingOf(id);
       if (superseded()) return;
       if (row == null) return;
       final stored = recordedLines(await _repo.recordingFixes(id));
+      tripId = row.tripId;
       lines = [for (final line in stored) line.points];
       meters = recordedDistanceMeters(stored);
       startedAt = DateTime.fromMillisecondsSinceEpoch(
         row.startedAt,
         isUtc: true,
       );
+      utcOffset = Duration(minutes: row.utcOffsetMinutes);
     }
     final segment = await _repo.resumeRecording(id);
     if (superseded()) return;
@@ -246,8 +315,10 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     _last = null;
     state = TrackRecorderState(
       recordingId: id,
+      tripId: tripId,
       running: true,
       startedAt: startedAt,
+      utcOffset: utcOffset,
       lines: [...lines.where((line) => line.isNotEmpty), <LatLng>[]],
       meters: meters,
     );
@@ -257,6 +328,8 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
   /// Throws the recording away, fixes and all — once the import has filed it,
   /// or because the user said so.
   Future<void> discard() async {
+    await _adopting;
+    if (!ref.mounted) return;
     final id = state.recordingId;
     _cancel();
     state = TrackRecorderState.idle;
@@ -292,12 +365,23 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     );
   }
 
+  static void _report(Object error, StackTrace stack) =>
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'track recorder',
+        ),
+      );
+
   /// Stops the receiver and marks the recording stopped, keeping it held.
   Future<void> _hold(int id, {required LocationProblem? problem}) async {
     _cancel();
     state = TrackRecorderState(
       recordingId: id,
+      tripId: state.tripId,
       startedAt: state.startedAt,
+      utcOffset: state.utcOffset,
       lines: state.lines,
       meters: state.meters,
       problem: problem,
@@ -327,21 +411,15 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
         )
         // Reported, and not allowed to stop the writes after it: one failed
         // insert must not silently cost the rest of the walk.
-        .onError<Object>(
-          (error, stack) => FlutterError.reportError(
-            FlutterErrorDetails(
-              exception: error,
-              stack: stack,
-              library: 'track recorder',
-            ),
-          ),
-        );
+        .onError<Object>(_report);
 
     final lines = state.lines;
     state = TrackRecorderState(
       recordingId: id,
+      tripId: state.tripId,
       running: true,
       startedAt: state.startedAt,
+      utcOffset: state.utcOffset,
       lines: [
         ...lines.take(lines.length - 1),
         [...lines.last, reading.position],

@@ -277,6 +277,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
       isChosen: _isChosen,
       span: _span,
       label: (item) => _label(item, l10n),
+      zoneHint: widget.source == TrackSource.recorded
+          ? l10n.trackRecordingZoneHintRecorded
+          : l10n.trackRecordingZoneHint,
       onChanged: (offset, choices) => setState(() {
         _offset = offset;
         _timeChoices = choices;
@@ -788,6 +791,7 @@ class _ActualTimesSheet extends StatefulWidget {
     required this.isChosen,
     required this.span,
     required this.label,
+    required this.zoneHint,
     required this.onChanged,
   });
 
@@ -797,6 +801,10 @@ class _ActualTimesSheet extends StatefulWidget {
   final bool Function(ActualTimeProposal, Map<(int, TrackEnd), bool>) isChosen;
   final String Function(Duration offset) span;
   final String Function(ItineraryItem) label;
+
+  /// What the zone means here: a file stores UTC and says nothing more, while
+  /// the app's own recording noted the zone the phone was in.
+  final String zoneHint;
   final void Function(Duration offset, Map<(int, TrackEnd), bool> choices)
   onChanged;
 
@@ -854,7 +862,7 @@ class _ActualTimesSheetState extends State<_ActualTimesSheet> {
             ],
           ),
           Text(
-            l10n.trackRecordingZoneHint,
+            widget.zoneHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

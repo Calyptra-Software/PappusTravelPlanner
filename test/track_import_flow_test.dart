@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart' hide isNull;
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/map/location/track_recorder.dart';
 import 'package:travelplanner/features/map/presentation/track_import_screen.dart';
 import 'package:travelplanner/features/map/track_import_flow.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -224,5 +225,99 @@ void main() {
     final tracks = await tester.runAsync(() => db.select(db.tracks).get());
     expect(tracks!.single.source, TrackSource.recorded);
     expect(tracks.single.name, isNull);
+  });
+
+  group('a recording the app made', () {
+    /// A stopped recording in the database, as the recorder leaves one: two
+    /// fixes, at [departed] and [arrived], noted in a zone no test runs in.
+    Future<int> recorded(List<DateTime> at) async {
+      final id = await db.recordingDao.startRecording(
+        tripId: tripId,
+        startedAt: at.first,
+        utcOffset: const Duration(hours: 5, minutes: 45),
+      );
+      await db.recordingDao.addFixes(id, 0, [
+        for (final (i, time) in at.indexed)
+          (position: LatLng(53.50 + i * 0.01, 9.9), at: time),
+      ]);
+      await db.recordingDao.stopRecording(id, at.last);
+      return id;
+    }
+
+    Future<ProviderContainer> fileIt(WidgetTester tester) async {
+      late ProviderContainer container;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            databaseProvider.overrideWithValue(db),
+            appVersionProvider.overrideWithValue('0.0.0-test'),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Consumer(
+              builder: (context, ref, _) {
+                container = ProviderScope.containerOf(context);
+                ref.watch(trackRecorderProvider);
+                return Scaffold(
+                  body: TextButton(
+                    onPressed: () =>
+                        fileRecording(context, ref, tripId: tripId),
+                    child: const Text('go'),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      // The recorder finds the held recording on a real query.
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pump();
+      await tester.tap(find.text('go'));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      return container;
+    }
+
+    testWidgets('is divided like a file, as recorded, and then let go', (
+      tester,
+    ) async {
+      await tester.runAsync(() => recorded([departed, arrived]));
+      final container = await fileIt(tester);
+
+      expect(find.text('Which entries does it cover?'), findsOneWidget);
+      await importTheLeg(tester);
+
+      final leg = await tester.runAsync(theLeg);
+      // Read in the zone the recording noted, not the machine's.
+      expect(leg!.actualStartMinutes, 17 * 60 + 45);
+      expect(leg.actualEndMinutes, 18 * 60 + 25);
+      final tracks = await tester.runAsync(() => db.select(db.tracks).get());
+      expect(tracks!.single.source, TrackSource.recorded);
+      expect(
+        await tester.runAsync(() => db.select(db.recordings).get()),
+        isEmpty,
+        reason: 'filed, so no longer held',
+      );
+      expect(container.read(trackRecorderProvider).recordingId, isNull);
+    });
+
+    testWidgets('with nothing drawable says so, and is kept', (tester) async {
+      await tester.runAsync(() => recorded([departed]));
+      final container = await fileIt(tester);
+
+      expect(
+        find.text('Nothing was recorded that could be drawn yet'),
+        findsOneWidget,
+      );
+      expect(find.text('Which entries does it cover?'), findsNothing);
+      expect(container.read(trackRecorderProvider).recordingId, isNotNull);
+    });
   });
 }

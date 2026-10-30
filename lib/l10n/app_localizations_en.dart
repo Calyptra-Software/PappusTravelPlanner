@@ -1094,6 +1094,52 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recordingNotificationChannel => 'Track recording';
 
   @override
+  String get mapRecordStart => 'Record a track';
+
+  @override
+  String get mapRecordStop => 'Stop recording';
+
+  @override
+  String mapRecordElsewhere(String trip) {
+    return 'A recording from “$trip” has not been filed yet. File or discard it there first.';
+  }
+
+  @override
+  String recordingRunning(String distance, String time) {
+    return 'Recording · $distance · since $time';
+  }
+
+  @override
+  String recordingStopped(String distance) {
+    return 'Recording stopped · $distance';
+  }
+
+  @override
+  String recordingInterrupted(String distance) {
+    return 'Recording interrupted · $distance';
+  }
+
+  @override
+  String get recordingContinue => 'Continue';
+
+  @override
+  String get recordingFile => 'Attach to entries…';
+
+  @override
+  String get recordingDiscard => 'Discard recording';
+
+  @override
+  String get recordingDiscardQuestion =>
+      'Discard this recording? What was recorded is lost.';
+
+  @override
+  String get recordingEmpty => 'Nothing was recorded that could be drawn yet';
+
+  @override
+  String get trackRecordingZoneHintRecorded =>
+      'The recording stores UTC. It is shown in the zone the phone was in when it started; pick another if the entries\' times are in a different one.';
+
+  @override
   String get trackNotDrawable => 'Nothing to draw';
 
   @override

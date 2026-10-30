@@ -21,16 +21,19 @@ import 'package:travelplanner/features/itinerary/application/itinerary_providers
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
+import 'package:travelplanner/features/map/location/track_recorder.dart';
 import 'package:travelplanner/features/map/map_features.dart';
 import 'package:travelplanner/features/map/presentation/map_item_sheet.dart';
 import 'package:travelplanner/features/map/widgets/device_location_overlay.dart'
-    show kLocationZoom;
+    show kLocationBlue, kLocationZoom;
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
+import 'package:travelplanner/features/map/widgets/recording_overlay.dart';
 import 'package:travelplanner/features/map/widgets/track_row.dart';
 import 'package:travelplanner/features/map/presentation/trip_map_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'location_fixture.dart';
+import 'support/fake_track_recorder.dart';
 
 /// The trip map screen. Drift's `.watch()` streams never resolve under
 /// `flutter_test`'s fake-async clock, so every provider it reads is overridden
@@ -97,6 +100,8 @@ void main() {
     Map<int, List<TrackLine>> tracks = const {},
     Map<int, List<Track>> trackRows = const {},
     List<Attachment> photos = const [],
+    FakeTrackRecorder? recorder,
+    List<Trip> otherTrips = const [],
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -132,6 +137,13 @@ void main() {
           // and the picture itself.
           tripCoverIdProvider(tripId).overrideWith((ref) => null),
           attachmentBytesProvider.overrideWith((ref, id) async => null),
+          // No recording unless a test says so: the real recorder looks for
+          // one in the database the moment the map asks about it.
+          trackRecorderProvider.overrideWith(
+            () => recorder ?? FakeTrackRecorder(),
+          ),
+          for (final other in otherTrips)
+            tripProvider(other.id).overrideWith((ref) => Stream.value(other)),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -1186,6 +1198,209 @@ void main() {
 
       await tester.pump(kTileUpdateThrottle);
       await tester.pump(kTileUpdateThrottle);
+    });
+  });
+
+  group('recording', () {
+    final positioned = [
+      place(id: 1, lat: 50.1, lon: 8.6),
+      place(id: 2, lat: 50.2, lon: 8.7),
+    ];
+    final line = [const LatLng(50.10, 8.60), const LatLng(50.11, 8.60)];
+
+    TrackRecorderState held({
+      int? tripId = tripId,
+      bool interrupted = false,
+      List<List<LatLng>>? lines,
+    }) => TrackRecorderState(
+      recordingId: 3,
+      tripId: tripId,
+      interrupted: interrupted,
+      startedAt: DateTime.utc(2026, 5, 1, 12),
+      lines: lines ?? [line],
+      meters: 1234,
+    );
+
+    Future<void> settle(WidgetTester tester) async {
+      await tester.pump(kTileUpdateThrottle);
+      await tester.pump(kTileUpdateThrottle);
+    }
+
+    testWidgets('the round button starts one for this trip', (tester) async {
+      final recorder = FakeTrackRecorder();
+      await pumpMap(tester, items: positioned, recorder: recorder);
+
+      expect(find.byType(RecordingBand), findsNothing);
+      await tester.tap(find.byTooltip('Record a track'));
+      expect(recorder.calls, ['start:$tripId']);
+      await settle(tester);
+    });
+
+    testWidgets('a map with nothing to draw offers it in words', (
+      tester,
+    ) async {
+      final recorder = FakeTrackRecorder();
+      await pumpMap(tester, items: [place(id: 1)], recorder: recorder);
+
+      expect(find.byType(FlutterMap), findsNothing);
+      await tester.tap(find.widgetWithText(FilledButton, 'Record a track'));
+      expect(recorder.calls, ['start:$tripId']);
+      await settle(tester);
+    });
+
+    testWidgets('a trip with nothing else is drawn once it has a recording', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        items: [place(id: 1)],
+        recorder: FakeTrackRecorder(held()),
+      );
+      expect(find.byType(FlutterMap), findsOneWidget);
+      expect(find.byType(RecordingBand), findsOneWidget);
+      await settle(tester);
+    });
+
+    testWidgets('running: drawn in blue, and the band stops it', (
+      tester,
+    ) async {
+      final running = held();
+      final recorder = FakeTrackRecorder(
+        TrackRecorderState(
+          recordingId: running.recordingId,
+          tripId: tripId,
+          running: true,
+          startedAt: running.startedAt,
+          lines: running.lines,
+          meters: running.meters,
+        ),
+      );
+      await pumpMap(tester, items: positioned, recorder: recorder);
+
+      expect(find.textContaining('Recording · 1.2 km · since'), findsOneWidget);
+      final lines = [
+        for (final layer in tester.widgetList<PolylineLayer>(polylineLayer))
+          ...layer.polylines,
+      ];
+      expect(lines.where((l) => l.color == kLocationBlue), hasLength(1));
+
+      await tester.tap(find.widgetWithText(TextButton, 'Stop recording'));
+      expect(recorder.calls, ['stop']);
+      await settle(tester);
+    });
+
+    testWidgets('interrupted: says so, and continues from the band', (
+      tester,
+    ) async {
+      final recorder = FakeTrackRecorder(held(interrupted: true));
+      await pumpMap(tester, items: positioned, recorder: recorder);
+
+      expect(find.text('Recording interrupted · 1.2 km'), findsOneWidget);
+      await tester.tap(find.widgetWithText(TextButton, 'Continue'));
+      expect(recorder.calls, ['resume']);
+      await settle(tester);
+    });
+
+    testWidgets('stopped: the round button continues it too', (tester) async {
+      final recorder = FakeTrackRecorder(held());
+      await pumpMap(tester, items: positioned, recorder: recorder);
+
+      expect(find.text('Recording stopped · 1.2 km'), findsOneWidget);
+      await tester.tap(find.byTooltip('Continue'));
+      expect(recorder.calls, ['resume']);
+      await settle(tester);
+    });
+
+    testWidgets('discarding asks first', (tester) async {
+      final recorder = FakeTrackRecorder(held());
+      await pumpMap(tester, items: positioned, recorder: recorder);
+
+      await tester.tap(find.byTooltip('Discard recording'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(recorder.calls, isEmpty);
+
+      await tester.tap(find.byTooltip('Discard recording'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, 'Discard recording'));
+      await tester.pumpAndSettle();
+      expect(recorder.calls, ['discard']);
+      expect(find.byType(RecordingBand), findsNothing);
+      await settle(tester);
+    });
+
+    testWidgets('one recording at a time: another trip\'s is named', (
+      tester,
+    ) async {
+      final other = Trip(
+        id: 8,
+        title: 'Hamburg',
+        destination: '',
+        colorValue: accent,
+        coverHidden: false,
+        photosCollapsed: false,
+        createdAt: DateTime(2026, 5, 1),
+        kind: TripKind.trip,
+      );
+      final recorder = FakeTrackRecorder(held(tripId: 8));
+      await pumpMap(
+        tester,
+        items: positioned,
+        recorder: recorder,
+        otherTrips: [other],
+      );
+
+      expect(find.byType(RecordingBand), findsNothing);
+      expect(
+        tester
+            .widgetList<PolylineLayer>(polylineLayer)
+            .expand(
+              (layer) => layer.polylines.where((l) => l.color == kLocationBlue),
+            ),
+        isEmpty,
+        reason: 'not drawn over a trip it was not made on',
+      );
+      await tester.pump(); // the other trip's title answers
+      await tester.tap(find.byTooltip('Record a track'));
+      await tester.pump();
+      expect(recorder.calls, isEmpty);
+      expect(
+        find.textContaining('“Hamburg” has not been filed'),
+        findsOneWidget,
+      );
+      await settle(tester);
+    });
+
+    testWidgets('one whose trip is gone is offered on every trip', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        items: positioned,
+        recorder: FakeTrackRecorder(held(tripId: null)),
+      );
+      expect(find.byType(RecordingBand), findsOneWidget);
+      await settle(tester);
+    });
+
+    testWidgets('with the band shown, the attribution sits above it', (
+      tester,
+    ) async {
+      await pumpMap(
+        tester,
+        items: positioned,
+        recorder: FakeTrackRecorder(held()),
+        systemInsets: const EdgeInsets.only(bottom: 48),
+      );
+      final attribution = tester
+          .getBottomLeft(find.textContaining('OpenStreetMap'))
+          .dy;
+      expect(
+        attribution,
+        lessThanOrEqualTo(tester.getTopLeft(find.byType(RecordingBand)).dy),
+      );
+      await settle(tester);
     });
   });
 }

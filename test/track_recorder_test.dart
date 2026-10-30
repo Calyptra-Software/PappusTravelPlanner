@@ -192,6 +192,71 @@ void main() {
     expect([for (final f in await stored()) f.segment], [0, 0, 1]);
   });
 
+  group('a recording left in the database', () {
+    Future<int> left({required bool stopped, int? tripId}) async {
+      final trip = tripId == null
+          ? null
+          : await db.into(db.trips).insert(TripsCompanion.insert(title: 'T'));
+      final id = await db.recordingDao.startRecording(
+        tripId: trip,
+        startedAt: clock,
+        utcOffset: const Duration(hours: 2),
+      );
+      await db.recordingDao.addFixes(id, 0, [
+        (position: const LatLng(53.5, 9.9), at: clock),
+        (position: const LatLng(53.501, 9.9), at: clock.add(_minute)),
+      ]);
+      if (stopped) await db.recordingDao.stopRecording(id, clock.add(_minute));
+      return id;
+    }
+
+    test('is found again, held: interrupted when it had no stop', () async {
+      final id = await left(stopped: false, tripId: 1);
+      final (container, _) = open();
+      await pumpEventQueue();
+
+      final state = stateOf(container);
+      expect(state.recordingId, id);
+      expect(state.running, isFalse, reason: 'nothing starts unasked');
+      expect(state.interrupted, isTrue);
+      expect(state.tripId, isNotNull);
+      expect(state.utcOffset, const Duration(hours: 2));
+      expect(state.lines.single, hasLength(2));
+      expect(state.meters, closeTo(111, 1));
+      expect(platform.streamRequested, isFalse);
+    });
+
+    test('and stopped when it was stopped', () async {
+      await left(stopped: true);
+      final (container, _) = open();
+      await pumpEventQueue();
+      expect(stateOf(container).interrupted, isFalse);
+      expect(stateOf(container).tripId, isNull);
+    });
+
+    test('a start pressed at once waits for it, and starts nothing', () async {
+      final id = await left(stopped: true);
+      final (container, recorder) = open();
+      await recorder.start();
+
+      expect(stateOf(container).recordingId, id);
+      expect(stateOf(container).running, isFalse);
+      expect(await db.select(db.recordings).get(), hasLength(1));
+    });
+
+    test('a continue goes on from what was found', () async {
+      await left(stopped: false);
+      final (container, recorder) = open();
+      await recorder.resume();
+      await walk(3, 900);
+      await pumpEventQueue();
+
+      expect(stateOf(container).running, isTrue);
+      expect(stateOf(container).interrupted, isFalse);
+      expect([for (final f in await stored()) f.segment], [0, 0, 1]);
+    });
+  });
+
   test('discarding throws the recording away', () async {
     final (container, recorder) = open();
     await recorder.start();

@@ -229,6 +229,10 @@ class TripRepository {
   Stream<List<Recording>> watchRecordings() =>
       _db.recordingDao.watchRecordings();
 
+  /// The same, read once.
+  Future<List<Recording>> unfiledRecordings() =>
+      _db.recordingDao.unfiledRecordings();
+
   Future<Recording?> recordingOf(int id) => _db.recordingDao.recordingOf(id);
 
   Future<List<RecordingFix>> recordingFixes(int id) =>

@@ -1070,6 +1070,30 @@ UI (features/*/presentation, *widgets)
   not started, so as the code reads it ends when the Flutter engine detaches — swiping the
   app away would end a recording, which the database then holds as one nobody stopped. Read
   off the Java, not yet seen on a phone.
+- **A recording is made, held and filed from the trip's map, and the recorder's state is the
+  only answer to "is there one".** `TrackRecorderController.build` looks for an unfiled row
+  (`unfiledRecordings`) and takes it up **held** — `interrupted` when it has no stop, since
+  that is what the app being closed under it leaves — and every press awaits that look, so a
+  start cannot begin a second recording beside one about to be found. The button
+  (`MapRecordButton`, under the locate button) and the band (`RecordingBand`) both read that
+  state, never the table: a second source would disagree for the length of a database round
+  trip after every discard, which is a band flashing back up with "0 m" on it. One press has
+  four meanings, defined once in `recordAction` so the labelled button an empty map offers
+  cannot drift from the round one: start, stop (or withdraw a start still at its dialog),
+  continue a held one, and — while another trip holds the one slot — name that trip, because
+  a second recording would be filed into the wrong trip by whoever forgot the first. A
+  recording whose trip was deleted (`setNull`) is offered on every trip. Filing is the
+  ordinary track import (`fileRecording`, sharing `_divideAcross` with the GPX door) with
+  `source: recorded`, the zone the recording **noted at its start** rather than the device's
+  now, and no name, since inventing "Recording of 1 May" would be a label nobody gave it; the
+  row is thrown away only once the lines are written. The live line is drawn in the device
+  mark's blue (`kLocationBlue`), being the device's own — not the trip's accent, which would
+  claim a place in the plan before anyone has said which, and not the reserved red. A trip
+  with no positions still gets a map once a recording has a point, since that is then the
+  thing to draw. **The band is passed as `bottomNavigationBar` only while it shows
+  something**: any bottom bar at all, even an empty one, makes the scaffold take the system
+  inset out of the body, and the map's attribution sinks under the navigation bar — a test
+  in `trip_map_screen_test.dart` caught it.
 - **The Android half of `geolocator` is a copy in this repository, without Google
   Play Services.** `third_party/geolocator_android` is the published 5.0.3 with four
   edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,

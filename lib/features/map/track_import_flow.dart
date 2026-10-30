@@ -5,15 +5,18 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../core/providers.dart';
 import '../../data/database/tables.dart';
 import '../../l10n/app_localizations.dart';
 import 'gpx.dart';
+import 'location/track_recorder.dart';
+import 'track_recording.dart';
 import 'presentation/track_import_screen.dart';
 import 'widgets/track_entry_picker.dart';
 
-/// Importing a recording, from either door.
+/// Importing a recording, from either door — and filing one the app made.
 ///
 /// One flow, entered from two places, and the door decides only what is ticked
 /// when the picker opens: the trip's own menu ticks nothing, a leg's form ticks
@@ -49,6 +52,77 @@ Future<bool> startTrackImport(
     return false;
   }
 
+  return _divideAcross(
+    context,
+    ref,
+    tripId: tripId,
+    preselected: preselected,
+    lines: [for (final track in read) track.points],
+    times: [for (final track in read) track.times],
+    name: read.map((t) => t.name).nonNulls.firstOrNull,
+    source: TrackSource.imported,
+  );
+}
+
+/// Filing what the app recorded itself: the same division, with the recording
+/// read from the database instead of a file — and thrown away once its lines
+/// are written, since they are then where they belong.
+///
+/// Offered for a held recording only. Its times are first read in the zone the
+/// phone was in when it started, which the recording noted, rather than in
+/// whatever zone the phone is in now.
+Future<bool> fileRecording(
+  BuildContext context,
+  WidgetRef ref, {
+  required int tripId,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final recording = ref.read(trackRecorderProvider);
+  final id = recording.recordingId;
+  if (id == null || recording.running) return false;
+
+  final read = recordedLines(
+    await ref.read(repositoryProvider).recordingFixes(id),
+  );
+  if (!context.mounted) return false;
+  if (read.isEmpty) {
+    messenger.showSnackBar(SnackBar(content: Text(l10n.recordingEmpty)));
+    return false;
+  }
+
+  final filed = await _divideAcross(
+    context,
+    ref,
+    tripId: tripId,
+    lines: [for (final line in read) line.points],
+    times: [for (final line in read) line.times],
+    // A recording has no name of its own, and inventing one ("Recording of
+    // 1 May") would be a label nobody gave it.
+    name: null,
+    offset: recording.utcOffset,
+    source: TrackSource.recorded,
+  );
+  if (!filed) return false;
+  await ref.read(trackRecorderProvider.notifier).discard();
+  return true;
+}
+
+/// Asks which entries [lines] covered, and divides it among them.
+Future<bool> _divideAcross(
+  BuildContext context,
+  WidgetRef ref, {
+  required int tripId,
+  List<int> preselected = const [],
+  required List<List<LatLng>> lines,
+  required List<List<DateTime>?> times,
+  required String? name,
+  Duration? offset,
+  required TrackSource source,
+}) async {
+  final l10n = AppLocalizations.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+
   // Read once rather than watched: this is a question asked at a moment, and a
   // stream would keep the picker's list moving under the user's finger. The
   // decisions come along because the picker shows *one path* through the plan
@@ -71,13 +145,15 @@ Future<bool> startTrackImport(
 
   final imported = await importTrackAcrossEntries(
     context,
-    lines: [for (final track in read) track.points],
-    times: [for (final track in read) track.times],
-    name: read.map((t) => t.name).nonNulls.firstOrNull,
+    lines: lines,
+    times: times,
+    name: name,
     selection: selection,
     // A routine's entries sit on a sort origin, not on a day anybody
     // travelled, so the recording's dates and times say nothing about them.
     readTimes: trip?.kind != TripKind.routine,
+    offset: offset,
+    source: source,
   );
   if (imported != true) return false;
   messenger.showSnackBar(SnackBar(content: Text(l10n.trackImported)));
