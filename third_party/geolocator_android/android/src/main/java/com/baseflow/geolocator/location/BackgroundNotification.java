@@ -66,7 +66,7 @@ public class BackgroundNotification {
             NotificationChannel channel = new NotificationChannel(
                     channelId,
                     channelName,
-                    NotificationManager.IMPORTANCE_NONE
+                    NotificationManager.IMPORTANCE_LOW
             );
             channel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
             notificationManager.createNotificationChannel(channel);

@@ -1055,16 +1055,26 @@ UI (features/*/presentation, *widgets)
   which cannot see a name that lives in Dart. No wake lock (`WAKE_LOCK` stays removed): a
   fix carries the time it was taken, so one delivered late still lands where it belongs —
   whether readings are *dropped* while the CPU sleeps is a question for a phone, not for
-  this file. Two facts about the vendored service worth knowing before relying on the
-  notification: its channel is created with `IMPORTANCE_NONE` (upstream too, as of 5.2.1),
-  and the service is **bound** to the plugin (`GeolocatorPlugin.bindForegroundService`),
+  this file. **The notification is meant to be seen**, which upstream's is not: its channel
+  is created with `IMPORTANCE_NONE` (as of 5.2.1), which leaves a recording running with
+  nothing in the drawer to say so or to tap back into the app by. The copy creates it
+  `IMPORTANCE_LOW` (silent, but listed), and the recorder asks for `POST_NOTIFICATIONS` on
+  the record press (`notification_permission.dart`, `NotificationPermission.kt`), after the
+  location and on a start only. Its answer is **not read**: the service posts its
+  notification with or without the grant, and without it Android 13 and later merely list
+  the service in the quick settings' task manager instead of the drawer, so a refusal
+  costs the notice its place and never the recording. A channel's importance cannot be
+  raised once created, so a phone that ran a build of this branch before the change keeps
+  the silent channel until the app is reinstalled. One more fact about the vendored
+  service worth knowing before relying on it: the service is **bound** to the plugin (`GeolocatorPlugin.bindForegroundService`),
   not started, so as the code reads it ends when the Flutter engine detaches — swiping the
   app away would end a recording, which the database then holds as one nobody stopped. Read
   off the Java, not yet seen on a phone.
 - **The Android half of `geolocator` is a copy in this repository, without Google
-  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with three
+  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with four
   edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,
-  and the branch in `GeolocationManager` that chose between them — and `dependency_overrides`
+  and the branch in `GeolocationManager` that chose between them, plus the foreground
+  notification's channel importance (above) — and `dependency_overrides`
   in `pubspec.yaml` puts it in place of the pub.dev package for **every** build, not for a
   variant: there is no Play Store listing to keep GMS for, and one artifact per release is
   what leaves the door open to reproducible builds later. The reason is F-Droid, which
@@ -1078,7 +1088,7 @@ UI (features/*/presentation, *widgets)
   `LocationManagerClient` prefers `LocationManager.FUSED_PROVIDER` from 12 onwards and falls
   back to GPS. Everything else is upstream's own code, the foreground service included, so
   recording a track needs nothing from Google either. The copy carries no permissions of its
-  own; the six in `SECURITY.md` are the app's own statement, `FOREGROUND_SERVICE_LOCATION`
+  own; the seven in `SECURITY.md` are the app's own statement, `FOREGROUND_SERVICE_LOCATION`
   included, which upstream deliberately does not declare (5.1.1+1). Keep the edits
   minimal and the version equal to the upstream release they were taken from — the copy is
   meant to stay a diff that can be rebased, forked, or offered upstream, where the

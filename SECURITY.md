@@ -279,11 +279,13 @@ directory, and there is no camera capture.
 
 **Nothing else leaves the device.** There is no analytics, no crash reporting,
 and no telemetry of any kind. A web build also fetches the app itself from
-wherever it is hosted, which is that host's business and not this repository's. This app declares six permissions of its own:
+wherever it is hosted, which is that host's business and not this repository's. This app declares seven permissions of its own:
 `INTERNET`; `ACCESS_FINE_LOCATION` / `ACCESS_COARSE_LOCATION`, asked for only
 when the locate button or the record button is pressed;
 `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_LOCATION`, which let a track recording
-go on while the app is off screen and are used for nothing else; and
+go on while the app is off screen and are used for nothing else;
+`POST_NOTIFICATIONS`, asked for when the record button is pressed, so that the
+recording's notification is shown in the notification drawer; and
 `ACCESS_MEDIA_LOCATION`, asked for only when *Read where a photo was taken* is
 switched on in settings. The two location permissions are both declared so that
 the system dialog can offer the choice between an exact and an approximate
@@ -291,12 +293,15 @@ position; the app works either way. The two foreground-service ones are not
 shown in any dialog, since Android grants them at install; they do not give the
 app the position, and a location service started without the location
 permission has nothing to read (Android 14 and later refuse to start one at
-all). The media
+all). The notification one is used for that one notification and no other,
+and refusing it hides the notification from the drawer without stopping the
+recording: Android still lists it among the running apps in the quick
+settings. The media
 one is granted to nobody until it is asked for, and the app works without it — a
 photograph simply attaches without the place it was taken.
 
-**Six is also what the installed APK declares**, which is the list Android
-shows you, and it stays six on purpose. Libraries merge their own permissions
+**Seven is also what the installed APK declares**, which is the list Android
+shows you, and it stays seven on purpose. Libraries merge their own permissions
 into the manifest, and androidx `work-runtime` merged in five: `WAKE_LOCK`,
 `ACCESS_NETWORK_STATE`, `RECEIVE_BOOT_COMPLETED`, `FOREGROUND_SERVICE`, and a
 signature-level one androidx `core` generates. It arrives with the home-screen

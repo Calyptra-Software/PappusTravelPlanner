@@ -26,6 +26,9 @@ class MainActivity : FlutterActivity() {
     /** ACCESS_MEDIA_LOCATION: asking for it, and reading a photo's original. */
     private var mediaLocation: MediaLocationBridge? = null
 
+    /** POST_NOTIFICATIONS, asked for on the record press. */
+    private var notifications: NotificationPermission? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
@@ -38,6 +41,7 @@ class MainActivity : FlutterActivity() {
             }
         }
         mediaLocation = MediaLocationBridge(this, flutterEngine.dartExecutor.binaryMessenger)
+        notifications = NotificationPermission(this, flutterEngine.dartExecutor.binaryMessenger)
         DocumentOpener(this, flutterEngine.dartExecutor.binaryMessenger)
         // The intent that launched us (cold start): buffer it — Dart isn't
         // listening for pushes yet, so it will pull via getInitialTrip.
@@ -70,6 +74,7 @@ class MainActivity : FlutterActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         mediaLocation?.onRequestPermissionsResult(requestCode, grantResults)
+        notifications?.onRequestPermissionsResult(requestCode, grantResults)
     }
 
     /** Reads the trip file referenced by [intent], as Base64, or null. */

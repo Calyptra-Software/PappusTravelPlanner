@@ -11,7 +11,9 @@
 ///
 /// * **Nothing starts unasked.** A recording begins on a press and on nothing
 ///   else, and the permission is asked for on that press, through the same
-///   [checkLocationAccess] the mark uses.
+///   [checkLocationAccess] the mark uses — followed, on Android 13 and later,
+///   by the one to show the recording's notification, whose answer changes
+///   nothing but where that notice appears.
 /// * **Not `autoDispose`.** Leaving the map is no reason to stop recording —
 ///   it is the ordinary thing to do while walking with the phone in a pocket.
 ///   The provider lives as long as the app, or until the database is switched:
@@ -37,6 +39,7 @@ import '../../../data/repositories/trip_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../track_recording.dart';
 import 'device_location.dart' show LocationProblem, checkLocationAccess;
+import 'notification_permission.dart';
 import 'position_feed.dart';
 
 const Distance _distance = Distance(calculator: Haversine());
@@ -150,6 +153,12 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
       state = TrackRecorderState(problem: problem);
       return;
     }
+    // Only so the running recording can be seen in the drawer: the answer is
+    // not read, because a refusal costs the notice its place there and nothing
+    // else. Asked after the location, which a recording cannot do without, and
+    // on a start only — a resume continues what this press already asked for.
+    await ref.read(notificationPermissionProvider).request();
+    if (superseded()) return;
     final startedAt = _now();
     final id = await _repo.startRecording(
       tripId: tripId,

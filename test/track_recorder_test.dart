@@ -12,6 +12,7 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/features/map/location/device_location.dart';
+import 'package:travelplanner/features/map/location/notification_permission.dart';
 import 'package:travelplanner/features/map/location/track_recorder.dart';
 
 import 'location_fixture.dart';
@@ -25,6 +26,7 @@ void main() {
   late FakeGeolocator platform;
   late AppDatabase db;
   late SharedPreferences prefs;
+  late _FakeNotifications notifications;
 
   final clock = DateTime.utc(2026, 5, 1, 12);
 
@@ -34,6 +36,7 @@ void main() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
+    notifications = _FakeNotifications();
   });
   tearDown(() => db.close());
 
@@ -43,6 +46,7 @@ void main() {
         databaseProvider.overrideWithValue(db),
         sharedPreferencesProvider.overrideWithValue(prefs),
         recorderClockProvider.overrideWithValue(() => clock),
+        notificationPermissionProvider.overrideWithValue(notifications),
       ],
     );
     addTearDown(container.dispose);
@@ -308,6 +312,60 @@ void main() {
     },
   );
 
+  group('the notification permission', () {
+    test('is asked for on a start, after the location', () async {
+      final (_, recorder) = open();
+      await recorder.start();
+      expect(notifications.asked, 1);
+    });
+
+    test('is not asked for when the location was refused', () async {
+      platform.permission = LocationPermission.denied;
+      final (_, recorder) = open();
+      await recorder.start();
+      expect(notifications.asked, 0);
+    });
+
+    test('refused, the recording runs all the same', () async {
+      notifications.answer = false;
+      final (container, recorder) = open();
+      await recorder.start();
+      await walk(0, 0);
+      await walk(1, 60);
+
+      expect(stateOf(container).running, isTrue);
+      expect(stateOf(container).problem, isNull);
+      expect(await stored(), hasLength(2));
+    });
+
+    test('a resume does not ask again', () async {
+      final (_, recorder) = open();
+      await recorder.start();
+      await recorder.stop();
+      await recorder.resume();
+      expect(notifications.asked, 1);
+    });
+
+    test('a stop while it is being asked leaves nothing', () async {
+      notifications.dialog = Completer<void>();
+      final (container, recorder) = open();
+
+      final starting = recorder.start();
+      await pumpEventQueue();
+      expect(notifications.asked, 1);
+      expect(stateOf(container).starting, isTrue);
+      await recorder.stop();
+
+      notifications.dialog!.complete();
+      await starting;
+      await pumpEventQueue();
+
+      expect(stateOf(container).recordingId, isNull);
+      expect(await db.select(db.recordings).get(), isEmpty);
+      expect(platform.streamRequested, isFalse);
+    });
+  });
+
   test('a failing receiver stops the recording and says so', () async {
     final (container, recorder) = open();
     await recorder.start();
@@ -325,3 +383,18 @@ void main() {
 }
 
 const _minute = Duration(minutes: 1);
+
+/// The notification permission, answered without a platform: [answer], after
+/// [dialog] completes when one is set.
+class _FakeNotifications implements NotificationPermissionChannel {
+  int asked = 0;
+  bool answer = true;
+  Completer<void>? dialog;
+
+  @override
+  Future<bool> request() async {
+    asked++;
+    await dialog?.future;
+    return answer;
+  }
+}

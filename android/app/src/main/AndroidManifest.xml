@@ -28,6 +28,14 @@
          service's wake lock is not used, so WAKE_LOCK stays out (below). -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <!-- So that the recording's notification can be seen. The service posts one
+         either way; without this, Android 13 and later keep it out of the
+         drawer and list the running service only in the quick settings' task
+         manager, which is easy to forget a recording in. Asked for on the
+         record press, after the location permission, and a refusal changes
+         nothing but where the notice is shown. No other notification is ever
+         posted. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Where a photograph was taken. Since Android 10 the system zeroes the
          GPS tags of a picture handed to an app without this, so a holiday photo
          attaches itself with no place and no reason given. It is **off until
