@@ -57,8 +57,15 @@ class FakeGeolocator extends GeolocatorPlatform
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;
 
+  /// When set, asking where the permission stands throws it — a platform
+  /// channel failing, rather than answering.
+  Exception? checkError;
+
   @override
-  Future<LocationPermission> checkPermission() async => permission;
+  Future<LocationPermission> checkPermission() async {
+    if (checkError case final error?) throw error;
+    return permission;
+  }
 
   @override
   Future<LocationPermission> requestPermission() async {

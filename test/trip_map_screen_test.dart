@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' show Value;
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -21,6 +22,8 @@ import 'package:travelplanner/features/itinerary/application/itinerary_providers
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/transport_mode.dart';
+import 'package:travelplanner/features/map/location/device_location.dart'
+    show LocationProblem;
 import 'package:travelplanner/features/map/location/track_recorder.dart';
 import 'package:travelplanner/features/map/map_features.dart';
 import 'package:travelplanner/features/map/presentation/map_item_sheet.dart';
@@ -102,6 +105,7 @@ void main() {
     List<Attachment> photos = const [],
     FakeTrackRecorder? recorder,
     List<Trip> otherTrips = const [],
+    AppDatabase? db,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -144,6 +148,7 @@ void main() {
           ),
           for (final other in otherTrips)
             tripProvider(other.id).overrideWith((ref) => Stream.value(other)),
+          if (db != null) databaseProvider.overrideWithValue(db),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -1308,6 +1313,44 @@ void main() {
       expect(find.text('Recording stopped · 1.2 km'), findsOneWidget);
       await tester.tap(find.byTooltip('Continue'));
       expect(recorder.calls, ['resume']);
+      await settle(tester);
+    });
+
+    testWidgets('a refusal is said over the map', (tester) async {
+      final recorder = FakeTrackRecorder();
+      await pumpMap(tester, items: positioned, recorder: recorder);
+
+      recorder.set(
+        const TrackRecorderState(problem: LocationProblem.deniedForever),
+      );
+      await tester.pump();
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.widgetWithText(SnackBarAction, 'Settings'), findsOneWidget);
+      await settle(tester);
+    });
+
+    testWidgets('attaching starts the import, with what was recorded', (
+      tester,
+    ) async {
+      // A held recording with no fixes stored behind it: the flow reads them
+      // and says there is nothing to divide, which is what shows the button
+      // reached it.
+      final db = AppDatabase.forTesting(NativeDatabase.memory());
+      addTearDown(db.close);
+      await pumpMap(
+        tester,
+        items: positioned,
+        recorder: FakeTrackRecorder(held()),
+        db: db,
+      );
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Attach to entries…'));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pump();
+      expect(
+        find.text('Nothing was recorded that could be drawn yet'),
+        findsOneWidget,
+      );
       await settle(tester);
     });
 

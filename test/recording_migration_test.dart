@@ -68,10 +68,7 @@ void main() {
     // The references came through: the trip going nulls the hint, and the
     // recording going takes its fixes.
     await (db.delete(db.trips)..where((t) => t.id.equals(tripId))).go();
-    expect(
-      (await db.recordingDao.watchRecordings().first).single.tripId,
-      isNull,
-    );
+    expect((await db.recordingDao.unfiledRecordings()).single.tripId, isNull);
     await db.recordingDao.deleteRecording(id);
     expect(await db.select(db.recordingFixes).get(), isEmpty);
   });

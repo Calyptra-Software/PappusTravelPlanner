@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:travelplanner/features/map/location/notification_permission.dart';
 
@@ -14,6 +15,15 @@ void main() {
   tearDown(() {
     debugDefaultTargetPlatformOverride = null;
     messenger.setMockMethodCallHandler(channel, null);
+  });
+
+  test('the app asks through the bridge', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    expect(
+      container.read(notificationPermissionProvider),
+      isA<NotificationPermissionChannel>(),
+    );
   });
 
   test('off Android there is nothing to ask', () async {

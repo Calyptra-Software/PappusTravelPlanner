@@ -11,6 +11,7 @@ import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/map/location/device_location.dart';
 import 'package:travelplanner/features/map/location/notification_permission.dart';
 import 'package:travelplanner/features/map/location/track_recorder.dart';
@@ -40,10 +41,11 @@ void main() {
   });
   tearDown(() => db.close());
 
-  (ProviderContainer, TrackRecorderController) open() {
+  (ProviderContainer, TrackRecorderController) open({TripRepository? repo}) {
     final container = ProviderContainer(
       overrides: [
         databaseProvider.overrideWithValue(db),
+        if (repo != null) repositoryProvider.overrideWithValue(repo),
         sharedPreferencesProvider.overrideWithValue(prefs),
         recorderClockProvider.overrideWithValue(() => clock),
         notificationPermissionProvider.overrideWithValue(notifications),
@@ -177,7 +179,7 @@ void main() {
     ]);
 
     final (container, recorder) = open();
-    await recorder.resume(recordingId: id);
+    await recorder.resume();
 
     final state = stateOf(container);
     expect(state.recordingId, id);
@@ -243,18 +245,69 @@ void main() {
       expect(stateOf(container).running, isFalse);
       expect(await db.select(db.recordings).get(), hasLength(1));
     });
+  });
 
-    test('a continue goes on from what was found', () async {
-      await left(stopped: false);
-      final (container, recorder) = open();
-      await recorder.resume();
-      await walk(3, 900);
+  test('a declined continue keeps the recording held, and says why', () async {
+    final (container, recorder) = open();
+    await recorder.start();
+    await walk(0, 0);
+    await walk(1, 60);
+    await recorder.stop();
+
+    platform.permission = LocationPermission.deniedForever;
+    await recorder.resume();
+
+    final state = stateOf(container);
+    expect(state.problem, LocationProblem.deniedForever);
+    expect(state.running, isFalse);
+    expect(state.recordingId, isNotNull, reason: 'nothing is lost by asking');
+    expect(state.lines.single, hasLength(2));
+    expect(state.meters, closeTo(111, 1));
+  });
+
+  test(
+    'a stop while the recording is being created takes it back out',
+    () async {
+      final gate = Completer<void>();
+      final repo = _GatedRepository(db)..gate = gate;
+      final (container, recorder) = open(repo: repo);
+
+      final starting = recorder.start();
+      await repo.reached.future;
+      await recorder.stop();
+      gate.complete();
+      await starting;
       await pumpEventQueue();
 
-      expect(stateOf(container).running, isTrue);
-      expect(stateOf(container).interrupted, isFalse);
-      expect([for (final f in await stored()) f.segment], [0, 0, 1]);
-    });
+      expect(stateOf(container).recordingId, isNull);
+      expect(await db.select(db.recordings).get(), isEmpty);
+      expect(platform.streamRequested, isFalse);
+    },
+  );
+
+  test('a recording that cannot be looked for is reported, and the button '
+      'still works', () async {
+    final reported = <FlutterErrorDetails>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+
+    final (container, recorder) = open(
+      repo: _GatedRepository(db)..lookFails = true,
+    );
+    await recorder.start();
+
+    expect(reported.single.library, 'track recorder');
+    expect(stateOf(container).running, isTrue);
+  });
+
+  test('the press is timed by the device\'s clock', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final before = DateTime.now();
+    final read = container.read(recorderClockProvider)();
+    expect(read.isBefore(before), isFalse);
+    expect(read.difference(before).inSeconds, lessThan(5));
   });
 
   test('discarding throws the recording away', () async {
@@ -461,5 +514,38 @@ class _FakeNotifications implements NotificationPermissionChannel {
     asked++;
     await dialog?.future;
     return answer;
+  }
+}
+
+/// The real repository, with two ways to get in its way: [gate] holds a new
+/// recording's row until it is completed (and [reached] says the row is being
+/// written), and [lookFails] makes the look for a held recording throw.
+class _GatedRepository extends TripRepository {
+  _GatedRepository(super.db);
+
+  Completer<void>? gate;
+  final reached = Completer<void>();
+  bool lookFails = false;
+
+  @override
+  Future<int> startRecording({
+    int? tripId,
+    required DateTime startedAt,
+    required Duration utcOffset,
+  }) async {
+    final id = await super.startRecording(
+      tripId: tripId,
+      startedAt: startedAt,
+      utcOffset: utcOffset,
+    );
+    reached.complete();
+    await gate?.future;
+    return id;
+  }
+
+  @override
+  Future<List<Recording>> unfiledRecordings() async {
+    if (lookFails) throw StateError('database gone');
+    return super.unfiledRecordings();
   }
 }

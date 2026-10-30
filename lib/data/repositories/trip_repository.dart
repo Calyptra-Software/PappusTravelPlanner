@@ -225,15 +225,9 @@ class TripRepository {
   /// Takes a recording up again; the answer is the segment to write into.
   Future<int> resumeRecording(int id) => _db.recordingDao.resumeRecording(id);
 
-  /// The recordings not yet filed onto a plan.
-  Stream<List<Recording>> watchRecordings() =>
-      _db.recordingDao.watchRecordings();
-
-  /// The same, read once.
+  /// The recordings not yet filed onto a plan, oldest first.
   Future<List<Recording>> unfiledRecordings() =>
       _db.recordingDao.unfiledRecordings();
-
-  Future<Recording?> recordingOf(int id) => _db.recordingDao.recordingOf(id);
 
   Future<List<RecordingFix>> recordingFixes(int id) =>
       _db.recordingDao.fixesOf(id);

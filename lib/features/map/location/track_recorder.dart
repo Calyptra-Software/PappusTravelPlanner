@@ -258,13 +258,13 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     await _hold(id, problem: null);
   }
 
-  /// Takes up a held recording again — the one held now, or [recordingId],
-  /// which is how a recording the app was stopped in the middle of is
-  /// continued. Its next fixes go into a new segment, so the gap stays a gap.
-  Future<void> resume({int? recordingId}) async {
+  /// Takes up the held recording again — one stopped by a press, or one the
+  /// app was stopped in the middle of, which [build] found. Its next fixes go
+  /// into a new segment, so the gap stays a gap.
+  Future<void> resume() async {
     await _adopting;
     if (!ref.mounted) return;
-    final id = recordingId ?? state.recordingId;
+    final id = state.recordingId;
     if (id == null || state.running || state.starting) return;
     _cancel();
     final generation = _generation;
@@ -290,37 +290,18 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
       return;
     }
 
-    var tripId = held.tripId;
-    var lines = held.lines;
-    var meters = held.meters;
-    var startedAt = held.startedAt;
-    var utcOffset = held.utcOffset;
-    if (id != held.recordingId) {
-      final row = await _repo.recordingOf(id);
-      if (superseded()) return;
-      if (row == null) return;
-      final stored = recordedLines(await _repo.recordingFixes(id));
-      tripId = row.tripId;
-      lines = [for (final line in stored) line.points];
-      meters = recordedDistanceMeters(stored);
-      startedAt = DateTime.fromMillisecondsSinceEpoch(
-        row.startedAt,
-        isUtc: true,
-      );
-      utcOffset = Duration(minutes: row.utcOffsetMinutes);
-    }
     final segment = await _repo.resumeRecording(id);
     if (superseded()) return;
     _segment = segment;
     _last = null;
     state = TrackRecorderState(
       recordingId: id,
-      tripId: tripId,
+      tripId: held.tripId,
       running: true,
-      startedAt: startedAt,
-      utcOffset: utcOffset,
-      lines: [...lines.where((line) => line.isNotEmpty), <LatLng>[]],
-      meters: meters,
+      startedAt: held.startedAt,
+      utcOffset: held.utcOffset,
+      lines: [...held.lines.where((line) => line.isNotEmpty), <LatLng>[]],
+      meters: held.meters,
     );
     _listen();
   }

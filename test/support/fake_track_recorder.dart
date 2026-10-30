@@ -27,7 +27,7 @@ class FakeTrackRecorder extends TrackRecorderController {
   Future<void> stop() async => calls.add('stop');
 
   @override
-  Future<void> resume({int? recordingId}) async => calls.add('resume');
+  Future<void> resume() async => calls.add('resume');
 
   @override
   Future<void> discard() async {

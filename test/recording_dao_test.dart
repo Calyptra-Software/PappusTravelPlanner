@@ -29,7 +29,7 @@ void main() {
       await db.recordingDao.addFixes(id, 0, [fix(0, 53.50), fix(1, 53.51)]);
       await db.recordingDao.addFixes(id, 0, [fix(2, 53.52)]);
 
-      final recording = (await db.recordingDao.watchRecordings().first).single;
+      final recording = (await db.recordingDao.unfiledRecordings()).single;
       expect(recording.startedAt, start.millisecondsSinceEpoch);
       expect(recording.utcOffsetMinutes, 120);
       expect(recording.stoppedAt, isNull, reason: 'it is running');
@@ -50,7 +50,7 @@ void main() {
       (position: const LatLng(53.5, 9.9), at: start.toLocal()),
     ]);
 
-    final recording = (await db.recordingDao.watchRecordings().first).single;
+    final recording = (await db.recordingDao.unfiledRecordings()).single;
     expect(recording.startedAt, start.millisecondsSinceEpoch);
     final stored = (await db.recordingDao.fixesOf(id)).single;
     expect(stored.recordedAt, start.millisecondsSinceEpoch);
@@ -67,7 +67,7 @@ void main() {
       start.add(const Duration(hours: 1)),
     );
 
-    var recording = (await db.recordingDao.watchRecordings().first).single;
+    var recording = (await db.recordingDao.unfiledRecordings()).single;
     expect(
       recording.stoppedAt,
       start.add(const Duration(hours: 1)).millisecondsSinceEpoch,
@@ -75,7 +75,7 @@ void main() {
 
     final segment = await db.recordingDao.resumeRecording(id);
     expect(segment, 1, reason: 'the pause stays a gap');
-    recording = (await db.recordingDao.watchRecordings().first).single;
+    recording = (await db.recordingDao.unfiledRecordings()).single;
     expect(recording.stoppedAt, isNull);
 
     await db.recordingDao.addFixes(id, segment, [fix(70, 53.60)]);
@@ -98,7 +98,7 @@ void main() {
     await db.recordingDao.addFixes(id, 0, [fix(0, 53.50), fix(1, 53.51)]);
 
     await db.recordingDao.deleteRecording(id);
-    expect(await db.recordingDao.watchRecordings().first, isEmpty);
+    expect(await db.recordingDao.unfiledRecordings(), isEmpty);
     expect(await db.select(db.recordingFixes).get(), isEmpty);
   });
 
@@ -115,7 +115,7 @@ void main() {
 
     await (db.delete(db.trips)..where((t) => t.id.equals(tripId))).go();
 
-    final recording = (await db.recordingDao.watchRecordings().first).single;
+    final recording = (await db.recordingDao.unfiledRecordings()).single;
     expect(recording.tripId, isNull);
     expect(await db.recordingDao.fixesOf(id), hasLength(1));
   });
@@ -129,7 +129,7 @@ void main() {
       startedAt: start,
       utcOffset: Duration.zero,
     );
-    final listed = await db.recordingDao.watchRecordings().first;
+    final listed = await db.recordingDao.unfiledRecordings();
     expect([for (final r in listed) r.id], [earlier, later]);
   });
 }
