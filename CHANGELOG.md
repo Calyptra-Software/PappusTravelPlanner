@@ -21,6 +21,9 @@ exact commits.
   times are filled in after a recording has been imported.
 - **A delay that runs past midnight reads as a delay in the connection search results.** The
   list used to show it as nearly a day early, though the connection's details were right.
+- **A connection search opened from a transport entry is filled in from it**,
+  saved or not. A station that only has a name opens the stop suggestions on that name, an
+  end with a position is filled in, and the departure time is taken over.
 
 ## 1.14.0 — 2026-10-23
 

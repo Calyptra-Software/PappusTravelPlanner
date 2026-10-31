@@ -28,19 +28,24 @@ import 'journey_destination.dart';
 import 'journey_formats.dart';
 import 'journey_preview_sheet.dart';
 import 'search_options_sheet.dart';
+import 'search_seed.dart';
 
 /// Opens the connection search, writing what is taken to [destination] — a day
 /// of a trip, one option of a decision, the run being replaced, or nowhere at
 /// all ([JourneyLookup]). Resolves to true when a journey was written (so the
 /// caller can close its own sheet), false/null otherwise — and so always false
 /// for a lookup, which writes nothing.
+///
+/// [seed] is what the form opens holding; without one a [ReplaceRun] opens on
+/// the run it replaces and everything else on an empty form.
 Future<bool> showConnectionSearchSheet(
   BuildContext context, {
   required JourneyDestination destination,
+  SearchSeed? seed,
 }) async {
   final imported = await showAppSheet<bool>(
     context,
-    builder: (_) => ConnectionSearchSheet(destination: destination),
+    builder: (_) => ConnectionSearchSheet(destination: destination, seed: seed),
   );
   return imported ?? false;
 }
@@ -49,13 +54,23 @@ Future<bool> showConnectionSearchSheet(
 typedef _Via = ({TransportPlace place, int stayMinutes});
 
 class ConnectionSearchSheet extends ConsumerStatefulWidget {
-  const ConnectionSearchSheet({super.key, required this.destination});
+  const ConnectionSearchSheet({
+    super.key,
+    required this.destination,
+    this.seed,
+  });
 
   /// What becomes of a connection taken here: added to a day or an option,
   /// swapped in for a run the trip already holds, or — for a [JourneyLookup] —
   /// nothing, the search having been made from the overview with no plan behind
   /// it.
   final JourneyDestination destination;
+
+  /// The ends and the time the form opens on. An entry form passes what it
+  /// holds — saved or not, so a leg being written is searched as it reads on
+  /// screen; when null, a [ReplaceRun] seeds itself from its run
+  /// ([SearchSeed.ofJourney]).
+  final SearchSeed? seed;
 
   @override
   ConsumerState<ConnectionSearchSheet> createState() =>
@@ -136,32 +151,33 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
   /// its destination already and never asks.
   List<Trip> _saveTargets = const [];
 
-  /// What the run being replaced called its ends, for an end that has no
-  /// [TransportPlace] to fill the field with — a hand-entered leg knows
-  /// "Rahlstedt" and nothing more.
-  ///
-  /// A name is not an address: the router takes stop ids and coordinates, and
-  /// turning one into the other is the geocoder's job, with the user choosing
-  /// between the answers. So the name is shown on the field and handed to the
-  /// picker as its opening query — the station is a tap away, and which
-  /// Rahlstedt it is stays the user's call.
+  /// What the seed calls an end it has no [TransportPlace] for — a
+  /// hand-entered leg knows "Rahlstedt" and nothing more. Shown on the field
+  /// and handed to the picker as its opening query ([SearchSeed]); cleared once
+  /// the end is picked.
   String? _fromHint;
   String? _toHint;
 
   @override
   void initState() {
     super.initState();
-    // Looking a run up again starts from the run: its ends, and the minute it
-    // was planned to leave. Everything stays editable — the point of arriving
-    // here rather than firing one query is that the question can be changed.
-    final destination = widget.destination;
-    if (destination is! ReplaceRun) return;
-    final replacing = destination.journey;
-    _from = replacing.fromPlace;
-    _to = replacing.toPlace;
-    if (_from == null) _fromHint = replacing.fromLocation;
-    if (_to == null) _toHint = replacing.toLocation;
-    final minutes = destination.departFromMinutes ?? replacing.departMinutes;
+    // Looking a run up again starts from the run, and a search opened from an
+    // entry form from what the form holds: the ends, and the minute it leaves.
+    // Everything stays editable — the point of arriving here rather than firing
+    // one query is that the question can be changed.
+    final seed =
+        widget.seed ??
+        switch (widget.destination) {
+          ReplaceRun(:final journey, :final departFromMinutes) =>
+            SearchSeed.ofJourney(journey, departMinutes: departFromMinutes),
+          _ => null,
+        };
+    if (seed == null) return;
+    _from = seed.from;
+    _to = seed.to;
+    _fromHint = seed.fromHint;
+    _toHint = seed.toHint;
+    final minutes = seed.departMinutes;
     if (minutes != null) {
       _time = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     }
