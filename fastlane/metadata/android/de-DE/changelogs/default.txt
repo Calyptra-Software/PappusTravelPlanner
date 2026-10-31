@@ -1,9 +1,7 @@
-1.14.0:
-• Jetzt auch auf vereinfachtem Chinesisch
-• Reise ab einem verpassten Umstieg neu planen
-• Ist-Zeiten aus GPX-Aufzeichnungen
-• Suche für die Verbindung einer Routine anpassen
-• Fehlgeschlagene Suchen sagen sofort, warum
-• Das PDF zeichnet jeden Tag wie die App
-• Feinere Länderkarte, Länder zuverlässiger erkannt
-• Web-App liegt jedem Release bei, mit Korrekturen
+1.15.0:
+• GPS-Track auf der Karte der Reise aufzeichnen, auch bei ausgeschaltetem Bildschirm
+• Aufzeichnung den Einträgen der Reise zuordnen, mit Ist-Zeiten
+• Kalender in Monaten mit Zeitumstellung korrigiert
+• Verspätungen über Mitternacht in den Suchergebnissen richtig angezeigt
+• Verbindungssuche übernimmt die schon eingetragenen Stationen
+• Die Web-App lädt ihre Schrift nicht mehr von Google

@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.15.0 — 2026-10-31
 
 - **Record a track from the trip's map.** The record button under the location button
   records your position, also with the screen off on Android. Stopped, the recording waits
@@ -24,6 +24,10 @@ exact commits.
 - **A connection search opened from a transport entry is filled in from it**,
   saved or not. A station that only has a name opens the stop suggestions on that name, an
   end with a position is filled in, and the departure time is taken over.
+- **The web app no longer downloads the Roboto font from Google at every start.** It is
+  bundled now, so Android and Linux draw their text with it too.
+- **The license page lists everything the app contains**, including the Material Icons
+  font and, on Android, the libraries the plugins bring along.
 
 ## 1.14.0 — 2026-10-23
 
