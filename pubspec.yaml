@@ -27,7 +27,7 @@ dependencies:
   go_router: ^18.1.1
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
-  drift: ^2.35.2
+  drift: ^2.35.3
   drift_flutter: ^0.3.1
   sqlite3_flutter_libs: ^0.6.0+eol
   shared_preferences: ^2.5.6
@@ -98,11 +98,11 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
-  sqlite3: ^3.7.0 # used by tests to build an old-schema DB for migration checks
+  sqlite3: ^3.8.0 # used by tests to build an old-schema DB for migration checks
 
   # Code generation: `dart run build_runner build --delete-conflicting-outputs`.
   build_runner: ^2.16.2
-  drift_dev: ^2.35.1
+  drift_dev: ^2.35.2
   riverpod_generator: ^4.0.4
 
   # Launcher icons: `dart run flutter_launcher_icons` (see flutter_launcher_icons.yaml).
