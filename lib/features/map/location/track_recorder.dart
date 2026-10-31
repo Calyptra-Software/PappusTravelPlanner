@@ -40,6 +40,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/settings/locale_provider.dart';
+import '../../../data/database/app_database.dart' show Recording;
 import '../../../data/repositories/trip_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../track_recording.dart';
@@ -107,6 +108,19 @@ final class TrackRecorderState {
   final LocationProblem? problem;
 
   static const idle = TrackRecorderState();
+
+  TrackRecorderState _withTripId(int? tripId) => TrackRecorderState(
+    recordingId: recordingId,
+    tripId: tripId,
+    running: running,
+    starting: starting,
+    interrupted: interrupted,
+    startedAt: startedAt,
+    utcOffset: utcOffset,
+    lines: lines,
+    meters: meters,
+    problem: problem,
+  );
 }
 
 /// The app's recorder. One recording at a time.
@@ -142,10 +156,17 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
   /// found.
   Future<void> _adopting = Future.value();
 
+  /// The held recording's own row, watched for as long as it is held — see
+  /// [_follow].
+  StreamSubscription<Recording?>? _row;
+
   @override
   TrackRecorderState build() {
     _repo = ref.watch(repositoryProvider);
-    ref.onDispose(_cancel);
+    ref.onDispose(() {
+      _cancel();
+      _row?.cancel();
+    });
     _adopting = _adopt();
     return TrackRecorderState.idle;
   }
@@ -173,11 +194,28 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
         lines: [for (final line in stored) line.points],
         meters: recordedDistanceMeters(stored),
       );
+      _follow(row.id);
     } on Object catch (error, stack) {
       // Every press waits for this, so it may not fail: a recording that
       // cannot be read back is reported and left where it is.
       _report(error, stack);
     }
+  }
+
+  /// Keeps [TrackRecorderState.tripId] true to recording [id]'s row.
+  ///
+  /// Deleting the trip a recording was started from nulls the row's trip
+  /// (`setNull`) without the recorder hearing of it, and a state still naming
+  /// the deleted trip kept the recording off every other trip's map — offered
+  /// nowhere until the next launch read the row again, while the record button
+  /// named a trip that no longer had a title.
+  void _follow(int id) {
+    _row?.cancel();
+    _row = _repo.watchRecording(id).listen((row) {
+      if (row == null || state.recordingId != id) return;
+      if (row.tripId == state.tripId) return;
+      state = state._withTripId(row.tripId);
+    }, onError: (Object error, StackTrace stack) => _report(error, stack));
   }
 
   DateTime _now() => ref.read(recorderClockProvider)().toUtc();
@@ -240,6 +278,7 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
       utcOffset: utcOffset,
       lines: const [<LatLng>[]],
     );
+    _follow(id);
     _listen();
   }
 
@@ -279,7 +318,8 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     if (problem != null) {
       state = TrackRecorderState(
         recordingId: held.recordingId,
-        tripId: held.tripId,
+        // As it is now: the trip may have been deleted during the dialog.
+        tripId: state.tripId,
         interrupted: held.interrupted,
         startedAt: held.startedAt,
         utcOffset: held.utcOffset,
@@ -296,7 +336,7 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     _last = null;
     state = TrackRecorderState(
       recordingId: id,
-      tripId: held.tripId,
+      tripId: state.tripId,
       running: true,
       startedAt: held.startedAt,
       utcOffset: held.utcOffset,
@@ -313,6 +353,8 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     if (!ref.mounted) return;
     final id = state.recordingId;
     _cancel();
+    _row?.cancel();
+    _row = null;
     state = TrackRecorderState.idle;
     if (id == null) return;
     await _writes;

@@ -1082,7 +1082,10 @@ UI (features/*/presentation, *widgets)
   cannot drift from the round one: start, stop (or withdraw a start still at its dialog),
   continue a held one, and — while another trip holds the one slot — name that trip, because
   a second recording would be filed into the wrong trip by whoever forgot the first. A
-  recording whose trip was deleted (`setNull`) is offered on every trip. Filing is the
+  recording whose trip was deleted (`setNull`) is offered on every trip — which needs the
+  recorder to **watch its own row** while it holds one (`_follow`): the delete nulls the
+  column behind its back, and a state still naming the deleted trip kept the recording off
+  every map until the next launch, with the button quoting a trip that had no title left. Filing is the
   ordinary track import (`fileRecording`, sharing `_divideAcross` with the GPX door) with
   `source: recorded`, the zone the recording **noted at its start** rather than the device's
   now, and no name, since inventing "Recording of 1 May" would be a label nobody gave it; the

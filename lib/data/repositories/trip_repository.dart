@@ -229,6 +229,9 @@ class TripRepository {
   Future<List<Recording>> unfiledRecordings() =>
       _db.recordingDao.unfiledRecordings();
 
+  Stream<Recording?> watchRecording(int id) =>
+      _db.recordingDao.watchRecording(id);
+
   Future<List<RecordingFix>> recordingFixes(int id) =>
       _db.recordingDao.fixesOf(id);
 

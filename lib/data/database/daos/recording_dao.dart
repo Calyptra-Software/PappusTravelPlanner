@@ -87,6 +87,12 @@ class RecordingDao extends DatabaseAccessor<AppDatabase>
     recordings,
   )..orderBy([(r) => OrderingTerm(expression: r.startedAt)])).get();
 
+  /// Recording [id] as it changes, or null once it is gone — how the recorder
+  /// learns that the trip it was started from has been deleted, which nulls
+  /// [Recordings.tripId] behind its back.
+  Stream<Recording?> watchRecording(int id) =>
+      (select(recordings)..where((r) => r.id.equals(id))).watchSingleOrNull();
+
   /// The fixes of recording [id], in the order they were taken.
   Future<List<RecordingFix>> fixesOf(int id) =>
       (select(recordingFixes)

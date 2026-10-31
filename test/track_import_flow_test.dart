@@ -318,6 +318,13 @@ void main() {
       );
       expect(find.text('Which entries does it cover?'), findsNothing);
       expect(container.read(trackRecorderProvider).recordingId, isNotNull);
+
+      // Still held, so the recorder still watches its row. Let it go on the
+      // real event loop it was opened on, or drift's closing timer is left
+      // pending for the binding to find after the test.
+      await tester.runAsync(
+        () => container.read(trackRecorderProvider.notifier).discard(),
+      );
     });
   });
 }

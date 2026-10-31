@@ -228,6 +228,19 @@ void main() {
       expect(platform.streamRequested, isFalse);
     });
 
+    test('lets go of a trip that is deleted while it is held', () async {
+      await left(stopped: true, tripId: 1);
+      final (container, _) = open();
+      await pumpEventQueue();
+      final trip = stateOf(container).tripId!;
+
+      await (db.delete(db.trips)..where((t) => t.id.equals(trip))).go();
+      await pumpEventQueue();
+
+      expect(stateOf(container).tripId, isNull);
+      expect(stateOf(container).recordingId, isNotNull, reason: 'still held');
+    });
+
     test('and stopped when it was stopped', () async {
       await left(stopped: true);
       final (container, _) = open();
@@ -245,6 +258,27 @@ void main() {
       expect(stateOf(container).running, isFalse);
       expect(await db.select(db.recordings).get(), hasLength(1));
     });
+  });
+
+  test('a running recording lets go of a trip deleted under it', () async {
+    // Deleting the trip nulls the row's trip; a state still naming it kept the
+    // recording off every other trip's map until the next launch.
+    final trip = await db
+        .into(db.trips)
+        .insert(TripsCompanion.insert(title: 'A'));
+    final (container, recorder) = open();
+    await recorder.start(tripId: trip);
+    await walk(0, 0);
+    expect(stateOf(container).tripId, trip);
+
+    await (db.delete(db.trips)..where((t) => t.id.equals(trip))).go();
+    await pumpEventQueue();
+
+    final state = stateOf(container);
+    expect(state.tripId, isNull);
+    expect(state.running, isTrue, reason: 'the recording goes on');
+    await walk(1, 60);
+    expect(await stored(), hasLength(2));
   });
 
   test('a declined continue keeps the recording held, and says why', () async {
