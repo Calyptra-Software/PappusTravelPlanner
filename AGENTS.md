@@ -1054,8 +1054,8 @@ UI (features/*/presentation, *widgets)
   native side, so `res/raw/keep.xml` keeps it from the release build's resource shrinker,
   which cannot see a name that lives in Dart. No wake lock (`WAKE_LOCK` stays removed): a
   fix carries the time it was taken, so one delivered late still lands where it belongs —
-  whether readings are *dropped* while the CPU sleeps is a question for a phone, not for
-  this file. **The notification is meant to be seen**, which upstream's is not: its channel
+  and none were seen to be dropped: a walk recorded on an Android 15 phone with the screen
+  off came out without a gap or a straight cut across a bend. **The notification is meant to be seen**, which upstream's is not: its channel
   is created with `IMPORTANCE_NONE` (as of 5.2.1), which leaves a recording running with
   nothing in the drawer to say so or to tap back into the app by. The copy creates it
   `IMPORTANCE_LOW` (silent, but listed), and the recorder asks for `POST_NOTIFICATIONS` on
@@ -1067,9 +1067,9 @@ UI (features/*/presentation, *widgets)
   raised once created, so a phone that ran a build of this branch before the change keeps
   the silent channel until the app is reinstalled. One more fact about the vendored
   service worth knowing before relying on it: the service is **bound** to the plugin (`GeolocatorPlugin.bindForegroundService`),
-  not started, so as the code reads it ends when the Flutter engine detaches — swiping the
-  app away would end a recording, which the database then holds as one nobody stopped. Read
-  off the Java, not yet seen on a phone.
+  not started, so it ends when the Flutter engine detaches — swiping the app out of the
+  recents ends a recording, which the database then holds as one nobody stopped and the
+  next launch offers to continue. Read off the Java first, and seen so on the same phone.
 - **A recording is made, held and filed from the trip's map, and the recorder's state is the
   only answer to "is there one".** `TrackRecorderController.build` looks for an unfiled row
   (`unfiledRecordings`) and takes it up **held** — `interrupted` when it has no stop, since
