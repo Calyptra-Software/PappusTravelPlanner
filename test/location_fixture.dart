@@ -22,17 +22,26 @@ class FakeGeolocator extends GeolocatorPlatform
   bool streamRequested = false;
   bool streamCancelled = false;
 
+  /// The settings of every stream asked for, in order — which is how a test
+  /// sees the one stream being reopened when a recording starts under a mark.
+  final List<LocationSettings?> requestedSettings = [];
+
+  /// When set, a permission request waits for it — standing in for the dialog
+  /// being on screen, which is when a press can be overtaken.
+  Completer<void>? dialog;
+
   final _positions = StreamController<Position>.broadcast();
 
   void emit({
     required double latitude,
     required double longitude,
     required double accuracy,
+    DateTime? timestamp,
   }) => _positions.add(
     Position(
       latitude: latitude,
       longitude: longitude,
-      timestamp: DateTime.utc(2026, 8, 19, 9),
+      timestamp: timestamp ?? DateTime.utc(2026, 8, 19, 9),
       accuracy: accuracy,
       altitude: 0,
       altitudeAccuracy: 0,
@@ -48,18 +57,27 @@ class FakeGeolocator extends GeolocatorPlatform
   @override
   Future<bool> isLocationServiceEnabled() async => serviceEnabled;
 
+  /// When set, asking where the permission stands throws it — a platform
+  /// channel failing, rather than answering.
+  Exception? checkError;
+
   @override
-  Future<LocationPermission> checkPermission() async => permission;
+  Future<LocationPermission> checkPermission() async {
+    if (checkError case final error?) throw error;
+    return permission;
+  }
 
   @override
   Future<LocationPermission> requestPermission() async {
     permissionRequests++;
+    await dialog?.future;
     return permission;
   }
 
   @override
   Stream<Position> getPositionStream({LocationSettings? locationSettings}) {
     streamRequested = true;
+    requestedSettings.add(locationSettings);
     // Handed out through a controller of its own so that cancelling it is
     // observable: "the receiver is released" is half of what this feature
     // promises, and it is the half a leak would not otherwise show.

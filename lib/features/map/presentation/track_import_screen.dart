@@ -78,6 +78,11 @@ const Color kTrackUndividedColor = Color(0xFF9E9E9E);
 /// file is read in beside it (`track_times.dart`). Times only fill what is
 /// empty unless a row is ticked by hand, and are offered only once every
 /// handover is placed, since a leg's times are read at its cuts.
+///
+/// [offset] is the zone the times are first read in, where the caller knows it
+/// — this app's own recorder noted the device's at the start; a file says
+/// nothing, and is read in the device's offset at the recording's first
+/// instant. [source] is what the written lines say they are.
 Future<bool?> importTrackAcrossEntries(
   BuildContext context, {
   required List<List<LatLng>> lines,
@@ -85,6 +90,8 @@ Future<bool?> importTrackAcrossEntries(
   required String? name,
   required List<ItineraryItem> selection,
   bool readTimes = true,
+  Duration? offset,
+  TrackSource source = TrackSource.imported,
 }) => Navigator.of(context).push<bool>(
   MaterialPageRoute(
     builder: (_) => TrackImportScreen(
@@ -93,6 +100,8 @@ Future<bool?> importTrackAcrossEntries(
       name: name,
       selection: selection,
       readTimes: readTimes,
+      offset: offset,
+      source: source,
     ),
   ),
 );
@@ -105,6 +114,8 @@ class TrackImportScreen extends ConsumerStatefulWidget {
     required this.name,
     required this.selection,
     this.readTimes = true,
+    this.offset,
+    this.source = TrackSource.imported,
   });
 
   /// The recording, one list per `<trkseg>` — a pause is a hole that survives.
@@ -118,6 +129,15 @@ class TrackImportScreen extends ConsumerStatefulWidget {
   /// Whether the times may be read at all — false for a routine, whose
   /// entries stand on no real day.
   final bool readTimes;
+
+  /// The offset from UTC the times are first read in, or null for the
+  /// device's own at the recording's first instant (`defaultRecordingOffset`).
+  /// Either way only a first answer: the panel shows it and lets it be changed.
+  final Duration? offset;
+
+  /// What the lines are written as: [TrackSource.imported] for a file,
+  /// [TrackSource.recorded] for what this app recorded itself.
+  final TrackSource source;
   final String? name;
 
   /// The contiguous run of entries the recording covers, in the order the day
@@ -182,7 +202,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
       _flatTimes = const [];
     }
     final firstTime = _flatTimes.nonNulls.firstOrNull;
-    if (firstTime != null) _offset = defaultRecordingOffset(firstTime);
+    if (firstTime != null) {
+      _offset = widget.offset ?? defaultRecordingOffset(firstTime);
+    }
   }
 
   /// The actual times the recording can supply at the current division, or
@@ -255,6 +277,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
       isChosen: _isChosen,
       span: _span,
       label: (item) => _label(item, l10n),
+      zoneHint: widget.source == TrackSource.recorded
+          ? l10n.trackRecordingZoneHintRecorded
+          : l10n.trackRecordingZoneHint,
       onChanged: (offset, choices) => setState(() {
         _offset = offset;
         _timeChoices = choices;
@@ -363,6 +388,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
               if (_isChosen(p, _timeChoices))
                 (itemId: p.item.id, end: p.end, minutes: p.minutes),
           ],
+          source: widget.source,
         );
     navigator.pop(true);
   }
@@ -765,6 +791,7 @@ class _ActualTimesSheet extends StatefulWidget {
     required this.isChosen,
     required this.span,
     required this.label,
+    required this.zoneHint,
     required this.onChanged,
   });
 
@@ -774,6 +801,10 @@ class _ActualTimesSheet extends StatefulWidget {
   final bool Function(ActualTimeProposal, Map<(int, TrackEnd), bool>) isChosen;
   final String Function(Duration offset) span;
   final String Function(ItineraryItem) label;
+
+  /// What the zone means here: a file stores UTC and says nothing more, while
+  /// the app's own recording noted the zone the phone was in.
+  final String zoneHint;
   final void Function(Duration offset, Map<(int, TrackEnd), bool> choices)
   onChanged;
 
@@ -831,7 +862,7 @@ class _ActualTimesSheetState extends State<_ActualTimesSheet> {
             ],
           ),
           Text(
-            l10n.trackRecordingZoneHint,
+            widget.zoneHint,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

@@ -11,9 +11,31 @@
          footpath needs, coarse is the user's right to say "roughly" instead, and
          a build that declares only fine offers them no such choice.
          Deliberately no ACCESS_BACKGROUND_LOCATION: the mark exists while a map
-         is open, and there is no feature here that follows anyone. -->
+         is open, and a track recording, the one thing that goes on reading the
+         position off screen, does so through a foreground service started on a
+         press (below), which Android does not ask a background grant for. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Recording a track. Without a foreground service Android stops handing
+         an app positions the moment it leaves the screen, so a recording would
+         end when the phone goes into a pocket. geolocator brings the service
+         (GeolocatorLocationService, foregroundServiceType="location", merged
+         from its own manifest) and runs it only while a recording does: it is
+         started on the record press, ends with the recording, and is never
+         started at boot or by anything else. The second permission is the one
+         Android 14 asks of a service of that type; it is declared here and not
+         by geolocator, which ships without it on purpose (5.1.1+1). The
+         service's wake lock is not used, so WAKE_LOCK stays out (below). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <!-- So that the recording's notification can be seen. The service posts one
+         either way; without this, Android 13 and later keep it out of the
+         drawer and list the running service only in the quick settings' task
+         manager, which is easy to forget a recording in. Asked for on the
+         record press, after the location permission, and a refusal changes
+         nothing but where the notice is shown. No other notification is ever
+         posted. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- Where a photograph was taken. Since Android 10 the system zeroes the
          GPS tags of a picture handed to an app without this, so a holiday photo
          attaches itself with no place and no reason given. It is **off until
@@ -23,7 +45,7 @@
          READ_MEDIA_IMAGES, which is deliberately not here) and asks only about
          the one file the picker just handed over. -->
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION"/>
-    <!-- Four permissions this app does not want, taken back out of the merged
+    <!-- Three permissions this app does not want, taken back out of the merged
          manifest. androidx work-runtime declares them, and it arrives twice over:
          home_widget depends on it directly and again through
          androidx.glance:glance-appwidget. Neither can simply be excluded: three
@@ -35,9 +57,10 @@
          HomeWidgetBackgroundWorker, which only HomeWidget.registerInteractivityCallback
          leads to, and this app uses none of that: it pushes a payload with
          saveWidgetData/updateWidget and answers a tap through a deep link. So the
-         four are dead weight, and on F-Droid's listing page RECEIVE_BOOT_COMPLETED
-         beside FOREGROUND_SERVICE reads as a claim about a trip planner that is
-         simply not true.
+         three are dead weight, and on F-Droid's listing page RECEIVE_BOOT_COMPLETED
+         reads as a claim about a trip planner that is simply not true.
+         work-runtime declares FOREGROUND_SERVICE too; that one is the app's own
+         now, for the track recording above, so it is no longer taken out.
 
          The trade is stated rather than hidden. Adding an interactivity callback
          later means putting these back, and the failure would be a worker that
@@ -45,7 +68,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" tools:node="remove"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" tools:node="remove"/>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" tools:node="remove"/>
     <!-- And the one androidx core generates for itself, which only
          ContextCompat.registerReceiver ever holds: measured on the release APK,
          that method is called zero times (all seven registerReceiver calls go

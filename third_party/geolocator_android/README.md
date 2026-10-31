@@ -30,9 +30,9 @@ Nothing here is used to avoid a licence: the package is MIT, and `LICENSE` and
 
 ## What was changed
 
-Exactly three edits against the published 5.0.3, and nothing else — no
+Exactly four edits against the published 5.0.3, and nothing else — no
 tidying, no renaming — so the copy stays a readable diff that can be rebased
-onto a new release, turned into a fork, or offered upstream. All three are in
+onto a new release, turned into a fork, or offered upstream. All four are in
 Java and Gradle, which `dart format .` never touches; it does cover the five
 Dart files under `lib/`, and currently changes nothing in them:
 
@@ -44,6 +44,12 @@ Dart files under `lib/`, and currently changes nothing in them:
    `createLocationClient` now always returns `LocationManagerClient`. The
    `forceAndroidLocationManager` parameter is kept, because it is what the
    method channel passes; it simply no longer selects anything.
+4. `android/src/main/java/.../location/BackgroundNotification.java` — the
+   foreground service's notification channel is created with
+   `IMPORTANCE_LOW` instead of `IMPORTANCE_NONE`. Unrelated to Play Services:
+   with `NONE` a track recording runs with nothing in the notification drawer
+   to say so, and `LOW` lists it there without a sound. Upstream still creates
+   it `NONE` as of 5.2.1, so this one could be offered back as an option.
 
 `example/`, `test/` (the Dart tests) and upstream's `analysis_options.yaml` are
 not copied: the first two are not part of what a path dependency builds, and the
@@ -80,6 +86,6 @@ two that have one.
 ## Updating
 
 Fetch the new upstream release, diff it against this directory, and re-apply
-the three edits above. Most upstream churn is in the half that is missing here,
+the four edits above. Most upstream churn is in the half that is missing here,
 so this is usually cheap. Keep the version in `pubspec.yaml` equal to the
 upstream release the copy is taken from.

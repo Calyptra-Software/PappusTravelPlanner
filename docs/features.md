@@ -454,6 +454,12 @@ a time you already entered (or the live data filled) is replaced only if you tic
 stores UTC, so pick the time zone your trip's times are in there; it starts at your device's.
 A recording made on other days than the entries is pointed out. Routines take no times.
 
+**Recording a track yourself:** the record button on the trip's map (below the location
+button) records where you go, on Android also with the screen off. While it runs, a band under
+the map shows the distance; *Stop recording* holds it there, to *Continue*, *Attach to
+entries…* — the same division as above, with the times read in the zone your phone was in — or
+discard. One recording at a time; one the app was closed in is offered again as interrupted.
+
 The list follows **one path** through the plan: where a day forks into alternatives, it shows
 a single option — the one the trip follows — with a menu on the decision's row to pick another.
 Picking one there only says which option the line covered; it does not choose it for the trip,

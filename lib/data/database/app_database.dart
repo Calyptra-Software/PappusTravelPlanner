@@ -8,6 +8,7 @@ import 'daos/cost_dao.dart';
 import 'daos/currency_dao.dart';
 import 'daos/group_dao.dart';
 import 'daos/itinerary_dao.dart';
+import 'daos/recording_dao.dart';
 import 'daos/routine_dao.dart';
 import 'daos/sharing_dao.dart';
 import 'daos/tag_dao.dart';
@@ -54,6 +55,8 @@ const int kApplicationId = 0x5452504C;
     VisitedCountries,
     Attachments,
     AttachmentBlobs,
+    Recordings,
+    RecordingFixes,
   ],
   daos: [
     TripDao,
@@ -65,6 +68,7 @@ const int kApplicationId = 0x5452504C;
     RoutineDao,
     TagDao,
     TrackDao,
+    RecordingDao,
     AttachmentDao,
     VisitedCountryDao,
     SharingDao,
@@ -81,7 +85,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 40;
+  int get schemaVersion => 41;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -449,6 +453,14 @@ class AppDatabase extends _$AppDatabase {
       // journey can run through more than one night.
       if (from < 40) {
         await _replaceSpansNextDay(m);
+      }
+      // v41 lets the app record a track itself. Two new tables and nothing
+      // else: a recording is a buffer the import empties into `tracks`, so no
+      // existing row changes meaning, and there is nothing to backfill — the
+      // app has never recorded anything.
+      if (from < 41) {
+        await m.createTable(recordings);
+        await m.createTable(recordingFixes);
       }
     },
     beforeOpen: (details) async {

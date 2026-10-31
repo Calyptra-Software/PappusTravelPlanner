@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../l10n/app_localizations.dart';
+
 /// Holds the [SharedPreferences] instance. Overridden in `main` with the
 /// already-loaded instance so settings can be read synchronously.
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -33,4 +35,17 @@ class LocaleController extends Notifier<Locale?> {
     }
     state = locale;
   }
+}
+
+/// The locale the app's texts are in, for code that has no widget to ask: the
+/// one [chosen] in settings, else the system's, clamped to a language the app
+/// ships and defaulting to English — so [lookupAppLocalizations] always has an
+/// answer. Read by the home-screen widget and the recording notification.
+Locale appLocaleFor(Locale? chosen) {
+  final wanted = chosen ?? WidgetsBinding.instance.platformDispatcher.locale;
+  return AppLocalizations.supportedLocales.any(
+        (l) => l.languageCode == wanted.languageCode,
+      )
+      ? Locale(wanted.languageCode)
+      : const Locale('en');
 }

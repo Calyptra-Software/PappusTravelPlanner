@@ -5,6 +5,15 @@ exact commits.
 
 ## Unreleased
 
+- **Record a track from the trip's map.** The record button under the location button
+  records your position, also with the screen off on Android. Stopped, the recording waits
+  under the map until you continue it, attach it to the trip's entries the way an imported
+  GPX file is attached (actual times included), or discard it. A recording the app was
+  closed in is still there afterwards.
+- **The Android app declares three more permissions, `FOREGROUND_SERVICE`,
+  `FOREGROUND_SERVICE_LOCATION` and `POST_NOTIFICATIONS`.** The first two let a track
+  recording continue with the screen off; the third shows a notification while one runs,
+  asked for when recording starts. Refusing it hides the notification, not the recording.
 - **The calendar shows every day once in a month with a daylight-saving change.** October
   2026 showed the 25th twice and every later day one cell early.
 - **An empty planned time offers the actual one when you set it**, the way an empty actual

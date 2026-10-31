@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resources found only by name at run time, which the release build's
+     resource shrinker cannot see: geolocator looks the recording notification's
+     icon up with getIdentifier, from a string that lives in Dart. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_recording" />

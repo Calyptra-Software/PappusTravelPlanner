@@ -497,6 +497,89 @@
   "@trackSourceRouted": {
     "description": "A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it."
   },
+  "recordingNotificationTitle": "Recording a track",
+  "@recordingNotificationTitle": {
+    "description": "Title of the Android notification shown while the app records the device's position as a track."
+  },
+  "recordingNotificationText": "Pappus is recording your position. Stop it in the app.",
+  "@recordingNotificationText": {
+    "description": "Body of the Android notification shown while a track is being recorded."
+  },
+  "recordingNotificationChannel": "Track recording",
+  "@recordingNotificationChannel": {
+    "description": "Name of the Android notification channel for the notification shown while a track is recorded; users see it in the system's notification settings."
+  },
+  "mapRecordStart": "Record a track",
+  "@mapRecordStart": {
+    "description": "Tooltip of the map button that starts recording the device's position as a track."
+  },
+  "mapRecordStop": "Stop recording",
+  "@mapRecordStop": {
+    "description": "Tooltip of the map button while a track is being recorded."
+  },
+  "mapRecordElsewhere": "A recording from \u201c{trip}\u201d has not been filed yet. File or discard it there first.",
+  "@mapRecordElsewhere": {
+    "description": "Shown when the record button is pressed while another trip holds a recording that was not yet attached to entries or thrown away. {trip} is that trip's title.",
+    "placeholders": {
+      "trip": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingRunning": "Recording \u00b7 {distance} \u00b7 since {time}",
+  "@recordingRunning": {
+    "description": "Band over the map while a track is recorded. {distance} is how far it runs so far, e.g. \"1.2 km\"; {time} is when it started, e.g. \"14:05\".",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingStopped": "Recording stopped \u00b7 {distance}",
+  "@recordingStopped": {
+    "description": "Band over the map for a recording that was stopped and not yet attached to entries.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingInterrupted": "Recording interrupted \u00b7 {distance}",
+  "@recordingInterrupted": {
+    "description": "Band over the map for a recording that was still running when the app was closed or stopped by the system.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingContinue": "Continue",
+  "@recordingContinue": {
+    "description": "Button on the recording band: record further, into the same recording."
+  },
+  "recordingFile": "Attach to entries\u2026",
+  "@recordingFile": {
+    "description": "Button on the recording band: divide the recorded line among the trip's entries, the same way an imported GPX file is."
+  },
+  "recordingDiscard": "Discard recording",
+  "@recordingDiscard": {
+    "description": "Button (and dialog confirm) that throws a recording away."
+  },
+  "recordingDiscardQuestion": "Discard this recording? What was recorded is lost.",
+  "@recordingDiscardQuestion": {
+    "description": "Confirmation before throwing a recording away."
+  },
+  "recordingEmpty": "Nothing was recorded that could be drawn yet",
+  "@recordingEmpty": {
+    "description": "Shown when a recording holds fewer than two positions and so cannot be attached to entries."
+  },
+  "trackRecordingZoneHintRecorded": "The recording stores UTC. It is shown in the zone the phone was in when it started; pick another if the entries' times are in a different one.",
+  "@trackRecordingZoneHintRecorded": {
+    "description": "Explanation in the time-zone picker of the track import, for a recording made by the app itself."
+  },
   "trackNotDrawable": "Nothing to draw",
   "@trackNotDrawable": {
     "description": "Stands where a line's length would, when the stored line cannot be read or holds fewer than two points \u2014 the map draws nothing for it either way."

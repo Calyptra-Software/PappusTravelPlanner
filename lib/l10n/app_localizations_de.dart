@@ -1091,6 +1091,63 @@ class AppLocalizationsDe extends AppLocalizations {
   String get trackSourceRouted => 'Berechnete Route';
 
   @override
+  String get recordingNotificationTitle => 'Track wird aufgezeichnet';
+
+  @override
+  String get recordingNotificationText =>
+      'Pappus zeichnet deine Position auf. Beende die Aufzeichnung in der App.';
+
+  @override
+  String get recordingNotificationChannel => 'Track-Aufzeichnung';
+
+  @override
+  String get mapRecordStart => 'Track aufzeichnen';
+
+  @override
+  String get mapRecordStop => 'Aufzeichnung beenden';
+
+  @override
+  String mapRecordElsewhere(String trip) {
+    return 'Eine Aufzeichnung aus „$trip“ ist noch nicht zugeordnet. Ordne sie dort zu oder verwirf sie.';
+  }
+
+  @override
+  String recordingRunning(String distance, String time) {
+    return 'Aufzeichnung · $distance · seit $time';
+  }
+
+  @override
+  String recordingStopped(String distance) {
+    return 'Aufzeichnung angehalten · $distance';
+  }
+
+  @override
+  String recordingInterrupted(String distance) {
+    return 'Aufzeichnung unterbrochen · $distance';
+  }
+
+  @override
+  String get recordingContinue => 'Fortsetzen';
+
+  @override
+  String get recordingFile => 'Einträgen zuordnen…';
+
+  @override
+  String get recordingDiscard => 'Aufzeichnung verwerfen';
+
+  @override
+  String get recordingDiscardQuestion =>
+      'Diese Aufzeichnung verwerfen? Was aufgezeichnet wurde, geht verloren.';
+
+  @override
+  String get recordingEmpty =>
+      'Es wurde noch nichts aufgezeichnet, das sich zeichnen lässt';
+
+  @override
+  String get trackRecordingZoneHintRecorded =>
+      'Die Aufzeichnung speichert UTC. Angezeigt wird sie in der Zone, in der das Handy beim Start war; wähle eine andere, wenn die Zeiten der Einträge in einer anderen stehen.';
+
+  @override
   String get trackNotDrawable => 'Nichts zu zeichnen';
 
   @override

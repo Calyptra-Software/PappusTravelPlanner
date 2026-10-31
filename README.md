@@ -79,8 +79,8 @@ For macOS and iOS, which have no release builds, or to build any of the four you
   long-distance trains, buses, and more from operators around the world, compare the results,
   import one as that day's legs, and refresh its live times later.
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
-  is under way marked as the timeline marks it. Import a **GPX** track onto a leg and the
-  map draws the line you actually followed instead of the straight one.
+  is under way marked as the timeline marks it. Record a **track** from the map, or import a
+  **GPX** file, and the map draws the line you actually followed instead of the straight one.
 - **Photos and files on the plan** — attach a photograph or a document to an entry, to a
   group, or to the trip itself. They live inside the database, so a copy of that one file
   is a copy of everything. A photo carrying a position shows up on the map, and one of them
