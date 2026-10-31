@@ -359,6 +359,15 @@ UI (features/*/presentation, *widgets)
   touched. It is offered only on a leg standing **on its own**: a grouped leg is one leg of a
   run, and a run is replaced whole from the label above it, so replacing one leg of a shared
   ticket from inside an edit form is not a thing the app does.
+  Either way the search opens on **what the form holds now**, saved or not (`SearchSeed.ofLeg`,
+  `presentation/search_seed.dart`): typing the stations and then asking for a timetable is the
+  ordinary way in, and a new leg used to hand over nothing at all. An end with a position, or
+  with an id that still describes it (`_fromPlaceId`, the save's own rule), is filled in; one
+  with only a name becomes the hint the hand-entered run already gets, so the geocoder's
+  answers are a tap away and the station is still the user's pick. The seed is a separate
+  argument from the `JourneyDestination` and not a field of it: one says what the question
+  starts as, the other what becomes of the answer, and a `ReplaceRun` opened from the journey
+  sheet still seeds itself from its stored run (`SearchSeed.ofJourney`).
 - **Single `ItineraryItems` table** holds both places and transport legs, discriminated by
   `ItemKind`; kind-specific columns are nullable. This lets a day read as one ordered timeline
   (place → transport → place). Items are ordered by `date` → `sortOrder` → `startMinutes`.

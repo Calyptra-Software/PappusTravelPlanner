@@ -57,32 +57,19 @@ class PlannedJourney {
   /// this is the very string the journey was searched by — a stop id, or a
   /// coordinate for an address — and re-deriving it from the coordinates could
   /// quietly search from somewhere else.
-  TransportPlace? get fromPlace => _place(
-    fromPlaceId,
-    legs.first.fromLocation,
-    legs.first.fromLat,
-    legs.first.fromLon,
+  TransportPlace? get fromPlace => legEndPlace(
+    placeId: legs.first.fromPlaceId,
+    name: legs.first.fromLocation,
+    lat: legs.first.fromLat,
+    lon: legs.first.fromLon,
   );
 
-  TransportPlace? get toPlace =>
-      _place(toPlaceId, legs.last.toLocation, legs.last.toLat, legs.last.toLon);
-
-  static TransportPlace? _place(
-    String? queryId,
-    String? name,
-    double? lat,
-    double? lon,
-  ) => queryId == null
-      ? null
-      : TransportPlace(
-          id: queryId,
-          // The station's name as the trip has it: what the tile shows, so the
-          // form reads as the journey it came from rather than as an id.
-          name: name ?? queryId,
-          kind: PlaceKind.stop,
-          lat: lat,
-          lon: lon,
-        );
+  TransportPlace? get toPlace => legEndPlace(
+    placeId: legs.last.toPlaceId,
+    name: legs.last.toLocation,
+    lat: legs.last.toLat,
+    lon: legs.last.toLon,
+  );
 
   /// When the run is planned to depart, as minutes since midnight.
   int? get departMinutes => legs.first.startMinutes;
@@ -128,6 +115,32 @@ class PlannedJourney {
   /// naming the station is a question the user answers.
   bool get canLookUp =>
       fromPlaceId != null && toPlaceId != null && departMinutes != null;
+}
+
+/// One end of a leg as the search form holds it: [placeId] when the leg still
+/// carries the id a search was issued against, else the end's coordinates, and
+/// null when it has neither — the rule [PlannedJourney.fromPlaceId] states.
+///
+/// Shared by a stored run ([PlannedJourney.fromPlace]) and an entry form that
+/// has not been saved yet (`SearchSeed.ofLeg`), so the two cannot come to
+/// disagree about how an end is addressed.
+TransportPlace? legEndPlace({
+  String? placeId,
+  String? name,
+  double? lat,
+  double? lon,
+}) {
+  final queryId = placeId ?? PlannedJourney._coordinate(lat, lon);
+  if (queryId == null) return null;
+  return TransportPlace(
+    id: queryId,
+    // The station's name as the trip has it: what the tile shows, so the form
+    // reads as the journey it came from rather than as an id.
+    name: name ?? queryId,
+    kind: PlaceKind.stop,
+    lat: lat,
+    lon: lon,
+  );
 }
 
 /// When the traveller will really be standing at [leg]'s departure stop, in

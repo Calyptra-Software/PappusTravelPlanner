@@ -275,6 +275,10 @@ stop the train is *skipping* is struck through rather than given a reassuring ti
 a partially canceled train goes on publishing the planned departure for stops it will pass
 straight through.
 
+Searched from a transport entry, the form starts from what the entry says: an end already
+placed on the map, or found by an earlier search, is filled in; one that only has a name
+opens the stop suggestions on that name; and the planned departure is taken over.
+
 You can also search a connection with **no trip behind it at all**, straight from the
 overview — "when is the next train?" is asked long before there is a trip to hang the
 answer on. Nothing is stored unless you then file the result into a trip by name.

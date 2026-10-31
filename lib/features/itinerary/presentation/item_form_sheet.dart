@@ -24,6 +24,7 @@ import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../transport_search/presentation/connection_search_sheet.dart';
 import '../../transport_search/presentation/journey_destination.dart';
+import '../../transport_search/presentation/search_seed.dart';
 import '../application/item_clipboard.dart';
 import '../application/itinerary_providers.dart';
 import '../application/transport_mode_providers.dart';
@@ -329,6 +330,12 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// Opens the connection search: to *add* a run when a new leg is being planned,
   /// and to **replace** this one when an existing leg is open.
   ///
+  /// Either way the search opens on what the form holds **now**, saved or not:
+  /// the ends (an end with a position or a still-valid id filled in, one with
+  /// only a name offered as the picker's opening query) and the planned
+  /// departure. Typing "Rahlstedt" and then pressing the button is the ordinary
+  /// way in, and reading the stored row instead dropped all of it.
+  ///
   /// Either way the form behind it has nothing left to do afterwards — a new leg
   /// would be an empty duplicate of what the search wrote, and an edited one no
   /// longer exists — so it closes with the search.
@@ -336,8 +343,25 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
     final navigator = Navigator.of(context);
     final existing = widget.existing;
     final replacing = _canReplaceLeg ? plannedJourneyOf([existing!]) : null;
+    String? named(TextEditingController c) {
+      final text = c.text.trim();
+      return text.isEmpty ? null : text;
+    }
+
+    final seed = SearchSeed.ofLeg(
+      fromName: named(_fromController),
+      fromPlaceId: _fromPlaceId,
+      fromLat: _fromPosition?.lat,
+      fromLon: _fromPosition?.lon,
+      toName: named(_toController),
+      toPlaceId: _toPlaceId,
+      toLat: _toPosition?.lat,
+      toLon: _toPosition?.lon,
+      departMinutes: _times[_TimeSlot.plannedStart],
+    );
     final done = await showConnectionSearchSheet(
       context,
+      seed: seed,
       destination: replacing == null
           ? AddToDay(
               tripId: widget.tripId,
@@ -413,20 +437,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
       // where naming them all wrote null for the one that was forgotten — which
       // is how editing an imported leg used to silently drop the stops it calls
       // at and the ids its journey was searched by.
-      //
-      // The base is the item as it is *now*, not `widget.existing` — that is a
-      // snapshot from when the sheet opened, and the item may since have been
-      // grouped, turned into a decision, reordered, or had its live times (and
-      // with them its stopovers) refreshed. Only when it is no longer in the
-      // trip's items at all does the snapshot stand in.
-      final existing = widget.existing!;
-      final live = ref.read(itineraryProvider(widget.tripId)).value;
-      final base = live == null
-          ? existing
-          : live.firstWhere(
-              (it) => it.id == existing.id,
-              orElse: () => existing,
-            );
+      final base = _current!;
       await repo.updateItem(
         base.copyWith(
           date: _date,
@@ -468,16 +479,8 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           // position actually changed; saving a leg without touching its map
           // keeps everything it arrived with.
           sourceTripId: Value(_isTransport ? base.sourceTripId : null),
-          fromPlaceId: Value(
-            _isTransport && !_moved(base.fromLat, base.fromLon, _fromPosition)
-                ? base.fromPlaceId
-                : null,
-          ),
-          toPlaceId: Value(
-            _isTransport && !_moved(base.toLat, base.toLon, _toPosition)
-                ? base.toPlaceId
-                : null,
-          ),
+          fromPlaceId: Value(_isTransport ? _fromPlaceId : null),
+          toPlaceId: Value(_isTransport ? _toPlaceId : null),
           stopovers: Value(_isTransport ? base.stopovers : null),
         ),
       );
@@ -599,6 +602,39 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// that decides whether that end's router id still describes it.
   static bool _moved(double? lat, double? lon, _Coordinates? now) =>
       lat != now?.lat || lon != now?.lon;
+
+  /// The entry being edited as it is *now*, or null for a new one.
+  ///
+  /// Not `widget.existing` — that is a snapshot from when the sheet opened, and
+  /// the item may since have been grouped, turned into a decision, reordered,
+  /// or had its live times (and with them its stopovers) refreshed. Only when it
+  /// is no longer in the trip's items at all does the snapshot stand in.
+  ItineraryItem? get _current {
+    final existing = widget.existing;
+    if (existing == null) return null;
+    final live = ref.read(itineraryProvider(widget.tripId)).value;
+    return live == null
+        ? existing
+        : live.firstWhere((it) => it.id == existing.id, orElse: () => existing);
+  }
+
+  /// The ids the router addressed this leg's ends by, for as long as they still
+  /// describe them: an end the form has moved has none (see the save), and a
+  /// new leg has none yet. Read by the save and by the search alike, so a
+  /// search from an unsaved form addresses each end exactly as saving it would.
+  String? get _fromPlaceId {
+    final base = _current;
+    return base == null || _moved(base.fromLat, base.fromLon, _fromPosition)
+        ? null
+        : base.fromPlaceId;
+  }
+
+  String? get _toPlaceId {
+    final base = _current;
+    return base == null || _moved(base.toLat, base.toLon, _toPosition)
+        ? null
+        : base.toPlaceId;
+  }
 
   Future<void> _delete() async {
     await ref.read(repositoryProvider).deleteItem(widget.existing!.id);

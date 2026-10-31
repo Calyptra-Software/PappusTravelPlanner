@@ -18,6 +18,7 @@ import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.da
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
+import 'package:travelplanner/features/transport_search/presentation/search_seed.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
@@ -394,6 +395,110 @@ void main() {
       await openNewLeg(tester);
 
       expect(searchSheetAlternativeId(tester), isNull);
+    });
+  });
+
+  group('what the search opens on', () {
+    // A tall surface, as the other search tests use: the form with a name
+    // standing in a field is taller than the default test window's sheet.
+    setUp(() {
+      final view =
+          TestWidgetsFlutterBinding.instance.platformDispatcher.views.first;
+      view.physicalSize = const Size(1000, 2400);
+      view.devicePixelRatio = 1;
+      addTearDown(view.reset);
+    });
+
+    Future<void> type(WidgetTester tester, String label, String text) =>
+        tester.enterText(find.widgetWithText(TextFormField, label), text);
+
+    Future<void> searchOnline(WidgetTester tester) async {
+      final button = find.text('Search online');
+      await tester.ensureVisible(button);
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+    }
+
+    SearchSeed seedOf(WidgetTester tester) => tester
+        .widget<ConnectionSearchSheet>(find.byType(ConnectionSearchSheet))
+        .seed!;
+
+    Finder inSearch(Finder finder) => find.descendant(
+      of: find.byType(ConnectionSearchSheet),
+      matching: finder,
+    );
+
+    testWidgets('a new leg hands over the names typed into it', (tester) async {
+      // Typing the stations and then asking for a timetable is the ordinary way
+      // in; the search used to open empty and have them typed again.
+      await tester.pumpWidget(
+        wrap(ItemFormSheet(tripId: 1, kind: ItemKind.transport, day: day)),
+      );
+      await tester.pump();
+      await type(tester, 'From', 'Rahlstedt');
+      await type(tester, 'To', 'Hamburg Hbf');
+      await searchOnline(tester);
+
+      // Names, not places: the picker opens on them, and the station is still
+      // the user's to choose.
+      final seed = seedOf(tester);
+      expect(seed.from, isNull);
+      expect(seed.fromHint, 'Rahlstedt');
+      expect(seed.toHint, 'Hamburg Hbf');
+      expect(inSearch(find.text('Rahlstedt')), findsOneWidget);
+      expect(inSearch(find.text('Hamburg Hbf')), findsOneWidget);
+    });
+
+    testWidgets('an edited leg is searched as the form shows it, unsaved', (
+      tester,
+    ) async {
+      final leg = await importedLeg();
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: leg),
+          items: [leg],
+        ),
+      );
+      await tester.pump();
+      await type(tester, 'To', 'Hauptbahnhof');
+      await searchOnline(tester);
+
+      final sheet = tester.widget<ConnectionSearchSheet>(
+        find.byType(ConnectionSearchSheet),
+      );
+      expect(sheet.destination, isA<ReplaceRun>());
+      final seed = sheet.seed!;
+      // The ids the leg was found by still describe its ends, so both are
+      // searchable at once; the label is the one just typed.
+      expect(seed.from?.queryId, 'de-DELFI_de:02000:81501:1:2');
+      expect(seed.to?.queryId, 'de-DELFI_de:02000:10951:1:6');
+      expect(seed.to?.name, 'Hauptbahnhof');
+      expect(seed.departMinutes, 452);
+    });
+
+    testWidgets('a hand-entered leg offers its unsaved names', (tester) async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          fromLocation: const Value('Rahlstedt'),
+          toLocation: const Value('Hamburg Hbf'),
+        ),
+      );
+      final leg = await reread(id);
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: leg),
+          items: [leg],
+        ),
+      );
+      await tester.pump();
+      await type(tester, 'From', 'Bargteheide');
+      await searchOnline(tester);
+
+      expect(seedOf(tester).fromHint, 'Bargteheide');
+      expect(seedOf(tester).toHint, 'Hamburg Hbf');
     });
   });
 
