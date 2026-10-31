@@ -718,7 +718,9 @@ UI (features/*/presentation, *widgets)
   `TransportModes` (the built-in-plus-custom transport modes, above), `People` (reusable payer/
   beneficiary names; one flagged `isMe`), `TripParticipants`, and `CostBeneficiaries`
   (many-to-many join tables), `Checklists` / `ChecklistItems` (any number of named checklists
-  per trip), and `CollapsedDays` (persists which itinerary days are collapsed).
+  per trip), `CollapsedDays` (persists which itinerary days are collapsed), and
+  `Recordings` / `RecordingFixes` (a track the app is recording, kept fix by fix until the
+  import files it as `Tracks` rows — a buffer outside every trip, see the table docs).
 - **Expense splitting** lives in `lib/features/costs/trip_stats.dart` as pure functions
   (`computeTripStats`) so the per-currency category breakdown, per-person paid/share/balance,
   and minimal settle-up transfers are unit-testable without a database. A cost splits among
@@ -1023,10 +1025,83 @@ UI (features/*/presentation, *widgets)
   is still a pointing act — but only the reading the press was waiting for is
   taken, and a map tap made while waiting wins, or a choice made at a doorway
   would follow its owner down the street.
+- **The position comes from one stream, so nothing opens its own.** `geolocator` hands
+  the stream it opened first to every later caller, *with the settings it was opened with*,
+  until its last listener goes — so a second `getPositionStream` with other settings does
+  not fail, it silently answers with the first. `PositionFeed`
+  (`features/map/location/position_feed.dart`, `positionFeedProvider`) is therefore the
+  only caller: the map's mark and the track recorder each listen there with a
+  `PositionDemand`, and the feed holds one platform subscription opened for the most
+  demanding reader present, closing and reopening it when that changes. A recording
+  started under a mark the remembered switch put back on would otherwise have run on the
+  mark's settings. Opening is synchronous when nothing has to be closed first, so a
+  reading delivered in the same breath as a listen is not lost; only a change of settings
+  waits for the close. The permission check is shared the same way
+  (`checkLocationAccess`). `TrackRecorderController` (`track_recorder.dart`) is the other
+  reader: **not** `autoDispose`, since leaving a map is the ordinary thing to do while
+  recording, and watching `repositoryProvider`, so switching the database rebuilds it and
+  the recording left running in the old file is found there as one nobody stopped. What it
+  keeps is written fix by fix (`Recordings`), unlike the mark's fix, which is still never
+  stored. **On Android a recording runs in `geolocator`'s foreground service**
+  (`positionSettingsFor` returns `AndroidSettings` with a `ForegroundNotificationConfig` for
+  `PositionDemand.recording` only), since without one the system stops delivering positions
+  the moment the app leaves the screen. It is started from the foreground, on the press,
+  which is why no `ACCESS_BACKGROUND_LOCATION` is needed and none is declared, and it ends
+  with the recording's last listener: `StreamHandlerImpl` stops the service when the stream
+  is cancelled. The notification's texts are localized by the recorder (`RecordingNotice`,
+  through `appLocaleFor`, which the home widget shares) because the feed has no widget to
+  ask; its small icon, `res/drawable/ic_stat_recording.xml`, is looked up **by name** on the
+  native side, so `res/raw/keep.xml` keeps it from the release build's resource shrinker,
+  which cannot see a name that lives in Dart. No wake lock (`WAKE_LOCK` stays removed): a
+  fix carries the time it was taken, so one delivered late still lands where it belongs —
+  and none were seen to be dropped: a walk recorded on an Android 15 phone with the screen
+  off came out without a gap or a straight cut across a bend. **The notification is meant to be seen**, which upstream's is not: its channel
+  is created with `IMPORTANCE_NONE` (as of 5.2.1), which leaves a recording running with
+  nothing in the drawer to say so or to tap back into the app by. The copy creates it
+  `IMPORTANCE_LOW` (silent, but listed), and the recorder asks for `POST_NOTIFICATIONS` on
+  the record press (`notification_permission.dart`, `NotificationPermission.kt`), after the
+  location and on a start only. Its answer is **not read**: the service posts its
+  notification with or without the grant, and without it Android 13 and later merely list
+  the service in the quick settings' task manager instead of the drawer, so a refusal
+  costs the notice its place and never the recording. A channel's importance cannot be
+  raised once created, so a phone that ran a build of this branch before the change keeps
+  the silent channel until the app is reinstalled. One more fact about the vendored
+  service worth knowing before relying on it: the service is **bound** to the plugin (`GeolocatorPlugin.bindForegroundService`),
+  not started, so it ends when the Flutter engine detaches — swiping the app out of the
+  recents ends a recording, which the database then holds as one nobody stopped and the
+  next launch offers to continue. Read off the Java first, and seen so on the same phone.
+- **A recording is made, held and filed from the trip's map, and the recorder's state is the
+  only answer to "is there one".** `TrackRecorderController.build` looks for an unfiled row
+  (`unfiledRecordings`) and takes it up **held** — `interrupted` when it has no stop, since
+  that is what the app being closed under it leaves — and every press awaits that look, so a
+  start cannot begin a second recording beside one about to be found. The button
+  (`MapRecordButton`, under the locate button) and the band (`RecordingBand`) both read that
+  state, never the table: a second source would disagree for the length of a database round
+  trip after every discard, which is a band flashing back up with "0 m" on it. One press has
+  four meanings, defined once in `recordAction` so the labelled button an empty map offers
+  cannot drift from the round one: start, stop (or withdraw a start still at its dialog),
+  continue a held one, and — while another trip holds the one slot — name that trip, because
+  a second recording would be filed into the wrong trip by whoever forgot the first. A
+  recording whose trip was deleted (`setNull`) is offered on every trip — which needs the
+  recorder to **watch its own row** while it holds one (`_follow`): the delete nulls the
+  column behind its back, and a state still naming the deleted trip kept the recording off
+  every map until the next launch, with the button quoting a trip that had no title left. Filing is the
+  ordinary track import (`fileRecording`, sharing `_divideAcross` with the GPX door) with
+  `source: recorded`, the zone the recording **noted at its start** rather than the device's
+  now, and no name, since inventing "Recording of 1 May" would be a label nobody gave it; the
+  row is thrown away only once the lines are written. The live line is drawn in the device
+  mark's blue (`kLocationBlue`), being the device's own — not the trip's accent, which would
+  claim a place in the plan before anyone has said which, and not the reserved red. A trip
+  with no positions still gets a map once a recording has a point, since that is then the
+  thing to draw. **The band is passed as `bottomNavigationBar` only while it shows
+  something**: any bottom bar at all, even an empty one, makes the scaffold take the system
+  inset out of the body, and the map's attribution sinks under the navigation bar — a test
+  in `trip_map_screen_test.dart` caught it.
 - **The Android half of `geolocator` is a copy in this repository, without Google
-  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with three
+  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with four
   edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,
-  and the branch in `GeolocationManager` that chose between them — and `dependency_overrides`
+  and the branch in `GeolocationManager` that chose between them, plus the foreground
+  notification's channel importance (above) — and `dependency_overrides`
   in `pubspec.yaml` puts it in place of the pub.dev package for **every** build, not for a
   variant: there is no Play Store listing to keep GMS for, and one artifact per release is
   what leaves the door open to reproducible builds later. The reason is F-Droid, which
@@ -1039,8 +1114,9 @@ UI (features/*/presentation, *widgets)
   those three states itself — and, below Android 12, the fused provider:
   `LocationManagerClient` prefers `LocationManager.FUSED_PROVIDER` from 12 onwards and falls
   back to GPS. Everything else is upstream's own code, the foreground service included, so
-  recording a track later needs nothing from Google either. The copy carries no permissions
-  of its own; the four in `SECURITY.md` are still the app's own statement. Keep the edits
+  recording a track needs nothing from Google either. The copy carries no permissions of its
+  own; the seven in `SECURITY.md` are the app's own statement, `FOREGROUND_SERVICE_LOCATION`
+  included, which upstream deliberately does not declare (5.1.1+1). Keep the edits
   minimal and the version equal to the upstream release they were taken from — the copy is
   meant to stay a diff that can be rebased, forked, or offered upstream, where the
   maintainer has said he would take a Play-Services-free path as long as GMS stays the
@@ -2081,7 +2157,7 @@ UI (features/*/presentation, *widgets)
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 40) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 41) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ### Android home-screen widget
@@ -2109,8 +2185,9 @@ androidx `work-runtime` directly *and* on `androidx.glance:glance-appwidget`, wh
 on it again — neither can be excluded, since three of the plugin's own Kotlin sources
 reference Glance. Its only user is `HomeWidgetBackgroundWorker`, reached solely from
 `HomeWidget.registerInteractivityCallback`, which this app does not use: it pushes a payload
-with `saveWidgetData`/`updateWidget` and answers a tap with a deep link. So the five
-permissions it merged into the manifest are removed with `tools:node="remove"`, and — the
+with `saveWidgetData`/`updateWidget` and answers a tap with a deep link. So four of the five
+permissions it merged into the manifest are removed with `tools:node="remove"` — the fifth,
+`FOREGROUND_SERVICE`, is the app's own since the track recorder, and stays — and — the
 other half, without which the first is a crash rather than a tidy-up — the
 `WorkManagerInitializer` node is removed from `androidx.startup`'s provider, because that
 initializer runs in every process at launch and its `ForceStopRunnable` takes a

@@ -1912,6 +1912,96 @@ abstract class AppLocalizations {
   /// **'Computed route'**
   String get trackSourceRouted;
 
+  /// Title of the Android notification shown while the app records the device's position as a track.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording a track'**
+  String get recordingNotificationTitle;
+
+  /// Body of the Android notification shown while a track is being recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Pappus is recording your position. Stop it in the app.'**
+  String get recordingNotificationText;
+
+  /// Name of the Android notification channel for the notification shown while a track is recorded; users see it in the system's notification settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Track recording'**
+  String get recordingNotificationChannel;
+
+  /// Tooltip of the map button that starts recording the device's position as a track.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a track'**
+  String get mapRecordStart;
+
+  /// Tooltip of the map button while a track is being recorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get mapRecordStop;
+
+  /// Shown when the record button is pressed while another trip holds a recording that was not yet attached to entries or thrown away. {trip} is that trip's title.
+  ///
+  /// In en, this message translates to:
+  /// **'A recording from “{trip}” has not been filed yet. File or discard it there first.'**
+  String mapRecordElsewhere(String trip);
+
+  /// Band over the map while a track is recorded. {distance} is how far it runs so far, e.g. "1.2 km"; {time} is when it started, e.g. "14:05".
+  ///
+  /// In en, this message translates to:
+  /// **'Recording · {distance} · since {time}'**
+  String recordingRunning(String distance, String time);
+
+  /// Band over the map for a recording that was stopped and not yet attached to entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording stopped · {distance}'**
+  String recordingStopped(String distance);
+
+  /// Band over the map for a recording that was still running when the app was closed or stopped by the system.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording interrupted · {distance}'**
+  String recordingInterrupted(String distance);
+
+  /// Button on the recording band: record further, into the same recording.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get recordingContinue;
+
+  /// Button on the recording band: divide the recorded line among the trip's entries, the same way an imported GPX file is.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach to entries…'**
+  String get recordingFile;
+
+  /// Button (and dialog confirm) that throws a recording away.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard recording'**
+  String get recordingDiscard;
+
+  /// Confirmation before throwing a recording away.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard this recording? What was recorded is lost.'**
+  String get recordingDiscardQuestion;
+
+  /// Shown when a recording holds fewer than two positions and so cannot be attached to entries.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing was recorded that could be drawn yet'**
+  String get recordingEmpty;
+
+  /// Explanation in the time-zone picker of the track import, for a recording made by the app itself.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording stores UTC. It is shown in the zone the phone was in when it started; pick another if the entries\' times are in a different one.'**
+  String get trackRecordingZoneHintRecorded;
+
   /// Stands where a line's length would, when the stored line cannot be read or holds fewer than two points — the map draws nothing for it either way.
   ///
   /// In en, this message translates to:

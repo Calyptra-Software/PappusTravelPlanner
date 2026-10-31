@@ -51,6 +51,8 @@ void main() {
     List<ItineraryItem>? selection,
     List<List<DateTime>?> times = const [],
     bool readTimes = true,
+    Duration? offset,
+    TrackSource source = TrackSource.imported,
   }) async {
     tester.view.physicalSize = const Size(1000, 1400);
     tester.view.devicePixelRatio = 1.0;
@@ -71,6 +73,8 @@ void main() {
             lines: [line],
             times: times,
             readTimes: readTimes,
+            offset: offset,
+            source: source,
             name: 'Walk',
             selection: selection ?? [leg(1, 'A → B'), leg(2, 'B → C')],
           ),
@@ -410,6 +414,49 @@ void main() {
       // A warning, not a refusal.
       expect(confirmable(tester), isTrue);
 
+      await drain(tester);
+    });
+
+    testWidgets('an offset handed in is the one the times are read in', (
+      tester,
+    ) async {
+      // What this app's recorder knows and a file does not. UTC+05:45 is no
+      // test machine's zone, so it can only be on screen if it was used.
+      await pump(
+        tester,
+        selection: [leg(1, 'A → B')],
+        times: [onTheDay],
+        offset: const Duration(hours: 5, minutes: 45),
+      );
+      await tester.tap(find.text('2 actual times from the recording'));
+      await tester.pumpAndSettle();
+      expect(find.text('UTC+05:45'), findsOneWidget);
+      expect(find.textContaining('17:45'), findsWidgets);
+      expect(find.textContaining('The file stores UTC'), findsOneWidget);
+
+      await tester.tapAt(const Offset(500, 20));
+      await tester.pumpAndSettle();
+      await drain(tester);
+    });
+
+    testWidgets('one the app recorded is not called a file', (tester) async {
+      await pump(
+        tester,
+        selection: [leg(1, 'A → B')],
+        times: [onTheDay],
+        offset: const Duration(hours: 5, minutes: 45),
+        source: TrackSource.recorded,
+      );
+      await tester.tap(find.text('2 actual times from the recording'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('The file stores UTC'), findsNothing);
+      expect(
+        find.textContaining('the zone the phone was in when it started'),
+        findsOneWidget,
+      );
+
+      await tester.tapAt(const Offset(500, 20));
+      await tester.pumpAndSettle();
       await drain(tester);
     });
 

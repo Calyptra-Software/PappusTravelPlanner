@@ -50,6 +50,19 @@ void main() {
   DeviceLocationState stateOf(ProviderContainer c) =>
       c.read(deviceLocationProvider);
 
+  group('checkLocationAccess', () {
+    test('a platform that cannot say is not a refusal', () async {
+      // What some platforms answer where there is no permission model at all.
+      platform.permission = LocationPermission.unableToDetermine;
+      expect(await checkLocationAccess(mayAsk: false), isNull);
+    });
+
+    test('a platform that throws is a failure, not a crash', () async {
+      platform.checkError = Exception('channel gone');
+      expect(await checkLocationAccess(mayAsk: true), LocationProblem.failed);
+    });
+  });
+
   test('starts off, with nothing to say', () {
     final (container, _) = open();
     expect(stateOf(container).on, isFalse);

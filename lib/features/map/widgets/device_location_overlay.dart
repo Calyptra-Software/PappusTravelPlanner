@@ -11,7 +11,7 @@
 /// Note which "you are here" this is *not*. `now_marker.dart` answers where the
 /// **plan** has got to, from the clock and the day's entries, and it is drawn in
 /// the app's reserved red. This one answers where the **device** is, and says so
-/// in a color of its own — see [_kLocationBlue].
+/// in a color of its own — see [kLocationBlue].
 library;
 
 import 'dart:math' as math;
@@ -33,7 +33,7 @@ import 'map_overlays.dart';
 /// map application has drawn a receiver's own reading in for twenty years, so it
 /// is read correctly before anything is tapped — and it stays the same in light
 /// and dark, because the raster tiles under it do too.
-const Color _kLocationBlue = Color(0xFF1A73E8);
+const Color kLocationBlue = Color(0xFF1A73E8);
 
 /// How far in the map zooms when it is centered on a fix, unless it is already
 /// closer.
@@ -187,7 +187,7 @@ class MapLocationButton extends ConsumerWidget {
           : Icons.location_searching,
       // Highlighted while it is on, so the button says whether the receiver is
       // running even before the first fix has drawn anything.
-      foreground: state.on ? _kLocationBlue : null,
+      foreground: state.on ? kLocationBlue : null,
       tooltip: state.on ? l10n.mapMyLocationCenter : l10n.mapMyLocationShow,
       onPressed: () {
         if (!state.on) {
@@ -237,8 +237,8 @@ class DeviceLocationLayer extends ConsumerWidget {
                 point: fix.position,
                 radius: fix.accuracyMeters,
                 useRadiusInMeter: true,
-                color: _kLocationBlue.withValues(alpha: 0.15),
-                borderColor: _kLocationBlue.withValues(alpha: 0.5),
+                color: kLocationBlue.withValues(alpha: 0.15),
+                borderColor: kLocationBlue.withValues(alpha: 0.5),
                 borderStrokeWidth: 1,
               ),
             ],
@@ -275,7 +275,7 @@ class _LocationDot extends StatelessWidget {
       width: 16,
       height: 16,
       decoration: BoxDecoration(
-        color: _kLocationBlue,
+        color: kLocationBlue,
         shape: BoxShape.circle,
         border: Border.all(color: const Color(0xFFFFFFFF), width: 2.5),
       ),

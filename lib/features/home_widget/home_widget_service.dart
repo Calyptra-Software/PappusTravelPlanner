@@ -74,7 +74,7 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
       );
     }
 
-    final locale = _resolveLocale(ref);
+    final locale = appLocaleFor(ref.read(localeProvider));
     final l10n = await AppLocalizations.delegate.load(locale);
     // Pre-resolve every mode's localized label so the payload (which the native
     // side only displays) carries plain text, not row ids.
@@ -95,19 +95,6 @@ Future<void> updateHomeWidget(WidgetRef ref) async {
   } catch (error, stack) {
     debugPrint('Home widget update failed: $error\n$stack');
   }
-}
-
-/// Clamps the active locale to one the app actually ships (en/de), defaulting
-/// to English, so [AppLocalizations.delegate.load] always succeeds.
-Locale _resolveLocale(WidgetRef ref) {
-  final chosen =
-      ref.read(localeProvider) ??
-      WidgetsBinding.instance.platformDispatcher.locale;
-  return AppLocalizations.supportedLocales.any(
-        (l) => l.languageCode == chosen.languageCode,
-      )
-      ? Locale(chosen.languageCode)
-      : const Locale('en');
 }
 
 Future<void> _save(WidgetPayload p) async {

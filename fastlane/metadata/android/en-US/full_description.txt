@@ -10,7 +10,7 @@ You can plan all kinds of trips: an afternoon out, the daily commute, and two we
 • Alternatives — plan different ways a day could go and pick one later; only the chosen option counts toward the trip's money.
 • Planned versus actual times, with a green or red +/− on each end, and a "you are here" mark on today's plan.
 • Real connections — search an open routing service (Transitous) covering public transport, long-distance trains, buses, and more from operators around the world, compare the results, import one as that day's legs, and refresh its live times later.
-• A map — a trip's places and legs on an OpenStreetMap background, with the entry that is under way marked as the timeline marks it. Import a GPX track onto a leg and the map draws the line you actually followed instead of the straight one.
+• A map — a trip's places and legs on an OpenStreetMap background, with the entry that is under way marked as the timeline marks it. Record a track from the map, or import a GPX file, and the map draws the line you actually followed instead of the straight one.
 • Photos and files on the plan — attach a photograph or a document to an entry, to a group, or to the trip itself. They live inside the database, so a copy of that one file is a copy of everything. A photo carrying a position shows up on the map, and one of them can be the cover on the trip's overview card.
 • Costs in as many currencies as you like — attached to a place, a leg, a whole shared ticket, or the trip, with your own categories and your own exchange rates.
 • Countries you have been to — the world drawn from bundled outlines, counted from your trips or entered manually.

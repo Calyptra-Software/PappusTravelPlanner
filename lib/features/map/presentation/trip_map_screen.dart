@@ -27,6 +27,8 @@ import '../finite_camera.dart';
 import '../map_features.dart';
 import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
+import '../widgets/recording_overlay.dart';
+import '../location/track_recorder.dart';
 import 'map_item_sheet.dart';
 
 /// A trip on a map: its places as pins, its transport legs as lines between
@@ -55,8 +57,24 @@ class TripMapScreen extends ConsumerWidget {
     final isRoutine = trip?.kind == TripKind.routine;
     final now = isRoutine ? null : ref.watch(nowProvider).value;
 
+    reportRecordingProblems(context, ref);
+    // A recording draws on a map with nothing else on it, so a trip without a
+    // single position still gets a map once something has been recorded.
+    final recordingDrawn = ref.watch(
+      trackRecorderProvider.select(
+        (s) => recordingIsFor(s, tripId) && s.lines.any((l) => l.isNotEmpty),
+      ),
+    );
+    final recordingHere = ref.watch(
+      trackRecorderProvider.select((s) => recordingIsFor(s, tripId)),
+    );
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.mapTitle)),
+      // Null, not an empty band, while there is nothing to say: any bottom bar
+      // at all makes the scaffold take the system inset out of the body, and
+      // the attribution would sink under the navigation bar.
+      bottomNavigationBar: recordingHere ? RecordingBand(tripId: tripId) : null,
       body: itemsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(child: Text(l10n.genericError('$error'))),
@@ -82,7 +100,9 @@ class TripMapScreen extends ConsumerWidget {
             // here is drawn from.
             photos: photos,
           );
-          if (features.isEmpty) return _EmptyMap(l10n: l10n);
+          if (features.isEmpty && !recordingDrawn) {
+            return _EmptyMap(l10n: l10n, tripId: tripId);
+          }
           return _MapView(
             tripId: tripId,
             features: features,
@@ -402,7 +422,14 @@ class _MapViewState extends ConsumerState<_MapView> {
     final features = widget.features;
     final basemap = widget.basemap;
     final modes = ref.watch(transportModesByIdProvider);
-    final points = features.allPoints;
+    // Read, not watched: this frames the opening view only, and a recording
+    // under way must not re-frame the map with every point it keeps.
+    final recording = ref.read(trackRecorderProvider);
+    final points = [
+      ...features.allPoints,
+      if (recordingIsFor(recording, widget.tripId))
+        ...recordingPoints(recording),
+    ];
     final accent = widget.accent ?? theme.colorScheme.primary;
 
     // The map is put where the user is once, when the receiver first answers.
@@ -513,6 +540,9 @@ class _MapViewState extends ConsumerState<_MapView> {
                   ],
                 ),
               ),
+              // What is being recorded, above the plan's lines and below every
+              // mark: it is a line too, and a pin must stay tappable over it.
+              RecordingLayer(tripId: widget.tripId),
               MarkerLayer(
                 markers: [
                   // One badge per entry, not per line: a leg recorded in three
@@ -587,6 +617,8 @@ class _MapViewState extends ConsumerState<_MapView> {
                 MapLocationButton(
                   onCenter: (fix) => centerOnFix(_controller, fix),
                 ),
+                const SizedBox(height: 8),
+                MapRecordButton(tripId: widget.tripId),
               ],
             ),
           ),
@@ -634,9 +666,10 @@ class _ModeBadge extends StatelessWidget {
 /// place on the map or from importing a connection, and neither has happened
 /// here yet.
 class _EmptyMap extends StatelessWidget {
-  const _EmptyMap({required this.l10n});
+  const _EmptyMap({required this.l10n, required this.tripId});
 
   final AppLocalizations l10n;
+  final int tripId;
 
   @override
   Widget build(BuildContext context) {
@@ -666,6 +699,8 @@ class _EmptyMap extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            const SizedBox(height: 24),
+            RecordTrackButton(tripId: tripId),
           ],
         ),
       ),

@@ -125,7 +125,7 @@ dev_dependencies:
 # a map, and `LocationManagerClient` (upstream's own, Play-Services-free code
 # path) does that through Android's LocationManager. There is no Play Store
 # build to keep GMS for, so the swap is unconditional rather than a variant.
-# third_party/geolocator_android/README.md documents the three edits, what they
+# third_party/geolocator_android/README.md documents the four edits, what they
 # cost, and how to rebase them onto a new release.
 #
 # SQLite is compiled from the copy in third_party/sqlite3, not downloaded. Left
