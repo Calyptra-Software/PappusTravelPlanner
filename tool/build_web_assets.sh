@@ -7,12 +7,12 @@
 #
 # Run it after `flutter pub get` whenever drift or sqlite3 move. CI runs it too
 # and fails if the result differs from what is committed, so a bump that left
-# these behind cannot merge green (AGENTS.md, "Web").
+# these behind cannot merge green (docs/design/web.md).
 #
 # The worker is compiled at -O4 because that is the level drift compiles its
 # own released worker at, and the one level that keeps drift's null test on
 # `navigator.locks`: below it the worker hangs in every insecure context (see
-# AGENTS.md). dart2js output depends on the Dart SDK, so a Flutter upgrade can
+# docs/design/web.md). dart2js output depends on the Dart SDK, so a Flutter upgrade can
 # change the worker without any package moving; that is a regeneration too.
 set -euo pipefail
 

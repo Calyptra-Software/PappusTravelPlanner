@@ -157,9 +157,10 @@ hand, is described in [docs/fdroid.md](docs/fdroid.md).
 
 ## How the code is arranged
 
-[AGENTS.md](AGENTS.md) is the long version — the layering, why a trip and a routine are one
-table, why money is stored in minor units, what a group and a decision each mean. It is
-written for coding agents but reads perfectly well for people, and it is the fastest way to
+[AGENTS.md](AGENTS.md) is the short version — the layering, the data model, the rules that
+cut across the whole app — and [docs/design/](docs/design/) the long one, a file per area
+saying why a trip and a routine are one table, what a group and a decision each mean, and
+the rest. Both are written for coding agents but read perfectly well for people, and it is the fastest way to
 find out whether the thing you are about to add already has a place.
 
 Two conventions worth stating here:

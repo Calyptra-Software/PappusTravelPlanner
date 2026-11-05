@@ -41,7 +41,7 @@ void main() {
     // -and-divide form has to stay exact over — it is written without shifts
     // and masks because the web's are 32 bits and unsigned, which this test
     // cannot see: `flutter test` runs on the VM, where both forms agree. The
-    // check that does see it is `dart compile js` plus `node` (see AGENTS.md).
+    // check that does see it is `dart compile js` plus `node` (docs/design/tracks.md).
     const corners = [
       LatLng(90, 180),
       LatLng(-90, -180),

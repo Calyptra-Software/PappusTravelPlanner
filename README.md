@@ -212,9 +212,9 @@ State lives in [Riverpod](https://riverpod.dev) providers, navigation in
 [Drift](https://drift.simonbinder.eu) over SQLite. Drift, Riverpod, and the localizations all
 generate code, and the generated files are committed beside their sources.
 
-[AGENTS.md](AGENTS.md) is the long version — the layering, why a trip and a routine are one
-table, why money is stored in minor units, what a group and a decision each mean. It is
-written for coding agents but reads perfectly well for people.
+[AGENTS.md](AGENTS.md) is the short version — the layering, the data model, the rules that
+cut across the whole app — and [docs/design/](docs/design/) the long one.
+Both are written for coding agents but read perfectly well for people.
 
 ## Contributing
 

@@ -72,7 +72,7 @@ jobs:
   # not a ceiling but a mode: `android.builtInKotlin=true` in
   # android/gradle.properties has AGP compile every Kotlin source in the build —
   # ours and all eleven plugin modules' — instead of the Kotlin Gradle Plugin
-  # (see AGENTS.md, "Platform build constraints"; under Flutter 3.44 only the
+  # (see docs/design/platform-builds.md; under Flutter 3.44 only the
   # other setting built at all). Every failure here happens while Gradle
   # applies its plugins, long before a line of Dart or Kotlin is compiled, so
   # they are invisible to `analyze` and `test` — a breaking bump merged green
@@ -133,7 +133,7 @@ jobs:
 
       # The one fact about this build that nothing else would notice going
       # wrong. `third_party/geolocator_android` exists so that no Google Play
-      # Services code is linked in (AGENTS.md, and SECURITY.md states it as a
+      # Services code is linked in (docs/design/platform-builds.md, and SECURITY.md states it as a
       # fact about the released binary) -- and the way to lose that is not a
       # broken build but a quiet one: a `flutter pub upgrade` that drops the
       # override, a new plugin that brings its own `play-services-*`, or a
@@ -148,7 +148,7 @@ jobs:
           ./gradlew -q :app:dependencies --configuration releaseRuntimeClasspath \
             > "$RUNNER_TEMP/deps.txt"
           if grep -i -e 'play-services' -e 'com\.google\.android\.gms' "$RUNNER_TEMP/deps.txt"; then
-            echo "::error::Google Play Services reached the release classpath — see AGENTS.md on third_party/geolocator_android"
+            echo "::error::Google Play Services reached the release classpath — see docs/design/platform-builds.md on third_party/geolocator_android"
             exit 1
           fi
           echo "No Play Services in the release runtime classpath."
@@ -164,7 +164,7 @@ jobs:
       - name: Check SQLite was compiled, not downloaded
         run: |
           if find .dart_tool/hooks_runner -type d -name 'download-*' | grep -q .; then
-            echo "::error::package:sqlite3 downloaded a prebuilt library — see AGENTS.md on third_party/sqlite3"
+            echo "::error::package:sqlite3 downloaded a prebuilt library — see docs/design/platform-builds.md on third_party/sqlite3"
             find .dart_tool/hooks_runner -type d -name 'download-*'
             exit 1
           fi
@@ -297,7 +297,7 @@ jobs:
   # The web counterpart of the three artifacts above, and the only job that
   # compiles the app with dart2js at all: `flutter test` runs on the VM, which
   # is how a codec that broke only under JavaScript's numbers once went
-  # unnoticed (AGENTS.md).
+  # unnoticed (docs/design/tracks.md).
   web:
     name: Build web app
     runs-on: ubuntu-latest

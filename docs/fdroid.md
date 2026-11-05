@@ -47,7 +47,7 @@ client shows another language's.
 ## Things that would break the build, and why they do not
 
 - **Google Play Services.** `third_party/geolocator_android` exists so no proprietary code
-  is linked in; see AGENTS.md. F-Droid's scanner rejects both the Gradle coordinate and
+  is linked in; see [design/platform-builds.md](design/platform-builds.md). F-Droid's scanner rejects both the Gradle coordinate and
   the class references in the dex, and CI checks the release classpath on every pull
   request so this cannot regress quietly.
 - **Prebuilt native libraries.** `package:sqlite3` downloads a ready-made `libsqlite3.so`

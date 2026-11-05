@@ -230,7 +230,7 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
   /// This is deliberately **not** part of `copyItemPlan`, which builds a
   /// companion out of columns and cannot reach a second table. Every path that
   /// duplicates an item has to call this as well, which is exactly where the
-  /// rule will rot if it is not written down — see `AGENTS.md`.
+  /// rule will rot if it is not written down — see `docs/design/tracks.md`.
   /// Set [reversed] when the copy runs the other way — the reversed routine,
   /// where the way home covers the ground the way out covered. A path from A to
   /// B *is* the path from B to A, unlike the times and the stops beside it,
