@@ -11708,7 +11708,12 @@ class $$TripsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (itemGroupsRefs)
-                        await $_getPrefetchedData<Trip, $TripsTable, ItemGroup>(
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          ItemGroup,
+                          $ItemGroupsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
                               ._itemGroupsRefsTable(db),
@@ -11718,17 +11723,16 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).itemGroupsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (alternativeSetsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Trip,
                           $TripsTable,
-                          AlternativeSet
+                          AlternativeSet,
+                          $AlternativeSetsTable
                         >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
@@ -11739,17 +11743,16 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).alternativeSetsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (itineraryItemsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Trip,
                           $TripsTable,
-                          ItineraryItem
+                          ItineraryItem,
+                          $ItineraryItemsTable
                         >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
@@ -11760,27 +11763,33 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).itineraryItemsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (costsRefs)
-                        await $_getPrefetchedData<Trip, $TripsTable, Cost>(
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          Cost,
+                          $CostsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
                               ._costsRefsTable(db),
                           managerFromTypedResult: (p0) =>
                               $$TripsTableReferences(db, table, p0).costsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (tripTagsRefs)
-                        await $_getPrefetchedData<Trip, $TripsTable, TripTag>(
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          TripTag,
+                          $TripTagsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
                               ._tripTagsRefsTable(db),
@@ -11790,17 +11799,16 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).tripTagsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (tripParticipantsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Trip,
                           $TripsTable,
-                          TripParticipant
+                          TripParticipant,
+                          $TripParticipantsTable
                         >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
@@ -11811,14 +11819,17 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).tripParticipantsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (checklistsRefs)
-                        await $_getPrefetchedData<Trip, $TripsTable, Checklist>(
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          Checklist,
+                          $ChecklistsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
                               ._checklistsRefsTable(db),
@@ -11828,17 +11839,16 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).checklistsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (collapsedDaysRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Trip,
                           $TripsTable,
-                          CollapsedDay
+                          CollapsedDay,
+                          $CollapsedDaysTable
                         >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
@@ -11849,17 +11859,16 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).collapsedDaysRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (attachmentsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Trip,
                           $TripsTable,
-                          Attachment
+                          Attachment,
+                          $AttachmentsTable
                         >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
@@ -11870,14 +11879,17 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).attachmentsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                       if (recordingsRefs)
-                        await $_getPrefetchedData<Trip, $TripsTable, Recording>(
+                        await $_getPrefetchedDataByColumns<
+                          Trip,
+                          $TripsTable,
+                          Recording,
+                          $RecordingsTable
+                        >(
                           currentTable: table,
                           referencedTable: $$TripsTableReferences
                               ._recordingsRefsTable(db),
@@ -11887,10 +11899,8 @@ class $$TripsTableTableManager
                                 table,
                                 p0,
                               ).recordingsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.tripId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'trip_id',
                           typedResults: items,
                         ),
                     ];
@@ -12420,10 +12430,11 @@ class $$ItemGroupsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (itineraryItemsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ItemGroup,
                           $ItemGroupsTable,
-                          ItineraryItem
+                          ItineraryItem,
+                          $ItineraryItemsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ItemGroupsTableReferences
@@ -12434,17 +12445,16 @@ class $$ItemGroupsTableTableManager
                                 table,
                                 p0,
                               ).itineraryItemsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.groupId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'group_id',
                           typedResults: items,
                         ),
                       if (costsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ItemGroup,
                           $ItemGroupsTable,
-                          Cost
+                          Cost,
+                          $CostsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ItemGroupsTableReferences
@@ -12455,17 +12465,16 @@ class $$ItemGroupsTableTableManager
                                 table,
                                 p0,
                               ).costsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.groupId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'group_id',
                           typedResults: items,
                         ),
                       if (attachmentsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ItemGroup,
                           $ItemGroupsTable,
-                          Attachment
+                          Attachment,
+                          $AttachmentsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ItemGroupsTableReferences
@@ -12476,10 +12485,8 @@ class $$ItemGroupsTableTableManager
                                 table,
                                 p0,
                               ).attachmentsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.groupId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'group_id',
                           typedResults: items,
                         ),
                     ];
@@ -12877,10 +12884,11 @@ class $$AlternativeSetsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (alternativesRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       AlternativeSet,
                       $AlternativeSetsTable,
-                      Alternative
+                      Alternative,
+                      $AlternativesTable
                     >(
                       currentTable: table,
                       referencedTable: $$AlternativeSetsTableReferences
@@ -12891,8 +12899,8 @@ class $$AlternativeSetsTableTableManager
                             table,
                             p0,
                           ).alternativesRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.setId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'set_id',
                       typedResults: items,
                     ),
                 ];
@@ -13279,10 +13287,11 @@ class $$AlternativesTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (itineraryItemsRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       Alternative,
                       $AlternativesTable,
-                      ItineraryItem
+                      ItineraryItem,
+                      $ItineraryItemsTable
                     >(
                       currentTable: table,
                       referencedTable: $$AlternativesTableReferences
@@ -13293,10 +13302,8 @@ class $$AlternativesTableTableManager
                             table,
                             p0,
                           ).itineraryItemsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where(
-                            (e) => e.alternativeId == item.id,
-                          ),
+                      currentColumn: 'id',
+                      referencedColumn: 'alternative_id',
                       typedResults: items,
                     ),
                 ];
@@ -13587,10 +13594,11 @@ class $$TransportModesTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (itineraryItemsRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       TransportModeRow,
                       $TransportModesTable,
-                      ItineraryItem
+                      ItineraryItem,
+                      $ItineraryItemsTable
                     >(
                       currentTable: table,
                       referencedTable: $$TransportModesTableReferences
@@ -13601,8 +13609,8 @@ class $$TransportModesTableTableManager
                             table,
                             p0,
                           ).itineraryItemsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.mode == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'mode',
                       typedResults: items,
                     ),
                 ];
@@ -14918,10 +14926,11 @@ class $$ItineraryItemsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (costsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ItineraryItem,
                           $ItineraryItemsTable,
-                          Cost
+                          Cost,
+                          $CostsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ItineraryItemsTableReferences
@@ -14932,17 +14941,16 @@ class $$ItineraryItemsTableTableManager
                                 table,
                                 p0,
                               ).costsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.itemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'item_id',
                           typedResults: items,
                         ),
                       if (tracksRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ItineraryItem,
                           $ItineraryItemsTable,
-                          Track
+                          Track,
+                          $TracksTable
                         >(
                           currentTable: table,
                           referencedTable: $$ItineraryItemsTableReferences
@@ -14953,17 +14961,16 @@ class $$ItineraryItemsTableTableManager
                                 table,
                                 p0,
                               ).tracksRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.itemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'item_id',
                           typedResults: items,
                         ),
                       if (attachmentsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           ItineraryItem,
                           $ItineraryItemsTable,
-                          Attachment
+                          Attachment,
+                          $AttachmentsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ItineraryItemsTableReferences
@@ -14974,10 +14981,8 @@ class $$ItineraryItemsTableTableManager
                                 table,
                                 p0,
                               ).attachmentsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.itemId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'item_id',
                           typedResults: items,
                         ),
                     ];
@@ -15287,18 +15292,19 @@ class $$CurrenciesTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (costsRefs)
-                    await $_getPrefetchedData<
+                    await $_getPrefetchedDataByColumns<
                       CurrencyRow,
                       $CurrenciesTable,
-                      Cost
+                      Cost,
+                      $CostsTable
                     >(
                       currentTable: table,
                       referencedTable: $$CurrenciesTableReferences
                           ._costsRefsTable(db),
                       managerFromTypedResult: (p0) =>
                           $$CurrenciesTableReferences(db, table, p0).costsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.currency == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'currency',
                       typedResults: items,
                     ),
                 ];
@@ -16097,10 +16103,11 @@ class $$CostsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (costBeneficiariesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Cost,
                           $CostsTable,
-                          CostBeneficiary
+                          CostBeneficiary,
+                          $CostBeneficiariesTable
                         >(
                           currentTable: table,
                           referencedTable: $$CostsTableReferences
@@ -16111,10 +16118,8 @@ class $$CostsTableTableManager
                                 table,
                                 p0,
                               ).costBeneficiariesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.costId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'cost_id',
                           typedResults: items,
                         ),
                     ];
@@ -16543,15 +16548,20 @@ class $$TagsTableTableManager
               getPrefetchedDataCallback: (items) async {
                 return [
                   if (tripTagsRefs)
-                    await $_getPrefetchedData<Tag, $TagsTable, TripTag>(
+                    await $_getPrefetchedDataByColumns<
+                      Tag,
+                      $TagsTable,
+                      TripTag,
+                      $TripTagsTable
+                    >(
                       currentTable: table,
                       referencedTable: $$TagsTableReferences._tripTagsRefsTable(
                         db,
                       ),
                       managerFromTypedResult: (p0) =>
                           $$TagsTableReferences(db, table, p0).tripTagsRefs,
-                      referencedItemsForCurrentItem: (item, referencedItems) =>
-                          referencedItems.where((e) => e.tagId == item.id),
+                      currentColumn: 'id',
+                      referencedColumn: 'tag_id',
                       typedResults: items,
                     ),
                 ];
@@ -17209,10 +17219,11 @@ class $$PeopleTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (tripParticipantsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Person,
                           $PeopleTable,
-                          TripParticipant
+                          TripParticipant,
+                          $TripParticipantsTable
                         >(
                           currentTable: table,
                           referencedTable: $$PeopleTableReferences
@@ -17223,17 +17234,16 @@ class $$PeopleTableTableManager
                                 table,
                                 p0,
                               ).tripParticipantsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.personId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'person_id',
                           typedResults: items,
                         ),
                       if (costBeneficiariesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Person,
                           $PeopleTable,
-                          CostBeneficiary
+                          CostBeneficiary,
+                          $CostBeneficiariesTable
                         >(
                           currentTable: table,
                           referencedTable: $$PeopleTableReferences
@@ -17244,10 +17254,8 @@ class $$PeopleTableTableManager
                                 table,
                                 p0,
                               ).costBeneficiariesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.personId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'person_id',
                           typedResults: items,
                         ),
                     ];
@@ -18397,10 +18405,11 @@ class $$ChecklistsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (checklistItemsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Checklist,
                           $ChecklistsTable,
-                          ChecklistItem
+                          ChecklistItem,
+                          $ChecklistItemsTable
                         >(
                           currentTable: table,
                           referencedTable: $$ChecklistsTableReferences
@@ -18411,10 +18420,8 @@ class $$ChecklistsTableTableManager
                                 table,
                                 p0,
                               ).checklistItemsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.checklistId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'checklist_id',
                           typedResults: items,
                         ),
                     ];
@@ -20322,10 +20329,11 @@ class $$AttachmentsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (attachmentBlobsRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Attachment,
                           $AttachmentsTable,
-                          AttachmentBlob
+                          AttachmentBlob,
+                          $AttachmentBlobsTable
                         >(
                           currentTable: table,
                           referencedTable: $$AttachmentsTableReferences
@@ -20336,10 +20344,8 @@ class $$AttachmentsTableTableManager
                                 table,
                                 p0,
                               ).attachmentBlobsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.attachmentId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'attachment_id',
                           typedResults: items,
                         ),
                     ];
@@ -20998,10 +21004,11 @@ class $$RecordingsTableTableManager
                   getPrefetchedDataCallback: (items) async {
                     return [
                       if (recordingFixesRefs)
-                        await $_getPrefetchedData<
+                        await $_getPrefetchedDataByColumns<
                           Recording,
                           $RecordingsTable,
-                          RecordingFix
+                          RecordingFix,
+                          $RecordingFixesTable
                         >(
                           currentTable: table,
                           referencedTable: $$RecordingsTableReferences
@@ -21012,10 +21019,8 @@ class $$RecordingsTableTableManager
                                 table,
                                 p0,
                               ).recordingFixesRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.recordingId == item.id,
-                              ),
+                          currentColumn: 'id',
+                          referencedColumn: 'recording_id',
                           typedResults: items,
                         ),
                     ];
