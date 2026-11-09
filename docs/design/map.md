@@ -325,19 +325,29 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   what differs is `maxNativeZoom`, past which the last real level is enlarged. It is
   **measured**, since few sources state it, and getting it wrong is visible: past 17
   OpenTopoMap serves one identical placeholder, past 18 OpenSnowMap a picture reading "No
-  tile here", past 18 Humanitarian a 404. Each `TileLayer` is keyed by style because
+  tile here", past 18 Humanitarian a 404. Each `TileLayer` is keyed by source because
   `didUpdateWidget` reloads on a new URL but not on a new `maxNativeZoom`.
-- **A transparent overlay is not a second ground.** "Switched, never mixed" is about two
-  opaque layers, so `TileOverlay` does not break it: nothing is fetched to be hidden. An
-  overlay belongs to one entry rather than being a switch of its own, which keeps a second
-  server out of every map that did not ask for it. OpenSnowMap is the case that needed it:
-  its pistes are transparent and answered our requests, while its own grounds
-  (`base_snow_map`, `pistes-relief`) redirected them to an access-denied image, so the entry
-  stands on OpenTopoMap. Its terms forbid bulk download and do not address live use by an
-  app, so the operator's view of that is still to be asked. The `©` lives in each
-  `MapAttribution` label, not in the bar, because SRTM is credited rather than claimed.
+- **An overlay is not a second ground, and it is not part of a style.** "Switched, never
+  mixed" is about two opaque layers, so a transparent `MapOverlay` does not break it: nothing
+  is fetched to be hidden. A ski style was tried first, OpenSnowMap's pistes bundled over
+  OpenTopoMap, and it could not offer them on another ground; OpenRailwayMap exists only as
+  an overlay. So overlays are a list of their own, switched on independently
+  (`mapOverlaysProvider`) and drawn in list order, whichever was switched on first. Each
+  costs a further server's requests for every view, for as long as it stays on, so the
+  layers button is tinted while one is on, and `minZoom` keeps it from being fetched where
+  it would be a tangle. OpenSnowMap's own grounds (`base_snow_map`, `pistes-relief`)
+  redirected our requests to an access-denied image, and its terms forbid bulk download
+  without addressing live use by an app, so the operator's view is still to be asked. The
+  `©` lives in each `MapAttribution` label, not in the bar, because SRTM is credited rather
+  than claimed; `combinedAttributions` lists each source once.
+- **A 429 means stop.** OpenRailwayMap's terms ask a client to stop on one rather than risk a
+  longer block, and flutter_map, though it does not retry a 429, goes on asking for every new
+  tile. `tile_client.dart` therefore leaves a host alone for the `Retry-After` it gave, or for
+  a quarter of an hour, and answers for it meanwhile. It sits under every tile layer, since
+  no server's 429 means anything else. One shared client rather than flutter_map's per-layer
+  default, because a pause kept per layer would end with the next rebuild.
 - **"Raster tiles are pale" holds less well than it did.** The rule above that marks use map
-  colors and carry a ring was written for one pale ground. OpenTopoMap is browner and
-  OpenSnowMap draws blue, red and black pistes, which is the reserved red and close to
-  `kLocationBlue`. A satellite or dark style would break the premise outright, and needs that
-  checked before it is added.
+  colors and carry a ring was written for one pale ground. OpenTopoMap is browner and the
+  pistes are blue, red and black, which is the reserved red and close to `kLocationBlue`;
+  pins and lines stayed legible on them on a phone. A satellite or dark style would break the
+  premise outright, and needs that checked before it is added.

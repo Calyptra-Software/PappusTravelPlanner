@@ -172,6 +172,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final basemap = ref.watch(basemapProvider);
+    final overlays = ref.watch(mapOverlaysProvider);
 
     final itemsAsync = ref.watch(positionedItemsProvider);
     final items = itemsAsync.value ?? const <ItineraryItem>[];
@@ -243,7 +244,11 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
             ),
           ),
           children: [
-            ...basemapTileLayers(basemap, ref.watch(appVersionProvider)),
+            ...basemapTileLayers(
+              basemap,
+              overlays,
+              ref.watch(appVersionProvider),
+            ),
             // Every trip's lines in one layer rather than one layer per trip:
             // flutter_map culls and simplifies per layer, and a hundred layers
             // of one line each would do that work a hundred times.
@@ -335,7 +340,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
           left: 0,
           right: 0,
           bottom: 0,
-          child: MapAttributionBar(basemap: basemap),
+          child: MapAttributionBar(basemap: basemap, overlays: overlays),
         ),
       ],
     );

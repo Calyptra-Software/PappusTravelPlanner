@@ -10,8 +10,8 @@
 /// **Switched, never mixed.** Two grounds stacked would show a seam wherever one
 /// stops, disagree about zoom depth, and — the part that matters here — go on
 /// fetching tiles hidden under an opaque layer, which is traffic taken from
-/// someone's donated server for pixels nobody sees. A [TileOverlay] is not a
-/// second ground: it is transparent, hides nothing, and belongs to one entry.
+/// someone's donated server for pixels nobody sees. A [MapOverlay] is not a
+/// second ground: it is transparent and hides nothing.
 library;
 
 import '../../core/widgets/attribution.dart' show kOsmCopyrightUrl;
@@ -47,7 +47,7 @@ typedef MapAttribution = ({String label, String url});
 /// An enum rather than a text on the entry because that line is translated, and
 /// `basemap.dart` knows nothing of localizations: the compiler then insists on a
 /// sentence for every value. Never persisted.
-enum BasemapPurpose { everyday, topographic, cycling, muted, ski }
+enum BasemapPurpose { everyday, topographic, cycling, muted }
 
 sealed class Basemap {
   const Basemap({
@@ -77,17 +77,6 @@ sealed class Basemap {
 /// What differs per source is [RasterBasemap.maxNativeZoom].
 const double kBasemapMaxZoom = 19;
 
-/// Transparent image tiles drawn over a [RasterBasemap]'s own.
-final class TileOverlay {
-  const TileOverlay({required this.urlTemplate, required this.maxNativeZoom});
-
-  final String urlTemplate;
-
-  /// The deepest level the server has real tiles for; see
-  /// [RasterBasemap.maxNativeZoom].
-  final int maxNativeZoom;
-}
-
 /// Ordinary XYZ image tiles, the kind every raster server speaks.
 final class RasterBasemap extends Basemap {
   const RasterBasemap({
@@ -99,7 +88,6 @@ final class RasterBasemap extends Basemap {
     required this.urlTemplate,
     required this.maxNativeZoom,
     this.maxZoom = kBasemapMaxZoom,
-    this.overlays = const [],
   });
 
   final String urlTemplate;
@@ -110,10 +98,6 @@ final class RasterBasemap extends Basemap {
   /// is no tile, drawn as if it were the map.
   final int maxNativeZoom;
   final double maxZoom;
-
-  /// Drawn above the tiles, in order. Part of the entry rather than a switch of
-  /// their own, so a server is asked for them only by someone who chose them.
-  final List<TileOverlay> overlays;
 }
 
 /// OpenStreetMap's own tiles — the cartography people recognise as *the* OSM
@@ -143,28 +127,24 @@ const MapAttribution _osmAttribution = (
   url: kOsmCopyrightUrl,
 );
 
-const String _openTopoMapTiles =
-    'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png';
-
-/// Tiles above this level are one identical placeholder image.
-const int _openTopoMapNativeZoom = 17;
-
-/// The credit OpenTopoMap asks for: its data sources and the style's license.
-const List<MapAttribution> _openTopoMapAttributions = [
-  _osmAttribution,
-  (label: 'SRTM', url: 'https://www.earthdata.nasa.gov/data/instruments/srtm'),
-  (label: '© OpenTopoMap (CC-BY-SA)', url: 'https://opentopomap.org/about'),
-];
-
 /// Embedding in an app is welcome as long as the server is not burdened, its
 /// FAQ says, naming mass downloads; hence [OfflineDownload.forbidden].
 const RasterBasemap openTopoMapBasemap = RasterBasemap(
   id: 'opentopomap',
   name: 'OpenTopoMap',
   purpose: BasemapPurpose.topographic,
-  urlTemplate: _openTopoMapTiles,
-  maxNativeZoom: _openTopoMapNativeZoom,
-  attributions: _openTopoMapAttributions,
+  urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  // Tiles above this level are one identical placeholder image.
+  maxNativeZoom: 17,
+  // The credit OpenTopoMap asks for: its data sources and the style's license.
+  attributions: [
+    _osmAttribution,
+    (
+      label: 'SRTM',
+      url: 'https://www.earthdata.nasa.gov/data/instruments/srtm',
+    ),
+    (label: '© OpenTopoMap (CC-BY-SA)', url: 'https://opentopomap.org/about'),
+  ],
   offlineDownload: OfflineDownload.forbidden,
 );
 
@@ -201,41 +181,12 @@ const RasterBasemap humanitarianBasemap = RasterBasemap(
   offlineDownload: OfflineDownload.forbidden,
 );
 
-/// OpenSnowMap's pistes and lifts, over OpenTopoMap's relief.
-///
-/// The pistes are all OpenSnowMap serves to an app: its own grounds answer with
-/// an access-denied image. Its terms forbid bulk download by any application and
-/// require the credit below wherever the tiles are used. Past level 18 the
-/// server answers with a picture saying so, not a tile.
-const RasterBasemap openSnowMapBasemap = RasterBasemap(
-  id: 'opensnowmap',
-  name: 'OpenSnowMap',
-  purpose: BasemapPurpose.ski,
-  urlTemplate: _openTopoMapTiles,
-  maxNativeZoom: _openTopoMapNativeZoom,
-  overlays: [
-    TileOverlay(
-      urlTemplate: 'https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png',
-      maxNativeZoom: 18,
-    ),
-  ],
-  attributions: [
-    ..._openTopoMapAttributions,
-    (
-      label: '© opensnowmap.org (CC-BY-SA)',
-      url: 'https://www.opensnowmap.org/',
-    ),
-  ],
-  offlineDownload: OfflineDownload.forbidden,
-);
-
 /// Every basemap the user can pick, in menu order.
 const List<Basemap> kBasemaps = [
   osmStandardBasemap,
   openTopoMapBasemap,
   cyclOsmBasemap,
   humanitarianBasemap,
-  openSnowMapBasemap,
 ];
 
 const Basemap kDefaultBasemap = osmStandardBasemap;
@@ -246,3 +197,108 @@ Basemap basemapById(String? id) => kBasemaps.firstWhere(
   (basemap) => basemap.id == id,
   orElse: () => kDefaultBasemap,
 );
+
+/// What an overlay shows, which the picker names in the user's language.
+///
+/// An enum for the same reason as [BasemapPurpose]. Never persisted.
+enum MapOverlayContent { skiSlopes, railways }
+
+/// Transparent image tiles drawn over whichever basemap is chosen.
+///
+/// Switched on by hand and off by default, so an overlay's server hears from the
+/// app only after someone asked for it.
+final class MapOverlay {
+  const MapOverlay({
+    required this.id,
+    required this.source,
+    required this.content,
+    required this.urlTemplate,
+    required this.minZoom,
+    required this.maxNativeZoom,
+    required this.attributions,
+    required this.offlineDownload,
+  });
+
+  /// Stable key, used to persist the choice; see [Basemap.id].
+  final String id;
+
+  /// Who serves it, shown in the picker. A proper name, so not translated.
+  final String source;
+  final MapOverlayContent content;
+  final String urlTemplate;
+
+  /// Below this level the overlay is not drawn or fetched: it would be an
+  /// unreadable tangle, and each of those tiles is a request to a small server.
+  final int minZoom;
+
+  /// The deepest level with real tiles; see [RasterBasemap.maxNativeZoom].
+  final int maxNativeZoom;
+  final List<MapAttribution> attributions;
+  final OfflineDownload offlineDownload;
+}
+
+/// Pistes and lifts. OpenSnowMap's own grounds answer an app with an
+/// access-denied image, which is why this comes without one.
+///
+/// Its terms forbid bulk download by any application and require the credit
+/// below wherever the tiles are used. Past level 18 the server answers with a
+/// picture saying there is no tile.
+const MapOverlay skiSlopesOverlay = MapOverlay(
+  id: 'ski-slopes',
+  source: 'OpenSnowMap',
+  content: MapOverlayContent.skiSlopes,
+  urlTemplate: 'https://tiles.opensnowmap.org/pistes/{z}/{x}/{y}.png',
+  minZoom: 9,
+  maxNativeZoom: 18,
+  attributions: [
+    _osmAttribution,
+    (
+      label: '© opensnowmap.org (CC-BY-SA)',
+      url: 'https://www.opensnowmap.org/',
+    ),
+  ],
+  offlineDownload: OfflineDownload.forbidden,
+);
+
+/// Its terms admit small applications open to the public, free of charge and
+/// registration, that send a unique `User-Agent`, never fetch in bulk, and stop
+/// on a 429, which `tile_client.dart` sees to.
+const MapOverlay railwaysOverlay = MapOverlay(
+  id: 'railways',
+  source: 'OpenRailwayMap',
+  content: MapOverlayContent.railways,
+  urlTemplate: 'https://tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png',
+  minZoom: 5,
+  maxNativeZoom: 19,
+  attributions: [
+    _osmAttribution,
+    (
+      label: '© OpenRailwayMap (CC-BY-SA 2.0)',
+      url: 'https://www.openrailwaymap.org/',
+    ),
+  ],
+  offlineDownload: OfflineDownload.forbidden,
+);
+
+/// Every overlay the user can switch on. Also the order they are drawn in, so
+/// the picture does not depend on which was switched on first.
+const List<MapOverlay> kMapOverlays = [skiSlopesOverlay, railwaysOverlay];
+
+/// The overlays stored under [ids], in drawing order. An id this build cannot
+/// name is dropped.
+List<MapOverlay> mapOverlaysByIds(Iterable<String> ids) {
+  final wanted = ids.toSet();
+  return [
+    for (final overlay in kMapOverlays)
+      if (wanted.contains(overlay.id)) overlay,
+  ];
+}
+
+/// Everything that has to be credited for this picture, each source once.
+List<MapAttribution> combinedAttributions(
+  Basemap basemap,
+  List<MapOverlay> overlays,
+) => {
+  ...basemap.attributions,
+  for (final overlay in overlays) ...overlay.attributions,
+}.toList();

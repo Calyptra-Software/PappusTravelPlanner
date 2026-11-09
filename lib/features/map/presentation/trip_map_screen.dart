@@ -423,6 +423,7 @@ class _MapViewState extends ConsumerState<_MapView> {
     final theme = Theme.of(context);
     final features = widget.features;
     final basemap = widget.basemap;
+    final overlays = ref.watch(mapOverlaysProvider);
     final modes = ref.watch(transportModesByIdProvider);
     // Read, not watched: this frames the opening view only, and a recording
     // under way must not re-frame the map with every point it keeps.
@@ -495,7 +496,11 @@ class _MapViewState extends ConsumerState<_MapView> {
               ),
             ),
             children: [
-              ...basemapTileLayers(basemap, ref.watch(appVersionProvider)),
+              ...basemapTileLayers(
+                basemap,
+                overlays,
+                ref.watch(appVersionProvider),
+              ),
               GestureDetector(
                 onTap: () {
                   final hit = _lineHits.value;
@@ -630,7 +635,7 @@ class _MapViewState extends ConsumerState<_MapView> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: MapAttributionBar(basemap: basemap),
+            child: MapAttributionBar(basemap: basemap, overlays: overlays),
           ),
         ],
       ),

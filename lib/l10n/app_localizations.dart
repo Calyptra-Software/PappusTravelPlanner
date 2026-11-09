@@ -2230,11 +2230,23 @@ abstract class AppLocalizations {
   /// **'A calmer, more muted look'**
   String get mapStyleMuted;
 
-  /// Line under the OpenSnowMap entry in the list of map styles.
+  /// Heading of the optional layers drawn over any map style, in the map style sheet.
   ///
   /// In en, this message translates to:
-  /// **'Ski slopes and lifts on a topographic map'**
-  String get mapStyleSki;
+  /// **'Show on top'**
+  String get mapOverlays;
+
+  /// Name of the map overlay showing ski slopes and lifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Ski slopes and lifts'**
+  String get mapOverlaySkiSlopes;
+
+  /// Name of the map overlay showing railway lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Railways'**
+  String get mapOverlayRailways;
 
   /// Tooltip of the country map's button that opens the map on the whole screen.
   ///

@@ -745,9 +745,17 @@
   "@mapStyleMuted": {
     "description": "Line under the Humanitarian entry in the list of map styles."
   },
-  "mapStyleSki": "Ski slopes and lifts on a topographic map",
-  "@mapStyleSki": {
-    "description": "Line under the OpenSnowMap entry in the list of map styles."
+  "mapOverlays": "Show on top",
+  "@mapOverlays": {
+    "description": "Heading of the optional layers drawn over any map style, in the map style sheet."
+  },
+  "mapOverlaySkiSlopes": "Ski slopes and lifts",
+  "@mapOverlaySkiSlopes": {
+    "description": "Name of the map overlay showing ski slopes and lifts."
+  },
+  "mapOverlayRailways": "Railways",
+  "@mapOverlayRailways": {
+    "description": "Name of the map overlay showing railway lines."
   },
   "mapFullscreen": "Fullscreen map",
   "@mapFullscreen": {

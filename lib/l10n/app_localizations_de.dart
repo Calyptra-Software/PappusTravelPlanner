@@ -1320,8 +1320,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapStyleMuted => 'Ruhigeres, zurückhaltendes Kartenbild';
 
   @override
-  String get mapStyleSki =>
-      'Skipisten und Lifte auf einer topografischen Karte';
+  String get mapOverlays => 'Zusätzlich einblenden';
+
+  @override
+  String get mapOverlaySkiSlopes => 'Skipisten und Lifte';
+
+  @override
+  String get mapOverlayRailways => 'Bahnstrecken';
 
   @override
   String get mapFullscreen => 'Karte im Vollbild';

@@ -1295,7 +1295,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapStyleMuted => 'A calmer, more muted look';
 
   @override
-  String get mapStyleSki => 'Ski slopes and lifts on a topographic map';
+  String get mapOverlays => 'Show on top';
+
+  @override
+  String get mapOverlaySkiSlopes => 'Ski slopes and lifts';
+
+  @override
+  String get mapOverlayRailways => 'Railways';
 
   @override
   String get mapFullscreen => '全屏地图';

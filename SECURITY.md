@@ -124,8 +124,9 @@ boundary.
 `https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`),
 and the map fetches tile images from the server of the chosen map style
 (`lib/features/map/basemap.dart`): `tile.openstreetmap.org` by default, and
-`tile.opentopomap.org`, `tile-cyclosm.openstreetmap.fr`, `tile.openstreetmap.fr` or
-`tiles.opensnowmap.org` only once a style using them has been picked. A hostile or compromised reply should not be
+`tile.opentopomap.org`, `tile-cyclosm.openstreetmap.fr` or `tile.openstreetmap.fr` only
+once a style using them has been picked, and `tiles.opensnowmap.org` or
+`tiles.openrailwaymap.org` only while their overlay is switched on. A hostile or compromised reply should not be
 able to do more than produce a wrong or empty result, or a wrong picture. The
 web build parses a third kind of reply, font files from Google (see below);
 those are read by Flutter's renderer, not by code in this repository.
@@ -224,8 +225,8 @@ that can be built.
 
 **The map tells its tile server which tiles it is looking at.** Opening a trip's
 map requests the image tiles covering it, which means the server of the chosen
-map style, OpenStreetMap unless you picked another, sees the area you are looking
-at, along with a `User-Agent` naming the app and its version — the
+map style, OpenStreetMap unless you picked another, and of any overlay switched on
+sees the area you are looking at, along with a `User-Agent` naming the app and its version — the
 [OpenStreetMap tile usage policy](https://operations.osmfoundation.org/policies/tiles/)
 requires that identification. Tiles are cached, so panning back over ground
 already seen asks for nothing. No coordinate of yours is ever *sent*: a tile is

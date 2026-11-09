@@ -192,7 +192,7 @@ for offline use" as the prohibited pattern. Requests therefore carry the same id
 `User-Agent`, caching is left on, and `Basemap.offlineDownload`
 (`lib/features/map/basemap.dart`) records per source whether prefetching is allowed at all,
 so a future download feature has to ask the source rather than apply to whichever one
-happens to be selected. The other styles in that file come from other volunteer-run servers
+happens to be selected. The other styles and the overlays in that file come from other volunteer-run servers
 with terms of their own, noted on each entry.
 
 Please do not add anything that increases request volume — polling, prefetching, a search

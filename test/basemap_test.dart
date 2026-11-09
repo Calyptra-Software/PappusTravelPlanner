@@ -13,8 +13,6 @@ import 'package:travelplanner/features/map/widgets/map_style_button.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 void main() {
-  final rasters = kBasemaps.cast<RasterBasemap>();
-
   group('the list of styles', () {
     test('ids are unique, because the choice is stored by id', () {
       expect(kBasemaps.map((b) => b.id).toSet(), hasLength(kBasemaps.length));
@@ -22,10 +20,9 @@ void main() {
 
     test('every tile URL is https and addresses a tile', () {
       final urls = [
-        for (final basemap in rasters) ...[
+        for (final basemap in kBasemaps.cast<RasterBasemap>())
           basemap.urlTemplate,
-          ...basemap.overlays.map((overlay) => overlay.urlTemplate),
-        ],
+        for (final overlay in kMapOverlays) overlay.urlTemplate,
       ];
       for (final url in urls) {
         expect(url, startsWith('https://'));
@@ -34,14 +31,18 @@ void main() {
     });
 
     // A condition of use on every one of these servers.
-    test('every style credits OpenStreetMap, with a link', () {
-      for (final basemap in kBasemaps) {
+    test('every source credits OpenStreetMap, with a link', () {
+      final sources = [
+        ...kBasemaps.map((b) => (b.id, b.attributions)),
+        ...kMapOverlays.map((o) => (o.id, o.attributions)),
+      ];
+      for (final (id, attributions) in sources) {
         expect(
-          basemap.attributions.map((a) => a.url),
+          attributions.map((a) => a.url),
           contains(kOsmCopyrightUrl),
-          reason: basemap.id,
+          reason: id,
         );
-        for (final attribution in basemap.attributions) {
+        for (final attribution in attributions) {
           expect(attribution.url, startsWith('https://'));
         }
       }
@@ -50,6 +51,9 @@ void main() {
     test('nothing may be downloaded ahead of being looked at', () {
       for (final basemap in kBasemaps) {
         expect(basemap.offlineDownload, OfflineDownload.forbidden);
+      }
+      for (final overlay in kMapOverlays) {
+        expect(overlay.offlineDownload, OfflineDownload.forbidden);
       }
     });
 
@@ -69,30 +73,70 @@ void main() {
     });
   });
 
+  group('overlays', () {
+    test('ids are unique', () {
+      expect(
+        kMapOverlays.map((o) => o.id).toSet(),
+        hasLength(kMapOverlays.length),
+      );
+    });
+
+    test('by id, in drawing order, without the ones this build lacks', () {
+      expect(mapOverlaysByIds(['railways', 'gone', 'ski-slopes']), [
+        skiSlopesOverlay,
+        railwaysOverlay,
+      ]);
+    });
+
+    test('a source shared with the ground is credited once', () {
+      final attributions = combinedAttributions(humanitarianBasemap, [
+        skiSlopesOverlay,
+        railwaysOverlay,
+      ]);
+      expect(
+        attributions.where((a) => a.url == kOsmCopyrightUrl),
+        hasLength(1),
+      );
+      expect(
+        attributions.map((a) => a.url),
+        contains('https://www.opensnowmap.org/'),
+      );
+      expect(
+        attributions.map((a) => a.url),
+        contains('https://www.openrailwaymap.org/'),
+      );
+    });
+  });
+
   group('basemapTileLayers', () {
-    test('a plain style is one layer, limited to its native zoom', () {
-      final layers = basemapTileLayers(openTopoMapBasemap, '1.0.0');
+    test('a style alone is one layer, limited to its native zoom', () {
+      final layers = basemapTileLayers(openTopoMapBasemap, const [], '1.0.0');
       expect(layers, hasLength(1));
       expect(layers.single.maxNativeZoom, 17);
       expect(layers.single.maxZoom, kBasemapMaxZoom);
     });
 
-    test('an overlay is drawn above the ground, with its own limit', () {
-      final layers = basemapTileLayers(openSnowMapBasemap, '1.0.0');
-      expect(layers, hasLength(2));
-      expect(layers.first.urlTemplate, openTopoMapBasemap.urlTemplate);
-      expect(layers.first.maxNativeZoom, 17);
-      expect(layers.last.urlTemplate, contains('opensnowmap.org/pistes'));
-      expect(layers.last.maxNativeZoom, 18);
+    test('overlays go above any style, with their own limits', () {
+      final layers = basemapTileLayers(osmStandardBasemap, const [
+        skiSlopesOverlay,
+        railwaysOverlay,
+      ], '1.0.0');
+      expect(layers, hasLength(3));
+      expect(layers.first.urlTemplate, osmStandardBasemap.urlTemplate);
+      expect(layers[1].urlTemplate, contains('opensnowmap.org/pistes'));
+      expect(layers[1].minZoom, skiSlopesOverlay.minZoom);
+      expect(layers[1].maxNativeZoom, 18);
+      expect(layers[2].urlTemplate, contains('openrailwaymap.org'));
+      expect(layers[2].maxZoom, kBasemapMaxZoom);
     });
 
-    test('layers of different styles do not share a key', () {
+    test('no two sources share a key', () {
       final keys = {
         for (final basemap in kBasemaps)
-          for (final layer in basemapTileLayers(basemap, '1.0.0')) layer.key,
+          for (final layer in basemapTileLayers(basemap, kMapOverlays, '1.0.0'))
+            layer.key,
       };
-      final count = rasters.fold<int>(0, (n, b) => n + 1 + b.overlays.length);
-      expect(keys, hasLength(count));
+      expect(keys, hasLength(kBasemaps.length + kMapOverlays.length));
     });
   });
 
@@ -115,8 +159,8 @@ void main() {
     });
 
     test('is read back from the preferences', () async {
-      final (container, _) = await open({'map_basemap': 'opensnowmap'});
-      expect(container.read(basemapProvider), same(openSnowMapBasemap));
+      final (container, _) = await open({'map_basemap': 'cyclosm'});
+      expect(container.read(basemapProvider), same(cyclOsmBasemap));
     });
 
     test('a stored style that no longer exists is the default', () async {
@@ -129,6 +173,35 @@ void main() {
       await container.read(basemapProvider.notifier).set(humanitarianBasemap);
       expect(container.read(basemapProvider), same(humanitarianBasemap));
       expect(prefs.getString('map_basemap'), 'hot');
+    });
+
+    test('overlays start off', () async {
+      final (container, _) = await open({});
+      expect(container.read(mapOverlaysProvider), isEmpty);
+    });
+
+    test('overlays are read back, unknown ones dropped', () async {
+      final (container, _) = await open({
+        'map_overlays': ['gone', 'railways'],
+      });
+      expect(container.read(mapOverlaysProvider), [railwaysOverlay]);
+    });
+
+    test('an overlay is switched on and off and stored', () async {
+      final (container, prefs) = await open({});
+      final overlays = container.read(mapOverlaysProvider.notifier);
+
+      await overlays.set(railwaysOverlay, on: true);
+      await overlays.set(skiSlopesOverlay, on: true);
+      expect(container.read(mapOverlaysProvider), [
+        skiSlopesOverlay,
+        railwaysOverlay,
+      ]);
+      expect(prefs.getStringList('map_overlays'), ['ski-slopes', 'railways']);
+
+      await overlays.set(skiSlopesOverlay, on: false);
+      expect(container.read(mapOverlaysProvider), [railwaysOverlay]);
+      expect(prefs.getStringList('map_overlays'), ['railways']);
     });
   });
 
@@ -152,7 +225,7 @@ void main() {
     ),
   );
 
-  testWidgets('the sheet lists every style and stores the one tapped', (
+  testWidgets('the sheet stores a style and overlays, and stays open', (
     tester,
   ) async {
     await tester.pumpWidget(app(const Center(child: MapStyleButton())));
@@ -162,19 +235,47 @@ void main() {
     for (final basemap in kBasemaps) {
       expect(find.text(basemap.name), findsOneWidget);
     }
+    for (final overlay in kMapOverlays) {
+      expect(find.text(overlay.source), findsOneWidget);
+    }
 
     await tester.tap(find.text('OpenTopoMap'));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('OpenRailwayMap'));
+    await tester.pumpAndSettle();
 
-    expect(find.text('CyclOSM'), findsNothing);
+    expect(find.text('CyclOSM'), findsOneWidget);
     expect(prefs.getString('map_basemap'), 'opentopomap');
+    expect(prefs.getStringList('map_overlays'), ['railways']);
+  });
+
+  testWidgets('the button says when an overlay is on', (tester) async {
+    Color? foreground() =>
+        tester.widget<MapRoundButton>(find.byType(MapRoundButton)).foreground;
+
+    await tester.pumpWidget(app(const Center(child: MapStyleButton())));
+    expect(foreground(), isNull);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MapStyleButton)),
+    );
+    await container
+        .read(mapOverlaysProvider.notifier)
+        .set(skiSlopesOverlay, on: true);
+    await tester.pump();
+    expect(foreground(), isNotNull);
   });
 
   testWidgets('the attribution bar prints each label as it stands', (
     tester,
   ) async {
     await tester.pumpWidget(
-      app(const MapAttributionBar(basemap: openSnowMapBasemap)),
+      app(
+        const MapAttributionBar(
+          basemap: openTopoMapBasemap,
+          overlays: [skiSlopesOverlay],
+        ),
+      ),
     );
 
     expect(find.text('© OpenStreetMap'), findsOneWidget);

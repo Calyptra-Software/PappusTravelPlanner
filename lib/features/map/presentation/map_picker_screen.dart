@@ -105,6 +105,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final basemap = ref.watch(basemapProvider);
+    final overlays = ref.watch(mapOverlaysProvider);
     final location = ref.watch(deviceLocationProvider);
 
     reportLocationProblems(context, ref);
@@ -179,7 +180,11 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               }),
             ),
             children: [
-              ...basemapTileLayers(basemap, ref.watch(appVersionProvider)),
+              ...basemapTileLayers(
+                basemap,
+                overlays,
+                ref.watch(appVersionProvider),
+              ),
               // The trip's other points, so the user can see what they are
               // placing this one relative to. Quieter than the mark being
               // chosen — a dot rather than a pin, and grey rather than red —
@@ -260,6 +265,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               picked: _picked,
               hint: l10n.mapPickHint,
               basemap: basemap,
+              overlays: overlays,
             ),
           ),
         ],
@@ -273,6 +279,7 @@ class _PickedReadout extends StatelessWidget {
     required this.picked,
     required this.hint,
     required this.basemap,
+    required this.overlays,
   });
 
   /// Null until the map has been tapped, which is when the readout says what to
@@ -280,6 +287,7 @@ class _PickedReadout extends StatelessWidget {
   final LatLng? picked;
   final String hint;
   final Basemap basemap;
+  final List<MapOverlay> overlays;
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +314,7 @@ class _PickedReadout extends StatelessWidget {
             ),
           ),
         ),
-        MapAttributionBar(basemap: basemap),
+        MapAttributionBar(basemap: basemap, overlays: overlays),
       ],
     );
   }

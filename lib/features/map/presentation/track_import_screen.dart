@@ -417,6 +417,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final basemap = ref.watch(basemapProvider);
+    final overlays = ref.watch(mapOverlaysProvider);
     final selected = _selected;
     final placed = _placedPrefix;
     final stretches = splitTracksAt(widget.lines, placed);
@@ -457,6 +458,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                   children: [
                     ...basemapTileLayers(
                       basemap,
+                      overlays,
                       ref.watch(appVersionProvider),
                     ),
                     PolylineLayer(
@@ -521,7 +523,10 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: MapAttributionBar(basemap: basemap),
+                  child: MapAttributionBar(
+                    basemap: basemap,
+                    overlays: overlays,
+                  ),
                 ),
               ],
             ),
