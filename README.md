@@ -133,7 +133,9 @@ on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles from the
 OpenStreetMap Foundation's own servers. Their
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) permits ordinary
-interactive viewing and forbids downloading areas in advance.
+interactive viewing and forbids downloading areas in advance. The other map styles come from
+the servers of OpenTopoMap, OpenStreetMap France and OpenSnowMap, which are contacted only
+once you pick such a style. The app never downloads areas in advance from any of them.
 
 Both policies are functional requirements of this app — see the
 *routing service* section of [CONTRIBUTING.md](CONTRIBUTING.md) before touching anything

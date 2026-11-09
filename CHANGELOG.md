@@ -3,6 +3,12 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **Maps come in more styles.** The new layers button offers topographic, cycling and
+  ski maps and a calmer look alongside OpenStreetMap. Each loads from its own server, which
+  the app contacts only once you pick that style.
+
 ## 1.15.0 — 2026-10-31
 
 - **Record a track from the trip's map.** The record button under the location button

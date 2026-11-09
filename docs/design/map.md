@@ -317,3 +317,27 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   `userAgentPackageName`, whose generic format the policy names as a reason for blocking;
   caching stays on flutter_map's default, which honors the server's own headers and is the
   conforming caching the policy requires. `appVersionProvider` now has two callers, not one.
+- **The style is one choice per device, and the camera does not know about it.**
+  `basemapProvider` stores the entry's id in the preferences, so it travels in neither the
+  database nor a `.tpt`, and a server beyond OpenStreetMap's hears from the app only after
+  someone picked its style. `maxZoom` is the same on every entry, because a camera that had
+  to back off when the style changes is a camera moved by something other than the user;
+  what differs is `maxNativeZoom`, past which the last real level is enlarged. It is
+  **measured**, since few sources state it, and getting it wrong is visible: past 17
+  OpenTopoMap serves one identical placeholder, past 18 OpenSnowMap a picture reading "No
+  tile here", past 18 Humanitarian a 404. Each `TileLayer` is keyed by style because
+  `didUpdateWidget` reloads on a new URL but not on a new `maxNativeZoom`.
+- **A transparent overlay is not a second ground.** "Switched, never mixed" is about two
+  opaque layers, so `TileOverlay` does not break it: nothing is fetched to be hidden. An
+  overlay belongs to one entry rather than being a switch of its own, which keeps a second
+  server out of every map that did not ask for it. OpenSnowMap is the case that needed it:
+  its pistes are transparent and answered our requests, while its own grounds
+  (`base_snow_map`, `pistes-relief`) redirected them to an access-denied image, so the entry
+  stands on OpenTopoMap. Its terms forbid bulk download and do not address live use by an
+  app, so the operator's view of that is still to be asked. The `©` lives in each
+  `MapAttribution` label, not in the bar, because SRTM is credited rather than claimed.
+- **"Raster tiles are pale" holds less well than it did.** The rule above that marks use map
+  colors and carry a ring was written for one pale ground. OpenTopoMap is browner and
+  OpenSnowMap draws blue, red and black pistes, which is the reserved red and close to
+  `kLocationBlue`. A satellite or dark style would break the premise outright, and needs that
+  checked before it is added.

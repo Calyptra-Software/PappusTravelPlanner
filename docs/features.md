@@ -524,7 +524,10 @@ public domain.
 
 ### Where the background comes from
 
-The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles by default. The
+**layers** button on a map offers other styles: OpenTopoMap for hiking, CyclOSM for cycling,
+Humanitarian, and OpenSnowMap, with ski slopes and lifts over OpenTopoMap. The choice applies
+to every map, and a style's server is contacted only once you pick it. Tiles already
 fetched are cached so panning back over ground you have seen does not need to download new
 tiles again.
 

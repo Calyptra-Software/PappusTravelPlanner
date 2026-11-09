@@ -12,12 +12,13 @@ import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
-import '../basemap.dart';
+import '../basemap_provider.dart';
 import '../finite_camera.dart';
 import '../map_features.dart';
 import '../pin_clusters.dart';
 import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
+import '../widgets/map_style_button.dart';
 import '../../trips/widgets/trip_card.dart';
 
 /// Every trip the overview is currently showing, on one map.
@@ -170,7 +171,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    const basemap = kDefaultBasemap;
+    final basemap = ref.watch(basemapProvider);
 
     final itemsAsync = ref.watch(positionedItemsProvider);
     final items = itemsAsync.value ?? const <ItineraryItem>[];
@@ -242,7 +243,7 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
             ),
           ),
           children: [
-            basemapTileLayer(basemap, ref.watch(appVersionProvider)),
+            ...basemapTileLayers(basemap, ref.watch(appVersionProvider)),
             // Every trip's lines in one layer rather than one layer per trip:
             // flutter_map culls and simplifies per layer, and a hundred layers
             // of one line each would do that work a hundred times.
@@ -325,6 +326,8 @@ class _AllTripsMapState extends ConsumerState<AllTripsMap> {
               MapLocationButton(
                 onCenter: (fix) => centerOnFix(_controller, fix),
               ),
+              const SizedBox(height: 8),
+              const MapStyleButton(),
             ],
           ),
         ),

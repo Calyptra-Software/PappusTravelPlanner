@@ -9,7 +9,7 @@ import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
-import '../basemap.dart';
+import '../basemap_provider.dart';
 import '../finite_camera.dart';
 import '../track_import_plan.dart';
 import '../track_split.dart';
@@ -416,7 +416,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    const basemap = kDefaultBasemap;
+    final basemap = ref.watch(basemapProvider);
     final selected = _selected;
     final placed = _placedPrefix;
     final stretches = splitTracksAt(widget.lines, placed);
@@ -455,7 +455,10 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                     ),
                   ),
                   children: [
-                    basemapTileLayer(basemap, ref.watch(appVersionProvider)),
+                    ...basemapTileLayers(
+                      basemap,
+                      ref.watch(appVersionProvider),
+                    ),
                     PolylineLayer(
                       polylines: [
                         for (var i = 0; i < stretches.length; i++)
@@ -514,7 +517,7 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
                     zoomOutTooltip: l10n.mapZoomOut,
                   ),
                 ),
-                const Positioned(
+                Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,

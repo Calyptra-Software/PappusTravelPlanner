@@ -1296,6 +1296,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapZoomOut => 'Zoom out';
 
   @override
+  String get mapStyle => 'Map style';
+
+  @override
+  String get mapStyleEveryday => 'The standard map';
+
+  @override
+  String get mapStyleTopographic => 'Hiking, with contour lines and relief';
+
+  @override
+  String get mapStyleCycling => 'Cycling, with bike routes and paths';
+
+  @override
+  String get mapStyleMuted => 'A calmer, more muted look';
+
+  @override
+  String get mapStyleSki => 'Ski slopes and lifts on a topographic map';
+
+  @override
   String get mapFullscreen => 'Fullscreen map';
 
   @override

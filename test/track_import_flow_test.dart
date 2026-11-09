@@ -12,6 +12,9 @@ import 'package:travelplanner/features/map/location/track_recorder.dart';
 import 'package:travelplanner/features/map/presentation/track_import_screen.dart';
 import 'package:travelplanner/features/map/track_import_flow.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 
 /// Importing a recording, from picking the file to the answer the user gets.
 ///
@@ -21,7 +24,10 @@ void main() {
   late AppDatabase db;
   late int tripId;
 
+  late SharedPreferences prefs;
   setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting(NativeDatabase.memory());
     tripId = await db
         .into(db.trips)
@@ -45,6 +51,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           databaseProvider.overrideWithValue(db),
           appVersionProvider.overrideWithValue('0.0.0-test'),
         ],
@@ -179,6 +186,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           databaseProvider.overrideWithValue(db),
           appVersionProvider.overrideWithValue('0.0.0-test'),
         ],
@@ -249,6 +257,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
             databaseProvider.overrideWithValue(db),
             appVersionProvider.overrideWithValue('0.0.0-test'),
           ],

@@ -1305,6 +1305,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapZoomOut => 'Verkleinern';
 
   @override
+  String get mapStyle => 'Kartenstil';
+
+  @override
+  String get mapStyleEveryday => 'Die Standardkarte';
+
+  @override
+  String get mapStyleTopographic => 'Wandern, mit Höhenlinien und Relief';
+
+  @override
+  String get mapStyleCycling => 'Radfahren, mit Radrouten und Radwegen';
+
+  @override
+  String get mapStyleMuted => 'Ruhigeres, zurückhaltendes Kartenbild';
+
+  @override
+  String get mapStyleSki =>
+      'Skipisten und Lifte auf einer topografischen Karte';
+
+  @override
   String get mapFullscreen => 'Karte im Vollbild';
 
   @override

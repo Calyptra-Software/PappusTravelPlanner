@@ -6,10 +6,12 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
+import '../basemap_provider.dart';
 import '../finite_camera.dart';
 import '../location/device_location.dart';
 import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
+import '../widgets/map_style_button.dart';
 
 /// Opens the map so the user can point at a place, and returns what they chose —
 /// or null if they backed out.
@@ -102,7 +104,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    const basemap = kDefaultBasemap;
+    final basemap = ref.watch(basemapProvider);
     final location = ref.watch(deviceLocationProvider);
 
     reportLocationProblems(context, ref);
@@ -177,7 +179,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               }),
             ),
             children: [
-              basemapTileLayer(basemap, ref.watch(appVersionProvider)),
+              ...basemapTileLayers(basemap, ref.watch(appVersionProvider)),
               // The trip's other points, so the user can see what they are
               // placing this one relative to. Quieter than the mark being
               // chosen — a dot rather than a pin, and grey rather than red —
@@ -242,6 +244,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   onPressed: _useMyLocation,
                   busy: location.locating,
                 ),
+                const SizedBox(height: 8),
+                const MapStyleButton(),
               ],
             ),
           ),

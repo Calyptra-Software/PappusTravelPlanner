@@ -725,6 +725,30 @@
   "@mapZoomOut": {
     "description": "Tooltip of the map's zoom-out button."
   },
+  "mapStyle": "Map style",
+  "@mapStyle": {
+    "description": "Tooltip of the map's button that opens the list of map styles, and the heading of that list."
+  },
+  "mapStyleEveryday": "The standard map",
+  "@mapStyleEveryday": {
+    "description": "Line under the OpenStreetMap entry in the list of map styles."
+  },
+  "mapStyleTopographic": "Hiking, with contour lines and relief",
+  "@mapStyleTopographic": {
+    "description": "Line under the OpenTopoMap entry in the list of map styles."
+  },
+  "mapStyleCycling": "Cycling, with bike routes and paths",
+  "@mapStyleCycling": {
+    "description": "Line under the CyclOSM entry in the list of map styles."
+  },
+  "mapStyleMuted": "A calmer, more muted look",
+  "@mapStyleMuted": {
+    "description": "Line under the Humanitarian entry in the list of map styles."
+  },
+  "mapStyleSki": "Ski slopes and lifts on a topographic map",
+  "@mapStyleSki": {
+    "description": "Line under the OpenSnowMap entry in the list of map styles."
+  },
   "mapFullscreen": "Fullscreen map",
   "@mapFullscreen": {
     "description": "Tooltip of the country map's button that opens the map on the whole screen."

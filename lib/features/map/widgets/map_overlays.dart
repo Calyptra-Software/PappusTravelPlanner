@@ -66,26 +66,62 @@ Map<String, String> basemapTileHeaders(
   bool web = kIsWeb,
 }) => web ? <String, String>{} : {'User-Agent': buildUserAgent(appVersion)};
 
-/// The basemap's tiles, built the same way wherever a map is drawn.
+/// The basemap's tiles, built the same way wherever a map is drawn: its own,
+/// then whatever it draws over them.
 ///
 /// One place rather than three, because every line of it is a condition rather
 /// than a preference: who we say we are, how often we ask, and that the answers
 /// are cached.
-TileLayer basemapTileLayer(
-  Basemap basemap,
-  String appVersion,
-) => switch (basemap) {
-  RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
-    urlTemplate: urlTemplate,
-    maxZoom: maxZoom,
-    tileProvider: NetworkTileProvider(headers: basemapTileHeaders(appVersion)),
-    tileUpdateTransformer: TileUpdateTransformers.throttle(kTileUpdateThrottle),
-    // Caching is left at flutter_map's default, which stores tiles for as
-    // long as the server's own headers say — the conforming caching the
-    // policy asks for, and the reason panning back over ground already seen
-    // costs nobody anything.
-  ),
-};
+///
+/// Keyed by style, so a change of style is a new layer. `TileLayer` reloads its
+/// images when only the URL changes, but keeps the tile grid it worked out from
+/// the old `maxNativeZoom`, which differs between sources.
+List<TileLayer> basemapTileLayers(Basemap basemap, String appVersion) =>
+    switch (basemap) {
+      RasterBasemap(
+        :final id,
+        :final urlTemplate,
+        :final maxNativeZoom,
+        :final maxZoom,
+        :final overlays,
+      ) =>
+        [
+          _tileLayer(
+            key: ValueKey(id),
+            urlTemplate: urlTemplate,
+            maxNativeZoom: maxNativeZoom,
+            maxZoom: maxZoom,
+            appVersion: appVersion,
+          ),
+          for (final (index, overlay) in overlays.indexed)
+            _tileLayer(
+              key: ValueKey('$id/$index'),
+              urlTemplate: overlay.urlTemplate,
+              maxNativeZoom: overlay.maxNativeZoom,
+              maxZoom: maxZoom,
+              appVersion: appVersion,
+            ),
+        ],
+    };
+
+TileLayer _tileLayer({
+  required Key key,
+  required String urlTemplate,
+  required int maxNativeZoom,
+  required double maxZoom,
+  required String appVersion,
+}) => TileLayer(
+  key: key,
+  urlTemplate: urlTemplate,
+  maxNativeZoom: maxNativeZoom,
+  maxZoom: maxZoom,
+  tileProvider: NetworkTileProvider(headers: basemapTileHeaders(appVersion)),
+  tileUpdateTransformer: TileUpdateTransformers.throttle(kTileUpdateThrottle),
+  // Caching is left at flutter_map's default, which stores tiles for as
+  // long as the server's own headers say — the conforming caching the
+  // policy asks for, and the reason panning back over ground already seen
+  // costs nobody anything.
+);
 
 /// The `+` / `−` pair. Positioned by the caller: the trip map floats it over the
 /// map, and a picker may want it somewhere else entirely.
@@ -268,7 +304,7 @@ class MapAttributionBar extends StatelessWidget {
             InkWell(
               onTap: () => openExternalLink(context, source.url),
               child: Text(
-                '© ${source.label}',
+                source.label,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   decoration: TextDecoration.underline,
