@@ -125,8 +125,9 @@ boundary.
 and the map fetches tile images from the server of the chosen map style
 (`lib/features/map/basemap.dart`): `tile.openstreetmap.org` by default, and
 `tile.opentopomap.org`, `tile-cyclosm.openstreetmap.fr` or `tile.openstreetmap.fr` only
-once a style using them has been picked, and `tiles.opensnowmap.org` or
-`tiles.openrailwaymap.org` only while their overlay is switched on. A hostile or compromised reply should not be
+once a style using them has been picked, and `tiles.opensnowmap.org`,
+`tiles.openrailwaymap.org` or `tiles.openseamap.org` only while their overlay is switched
+on. A hostile or compromised reply should not be
 able to do more than produce a wrong or empty result, or a wrong picture. The
 web build parses a third kind of reply, font files from Google (see below);
 those are read by Flutter's renderer, not by code in this repository.

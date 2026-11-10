@@ -2248,6 +2248,12 @@ abstract class AppLocalizations {
   /// **'Railways'**
   String get mapOverlayRailways;
 
+  /// Name of the map overlay showing nautical seamarks: buoys, lighthouses and their light sectors.
+  ///
+  /// In en, this message translates to:
+  /// **'Seamarks and lights'**
+  String get mapOverlaySeamarks;
+
   /// Tooltip of the country map's button that opens the map on the whole screen.
   ///
   /// In en, this message translates to:

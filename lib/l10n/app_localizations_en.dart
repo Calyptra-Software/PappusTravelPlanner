@@ -1320,6 +1320,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mapOverlayRailways => 'Railways';
 
   @override
+  String get mapOverlaySeamarks => 'Seamarks and lights';
+
+  @override
   String get mapFullscreen => 'Fullscreen map';
 
   @override

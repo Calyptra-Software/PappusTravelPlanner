@@ -757,6 +757,10 @@
   "@mapOverlayRailways": {
     "description": "Name of the map overlay showing railway lines."
   },
+  "mapOverlaySeamarks": "Seamarks and lights",
+  "@mapOverlaySeamarks": {
+    "description": "Name of the map overlay showing nautical seamarks: buoys, lighthouses and their light sectors."
+  },
   "mapFullscreen": "Fullscreen map",
   "@mapFullscreen": {
     "description": "Tooltip of the country map's button that opens the map on the whole screen."

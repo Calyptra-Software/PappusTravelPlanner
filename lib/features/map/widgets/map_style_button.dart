@@ -81,6 +81,7 @@ class _MapStyleSheet extends ConsumerWidget {
                 title: Text(switch (overlay.content) {
                   MapOverlayContent.skiSlopes => l10n.mapOverlaySkiSlopes,
                   MapOverlayContent.railways => l10n.mapOverlayRailways,
+                  MapOverlayContent.seamarks => l10n.mapOverlaySeamarks,
                 }),
                 subtitle: Text(overlay.source),
                 onChanged: (on) => ref

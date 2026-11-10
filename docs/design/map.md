@@ -330,16 +330,18 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
 - **An overlay is not a second ground, and it is not part of a style.** "Switched, never
   mixed" is about two opaque layers, so a transparent `MapOverlay` does not break it: nothing
   is fetched to be hidden. A ski style was tried first, OpenSnowMap's pistes bundled over
-  OpenTopoMap, and it could not offer them on another ground; OpenRailwayMap exists only as
-  an overlay. So overlays are a list of their own, switched on independently
-  (`mapOverlaysProvider`) and drawn in list order, whichever was switched on first. Each
+  OpenTopoMap, and it could not offer them on another ground; OpenRailwayMap and OpenSeaMap's
+  seamarks exist only as overlays. So overlays are a list of their own, switched on
+  independently (`mapOverlaysProvider`) and drawn in list order, whichever was switched on
+  first. Each
   costs a further server's requests for every view, for as long as it stays on, so the
   layers button is tinted while one is on, and `minZoom` keeps it from being fetched where
   it would be a tangle. OpenSnowMap's own grounds (`base_snow_map`, `pistes-relief`)
   redirected our requests to an access-denied image, and its terms forbid bulk download
-  without addressing live use by an app, so the operator's view is still to be asked. The
-  `©` lives in each `MapAttribution` label, not in the bar, because SRTM is credited rather
-  than claimed; `combinedAttributions` lists each source once.
+  without addressing live use by an app, so the operator's view is still to be asked; for
+  OpenSeaMap's tiles no usage policy could be found at all. The `©` lives in each
+  `MapAttribution` label, not in the bar, because SRTM is credited rather than claimed;
+  `combinedAttributions` lists each source once.
 - **A 429 means stop.** OpenRailwayMap's terms ask a client to stop on one rather than risk a
   longer block, and flutter_map, though it does not retry a 429, goes on asking for every new
   tile. `tile_client.dart` therefore leaves a host alone for the `Retry-After` it gave, or for

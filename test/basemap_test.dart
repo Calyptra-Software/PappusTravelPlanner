@@ -82,17 +82,18 @@ void main() {
     });
 
     test('by id, in drawing order, without the ones this build lacks', () {
-      expect(mapOverlaysByIds(['railways', 'gone', 'ski-slopes']), [
+      expect(mapOverlaysByIds(['seamarks', 'railways', 'gone', 'ski-slopes']), [
         skiSlopesOverlay,
         railwaysOverlay,
+        seamarksOverlay,
       ]);
     });
 
     test('a source shared with the ground is credited once', () {
-      final attributions = combinedAttributions(humanitarianBasemap, [
-        skiSlopesOverlay,
-        railwaysOverlay,
-      ]);
+      final attributions = combinedAttributions(
+        humanitarianBasemap,
+        kMapOverlays,
+      );
       expect(
         attributions.where((a) => a.url == kOsmCopyrightUrl),
         hasLength(1),
@@ -100,6 +101,10 @@ void main() {
       expect(
         attributions.map((a) => a.url),
         contains('https://www.opensnowmap.org/'),
+      );
+      expect(
+        attributions.map((a) => a.url),
+        contains('https://map.openseamap.org/'),
       );
       expect(
         attributions.map((a) => a.url),

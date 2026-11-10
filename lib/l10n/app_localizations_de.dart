@@ -1329,6 +1329,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapOverlayRailways => 'Bahnstrecken';
 
   @override
+  String get mapOverlaySeamarks => 'Seezeichen und Leuchtfeuer';
+
+  @override
   String get mapFullscreen => 'Karte im Vollbild';
 
   @override

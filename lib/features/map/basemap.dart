@@ -201,7 +201,7 @@ Basemap basemapById(String? id) => kBasemaps.firstWhere(
 /// What an overlay shows, which the picker names in the user's language.
 ///
 /// An enum for the same reason as [BasemapPurpose]. Never persisted.
-enum MapOverlayContent { skiSlopes, railways }
+enum MapOverlayContent { skiSlopes, railways, seamarks }
 
 /// Transparent image tiles drawn over whichever basemap is chosen.
 ///
@@ -280,9 +280,31 @@ const MapOverlay railwaysOverlay = MapOverlay(
   offlineDownload: OfflineDownload.forbidden,
 );
 
+/// Buoys, lights with their sectors, and fairways. The tiles are CC-BY-SA; no
+/// usage policy for them could be found, while the project lists apps that use
+/// them. Blank below level 9 and past 18. Not a substitute for official charts,
+/// as OpenSeaMap says itself.
+const MapOverlay seamarksOverlay = MapOverlay(
+  id: 'seamarks',
+  source: 'OpenSeaMap',
+  content: MapOverlayContent.seamarks,
+  urlTemplate: 'https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+  minZoom: 9,
+  maxNativeZoom: 18,
+  attributions: [
+    _osmAttribution,
+    (label: '© OpenSeaMap (CC-BY-SA)', url: 'https://map.openseamap.org/'),
+  ],
+  offlineDownload: OfflineDownload.forbidden,
+);
+
 /// Every overlay the user can switch on. Also the order they are drawn in, so
 /// the picture does not depend on which was switched on first.
-const List<MapOverlay> kMapOverlays = [skiSlopesOverlay, railwaysOverlay];
+const List<MapOverlay> kMapOverlays = [
+  skiSlopesOverlay,
+  railwaysOverlay,
+  seamarksOverlay,
+];
 
 /// The overlays stored under [ids], in drawing order. An id this build cannot
 /// name is dropped.
