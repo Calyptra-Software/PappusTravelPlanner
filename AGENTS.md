@@ -51,7 +51,7 @@ change is not written at all.
 
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
 without touching it: which hosts are contacted (`api.transitous.org` for a connection
-search, `tile.openstreetmap.org` while a map is open, and nothing else), which permissions
+search, the tile servers of the map styles and overlays in `basemap.dart` while a map is open, and nothing else), which permissions
 the app asks for and which its libraries merge in, that there is no telemetry of any kind,
 and the list of foreign files the app parses. A third host, a new permission, an analytics
 or crash-reporting dependency, or another format read from outside all turn a sentence

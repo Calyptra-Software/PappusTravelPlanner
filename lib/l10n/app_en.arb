@@ -725,6 +725,42 @@
   "@mapZoomOut": {
     "description": "Tooltip of the map's zoom-out button."
   },
+  "mapStyle": "Map style",
+  "@mapStyle": {
+    "description": "Tooltip of the map's button that opens the list of map styles, and the heading of that list."
+  },
+  "mapStyleEveryday": "The standard map",
+  "@mapStyleEveryday": {
+    "description": "Line under the OpenStreetMap entry in the list of map styles."
+  },
+  "mapStyleTopographic": "Hiking, with contour lines and relief",
+  "@mapStyleTopographic": {
+    "description": "Line under the OpenTopoMap entry in the list of map styles."
+  },
+  "mapStyleCycling": "Cycling, with bike routes and paths",
+  "@mapStyleCycling": {
+    "description": "Line under the CyclOSM entry in the list of map styles."
+  },
+  "mapStyleMuted": "A calmer, more muted look",
+  "@mapStyleMuted": {
+    "description": "Line under the Humanitarian entry in the list of map styles."
+  },
+  "mapOverlays": "Show on top",
+  "@mapOverlays": {
+    "description": "Heading of the optional layers drawn over any map style, in the map style sheet."
+  },
+  "mapOverlaySkiSlopes": "Ski slopes and lifts",
+  "@mapOverlaySkiSlopes": {
+    "description": "Name of the map overlay showing ski slopes and lifts."
+  },
+  "mapOverlayRailways": "Railways",
+  "@mapOverlayRailways": {
+    "description": "Name of the map overlay showing railway lines."
+  },
+  "mapOverlaySeamarks": "Seamarks and lights",
+  "@mapOverlaySeamarks": {
+    "description": "Name of the map overlay showing nautical seamarks: buoys, lighthouses and their light sectors."
+  },
   "mapFullscreen": "Fullscreen map",
   "@mapFullscreen": {
     "description": "Tooltip of the country map's button that opens the map on the whole screen."

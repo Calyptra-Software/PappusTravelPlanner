@@ -23,10 +23,12 @@ import '../../itinerary/now_marker.dart';
 import '../../itinerary/widgets/transport_mode.dart';
 import '../../trips/application/trip_providers.dart';
 import '../basemap.dart';
+import '../basemap_provider.dart';
 import '../finite_camera.dart';
 import '../map_features.dart';
 import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
+import '../widgets/map_style_button.dart';
 import '../widgets/recording_overlay.dart';
 import '../location/track_recorder.dart';
 import 'map_item_sheet.dart';
@@ -119,7 +121,7 @@ class TripMapScreen extends ConsumerWidget {
             // find the thumbnail it is drawn from — the same arrangement the
             // entries use.
             photosById: {for (final photo in photos) photo.id: photo},
-            basemap: kDefaultBasemap,
+            basemap: ref.watch(basemapProvider),
             // The trip's own accent, the same one its card, its header, its
             // calendar bar and its PDF are drawn in — the map was the one place
             // still using the app's theme color, which says nothing about
@@ -421,6 +423,7 @@ class _MapViewState extends ConsumerState<_MapView> {
     final theme = Theme.of(context);
     final features = widget.features;
     final basemap = widget.basemap;
+    final overlays = ref.watch(mapOverlaysProvider);
     final modes = ref.watch(transportModesByIdProvider);
     // Read, not watched: this frames the opening view only, and a recording
     // under way must not re-frame the map with every point it keeps.
@@ -493,7 +496,11 @@ class _MapViewState extends ConsumerState<_MapView> {
               ),
             ),
             children: [
-              basemapTileLayer(basemap, ref.watch(appVersionProvider)),
+              ...basemapTileLayers(
+                basemap,
+                overlays,
+                ref.watch(appVersionProvider),
+              ),
               GestureDetector(
                 onTap: () {
                   final hit = _lineHits.value;
@@ -619,6 +626,8 @@ class _MapViewState extends ConsumerState<_MapView> {
                 ),
                 const SizedBox(height: 8),
                 MapRecordButton(tripId: widget.tripId),
+                const SizedBox(height: 8),
+                const MapStyleButton(),
               ],
             ),
           ),
@@ -626,7 +635,7 @@ class _MapViewState extends ConsumerState<_MapView> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: MapAttributionBar(basemap: basemap),
+            child: MapAttributionBar(basemap: basemap, overlays: overlays),
           ),
         ],
       ),

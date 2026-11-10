@@ -10,9 +10,19 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/map/presentation/track_import_screen.dart';
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:travelplanner/core/settings/locale_provider.dart'
+    show sharedPreferencesProvider;
 
 /// The screen that divides one recording among its entries.
 void main() {
+  // The map reads the remembered style when it is built.
+  late SharedPreferences prefs;
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
+  });
+
   ItineraryItem leg(int id, String title) => ItineraryItem(
     id: id,
     tripId: 1,
@@ -60,7 +70,10 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [appVersionProvider.overrideWithValue('0.0.0-test')],
+        overrides: [
+          appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -152,7 +165,10 @@ void main() {
     // left to point at and the import can be confirmed straight away.
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [appVersionProvider.overrideWithValue('0.0.0-test')],
+        overrides: [
+          appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -188,7 +204,10 @@ void main() {
     // Its two ends come from the recording, so the screen is a preview.
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [appVersionProvider.overrideWithValue('0.0.0-test')],
+        overrides: [
+          appVersionProvider.overrideWithValue('0.0.0-test'),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+        ],
         child: MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,

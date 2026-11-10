@@ -16,6 +16,7 @@ import 'package:flutter_map/flutter_map.dart';
 import '../../../core/app_info.dart';
 import '../../../core/widgets/external_link.dart';
 import '../basemap.dart';
+import '../tile_client.dart';
 
 /// Zoomed out no further than the whole world in view; a map showing four copies
 /// of the earth is not a smaller map, just a confusing one.
@@ -66,26 +67,70 @@ Map<String, String> basemapTileHeaders(
   bool web = kIsWeb,
 }) => web ? <String, String>{} : {'User-Agent': buildUserAgent(appVersion)};
 
-/// The basemap's tiles, built the same way wherever a map is drawn.
+/// The basemap's tiles and then the overlays', built the same way wherever a
+/// map is drawn.
 ///
 /// One place rather than three, because every line of it is a condition rather
 /// than a preference: who we say we are, how often we ask, and that the answers
 /// are cached.
-TileLayer basemapTileLayer(
+///
+/// Keyed by source, so a change of style is a new layer. `TileLayer` reloads its
+/// images when only the URL changes, but keeps the tile grid it worked out from
+/// the old `maxNativeZoom`, which differs between sources.
+List<TileLayer> basemapTileLayers(
   Basemap basemap,
+  List<MapOverlay> overlays,
   String appVersion,
-) => switch (basemap) {
-  RasterBasemap(:final urlTemplate, :final maxZoom) => TileLayer(
-    urlTemplate: urlTemplate,
-    maxZoom: maxZoom,
-    tileProvider: NetworkTileProvider(headers: basemapTileHeaders(appVersion)),
-    tileUpdateTransformer: TileUpdateTransformers.throttle(kTileUpdateThrottle),
-    // Caching is left at flutter_map's default, which stores tiles for as
-    // long as the server's own headers say — the conforming caching the
-    // policy asks for, and the reason panning back over ground already seen
-    // costs nobody anything.
+) => [
+  switch (basemap) {
+    RasterBasemap(
+      :final id,
+      :final urlTemplate,
+      :final maxNativeZoom,
+      :final maxZoom,
+    ) =>
+      _tileLayer(
+        key: ValueKey(id),
+        urlTemplate: urlTemplate,
+        maxNativeZoom: maxNativeZoom,
+        maxZoom: maxZoom,
+        appVersion: appVersion,
+      ),
+  },
+  for (final overlay in overlays)
+    _tileLayer(
+      key: ValueKey('overlay/${overlay.id}'),
+      urlTemplate: overlay.urlTemplate,
+      minZoom: overlay.minZoom.toDouble(),
+      maxNativeZoom: overlay.maxNativeZoom,
+      maxZoom: kBasemapMaxZoom,
+      appVersion: appVersion,
+    ),
+];
+
+TileLayer _tileLayer({
+  required Key key,
+  required String urlTemplate,
+  double minZoom = 0,
+  required int maxNativeZoom,
+  required double maxZoom,
+  required String appVersion,
+}) => TileLayer(
+  key: key,
+  urlTemplate: urlTemplate,
+  minZoom: minZoom,
+  maxNativeZoom: maxNativeZoom,
+  maxZoom: maxZoom,
+  tileProvider: NetworkTileProvider(
+    headers: basemapTileHeaders(appVersion),
+    httpClient: tileHttpClient,
   ),
-};
+  tileUpdateTransformer: TileUpdateTransformers.throttle(kTileUpdateThrottle),
+  // Caching is left at flutter_map's default, which stores tiles for as
+  // long as the server's own headers say — the conforming caching the
+  // policy asks for, and the reason panning back over ground already seen
+  // costs nobody anything.
+);
 
 /// The `+` / `−` pair. Positioned by the caller: the trip map floats it over the
 /// map, and a picker may want it somewhere else entirely.
@@ -241,9 +286,14 @@ class MapRoundButton extends StatelessWidget {
 /// lifted — so the map keeps a clean bottom edge instead of a floating bar with
 /// a gap under it.
 class MapAttributionBar extends StatelessWidget {
-  const MapAttributionBar({super.key, required this.basemap});
+  const MapAttributionBar({
+    super.key,
+    required this.basemap,
+    this.overlays = const [],
+  });
 
   final Basemap basemap;
+  final List<MapOverlay> overlays;
 
   @override
   Widget build(BuildContext context) {
@@ -264,11 +314,11 @@ class MapAttributionBar extends StatelessWidget {
         alignment: WrapAlignment.end,
         spacing: 12,
         children: [
-          for (final source in basemap.attributions)
+          for (final source in combinedAttributions(basemap, overlays))
             InkWell(
               onTap: () => openExternalLink(context, source.url),
               child: Text(
-                '© ${source.label}',
+                source.label,
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   decoration: TextDecoration.underline,

@@ -57,7 +57,8 @@ HTTPS (see below).
   website instead.
 - **The OpenStreetMap [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).**
   Maps load tiles from `tile.openstreetmap.org`, which identifies your site by its address.
-  Heavy use can get it blocked.
+  Heavy use can get it blocked. A visitor who picks another map style or an overlay loads from
+  that source's server as well, under its own terms (`lib/features/map/basemap.dart`).
 - **Fonts from Google.** For characters the bundled fonts lack, such as Chinese text or
   emoji, the app downloads Noto fonts from `fonts.gstatic.com`. To prevent that, add
   `config: { fontFallbackBaseUrl: "/fonts/" }` to the object passed to

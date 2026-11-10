@@ -6,10 +6,12 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/providers.dart';
 import '../../../l10n/app_localizations.dart';
 import '../basemap.dart';
+import '../basemap_provider.dart';
 import '../finite_camera.dart';
 import '../location/device_location.dart';
 import '../widgets/device_location_overlay.dart';
 import '../widgets/map_overlays.dart';
+import '../widgets/map_style_button.dart';
 
 /// Opens the map so the user can point at a place, and returns what they chose —
 /// or null if they backed out.
@@ -102,7 +104,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    const basemap = kDefaultBasemap;
+    final basemap = ref.watch(basemapProvider);
+    final overlays = ref.watch(mapOverlaysProvider);
     final location = ref.watch(deviceLocationProvider);
 
     reportLocationProblems(context, ref);
@@ -177,7 +180,11 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               }),
             ),
             children: [
-              basemapTileLayer(basemap, ref.watch(appVersionProvider)),
+              ...basemapTileLayers(
+                basemap,
+                overlays,
+                ref.watch(appVersionProvider),
+              ),
               // The trip's other points, so the user can see what they are
               // placing this one relative to. Quieter than the mark being
               // chosen — a dot rather than a pin, and grey rather than red —
@@ -242,6 +249,8 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
                   onPressed: _useMyLocation,
                   busy: location.locating,
                 ),
+                const SizedBox(height: 8),
+                const MapStyleButton(),
               ],
             ),
           ),
@@ -256,6 +265,7 @@ class _MapPickerScreenState extends ConsumerState<MapPickerScreen> {
               picked: _picked,
               hint: l10n.mapPickHint,
               basemap: basemap,
+              overlays: overlays,
             ),
           ),
         ],
@@ -269,6 +279,7 @@ class _PickedReadout extends StatelessWidget {
     required this.picked,
     required this.hint,
     required this.basemap,
+    required this.overlays,
   });
 
   /// Null until the map has been tapped, which is when the readout says what to
@@ -276,6 +287,7 @@ class _PickedReadout extends StatelessWidget {
   final LatLng? picked;
   final String hint;
   final Basemap basemap;
+  final List<MapOverlay> overlays;
 
   @override
   Widget build(BuildContext context) {
@@ -302,7 +314,7 @@ class _PickedReadout extends StatelessWidget {
             ),
           ),
         ),
-        MapAttributionBar(basemap: basemap),
+        MapAttributionBar(basemap: basemap, overlays: overlays),
       ],
     );
   }

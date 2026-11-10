@@ -1280,6 +1280,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapZoomOut => '缩小';
 
   @override
+  String get mapStyle => 'Map style';
+
+  @override
+  String get mapStyleEveryday => 'The standard map';
+
+  @override
+  String get mapStyleTopographic => 'Hiking, with contour lines and relief';
+
+  @override
+  String get mapStyleCycling => 'Cycling, with bike routes and paths';
+
+  @override
+  String get mapStyleMuted => 'A calmer, more muted look';
+
+  @override
+  String get mapOverlays => 'Show on top';
+
+  @override
+  String get mapOverlaySkiSlopes => 'Ski slopes and lifts';
+
+  @override
+  String get mapOverlayRailways => 'Railways';
+
+  @override
+  String get mapOverlaySeamarks => 'Seamarks and lights';
+
+  @override
   String get mapFullscreen => '全屏地图';
 
   @override

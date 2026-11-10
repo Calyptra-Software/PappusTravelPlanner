@@ -524,9 +524,13 @@ public domain.
 
 ### Where the background comes from
 
-The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles. Tiles already
-fetched are cached so panning back over ground you have seen does not need to download new
-tiles again.
+The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles by default. The
+**layers** button on a map offers other styles: OpenTopoMap for hiking, CyclOSM for cycling,
+and Humanitarian. It can also draw ski slopes and lifts (OpenSnowMap), railways
+(OpenRailwayMap) or seamarks and lights (OpenSeaMap) on top of any style. The seamarks are
+not a substitute for official nautical charts. The choice applies to every map, and a
+source's server is contacted only once you pick it. Tiles already fetched are cached so
+panning back over ground you have seen does not need to download new tiles again.
 
 ---
 

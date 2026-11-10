@@ -2200,6 +2200,60 @@ abstract class AppLocalizations {
   /// **'Zoom out'**
   String get mapZoomOut;
 
+  /// Tooltip of the map's button that opens the list of map styles, and the heading of that list.
+  ///
+  /// In en, this message translates to:
+  /// **'Map style'**
+  String get mapStyle;
+
+  /// Line under the OpenStreetMap entry in the list of map styles.
+  ///
+  /// In en, this message translates to:
+  /// **'The standard map'**
+  String get mapStyleEveryday;
+
+  /// Line under the OpenTopoMap entry in the list of map styles.
+  ///
+  /// In en, this message translates to:
+  /// **'Hiking, with contour lines and relief'**
+  String get mapStyleTopographic;
+
+  /// Line under the CyclOSM entry in the list of map styles.
+  ///
+  /// In en, this message translates to:
+  /// **'Cycling, with bike routes and paths'**
+  String get mapStyleCycling;
+
+  /// Line under the Humanitarian entry in the list of map styles.
+  ///
+  /// In en, this message translates to:
+  /// **'A calmer, more muted look'**
+  String get mapStyleMuted;
+
+  /// Heading of the optional layers drawn over any map style, in the map style sheet.
+  ///
+  /// In en, this message translates to:
+  /// **'Show on top'**
+  String get mapOverlays;
+
+  /// Name of the map overlay showing ski slopes and lifts.
+  ///
+  /// In en, this message translates to:
+  /// **'Ski slopes and lifts'**
+  String get mapOverlaySkiSlopes;
+
+  /// Name of the map overlay showing railway lines.
+  ///
+  /// In en, this message translates to:
+  /// **'Railways'**
+  String get mapOverlayRailways;
+
+  /// Name of the map overlay showing nautical seamarks: buoys, lighthouses and their light sectors.
+  ///
+  /// In en, this message translates to:
+  /// **'Seamarks and lights'**
+  String get mapOverlaySeamarks;
+
   /// Tooltip of the country map's button that opens the map on the whole screen.
   ///
   /// In en, this message translates to:
