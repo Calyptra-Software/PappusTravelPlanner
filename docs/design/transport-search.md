@@ -40,8 +40,9 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   never copied, these say only *where*, so they survive a copy and travel in the `.tpt`
   bundle. They sit on the run's **outer** legs, since a journey is searched again as a whole.
   This is what lets a routine's plan become a real connection: `RoutineController` copies the
-  plan first (offline-safe, instant, correct on its own), then looks each `PlannedJourney`
-  up for the day it now sits on and offers the result in the ordinary `journey_sheet.dart`.
+  plan first (offline-safe, instant, correct on its own), then `TripConnectionsController`
+  (driven by `lookUpTripConnections`) looks each `PlannedJourney` up for the day it now sits
+  on and offers the result in the ordinary `journey_sheet.dart`.
   Accepting it swaps the legs via `RoutineDao.replaceJourneyLegs`, which **keeps the group**
   so the shared ticket hanging off it survives — and rescues a cost sitting on a *leg* onto
   the group (or the replacement's first leg) rather than letting the cascade take it, since a

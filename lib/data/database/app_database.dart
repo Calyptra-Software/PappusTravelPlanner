@@ -16,6 +16,7 @@ import 'daos/track_dao.dart';
 import 'daos/visited_country_dao.dart';
 import 'daos/transport_mode_dao.dart';
 import 'daos/trip_dao.dart';
+import 'daos/trip_plan_dao.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -74,6 +75,7 @@ const int kApplicationId = 0x5452504C;
     SharingDao,
     TransportModeDao,
     CurrencyDao,
+    TripPlanDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
