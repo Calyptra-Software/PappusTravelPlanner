@@ -70,7 +70,7 @@ the obvious change was once made and turned out wrong.
 
 | File | Read before touching |
 | --- | --- |
-| [`trips-and-routines.md`](docs/design/trips-and-routines.md) | the overview, `TripQuery`/`RoutineQuery`, tags, the result line, the statistics filter, routines and `materializeRoutine` |
+| [`trips-and-routines.md`](docs/design/trips-and-routines.md) | the overview, `TripQuery`/`RoutineQuery`, tags, the result line, the statistics filter, routines and `materializeRoutine`, `TripPlanDao` (copying a plan, duplicating a trip) |
 | [`itinerary.md`](docs/design/itinerary.md) | `ItineraryItems`, groups, decisions, day blocks, drag/move/copy, the clipboard, "you are here", planned/actual times, `endDayOffset`, transport modes |
 | [`transport-search.md`](docs/design/transport-search.md) | the connection search, import, re-routing (`replaceJourney`), lookups, stopovers, the Transitous usage policy |
 | [`costs.md`](docs/design/costs.md) | currencies and rates, totals, `computeTripStats`, settlements, reimbursements, invitations |

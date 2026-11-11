@@ -2304,6 +2304,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get routineDuplicateReversed => '复制并反转';
 
   @override
+  String get duplicateTrip => 'Duplicate trip…';
+
+  @override
+  String get duplicateTripHeading => 'Duplicate trip';
+
+  @override
+  String get duplicateTripConfirm => 'Duplicate';
+
+  @override
   String routineReversedSuffix(String title) {
     return '$title（返程）';
   }

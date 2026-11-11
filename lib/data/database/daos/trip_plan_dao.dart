@@ -1,7 +1,10 @@
 import 'package:drift/drift.dart';
 
+import '../../../core/format/civil_date.dart';
+import '../../../features/itinerary/entry_times.dart';
 import '../app_database.dart';
 import '../item_copy.dart';
+import '../stopovers.dart';
 import '../tables.dart';
 
 part 'trip_plan_dao.g.dart';
@@ -13,12 +16,14 @@ typedef PlanCopy = ({Map<int, int> items, Map<int, int> groups});
 
 /// A trip's plan as a whole, copied into another trip.
 ///
-/// One copy for every path that writes a whole plan somewhere else — a routine
+/// One copy for every path that writes a whole plan somewhere else: a routine
 /// stamped out onto real dates (`RoutineDao.materializeRoutine`) and a trip
-/// duplicated onto new ones — so a column or a table added to the plan reaches
-/// both at once, the way `copyItemPlan` does for a single entry.
+/// duplicated onto new ones ([duplicateTrip]). A column or a table added to the
+/// plan thus reaches both at once, the way `copyItemPlan` does for a single
+/// entry.
 @DriftAccessor(
   tables: [
+    Trips,
     TripParticipants,
     TripTags,
     ItineraryItems,
@@ -43,9 +48,10 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
   /// writes, and not the money or the files: whether those travel is the
   /// caller's rule, not the plan's.
   ///
-  /// [dropActualTimes] clears what `copyItemPlan` otherwise carries of the day
-  /// an entry was travelled on: its actual times. A copy of a trip that was
-  /// already under way would else open on its new dates claiming it ran late.
+  /// [dropLiveTimes] clears what `copyItemPlan` otherwise carries of the day an
+  /// entry was travelled on: its actual times and the delays at its stops. A
+  /// copy of a trip that was already under way would else open on its new dates
+  /// claiming it ran late.
   ///
   /// Not a transaction of its own: every caller writes the trip row in the same
   /// one.
@@ -53,7 +59,7 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
     int fromTripId,
     int toTripId, {
     required DateTime Function(DateTime day) shift,
-    bool dropActualTimes = false,
+    bool dropLiveTimes = false,
   }) async {
     final participants = await (select(
       tripParticipants,
@@ -148,17 +154,18 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
         groupId: newGroupId,
         sortOrder: item.sortOrder,
       ).copyWith(tripId: Value(toTripId));
-      if (dropActualTimes) {
+      if (dropLiveTimes) {
         entry = entry.copyWith(
           actualStartMinutes: const Value(null),
           actualEndMinutes: const Value(null),
+          stopovers: Value(stopoversWithoutLive(item.stopovers)),
         );
       }
       final copy = await into(itineraryItems).insert(entry);
       itemMap[item.id] = copy;
       // The walk to the station is part of the plan, and a plan the user has
-      // to redraw on every copy is missing by Thursday — the same reason the
-      // checklist travels.
+      // to redraw on every copy is missing by Thursday. The checklist travels
+      // for the same reason.
       await attachedDatabase.trackDao.copyItemTracks(item.id, copy);
     }
 
@@ -177,5 +184,92 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
     }
 
     return (items: itemMap, groups: groupMap);
+  }
+
+  /// The days [tripId]'s plan occupies, first and last, or null for a trip with
+  /// neither dates nor entries.
+  ///
+  /// A trip's own range when it has one: that is what the user set and what
+  /// the overview shows, including a free day at either end. A trip without
+  /// dates is read off its entries instead (the days they start on, the days
+  /// an overnight one ends on, and the days its decisions sit on), which is
+  /// what its timeline draws.
+  Future<({DateTime start, DateTime end})?> planRange(int tripId) async {
+    final trip = await (select(
+      trips,
+    )..where((t) => t.id.equals(tripId))).getSingle();
+    final start = trip.startDate;
+    if (start != null) {
+      return (
+        start: normalizeDay(start),
+        end: normalizeDay(trip.endDate ?? start),
+      );
+    }
+    final itemRows = await (select(
+      itineraryItems,
+    )..where((i) => i.tripId.equals(tripId))).get();
+    final setRows = await (select(
+      alternativeSets,
+    )..where((s) => s.tripId.equals(tripId))).get();
+    final days = [
+      for (final i in itemRows) ...daysCovered(i.date, i.endDayOffset),
+      for (final s in setRows) s.date,
+    ].map(normalizeDay).toList()..sort();
+    if (days.isEmpty) return null;
+    return (start: days.first, end: days.last);
+  }
+
+  /// Writes a copy of [tripId] as a new trip called [title] that begins on
+  /// [startDate], and returns its id.
+  ///
+  /// Every day moves by the same number of calendar days, the distance from
+  /// the old start to the new one ([planRange]), so the copy keeps the shape of
+  /// the original: a free day in the middle stays free, and the range keeps its
+  /// length. (A routine is read by *rank* instead and closes such a gap, see
+  /// `RoutineDao.routineDays`; a trip has real dates, and they say where the
+  /// gaps are.)
+  ///
+  /// The copy takes the **plan, not the money** (see `copyItemPlan`): a trip's
+  /// costs record payments made for *that* trip, and copying them would invent
+  /// spending, payers and debts on dates nobody has booked yet. Nor do its
+  /// files travel, which are bookings and photographs of the original, nor
+  /// anything of the day an entry was actually travelled on ([copyPlan]'s
+  /// `dropLiveTimes`). Nor does `fromRoutineId`: the copy was made from a trip,
+  /// and only an occurrence the routine itself produced is asked about before
+  /// being recorded twice on a day.
+  ///
+  /// The journeys come across as a plan, exactly as from a routine: making
+  /// them real connections on the new dates is `TripConnectionsController`'s
+  /// job, after this returns.
+  Future<int> duplicateTrip(
+    int tripId, {
+    required String title,
+    required DateTime startDate,
+  }) {
+    return transaction(() async {
+      final source = await (select(
+        trips,
+      )..where((t) => t.id.equals(tripId))).getSingle();
+      if (source.kind != TripKind.trip) {
+        throw ArgumentError('Trip $tripId is a routine, not a trip.');
+      }
+      final start = normalizeDay(startDate);
+      final range = await planRange(tripId);
+      final days = range == null ? 0 : daysBetween(range.start, start);
+      DateTime shift(DateTime day) => addDays(day, days);
+
+      final newTripId = await into(trips).insert(
+        TripsCompanion.insert(
+          title: title,
+          destination: Value(source.destination),
+          startDate: Value(start),
+          endDate: Value(range == null ? start : shift(range.end)),
+          notes: Value(source.notes),
+          colorValue: Value(source.colorValue),
+        ),
+      );
+      await copyPlan(tripId, newTripId, shift: shift, dropLiveTimes: true);
+      return newTripId;
+    });
   }
 }

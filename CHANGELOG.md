@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **A trip can be duplicated onto new dates.** *Duplicate trip…* in the trip's menu copies the
+  plan, participants, tags and checklists onto the start date you pick, keeping free days
+  where they were, and can look the connections up for the new dates. Costs and files stay
+  with the original.
 - **Maps come in more styles, with overlays.** The new layers button offers topographic and
   cycling maps and a calmer look alongside OpenStreetMap, and can draw ski slopes, railways
   or seamarks on top of any of them. Each loads from its own server, which the app contacts

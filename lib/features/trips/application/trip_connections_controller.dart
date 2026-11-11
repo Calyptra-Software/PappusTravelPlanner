@@ -11,14 +11,14 @@ final tripConnectionsControllerProvider = Provider<TripConnectionsController>(
 );
 
 /// Turning the journeys a trip carries as a *plan* into connections that
-/// actually run on the days they now sit on — the part of putting a plan onto
+/// actually run on the days they now sit on: the part of putting a plan onto
 /// new dates that needs the network.
 ///
 /// Every way of doing that writes the plan first and asks here afterwards: a
 /// routine stamped out onto real dates, a trip duplicated onto new ones, a trip
 /// moved to new dates. Copying or moving is a database write that always
 /// succeeds; looking the journeys up is a network call per journey that may
-/// fail, may find nothing, and wants the user's eye on the result — so it
+/// fail, may find nothing, and wants the user's eye on the result. So it
 /// happens *after* the trip is right as a plan, and the trip is none the worse
 /// if it is skipped.
 class TripConnectionsController {

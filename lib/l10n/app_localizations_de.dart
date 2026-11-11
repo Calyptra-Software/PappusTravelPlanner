@@ -2358,6 +2358,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routineDuplicateReversed => 'Umgekehrt duplizieren';
 
   @override
+  String get duplicateTrip => 'Reise duplizieren…';
+
+  @override
+  String get duplicateTripHeading => 'Reise duplizieren';
+
+  @override
+  String get duplicateTripConfirm => 'Duplizieren';
+
+  @override
   String routineReversedSuffix(String title) {
     return '$title (Rückweg)';
   }

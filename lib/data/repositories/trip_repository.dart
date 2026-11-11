@@ -62,6 +62,19 @@ class TripRepository {
     }
   }
 
+  /// Copies a trip onto new dates. [TripPlanDao.duplicateTrip] says what
+  /// travels with the plan and what stays behind.
+  Future<int> duplicateTrip(
+    int tripId, {
+    required String title,
+    required DateTime startDate,
+  }) =>
+      _db.tripPlanDao.duplicateTrip(tripId, title: title, startDate: startDate);
+
+  /// The first and last day of a trip's plan ([TripPlanDao.planRange]).
+  Future<({DateTime start, DateTime end})?> planRange(int tripId) =>
+      _db.tripPlanDao.planRange(tripId);
+
   // --- routines ---
   Stream<List<Trip>> watchRoutines() => _db.routineDao.watchRoutines();
 

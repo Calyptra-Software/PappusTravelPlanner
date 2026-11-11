@@ -1350,6 +1350,9 @@
   "routineCreated": "Trip created.",
   "routineCreatedOpen": "Open",
   "routineDuplicateReversed": "Duplicate reversed",
+  "duplicateTrip": "Duplicate trip\u2026",
+  "duplicateTripHeading": "Duplicate trip",
+  "duplicateTripConfirm": "Duplicate",
   "routineReversedSuffix": "{title} (return)",
   "@routineReversedSuffix": {
     "placeholders": { "title": { "type": "String" } }

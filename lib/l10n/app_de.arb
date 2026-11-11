@@ -829,6 +829,9 @@
   "routineCreated": "Reise erzeugt.",
   "routineCreatedOpen": "Öffnen",
   "routineDuplicateReversed": "Umgekehrt duplizieren",
+  "duplicateTrip": "Reise duplizieren\u2026",
+  "duplicateTripHeading": "Reise duplizieren",
+  "duplicateTripConfirm": "Duplizieren",
   "routineReversedSuffix": "{title} (Rückweg)",
   "@routineReversedSuffix": {
     "placeholders": { "title": { "type": "String" } }

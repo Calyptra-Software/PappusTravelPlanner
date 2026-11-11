@@ -1,6 +1,6 @@
 # Trips, tags, queries and routines
 
-Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when the work needs them rather than every session. They were written as one document: an "above" or "below" may point into another file in this directory. Read this for the overview, its filters and counts, the statistics filter, routines and materializing them.
+Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when the work needs them rather than every session. They were written as one document: an "above" or "below" may point into another file in this directory. Read this for the overview, its filters and counts, the statistics filter, routines and materializing them, and duplicating a trip.
 
 - **A trip is a trip, however long it lasts.** A walk, a commute, and a fortnight in
   Rome are the same row with different dates — a one-day trip is simply one whose start
@@ -94,3 +94,18 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   through `core/format/civil_date.dart` (`addDays` / `daysBetween`), never `Duration`: a
   local day is 23 or 25 hours across a daylight-saving change, which is exactly enough to
   pull day two onto day one.
+- **A whole plan is copied in one place** (`TripPlanDao.copyPlan`): participants, tags,
+  decisions with their choice, groups (cloned), entries via `copyItemPlan` and their lines
+  via `copyItemTracks`, and checklists via `copyChecklist`. `materializeRoutine` and
+  `duplicateTrip` both call it and add only their own rules around it (the routine's fare
+  and paperwork for the one, nothing for the other), so a new part of the plan reaches both.
+- **A duplicated trip moves by distance, not by rank.** `duplicateTrip` shifts every day by
+  `daysBetween(old start, new start)`, the old start being the trip's own or, without dates,
+  its first entry's (`planRange`). A trip's dates are real, so a free day in the middle or
+  at the end is part of the plan and stays; reading ranks, as a routine must, would close it
+  up. The copy takes the **plan, not the money**: a trip's costs record payments for that
+  trip, and its files are its bookings and photographs, so neither travels. Nor do the
+  actual times, the delays at the stops, or `sourceTripId` (`dropLiveTimes`): they describe
+  how the original days went. Nor `fromRoutineId`, which says the *routine* produced a trip.
+  The journeys arrive as a plan, and the same `lookUpTripConnections` round a routine gets
+  makes them real for the new dates.

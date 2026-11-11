@@ -2346,6 +2346,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routineDuplicateReversed => 'Duplicate reversed';
 
   @override
+  String get duplicateTrip => 'Duplicate trip…';
+
+  @override
+  String get duplicateTripHeading => 'Duplicate trip';
+
+  @override
+  String get duplicateTripConfirm => 'Duplicate';
+
+  @override
   String routineReversedSuffix(String title) {
     return '$title (return)';
   }

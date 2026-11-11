@@ -3958,6 +3958,24 @@ abstract class AppLocalizations {
   /// **'Duplicate reversed'**
   String get routineDuplicateReversed;
 
+  /// No description provided for @duplicateTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate trip…'**
+  String get duplicateTrip;
+
+  /// No description provided for @duplicateTripHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate trip'**
+  String get duplicateTripHeading;
+
+  /// No description provided for @duplicateTripConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateTripConfirm;
+
   /// No description provided for @routineReversedSuffix.
   ///
   /// In en, this message translates to:
