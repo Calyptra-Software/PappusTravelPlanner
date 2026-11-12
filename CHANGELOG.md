@@ -9,6 +9,11 @@ exact commits.
   plan, participants, tags and checklists onto the start date you pick, keeping free days
   where they were, and can look the connections up for the new dates. Costs and files stay
   with the original.
+- **Changing a trip's start date can move its entries along.** Saving the form with a new
+  start asks whether every entry should move by the same number of days, and can then look
+  the connections up for the new dates. *Dates only* keeps the entries where they are.
+- **Editing a trip made from a routine keeps it linked to the routine.** Saving the form
+  used to drop the link, so the trip vanished from the routine filter.
 - **Maps come in more styles, with overlays.** The new layers button offers topographic and
   cycling maps and a calmer look alongside OpenStreetMap, and can draw ski slopes, railways
   or seamarks on top of any of them. Each loads from its own server, which the app contacts

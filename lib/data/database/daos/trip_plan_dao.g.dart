@@ -16,6 +16,7 @@ mixin _$TripPlanDaoMixin on DatabaseAccessor<AppDatabase> {
   $TransportModesTable get transportModes => attachedDatabase.transportModes;
   $ItineraryItemsTable get itineraryItems => attachedDatabase.itineraryItems;
   $ChecklistsTable get checklists => attachedDatabase.checklists;
+  $CollapsedDaysTable get collapsedDays => attachedDatabase.collapsedDays;
   TripPlanDaoManager get managers => TripPlanDaoManager(this);
 }
 
@@ -56,4 +57,6 @@ class TripPlanDaoManager {
       );
   $$ChecklistsTableTableManager get checklists =>
       $$ChecklistsTableTableManager(_db.attachedDatabase, _db.checklists);
+  $$CollapsedDaysTableTableManager get collapsedDays =>
+      $$CollapsedDaysTableTableManager(_db.attachedDatabase, _db.collapsedDays);
 }

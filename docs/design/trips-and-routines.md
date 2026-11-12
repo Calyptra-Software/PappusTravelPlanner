@@ -1,6 +1,6 @@
 # Trips, tags, queries and routines
 
-Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when the work needs them rather than every session. They were written as one document: an "above" or "below" may point into another file in this directory. Read this for the overview, its filters and counts, the statistics filter, routines and materializing them, and duplicating a trip.
+Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when the work needs them rather than every session. They were written as one document: an "above" or "below" may point into another file in this directory. Read this for the overview, its filters and counts, the statistics filter, routines and materializing them, and duplicating or moving a trip.
 
 - **A trip is a trip, however long it lasts.** A walk, a commute, and a fortnight in
   Rome are the same row with different dates — a one-day trip is simply one whose start
@@ -109,3 +109,19 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   how the original days went. Nor `fromRoutineId`, which says the *routine* produced a trip.
   The journeys arrive as a plan, and the same `lookUpTripConnections` round a routine gets
   makes them real for the new dates.
+- **A trip is moved from its form, not from a menu.** Changing the start date is where
+  moving a trip is looked for, so saving a new start (`entryShiftDays`: only the start
+  counts, and only between two dates) asks `showMoveEntriesDialog` whether the entries come
+  along. It is a question because a new start means either "the trip moved" or "the dates
+  were wrong", and only the user knows which; *Dates only* answers the second. It is asked
+  on **saving**, not on picking, so picking twice or cancelling the form asks nothing, and
+  only when there are entries (`moveFacts`). `TripPlanDao.moveTrip` writes the row and moves
+  the entries, decisions and collapsed days in one transaction, by `addDays`. In place, the
+  trip keeps its money, ticks and files; what it drops is the record of the old days, as a
+  duplicate does: `sourceTripId` (a live refresh would read the old run onto the new day),
+  actual times and stop delays. The dialog says so when actual times exist, since that is
+  the one loss. The lookup runs on the detail screen after the form has closed (the form
+  pops `true`), because the round needs a screen that stays.
+- **The form writes `copyWith` of the row it loaded**, never a fresh `Trip`: a fresh one
+  silently reset every column the form does not show, and `fromRoutineId` was lost on each
+  edit of a trip made from a routine.

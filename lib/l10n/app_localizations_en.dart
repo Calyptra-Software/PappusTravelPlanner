@@ -2355,6 +2355,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get duplicateTripConfirm => 'Duplicate';
 
   @override
+  String get moveEntriesTitle => 'Move the entries too?';
+
+  @override
+  String moveEntriesLater(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Every entry moves $days days later.',
+      one: 'Every entry moves one day later.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String moveEntriesEarlier(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Every entry moves $days days earlier.',
+      one: 'Every entry moves one day earlier.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get moveEntriesClearsActualTimes =>
+      'The actual times recorded so far are removed.';
+
+  @override
+  String get moveEntriesConfirm => 'Move entries';
+
+  @override
+  String get moveEntriesDatesOnly => 'Dates only';
+
+  @override
   String routineReversedSuffix(String title) {
     return '$title (return)';
   }

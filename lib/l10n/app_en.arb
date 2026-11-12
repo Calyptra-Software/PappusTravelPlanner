@@ -1353,6 +1353,18 @@
   "duplicateTrip": "Duplicate trip\u2026",
   "duplicateTripHeading": "Duplicate trip",
   "duplicateTripConfirm": "Duplicate",
+  "moveEntriesTitle": "Move the entries too?",
+  "moveEntriesLater": "{days, plural, =1{Every entry moves one day later.} other{Every entry moves {days} days later.}}",
+  "@moveEntriesLater": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "moveEntriesEarlier": "{days, plural, =1{Every entry moves one day earlier.} other{Every entry moves {days} days earlier.}}",
+  "@moveEntriesEarlier": {
+    "placeholders": { "days": { "type": "int" } }
+  },
+  "moveEntriesClearsActualTimes": "The actual times recorded so far are removed.",
+  "moveEntriesConfirm": "Move entries",
+  "moveEntriesDatesOnly": "Dates only",
   "routineReversedSuffix": "{title} (return)",
   "@routineReversedSuffix": {
     "placeholders": { "title": { "type": "String" } }

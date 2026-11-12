@@ -832,6 +832,12 @@
   "duplicateTrip": "Reise duplizieren\u2026",
   "duplicateTripHeading": "Reise duplizieren",
   "duplicateTripConfirm": "Duplizieren",
+  "moveEntriesTitle": "Einträge mitverschieben?",
+  "moveEntriesLater": "{days, plural, =1{Alle Einträge werden um einen Tag nach hinten verschoben.} other{Alle Einträge werden um {days} Tage nach hinten verschoben.}}",
+  "moveEntriesEarlier": "{days, plural, =1{Alle Einträge werden um einen Tag nach vorne verschoben.} other{Alle Einträge werden um {days} Tage nach vorne verschoben.}}",
+  "moveEntriesClearsActualTimes": "Bereits erfasste tatsächliche Zeiten werden dabei gelöscht.",
+  "moveEntriesConfirm": "Mitverschieben",
+  "moveEntriesDatesOnly": "Nur Zeitraum ändern",
   "routineReversedSuffix": "{title} (Rückweg)",
   "@routineReversedSuffix": {
     "placeholders": { "title": { "type": "String" } }

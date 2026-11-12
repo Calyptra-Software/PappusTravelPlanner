@@ -12,7 +12,7 @@ import 'package:travelplanner/features/attachments/attachment_import.dart';
 import 'currency_fixture.dart';
 import 'support/dst.dart';
 
-/// A trip's plan put onto other dates: copied as a new trip.
+/// A trip's plan put onto other dates: copied as a new trip, or moved in place.
 void main() {
   late AppDatabase db;
 
@@ -373,6 +373,229 @@ void main() {
         ),
         throwsArgumentError,
       );
+    });
+  });
+
+  group('moveTrip', () {
+    Future<Trip> withDates(int tripId, DateTime start, DateTime end) async {
+      final trip = (await db.tripDao.findTrip(tripId))!;
+      return trip.copyWith(startDate: Value(start), endDate: Value(end));
+    }
+
+    test('every dated part of the plan moves, nothing is added', () async {
+      final tripId = await makeTrip(
+        start: DateTime(2026, 5, 1),
+        end: DateTime(2026, 5, 3),
+      );
+      await makeEntry(tripId, DateTime(2026, 5, 1), title: 'Arrive');
+      final museum = await makeEntry(
+        tripId,
+        DateTime(2026, 5, 3),
+        title: 'Museum',
+      );
+      await db.alternativeDao.createSetFromItem(museum);
+      await db.itineraryDao.setDayCollapsed(tripId, DateTime(2026, 5, 1), true);
+      await db.itineraryDao.setDayCollapsed(tripId, DateTime(2026, 5, 2), true);
+
+      await db.tripPlanDao.moveTrip(
+        await withDates(tripId, DateTime(2026, 5, 2), DateTime(2026, 5, 4)),
+        days: 1,
+      );
+
+      final trip = await db.tripDao.findTrip(tripId);
+      expect(trip!.startDate, DateTime(2026, 5, 2));
+      expect(trip.endDate, DateTime(2026, 5, 4));
+      expect(
+        {for (final e in await entriesOf(tripId)) e.title: e.date},
+        {'Arrive': DateTime(2026, 5, 2), 'Museum': DateTime(2026, 5, 4)},
+      );
+      final sets = await db.alternativeDao.setsForTrip(tripId);
+      expect(sets.values.single.date, DateTime(2026, 5, 4));
+      // Shifting by one day moves the 1st onto the 2nd, which was itself
+      // collapsed: the rows must not collide on the way.
+      expect(await db.itineraryDao.watchCollapsedDays(tripId).first, {
+        DateTime(2026, 5, 2),
+        DateTime(2026, 5, 3),
+      });
+      expect(await db.select(db.trips).get(), hasLength(1));
+    });
+
+    test('the money, the ticks and the files stay as they are', () async {
+      final tripId = await makeTrip(start: DateTime(2026, 5, 1));
+      final entryId = await makeEntry(tripId, DateTime(2026, 5, 1));
+      await db.costDao.addCost(
+        CostsCompanion.insert(
+          itemId: Value(entryId),
+          amountMinor: 1200,
+          currency: eurId,
+          reason: 'Tickets',
+          paid: const Value(true),
+        ),
+      );
+      final listId = await db.checklistDao.addChecklist(
+        ChecklistsCompanion.insert(tripId: tripId),
+      );
+      await db.checklistDao.addItem(
+        ChecklistItemsCompanion.insert(
+          checklistId: listId,
+          label: 'Passport',
+          done: const Value(true),
+        ),
+      );
+      final pdf = Uint8List.fromList(utf8.encode('%PDF-1.4\n%booking\n'));
+      await db.attachmentDao.addAttachment(
+        prepareAttachment(
+          pdf,
+          name: 'ticket.pdf',
+          kind: AttachmentKind.document,
+        ),
+        itemId: entryId,
+      );
+
+      await db.tripPlanDao.moveTrip(
+        await withDates(tripId, DateTime(2026, 6, 1), DateTime(2026, 6, 1)),
+        days: 31,
+      );
+
+      final entry = (await entriesOf(tripId)).single;
+      expect(entry.id, entryId, reason: 'the same entry, moved');
+      final costs = await db.costDao.watchCostsForTrip(tripId).first;
+      expect(costs.single.itemId, entryId);
+      expect(costs.single.paid, isTrue);
+      expect(
+        (await db.checklistDao.watchItems(listId).first).single.done,
+        isTrue,
+      );
+      expect(
+        await db.attachmentDao.watchAttachmentsForItem(entryId).first,
+        hasLength(1),
+      );
+    });
+
+    test('what the old day recorded is cleared, the plan is kept', () async {
+      final tripId = await makeTrip(start: DateTime(2026, 5, 1));
+      await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          kind: ItemKind.transport,
+          startMinutes: const Value(600),
+          endMinutes: const Value(700),
+          actualStartMinutes: const Value(612),
+          actualEndMinutes: const Value(715),
+          sourceTripId: const Value('20260501_10:00_ic2021'),
+          fromPlaceId: const Value('id:A'),
+          toPlaceId: const Value('id:B'),
+          stopovers: Value(
+            encodeStopovers(const [
+              Stopover(name: 'X', minutes: 630, delayMinutes: 12),
+            ]),
+          ),
+        ),
+      );
+      expect((await db.tripPlanDao.moveFacts(tripId)).hasActualTimes, isTrue);
+
+      await db.tripPlanDao.moveTrip(
+        await withDates(tripId, DateTime(2026, 5, 8), DateTime(2026, 5, 8)),
+        days: 7,
+      );
+
+      final leg = (await entriesOf(tripId)).single;
+      expect(leg.date, DateTime(2026, 5, 8));
+      expect(leg.startMinutes, 600);
+      expect(leg.endMinutes, 700);
+      expect(leg.fromPlaceId, 'id:A');
+      expect(leg.toPlaceId, 'id:B');
+      expect(leg.sourceTripId, isNull);
+      expect(leg.actualStartMinutes, isNull);
+      expect(leg.actualEndMinutes, isNull);
+      expect(decodeStopovers(leg.stopovers), const [
+        Stopover(name: 'X', minutes: 630),
+      ]);
+      expect((await db.tripPlanDao.moveFacts(tripId)).hasActualTimes, isFalse);
+    });
+
+    test('there and back again is where it started', () async {
+      final tripId = await makeTrip(
+        start: DateTime(2026, 5, 1),
+        end: DateTime(2026, 5, 5),
+      );
+      await makeEntry(tripId, DateTime(2026, 5, 1), title: 'A');
+      await makeEntry(tripId, DateTime(2026, 5, 4), title: 'B');
+
+      await db.tripPlanDao.moveTrip(
+        await withDates(tripId, DateTime(2026, 4, 21), DateTime(2026, 4, 25)),
+        days: -10,
+      );
+      expect(
+        {for (final e in await entriesOf(tripId)) e.title: e.date},
+        {'A': DateTime(2026, 4, 21), 'B': DateTime(2026, 4, 24)},
+      );
+      await db.tripPlanDao.moveTrip(
+        await withDates(tripId, DateTime(2026, 5, 1), DateTime(2026, 5, 5)),
+        days: 10,
+      );
+      expect(
+        {for (final e in await entriesOf(tripId)) e.title: e.date},
+        {'A': DateTime(2026, 5, 1), 'B': DateTime(2026, 5, 4)},
+      );
+    });
+
+    test(
+      'a daylight-saving change in between costs no day',
+      skip: skipWithoutEuropeanDst,
+      () async {
+        final tripId = await makeTrip(
+          start: DateTime(2026, 3, 27),
+          end: DateTime(2026, 3, 28),
+        );
+        await makeEntry(tripId, DateTime(2026, 3, 27), title: 'Fri');
+        await makeEntry(tripId, DateTime(2026, 3, 28), title: 'Sat');
+
+        // Across the spring change: the 29th is 23 hours long.
+        await db.tripPlanDao.moveTrip(
+          await withDates(tripId, DateTime(2026, 3, 29), DateTime(2026, 3, 30)),
+          days: 2,
+        );
+
+        expect(
+          {for (final e in await entriesOf(tripId)) e.title: e.date},
+          {'Fri': DateTime(2026, 3, 29), 'Sat': DateTime(2026, 3, 30)},
+        );
+      },
+    );
+
+    test('a move of no days only writes the trip', () async {
+      final tripId = await makeTrip(start: DateTime(2026, 5, 1));
+      await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: tripId,
+          date: DateTime(2026, 5, 1),
+          kind: ItemKind.transport,
+          actualStartMinutes: const Value(612),
+          sourceTripId: const Value('run'),
+        ),
+      );
+      final trip = (await db.tripDao.findTrip(tripId))!;
+      await db.tripPlanDao.moveTrip(trip.copyWith(title: 'Renamed'), days: 0);
+
+      expect((await db.tripDao.findTrip(tripId))!.title, 'Renamed');
+      final leg = (await entriesOf(tripId)).single;
+      expect(leg.actualStartMinutes, 612);
+      expect(leg.sourceTripId, 'run');
+    });
+
+    test('moveFacts says whether there is anything to move', () async {
+      final tripId = await makeTrip(start: DateTime(2026, 5, 1));
+      expect(await db.tripPlanDao.moveFacts(tripId), (
+        hasEntries: false,
+        hasActualTimes: false,
+      ));
+      await makeEntry(tripId, DateTime(2026, 5, 1));
+      expect(await db.tripPlanDao.moveFacts(tripId), (
+        hasEntries: true,
+        hasActualTimes: false,
+      ));
     });
   });
 }

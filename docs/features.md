@@ -31,6 +31,11 @@ Dates are optional on purpose. A plan whose timing you have not settled is a tri
 range, rather than a trip pushed into pretending it has one — put them in when you know
 them, and everything dated adjusts around them.
 
+Saving a new start date for a trip with entries asks whether they should move along: every
+entry moves by the same number of days, and the connections can then be looked up for the
+new dates. Moving clears the actual times recorded on the old dates; costs, ticks and files
+stay. *Dates only* is for correcting the range when the entries were already right.
+
 What hangs off a trip is the rest of this page: a **day-by-day itinerary** of places and
 transport legs, the **costs** those come to and how they divide among the people on it,
 and any number of **checklists**.
@@ -326,7 +331,7 @@ offline, correct on its own — and *then* looks the connection up for the day i
 on, offering the day's actual departure to swap in. If it is not the one you want, *Adjust
 search…* opens the connection search for that journey, with its ends and time filled in.
 
-A duplicated trip is offered the same.
+A duplicated trip, or one whose entries moved with a new start date, is offered the same.
 
 Declining it, finding nothing, or having no signal all leave the copied plan standing. A
 journey for which nothing was found says so, with the same way into the search. And

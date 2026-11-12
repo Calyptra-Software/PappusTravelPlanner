@@ -42,6 +42,7 @@ import '../../sharing/trip_pdf_sections.dart';
 import '../application/trip_providers.dart';
 import 'create_trip_from_routine.dart';
 import 'duplicate_trip.dart';
+import 'look_up_trip_connections.dart';
 import '../trip_kind.dart';
 import '../widgets/trip_when_line.dart';
 
@@ -151,6 +152,16 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Opens the trip's form, and looks the journeys up for their new days when
+  /// the form moved them there and was asked to. The form closes on saving, so
+  /// the round of offers runs here, on the screen that stays.
+  Future<void> _editTrip(BuildContext context, WidgetRef ref) async {
+    final lookUp = await context.push<bool>('/trip/$tripId/edit');
+    if (lookUp == true && context.mounted) {
+      await lookUpTripConnections(context, ref, tripId);
+    }
   }
 
   /// Copies this trip onto new dates and opens the copy. [duplicateTrip] asks
@@ -638,7 +649,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           IconButton(
             tooltip: l10n.editTrip,
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => context.push('/trip/$tripId/edit'),
+            onPressed: () => _editTrip(context, ref),
           ),
           PopupMenuButton<_TripAction>(
             tooltip: MaterialLocalizations.of(context).showMenuTooltip,
@@ -760,7 +771,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     tripLevelCosts: tripLevelCosts,
                     participants: participants,
                     localeName: localeName,
-                    onEdit: () => context.push('/trip/$tripId/edit'),
+                    onEdit: () => _editTrip(context, ref),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
                       tripId: tripId,

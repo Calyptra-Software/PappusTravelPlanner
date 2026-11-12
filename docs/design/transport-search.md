@@ -90,7 +90,8 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   different journey wearing the same label.
 - **A journey is looked up again from the sheet that reads it**, one run at a time
   (`JourneyDetailsSheet`, on the group's label or a lone imported leg). The trip-wide lookup
-  above happens once, in the seconds after a routine is stamped out; every way of not
+  above happens once, in the seconds after a routine is stamped out (or a trip is
+  duplicated, or moved with its start date); every way of not
   finishing it — the switch left off, no signal on the platform, "keep the plan" tapped by
   mistake, nothing running at that hour — used to leave the plan un-refreshable for good,
   since a copied leg carries no `sourceTripId` and nothing else asked the timetable again.

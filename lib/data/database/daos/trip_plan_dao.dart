@@ -14,7 +14,8 @@ part 'trip_plan_dao.g.dart';
 /// them afterwards (a routine's fare).
 typedef PlanCopy = ({Map<int, int> items, Map<int, int> groups});
 
-/// A trip's plan as a whole, copied into another trip.
+/// A trip's plan as a whole: copied into another trip, or moved to other
+/// dates.
 ///
 /// One copy for every path that writes a whole plan somewhere else: a routine
 /// stamped out onto real dates (`RoutineDao.materializeRoutine`) and a trip
@@ -31,6 +32,7 @@ typedef PlanCopy = ({Map<int, int> items, Map<int, int> groups});
     AlternativeSets,
     Alternatives,
     Checklists,
+    CollapsedDays,
   ],
 )
 class TripPlanDao extends DatabaseAccessor<AppDatabase>
@@ -270,6 +272,96 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
       );
       await copyPlan(tripId, newTripId, shift: shift, dropLiveTimes: true);
       return newTripId;
+    });
+  }
+
+  /// What the question before moving [tripId] needs to know: whether it has
+  /// anything to move, and whether moving it would clear actual times that
+  /// were recorded on the old dates.
+  Future<({bool hasEntries, bool hasActualTimes})> moveFacts(int tripId) async {
+    final itemRows = await (select(
+      itineraryItems,
+    )..where((i) => i.tripId.equals(tripId))).get();
+    final hasSets =
+        await (select(alternativeSets)
+              ..where((s) => s.tripId.equals(tripId))
+              ..limit(1))
+            .getSingleOrNull() !=
+        null;
+    return (
+      hasEntries: itemRows.isNotEmpty || hasSets,
+      hasActualTimes: itemRows.any(
+        (i) => i.actualStartMinutes != null || i.actualEndMinutes != null,
+      ),
+    );
+  }
+
+  /// Writes [trip] and moves every entry of it by [days] calendar days, in one
+  /// transaction: what the trip form does when its start date changes and the
+  /// user asks for the entries to come along.
+  ///
+  /// In place, unlike [duplicateTrip]: the trip stays the one trip, with its
+  /// costs, ticks, files, groups and decisions. What moves is every date the
+  /// plan has: the entries, the decisions, and which days are collapsed. Each by
+  /// [addDays], so a daylight-saving change in between costs no day.
+  ///
+  /// What the entries knew of the **old** days is cleared, for the reason
+  /// [duplicateTrip] leaves it behind: `sourceTripId` names one dated run, and
+  /// a live refresh would read that run's times onto a day it does not run on;
+  /// the actual times and the delays at the stops describe how the old day
+  /// went. The planned times, the places and the router's place ids stay, so
+  /// the journeys can be looked up again for the new dates.
+  ///
+  /// The trip's range is [trip]'s, as written: an entry may end up outside it
+  /// when the length was changed in the same edit, and the timeline still
+  /// draws it.
+  Future<void> moveTrip(Trip trip, {required int days}) {
+    return transaction(() async {
+      if (days != 0) {
+        final items = await (select(
+          itineraryItems,
+        )..where((i) => i.tripId.equals(trip.id))).get();
+        for (final item in items) {
+          await (update(
+            itineraryItems,
+          )..where((i) => i.id.equals(item.id))).write(
+            ItineraryItemsCompanion(
+              date: Value(addDays(item.date, days)),
+              sourceTripId: const Value(null),
+              actualStartMinutes: const Value(null),
+              actualEndMinutes: const Value(null),
+              stopovers: Value(stopoversWithoutLive(item.stopovers)),
+            ),
+          );
+        }
+        final sets = await (select(
+          alternativeSets,
+        )..where((s) => s.tripId.equals(trip.id))).get();
+        for (final set in sets) {
+          await (update(
+            alternativeSets,
+          )..where((s) => s.id.equals(set.id))).write(
+            AlternativeSetsCompanion(date: Value(addDays(set.date, days))),
+          );
+        }
+        // Keyed by (trip, day), so moving the rows one by one could collide
+        // with a day not yet moved. Taken out and put back instead.
+        final collapsed = await (select(
+          collapsedDays,
+        )..where((c) => c.tripId.equals(trip.id))).get();
+        await (delete(
+          collapsedDays,
+        )..where((c) => c.tripId.equals(trip.id))).go();
+        for (final row in collapsed) {
+          await into(collapsedDays).insert(
+            CollapsedDaysCompanion.insert(
+              tripId: trip.id,
+              day: addDays(row.day, days),
+            ),
+          );
+        }
+      }
+      await update(trips).replace(trip);
     });
   }
 }

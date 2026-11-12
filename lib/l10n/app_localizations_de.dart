@@ -2367,6 +2367,41 @@ class AppLocalizationsDe extends AppLocalizations {
   String get duplicateTripConfirm => 'Duplizieren';
 
   @override
+  String get moveEntriesTitle => 'Einträge mitverschieben?';
+
+  @override
+  String moveEntriesLater(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Alle Einträge werden um $days Tage nach hinten verschoben.',
+      one: 'Alle Einträge werden um einen Tag nach hinten verschoben.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String moveEntriesEarlier(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Alle Einträge werden um $days Tage nach vorne verschoben.',
+      one: 'Alle Einträge werden um einen Tag nach vorne verschoben.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get moveEntriesClearsActualTimes =>
+      'Bereits erfasste tatsächliche Zeiten werden dabei gelöscht.';
+
+  @override
+  String get moveEntriesConfirm => 'Mitverschieben';
+
+  @override
+  String get moveEntriesDatesOnly => 'Nur Zeitraum ändern';
+
+  @override
   String routineReversedSuffix(String title) {
     return '$title (Rückweg)';
   }
