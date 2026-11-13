@@ -12,6 +12,9 @@ exact commits.
 - **Changing a trip's start date can move its entries along.** Saving the form with a new
   start asks whether every entry should move by the same number of days, and can then look
   the connections up for the new dates. *Dates only* keeps the entries where they are.
+- **Ski runs, flights and taxi rides are no longer offered a connection to replace them.**
+  When a trip is created from a routine, duplicated or moved, connections are looked up only
+  for journeys public transport could take over, also when such a leg is grouped with others.
 - **Editing a trip made from a routine keeps it linked to the routine.** Saving the form
   used to drop the link, so the trip vanished from the routine filter.
 - **Maps come in more styles, with overlays.** The new layers button offers topographic and

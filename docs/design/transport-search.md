@@ -128,6 +128,15 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   that a bus now beats the walk. `plannedJourneyOf` is untouched, so that question is still
   one tap away from the journey sheet or the item form — the capability moves to where a
   human is watching, which is the split those two functions already exist to draw.
+- **A run the router could not reproduce is not offered either** (`routerCanReplace`, the
+  third condition in `plannedJourneys`). Taking an offer replaces the whole run, first end to
+  last, so a run holding a leg the router never returns would lose it: a train grouped with a
+  ski descent came back as a train and a bus, and a flight would become a train. The set is
+  `unroutedTransportModeIds`: ski, flight and taxi, the built-ins `builtinTransportModeFor`
+  never produces (a lift imports with no mode). Resolved from the table by `builtinKey`, like
+  the street set. A null mode, `other` and a custom mode do not hold a run back, by the same
+  "only what is positively known" rule. `plannedJourneyOf` again stays open, so such a run can
+  still be looked up deliberately from its sheet.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the

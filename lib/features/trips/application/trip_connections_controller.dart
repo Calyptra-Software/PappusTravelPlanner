@@ -37,9 +37,11 @@ class TripConnectionsController {
     final repo = _ref.read(repositoryProvider);
     final items = await repo.watchItems(tripId).first;
     final branches = await repo.watchAlternativeBranches(tripId).first;
+    final modes = await repo.transportModes();
     return plannedJourneys(
       liveItems(items, chosenBranchIds(branches)),
-      streetModeIds: streetTransportModeIds(await repo.transportModes()),
+      streetModeIds: streetTransportModeIds(modes),
+      unroutedModeIds: unroutedTransportModeIds(modes),
     );
   }
 
