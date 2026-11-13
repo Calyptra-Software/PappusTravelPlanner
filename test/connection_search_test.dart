@@ -105,16 +105,18 @@ const _address = TransportPlace(
   lon: 9.99,
 );
 
-/// One journey departing at [hour] UTC and running for [duration]. [live] gives
-/// it real-time data — a 5-minute departure delay, arriving on time.
+/// One journey departing at [hour] UTC on [day] July 2026 and running for
+/// [duration]. [live] gives it real-time data — a 5-minute departure delay,
+/// arriving on time.
 JourneyOption _option({
   required String? line,
   required int hour,
+  int day = 27,
   bool live = false,
   TransitMode mode = TransitMode.highSpeedRail,
   Duration duration = const Duration(hours: 2),
 }) {
-  final departure = DateTime.utc(2026, 7, 27, hour);
+  final departure = DateTime.utc(2026, 7, day, hour);
   final arrival = departure.add(duration);
   return JourneyOption(
     departure: departure,
@@ -210,6 +212,19 @@ class _FakeSearch implements TransportSearch {
       'L0' => JourneyResults(
         options: [_option(line: 'ICE 2', hour: 10)],
         laterCursor: 'L1',
+      ),
+      // The next morning, and a night train from it that runs through two
+      // nights.
+      'L1' => JourneyResults(
+        options: [
+          _option(line: 'ICE 3', hour: 6, day: 28),
+          _option(
+            line: 'EN 4',
+            hour: 20,
+            day: 28,
+            duration: Duration(hours: 30),
+          ),
+        ],
       ),
       'E0' => JourneyResults(
         options: [_option(line: 'ICE 0', hour: 6)],
@@ -616,6 +631,36 @@ void main() {
     await tester.pumpAndSettle();
     expect(search.calls.last.pageCursor, 'L0');
     expect(find.textContaining('ICE 2'), findsOneWidget);
+  });
+
+  testWidgets('results reaching another day are dated by departure day', (
+    tester,
+  ) async {
+    await searchFrom(tester);
+    await tester.tap(find.text('Later'));
+    await tester.pumpAndSettle();
+    // Everything still leaves on the searched day: no dates.
+    expect(find.text('Mon, Jul 27'), findsNothing);
+
+    await tester.tap(find.text('Later'));
+    await tester.pumpAndSettle();
+    // Now every day is dated, the searched one too, each above its own run.
+    final monday = tester.getTopLeft(find.text('Mon, Jul 27')).dy;
+    final tuesday = tester.getTopLeft(find.text('Tue, Jul 28')).dy;
+    expect(
+      monday,
+      lessThan(tester.getTopLeft(find.textContaining('ICE 1')).dy),
+    );
+    expect(
+      tuesday,
+      greaterThan(tester.getTopLeft(find.textContaining('ICE 2')).dy),
+    );
+    expect(
+      tuesday,
+      lessThan(tester.getTopLeft(find.textContaining('ICE 3')).dy),
+    );
+    // 22:00 Tuesday to 04:00 Thursday, Berlin time.
+    expect(find.textContaining('+2'), findsOneWidget);
   });
 
   testWidgets('a failed page keeps the results and says so', (tester) async {

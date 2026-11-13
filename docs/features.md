@@ -281,7 +281,8 @@ connections only*, so a search never books you a three-minute sprint across a te
 **via stop** can be required as well, with a minimum time to stay there.
 
 Results come back as a window around what you asked for; **earlier** and **later** load the
-departures either side onto the same list. While results are shown, the form is folded into
+departures either side onto the same list. Once the list reaches another day, each day's
+departures are listed under their date. While results are shown, the form is folded into
 a summary of the search, which you tap to change it. Tapping one opens it in full — leg by leg, with
 platforms, the length of each change, and every stop the service calls at on the way. A
 stop the train is *skipping* is struck through rather than given a reassuring time, because

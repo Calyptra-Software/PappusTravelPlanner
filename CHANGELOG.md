@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **Connection search results show their date once they reach another day.** Each day's
+  departures are listed under its date, and an arrival two or more days later is marked
+  **+2** and so on rather than **+1**.
 - **A trip can be duplicated onto new dates.** *Duplicate trip…* in the trip's menu copies the
   plan, participants, tags and checklists onto the start date you pick, keeping free days
   where they were, and can look the connections up for the new dates. Costs and files stay
