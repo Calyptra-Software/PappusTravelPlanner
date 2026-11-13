@@ -81,3 +81,14 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   `build_transport_glyphs.py` — which means the app itself drew the horse and the three
   lifts up to 15% of their size left of center, in Flutter as much as in a PDF viewer, until
   both scripts were made to write `lsb = xMin`. A test asserts it for both fonts.
+- **A `.tpt` the app is opened with crosses into Dart as a path, never as bytes.**
+  `MainActivity.kt` streams the intent's URI into `cache/received/` on a background thread and
+  hands over the copy's path; `takeReceivedTrip` (`received_trip_file.dart`) reads it and deletes
+  it. The bytes used to cross the method channel as one Base64 string, which costs about five
+  times the file on the Java heap (the bytes, their Base64, and that as a UTF-16 string): a trip
+  carrying tens of megabytes of photos killed the app on launch with an `OutOfMemoryError`,
+  uncaught since it is not an `Exception`, while the import from inside the app, which never
+  touches Java, went through. The handoff waits for a frame and asks for one
+  (`ensureVisualUpdate`): a post-frame callback alone waits for whatever redraws next, and after
+  a copy that takes a second the screen may have nothing to redraw. A file that cannot be read
+  shows `importTripFailed` rather than nothing.
