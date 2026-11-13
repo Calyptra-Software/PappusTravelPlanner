@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **A trip file with many photos opens from a file manager.** Opening a large `.tpt` with
+  Pappus used to close the app without importing anything; a file that cannot be read now
+  says so.
 - **Connection search results show their date once they reach another day.** Each day's
   departures are listed under its date, and an arrival two or more days later is marked
   **+2** and so on rather than **+1**.
