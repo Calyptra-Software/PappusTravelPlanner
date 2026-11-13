@@ -114,6 +114,38 @@ void main() {
     ], reason: 'the copy is what needs connections on its new dates');
   });
 
+  testWidgets('starts on the day picked, and the sheet shows the range', (
+    tester,
+  ) async {
+    final result = await start(tester);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('duplicate'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start date'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Switch to input'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(TextField),
+      ),
+      '03/05/2027',
+    );
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Three days long, so the sheet names the range the copy will take.
+    expect(find.textContaining('2027'), findsOneWidget);
+
+    await tester.tap(find.text('Duplicate'));
+    await tester.pumpAndSettle();
+
+    final copy = await repo.findTrip((await result())!);
+    expect(copy!.startDate, DateTime(2027, 3, 5));
+    expect(copy.endDate, DateTime(2027, 3, 7));
+  });
+
   testWidgets('no lookup when it is switched off', (tester) async {
     final result = await start(tester);
     await tester.pumpAndSettle();
