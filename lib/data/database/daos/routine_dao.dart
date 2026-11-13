@@ -69,6 +69,11 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// than stretching one group across two days (which `GroupDao.groupItems`
   /// refuses to build in the first place).
   ///
+  /// A day the old run did not occupy, which the replacement **continues**
+  /// onto from an earlier day, takes its legs at the top: they follow the
+  /// overnight leg that arrives there, which the timeline draws above the
+  /// day's own entries.
+  ///
   /// The trip's own dates are widened to cover what was written, for the same
   /// reason: a leg on a day the trip does not admit to shows in the timeline (its
   /// days are the union of the range and the entries) while the overview card goes
@@ -169,6 +174,12 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             .add((index, leg));
       }
 
+      // The first day the replacement is written on. A later day the old run
+      // did not touch is one the journey *continues* onto (see below).
+      final firstDay = byDay.keys.isEmpty
+          ? null
+          : byDay.keys.reduce((a, b) => a.isBefore(b) ? a : b);
+
       final ids = List<int>.filled(legs.length, 0);
       // The bundle each day's legs end up in: the surviving [groupId] for the
       // first day written, a fresh one for any further day, and — where there was
@@ -178,11 +189,29 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       for (final entry in byDay.entries) {
         final day = entry.key;
         final slot = slots[day];
-        // A day the old run did not touch (a re-searched journey may cross
-        // midnight where the old one did not) simply appends.
-        final base =
-            slot?.base ??
-            await attachedDatabase.itineraryDao.nextSortOrder(tripId, day);
+        // A day the old run did not touch: a re-searched journey may cross
+        // midnight where the old one did not. Reached from an earlier day of
+        // the replacement, these legs continue the journey that day began
+        // with, so they go to the **top**, right under where the timeline draws
+        // what reaches into the day (`continuationsOn`); appended, the walk off
+        // a night train stood after the evening's connections. A replacement
+        // that lies wholly on such a day (nothing ran that evening) has
+        // nothing to continue, and is appended as before.
+        final int base;
+        if (slot != null) {
+          base = slot.base;
+        } else if (firstDay != null && day.isAfter(firstDay)) {
+          await _shiftAfter(
+            tripId,
+            day: day,
+            after: -1,
+            by: entry.value.length,
+            branchId: branchId,
+          );
+          base = 0;
+        } else {
+          base = await attachedDatabase.itineraryDao.nextSortOrder(tripId, day);
+        }
 
         // Deleting the old run leaves a hole its own width. Only a longer
         // replacement needs more room than that, and then everything that

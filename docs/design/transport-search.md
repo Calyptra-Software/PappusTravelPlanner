@@ -48,7 +48,11 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   the group (or the replacement's first leg) rather than letting the cascade take it, since a
   single-leg commute has no group to hang its fare on — and puts the replacement back in the *slot*
   the old run occupied rather than on the end of the day — appending once put a stop added
-  after the journey in front of it. A wider replacement pushes what followed it down,
+  after the journey in front of it. A day the old run did not occupy but the replacement
+  **continues** onto (a connection that now crosses midnight) takes those legs at its top,
+  under the overnight leg the timeline draws there; appending them put the walk off a night
+  train after the next day's connections. A replacement wholly on a later day continues
+  nothing there and is appended. A wider replacement pushes what followed it down,
   decisions included, since a day's items and its sets share one ordering space.
   **Each day of the replacement is one bundle**, the same rule the import follows: a run of two
   or more legs arriving where there was no group is *given* one (a lone leg the timetable now

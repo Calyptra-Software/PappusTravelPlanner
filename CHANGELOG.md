@@ -15,6 +15,8 @@ exact commits.
 - **Ski runs, flights and taxi rides are no longer offered a connection to replace them.**
   When a trip is created from a routine, duplicated or moved, connections are looked up only
   for journeys public transport could take over, also when such a leg is grouped with others.
+- **A connection looked up again that now runs past midnight continues at the top of the
+  next day.** Its legs after midnight used to be put after that day's other entries.
 - **Editing a trip made from a routine keeps it linked to the routine.** Saving the form
   used to drop the link, so the trip vanished from the routine filter.
 - **Maps come in more styles, with overlays.** The new layers button offers topographic and
