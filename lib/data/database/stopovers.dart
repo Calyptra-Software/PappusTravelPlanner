@@ -119,3 +119,15 @@ List<Stopover> decodeStopovers(String? encoded) {
     return const [];
   }
 }
+
+/// [encoded] with what the live trip once said about each stop (the delays and
+/// the skipped calls) taken off, and the timetable left.
+///
+/// For a leg put onto another day: a delay measured on one Tuesday is not part
+/// of the plan, and a stop that was skipped then may well be served now. A value
+/// that does not decode is returned as it is; there is nothing in it to strip.
+String? stopoversWithoutLive(String? encoded) {
+  final stops = decodeStopovers(encoded);
+  if (stops.isEmpty) return encoded;
+  return encodeStopovers([for (final stop in stops) stop.withLive()]);
+}

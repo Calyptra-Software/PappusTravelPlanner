@@ -1,6 +1,6 @@
 # Trips, tags, queries and routines
 
-Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when the work needs them rather than every session. They were written as one document: an "above" or "below" may point into another file in this directory. Read this for the overview, its filters and counts, the statistics filter, routines and materializing them.
+Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when the work needs them rather than every session. They were written as one document: an "above" or "below" may point into another file in this directory. Read this for the overview, its filters and counts, the statistics filter, routines and materializing them, and duplicating or moving a trip.
 
 - **A trip is a trip, however long it lasts.** A walk, a commute, and a fortnight in
   Rome are the same row with different dates — a one-day trip is simply one whose start
@@ -94,3 +94,34 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   through `core/format/civil_date.dart` (`addDays` / `daysBetween`), never `Duration`: a
   local day is 23 or 25 hours across a daylight-saving change, which is exactly enough to
   pull day two onto day one.
+- **A whole plan is copied in one place** (`TripPlanDao.copyPlan`): participants, tags,
+  decisions with their choice, groups (cloned), entries via `copyItemPlan` and their lines
+  via `copyItemTracks`, and checklists via `copyChecklist`. `materializeRoutine` and
+  `duplicateTrip` both call it and add only their own rules around it (the routine's fare
+  and paperwork for the one, nothing for the other), so a new part of the plan reaches both.
+- **A duplicated trip moves by distance, not by rank.** `duplicateTrip` shifts every day by
+  `daysBetween(old start, new start)`, the old start being the trip's own or, without dates,
+  its first entry's (`planRange`). A trip's dates are real, so a free day in the middle or
+  at the end is part of the plan and stays; reading ranks, as a routine must, would close it
+  up. The copy takes the **plan, not the money**: a trip's costs record payments for that
+  trip, and its files are its bookings and photographs, so neither travels. Nor do the
+  actual times, the delays at the stops, or `sourceTripId` (`dropLiveTimes`): they describe
+  how the original days went. Nor `fromRoutineId`, which says the *routine* produced a trip.
+  The journeys arrive as a plan, and the same `lookUpTripConnections` round a routine gets
+  makes them real for the new dates.
+- **A trip is moved from its form, not from a menu.** Changing the start date is where
+  moving a trip is looked for, so saving a new start (`entryShiftDays`: only the start
+  counts, and only between two dates) asks `showMoveEntriesDialog` whether the entries come
+  along. It is a question because a new start means either "the trip moved" or "the dates
+  were wrong", and only the user knows which; *Dates only* answers the second. It is asked
+  on **saving**, not on picking, so picking twice or cancelling the form asks nothing, and
+  only when there are entries (`moveFacts`). `TripPlanDao.moveTrip` writes the row and moves
+  the entries, decisions and collapsed days in one transaction, by `addDays`. In place, the
+  trip keeps its money, ticks and files; what it drops is the record of the old days, as a
+  duplicate does: `sourceTripId` (a live refresh would read the old run onto the new day),
+  actual times and stop delays. The dialog says so when actual times exist, since that is
+  the one loss. The lookup runs on the detail screen after the form has closed (the form
+  pops `true`), because the round needs a screen that stays.
+- **The form writes `copyWith` of the row it loaded**, never a fresh `Trip`: a fresh one
+  silently reset every column the form does not show, and `fromRoutineId` was lost on each
+  edit of a trip made from a routine.

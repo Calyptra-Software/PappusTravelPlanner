@@ -40,14 +40,19 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   never copied, these say only *where*, so they survive a copy and travel in the `.tpt`
   bundle. They sit on the run's **outer** legs, since a journey is searched again as a whole.
   This is what lets a routine's plan become a real connection: `RoutineController` copies the
-  plan first (offline-safe, instant, correct on its own), then looks each `PlannedJourney`
-  up for the day it now sits on and offers the result in the ordinary `journey_sheet.dart`.
+  plan first (offline-safe, instant, correct on its own), then `TripConnectionsController`
+  (driven by `lookUpTripConnections`) looks each `PlannedJourney` up for the day it now sits
+  on and offers the result in the ordinary `journey_sheet.dart`.
   Accepting it swaps the legs via `RoutineDao.replaceJourneyLegs`, which **keeps the group**
   so the shared ticket hanging off it survives — and rescues a cost sitting on a *leg* onto
   the group (or the replacement's first leg) rather than letting the cascade take it, since a
   single-leg commute has no group to hang its fare on — and puts the replacement back in the *slot*
   the old run occupied rather than on the end of the day — appending once put a stop added
-  after the journey in front of it. A wider replacement pushes what followed it down,
+  after the journey in front of it. A day the old run did not occupy but the replacement
+  **continues** onto (a connection that now crosses midnight) takes those legs at its top,
+  under the overnight leg the timeline draws there; appending them put the walk off a night
+  train after the next day's connections. A replacement wholly on a later day continues
+  nothing there and is appended. A wider replacement pushes what followed it down,
   decisions included, since a day's items and its sets share one ordering space.
   **Each day of the replacement is one bundle**, the same rule the import follows: a run of two
   or more legs arriving where there was no group is *given* one (a lone leg the timetable now
@@ -89,7 +94,8 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   different journey wearing the same label.
 - **A journey is looked up again from the sheet that reads it**, one run at a time
   (`JourneyDetailsSheet`, on the group's label or a lone imported leg). The trip-wide lookup
-  above happens once, in the seconds after a routine is stamped out; every way of not
+  above happens once, in the seconds after a routine is stamped out (or a trip is
+  duplicated, or moved with its start date); every way of not
   finishing it — the switch left off, no signal on the platform, "keep the plan" tapped by
   mistake, nothing running at that hour — used to leave the plan un-refreshable for good,
   since a copied leg carries no `sourceTripId` and nothing else asked the timetable again.
@@ -126,6 +132,15 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   that a bus now beats the walk. `plannedJourneyOf` is untouched, so that question is still
   one tap away from the journey sheet or the item form — the capability moves to where a
   human is watching, which is the split those two functions already exist to draw.
+- **A run the router could not reproduce is not offered either** (`routerCanReplace`, the
+  third condition in `plannedJourneys`). Taking an offer replaces the whole run, first end to
+  last, so a run holding a leg the router never returns would lose it: a train grouped with a
+  ski descent came back as a train and a bus, and a flight would become a train. The set is
+  `unroutedTransportModeIds`: ski, flight and taxi, the built-ins `builtinTransportModeFor`
+  never produces (a lift imports with no mode). Resolved from the table by `builtinKey`, like
+  the street set. A null mode, `other` and a custom mode do not hold a run back, by the same
+  "only what is positively known" rule. `plannedJourneyOf` again stays open, so such a run can
+  still be looked up deliberately from its sheet.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the

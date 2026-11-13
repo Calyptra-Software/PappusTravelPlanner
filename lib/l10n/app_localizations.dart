@@ -3958,6 +3958,60 @@ abstract class AppLocalizations {
   /// **'Duplicate reversed'**
   String get routineDuplicateReversed;
 
+  /// No description provided for @duplicateTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate trip…'**
+  String get duplicateTrip;
+
+  /// No description provided for @duplicateTripHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate trip'**
+  String get duplicateTripHeading;
+
+  /// No description provided for @duplicateTripConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate'**
+  String get duplicateTripConfirm;
+
+  /// No description provided for @moveEntriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move the entries too?'**
+  String get moveEntriesTitle;
+
+  /// No description provided for @moveEntriesLater.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Every entry moves one day later.} other{Every entry moves {days} days later.}}'**
+  String moveEntriesLater(int days);
+
+  /// No description provided for @moveEntriesEarlier.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Every entry moves one day earlier.} other{Every entry moves {days} days earlier.}}'**
+  String moveEntriesEarlier(int days);
+
+  /// No description provided for @moveEntriesClearsActualTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'The actual times recorded so far are removed.'**
+  String get moveEntriesClearsActualTimes;
+
+  /// No description provided for @moveEntriesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Move entries'**
+  String get moveEntriesConfirm;
+
+  /// No description provided for @moveEntriesDatesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates only'**
+  String get moveEntriesDatesOnly;
+
   /// No description provided for @routineReversedSuffix.
   ///
   /// In en, this message translates to:

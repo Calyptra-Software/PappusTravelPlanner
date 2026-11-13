@@ -41,16 +41,19 @@ import '../../sharing/trip_pdf.dart';
 import '../../sharing/trip_pdf_sections.dart';
 import '../application/trip_providers.dart';
 import 'create_trip_from_routine.dart';
+import 'duplicate_trip.dart';
+import 'look_up_trip_connections.dart';
 import '../trip_kind.dart';
 import '../widgets/trip_when_line.dart';
 
 /// What the detail screen's overflow menu offers — everything a trip is *done
-/// to*, as opposed to the views of it that stay out front as icons: shared as
-/// the app's own re-importable `.tpt` bundle, exported as a printable PDF or an
-/// `.ics` for a calendar, reversed into a return journey (routines only), or
-/// deleted.
+/// to*, as opposed to the views of it that stay out front as icons: copied onto
+/// new dates (trips only), shared as the app's own re-importable `.tpt` bundle,
+/// exported as a printable PDF or an `.ics` for a calendar, reversed into a
+/// return journey (routines only), or deleted.
 enum _TripAction {
   importTrack,
+  duplicate,
   duplicateReversed,
   share,
   pdf,
@@ -149,6 +152,29 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Opens the trip's form, and looks the journeys up for their new days when
+  /// the form moved them there and was asked to. The form closes on saving, so
+  /// the round of offers runs here, on the screen that stays.
+  Future<void> _editTrip(BuildContext context, WidgetRef ref) async {
+    final lookUp = await context.push<bool>('/trip/$tripId/edit');
+    if (lookUp == true && context.mounted) {
+      await lookUpTripConnections(context, ref, tripId);
+    }
+  }
+
+  /// Copies this trip onto new dates and opens the copy. [duplicateTrip] asks
+  /// for the dates and looks the journeys up.
+  Future<void> _duplicate(
+    BuildContext context,
+    WidgetRef ref,
+    Trip trip,
+  ) async {
+    final newTripId = await duplicateTrip(context, ref, trip);
+    if (newTripId != null && context.mounted) {
+      context.push('/trip/$newTripId');
+    }
   }
 
   /// Creates the way-back routine from the way-out one — see
@@ -623,7 +649,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           IconButton(
             tooltip: l10n.editTrip,
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => context.push('/trip/$tripId/edit'),
+            onPressed: () => _editTrip(context, ref),
           ),
           PopupMenuButton<_TripAction>(
             tooltip: MaterialLocalizations.of(context).showMenuTooltip,
@@ -635,6 +661,9 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                   // the trip: the unit an act applies to is the unit it is
                   // offered on, and a leg's form cannot speak for its neighbours.
                   startTrackImport(context, ref, tripId: tripId);
+                case _TripAction.duplicate:
+                  final trip = tripAsync.value;
+                  if (trip != null) _duplicate(context, ref, trip);
                 case _TripAction.duplicateReversed:
                   _duplicateReversed(context, ref, title);
                 case _TripAction.share:
@@ -650,6 +679,12 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
               }
             },
             itemBuilder: (context) => [
+              if (!isRoutine && tripAsync.value != null)
+                _menuItem(
+                  _TripAction.duplicate,
+                  Icons.copy_outlined,
+                  l10n.duplicateTrip,
+                ),
               if (isRoutine)
                 _menuItem(
                   _TripAction.duplicateReversed,
@@ -736,7 +771,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     tripLevelCosts: tripLevelCosts,
                     participants: participants,
                     localeName: localeName,
-                    onEdit: () => context.push('/trip/$tripId/edit'),
+                    onEdit: () => _editTrip(context, ref),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
                       tripId: tripId,

@@ -103,6 +103,23 @@ class PlannedJourney {
   bool carriesService(Set<int> streetModeIds) =>
       legs.any((leg) => leg.mode == null || !streetModeIds.contains(leg.mode));
 
+  /// Whether a connection the router finds could stand in for this run without
+  /// losing part of it: none of its legs is of a mode the router never returns.
+  ///
+  /// Taking an offer replaces the **whole** run, from its first end to its
+  /// last. A ski run, a flight or a taxi in it has no counterpart in a
+  /// timetable answer, so the replacement would quietly drop it (a group of a
+  /// train and the descent to the village came back as a train and a bus), or
+  /// put a train where the flight was. Such a run is the user's own way of
+  /// travelling, and there is nothing to look up.
+  ///
+  /// [unroutedModeIds] are the rows of [TransportModes] the router never
+  /// produces, from [unroutedTransportModeIds]. A null or custom mode does not
+  /// count, by the rule [carriesService] states: only what is positively known.
+  bool routerCanReplace(Set<int> unroutedModeIds) => legs.every(
+    (leg) => leg.mode == null || !unroutedModeIds.contains(leg.mode),
+  );
+
   /// Whether this run holds enough to be searched **unattended**: both endpoints
   /// as the router addresses them, and a departure time to search around.
   ///
@@ -238,23 +255,29 @@ PlannedJourney? plannedJourneyOf(List<ItineraryItem> items) {
 
 /// The journeys in [items] worth looking up again, in day order.
 ///
-/// Two conditions, deliberately separate. A run must be **addressable** — its
+/// Three conditions, deliberately separate. A run must be **addressable** — its
 /// ends reachable by the id the search used, or failing that by the coordinates
 /// the leg carries ([PlannedJourney.canLookUp]) — and it must be a journey a
 /// timetable can answer for at all ([PlannedJourney.carriesService]). The first
 /// asks whether the query can be issued, the second whether it is worth issuing;
 /// running them together once meant a walk across the campus was searched every
 /// time a routine was stamped out, simply because both its ends had been given
-/// coordinates.
+/// coordinates. The third asks whether an answer could replace the run at all
+/// ([PlannedJourney.routerCanReplace]): a run holding a ski descent, a flight or
+/// a taxi was offered a connection that would have dropped or replaced it.
 ///
 /// Grouping is as the import left it. Items in an option that was not chosen are
 /// skipped by the caller, not here: this only answers what the plan *holds*.
 List<PlannedJourney> plannedJourneys(
   List<ItineraryItem> items, {
   required Set<int> streetModeIds,
+  required Set<int> unroutedModeIds,
 }) => [
   for (final journey in _runs(items))
-    if (journey.canLookUp && journey.carriesService(streetModeIds)) journey,
+    if (journey.canLookUp &&
+        journey.carriesService(streetModeIds) &&
+        journey.routerCanReplace(unroutedModeIds))
+      journey,
 ];
 
 /// The modes among [modes] that are **street** modes: the ones the router itself
@@ -271,6 +294,29 @@ List<PlannedJourney> plannedJourneys(
 Set<int> streetTransportModeIds(List<TransportModeRow> modes) {
   const street = {TransportMode.walk, TransportMode.bike, TransportMode.car};
   final keys = {for (final mode in street) mode.name};
+  return {
+    for (final mode in modes)
+      if (keys.contains(mode.builtinKey)) mode.id,
+  };
+}
+
+/// The modes among [modes] the router **never** returns: skiing, flying and
+/// taking a taxi. The import maps every routed leg onto walk, bike, car, bus,
+/// tram, subway, train or ferry, or onto no mode at all for a lift or anything
+/// it does not know (`builtinTransportModeFor` in `journey_mapper.dart`), which
+/// makes this set read off the router's vocabulary rather than a matter of
+/// taste. `other` is left out: it is a user's own choice, and may well name a
+/// service.
+///
+/// Read off [TransportModeRow.builtinKey] like [streetTransportModeIds], so a
+/// renamed built-in is still recognized and a custom mode is not one of these.
+Set<int> unroutedTransportModeIds(List<TransportModeRow> modes) {
+  const unrouted = {
+    TransportMode.ski,
+    TransportMode.flight,
+    TransportMode.taxi,
+  };
+  final keys = {for (final mode in unrouted) mode.name};
   return {
     for (final mode in modes)
       if (keys.contains(mode.builtinKey)) mode.id,

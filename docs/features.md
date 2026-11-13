@@ -31,6 +31,11 @@ Dates are optional on purpose. A plan whose timing you have not settled is a tri
 range, rather than a trip pushed into pretending it has one — put them in when you know
 them, and everything dated adjusts around them.
 
+Saving a new start date for a trip with entries asks whether they should move along: every
+entry moves by the same number of days, and the connections can then be looked up for the
+new dates. Moving clears the actual times recorded on the old dates; costs, ticks and files
+stay. *Dates only* is for correcting the range when the entries were already right.
+
 What hangs off a trip is the rest of this page: a **day-by-day itinerary** of places and
 transport legs, the **costs** those come to and how they divide among the people on it,
 and any number of **checklists**.
@@ -45,6 +50,14 @@ you feel like it, and only ever for your own sorting.
 
 A one-day trip is simply one whose start and end fall on the same day, and the timeline
 quietly drops its day headers when it is drawing a single day.
+
+### The same trip again
+
+*Duplicate trip…* in a trip's menu copies it onto a start date you pick: every day moves by
+the same number of days, so free days stay free. The plan, participants, tags and
+checklists (unticked) come along; costs, files, and the actual times and live data of the
+original do not. Its connections can be looked up for the new dates
+[as for a routine](#a-routines-plan-becoming-a-real-connection).
 
 ### Tags are your filing
 
@@ -317,6 +330,8 @@ Stamping out a routine that contains a searched journey copies the plan first �
 offline, correct on its own — and *then* looks the connection up for the day it now sits
 on, offering the day's actual departure to swap in. If it is not the one you want, *Adjust
 search…* opens the connection search for that journey, with its ends and time filled in.
+
+A duplicated trip, or one whose entries moved with a new start date, is offered the same.
 
 Declining it, finding nothing, or having no signal all leave the copied plan standing. A
 journey for which nothing was found says so, with the same way into the search. And

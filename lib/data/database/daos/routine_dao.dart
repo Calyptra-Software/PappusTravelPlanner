@@ -69,6 +69,11 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// than stretching one group across two days (which `GroupDao.groupItems`
   /// refuses to build in the first place).
   ///
+  /// A day the old run did not occupy, which the replacement **continues**
+  /// onto from an earlier day, takes its legs at the top: they follow the
+  /// overnight leg that arrives there, which the timeline draws above the
+  /// day's own entries.
+  ///
   /// The trip's own dates are widened to cover what was written, for the same
   /// reason: a leg on a day the trip does not admit to shows in the timeline (its
   /// days are the union of the range and the entries) while the overview card goes
@@ -169,6 +174,12 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             .add((index, leg));
       }
 
+      // The first day the replacement is written on. A later day the old run
+      // did not touch is one the journey *continues* onto (see below).
+      final firstDay = byDay.keys.isEmpty
+          ? null
+          : byDay.keys.reduce((a, b) => a.isBefore(b) ? a : b);
+
       final ids = List<int>.filled(legs.length, 0);
       // The bundle each day's legs end up in: the surviving [groupId] for the
       // first day written, a fresh one for any further day, and — where there was
@@ -178,11 +189,29 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
       for (final entry in byDay.entries) {
         final day = entry.key;
         final slot = slots[day];
-        // A day the old run did not touch (a re-searched journey may cross
-        // midnight where the old one did not) simply appends.
-        final base =
-            slot?.base ??
-            await attachedDatabase.itineraryDao.nextSortOrder(tripId, day);
+        // A day the old run did not touch: a re-searched journey may cross
+        // midnight where the old one did not. Reached from an earlier day of
+        // the replacement, these legs continue the journey that day began
+        // with, so they go to the **top**, right under where the timeline draws
+        // what reaches into the day (`continuationsOn`); appended, the walk off
+        // a night train stood after the evening's connections. A replacement
+        // that lies wholly on such a day (nothing ran that evening) has
+        // nothing to continue, and is appended as before.
+        final int base;
+        if (slot != null) {
+          base = slot.base;
+        } else if (firstDay != null && day.isAfter(firstDay)) {
+          await _shiftAfter(
+            tripId,
+            day: day,
+            after: -1,
+            by: entry.value.length,
+            branchId: branchId,
+          );
+          base = 0;
+        } else {
+          base = await attachedDatabase.itineraryDao.nextSortOrder(tripId, day);
+        }
 
         // Deleting the old run leaves a hole its own width. Only a longer
         // replacement needs more room than that, and then everything that
@@ -468,8 +497,8 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
   /// `sourceTripId` names one dated run of one service, so it is deliberately
   /// left behind (see `copyItemPlan`) and the copy is a plan. Turning that plan
   /// into a real, refreshable connection for these dates means searching again,
-  /// which needs the network and the user's eye — `RoutineController` does it
-  /// after this returns.
+  /// which needs the network and the user's eye — `TripConnectionsController`
+  /// does it after this returns.
   Future<int> materializeRoutine(int routineId, {required DateTime startDate}) {
     return transaction(() async {
       final routine = await (select(
@@ -508,129 +537,21 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
         ),
       );
 
-      final participants = await (select(
-        tripParticipants,
-      )..where((tp) => tp.tripId.equals(routineId))).get();
-      for (final participant in participants) {
-        await into(tripParticipants).insert(
-          TripParticipantsCompanion.insert(
-            tripId: newTripId,
-            personId: participant.personId,
-          ),
-        );
-      }
-
-      final routineTags = await (select(
-        tripTags,
-      )..where((tt) => tt.tripId.equals(routineId))).get();
-      for (final link in routineTags) {
-        await into(tripTags).insert(
-          TripTagsCompanion.insert(tripId: newTripId, tagId: link.tagId),
-          mode: InsertMode.insertOrIgnore,
-        );
-      }
-
-      // The routine's decisions first, so a branch item has a branch to land
-      // in. A routine may hold one ("do I cycle or take the tram?"), and
-      // dropping it would quietly lose half the plan.
-      final sets = await (select(
-        alternativeSets,
-      )..where((s) => s.tripId.equals(routineId))).get();
-      final branchMap = <int, int>{};
-      for (final set in sets) {
-        final newSetId = await into(alternativeSets).insert(
-          AlternativeSetsCompanion.insert(
-            tripId: newTripId,
-            date: shift(set.date),
-            sortOrder: Value(set.sortOrder),
-            label: Value(set.label),
-          ),
-        );
-        final branches =
-            await (select(alternatives)
-                  ..where((a) => a.setId.equals(set.id))
-                  ..orderBy([(a) => OrderingTerm(expression: a.sortOrder)]))
-                .get();
-        for (final branch in branches) {
-          branchMap[branch.id] = await into(alternatives).insert(
-            AlternativesCompanion.insert(
-              setId: newSetId,
-              label: Value(branch.label),
-              sortOrder: Value(branch.sortOrder),
-              chosen: Value(branch.chosen),
-            ),
-          );
-        }
-      }
-
-      final items =
-          await (select(itineraryItems)
-                ..where((i) => i.tripId.equals(routineId))
-                ..orderBy([
-                  (i) => OrderingTerm(expression: i.sortOrder),
-                  (i) => OrderingTerm(expression: i.startMinutes),
-                ]))
-              .get();
-      // A group is part of what the plan *is* (these legs share one ticket), so
-      // it is cloned rather than shared: the occurrence's bundling is its own.
-      final groupMap = <int, int>{};
-      final itemMap = <int, int>{};
-      for (final item in items) {
-        int? newGroupId;
-        final sourceGroup = item.groupId;
-        if (sourceGroup != null) {
-          newGroupId = groupMap[sourceGroup];
-          if (newGroupId == null) {
-            final group = await (select(
-              itemGroups,
-            )..where((g) => g.id.equals(sourceGroup))).getSingle();
-            newGroupId = await into(itemGroups).insert(
-              ItemGroupsCompanion.insert(
-                tripId: newTripId,
-                label: Value(group.label),
-              ),
-            );
-            groupMap[sourceGroup] = newGroupId;
-          }
-        }
-        final copy = await into(itineraryItems).insert(
-          copyItemPlan(
-            item,
-            date: shift(item.date),
-            alternativeId: item.alternativeId == null
-                ? null
-                : branchMap[item.alternativeId],
-            groupId: newGroupId,
-            sortOrder: item.sortOrder,
-          ).copyWith(tripId: Value(newTripId)),
-        );
-        itemMap[item.id] = copy;
-        // The walk to the station is part of the plan, and a plan the user has
-        // to redraw every morning is missing by Thursday — the same reason the
-        // checklist and the fare travel.
-        await attachedDatabase.trackDao.copyItemTracks(item.id, copy);
-      }
+      // The plan itself: participants, tags, decisions, groups, entries with
+      // their lines, and checklists. Shared with duplicating a trip, so the two
+      // cannot drift apart in what a plan is (`TripPlanDao.copyPlan`).
+      final copy = await attachedDatabase.tripPlanDao.copyPlan(
+        routineId,
+        newTripId,
+        shift: shift,
+      );
 
       await _copyCosts(
         routineId,
         newTripId,
-        itemMap: itemMap,
-        groupMap: groupMap,
+        itemMap: copy.items,
+        groupMap: copy.groups,
       );
-
-      // In the order the routine keeps them, so the trip reads the same way. The
-      // copy arrives unticked; `copyChecklist` is where that rule lives.
-      final lists =
-          await (select(checklists)
-                ..where((c) => c.tripId.equals(routineId))
-                ..orderBy([
-                  (c) => OrderingTerm(expression: c.sortOrder),
-                  (c) => OrderingTerm(expression: c.createdAt),
-                ]))
-              .get();
-      for (final list in lists) {
-        await attachedDatabase.checklistDao.copyChecklist(list.id, newTripId);
-      }
 
       // The routine's own paperwork — the season ticket, the pass — for the same
       // reason the checklist and the fare travel. Only what hangs on the routine

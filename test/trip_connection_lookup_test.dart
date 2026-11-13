@@ -24,12 +24,13 @@ import 'package:travelplanner/features/transport_search/domain/transit_mode.dart
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
-import 'package:travelplanner/features/trips/application/routine_controller.dart';
+import 'package:travelplanner/features/trips/application/trip_connections_controller.dart';
 import 'package:travelplanner/features/trips/planned_journey.dart';
-import 'package:travelplanner/features/trips/presentation/create_trip_from_routine.dart';
+import 'package:travelplanner/features/trips/presentation/look_up_trip_connections.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
-/// The round of offers made after a trip is stamped out of a routine.
+/// The round of offers made after a plan is put onto new dates (a routine
+/// stamped out, a trip duplicated or moved).
 ///
 /// Each journey used to get exactly two answers — the first connection found,
 /// or the copied plan — and a journey for which nothing was found was only
@@ -42,7 +43,7 @@ void main() {
   late AppDatabase db;
   late TripRepository repo;
   late SharedPreferences prefs;
-  late _FakeRoutineController controller;
+  late _FakeConnectionsController controller;
 
   final day = DateTime(2026, 8, 3);
 
@@ -103,8 +104,12 @@ void main() {
           repositoryProvider.overrideWithValue(repo),
           sharedPreferencesProvider.overrideWithValue(prefs),
           transportSearchProvider.overrideWithValue(_NoSearch()),
-          routineControllerProvider.overrideWith((ref) {
-            return controller = _FakeRoutineController(ref, journeys, answers);
+          tripConnectionsControllerProvider.overrideWith((ref) {
+            return controller = _FakeConnectionsController(
+              ref,
+              journeys,
+              answers,
+            );
           }),
         ],
         child: MaterialApp(
@@ -118,7 +123,7 @@ void main() {
           home: Scaffold(
             body: Consumer(
               builder: (context, ref, _) => ElevatedButton(
-                onPressed: () => lookUpRoutineConnections(context, ref, 1),
+                onPressed: () => lookUpTripConnections(context, ref, 1),
                 child: const Text('look up'),
               ),
             ),
@@ -310,8 +315,8 @@ JourneyOption _option(int hour, int minute) {
 /// Hands out canned answers in order and records which runs were replaced,
 /// leaving the database alone: what is under test is the round of questions,
 /// not the swap, which `journey_lookup_test.dart` covers.
-class _FakeRoutineController extends RoutineController {
-  _FakeRoutineController(super.ref, this.journeys, this.answers);
+class _FakeConnectionsController extends TripConnectionsController {
+  _FakeConnectionsController(super.ref, this.journeys, this.answers);
 
   final List<PlannedJourney> journeys;
 

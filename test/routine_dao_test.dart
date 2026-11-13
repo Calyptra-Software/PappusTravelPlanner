@@ -614,6 +614,101 @@ void main() {
         reason: 'the near end is unmoved',
       );
     });
+
+    test(
+      'what a replacement brings onto the next day goes to its top',
+      () async {
+        // Reported: a night train looked up again came back with a short walk
+        // at the arrival station the next morning, which was put after that
+        // day's own connections instead of directly under the train.
+        final loose = await looseLeg();
+        final morning = DateTime(2026, 8, 2);
+        final city = await db.itineraryDao.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: loose.tripId,
+            date: morning,
+            kind: ItemKind.place,
+            title: const Value('Paris'),
+          ),
+        );
+        final onward = await db.itineraryDao.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: loose.tripId,
+            date: morning,
+            kind: ItemKind.transport,
+            sortOrder: const Value(1),
+            fromLocation: const Value('Gare de Lyon'),
+            startMinutes: const Value(888),
+          ),
+        );
+
+        await db.routineDao.replaceJourneyLegs(
+          loose.tripId,
+          oldLegIds: [loose.legId],
+          legs: [
+            newLeg(loose.tripId, from: 'Harburg', to: 'Nord', start: 1372),
+            newLeg(
+              loose.tripId,
+              from: 'Nord',
+              to: 'Nord exit',
+              dayOffset: 1,
+              start: 660,
+            ),
+          ],
+        );
+
+        final day = [
+          for (final i
+              in await db.itineraryDao.watchItemsForTrip(loose.tripId).first)
+            if (i.date == morning) i,
+        ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+        expect(day.map((i) => i.toLocation ?? i.title), [
+          'Nord exit',
+          'Paris',
+          null, // the onward train, which names no destination here
+        ]);
+        expect(day.map((i) => i.sortOrder).toSet(), hasLength(3));
+        expect(day[1].id, city);
+        expect(day[2].id, onward);
+      },
+    );
+
+    test('a replacement wholly on a later day is appended there', () async {
+      // Nothing ran that evening: the search answered with the first morning
+      // train. It continues nothing on that day, so it is not put before it.
+      final loose = await looseLeg();
+      final morning = DateTime(2026, 8, 2);
+      final city = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: loose.tripId,
+          date: morning,
+          kind: ItemKind.place,
+          title: const Value('Office'),
+        ),
+      );
+
+      await db.routineDao.replaceJourneyLegs(
+        loose.tripId,
+        oldLegIds: [loose.legId],
+        legs: [
+          newLeg(
+            loose.tripId,
+            from: 'Home',
+            to: 'Office',
+            dayOffset: 1,
+            start: 330,
+          ),
+        ],
+      );
+
+      final day = [
+        for (final i
+            in await db.itineraryDao.watchItemsForTrip(loose.tripId).first)
+          if (i.date == morning) i,
+      ]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+      expect(day.first.id, city);
+      expect(day.last.toLocation, 'Office');
+    });
   });
 
   group('a routine whose entries carry real dates', () {

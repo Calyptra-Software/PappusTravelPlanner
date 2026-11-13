@@ -16,8 +16,10 @@ import '../../costs/application/currency_providers.dart';
 import '../../costs/presentation/cost_chip.dart';
 import '../../costs/presentation/cost_form_sheet.dart';
 import '../../costs/presentation/person_picker.dart';
+import '../application/trip_connections_controller.dart';
 import '../application/trip_providers.dart';
 import '../widgets/tag_editor.dart';
+import 'move_entries_dialog.dart';
 
 /// Create a trip or a routine, or edit an existing one when [tripId] is given.
 ///
@@ -131,27 +133,59 @@ class _TripFormScreenState extends ConsumerState<TripFormScreen> {
     final notes = _notesController.text.trim();
 
     if (widget.isEditing && _editing != null) {
-      await repo.updateTrip(
-        Trip(
-          id: _editing!.id,
-          title: title,
-          destination: destination,
-          startDate: _routine ? null : _startDate,
-          endDate: _routine ? null : _endDate,
-          notes: notes.isEmpty ? null : notes,
-          kind: _kind,
-          colorValue: _colorValue,
-          // Carried over rather than defaulted: this form is about the trip's
-          // identity, and how its photographs are laid out — folded away, and
-          // which one the overview card shows — is not something editing the
-          // title should undo.
-          photosCollapsed: _editing!.photosCollapsed,
-          coverAttachmentId: _editing!.coverAttachmentId,
-          coverHidden: _editing!.coverHidden,
-          createdAt: _editing!.createdAt,
-        ),
+      final editing = _editing!;
+      // A new start date may mean the trip itself moved, or that the dates were
+      // simply wrong. Only the user knows which, so it is asked, and only when
+      // there are entries that could come along. See `showMoveEntriesDialog`.
+      final days = _routine
+          ? null
+          : entryShiftDays(oldStart: editing.startDate, newStart: _startDate);
+      MoveEntriesChoice? choice;
+      if (days != null) {
+        final facts = await repo.moveFacts(editing.id);
+        if (facts.hasEntries) {
+          final journeys = await ref
+              .read(tripConnectionsControllerProvider)
+              .lookUpCandidates(editing.id);
+          if (!mounted) return;
+          final oldStart = editing.startDate!;
+          final newStart = _startDate!;
+          choice = await showMoveEntriesDialog(
+            context,
+            days: days,
+            from: (start: oldStart, end: editing.endDate ?? oldStart),
+            to: (start: newStart, end: _endDate ?? newStart),
+            offerLookUp: journeys.isNotEmpty,
+            clearsActualTimes: facts.hasActualTimes,
+          );
+          // Cancelled: back to the form, nothing written.
+          if (choice == null) return;
+        }
+      }
+
+      // A copy of the row rather than a new one, so whatever this form does
+      // not show survives an edit: how its photographs are laid out, which one
+      // the overview card shows, and the routine the trip was made from.
+      final updated = editing.copyWith(
+        title: title,
+        destination: destination,
+        startDate: Value(_routine ? null : _startDate),
+        endDate: Value(_routine ? null : _endDate),
+        notes: Value(notes.isEmpty ? null : notes),
+        kind: _kind,
+        colorValue: _colorValue,
       );
-      await repo.setTagsForTrip(_editing!.id, _tagIds);
+      final move = choice?.move ?? false;
+      if (move) {
+        await repo.moveTrip(updated, days: days!);
+      } else {
+        await repo.updateTrip(updated);
+      }
+      await repo.setTagsForTrip(editing.id, _tagIds);
+      // The lookup is left to the screen underneath: this one is about to
+      // close, and the round of offers needs a screen that stays.
+      if (mounted) context.pop(move && choice!.lookUp);
+      return;
     } else {
       final tripId = await repo.createTrip(
         TripsCompanion.insert(
