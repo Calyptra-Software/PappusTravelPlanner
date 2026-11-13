@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/format/date_format.dart' show daysBetween, formatDay;
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/attribution.dart';
 import '../../../data/database/app_database.dart' show Trip;
@@ -798,13 +799,46 @@ class _ConnectionSearchSheetState extends ConsumerState<ConnectionSearchSheet> {
                   ),
                 ),
               ),
-            for (final option in results.options)
-              _ResultCard(option: option, onTap: () => _preview(option)),
+            ..._resultCards(results.options, searchDay: query.time),
             _pageRow(l10n, earlier: false, cursor: results.laterCursor),
           ],
         ),
       ),
     );
+  }
+
+  /// The result cards, with a date above each run of departures on one day as
+  /// soon as one of them leaves on a day other than [searchDay]: paging, a
+  /// window reaching past midnight or an arrive-by search all get there, and a
+  /// card shows only times. Then every run is dated, the searched day's too, so
+  /// no run of times is left to be read against the summary above. The date is
+  /// the one at the departure stop, the time the card leads with.
+  List<Widget> _resultCards(
+    List<JourneyOption> options, {
+    required DateTime searchDay,
+  }) {
+    final days = [for (final option in options) _departureDay(option)];
+    final dated = days.any((day) => daysBetween(searchDay, day) != 0);
+    final theme = Theme.of(context);
+    final localeName = Localizations.localeOf(context).toString();
+    return [
+      for (var i = 0; i < options.length; i++) ...[
+        if (dated && (i == 0 || daysBetween(days[i - 1], days[i]) != 0))
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Semantics(
+              header: true,
+              child: Text(
+                formatDay(days[i], localeName),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        _ResultCard(option: options[i], onTap: () => _preview(options[i])),
+      ],
+    ];
   }
 
   /// Ways to make the journey without public transport, as compact chips above
@@ -958,6 +992,12 @@ class _EndpointTile extends StatelessWidget {
   }
 }
 
+/// The day [option] leaves on, at its first stop.
+DateTime _departureDay(JourneyOption option) {
+  final dep = option.legs.first.from;
+  return localParts(dep.scheduled, dep.timeZone).date;
+}
+
 /// One journey option: overall departure–arrival, duration, change count and a
 /// per-leg line summary.
 class _ResultCard extends StatelessWidget {
@@ -975,7 +1015,7 @@ class _ResultCard extends StatelessWidget {
     final arr = option.legs.last.to;
     final depParts = localParts(dep.scheduled, dep.timeZone);
     final arrParts = localParts(arr.scheduled, arr.timeZone);
-    final nextDay = arrParts.date.isAfter(depParts.date);
+    final laterDays = daysBetween(depParts.date, arrParts.date);
 
     final vehicleLegs = option.legs
         .where((l) => l.mode != TransitMode.walk)
@@ -994,9 +1034,9 @@ class _ResultCard extends StatelessWidget {
             ...legTimeSpans(context, dep),
             const TextSpan(text: ' – '),
             ...legTimeSpans(context, arr),
-            if (nextDay)
+            if (laterDays > 0)
               TextSpan(
-                text: ' +1',
+                text: ' +$laterDays',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
