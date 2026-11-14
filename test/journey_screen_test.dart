@@ -338,6 +338,21 @@ void main() {
       expect(find.textContaining('OpenStreetMap'), findsOneWidget);
     });
 
+    testWidgets('the credit is one line high over a navigation bar', (
+      tester,
+    ) async {
+      // A phone with gesture navigation: an inset at the foot of the screen,
+      // where the panel is, not the credit.
+      tester.view.padding = const FakeViewPadding(bottom: 48);
+      addTearDown(tester.view.resetPadding);
+      await _pumpSheet(tester, _journey);
+
+      expect(
+        tester.getSize(find.byType(MapAttributionBar)).height,
+        lessThan(30),
+      );
+    });
+
     testWidgets('is titled by its run\'s label, or plainly without one', (
       tester,
     ) async {

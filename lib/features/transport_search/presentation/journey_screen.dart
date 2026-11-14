@@ -328,7 +328,15 @@ class _JourneyLayoutState extends ConsumerState<_JourneyLayout> {
                 bottom: height * extent,
                 child: child!,
               ),
-              child: MapAttributionBar(basemap: basemap, overlays: overlays),
+              // Without the system's bottom inset, which the bar adds for the
+              // navigation bar when it sits at the foot of a screen. Here the
+              // panel is below it, and the inset made the bar several lines
+              // tall on a phone.
+              child: MediaQuery.removePadding(
+                context: context,
+                removeBottom: true,
+                child: MapAttributionBar(basemap: basemap, overlays: overlays),
+              ),
             ),
             NotificationListener<DraggableScrollableNotification>(
               onNotification: (notification) {
