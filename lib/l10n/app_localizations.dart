@@ -3790,6 +3790,18 @@ abstract class AppLocalizations {
   /// **'Show the whole route'**
   String get connectionShowRun;
 
+  /// Button on a leg whose whole route is shown, putting the stops before boarding and after getting off away again, in the list and on the map.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the whole route'**
+  String get connectionHideRun;
+
+  /// Shown under the whole-route button when the stops are shown but the line the vehicle takes between them could not be fetched (e.g. offline).
+  ///
+  /// In en, this message translates to:
+  /// **'The route\'s path can\'t be loaded right now'**
+  String get connectionRunShapeUnavailable;
+
   /// No description provided for @connectionRunNotFound.
   ///
   /// In en, this message translates to:

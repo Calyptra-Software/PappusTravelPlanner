@@ -1324,6 +1324,14 @@
   "@connectionShowRun": {
     "description": "Button on an imported leg that loads every stop of the vehicle's run, including those before boarding and after getting off."
   },
+  "connectionHideRun": "Hide the whole route",
+  "@connectionHideRun": {
+    "description": "Button on a leg whose whole route is shown, putting the stops before boarding and after getting off away again, in the list and on the map."
+  },
+  "connectionRunShapeUnavailable": "The route's path can't be loaded right now",
+  "@connectionRunShapeUnavailable": {
+    "description": "Shown under the whole-route button when the stops are shown but the line the vehicle takes between them could not be fetched (e.g. offline)."
+  },
   "connectionRunNotFound": "This service is no longer in the current timetable",
   "connectionRunError": "Couldn't load the route",
   "connectionChangePlace": "Change in {place}",

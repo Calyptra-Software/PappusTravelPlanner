@@ -797,6 +797,8 @@
   "connectionStopsBefore": "Von {origin} · {count, plural, =1{1 Halt vorher} other{{count} Halte vorher}}",
   "connectionStopsAfter": "Bis {terminus} · {count, plural, =1{1 weiterer Halt} other{{count} weitere Halte}}",
   "connectionShowRun": "Gesamten Fahrtverlauf anzeigen",
+  "connectionHideRun": "Gesamten Fahrtverlauf ausblenden",
+  "connectionRunShapeUnavailable": "Der Streckenverlauf kann gerade nicht geladen werden",
   "connectionRunNotFound": "Diese Fahrt steht nicht mehr im aktuellen Fahrplan",
   "connectionRunError": "Fahrtverlauf konnte nicht geladen werden",
   "connectionChangePlace": "Umstieg in {place}",

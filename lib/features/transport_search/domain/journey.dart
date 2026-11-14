@@ -204,6 +204,17 @@ class TripStop {
   final bool cancelled;
 }
 
+/// A vehicle's whole run with the route it takes: its [stops] as
+/// [TripStop]s, and its [shape] as the router's encoded polyline, at the
+/// router's precision (`kRoutedShapePrecision`). The shape is null when the
+/// router sent none, or one at a precision this app does not read.
+class TripRun {
+  const TripRun({required this.stops, this.shape});
+
+  final List<TripStop> stops;
+  final String? shape;
+}
+
 /// One departure on a stop's board, as the router lists the services leaving
 /// it around a time — what an imported leg is found again by once the router
 /// has reissued its trip ids (see `relocatedTripId`).

@@ -21,6 +21,9 @@ class _FailingSearch implements TransportSearch {
   final Exception failure;
 
   @override
+  Future<TripRun> tripRun(String tripId) => throw UnimplementedError();
+
+  @override
   Future<List<TripStop>> tripStops(String tripId) async => throw failure;
 
   @override

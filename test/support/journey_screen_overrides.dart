@@ -9,6 +9,8 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/map/map_features.dart';
+import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
+import 'package:travelplanner/features/transport_search/data/run_shape_cache.dart';
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 
@@ -25,7 +27,13 @@ List<Override> journeyScreenOverrides({
   Trip? trip,
   DateTime? now,
   Map<int, List<TrackLine>> tracks = const {},
+  RunShapeCache? runShapes,
 }) => [
+  // The routes of whole runs, in memory only: nothing a test fetches is
+  // written to a real cache directory.
+  runShapeCacheProvider.overrideWithValue(
+    runShapes ?? RunShapeCache(Future.value()),
+  ),
   // The map's tiles carry the app's version in their User-Agent.
   appVersionProvider.overrideWithValue('0.0.0-test'),
   // The map's style and its locate button read the preferences.

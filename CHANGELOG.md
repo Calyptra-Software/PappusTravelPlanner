@@ -11,8 +11,8 @@ exact commits.
   timetable has since renumbered internally is found again by its train and departure time
   instead of being reported as unavailable.
 - **A journey shows where its trains come from and go on to.** On an imported leg,
-  *Show the whole route* loads the stops before you board and after you get off, and
-  refreshing the live times keeps them current.
+  *Show the whole route* shows the stops before you board and after you get off, in the list
+  and on the map along the route the train takes, and hides them again.
 - **A trip file with many photos opens from a file manager.** Opening a large `.tpt` with
   Pappus used to close the app without importing anything; a file that cannot be read now
   says so.

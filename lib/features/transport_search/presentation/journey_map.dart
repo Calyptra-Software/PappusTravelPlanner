@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,7 +39,10 @@ class JourneyMap extends ConsumerStatefulWidget {
     required this.legs,
     this.happeningItemId,
     this.accent,
-    this.bottomInset = 0,
+    this.panelExtent,
+    this.shownRuns = const {},
+    this.runShapes = const {},
+    this.fitTo,
   });
 
   final int tripId;
@@ -50,9 +56,18 @@ class JourneyMap extends ConsumerStatefulWidget {
   /// The trip's accent, or null while the trip is still loading.
   final Color? accent;
 
-  /// How much of the map's lower edge the panel covers when the screen opens:
-  /// the camera frames the journey in what is left.
-  final double bottomInset;
+  /// The share of the map's height the panel over its lower part covers:
+  /// the camera frames what it is asked to in what is left.
+  final ValueListenable<double>? panelExtent;
+
+  /// The legs whose run outside them is drawn, and each one's route; see
+  /// [journeyMapFeatures].
+  final Set<int> shownRuns;
+  final Map<int, List<LatLng>> runShapes;
+
+  /// Points to frame, once, whenever a new list arrives: the run that has
+  /// just been put on the map.
+  final ValueListenable<List<LatLng>?>? fitTo;
 
   @override
   ConsumerState<JourneyMap> createState() => _JourneyMapState();
@@ -60,6 +75,49 @@ class JourneyMap extends ConsumerStatefulWidget {
 
 class _JourneyMapState extends ConsumerState<JourneyMap> {
   final MapController _controller = MapController();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.fitTo?.addListener(_frame);
+  }
+
+  @override
+  void didUpdateWidget(JourneyMap oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.fitTo != widget.fitTo) {
+      oldWidget.fitTo?.removeListener(_frame);
+      widget.fitTo?.addListener(_frame);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.fitTo?.removeListener(_frame);
+    super.dispose();
+  }
+
+  /// Frames what [JourneyMap.fitTo] now holds, above the panel as it stands.
+  void _frame() {
+    final points = widget.fitTo?.value;
+    if (points == null || points.length < 2 || !mounted) return;
+    _controller.fitCamera(_fit(points, context.size?.height ?? 0));
+  }
+
+  /// The view holding [points] with room around them, the part of the map's
+  /// [height] the panel covers left out at the bottom.
+  ///
+  /// The room above and below shrinks with the strip the panel leaves: a
+  /// panel pulled up to the top leaves less than two fixed margins, and a view
+  /// asked to fit into less than nothing is zoomed out to the whole world.
+  CameraFit _fit(List<LatLng> points, double height) {
+    final covered = height * (widget.panelExtent?.value ?? 0);
+    final margin = math.min(48.0, math.max(0.0, height - covered) / 4);
+    return CameraFit.bounds(
+      bounds: LatLngBounds.fromPoints(points),
+      padding: EdgeInsets.fromLTRB(48, margin, 48, covered + margin),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +133,11 @@ class _JourneyMapState extends ConsumerState<JourneyMap> {
       happeningItemId: widget.happeningItemId,
       tracks: ref.watch(tripTracksProvider(widget.tripId)).value ?? const {},
     );
-    final journey = journeyMapFeatures(widget.legs);
+    final journey = journeyMapFeatures(
+      widget.legs,
+      shownRuns: widget.shownRuns,
+      runShapes: widget.runShapes,
+    );
     // The journey itself; the lines alone if no stop carries a position.
     final frame = journey.frame.isNotEmpty ? journey.frame : lines.allPoints;
 
@@ -90,130 +152,124 @@ class _JourneyMapState extends ConsumerState<JourneyMap> {
         : (colorValue == null ? accent : Color(colorValue));
     final casing = theme.colorScheme.surface;
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        FlutterMap(
-          mapController: _controller,
-          options: MapOptions(
-            minZoom: kMinMapZoom,
-            // See finite_camera.dart: a pinch can hand over a NaN camera.
-            cameraConstraint: const FiniteCamera(),
-            initialCameraFit: frame.length > 1
-                ? CameraFit.bounds(
-                    bounds: LatLngBounds.fromPoints(frame),
-                    padding: EdgeInsets.fromLTRB(
-                      48,
-                      48,
-                      48,
-                      48 + widget.bottomInset,
-                    ),
-                  )
-                : null,
-            initialCenter: frame.isEmpty ? const LatLng(0, 0) : frame.first,
-            initialZoom: 13,
-            maxZoom: maxZoomOf(basemap),
-            interactionOptions: const InteractionOptions(
-              flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+    return LayoutBuilder(
+      builder: (context, constraints) => Stack(
+        fit: StackFit.expand,
+        children: [
+          FlutterMap(
+            mapController: _controller,
+            options: MapOptions(
+              minZoom: kMinMapZoom,
+              // See finite_camera.dart: a pinch can hand over a NaN camera.
+              cameraConstraint: const FiniteCamera(),
+              initialCameraFit: frame.length > 1
+                  ? _fit(frame, constraints.maxHeight)
+                  : null,
+              initialCenter: frame.isEmpty ? const LatLng(0, 0) : frame.first,
+              initialZoom: 13,
+              maxZoom: maxZoomOf(basemap),
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+              ),
             ),
-          ),
-          children: [
-            ...basemapTileLayers(
-              basemap,
-              overlays,
-              ref.watch(appVersionProvider),
-            ),
-            // The run first, so the legs lie on top of it where they meet.
-            PolylineLayer(
-              polylines: [
-                for (final line in journey.runLines)
-                  Polyline(
-                    points: line,
-                    strokeWidth: 2.5,
-                    color: kJourneyRunColor,
-                    borderStrokeWidth: 1.5,
-                    borderColor: const Color(0xFFFFFFFF),
-                  ),
-              ],
-            ),
-            PolylineLayer(
-              polylines: [
-                for (final path in lines.paths)
-                  for (final segment in path.segments)
+            children: [
+              ...basemapTileLayers(
+                basemap,
+                overlays,
+                ref.watch(appVersionProvider),
+              ),
+              // The run first, so the legs lie on top of it where they meet.
+              PolylineLayer(
+                polylines: [
+                  for (final line in journey.runLines)
                     Polyline(
-                      points: segment,
-                      strokeWidth: path.happening ? 5 : 3.5,
-                      // Broken for a line the router computed rather than one
-                      // anybody followed, as on the trip's map.
-                      pattern: path.dashed
-                          ? StrokePattern.dashed(segments: const [7, 5])
-                          : const StrokePattern.solid(),
-                      color: colorOf(
-                        path.colorValue,
-                        happening: path.happening,
-                      ),
-                      borderStrokeWidth: 2,
-                      borderColor: casing,
+                      points: line,
+                      strokeWidth: 2.5,
+                      color: kJourneyRunColor,
+                      borderStrokeWidth: 1.5,
+                      borderColor: const Color(0xFFFFFFFF),
                     ),
-              ],
-            ),
-            MarkerLayer(
-              markers: [
-                for (final stop in journey.stops)
-                  Marker(
-                    point: stop.point,
-                    width: stop.end ? 14 : 10,
-                    height: stop.end ? 14 : 10,
-                    child: Semantics(
-                      label: stop.name,
-                      child: _StopDot(
-                        color: stop.outside ? kJourneyRunColor : accent,
-                        end: stop.end,
-                      ),
-                    ),
-                  ),
-                for (final path in lines.paths)
-                  if (path.badged)
-                    Marker(
-                      point: path.anchor,
-                      width: 28,
-                      height: 28,
-                      child: _ModeBadge(
+                ],
+              ),
+              PolylineLayer(
+                polylines: [
+                  for (final path in lines.paths)
+                    for (final segment in path.segments)
+                      Polyline(
+                        points: segment,
+                        strokeWidth: path.happening ? 5 : 3.5,
+                        // Broken for a line the router computed rather than one
+                        // anybody followed, as on the trip's map.
+                        pattern: path.dashed
+                            ? StrokePattern.dashed(segments: const [7, 5])
+                            : const StrokePattern.solid(),
                         color: colorOf(
                           path.colorValue,
                           happening: path.happening,
                         ),
-                        icon:
-                            modes[path.modeId]?.icon ??
-                            kDefaultTransportModeIcon,
+                        borderStrokeWidth: 2,
+                        borderColor: casing,
+                      ),
+                ],
+              ),
+              MarkerLayer(
+                markers: [
+                  for (final stop in journey.stops)
+                    Marker(
+                      point: stop.point,
+                      width: stop.end ? 14 : 10,
+                      height: stop.end ? 14 : 10,
+                      child: Semantics(
+                        label: stop.name,
+                        child: _StopDot(
+                          color: stop.outside ? kJourneyRunColor : accent,
+                          end: stop.end,
+                        ),
                       ),
                     ),
-              ],
-            ),
-            const DeviceLocationLayer(),
-          ],
-        ),
-        Positioned(
-          top: 12,
-          right: 12 + MediaQuery.paddingOf(context).right,
-          child: Column(
-            children: [
-              MapZoomButtons(
-                controller: _controller,
-                basemap: basemap,
-                zoomInTooltip: l10n.mapZoomIn,
-                zoomOutTooltip: l10n.mapZoomOut,
+                  for (final path in lines.paths)
+                    if (path.badged)
+                      Marker(
+                        point: path.anchor,
+                        width: 28,
+                        height: 28,
+                        child: _ModeBadge(
+                          color: colorOf(
+                            path.colorValue,
+                            happening: path.happening,
+                          ),
+                          icon:
+                              modes[path.modeId]?.icon ??
+                              kDefaultTransportModeIcon,
+                        ),
+                      ),
+                ],
               ),
-              const SizedBox(height: 8),
-              MapLocationButton(
-                onCenter: (fix) => centerOnFix(_controller, fix),
-              ),
-              const SizedBox(height: 8),
-              const MapStyleButton(),
+              const DeviceLocationLayer(),
             ],
           ),
-        ),
-      ],
+          Positioned(
+            top: 12,
+            right: 12 + MediaQuery.paddingOf(context).right,
+            child: Column(
+              children: [
+                MapZoomButtons(
+                  controller: _controller,
+                  basemap: basemap,
+                  zoomInTooltip: l10n.mapZoomIn,
+                  zoomOutTooltip: l10n.mapZoomOut,
+                ),
+                const SizedBox(height: 8),
+                MapLocationButton(
+                  onCenter: (fix) => centerOnFix(_controller, fix),
+                ),
+                const SizedBox(height: 8),
+                const MapStyleButton(),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

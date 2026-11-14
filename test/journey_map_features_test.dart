@@ -84,9 +84,21 @@ final _regional = _leg(
   toPoint: _uelzen,
 );
 
+/// The ICE's whole route as the router would give it: out of Bergedorf,
+/// through Harburg, Meckelfeld and Lüneburg, and on to Hannover.
+const _shape = [
+  _bergedorf,
+  LatLng(53.47, 10.1),
+  _harburg,
+  _meckelfeld,
+  _lueneburg,
+  LatLng(52.8, 10.0),
+  _hannover,
+];
+
 void main() {
   test('every stop with a position is drawn once', () {
-    final features = journeyMapFeatures([_ice, _regional]);
+    final features = journeyMapFeatures([_ice, _regional], shownRuns: {1});
 
     expect(
       features.stops.map((s) => s.name),
@@ -104,12 +116,24 @@ void main() {
     expect(lueneburg.single.end, isTrue);
   });
 
-  test('the run lies outside the legs and joins them at their ends', () {
-    final features = journeyMapFeatures([_ice]);
+  test('a run not asked for is not drawn, though it is stored', () {
+    final features = journeyMapFeatures([_ice], runShapes: {1: _shape});
 
+    expect(features.runLines, isEmpty);
+    expect(features.stops.every((s) => !s.outside), isTrue);
+  });
+
+  test('a shown run follows its route outside the leg', () {
+    final features = journeyMapFeatures(
+      [_ice],
+      shownRuns: {1},
+      runShapes: {1: _shape},
+    );
+
+    // Cut where the leg boards and gets off; the leg's own part is the leg's.
     expect(features.runLines, [
-      [_bergedorf, _harburg],
-      [_lueneburg, _hannover],
+      [_bergedorf, const LatLng(53.47, 10.1), _harburg],
+      [_lueneburg, const LatLng(52.8, 10.0), _hannover],
     ]);
     final bergedorf = features.stops.singleWhere((s) => s.name == 'Bergedorf');
     expect(bergedorf.outside, isTrue);
@@ -118,6 +142,17 @@ void main() {
       (s) => s.name == 'Meckelfeld',
     );
     expect(meckelfeld.outside, isFalse);
+  });
+
+  test('a shown run without its route draws its stops and no line', () {
+    // Never a straight line between stops: that is a route nobody takes.
+    final features = journeyMapFeatures([_ice], shownRuns: {1});
+
+    expect(features.runLines, isEmpty);
+    expect(
+      features.stops.where((s) => s.outside).map((s) => s.name),
+      unorderedEquals(['Bergedorf', 'Hannover Hbf']),
+    );
   });
 
   test('an end the run passes through stays an end', () {
@@ -141,7 +176,7 @@ void main() {
       ),
     );
 
-    final features = journeyMapFeatures([through, _regional]);
+    final features = journeyMapFeatures([through, _regional], shownRuns: {3});
 
     final lueneburg = features.stops.singleWhere((s) => s.name == 'Lüneburg');
     expect(lueneburg.end, isTrue);
@@ -149,15 +184,35 @@ void main() {
   });
 
   test('the camera frames the journey, not the run around it', () {
-    final features = journeyMapFeatures([_ice]);
+    final features = journeyMapFeatures(
+      [_ice],
+      shownRuns: {1},
+      runShapes: {1: _shape},
+    );
 
     expect(features.frame, [_harburg, _meckelfeld, _lueneburg]);
   });
 
-  test('a run never loaded draws nothing beyond the leg', () {
-    final features = journeyMapFeatures([_regional]);
+  group('splitRunShape', () {
+    test('a route passing the same place twice is cut in traveling order', () {
+      // A bus around a loop: it passes the alighting stop (C) on its way out
+      // too, before the boarding stop (B). The second pass is the one meant.
+      const a = LatLng(50.0, 8.0);
+      const c = LatLng(50.0, 8.1);
+      const b = LatLng(50.0, 8.2);
+      const d = LatLng(50.1, 8.1);
+      final parts = splitRunShape([a, c, b, d, c, a], board: b, alight: c)!;
 
-    expect(features.runLines, isEmpty);
-    expect(features.stops.every((s) => !s.outside), isTrue);
+      expect(parts.before, [a, c, b]);
+      expect(parts.after, [c, a]);
+    });
+
+    test('nothing to cut at, nothing cut', () {
+      expect(splitRunShape(_shape, board: null, alight: _hannover), isNull);
+      expect(
+        splitRunShape(const [_harburg], board: _harburg, alight: _harburg),
+        isNull,
+      );
+    });
   });
 }

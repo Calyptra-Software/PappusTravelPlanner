@@ -511,6 +511,37 @@ void main() {
       );
     });
 
+    test('tripRun asks for the route and reads it with the stops', () async {
+      late Uri seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req.url;
+          final trip = _decode(_fixture('motis_trip_full_run.json'));
+          // As the router answers when asked for the geometry.
+          trip['legs'][0]['legGeometry'] = {
+            'points': '_p~iF~ps|U_ulLnnqC',
+            'precision': 6,
+            'length': 2,
+          };
+          return http.Response(jsonEncode(trip), 200, headers: _jsonUtf8);
+        }),
+      );
+
+      final run = await client.tripRun('T1');
+
+      expect(seen.path, '/api/v6/trip');
+      expect(seen.queryParameters['detailedLegs'], 'true');
+      expect(run.shape, '_p~iF~ps|U_ulLnnqC');
+      expect(run.stops.first.name, 'Rostock Hauptbahnhof');
+    });
+
+    test('a route at a precision the app does not read is none', () {
+      final trip = _decode(_fixture('motis_trip_full_run.json'));
+      trip['legs'][0]['legGeometry'] = {'points': 'abc', 'precision': 5};
+
+      expect(parseTripRun(trip).shape, isNull);
+    });
+
     test('departures reads the board around a point', () async {
       late Uri seen;
       final client = MotisTransportSearch(

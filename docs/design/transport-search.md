@@ -223,7 +223,8 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   holds both links, under the search where the data is used and in settings, where they
   outlive the sheet — an imported connection stays in the trip, the PDF, and the `.ics` long
   after the search that found it. The rest of the policy is why the client looks the way it
-  does: `detailedLegs=false`, a debounced and cached geocode, journeys only on an explicit
+  does: `detailedLegs=false` except where a route is to be drawn (a search, and a run asked
+  to be shown), a debounced and cached geocode, journeys only on an explicit
   button, live refresh one leg at a time and never on a timer. That includes **Riverpod's own retry**:
   version 3 retries a failing provider ten times over about 38 s by default, loading all the
   while, so every provider that asks the router carries `retry: noAutomaticRetry`
@@ -258,12 +259,12 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   shape dashed, recording solid, its color, red while under way via the shared
   `happeningItemIdAt`), and adds what only a journey has (`journey_map_features.dart`): a
   dot per stop with a position (an end hollow and larger, a station where one leg ends and
-  the next starts drawn once), and the run outside the legs as grey chords from stop to stop,
-  the trip keeping no shape for it. The camera frames the journey and not the run, which can
-  reach across the country. The panel opens at 45 % and stops short of the top, so there is
-  always map to drag it back by, and the attribution follows the panel's edge rather than
-  sitting under it, since crediting the tiles is a condition of using them; the map itself
-  is not rebuilt as the panel moves. The title is the group's label, read from
+  the next starts drawn once), and, for a leg whose run has been asked for, that run in the
+  point picker's quiet grey (next note but one). The camera frames the journey and not the
+  run, which can reach across the country. The panel opens at 45 % and stops short of the
+  top, so there is always map to drag it back by, and the attribution follows the panel's
+  edge rather than sitting under it, since crediting the tiles is a condition of using
+  them; the map itself is not rebuilt as the panel moves. The title is the group's label, read from
   `groupsProvider` rather than passed in, so a deep link carries nothing but ids. The map
   does not answer taps yet: what a tap could say about a leg is in the panel.
 - **An end addressed by a coordinate comes back unnamed and unzoned, and both
@@ -376,26 +377,48 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   before (`Stopover.filledFrom`).
 - **The rest of the vehicle's run is kept beside the leg, in a column of its own**
   (`ItineraryItems.runStops`, `RunStops` in `stopovers.dart`): the stops before boarding and
-  after getting off, shown folded above and below the leg's ends in the journey view. Not
+  after getting off, listed above and below the leg's ends in the journey view while the run
+  is shown (below). Not
   more entries in `stopovers`, which an app that predates it would read as stops *between*
   the ends, routing the traveler through stations behind them; a column it does not know it
   never reads, so the `.tpt` field needs no format version. **Null means never asked**, and
   `{"before":[],"after":[]}` is the answer that the leg is the whole run: the two are offered
-  different things (a button, and nothing). Days count from the leg's `date` like a
+  different things. Days count from the leg's `date` like a
   stopover's, so a night train boarded after midnight has stops at `-1`; the terminus, which
   has no departure, is timed by its arrival. `/plan` does not return the run, `/trip` does
   (whole run, every stop with `lat`/`lon`/`tz` and both times, measured 2026-11-14), so it is
   written by the **live-times refresh**, which already asks `/trip` and used to throw the
-  rest away (`runStopsAround`), and by *Show the whole route* on a leg card
-  (`loadRunStops`), one request per tap. **Not at import**: a journey of five services would
-  be five requests nobody asked for. The button writes the run and nothing else, though the
-  same answer carries live times: asking for stops is not asking to overwrite an actual time
-  someone typed in. Its failure is said under the button, inside the sheet, where a snackbar
-  would be drawn behind it. Like the refresh, it asks by `sourceTripId`, and so depends on
+  rest away (`runStopsAround`), and by *Show the whole route* (below). **Not at import**: a
+  journey of five services would be five requests nobody asked for. Like the refresh, it
+  asks by `sourceTripId`, and so depends on
   the leg being found again once that id has expired (next note). A run that cannot be
   lined up with the leg (an end not found, or the ends in the wrong order) is not stored
   rather than split at a guess. Copies take it with the plan, live figures stripped
   (`runStopsWithoutLive`); a routine's reversed way back drops it with the stops.
+- **The run around a leg is shown on request, along the route it takes, and put away
+  again.** *Show the whole route* on a leg card (`RunButton`, state in `JourneyScreen`) lists
+  the run's stops in the panel and draws the run on the map; the same button, now *Hide the
+  whole route*, puts both away. It is offered whether or not the run was loaded before, and
+  the screen opens with every run put away, because a journey's own route is often what
+  somebody wants to look at, and a run drawn for good once loaded would make that
+  impossible. On the map the run follows **the route the vehicle takes, never straight lines
+  from stop to stop**: a chord across country is a route nobody travels, so a run whose route
+  is not to hand draws its stops and no line, and says so under the button. The route comes
+  from `/trip` with `detailedLegs=true` (`tripRun`), which gives the whole run as one
+  polyline at 1e-6 (62.8 KB, 11,403 points for an ICE from Rostock to München, measured
+  2026-11-14), cut where the leg boards and gets off (`splitRunShape`, the alighting point
+  looked for only after the boarding one). It is **not written to the database**, at about
+  45 KB a leg, but kept in `RunShapeCache`: memory for the session and, off the web, one file
+  per trip id in `<cache>/run_shapes/`, which the system may empty and which drops a run
+  `kRunShapeKeepDays` after its last travel day. **Nothing is asked without the tap, and the
+  tap asks only for what is missing** (`showRun`): stops stored and route kept, no request;
+  otherwise one `/trip` with the geometry, whose stops are written again where they differ
+  (the actual times it also carries are not: asking for the run is not asking to overwrite a
+  time someone typed in). An expired trip id is found again as the refresh finds it (next
+  note), since this too was asked for. When the request fails, stored stops are shown
+  without a route; with nothing stored, the failure is said under the button, in the panel
+  where it was asked. After a run is shown the map frames it once, since most of it lies
+  outside what the screen opened on; putting it away leaves the camera where it is.
 - **A stored trip id expires, so a leg is found again on its station's departure board.**
   The router reissues its trip ids with every feed it loads (runs imported 8 and 27 days
   earlier were both gone, measured 2026-08-23), so `/trip` answers 404 for a leg imported a

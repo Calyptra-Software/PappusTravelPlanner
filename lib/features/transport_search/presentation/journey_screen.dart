@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/clock.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
+import '../../../data/database/track_points.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../itinerary/application/itinerary_providers.dart';
 import '../../itinerary/application/transport_mode_providers.dart';
@@ -14,11 +17,14 @@ import '../../map/basemap_provider.dart';
 import '../../map/widgets/map_overlays.dart';
 import '../../trips/application/trip_providers.dart';
 import '../../trips/planned_journey.dart';
+import '../application/transport_search_controller.dart';
 import '../data/journey_view_items.dart';
+import '../data/motis_client.dart' show TransportSearchException;
 import 'connection_search_sheet.dart';
 import 'journey_destination.dart';
 import 'journey_map.dart';
 import 'journey_sheet.dart';
+import 'run_button.dart';
 
 /// Opens a journey the trip already holds on its own screen: the run of legs
 /// bundled as [groupId], or the lone leg [itemId].
@@ -61,7 +67,7 @@ Future<void> openJourney(
 /// again — and equally for a connection that has since been cancelled or
 /// missed. Per journey rather than per trip, because that is the unit the
 /// question arises in.
-class JourneyScreen extends ConsumerWidget {
+class JourneyScreen extends ConsumerStatefulWidget {
   const JourneyScreen({
     super.key,
     required this.tripId,
@@ -74,12 +80,112 @@ class JourneyScreen extends ConsumerWidget {
   final int? itemId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<JourneyScreen> createState() => _JourneyScreenState();
+}
+
+class _JourneyScreenState extends ConsumerState<JourneyScreen> {
+  /// The legs (by item id) whose run outside them is on screen. Only while
+  /// the screen is open: it opens on the journey's own route every time, and
+  /// the run is asked for leg by leg.
+  final Set<int> _shown = {};
+
+  /// The legs whose run is being fetched.
+  final Set<int> _loading = {};
+
+  /// What could not be had for a leg's run, said under its button.
+  final Map<int, String> _problems = {};
+
+  /// The route of each shown leg's whole run, decoded: what the map cuts the
+  /// parts outside the leg from.
+  final Map<int, List<LatLng>> _shapes = {};
+
+  /// Where the map is to look when a run has just been put on it.
+  final ValueNotifier<List<LatLng>?> _fit = ValueNotifier(null);
+
+  @override
+  void dispose() {
+    _fit.dispose();
+    super.dispose();
+  }
+
+  /// Shows the run around [item], or puts it away again.
+  ///
+  /// Showing it asks [TransportSearchController.showRun], which sends a request
+  /// only for what is not to hand; then the map is framed on the whole run once,
+  /// since most of it lies outside what the screen opened on. Putting it away
+  /// leaves the camera where it is.
+  Future<void> _toggleRun(ItineraryItem item) async {
+    final id = item.id;
+    if (_shown.contains(id)) {
+      setState(() {
+        _shown.remove(id);
+        _problems.remove(id);
+      });
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    setState(() {
+      _loading.add(id);
+      _problems.remove(id);
+    });
+    RunShown? shown;
+    String? problem;
+    try {
+      shown = await ref.read(transportSearchControllerProvider).showRun(item);
+    } on TransportSearchException catch (e) {
+      problem = e.statusCode == 404
+          ? l10n.connectionRunNotFound
+          : l10n.connectionRunError;
+    } on Exception {
+      problem = l10n.connectionRunError;
+    }
+    final stops = shown?.stops;
+    List<LatLng>? shape;
+    if (stops == null) {
+      problem ??= l10n.connectionRunNotFound;
+    } else {
+      final encoded = shown?.shape;
+      try {
+        shape = encoded == null
+            ? null
+            : decodeTrackPoints(encoded, precision: kRoutedShapePrecision);
+      } on FormatException {
+        shape = null;
+      }
+      if (shape == null) problem = l10n.connectionRunShapeUnavailable;
+    }
+    if (!mounted) return;
+    setState(() {
+      _loading.remove(id);
+      if (problem != null) _problems[id] = problem;
+      if (stops != null) {
+        _shown.add(id);
+        if (shape != null) _shapes[id] = shape;
+      }
+    });
+    if (stops == null) return;
+    _fit.value = [
+      ...?shape,
+      if (shape == null) ...[
+        for (final stop in [...stops.before, ...stops.after])
+          if (stop.lat != null && stop.lon != null)
+            LatLng(stop.lat!, stop.lon!),
+        if (item.fromLat != null && item.fromLon != null)
+          LatLng(item.fromLat!, item.fromLon!),
+        if (item.toLat != null && item.toLon != null)
+          LatLng(item.toLat!, item.toLon!),
+      ],
+    ];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tripId = widget.tripId;
     final l10n = AppLocalizations.of(context);
     final itemsAsync = ref.watch(itineraryProvider(tripId));
     final modesById = ref.watch(transportModesByIdProvider);
     final trip = ref.watch(tripProvider(tripId)).value;
-    final groupId = this.groupId;
+    final groupId = widget.groupId;
     final label = groupId == null
         ? null
         : ref.watch(groupsProvider(tripId)).value?[groupId]?.label;
@@ -105,7 +211,9 @@ class JourneyScreen extends ConsumerWidget {
         data: (items) {
           final journey = [
             for (final item in items)
-              if (groupId != null ? item.groupId == groupId : item.id == itemId)
+              if (groupId != null
+                  ? item.groupId == groupId
+                  : item.id == widget.itemId)
                 item,
           ];
           // Its legs were replaced, or the entry deleted, while this was open.
@@ -127,7 +235,7 @@ class JourneyScreen extends ConsumerWidget {
               ? null
               : () => _findConnection(context, planned, intoRoutine: isRoutine);
           return _JourneyLayout(
-            map: (inset) => JourneyMap(
+            map: (panelExtent) => JourneyMap(
               tripId: tripId,
               legs: [
                 for (final item in journey)
@@ -137,7 +245,10 @@ class JourneyScreen extends ConsumerWidget {
               // the leg red here is the one red there.
               happeningItemId: happeningItemIdAt(liveItems(items, chosen), now),
               accent: trip == null ? null : Color(trip.colorValue),
-              bottomInset: inset,
+              panelExtent: panelExtent,
+              shownRuns: _shown,
+              runShapes: _shapes,
+              fitTo: _fit,
             ),
             panel: [
               JourneyHeader(view: journeyViewFromItems(journey, modesById)),
@@ -167,6 +278,13 @@ class JourneyScreen extends ConsumerWidget {
                           arriving,
                           intoRoutine: isRoutine,
                         ),
+                  shownRuns: _shown,
+                  runControl: (item) => RunButton(
+                    shown: _shown.contains(item.id),
+                    loading: _loading.contains(item.id),
+                    problem: _problems[item.id],
+                    onPressed: () => _toggleRun(item),
+                  ),
                 ),
               ),
               if (find != null)
@@ -208,7 +326,7 @@ class JourneyScreen extends ConsumerWidget {
     final replaced = await showConnectionSearchSheet(
       context,
       destination: ReplaceRun(
-        tripId: tripId,
+        tripId: widget.tripId,
         day: journey.date,
         journey: journey,
         departFromMinutes: departFromMinutes,
@@ -281,9 +399,9 @@ class JourneyScreen extends ConsumerWidget {
 class _JourneyLayout extends ConsumerStatefulWidget {
   const _JourneyLayout({required this.map, required this.panel});
 
-  /// The map, given how much of its lower edge the panel covers when the
-  /// screen opens.
-  final Widget Function(double bottomInset) map;
+  /// The map, given the share of the screen's height the panel covers, which
+  /// follows the panel as it is dragged.
+  final Widget Function(ValueListenable<double> panelExtent) map;
   final List<Widget> panel;
 
   @override
@@ -319,7 +437,7 @@ class _JourneyLayoutState extends ConsumerState<_JourneyLayout> {
         return Stack(
           fit: StackFit.expand,
           children: [
-            widget.map(height * _initialExtent),
+            widget.map(_extent),
             ValueListenableBuilder<double>(
               valueListenable: _extent,
               builder: (context, extent, child) => Positioned(

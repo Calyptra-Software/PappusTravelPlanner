@@ -2269,6 +2269,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get connectionShowRun => 'Show the whole route';
 
   @override
+  String get connectionHideRun => 'Hide the whole route';
+
+  @override
+  String get connectionRunShapeUnavailable =>
+      'The route\'s path can\'t be loaded right now';
+
+  @override
   String get connectionRunNotFound =>
       'This service is no longer in the current timetable';
 
