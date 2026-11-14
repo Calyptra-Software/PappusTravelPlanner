@@ -314,7 +314,7 @@ either — Flutter's Gradle plugin threw a `NullPointerException` before it got 
 Kotlin.
 
 **That ceiling is gone, and `android.builtInKotlin` is now `true`.** Flutter's own
-documentation puts built-in Kotlin at **3.47 or later**, and the toolchain here is 3.47.2.
+documentation puts built-in Kotlin at **3.47 or later**, and the toolchain here is 3.50.0.
 The move was made while it is still optional — Flutter ships both properties as `false` for
 the duration of the ecosystem's migration (flutter/flutter#183910) and documents the escape
 hatch as going away before AGP 10 — on the grounds that a switch which can be undone by

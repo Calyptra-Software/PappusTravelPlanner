@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A leg's rows with its line down their left side, as a timetable draws a
 /// run: a dot for every stop, the line between them in the leg's color where

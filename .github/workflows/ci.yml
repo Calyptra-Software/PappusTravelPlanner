@@ -11,7 +11,7 @@ on:
 # three of them would have them testing and building against different SDKs.
 env:
   # Kept in sync with the `flutter:` constraint in pubspec.yaml.
-  FLUTTER_VERSION: '3.47.x'
+  FLUTTER_VERSION: '3.50.x'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

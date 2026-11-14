@@ -11,13 +11,17 @@ version: 1.16.0+409
 
 environment:
   sdk: ^3.12.0
-  flutter: '>=3.47.0'
+  flutter: '>=3.50.0'
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  # Material and Cupertino, which Flutter 3.50 moved out of the SDK. Their
+  # localizations come from here too; flutter_localizations keeps the widgets'.
+  material_ui: ^1.11.0
+  cupertino_ui: ^1.1.6
 
   cupertino_icons: ^2.0.0
 

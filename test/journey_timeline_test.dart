@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_timeline.dart';
 
 /// The line down a leg's card: its dots and the vehicle placed between them.

@@ -80,7 +80,7 @@ the obvious change was once made and turned out wrong.
 | [`countries.md`](docs/design/countries.md) | the countries tab, `assets/geo/countries.json` and its builder, hand marks |
 | [`attachments.md`](docs/design/attachments.md) | attachments, EXIF and `ACCESS_MEDIA_LOCATION`, photos on the map, the gallery, cover photos, documents |
 | [`database.md`](docs/design/database.md) | the database file: auto-vacuum, the storage tile, switching/importing/exporting, migrations |
-| [`ui-conventions.md`](docs/design/ui-conventions.md) | `showAppSheet` |
+| [`ui-conventions.md`](docs/design/ui-conventions.md) | `showAppSheet`, `material_ui` imports and localizations |
 | [`home-widget.md`](docs/design/home-widget.md) | the Android home-screen widget |
 | [`testing.md`](docs/design/testing.md) | a widget test that hangs, leaks a timer, or depends on the time zone |
 | [`platform-builds.md`](docs/design/platform-builds.md) | Gradle/AGP/Kotlin, signing, version codes, release and CI builds, side-by-side builds, Linux/Windows packaging, `third_party/` (geolocator, SQLite), the NDK pin |
