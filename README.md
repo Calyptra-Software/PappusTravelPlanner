@@ -77,7 +77,8 @@ For macOS and iOS, which have no release builds, or to build any of the four you
   here" mark on today's plan.
 - **Real connections** — search an open routing service (Transitous) covering public transport,
   long-distance trains, buses, and more from operators around the world, compare the results,
-  import one as that day's legs, and refresh its live times later.
+  import one as that day's legs, and refresh its live times later. On the way, the journey's
+  own screen shows its route on a map and where each train is estimated to be.
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
   is under way marked as the timeline marks it. Record a **track** from the map, or import a
   **GPX** file, and the map draws the line you actually followed instead of the straight one.
