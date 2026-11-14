@@ -348,4 +348,32 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   (`copyItemPlan`) and in the `.tpt` bundle; `sourceTripId` does not, since it names one
   dated run of one service — which is also what says a lone leg has a journey to show
   (`hasStandaloneJourney`), since a service the feed lists no stops for is an imported
-  journey all the same.
+  journey all the same. Since v42 each stop also keeps its position, its IANA zone and its
+  planned dwell (`Stopover.lat`/`lon`/`timeZone`/`dwellMinutes`, additive keys an older app
+  ignores): the trip stores no zones anywhere else, and an estimate of where a vehicle is
+  *now* needs both an instant and a place per stop. A refresh fills them into stops imported
+  before (`Stopover.filledFrom`).
+- **The rest of the vehicle's run is kept beside the leg, in a column of its own**
+  (`ItineraryItems.runStops`, `RunStops` in `stopovers.dart`): the stops before boarding and
+  after getting off, shown folded above and below the leg's ends in the journey view. Not
+  more entries in `stopovers`, which an app that predates it would read as stops *between*
+  the ends, routing the traveler through stations behind them; a column it does not know it
+  never reads, so the `.tpt` field needs no format version. **Null means never asked**, and
+  `{"before":[],"after":[]}` is the answer that the leg is the whole run: the two are offered
+  different things (a button, and nothing). Days count from the leg's `date` like a
+  stopover's, so a night train boarded after midnight has stops at `-1`; the terminus, which
+  has no departure, is timed by its arrival. `/plan` does not return the run, `/trip` does
+  (whole run, every stop with `lat`/`lon`/`tz` and both times, measured 2026-11-14), so it is
+  written by the **live-times refresh**, which already asks `/trip` and used to throw the
+  rest away (`runStopsAround`), and by *Show the whole route* on a leg card
+  (`loadRunStops`), one request per tap. **Not at import**: a journey of five services would
+  be five requests nobody asked for. The button writes the run and nothing else, though the
+  same answer carries live times: asking for stops is not asking to overwrite an actual time
+  someone typed in. Its failure is said under the button, inside the sheet, where a snackbar
+  would be drawn behind it. The limit is `sourceTripId` itself: the router reissues trip ids
+  with every feed it loads (runs imported 8 and 27 days earlier were both gone, measured
+  2026-08-23), so the run of a leg imported a feed ago answers 404, reported as "no longer in
+  the current timetable". The live-times refresh has the same limit. A run that cannot be
+  lined up with the leg (an end not found, or the ends in the wrong order) is not stored
+  rather than split at a guess. Copies take it with the plan, live figures stripped
+  (`runStopsWithoutLive`); a routine's reversed way back drops it with the stops.

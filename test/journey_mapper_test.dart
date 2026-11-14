@@ -3,11 +3,14 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/transport_search/data/journey_mapper.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
+
+import 'support/dst.dart';
 
 // A resolver stub: walk -> 1, anything else -> 6. Keeps the mapper test
 // independent of the real TransportModes table.
@@ -337,5 +340,58 @@ void main() {
       expect(builtinTransportModeFor(TransitMode.aerialLift), isNull);
       expect(builtinTransportModeFor(TransitMode.other), isNull);
     });
+  });
+
+  group('journeyToLegs stopovers', () {
+    test('each stop keeps its position, zone and dwell', () {
+      final leg = journeyToLegs(
+        _plan('motis_plan_stops.json'),
+        resolveMode: _stubResolve,
+      ).firstWhere((l) => l.stopovers.isNotEmpty);
+
+      final buechen = leg.stopovers.first;
+      expect(buechen.name, 'Büchen');
+      expect(buechen.minutes, 11 * 60 + 37); // 09:37Z, Berlin +2
+      expect(buechen.dwellMinutes, 2); // arrives 09:35Z
+      expect(buechen.lat, closeTo(53.4748, 1e-4));
+      expect(buechen.lon, closeTo(10.6240, 1e-4));
+      expect(buechen.timeZone, 'Europe/Berlin');
+    });
+
+    test(
+      'a stop past midnight after the clocks went forward is the next day',
+      () {
+        // Departs 23:00 CEST on 29 March, the day the clocks went forward,
+        // and calls at 01:00 on the 30th. Midnight to midnight that day is 23
+        // hours, which a count of 24-hour spans reads as no day at all.
+        final leg = JourneyLeg(
+          mode: TransitMode.nightRail,
+          from: _point('A', DateTime.utc(2026, 3, 29, 21), 'Europe/Berlin'),
+          to: _point('B', DateTime.utc(2026, 3, 30, 4), 'Europe/Berlin'),
+          realTime: false,
+          stops: [
+            LegStop(
+              name: 'M',
+              scheduledDeparture: DateTime.utc(2026, 3, 29, 23),
+              timeZone: 'Europe/Berlin',
+            ),
+          ],
+        );
+        final mapped = journeyToLegs(
+          _oneLeg(leg),
+          resolveMode: _stubResolve,
+        ).single;
+
+        expect(mapped.stopovers, const [
+          Stopover(
+            name: 'M',
+            minutes: 60,
+            dayOffset: 1,
+            timeZone: 'Europe/Berlin',
+          ),
+        ]);
+      },
+      skip: skipWithoutEuropeanDst,
+    );
   });
 }

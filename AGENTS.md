@@ -172,7 +172,7 @@ Each one is explained in the design note named after it.
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
-- Bump `AppDatabase.schemaVersion` (currently 41) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 42) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ## Testing essentials

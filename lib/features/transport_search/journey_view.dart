@@ -1,3 +1,4 @@
+import '../../core/format/civil_date.dart';
 import 'domain/journey.dart';
 import 'domain/transit_mode.dart';
 import 'data/journey_mapper.dart' show localParts;
@@ -131,6 +132,15 @@ class ViewStop {
   final int? delay;
 }
 
+/// The stops a leg's vehicle calls at outside the leg: [before] boarding and
+/// [after] getting off. Both empty when the leg is the whole run.
+class ViewRun {
+  const ViewRun({this.before = const [], this.after = const []});
+
+  final List<ViewStop> before;
+  final List<ViewStop> after;
+}
+
 /// One leg of the journey.
 class ViewLeg {
   const ViewLeg({
@@ -142,6 +152,7 @@ class ViewLeg {
     this.headsign,
     this.notes,
     this.stops = const [],
+    this.run,
     this.cancelled = false,
     this.itemId,
     this.sourceTripId,
@@ -171,6 +182,11 @@ class ViewLeg {
   final String? notes;
 
   final List<ViewStop> stops;
+
+  /// The rest of the vehicle's run, outside the leg: null when it has never
+  /// been loaded, which only a stored leg can do. A routed leg has none, since
+  /// the search does not return it.
+  final ViewRun? run;
   final bool cancelled;
 
   /// The itinerary row this leg is, on a stored journey — what lets the sheet
@@ -229,7 +245,7 @@ ViewStop _routedStop(LegStop stop, DateTime legDate) {
   return ViewStop(
     name: stop.name,
     minutes: local.minutes,
-    dayOffset: local.date.difference(legDate).inDays,
+    dayOffset: daysBetween(legDate, local.date),
     // From the UTC instants, where no projection can make a miss wrong — and
     // never for a stop being skipped, whose planned time the feed repeats.
     delay: stop.cancelled

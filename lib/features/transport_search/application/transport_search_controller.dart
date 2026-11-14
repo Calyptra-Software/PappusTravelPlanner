@@ -292,6 +292,10 @@ class TransportSearchController {
     final stops = await _ref
         .read(transportSearchProvider)
         .tripStops(sourceTripId);
+    // The same answer names every stop of the run, so the stops outside the
+    // leg are kept current too, whatever the times turn out to say: a train
+    // that runs tomorrow has no live times yet, and still has a run.
+    await _storeRunStops(item, stops);
     final stopovers = decodeStopovers(item.stopovers);
     final refreshed = refreshedActualTimes(
       stops: stops,
@@ -324,6 +328,50 @@ class TransportSearchController {
           ),
         );
     return LegRefresh.updated;
+  }
+
+  /// Loads the rest of an imported leg's run (the stops before boarding and
+  /// after getting off) from its trip, and stores it on the leg. Returns
+  /// whether there was a run to store: false for a leg with no trip id or
+  /// times to find itself by, and for one the trip no longer lines up with. A
+  /// network failure propagates, as the refresh's does.
+  ///
+  /// Writes nothing else. The same answer carries live times, but asking for
+  /// the stops is not asking to overwrite actual times someone may have typed
+  /// in; that stays the live-times button's act.
+  Future<bool> loadRunStops(ItineraryItem item) async {
+    final sourceTripId = item.sourceTripId;
+    if (sourceTripId == null ||
+        item.startMinutes == null ||
+        item.endMinutes == null) {
+      return false;
+    }
+    final stops = await _ref
+        .read(transportSearchProvider)
+        .tripStops(sourceTripId);
+    return _storeRunStops(item, stops);
+  }
+
+  /// Reads the run around [item] off its trip's [stops] and writes it, unless
+  /// the two cannot be lined up, in which case what was stored stays.
+  Future<bool> _storeRunStops(ItineraryItem item, List<TripStop> stops) async {
+    final start = item.startMinutes;
+    final end = item.endMinutes;
+    if (start == null || end == null) return false;
+    final run = runStopsAround(
+      stops: stops,
+      date: item.date,
+      startMinutes: start,
+      endMinutes: end,
+      endDayOffset: item.endDayOffset,
+      fromName: item.fromLocation ?? '',
+      toName: item.toLocation ?? '',
+    );
+    if (run == null) return false;
+    await _ref
+        .read(repositoryProvider)
+        .setRunStops(item.id, encodeRunStops(run));
+    return true;
   }
 }
 

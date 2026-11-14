@@ -68,6 +68,7 @@ ItineraryItemsCompanion copyItemPlan(
   fromPlaceId: Value(item.fromPlaceId),
   toPlaceId: Value(item.toPlaceId),
   stopovers: Value(item.stopovers),
+  runStops: Value(item.runStops),
 );
 
 /// The days an entry about to be written spans: from its date through the day

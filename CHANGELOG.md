@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **A journey shows where its trains come from and go on to.** On an imported leg,
+  *Show the whole route* loads the stops before you board and after you get off, and
+  refreshing the live times keeps them current.
 - **A trip file with many photos opens from a file manager.** Opening a large `.tpt` with
   Pappus used to close the app without importing anything; a file that cannot be read now
   says so.

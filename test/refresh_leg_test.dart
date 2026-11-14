@@ -154,7 +154,14 @@ void main() {
       db.itineraryItems,
     )..where((i) => i.id.equals(item.id))).getSingle();
     expect(decodeStopovers(after.stopovers), [
-      const Stopover(name: 'Mid', minutes: 16 * 60 + 30, delayMinutes: 8),
+      // The zone comes along from the same answer: the import that stored this
+      // stop predates keeping it.
+      const Stopover(
+        name: 'Mid',
+        minutes: 16 * 60 + 30,
+        delayMinutes: 8,
+        timeZone: 'Europe/Berlin',
+      ),
     ]);
     // The plan itself is untouched — a delay is a miss against it, not a new one.
     expect(after.startMinutes, 16 * 60);
@@ -242,5 +249,107 @@ void main() {
       db.itineraryItems,
     )..where((i) => i.id.equals(item.id))).getSingle();
     expect(after.actualStartMinutes, isNull);
+  });
+
+  /// The same service as [stopsWithDelay], seen as its whole run: it starts at
+  /// 'Origin' before the leg boards at 'A' and goes on to 'Terminus' after the
+  /// leg gets off at 'B'.
+  List<TripStop> stopsWithRun() => parseTripResponse({
+    'legs': [
+      {
+        'realTime': true,
+        'from': {
+          'name': 'Origin',
+          'tz': 'Europe/Berlin',
+          'lat': 53.0,
+          'lon': 10.0,
+          'scheduledDeparture': '2026-07-26T13:30:00Z', // 15:30 local
+          'departure': '2026-07-26T13:33:00Z', // +3
+        },
+        'intermediateStops': [
+          {
+            'name': 'A',
+            'tz': 'Europe/Berlin',
+            'scheduledArrival': '2026-07-26T13:58:00Z',
+            'scheduledDeparture': '2026-07-26T14:00:00Z', // 16:00 local
+            'departure': '2026-07-26T14:05:00Z', // +5
+          },
+          {
+            'name': 'B',
+            'tz': 'Europe/Berlin',
+            'scheduledArrival': '2026-07-26T15:00:00Z', // 17:00 local
+            'arrival': '2026-07-26T15:00:00Z',
+            'scheduledDeparture': '2026-07-26T15:02:00Z',
+          },
+        ],
+        'to': {
+          'name': 'Terminus',
+          'tz': 'Europe/Berlin',
+          'scheduledArrival': '2026-07-26T15:30:00Z', // 17:30 local
+        },
+      },
+    ],
+  });
+
+  Future<ItineraryItem> reread(int id) =>
+      (db.select(db.itineraryItems)..where((i) => i.id.equals(id))).getSingle();
+
+  test('a refresh keeps the run around the leg as well', () async {
+    final item = await seedLeg(sourceTripId: 'trip-1');
+    final controller = containerWith(
+      _FakeSearch(stopsWithRun()),
+    ).read(transportSearchControllerProvider);
+
+    expect(await controller.refreshLeg(item), LegRefresh.updated);
+
+    final run = decodeRunStops((await reread(item.id)).runStops)!;
+    expect(run.before.single.name, 'Origin');
+    expect(run.before.single.minutes, 15 * 60 + 30);
+    expect(run.before.single.delayMinutes, 3);
+    expect(run.before.single.lat, 53.0);
+    expect(run.after.single.name, 'Terminus');
+    expect(run.after.single.minutes, 17 * 60 + 30);
+  });
+
+  test('loading the run writes the run and nothing else', () async {
+    // Someone typed in when the train really left; asking for the stops is not
+    // asking to overwrite that with the live figure.
+    final seeded = await seedLeg(sourceTripId: 'trip-1');
+    await db.itineraryDao.setLiveTimes(
+      seeded.id,
+      actualStart: 16 * 60 + 20,
+      actualEnd: null,
+      stopovers: null,
+    );
+    final item = await reread(seeded.id);
+    final controller = containerWith(
+      _FakeSearch(stopsWithRun()),
+    ).read(transportSearchControllerProvider);
+
+    expect(await controller.loadRunStops(item), isTrue);
+
+    final after = await reread(item.id);
+    expect(decodeRunStops(after.runStops)!.after.single.name, 'Terminus');
+    expect(after.actualStartMinutes, 16 * 60 + 20);
+  });
+
+  test('a run that cannot be lined up with the leg is not stored', () async {
+    final item = await seedLeg(sourceTripId: 'trip-1');
+    final controller = containerWith(
+      _FakeSearch(cancelledStops().sublist(0, 1)),
+    ).read(transportSearchControllerProvider);
+
+    expect(await controller.loadRunStops(item), isFalse);
+    expect((await reread(item.id)).runStops, isNull);
+  });
+
+  test('a leg with no source trip id has no run to load', () async {
+    final item = await seedLeg(sourceTripId: null);
+    final controller = containerWith(
+      _FakeSearch(stopsWithRun()),
+    ).read(transportSearchControllerProvider);
+
+    expect(await controller.loadRunStops(item), isFalse);
+    expect((await reread(item.id)).runStops, isNull);
   });
 }

@@ -273,4 +273,195 @@ void main() {
       expect(refresh(stops(middleCancelled: true)), isNull);
     });
   });
+
+  group('runStopsAround', () {
+    // A live answer for ICE 585, Rostock -> München, recorded on 2026-11-14 for
+    // the next morning (no real-time yet). Berlin is +1 in November. The leg
+    // boards at Hamburg-Harburg (09:13) and gets off at Lüneburg (09:28), so the
+    // run has four stops before it and seven after.
+    List<TripStop> fullRun() => parseTripResponse(
+      jsonDecode(
+        File('test/fixtures/motis_trip_full_run.json').readAsStringSync(),
+      ),
+    );
+    final travelDay = DateTime(2026, 11, 15);
+
+    RunStops? around(
+      List<TripStop> stops, {
+      int start = 9 * 60 + 13,
+      int end = 9 * 60 + 28,
+      DateTime? date,
+    }) => runStopsAround(
+      stops: stops,
+      date: date ?? travelDay,
+      startMinutes: start,
+      endMinutes: end,
+      endDayOffset: 0,
+      fromName: 'Hamburg-Harburg',
+      toName: 'Lüneburg',
+    );
+
+    test('splits the run at the leg\'s two ends', () {
+      final run = around(fullRun())!;
+
+      expect(run.before.map((s) => s.name), [
+        'Rostock Hauptbahnhof',
+        'Schwerin Hauptbahnhof',
+        'Büchen',
+        'Bergedorf',
+      ]);
+      expect(run.after.map((s) => s.name), [
+        'Hannover Hauptbahnhof',
+        'Göttingen',
+        'Kassel Bahnhof Wilhelmshöhe',
+        'Fulda Bahnhof',
+        'Würzburg Hbf',
+        'Nürnberg Hbf',
+        'München Hbf',
+      ]);
+    });
+
+    test('each stop keeps its time, position, zone and dwell', () {
+      final run = around(fullRun())!;
+
+      // The origin has no arrival, so no dwell; it is timed by its departure.
+      final rostock = run.before.first;
+      expect(rostock.minutes, 7 * 60 + 4);
+      expect(rostock.dayOffset, 0);
+      expect(rostock.dwellMinutes, isNull);
+      expect(rostock.lat, closeTo(54.0787, 1e-4));
+      expect(rostock.lon, closeTo(12.1308, 1e-4));
+      expect(rostock.timeZone, 'Europe/Berlin');
+
+      final schwerin = run.before[1];
+      expect(schwerin.minutes, 7 * 60 + 55);
+      expect(schwerin.dwellMinutes, 2);
+
+      // The terminus has no departure, so it is timed by its arrival.
+      final munich = run.after.last;
+      expect(munich.minutes, 15 * 60 + 25);
+      expect(munich.dwellMinutes, isNull);
+
+      // A train that has not run yet carries no live figure anywhere.
+      expect(
+        [...run.before, ...run.after].map((s) => s.delayMinutes),
+        everyElement(isNull),
+      );
+    });
+
+    test('a leg that is the whole run has nothing around it', () {
+      final run = runStopsAround(
+        stops: fullRun(),
+        date: travelDay,
+        startMinutes: 7 * 60 + 4,
+        endMinutes: 15 * 60 + 25,
+        endDayOffset: 0,
+        fromName: 'Rostock Hauptbahnhof',
+        toName: 'München Hbf',
+      )!;
+
+      expect(run.isEmpty, isTrue);
+    });
+
+    test('a leg the run cannot be lined up with gets no run', () {
+      // Neither end found by time or by name: the timetable has moved on.
+      expect(
+        runStopsAround(
+          stops: fullRun(),
+          date: travelDay,
+          startMinutes: 9 * 60,
+          endMinutes: 10 * 60,
+          endDayOffset: 0,
+          fromName: 'Elsewhere',
+          toName: 'Nowhere',
+        ),
+        isNull,
+      );
+    });
+
+    test('ends found the wrong way round give no run', () {
+      // A leg stored backwards against this run (getting off before boarding)
+      // must not be split at a guess.
+      expect(
+        runStopsAround(
+          stops: fullRun(),
+          date: travelDay,
+          startMinutes: 9 * 60 + 30,
+          endMinutes: 9 * 60 + 8,
+          endDayOffset: 0,
+          fromName: 'Lüneburg',
+          toName: 'Hamburg-Harburg',
+        ),
+        isNull,
+      );
+    });
+
+    test('a stop called at the day before boarding is a day earlier', () {
+      // A night train left at 22:30 and the traveler boards at 01:10.
+      final stops = parseTripResponse({
+        'legs': [
+          {
+            'realTime': true,
+            'from': {
+              'name': 'Origin',
+              'tz': 'Europe/Berlin',
+              'scheduledDeparture': '2026-07-25T20:30:00Z', // 22:30 on the 25th
+              'departure': '2026-07-25T20:42:00Z', // +12
+            },
+            'intermediateStops': [
+              {
+                'name': 'Board',
+                'tz': 'Europe/Berlin',
+                'scheduledArrival': '2026-07-25T23:08:00Z',
+                'scheduledDeparture':
+                    '2026-07-25T23:10:00Z', // 01:10 on the 26th
+              },
+            ],
+            'to': {
+              'name': 'Alight',
+              'tz': 'Europe/Berlin',
+              'scheduledArrival': '2026-07-26T04:00:00Z', // 06:00
+            },
+          },
+        ],
+      });
+
+      final run = runStopsAround(
+        stops: stops,
+        date: day,
+        startMinutes: 70,
+        endMinutes: 6 * 60,
+        endDayOffset: 0,
+        fromName: 'Board',
+        toName: 'Alight',
+      )!;
+
+      expect(run.before.single.name, 'Origin');
+      expect(run.before.single.minutes, 22 * 60 + 30);
+      expect(run.before.single.dayOffset, -1);
+      expect(run.before.single.delayMinutes, 12);
+      expect(run.after, isEmpty);
+    });
+  });
+
+  group('refreshedStopovers fills in what an older import lacks', () {
+    test('a stop stored without a position learns it from the trip', () {
+      final stops = refreshedStopovers(
+        stops: parseTripResponse(
+          jsonDecode(
+            File('test/fixtures/motis_trip_full_run.json').readAsStringSync(),
+          ),
+        ),
+        // Bergedorf as an import from before positions were kept stored it.
+        stopovers: const [Stopover(name: 'Bergedorf', minutes: 8 * 60 + 48)],
+        date: DateTime(2026, 11, 15),
+      );
+
+      final bergedorf = stops.single;
+      expect(bergedorf.lat, closeTo(53.4898, 1e-4));
+      expect(bergedorf.lon, closeTo(10.2062, 1e-4));
+      expect(bergedorf.timeZone, 'Europe/Berlin');
+      expect(bergedorf.dwellMinutes, 4);
+    });
+  });
 }

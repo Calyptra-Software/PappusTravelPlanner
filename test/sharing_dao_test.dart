@@ -64,6 +64,11 @@ void main() {
             Stopover(name: 'Innsbruck Hbf', minutes: 300),
           ]),
         ),
+        runStops: Value(
+          encodeRunStops(
+            const RunStops(after: [Stopover(name: 'Napoli', minutes: 900)]),
+          ),
+        ),
       ),
     );
     // Group the leg with the place so a shared cost can attach to the group.
@@ -141,6 +146,7 @@ void main() {
     expect(decodeStopovers(transport.stopovers).map((s) => s.name), [
       'Innsbruck Hbf',
     ]);
+    expect(decodeRunStops(transport.runStops)!.after.single.name, 'Napoli');
     final placeItem = b.items.firstWhere((i) => i.kind == ItemKind.place);
     expect(placeItem.groupLocalId, groupLocal);
     expect(placeItem.location, 'Piazza del Colosseo');
@@ -1183,6 +1189,15 @@ Future<int> _seedTrip(AppDatabase db) async {
           Stopover(name: 'Firenze S.M.N.', minutes: 1320),
           Stopover(name: 'Roma Tiburtina', minutes: 75, dayOffset: 1),
         ]),
+      ),
+      // …and so does the rest of the train's run, once it has been loaded.
+      runStops: Value(
+        encodeRunStops(
+          const RunStops(
+            before: [Stopover(name: 'Milano Centrale', minutes: 1200)],
+            after: [Stopover(name: 'Napoli Centrale', minutes: 160)],
+          ),
+        ),
       ),
     ),
   );

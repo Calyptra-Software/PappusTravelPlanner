@@ -72,6 +72,8 @@ TripStop _tripStop(Map<String, dynamic> j, bool realTime) => TripStop(
   name: j['name'] as String? ?? '',
   cancelled: j['cancelled'] as bool? ?? false,
   timeZone: j['tz'] as String?,
+  lat: _toDouble(j['lat']),
+  lon: _toDouble(j['lon']),
   scheduledArrival: _parseUtcOrNull(j['scheduledArrival']),
   arrival: realTime ? _parseUtcOrNull(j['arrival']) : null,
   scheduledDeparture: _parseUtcOrNull(j['scheduledDeparture']),
@@ -210,7 +212,10 @@ List<LegStop> _legStops(dynamic value, bool realTime) => [
           actualDeparture: realTime
               ? _parseUtcOrNull(e['departure'] ?? e['arrival'])
               : null,
+          scheduledArrival: _parseUtcOrNull(e['scheduledArrival']),
           timeZone: e['tz'] as String?,
+          lat: _toDouble(e['lat']),
+          lon: _toDouble(e['lon']),
           cancelled: e['cancelled'] as bool? ?? false,
         ),
 ];

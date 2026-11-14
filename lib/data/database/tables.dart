@@ -429,6 +429,14 @@ class ItineraryItems extends Table {
   /// rather than in a table of their own so they are read offline, with the row
   /// they belong to, long after the routing service is out of reach.
   TextColumn get stopovers => text().nullable()();
+
+  /// The rest of the vehicle's run around this leg (the stops before boarding
+  /// and after getting off), encoded by `encodeRunStops`. Null until the run is
+  /// asked for: the search that imports a leg does not return it, so it is
+  /// written by the leg's live-times refresh or on request from the journey
+  /// view. A separate column rather than more [stopovers], which an older app
+  /// would read as stops between the ends (see `RunStops`).
+  TextColumn get runStops => text().nullable()();
 }
 
 /// A single cost. Attached to exactly one of: a single itinerary item (via

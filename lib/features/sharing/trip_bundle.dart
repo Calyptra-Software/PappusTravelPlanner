@@ -501,6 +501,7 @@ class BundleItem {
     this.toLat,
     this.toLon,
     this.stopovers,
+    this.runStops,
     this.fromPlaceId,
     this.toPlaceId,
     this.tracks = const [],
@@ -581,6 +582,12 @@ class BundleItem {
   /// travels while the routing trip id does not. Null for a leg with none.
   final String? stopovers;
 
+  /// The rest of the vehicle's run around the leg, in the encoding
+  /// `encodeRunStops` writes. Content like [stopovers], so it travels with
+  /// them; null for a leg whose run was never loaded. An app that predates it
+  /// ignores the key, which is why it needs no format version of its own.
+  final String? runStops;
+
   /// How the routing service addresses this leg's ends, when it came from a
   /// search. Part of the plan — they say *where*, never *when* — so they travel
   /// with it and let the recipient look the journey up for their own dates.
@@ -628,6 +635,7 @@ class BundleItem {
     'toLat': toLat,
     'toLon': toLon,
     'stopovers': stopovers,
+    if (runStops != null) 'runStops': runStops,
     'fromPlaceId': fromPlaceId,
     'toPlaceId': toPlaceId,
     // Omitted entirely when there are none, so an ordinary trip's bundle is
@@ -673,6 +681,7 @@ class BundleItem {
     toLat: (json['toLat'] as num?)?.toDouble(),
     toLon: (json['toLon'] as num?)?.toDouble(),
     stopovers: json['stopovers'] as String?,
+    runStops: json['runStops'] as String?,
     fromPlaceId: json['fromPlaceId'] as String?,
     toPlaceId: json['toPlaceId'] as String?,
     tracks: [

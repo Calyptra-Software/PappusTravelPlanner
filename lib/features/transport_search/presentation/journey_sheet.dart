@@ -8,6 +8,7 @@ import '../../itinerary/widgets/live_refresh_button.dart';
 import '../journey_preview.dart';
 import '../journey_view.dart';
 import 'journey_formats.dart';
+import 'load_run_button.dart';
 
 /// A journey read leg by leg: board here, ride this, change there.
 ///
@@ -303,6 +304,15 @@ class _LegCard extends StatelessWidget {
     final service = leg.line ?? modeLabel ?? '';
     final duration = leg.duration;
     final refreshable = item != null && item!.sourceTripId != null;
+    final run = leg.run;
+    // Only a vehicle has a run, and only a stored one with its trip id and
+    // times can be found in it.
+    final canLoadRun =
+        refreshable &&
+        run == null &&
+        !leg.ownSteam &&
+        item!.startMinutes != null &&
+        item!.endMinutes != null;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -315,6 +325,17 @@ class _LegCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Where the vehicle has been before the traveler boards, above
+            // the stop they board at, as the run is read.
+            if (run != null && run.before.isNotEmpty)
+              _StopsSection(
+                stops: run.before,
+                label: l10n.connectionStopsBefore(
+                  run.before.first.name,
+                  run.before.length,
+                ),
+                outside: true,
+              ),
             _EndLine(end: leg.from),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 6),
@@ -385,13 +406,27 @@ class _LegCard extends StatelessWidget {
                   ),
                 ),
               ),
-            if (leg.stops.isNotEmpty) _StopsSection(stops: leg.stops),
+            if (leg.stops.isNotEmpty)
+              _StopsSection(
+                stops: leg.stops,
+                label: l10n.connectionStops(leg.stops.length),
+              ),
             _EndLine(
               end: leg.to,
               // Calendar days, not 24-hour spans: across the spring change a
               // night is 23 hours, and `difference().inDays` read it as none.
               dayOffset: daysBetween(leg.from.date, leg.to.date),
             ),
+            if (run != null && run.after.isNotEmpty)
+              _StopsSection(
+                stops: run.after,
+                label: l10n.connectionStopsAfter(
+                  run.after.last.name,
+                  run.after.length,
+                ),
+                outside: true,
+              ),
+            if (canLoadRun) LoadRunButton(item: item!),
           ],
         ),
       ),
@@ -399,16 +434,28 @@ class _LegCard extends StatelessWidget {
   }
 }
 
-/// The stops between a leg's ends, folded away behind their count.
+/// A run of stops folded away behind a [label]: the ones between a leg's ends,
+/// or, [outside] the leg, the ones its vehicle calls at before boarding or after
+/// getting off.
 ///
 /// Collapsed by default and on purpose: a regional train calls at thirty places
 /// and the two that matter are the ones already on the card. Opened, it answers
 /// the question a stop list is actually for — *does it stop at mine, and when
-/// am I there?*
+/// am I there?* — and, outside the leg, *where is this train coming from, and
+/// where does it go on to?*
 class _StopsSection extends StatefulWidget {
-  const _StopsSection({required this.stops});
+  const _StopsSection({
+    required this.stops,
+    required this.label,
+    this.outside = false,
+  });
 
   final List<ViewStop> stops;
+  final String label;
+
+  /// Whether these stops lie outside the leg, drawn fainter than the ones the
+  /// traveler passes through.
+  final bool outside;
 
   @override
   State<_StopsSection> createState() => _StopsSectionState();
@@ -439,9 +486,11 @@ class _StopsSectionState extends State<_StopsSection> {
                   color: muted,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  l10n.connectionStops(widget.stops.length),
-                  style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                Flexible(
+                  child: Text(
+                    widget.label,
+                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
+                  ),
                 ),
                 // The list is folded away by default, so the one thing that
                 // cannot wait to be opened is said on the fold itself.
@@ -464,7 +513,8 @@ class _StopsSectionState extends State<_StopsSection> {
             padding: const EdgeInsets.only(bottom: 4),
             child: Column(
               children: [
-                for (final stop in widget.stops) _StopLine(stop: stop),
+                for (final stop in widget.stops)
+                  _StopLine(stop: stop, outside: widget.outside),
               ],
             ),
           ),
@@ -483,9 +533,12 @@ class _StopsSectionState extends State<_StopsSection> {
 /// goes on reporting the planned departure for the stops it is dropping, and
 /// printing that as a punctual "(+0)" is the one thing a stop list must not say.
 class _StopLine extends StatelessWidget {
-  const _StopLine({required this.stop});
+  const _StopLine({required this.stop, this.outside = false});
 
   final ViewStop stop;
+
+  /// Whether the stop lies outside the leg — see [_StopsSection.outside].
+  final bool outside;
 
   @override
   Widget build(BuildContext context) {
@@ -493,6 +546,8 @@ class _StopLine extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final colour = stop.cancelled
         ? theme.colorScheme.error
+        : outside
+        ? theme.colorScheme.outline
         : theme.colorScheme.onSurfaceVariant;
     final struck = stop.cancelled ? TextDecoration.lineThrough : null;
 
@@ -516,9 +571,10 @@ class _StopLine extends StatelessWidget {
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
-          if (stop.dayOffset > 0)
+          // Before boarding, a night train may have called the day before.
+          if (stop.dayOffset != 0)
             Text(
-              ' +${stop.dayOffset}',
+              stop.dayOffset > 0 ? ' +${stop.dayOffset}' : ' ${stop.dayOffset}',
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),

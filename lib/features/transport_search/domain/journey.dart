@@ -71,7 +71,10 @@ class LegStop {
     required this.name,
     required this.scheduledDeparture,
     this.actualDeparture,
+    this.scheduledArrival,
     this.timeZone,
+    this.lat,
+    this.lon,
     this.cancelled = false,
   });
 
@@ -85,7 +88,13 @@ class LegStop {
   /// terms as a leg end's [LegPoint.actual], and only ever shown as the miss
   /// against [scheduledDeparture].
   final DateTime? actualDeparture;
+
+  /// The planned arrival, when the service gave one. Not shown: it is kept
+  /// only as the dwell it implies (see `Stopover.dwellMinutes`).
+  final DateTime? scheduledArrival;
   final String? timeZone;
+  final double? lat;
+  final double? lon;
 
   /// Whether the service skips this stop.
   final bool cancelled;
@@ -163,8 +172,9 @@ class JourneyLeg {
 
 /// One stop of a vehicle's whole trip, as returned by the per-trip live query.
 /// Carries both the planned and the real-time-adjusted arrival/departure (all
-/// UTC instants, plus the stop's [timeZone]); a terminus has no arrival or no
-/// departure. Used to refresh an imported leg's actual times.
+/// UTC instants, plus the stop's [timeZone]); the origin has no arrival and the
+/// terminus no departure. Used to refresh an imported leg's actual times, and
+/// read for the stops of the run outside the leg (`RunStops`).
 class TripStop {
   const TripStop({
     required this.name,
@@ -173,11 +183,15 @@ class TripStop {
     this.arrival,
     this.scheduledDeparture,
     this.departure,
+    this.lat,
+    this.lon,
     this.cancelled = false,
   });
 
   final String name;
   final String? timeZone;
+  final double? lat;
+  final double? lon;
   final DateTime? scheduledArrival;
   final DateTime? arrival;
   final DateTime? scheduledDeparture;

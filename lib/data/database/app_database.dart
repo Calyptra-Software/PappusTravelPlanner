@@ -87,7 +87,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 41;
+  int get schemaVersion => 42;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -464,6 +464,13 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(recordings);
         await m.createTable(recordingFixes);
       }
+      // v42 keeps the rest of a vehicle's run around a leg: the stops before
+      // boarding and after getting off. Null on every existing leg, which is
+      // what "never asked for" means. Through the if-missing helper, since a
+      // database from below v20 has the table rebuilt with it already.
+      if (from < 42) {
+        await _addItineraryColumnsIfMissing(m, [itineraryItems.runStops]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -616,7 +623,7 @@ class AppDatabase extends _$AppDatabase {
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
         // otherwise the copy step selects a column the old table lacks. The v24
-        // through v40 additions; extend this list when a later version adds more.
+        // through v42 additions; extend this list when a later version adds more.
         newColumns: [
           itineraryItems.endDayOffset,
           itineraryItems.fromLat,
@@ -631,6 +638,7 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.lon,
           itineraryItems.colorValue,
           itineraryItems.chordDisplay,
+          itineraryItems.runStops,
         ],
       ),
     );

@@ -666,6 +666,7 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             actualStartMinutes: const Value(null),
             actualEndMinutes: const Value(null),
             stopovers: const Value(null),
+            runStops: const Value(null),
             sourceTripId: const Value(null),
           ),
         );

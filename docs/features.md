@@ -313,6 +313,10 @@ arrival and updates its stops along with its ends — one tap, one leg, never on
 The result surfaces through the planned-versus-actual marks above, and says so plainly when
 the service has been **canceled**.
 
+**Show the whole route** on a leg loads the stops its vehicle calls at before you board and
+after you get off, folded above and below the leg in the journey view. A refresh keeps them
+current too.
+
 ### Asking the timetable again
 
 A journey can be looked up again later from the sheet that shows it: the whole run from the

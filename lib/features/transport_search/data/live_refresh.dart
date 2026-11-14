@@ -122,14 +122,98 @@ Stopover _refreshedStopover(
     scheduled: (s) => s.scheduledDeparture,
   );
   if (match == null) return stopover.withLive();
-  if (match.cancelled) return stopover.withLive(cancelled: true);
+  // A stop imported before its position and zone were kept learns them here,
+  // from the same answer that times it.
+  final located = stopover.filledFrom(
+    dwellMinutes: _dwell(match),
+    lat: match.lat,
+    lon: match.lon,
+    timeZone: match.timeZone,
+  );
+  if (match.cancelled) return located.withLive(cancelled: true);
   final planned = match.scheduledDeparture;
   final live = match.departure;
-  return stopover.withLive(
+  return located.withLive(
     delay: planned == null || live == null
         ? null
         : live.difference(planned).inMinutes,
   );
+}
+
+/// The rest of the vehicle's run around a stored leg, read off the same live
+/// [stops] its times are refreshed from: every stop before the one the leg
+/// boards at, and every stop after the one it gets off at.
+///
+/// The two ends are found exactly as [refreshedActualTimes] finds them, by
+/// their planned local time with a name fallback. Null when either cannot be
+/// found, or when they come out in the wrong order: a run that cannot be lined
+/// up with the leg is left unstored rather than split at a guess.
+///
+/// Each stop is timed by its departure, the terminus by its arrival, and both
+/// are dated in days from the leg's [date] — negative for a stop the vehicle
+/// called at the day before.
+RunStops? runStopsAround({
+  required List<TripStop> stops,
+  required DateTime date,
+  required int startMinutes,
+  required int endMinutes,
+  required int endDayOffset,
+  required String fromName,
+  required String toName,
+}) {
+  final board = _matchIndex(
+    stops,
+    name: fromName,
+    wantDate: date,
+    wantMinutes: startMinutes,
+    scheduled: (s) => s.scheduledDeparture,
+  );
+  final alight = _matchIndex(
+    stops,
+    name: toName,
+    wantDate: addDays(date, endDayOffset),
+    wantMinutes: endMinutes,
+    scheduled: (s) => s.scheduledArrival,
+  );
+  if (board == null || alight == null || alight <= board) return null;
+  return RunStops(
+    before: [for (final stop in stops.take(board)) ?_runStop(stop, date)],
+    after: [for (final stop in stops.skip(alight + 1)) ?_runStop(stop, date)],
+  );
+}
+
+/// One stop of the run as the trip stores it, or null for one the service gave
+/// no planned time at all.
+Stopover? _runStop(TripStop stop, DateTime date) {
+  // The departure where there is one, so the run reads like the stops in
+  // between; the terminus, which has none, by its arrival.
+  final departs = stop.scheduledDeparture != null;
+  final planned = stop.scheduledDeparture ?? stop.scheduledArrival;
+  if (planned == null) return null;
+  final live = departs ? stop.departure : stop.arrival;
+  final local = localParts(planned, stop.timeZone);
+  return Stopover(
+    name: stop.name,
+    minutes: local.minutes,
+    dayOffset: daysBetween(date, local.date),
+    delayMinutes: stop.cancelled || live == null
+        ? null
+        : live.difference(planned).inMinutes,
+    cancelled: stop.cancelled,
+    dwellMinutes: _dwell(stop),
+    lat: stop.lat,
+    lon: stop.lon,
+    timeZone: stop.timeZone,
+  );
+}
+
+/// How long the timetable has the vehicle standing at [stop], when it gives
+/// both an arrival and a departure there.
+int? _dwell(TripStop stop) {
+  final arrival = stop.scheduledArrival;
+  final departure = stop.scheduledDeparture;
+  if (arrival == null || departure == null) return null;
+  return departure.difference(arrival).inMinutes;
 }
 
 /// Finds the stop whose planned local time equals ([wantDate], [wantMinutes]);
@@ -141,14 +225,32 @@ TripStop? _match(
   required int wantMinutes,
   required DateTime? Function(TripStop) scheduled,
 }) {
-  TripStop? byName;
-  for (final stop in stops) {
+  final index = _matchIndex(
+    stops,
+    name: name,
+    wantDate: wantDate,
+    wantMinutes: wantMinutes,
+    scheduled: scheduled,
+  );
+  return index == null ? null : stops[index];
+}
+
+/// Where in [stops] [_match] finds its stop.
+int? _matchIndex(
+  List<TripStop> stops, {
+  required String name,
+  required DateTime wantDate,
+  required int wantMinutes,
+  required DateTime? Function(TripStop) scheduled,
+}) {
+  int? byName;
+  for (final (index, stop) in stops.indexed) {
     final planned = scheduled(stop);
     if (planned != null) {
       final local = localParts(planned, stop.timeZone);
-      if (local.date == wantDate && local.minutes == wantMinutes) return stop;
+      if (local.date == wantDate && local.minutes == wantMinutes) return index;
     }
-    if (byName == null && stop.name == name && planned != null) byName = stop;
+    if (byName == null && stop.name == name && planned != null) byName = index;
   }
   return byName;
 }

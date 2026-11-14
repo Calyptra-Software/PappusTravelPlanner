@@ -68,19 +68,27 @@ ViewLeg _storedLeg(ItineraryItem item, Map<int, TransportModeRow> modesById) {
     line: item.title,
     notes: item.notes,
     stops: [
-      for (final stop in decodeStopovers(item.stopovers))
-        ViewStop(
-          name: stop.name,
-          minutes: stop.minutes,
-          dayOffset: stop.dayOffset,
-          delay: stop.delayMinutes,
-          cancelled: stop.cancelled,
-        ),
+      for (final stop in decodeStopovers(item.stopovers)) _viewStop(stop),
     ],
+    run: switch (decodeRunStops(item.runStops)) {
+      null => null,
+      final run => ViewRun(
+        before: [for (final stop in run.before) _viewStop(stop)],
+        after: [for (final stop in run.after) _viewStop(stop)],
+      ),
+    },
     itemId: item.id,
     sourceTripId: item.sourceTripId,
   );
 }
+
+ViewStop _viewStop(Stopover stop) => ViewStop(
+  name: stop.name,
+  minutes: stop.minutes,
+  dayOffset: stop.dayOffset,
+  delay: stop.delayMinutes,
+  cancelled: stop.cancelled,
+);
 
 /// [minutes] into [date] as one count of minutes, on the wall-clock scale this
 /// view does its arithmetic on. The day is taken as a whole number of days from

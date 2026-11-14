@@ -129,6 +129,14 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
     ),
   );
 
+  /// Writes just the rest of the vehicle's run around a leg (`RunStops`),
+  /// targeted for the reason [setItemColor] gives: its callers hold a snapshot
+  /// of the row, and the run is all they have to say.
+  Future<void> setRunStops(int id, String? runStops) =>
+      (update(itineraryItems)..where((i) => i.id.equals(id))).write(
+        ItineraryItemsCompanion(runStops: Value(runStops)),
+      );
+
   /// Writes just the color an entry is drawn in on the map — null puts it back
   /// to its trip's accent.
   ///
