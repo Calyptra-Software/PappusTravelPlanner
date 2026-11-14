@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **A journey opens on a map.** *Show journey* now shows the route with its stops on a map,
+  with the legs, changes and stops in a panel below that can be pulled up over it.
 - **Live times work for connections imported long before the trip.** A connection the
   timetable has since renumbered internally is found again by its train and departure time
   instead of being reported as unavailable.

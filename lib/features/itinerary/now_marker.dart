@@ -151,3 +151,24 @@ NowMarker? _marker(List<TimeSpan?> spans, int nowMinutes) {
   if (!anyTimed) return null;
   return NowMarker(index: lastPast + 1, happening: false);
 }
+
+/// Which of [live] is under way at [now], by the rule the timeline uses, for a
+/// map: its id, or null when nothing is (or there is no [now], as on a
+/// routine, which has no today).
+///
+/// `nowMarkerForItems` reads a single day, so it is asked about the entries of
+/// [now]'s day only; on any other day nothing is under way. A marker that is a
+/// *line* rather than a happening entry has no place on a map, which has slots
+/// but no gaps between them, so only [NowMarker.happening] is used.
+int? happeningItemIdAt(List<ItineraryItem> live, DateTime? now) {
+  if (now == null) return null;
+  final today = DateTime(now.year, now.month, now.day);
+  final todays = [
+    for (final i in live)
+      if (i.date == today) i,
+  ];
+  if (todays.isEmpty) return null;
+  final marker = nowMarkerForItems(todays, now.hour * 60 + now.minute);
+  if (marker == null || !marker.happening) return null;
+  return todays[marker.index].id;
+}

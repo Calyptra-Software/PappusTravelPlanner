@@ -2249,6 +2249,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get journeyDetails => '查看行程';
 
   @override
+  String get journeyTitle => 'Journey';
+
+  @override
+  String get journeyGone => 'This journey is no longer in the trip.';
+
+  @override
   String get liveTimesRefresh => '更新实时信息';
 
   @override

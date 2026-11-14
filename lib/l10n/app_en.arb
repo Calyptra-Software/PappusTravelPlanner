@@ -1340,6 +1340,14 @@
     }
   },
   "journeyDetails": "Show journey",
+  "journeyTitle": "Journey",
+  "@journeyTitle": {
+    "description": "Title of the screen showing one journey (a run of transport legs) on a map with its stops, when the journey has no label of its own."
+  },
+  "journeyGone": "This journey is no longer in the trip.",
+  "@journeyGone": {
+    "description": "Shown on the journey screen when its legs were replaced or deleted while it was open."
+  },
   "liveTimesRefresh": "Update live times",
   "liveTimesNone": "No live times to update",
   "liveTimesCancelled": "This service has been canceled",

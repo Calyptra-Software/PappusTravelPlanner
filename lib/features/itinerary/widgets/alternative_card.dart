@@ -13,7 +13,7 @@ import '../../../data/database/tables.dart';
 import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
-import '../../transport_search/presentation/journey_details_sheet.dart';
+import '../../transport_search/presentation/journey_screen.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../now_marker.dart';
@@ -580,7 +580,7 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 ItemBlock(:final item) => TimelineTile(
                   key: ValueKey('item-${item.id}'),
                   onShowJourney: hasStandaloneJourney(item)
-                      ? () => showJourneyDetailsSheet(
+                      ? () => openJourney(
                           context,
                           tripId: item.tripId,
                           itemId: item.id,
@@ -611,11 +611,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                   onReorder: widget.onReorderRun,
                   held: widget.held,
                   onShowJourney: groupHasJourney(items, groupId)
-                      ? () => showJourneyDetailsSheet(
+                      ? () => openJourney(
                           context,
                           tripId: items.first.tripId,
                           groupId: groupId,
-                          title: widget.groups[groupId]?.label,
                         )
                       : null,
                   dragHandle: dragHandle,
