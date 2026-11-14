@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Central Material 3 theme. A single teal seed drives the whole colour scheme
 /// in both light and dark, following the system setting.

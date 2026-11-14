@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 
 import 'package:drift/native.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
@@ -46,7 +46,13 @@ void main() {
       ProviderScope(
         overrides: [repositoryProvider.overrideWithValue(TripRepository(db))],
         child: MaterialApp.router(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          // Not AppLocalizations.localizationsDelegates: gen-l10n still lists
+          // flutter_localizations' Material delegate there, which material_ui
+          // widgets do not read.
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           supportedLocales: AppLocalizations.supportedLocales,
           routerConfig: router,
         ),

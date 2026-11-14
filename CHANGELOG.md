@@ -3,6 +3,11 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **Screens are animated again.** Since 1.10.0, opening and leaving a screen switched
+  without the platform's transition.
+
 ## 1.16.0 — 2026-11-14
 
 - **A map style for public transport.** ÖPNVKarte shows bus, tram, subway and train lines

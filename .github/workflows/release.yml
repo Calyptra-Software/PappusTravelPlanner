@@ -23,14 +23,14 @@ on:
   # artifact; what to look at is the certificate in the job summary.
   workflow_dispatch:
 
-# One place for the toolchain, as in ci.yml. Exact, unlike the `3.47.x` the CI
+# One place for the toolchain, as in ci.yml. Exact, unlike the `3.50.x` the CI
 # workflow uses: a range is right there -- it should catch a breaking patch
 # release early -- and wrong here, because the published APK has to be
 # reproducible, so the toolchain that built it must be a fact and not whatever
 # was newest that morning. Bump it deliberately; an F-Droid recipe is expected
 # to read this line, so it stays a plain literal.
 env:
-  FLUTTER_VERSION: '3.47.2'
+  FLUTTER_VERSION: '3.50.0'
 
 permissions:
   contents: write
@@ -48,7 +48,7 @@ jobs:
           java-version: '21'
           cache: gradle
 
-      # Exact, unlike the `3.47.x` the CI job uses -- see FLUTTER_VERSION at
+      # Exact, unlike the `3.50.x` the CI job uses -- see FLUTTER_VERSION at
       # the top of this file, which is the line to bump and the line an F-Droid
       # recipe is expected to read.
       - uses: subosito/flutter-action@v2

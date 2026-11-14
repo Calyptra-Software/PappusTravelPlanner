@@ -10,8 +10,8 @@ library;
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/app_info.dart';
 import '../../../core/widgets/external_link.dart';

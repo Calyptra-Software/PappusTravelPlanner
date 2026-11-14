@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The width of the timeline's left gutter. The rail runs down its middle, and
 /// everything a day is strung along — a place's dot, a leg's mode icon, the
