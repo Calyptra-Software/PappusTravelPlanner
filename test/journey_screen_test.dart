@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -26,6 +28,7 @@ import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_map.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_screen.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_sheet.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_timeline.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'support/journey_screen_overrides.dart';
@@ -201,6 +204,7 @@ Future<void> _pumpSheet(
   DateTime? now,
   Map<int, List<TrackLine>> tracks = const {},
   RunShapeCache? runShapes,
+  Stream<DateTime>? ticks,
 }) async {
   tester.view.physicalSize = const Size(1000, 2400);
   tester.view.devicePixelRatio = 1;
@@ -222,6 +226,7 @@ Future<void> _pumpSheet(
           now: now,
           tracks: tracks,
           runShapes: runShapes,
+          ticks: ticks,
         ),
       ],
       child: MaterialApp(
@@ -844,5 +849,322 @@ void main() {
     await tester.tap(find.byIcon(Icons.route));
     await tester.pumpAndSettle();
     expect(opened, 1);
+  });
+
+  group('the vehicle on its way', () {
+    /// 27 July 2026 at [hour]:[minute] on the device's clock, which is the
+    /// zone the test legs' times are read in, as they store none.
+    DateTime at(int hour, int minute) => DateTime(2026, 7, 27, hour, minute);
+
+    /// The vehicles drawn in the panel's list.
+    Finder listed() => find.descendant(
+      of: find.byType(JourneyTimeline),
+      matching: find.byType(VehicleBadge),
+    );
+
+    /// The vehicles drawn on the map.
+    Finder mapped() => find.descendant(
+      of: find.byType(FlutterMap),
+      matching: find.byType(VehicleBadge),
+    );
+
+    double middleOf(WidgetTester tester, Finder finder) =>
+        tester.getCenter(finder).dy;
+
+    /// Lets the clock say [time]: the provider hands a value on a pump after
+    /// the stream gives it, and the vehicles are drawn on the next.
+    Future<void> tick(
+      WidgetTester tester,
+      StreamController<DateTime> ticks,
+      DateTime time,
+    ) async {
+      ticks.add(time);
+      await tester.pump();
+      await tester.pump();
+    }
+
+    testWidgets('moves down the leg\'s line between its ends', (tester) async {
+      // ICE 507 leaves Hamburg at 08:00 and is in Frankfurt at 09:50: half way
+      // in time at 08:55, with the stops between folded away.
+      await _pumpSheet(tester, _journey, now: at(8, 55));
+
+      expect(listed(), findsOneWidget);
+      final top = middleOf(tester, find.text('Hamburg Hbf'));
+      final bottom = middleOf(tester, find.text('Frankfurt(Main) Hbf').first);
+      expect(middleOf(tester, listed()), closeTo((top + bottom) / 2, 2));
+    });
+
+    testWidgets('sits between the two stops it is between once opened', (
+      tester,
+    ) async {
+      // Hannover is left at 08:45 (five late), Göttingen reached at 09:05.
+      await _pumpSheet(tester, _journey, now: at(8, 55));
+      await tester.tap(find.text('3 stops'));
+      await tester.pumpAndSettle();
+
+      final top = middleOf(tester, find.text('Hannover Hbf'));
+      final bottom = middleOf(tester, find.text('Göttingen'));
+      expect(middleOf(tester, listed()), closeTo((top + bottom) / 2, 2));
+    });
+
+    testWidgets('is nowhere before it leaves or after it arrives', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, _journey, now: at(7, 59));
+      expect(listed(), findsNothing);
+
+      await _pumpSheet(tester, _journey, now: at(9, 50));
+      expect(listed(), findsNothing);
+    });
+
+    testWidgets('is red while the traveler is in it', (tester) async {
+      await _pumpSheet(tester, _journey, now: at(8, 55));
+
+      final badge = tester.widget<VehicleBadge>(listed());
+      final context = tester.element(listed());
+      expect(badge.color, Theme.of(context).colorScheme.error);
+    });
+
+    testWidgets('moves on with the clock, asking nobody', (tester) async {
+      final ticks = StreamController<DateTime>();
+      addTearDown(ticks.close);
+      final search = _CountingSearch();
+      await _pumpSheet(
+        tester,
+        _journey,
+        now: at(8, 30),
+        search: search,
+        ticks: ticks.stream,
+      );
+      await tick(tester, ticks, at(8, 30));
+      final before = middleOf(tester, listed());
+
+      await tick(tester, ticks, at(9, 0));
+
+      expect(middleOf(tester, listed()), greaterThan(before));
+      expect(search.requests, 0);
+    });
+
+    group('on the run before boarding', () {
+      final withRun = _journey.first.copyWith(
+        runStops: Value(
+          encodeRunStops(
+            const RunStops(
+              before: [
+                Stopover(name: 'Kiel Hbf', minutes: 420),
+                Stopover(name: 'Neumünster', minutes: 450),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      testWidgets('is said, not placed, while the run is put away', (
+        tester,
+      ) async {
+        // Between Kiel (07:00) and Neumünster (07:30): two calls to go.
+        await _pumpSheet(tester, [withRun], now: at(7, 10));
+
+        expect(find.text('On its way, 2 stops away'), findsOneWidget);
+        expect(listed(), findsNothing);
+      });
+
+      testWidgets('is placed on the run once it is shown', (tester) async {
+        await _pumpSheet(
+          tester,
+          [withRun],
+          now: at(7, 10),
+          search: _CountingSearch(),
+          runShapes: RunShapeCache(Future.value())
+            ..write(
+              'trip-507',
+              encodeTrackPoints(const [
+                LatLng(54.31, 10.13),
+                LatLng(53.553, 10.007),
+              ], precision: kRoutedShapePrecision),
+              lastDay: DateTime(2026, 7, 27),
+            ),
+        );
+        await tester.tap(find.text('Show the whole route'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('On its way, 2 stops away'), findsNothing);
+        expect(listed(), findsOneWidget);
+        // Outside the leg, in the quiet color, above where it is boarded.
+        final badge = tester.widget<VehicleBadge>(listed());
+        final context = tester.element(listed());
+        expect(badge.color, Theme.of(context).colorScheme.outline);
+        expect(
+          middleOf(tester, listed()),
+          lessThan(middleOf(tester, find.text('Hamburg Hbf'))),
+        );
+        await settleTiles(tester);
+      });
+    });
+
+    testWidgets('goes on along the run after getting off, once shown', (
+      tester,
+    ) async {
+      final withRun = _journey.first.copyWith(
+        runStops: Value(
+          encodeRunStops(
+            const RunStops(
+              after: [
+                Stopover(name: 'Mannheim Hbf', minutes: 630),
+                Stopover(name: 'München Hbf', minutes: 800),
+              ],
+            ),
+          ),
+        ),
+      );
+      await _pumpSheet(
+        tester,
+        [withRun],
+        now: at(10, 10),
+        search: _CountingSearch(),
+        runShapes: RunShapeCache(Future.value())
+          ..write(
+            'trip-507',
+            encodeTrackPoints(const [
+              LatLng(53.553, 10.007),
+              LatLng(48.14, 11.56),
+            ], precision: kRoutedShapePrecision),
+            lastDay: DateTime(2026, 7, 27),
+          ),
+      );
+      // Off the leg, and its run not shown: nowhere.
+      expect(listed(), findsNothing);
+
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('To München Hbf · 2 more stops'));
+      await tester.pumpAndSettle();
+
+      // Frankfurt 09:50 to Mannheim 10:30: half way at 10:10.
+      final top = middleOf(tester, find.text('Frankfurt(Main) Hbf'));
+      final bottom = middleOf(tester, find.text('Mannheim Hbf'));
+      expect(middleOf(tester, listed()), closeTo((top + bottom) / 2, 2));
+      await settleTiles(tester);
+    });
+
+    group('on the map', () {
+      /// ICE 507 placed, with the route the router gave it.
+      final placed = _journey.first.copyWith(
+        fromLat: const Value(53.553),
+        fromLon: const Value(10.007),
+        toLat: const Value(50.107),
+        toLon: const Value(8.663),
+      );
+      const route = {
+        1: [
+          TrackLine(
+            id: 1,
+            points: [
+              LatLng(53.553, 10.007),
+              LatLng(52.0, 9.5),
+              LatLng(50.107, 8.663),
+            ],
+            source: TrackSource.routed,
+          ),
+        ],
+      };
+
+      testWidgets('is placed on the route the leg is drawn along', (
+        tester,
+      ) async {
+        await _pumpSheet(tester, [placed], now: at(8, 55), tracks: route);
+
+        expect(mapped(), findsOneWidget);
+        final map = find.byType(FlutterMap);
+        final camera = MapCamera.of(
+          tester.element(
+            find
+                .descendant(of: map, matching: find.byType(PolylineLayer))
+                .first,
+          ),
+        );
+        final point = camera.screenOffsetToLatLng(
+          tester.getCenter(mapped()) - tester.getTopLeft(map),
+        );
+        // Half way in time; the stops between carry no position, so it is
+        // half way along the route from end to end.
+        expect(point.latitude, closeTo(52.0, 0.3));
+        await settleTiles(tester);
+      });
+
+      testWidgets('is followed from a tap on it', (tester) async {
+        await _pumpSheet(tester, [placed], now: at(8, 55), tracks: route);
+
+        await tester.tap(mapped());
+        await tester.pumpAndSettle();
+
+        final button = tester.widget<MapRoundButton>(
+          find.ancestor(
+            of: find.byTooltip('Follow the vehicle'),
+            matching: find.byType(MapRoundButton),
+          ),
+        );
+        expect(button.icon, Icons.navigation);
+        await settleTiles(tester);
+      });
+
+      testWidgets('is not placed where only the chord is drawn', (
+        tester,
+      ) async {
+        await _pumpSheet(tester, [placed], now: at(8, 55));
+
+        expect(mapped(), findsNothing);
+        // The list still has it.
+        expect(listed(), findsOneWidget);
+        expect(find.byTooltip('Follow the vehicle'), findsNothing);
+        await settleTiles(tester);
+      });
+
+      testWidgets('is followed until the map is moved by hand', (tester) async {
+        final ticks = StreamController<DateTime>();
+        addTearDown(ticks.close);
+        await _pumpSheet(
+          tester,
+          [placed],
+          now: at(8, 20),
+          tracks: route,
+          ticks: ticks.stream,
+        );
+        await tick(tester, ticks, at(8, 20));
+
+        final map = find.byType(FlutterMap);
+        MapCamera camera() => MapCamera.of(
+          tester.element(
+            find
+                .descendant(of: map, matching: find.byType(PolylineLayer))
+                .first,
+          ),
+        );
+        // In the middle of the map above the panel, which covers 45 % of it.
+        double strip() => tester.getRect(map).height * 0.55 / 2;
+
+        double vehicleY() =>
+            tester.getCenter(mapped()).dy - tester.getTopLeft(map).dy;
+
+        await tester.tap(find.byTooltip('Follow the vehicle'));
+        await tester.pumpAndSettle();
+        expect(vehicleY(), closeTo(strip(), 2));
+        expect(camera().zoom, greaterThanOrEqualTo(13));
+
+        // A minute on, it is still there, though it has moved.
+        final first = camera().center;
+        await tick(tester, ticks, at(9, 0));
+        expect(camera().center, isNot(first));
+        expect(vehicleY(), closeTo(strip(), 2));
+
+        // Dragged away, the map stays where it is put.
+        await tester.drag(map, const Offset(0, 100), warnIfMissed: false);
+        await tester.pumpAndSettle();
+        final moved = camera().center;
+        await tick(tester, ticks, at(9, 20));
+        expect(camera().center, moved);
+        await settleTiles(tester);
+      });
+    });
   });
 }

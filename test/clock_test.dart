@@ -50,4 +50,25 @@ void main() {
     // would fail on that alone.
     await tester.pump(const Duration(minutes: 5));
   });
+
+  testWidgets(
+    'the second clock ticks every second, and stops with its screen',
+    (tester) async {
+      final container = ProviderContainer();
+      final seen = <DateTime>[];
+      final subscription = container.listen(secondClockProvider, (_, next) {
+        if (next.value case final at?) seen.add(at);
+      }, fireImmediately: true);
+
+      await tester.pump();
+      expect(seen, hasLength(1), reason: 'the time is said at once');
+      await tester.pump(const Duration(seconds: 3));
+      expect(seen.length, greaterThanOrEqualTo(3));
+
+      // As above: disposed in the body, so a timer left running would fail it.
+      subscription.close();
+      container.dispose();
+      await tester.pump();
+    },
+  );
 }

@@ -2314,6 +2314,23 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journeyGone => 'Diese Reise ist nicht mehr im Plan.';
 
   @override
+  String journeyVehicleComing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Unterwegs, noch $count Halte entfernt',
+      one: 'Unterwegs, noch 1 Halt entfernt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get journeyVehicleEstimated => 'Geschätzte Position des Fahrzeugs';
+
+  @override
+  String get journeyFollowVehicle => 'Fahrzeug folgen';
+
+  @override
   String get liveTimesRefresh => 'Echtzeit aktualisieren';
 
   @override

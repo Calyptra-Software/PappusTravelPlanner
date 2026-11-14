@@ -323,6 +323,10 @@ time at its station.
 after you get off, in the journey's list and on its map along the route the vehicle takes;
 the same button hides them again. A refresh keeps the stops current too.
 
+While a journey is under way, its screen shows where each train is estimated to be, from
+the timetable and the last refreshed delays: on the leg's line in the list and on the map,
+in red for the one you are on. A tap on a train, or the follow button, keeps it in view.
+
 ### Asking the timetable again
 
 A journey can be looked up again later from the sheet that shows it: the whole run from the

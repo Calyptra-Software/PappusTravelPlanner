@@ -102,9 +102,23 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
   /// Where the map is to look when a run has just been put on it.
   final ValueNotifier<List<LatLng>?> _fit = ValueNotifier(null);
 
+  /// The time the vehicles are placed at, every second while the screen is
+  /// open. Handed down as a listenable so a tick moves the vehicles and
+  /// rebuilds nothing else.
+  final ValueNotifier<DateTime?> _clock = ValueNotifier(null);
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listenManual(secondClockProvider, (_, next) {
+      if (next.value case final now?) _clock.value = now;
+    }, fireImmediately: true);
+  }
+
   @override
   void dispose() {
     _fit.dispose();
+    _clock.dispose();
     super.dispose();
   }
 
@@ -234,6 +248,12 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
           final find = planned == null
               ? null
               : () => _findConnection(context, planned, intoRoutine: isRoutine);
+          // By the rule the trip's map uses, read over the whole day, so the
+          // leg red here is the one red there.
+          final happening = happeningItemIdAt(liveItems(items, chosen), now);
+          final accent = trip == null ? null : Color(trip.colorValue);
+          // A routine has no today for a vehicle to be anywhere on.
+          final clock = isRoutine ? null : _clock;
           return _JourneyLayout(
             map: (panelExtent) => JourneyMap(
               tripId: tripId,
@@ -241,14 +261,13 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                 for (final item in journey)
                   if (item.kind == ItemKind.transport) item,
               ],
-              // By the rule the trip's map uses, read over the whole day, so
-              // the leg red here is the one red there.
-              happeningItemId: happeningItemIdAt(liveItems(items, chosen), now),
-              accent: trip == null ? null : Color(trip.colorValue),
+              happeningItemId: happening,
+              accent: accent,
               panelExtent: panelExtent,
               shownRuns: _shown,
               runShapes: _shapes,
               fitTo: _fit,
+              clock: clock,
             ),
             panel: [
               JourneyHeader(view: journeyViewFromItems(journey, modesById)),
@@ -279,6 +298,9 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
                           intoRoutine: isRoutine,
                         ),
                   shownRuns: _shown,
+                  clock: clock,
+                  happeningItemId: happening,
+                  accent: accent,
                   runControl: (item) => RunButton(
                     shown: _shown.contains(item.id),
                     loading: _loading.contains(item.id),

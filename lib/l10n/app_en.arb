@@ -1356,6 +1356,21 @@
   "@journeyGone": {
     "description": "Shown on the journey screen when its legs were replaced or deleted while it was open."
   },
+  "journeyVehicleComing": "{count, plural, =1{On its way, 1 stop away} other{On its way, {count} stops away}}",
+  "@journeyVehicleComing": {
+    "description": "Above the boarding stop on the journey screen while the vehicle is already running towards it and its run before boarding is hidden; count includes the boarding stop.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "journeyVehicleEstimated": "Estimated position of the vehicle",
+  "@journeyVehicleEstimated": {
+    "description": "Accessibility label of the vehicle icon placed on a journey's line and map, estimated from its timetable and last known delays."
+  },
+  "journeyFollowVehicle": "Follow the vehicle",
+  "@journeyFollowVehicle": {
+    "description": "Tooltip of the map button that keeps a running vehicle in view on the journey screen."
+  },
   "liveTimesRefresh": "Update live times",
   "liveTimesNone": "No live times to update",
   "liveTimesCancelled": "This service has been canceled",
