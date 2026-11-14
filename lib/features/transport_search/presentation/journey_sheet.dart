@@ -101,19 +101,8 @@ class JourneySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final media = MediaQuery.of(context);
-    final rows = journeyPreview(view);
-    final legs = view.legs;
-    final dep = legs.firstOrNull?.from;
-    final arr = legs.lastOrNull?.to;
-    final nextDay = dep != null && arr != null && arr.date.isAfter(dep.date);
-    // The router plans around cancellations, so a cancelled result is all but
-    // unreachable — which is why the sheet must show one plainly if it ever
-    // is reached, rather than letting it in as an ordinary connection.
-    final cancelled = legs.any((leg) => leg.cancelled);
-    final duration = view.duration;
     final confirm = onConfirm;
     final find = onFindConnection;
     final adjust = confirm == null ? null : onAdjustSearch;
@@ -124,77 +113,19 @@ class JourneySheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (title != null && title!.isNotEmpty)
-                  Text(
-                    title!,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                if (dep != null && arr != null)
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        ...pointTimeSpans(context, dep),
-                        const TextSpan(text: ' – '),
-                        ...pointTimeSpans(context, arr),
-                        if (nextDay)
-                          TextSpan(
-                            text: ' +1',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.primary,
-                            ),
-                          ),
-                      ],
-                    ),
-                    style: theme.textTheme.titleLarge,
-                  ),
-                Text(
-                  [
-                    if (duration != null) formatJourneyDuration(duration),
-                    l10n.connectionChanges(view.transfers),
-                  ].join(' · '),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (cancelled)
-                  Text(
-                    l10n.connectionCancelled,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          JourneyHeader(view: view, title: title),
           const Divider(height: 1),
           Flexible(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               children: [
-                for (final row in rows)
-                  switch (row) {
-                    LegRow(:final leg) => _LegCard(
-                      leg: leg,
-                      modesById: modesById,
-                      item: itemsById[leg.itemId],
-                      onFindConnection: onFindLegConnection,
-                    ),
-                    ChangeRow(:final arriving) => _ChangeTile(
-                      change: row,
-                      modesById: modesById,
-                      arrivingItem: itemsById[arriving.itemId],
-                      onReplan: onReplanFrom,
-                    ),
-                  },
+                JourneyRows(
+                  view: view,
+                  modesById: modesById,
+                  itemsById: itemsById,
+                  onFindLegConnection: onFindLegConnection,
+                  onReplanFrom: onReplanFrom,
+                ),
               ],
             ),
           ),
@@ -266,6 +197,137 @@ class JourneySheet extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The journey in one look: what it is called, when it leaves and arrives,
+/// how long it takes and how often it changes.
+///
+/// Shared by the sheet that previews a connection and the screen that reads one
+/// the trip holds, so the two cannot come to say it differently.
+class JourneyHeader extends StatelessWidget {
+  const JourneyHeader({super.key, required this.view, this.title});
+
+  final JourneyView view;
+
+  /// See [JourneySheet.title].
+  final String? title;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final legs = view.legs;
+    final dep = legs.firstOrNull?.from;
+    final arr = legs.lastOrNull?.to;
+    final nextDay = dep != null && arr != null && arr.date.isAfter(dep.date);
+    // The router plans around cancellations, so a cancelled result is all but
+    // unreachable — which is why the sheet must show one plainly if it ever
+    // is reached, rather than letting it in as an ordinary connection.
+    final cancelled = legs.any((leg) => leg.cancelled);
+    final duration = view.duration;
+    final title = this.title;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (title != null && title.isNotEmpty)
+            Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          if (dep != null && arr != null)
+            Text.rich(
+              TextSpan(
+                children: [
+                  ...pointTimeSpans(context, dep),
+                  const TextSpan(text: ' – '),
+                  ...pointTimeSpans(context, arr),
+                  if (nextDay)
+                    TextSpan(
+                      text: ' +1',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                ],
+              ),
+              style: theme.textTheme.titleLarge,
+            ),
+          Text(
+            [
+              if (duration != null) formatJourneyDuration(duration),
+              l10n.connectionChanges(view.transfers),
+            ].join(' · '),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (cancelled)
+            Text(
+              l10n.connectionCancelled,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The journey leg by leg, with the changes between them: the body of both the
+/// preview sheet and the journey screen. A column, not a list, so each can put
+/// it in the scrolling container it has.
+class JourneyRows extends StatelessWidget {
+  const JourneyRows({
+    super.key,
+    required this.view,
+    this.modesById = const {},
+    this.itemsById = const {},
+    this.onFindLegConnection,
+    this.onReplanFrom,
+  });
+
+  final JourneyView view;
+
+  /// See [JourneySheet.modesById].
+  final Map<int, TransportModeRow> modesById;
+
+  /// See [JourneySheet.itemsById].
+  final Map<int, ItineraryItem> itemsById;
+
+  /// See [JourneySheet.onFindLegConnection].
+  final ValueChanged<ItineraryItem>? onFindLegConnection;
+
+  /// See [JourneySheet.onReplanFrom].
+  final ValueChanged<ItineraryItem>? onReplanFrom;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      for (final row in journeyPreview(view))
+        switch (row) {
+          LegRow(:final leg) => _LegCard(
+            leg: leg,
+            modesById: modesById,
+            item: itemsById[leg.itemId],
+            onFindConnection: onFindLegConnection,
+          ),
+          ChangeRow(:final arriving) => _ChangeTile(
+            change: row,
+            modesById: modesById,
+            arrivingItem: itemsById[arriving.itemId],
+            onReplan: onReplanFrom,
+          ),
+        },
+    ],
+  );
 }
 
 /// One leg to be travelled: board here, ride this, get off there.

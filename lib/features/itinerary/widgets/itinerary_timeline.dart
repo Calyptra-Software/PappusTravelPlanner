@@ -9,7 +9,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../costs/application/currency_providers.dart';
-import '../../transport_search/presentation/journey_details_sheet.dart';
+import '../../transport_search/presentation/journey_screen.dart';
 import '../application/item_clipboard.dart';
 import '../day_blocks.dart';
 import '../entry_times.dart';
@@ -655,11 +655,10 @@ class _DaySection extends ConsumerWidget {
                   onReorder: onReorderRun,
                   held: held,
                   onShowJourney: groupHasJourney(items, groupId)
-                      ? () => showJourneyDetailsSheet(
+                      ? () => openJourney(
                           context,
                           tripId: items.first.tripId,
                           groupId: groupId,
-                          title: groups[groupId]?.label,
                         )
                       : null,
                   dragHandle: dragHandle,
@@ -754,11 +753,7 @@ class _DaySection extends ConsumerWidget {
       // An imported leg standing outside a group carries its own way into the
       // journey sheet; inside one the run's label carries it.
       onShowJourney: hasStandaloneJourney(item)
-          ? () => showJourneyDetailsSheet(
-              context,
-              tripId: item.tripId,
-              itemId: item.id,
-            )
+          ? () => openJourney(context, tripId: item.tripId, itemId: item.id)
           : null,
       item: item,
       accent: accent,

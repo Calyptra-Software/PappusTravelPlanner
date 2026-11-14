@@ -2301,6 +2301,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journeyDetails => 'Reise anzeigen';
 
   @override
+  String get journeyTitle => 'Reise';
+
+  @override
+  String get journeyGone => 'Diese Reise ist nicht mehr im Plan.';
+
+  @override
   String get liveTimesRefresh => 'Echtzeit aktualisieren';
 
   @override

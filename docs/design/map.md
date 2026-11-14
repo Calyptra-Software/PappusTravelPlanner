@@ -243,6 +243,11 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   inset out of the body, and the map's attribution sinks under the navigation bar — a test
   in `trip_map_screen_test.dart` caught it.
 
+- **A journey has a map of its own**, on the journey screen. It draws its legs with
+  `tripMapFeatures`, so every rule above holds there too; what it adds (stops, the run
+  outside the legs in the picker's quiet grey, the attribution following the panel) is
+  explained in `transport-search.md`, where the screen is.
+
 ## The overview's map
 
 - **The overview draws the same trips three ways, and which one is a setting.**

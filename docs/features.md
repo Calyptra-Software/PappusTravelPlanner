@@ -304,7 +304,9 @@ ticket, carrying each leg's line and train number, direction, platform, and stop
 handling overnight legs that arrive the next morning.
 
 An imported journey reads back exactly the way it did in the search, so the walking
-transfer between two trains stays *the change* rather than becoming another leg.
+transfer between two trains stays *the change* rather than becoming another leg. It opens
+on a screen of its own: a map of the journey with its stops on top, and the journey leg by
+leg in a panel below that can be pulled up over the map.
 
 ### Live times
 
@@ -318,8 +320,8 @@ under the reference it was imported with, it is looked up again by its train and
 time at its station.
 
 **Show the whole route** on a leg loads the stops its vehicle calls at before you board and
-after you get off, folded above and below the leg in the journey view. A refresh keeps them
-current too.
+after you get off, folded above and below the leg in the journey view and drawn in grey on
+its map. A refresh keeps them current too.
 
 ### Asking the timetable again
 

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/costs/presentation/trip_stats_screen.dart';
 import '../../features/map/presentation/trip_map_screen.dart';
+import '../../features/transport_search/presentation/journey_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/trips/presentation/trip_detail_screen.dart';
 import '../../features/trips/presentation/trip_form_screen.dart';
@@ -70,6 +71,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'map',
                 builder: (context, state) => TripMapScreen(
                   tripId: int.parse(state.pathParameters['id']!),
+                ),
+              ),
+              GoRoute(
+                // ?group= names a run of legs, ?item= a lone leg; see
+                // `openJourney`.
+                path: 'journey',
+                builder: (context, state) => JourneyScreen(
+                  tripId: int.parse(state.pathParameters['id']!),
+                  groupId: int.tryParse(
+                    state.uri.queryParameters['group'] ?? '',
+                  ),
+                  itemId: int.tryParse(state.uri.queryParameters['item'] ?? ''),
                 ),
               ),
             ],

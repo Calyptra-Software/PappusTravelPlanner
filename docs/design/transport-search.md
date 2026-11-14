@@ -92,8 +92,8 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   with neither ids nor coordinates (hand-entered) is simply copied as a plan: there is
   nothing to re-issue a query with, and guessing one from a station's name would be a
   different journey wearing the same label.
-- **A journey is looked up again from the sheet that reads it**, one run at a time
-  (`JourneyDetailsSheet`, on the group's label or a lone imported leg). The trip-wide lookup
+- **A journey is looked up again from the screen that reads it**, one run at a time
+  (`JourneyScreen`, on the group's label or a lone imported leg). The trip-wide lookup
   above happens once, in the seconds after a routine is stamped out (or a trip is
   duplicated, or moved with its start date); every way of not
   finishing it — the switch left off, no signal on the platform, "keep the plan" tapped by
@@ -236,7 +236,9 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   the search and a run of legs the trip already holds are both mapped onto one
   `JourneyView` (`features/transport_search/journey_view.dart`, pure — plus the DB-side
   adapter in `data/journey_view_items.dart`), which the pure `journey_preview.dart` folds
-  into `LegRow`/`ChangeRow` and one `presentation/journey_sheet.dart` draws. So the walking
+  into `LegRow`/`ChangeRow` and one `presentation/journey_sheet.dart` draws (its
+  `JourneyHeader` and `JourneyRows`, inside the preview sheet before the import and inside
+  the journey screen after it). So the walking
   transfer the router puts between two trains reads as *the change* on both sides of the
   import, where the timeline can only show it as another leg. The arithmetic that survives
   the fan-in is `ViewPoint.absolute`, a monotone minute count each adapter defines in its own
@@ -245,6 +247,25 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   legs into one, so a group already *is* a journey and the button sits on the run's label
   (`TimelineTile.onShowJourney`); an imported leg standing alone carries its own. Each leg
   card hosts the leg's own `LiveRefreshButton` — still one tap, one leg.
+- **A journey the trip holds is read on a screen, with a map; one about to be imported, in a
+  sheet.** `JourneyScreen` (`/trip/:id/journey?group=…` or `?item=…`, opened by
+  `openJourney`) puts the journey's map behind a panel (`DraggableScrollableSheet`) holding
+  the same header and rows the preview sheet shows. A route and not a sheet for the reason
+  the point picker is one (`map.md`): a sheet answers a vertical drag by closing, which is
+  the gesture that pans a map. The preview stays a sheet, since it sits over the search it
+  came from and has no run or positions worth a map yet. The map draws the legs through
+  `tripMapFeatures`, so a leg there follows every rule it follows on the trip's map (routed
+  shape dashed, recording solid, its color, red while under way via the shared
+  `happeningItemIdAt`), and adds what only a journey has (`journey_map_features.dart`): a
+  dot per stop with a position (an end hollow and larger, a station where one leg ends and
+  the next starts drawn once), and the run outside the legs as grey chords from stop to stop,
+  the trip keeping no shape for it. The camera frames the journey and not the run, which can
+  reach across the country. The panel opens at 45 % and stops short of the top, so there is
+  always map to drag it back by, and the attribution follows the panel's edge rather than
+  sitting under it, since crediting the tiles is a condition of using them; the map itself
+  is not rebuilt as the panel moves. The title is the group's label, read from
+  `groupsProvider` rather than passed in, so a deep link carries nothing but ids. The map
+  does not answer taps yet: what a tap could say about a leg is in the panel.
 - **An end addressed by a coordinate comes back unnamed and unzoned, and both
   silences have to be filled before anything reads the answer.** A stop answers
   as `Hamburg-Rahlstedt` / `Europe/Berlin`; a coordinate — which is what a picked

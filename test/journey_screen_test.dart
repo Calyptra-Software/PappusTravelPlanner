@@ -2,11 +2,14 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
-import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/timeline_tile.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
@@ -16,8 +19,14 @@ import 'package:travelplanner/features/transport_search/domain/journey.dart';
 import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
-import 'package:travelplanner/features/transport_search/presentation/journey_details_sheet.dart';
+import 'package:travelplanner/features/map/map_features.dart';
+import 'package:travelplanner/features/map/widgets/map_overlays.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_map.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_screen.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_sheet.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'support/journey_screen_overrides.dart';
 
 /// Reading back a journey the trip already holds. Drift's `.watch()` streams do
 /// not resolve under the fake-async clock, so the trip's items arrive as a plain
@@ -136,6 +145,9 @@ Future<void> _pumpSheet(
   WidgetTester tester,
   List<ItineraryItem> items, {
   TransportSearch? search,
+  String? label = 'To Basel',
+  DateTime? now,
+  Map<int, List<TrackLine>> tracks = const {},
 }) async {
   tester.view.physicalSize = const Size(1000, 2400);
   tester.view.devicePixelRatio = 1;
@@ -143,11 +155,20 @@ Future<void> _pumpSheet(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        itineraryProvider(7).overrideWith((ref) => Stream.value(items)),
         transportModesByIdProvider.overrideWith(
           (ref) => {_train.id: _train, _walk.id: _walk},
         ),
         if (search != null) transportSearchProvider.overrideWithValue(search),
+        ...journeyScreenOverrides(
+          tripId: 7,
+          items: items,
+          prefs: await _prefs(),
+          groups: {
+            1: ItemGroup(id: 1, tripId: 7, label: label, collapsed: false),
+          },
+          now: now,
+          tracks: tracks,
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: const [
@@ -157,13 +178,17 @@ Future<void> _pumpSheet(
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const Scaffold(
-          body: JourneyDetailsSheet(tripId: 7, groupId: 1, title: 'To Basel'),
-        ),
+        home: const JourneyScreen(tripId: 7, groupId: 1),
       ),
     ),
   );
   await tester.pumpAndSettle();
+  await settleTiles(tester);
+}
+
+Future<SharedPreferences> _prefs() async {
+  SharedPreferences.setMockInitialValues({});
+  return SharedPreferences.getInstance();
 }
 
 void main() {
@@ -299,6 +324,202 @@ void main() {
         find.text('This service is no longer in the current timetable'),
         findsOneWidget,
       );
+    });
+  });
+
+  group('the screen around it', () {
+    testWidgets('opens on a map, its sources credited on screen', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, _journey);
+
+      expect(find.byType(FlutterMap), findsOneWidget);
+      // A condition of using the tiles, so it is never hidden by the panel.
+      expect(find.textContaining('OpenStreetMap'), findsOneWidget);
+    });
+
+    testWidgets('is titled by its run\'s label, or plainly without one', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, _journey, label: null);
+
+      expect(find.widgetWithText(AppBar, 'Journey'), findsOneWidget);
+    });
+
+    testWidgets('draws the run outside the legs in the quiet grey', (
+      tester,
+    ) async {
+      final withRun = _journey.first.copyWith(
+        fromLat: const Value(53.553),
+        fromLon: const Value(10.007),
+        toLat: const Value(50.107),
+        toLon: const Value(8.663),
+        runStops: Value(
+          encodeRunStops(
+            const RunStops(
+              before: [
+                Stopover(
+                  name: 'Kiel Hbf',
+                  minutes: 400,
+                  lat: 54.31,
+                  lon: 10.13,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await _pumpSheet(tester, [withRun]);
+
+      final run = [
+        for (final layer in tester.widgetList<PolylineLayer>(
+          find.byWidgetPredicate((w) => w is PolylineLayer),
+        ))
+          for (final line in layer.polylines)
+            if (line.color == kJourneyRunColor) line,
+      ];
+      expect(run.single.points.first.latitude, 54.31);
+      // Joined to where the traveler boards.
+      expect(run.single.points.last.latitude, 53.553);
+    });
+
+    /// ICE 507 placed on the map, Hamburg to Frankfurt.
+    final placed = _journey.first.copyWith(
+      fromLat: const Value(53.553),
+      fromLon: const Value(10.007),
+      toLat: const Value(50.107),
+      toLon: const Value(8.663),
+    );
+
+    /// The legs' own lines, as the screen draws them.
+    List<Polyline> legLines(WidgetTester tester) => [
+      for (final layer in tester.widgetList<PolylineLayer>(
+        find.byWidgetPredicate((w) => w is PolylineLayer),
+      ))
+        for (final line in layer.polylines)
+          if (line.color != kJourneyRunColor) line,
+    ];
+
+    testWidgets('the leg under way is drawn in the red reserved for it', (
+      tester,
+    ) async {
+      // 08:30 on the day: ICE 507 runs 08:00 to 09:50.
+      await _pumpSheet(tester, [placed], now: DateTime(2026, 7, 27, 8, 30));
+
+      final red = Theme.of(
+        tester.element(find.byType(JourneyMap)),
+      ).colorScheme.error;
+      expect(legLines(tester).single.color, red);
+    });
+
+    testWidgets('a routed shape is drawn dashed, as on the trip\'s map', (
+      tester,
+    ) async {
+      await _pumpSheet(
+        tester,
+        [placed],
+        tracks: {
+          1: const [
+            TrackLine(
+              id: 1,
+              points: [
+                LatLng(53.553, 10.007),
+                LatLng(52.0, 9.5),
+                LatLng(50.107, 8.663),
+              ],
+              source: TrackSource.routed,
+            ),
+          ],
+        },
+      );
+
+      final line = legLines(tester).single;
+      expect(line.points, hasLength(3));
+      expect(line.pattern, isNot(const StrokePattern.solid()));
+    });
+
+    testWidgets('the credit for the tiles follows the panel\'s edge', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, _journey);
+      final before = tester.getRect(find.byType(MapAttributionBar)).bottom;
+
+      // Pull the panel up by its top, far enough that it snaps to the top
+      // rather than back to where it opened.
+      await tester.drag(find.byType(JourneyHeader), const Offset(0, -900));
+      await tester.pumpAndSettle();
+
+      final after = tester.getRect(find.byType(MapAttributionBar)).bottom;
+      expect(after, lessThan(before));
+      await settleTiles(tester);
+    });
+
+    testWidgets('a journey arriving the next day says so in its header', (
+      tester,
+    ) async {
+      final overnight = _journey.last.copyWith(endDayOffset: 1);
+      await _pumpSheet(tester, [overnight]);
+
+      // In the header, and on the leg's own arrival.
+      expect(find.textContaining('+1'), findsNWidgets(2));
+    });
+
+    testWidgets('is reached by its run, or by a lone leg, as a route', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Column(
+                children: [
+                  TextButton(
+                    onPressed: () =>
+                        openJourney(context, tripId: 7, groupId: 1),
+                    child: const Text('run'),
+                  ),
+                  TextButton(
+                    onPressed: () => openJourney(context, tripId: 7, itemId: 3),
+                    child: const Text('leg'),
+                  ),
+                ],
+              ),
+            ),
+            routes: [
+              GoRoute(
+                path: 'trip/:id/journey',
+                builder: (context, state) {
+                  opened.add(state.uri.toString());
+                  return const Scaffold(body: Text('journey'));
+                },
+              ),
+            ],
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+
+      await tester.tap(find.text('run'));
+      await tester.pumpAndSettle();
+      router.pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('leg'));
+      await tester.pumpAndSettle();
+
+      expect(opened, ['/trip/7/journey?group=1', '/trip/7/journey?item=3']);
+    });
+
+    testWidgets('a journey whose legs have gone says so', (tester) async {
+      await _pumpSheet(tester, const []);
+
+      expect(
+        find.text('This journey is no longer in the trip.'),
+        findsOneWidget,
+      );
+      expect(find.byType(FlutterMap), findsNothing);
     });
   });
 

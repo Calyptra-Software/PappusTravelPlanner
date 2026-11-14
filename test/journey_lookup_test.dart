@@ -7,11 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:travelplanner/core/providers.dart';
-import 'package:travelplanner/core/settings/locale_provider.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
-import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart'
@@ -24,9 +22,10 @@ import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 import 'package:travelplanner/features/transport_search/domain/transit_mode.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
-import 'package:travelplanner/features/transport_search/presentation/journey_details_sheet.dart';
-import 'package:travelplanner/features/trips/application/trip_providers.dart';
+import 'package:travelplanner/features/transport_search/presentation/journey_screen.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'support/journey_screen_overrides.dart';
 
 /// Looking a journey up **again**, from the sheet that reads it.
 ///
@@ -167,16 +166,17 @@ void main() {
       ProviderScope(
         overrides: [
           repositoryProvider.overrideWithValue(repo),
-          sharedPreferencesProvider.overrideWithValue(prefs),
           transportSearchProvider.overrideWithValue(search),
           geocodeProvider.overrideWith((ref, query) async => suggestions),
           // Drift's `.watch()` never resolves under fake-async, so what the
           // sheet reads arrives as a plain stream; what it *writes* goes to the
           // real database, which is what the assertions read back.
-          itineraryProvider(1).overrideWith((ref) => Stream.value(items)),
-          tripProvider(
-            1,
-          ).overrideWith((ref) => Stream.value(trip.copyWith(kind: kind))),
+          ...journeyScreenOverrides(
+            tripId: 1,
+            items: items,
+            prefs: prefs,
+            trip: trip.copyWith(kind: kind),
+          ),
           transportModesByIdProvider.overrideWith(
             (ref) => const {
               1: TransportModeRow(id: 1, builtinKey: 'walk', sortOrder: 0),
@@ -191,13 +191,12 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const Scaffold(
-            body: JourneyDetailsSheet(tripId: 1, groupId: 1, title: 'Hinfahrt'),
-          ),
+          home: const JourneyScreen(tripId: 1, groupId: 1),
         ),
       ),
     );
     await tester.pumpAndSettle();
+    await settleTiles(tester);
   }
 
   /// Scoped to the search form: the journey behind it names the same stops and

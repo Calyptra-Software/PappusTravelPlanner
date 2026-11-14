@@ -2289,6 +2289,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeyDetails => 'Show journey';
 
   @override
+  String get journeyTitle => 'Journey';
+
+  @override
+  String get journeyGone => 'This journey is no longer in the trip.';
+
+  @override
   String get liveTimesRefresh => 'Update live times';
 
   @override

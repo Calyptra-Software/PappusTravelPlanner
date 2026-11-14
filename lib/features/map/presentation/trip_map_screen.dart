@@ -90,7 +90,7 @@ class TripMapScreen extends ConsumerWidget {
           final photos = photosAsync.value ?? const <Attachment>[];
           final features = tripMapFeatures(
             live,
-            happeningItemId: _happeningItemId(live, now),
+            happeningItemId: happeningItemIdAt(live, now),
             // A leg that was actually recorded draws what was recorded; the
             // straight segment between its ends was only ever the best the plan
             // could say. Empty while the stream is still opening, so the map
@@ -138,25 +138,6 @@ class TripMapScreen extends ConsumerWidget {
   /// not turn into one by waiting.
   static bool _answered(AsyncValue<Object?> value) =>
       value.hasValue || value.hasError;
-
-  /// Which entry is under way, by the same rule the timeline uses.
-  ///
-  /// `nowMarkerForItems` reads a single day, so it is asked about today's live
-  /// entries only; on any other day nothing is under way. A marker that is a
-  /// *line* rather than a happening entry has no place here — a map has slots
-  /// but no gaps between them — so only [NowMarker.happening] is used.
-  int? _happeningItemId(List<ItineraryItem> live, DateTime? now) {
-    if (now == null) return null;
-    final today = DateTime(now.year, now.month, now.day);
-    final todays = [
-      for (final i in live)
-        if (i.date == today) i,
-    ];
-    if (todays.isEmpty) return null;
-    final marker = nowMarkerForItems(todays, now.hour * 60 + now.minute);
-    if (marker == null || !marker.happening) return null;
-    return todays[marker.index].id;
-  }
 }
 
 class _MapView extends ConsumerStatefulWidget {

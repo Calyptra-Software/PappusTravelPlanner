@@ -802,6 +802,8 @@
   "connectionChangePlace": "Umstieg in {place}",
   "connectionChangePlaces": "Umstieg: {from} → {to}",
   "journeyDetails": "Reise anzeigen",
+  "journeyTitle": "Reise",
+  "journeyGone": "Diese Reise ist nicht mehr im Plan.",
   "liveTimesRefresh": "Echtzeit aktualisieren",
   "liveTimesNone": "Keine Echtzeitdaten zu aktualisieren",
   "liveTimesCancelled": "Diese Verbindung fällt aus",

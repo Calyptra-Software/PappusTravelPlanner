@@ -3820,6 +3820,18 @@ abstract class AppLocalizations {
   /// **'Show journey'**
   String get journeyDetails;
 
+  /// Title of the screen showing one journey (a run of transport legs) on a map with its stops, when the journey has no label of its own.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey'**
+  String get journeyTitle;
+
+  /// Shown on the journey screen when its legs were replaced or deleted while it was open.
+  ///
+  /// In en, this message translates to:
+  /// **'This journey is no longer in the trip.'**
+  String get journeyGone;
+
   /// No description provided for @liveTimesRefresh.
   ///
   /// In en, this message translates to:
