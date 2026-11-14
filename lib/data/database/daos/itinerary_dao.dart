@@ -129,6 +129,14 @@ class ItineraryDao extends DatabaseAccessor<AppDatabase>
     ),
   );
 
+  /// Writes just the router's id for the run a leg is, when the leg has been
+  /// found again under a new one — targeted for the reason [setItemColor]
+  /// gives.
+  Future<void> setSourceTripId(int id, String sourceTripId) =>
+      (update(itineraryItems)..where((i) => i.id.equals(id))).write(
+        ItineraryItemsCompanion(sourceTripId: Value(sourceTripId)),
+      );
+
   /// Writes just the rest of the vehicle's run around a leg (`RunStops`),
   /// targeted for the reason [setItemColor] gives: its callers hold a snapshot
   /// of the row, and the run is all they have to say.

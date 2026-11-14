@@ -370,10 +370,28 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   be five requests nobody asked for. The button writes the run and nothing else, though the
   same answer carries live times: asking for stops is not asking to overwrite an actual time
   someone typed in. Its failure is said under the button, inside the sheet, where a snackbar
-  would be drawn behind it. The limit is `sourceTripId` itself: the router reissues trip ids
-  with every feed it loads (runs imported 8 and 27 days earlier were both gone, measured
-  2026-08-23), so the run of a leg imported a feed ago answers 404, reported as "no longer in
-  the current timetable". The live-times refresh has the same limit. A run that cannot be
+  would be drawn behind it. Like the refresh, it asks by `sourceTripId`, and so depends on
+  the leg being found again once that id has expired (next note). A run that cannot be
   lined up with the leg (an end not found, or the ends in the wrong order) is not stored
   rather than split at a guess. Copies take it with the plan, live figures stripped
   (`runStopsWithoutLive`); a routine's reversed way back drops it with the stops.
+- **A stored trip id expires, so a leg is found again on its station's departure board.**
+  The router reissues its trip ids with every feed it loads (runs imported 8 and 27 days
+  earlier were both gone, measured 2026-08-23), so `/trip` answers 404 for a leg imported a
+  feed ago although its train runs as planned; for a trip planned weeks ahead that was every
+  leg, live times included. On that 404, and only then, `_tripStopsOf` reads the board at the
+  leg's boarding position (`GET /api/v6/stoptimes` with `center` and a 50 m `radius`, which
+  the router requires with a `center`; `exactRadius=false` adds what it counts as the same
+  station) for a short window around the planned departure, and takes the one departure
+  carrying the leg's title **and** leaving at its planned minute on its day
+  (`relocatedTripId`). The title compares because `/stoptimes` labels a service exactly as
+  `/plan` does (`displayName`: `ICE 585`, `RB31 (81617)`, verified live 2026-11-14). The new
+  id is written back (`setSourceTripId`) and asked once more, so the next tap goes straight
+  there. A board, not a `/plan` search: the usage policy names `/plan` as the expensive call,
+  a coordinate search picks up spurious walks, and only a journey's outer legs keep a stop id
+  at all. **No match, or two, and nothing is guessed**: the 404 reaches the caller and reads
+  "no longer in the current timetable", since another train's delays shown as this one's are
+  worse than none. That also covers a title edited by hand and a train retimed by a minute.
+  The window is placed in the zone of the stop nearest the boarding station
+  (`relocationWindowStart`), else the device's, which is right for a leg refreshed on the day
+  from where it leaves; a zone guessed an hour wrong misses and is reported the same way.

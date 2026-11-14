@@ -11,17 +11,78 @@ import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_controller.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
+import 'package:travelplanner/features/transport_search/data/motis_client.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
 import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
 import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 
+/// A router that has loaded a new timetable since the leg was imported: it
+/// knows the run only under [currentId], answers 404 for any other id, and
+/// lists [board] as the departures at any station.
+class _ReloadedSearch implements TransportSearch {
+  _ReloadedSearch({
+    required this.currentId,
+    required this.stops,
+    this.board = const [],
+  });
+
+  final String currentId;
+  final List<TripStop> stops;
+  final List<StopDeparture> board;
+  final List<String> askedTrips = [];
+  int boardsRead = 0;
+
+  @override
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  }) async {
+    boardsRead++;
+    return board;
+  }
+
+  @override
+  Future<List<TripStop>> tripStops(String tripId) async {
+    askedTrips.add(tripId);
+    if (tripId == currentId) return stops;
+    throw const TransportSearchException(
+      'MOTIS request failed (404)',
+      statusCode: 404,
+    );
+  }
+
+  @override
+  Future<List<TransportPlace>> searchPlaces(String query) =>
+      throw UnimplementedError();
+  @override
+  Future<JourneyResults> journeys({
+    required String fromId,
+    required String toId,
+    required DateTime time,
+    bool arriveBy = false,
+    JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
+    String? pageCursor,
+  }) => throw UnimplementedError();
+}
+
 /// A backend that only answers tripStops (all the refresh needs), from a fixed
 /// list of stops.
 class _FakeSearch implements TransportSearch {
   _FakeSearch(this.stops);
   final List<TripStop> stops;
+
+  @override
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  }) => throw UnimplementedError();
 
   @override
   Future<List<TripStop>> tripStops(String tripId) async => stops;
@@ -351,5 +412,113 @@ void main() {
 
     expect(await controller.loadRunStops(item), isFalse);
     expect((await reread(item.id)).runStops, isNull);
+  });
+
+  group('a trip id the router has since reissued', () {
+    /// The leg as an import stores it: its line as the title and where it
+    /// boards, under the id the router gave it then.
+    Future<ItineraryItem> seedImported() async {
+      final seeded = await seedLeg(sourceTripId: 'old-id');
+      await (db.update(
+        db.itineraryItems,
+      )..where((i) => i.id.equals(seeded.id))).write(
+        const ItineraryItemsCompanion(
+          title: Value('ICE 9'),
+          fromLat: Value(53.0),
+          fromLon: Value(10.0),
+        ),
+      );
+      return reread(seeded.id);
+    }
+
+    // 'A' at 16:00 Berlin on 26 July is 14:00Z.
+    StopDeparture departure(String tripId, {String name = 'ICE 9'}) =>
+        StopDeparture(
+          tripId: tripId,
+          name: name,
+          scheduledDeparture: DateTime.utc(2026, 7, 26, 14),
+          timeZone: 'Europe/Berlin',
+        );
+
+    test('is found again on the board, stored, and asked instead', () async {
+      final item = await seedImported();
+      final search = _ReloadedSearch(
+        currentId: 'new-id',
+        stops: stopsWithDelay(),
+        board: [
+          departure('new-id'),
+          departure('other', name: 'RE 7'),
+        ],
+      );
+      final controller = containerWith(
+        search,
+      ).read(transportSearchControllerProvider);
+
+      expect(await controller.refreshLeg(item), LegRefresh.updated);
+
+      final after = await reread(item.id);
+      expect(after.actualStartMinutes, 16 * 60 + 5);
+      expect(after.sourceTripId, 'new-id');
+      expect(search.askedTrips, ['old-id', 'new-id']);
+    });
+
+    test('loading the run finds it again the same way', () async {
+      final item = await seedImported();
+      final search = _ReloadedSearch(
+        currentId: 'new-id',
+        stops: stopsWithRun(),
+        board: [departure('new-id')],
+      );
+      final controller = containerWith(
+        search,
+      ).read(transportSearchControllerProvider);
+
+      expect(await controller.loadRunStops(item), isTrue);
+      expect((await reread(item.id)).sourceTripId, 'new-id');
+    });
+
+    test('is reported as gone when the board does not settle it', () async {
+      final item = await seedImported();
+      final search = _ReloadedSearch(
+        currentId: 'new-id',
+        stops: stopsWithDelay(),
+        // Two runs under the leg's name at its minute: neither is taken.
+        board: [departure('new-id'), departure('twin')],
+      );
+      final controller = containerWith(
+        search,
+      ).read(transportSearchControllerProvider);
+
+      await expectLater(
+        controller.refreshLeg(item),
+        throwsA(
+          isA<TransportSearchException>().having(
+            (e) => e.statusCode,
+            'statusCode',
+            404,
+          ),
+        ),
+      );
+      expect((await reread(item.id)).sourceTripId, 'old-id');
+    });
+
+    test('a leg with nothing to be found by is not looked for', () async {
+      // Hand-placed or old: no boarding position to read a board at.
+      final item = await seedLeg(sourceTripId: 'old-id');
+      final search = _ReloadedSearch(
+        currentId: 'new-id',
+        stops: stopsWithDelay(),
+        board: [departure('new-id')],
+      );
+      final controller = containerWith(
+        search,
+      ).read(transportSearchControllerProvider);
+
+      await expectLater(
+        controller.refreshLeg(item),
+        throwsA(isA<TransportSearchException>()),
+      );
+      expect(search.boardsRead, 0);
+    });
   });
 }

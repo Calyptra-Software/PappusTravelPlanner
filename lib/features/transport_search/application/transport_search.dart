@@ -44,4 +44,14 @@ abstract interface class TransportSearch {
   /// The ordered stops of a vehicle trip, with planned and real-time times —
   /// used to refresh an imported leg's actual departure/arrival.
   Future<List<TripStop>> tripStops(String tripId);
+
+  /// The services leaving the station at ([lat], [lon]) with a planned
+  /// departure from [from] to [from] + [window]: its departure board. Used to
+  /// find an imported leg's run again when its stored trip id has expired.
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  });
 }

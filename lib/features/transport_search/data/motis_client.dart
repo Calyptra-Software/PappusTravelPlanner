@@ -310,6 +310,34 @@ class MotisTransportSearch implements TransportSearch {
     return parseTripResponse(body);
   }
 
+  /// How far from the given point a stop may be and still count as the
+  /// station asked about, in meters. Small on purpose: the point is the stop
+  /// an import stored, and `exactRadius=false` lets the router add what it
+  /// considers the same station (its platforms, a stop of the same name).
+  static const int _boardRadiusMeters = 50;
+
+  @override
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  }) async {
+    final body = await _get('/api/v6/stoptimes', {
+      // A coordinate rather than a stop id: an id may have been reissued along
+      // with the trip ids, and only a leg's outer ends carry one at all. The
+      // router refuses a `center` without a `radius`.
+      'center': '$lat,$lon',
+      'radius': '$_boardRadiusMeters',
+      'exactRadius': 'false',
+      'time': _rfc3339Seconds(from),
+      'window': '${window.inSeconds}',
+      // The window decides how many: `n` is a minimum, and the larger wins.
+      'n': '1',
+    });
+    return parseStopTimesResponse(body);
+  }
+
   Future<dynamic> _get(String path, Map<String, String> query) async {
     final uri = _baseUrl.replace(
       path: path,

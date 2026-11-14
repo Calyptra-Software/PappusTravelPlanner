@@ -42,9 +42,9 @@ class _LoadRunButtonState extends ConsumerState<LoadRunButton> {
           .loadRunStops(widget.item);
       if (!found) problem = l10n.connectionRunNotFound;
     } on TransportSearchException catch (e) {
-      // The router reissues its trip ids with every timetable it loads, so an
-      // id stored a while ago answers "not found": the service is no longer
-      // there to be asked about, which is not a connection problem.
+      // Not found even on its station's departure board (the controller looks
+      // there when the stored trip id has expired): the service has changed,
+      // which is not a connection problem.
       problem = e.statusCode == 404
           ? l10n.connectionRunNotFound
           : l10n.connectionRunError;

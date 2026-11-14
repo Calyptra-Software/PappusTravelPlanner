@@ -511,6 +511,37 @@ void main() {
       );
     });
 
+    test('departures reads the board around a point', () async {
+      late Uri seen;
+      final client = MotisTransportSearch(
+        httpClient: MockClient((req) async {
+          seen = req.url;
+          return http.Response(
+            _fixture('motis_stoptimes_harburg.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      final board = await client.departures(
+        lat: 53.45591,
+        lon: 9.991701,
+        from: DateTime.utc(2026, 11, 15, 7, 58, 0, 500),
+        window: const Duration(minutes: 30),
+      );
+
+      expect(seen.path, '/api/v6/stoptimes');
+      expect(seen.queryParameters['center'], '53.45591,9.991701');
+      // The router refuses a `center` without a `radius`.
+      expect(seen.queryParameters['radius'], '50');
+      expect(seen.queryParameters['exactRadius'], 'false');
+      // Whole seconds, as every time sent to the router is.
+      expect(seen.queryParameters['time'], '2026-11-15T07:58:00Z');
+      expect(seen.queryParameters['window'], '1800');
+      expect(board.first.name, 'ICE 585');
+    });
+
     test('journeys builds the plan request and parses it', () async {
       late http.Request seen;
       final client = MotisTransportSearch(

@@ -68,6 +68,29 @@ List<TripStop> parseTripResponse(dynamic json) {
   ];
 }
 
+/// Parses the body of `GET /api/v6/stoptimes` — a departure board. An event
+/// with no planned departure (a service ending here) is not a departure and is
+/// left out, as is one without a trip id to ask about.
+List<StopDeparture> parseStopTimesResponse(dynamic json) {
+  final events = (json as Map<String, dynamic>)['stopTimes'] as List<dynamic>?;
+  return [
+    for (final e in events ?? const [])
+      if (e is Map<String, dynamic>)
+        if (e['place'] case final Map<String, dynamic> place)
+          if ((e['tripId'], _parseUtcOrNull(place['scheduledDeparture'])) case (
+            final String tripId,
+            final DateTime departure,
+          ))
+            StopDeparture(
+              tripId: tripId,
+              // The same rule as a leg's line, so the two compare.
+              name: (e['displayName'] ?? e['routeShortName']) as String? ?? '',
+              scheduledDeparture: departure,
+              timeZone: place['tz'] as String?,
+            ),
+  ];
+}
+
 TripStop _tripStop(Map<String, dynamic> j, bool realTime) => TripStop(
   name: j['name'] as String? ?? '',
   cancelled: j['cancelled'] as bool? ?? false,

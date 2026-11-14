@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/database/app_database.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../transport_search/application/transport_search_controller.dart';
+import '../../transport_search/data/motis_client.dart'
+    show TransportSearchException;
 
 /// Pulls one imported leg's live (real-time) times on demand. On success the
 /// refreshed actuals write to the DB and whatever shows the leg redraws with the
@@ -52,6 +54,18 @@ class _LiveRefreshButtonState extends ConsumerState<LiveRefreshButton> {
         case LegRefresh.nothing:
           messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesNone)));
       }
+    } on TransportSearchException catch (e) {
+      // Gone even after looking for it on its station's departure board: the
+      // service has changed, which is news about the train, not the network.
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            e.statusCode == 404
+                ? l10n.connectionRunNotFound
+                : l10n.liveTimesError,
+          ),
+        ),
+      );
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(l10n.liveTimesError)));
     } finally {
