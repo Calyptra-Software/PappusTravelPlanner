@@ -341,6 +341,31 @@ bool progressOnLeg(List<RunCall> calls, VehicleProgress progress) =>
         calls[from].part.onLeg && calls[to].part.onLeg,
     };
 
+/// Whether [progress] has the vehicle on its run after the stop the traveler
+/// gets off at: it has left the leg behind, and the traveler with it.
+bool progressPastLeg(List<RunCall> calls, VehicleProgress progress) =>
+    switch (progress) {
+      AtCall(:final index) => calls[index].part == CallPart.after,
+      BetweenCalls(:final to) => calls[to].part == CallPart.after,
+    };
+
+/// Which of the vehicles [placed] on the map (in the journey's order, by leg
+/// id, with whether the traveler has [left] it) the follow button follows, or
+/// null when none is.
+///
+/// The one the traveler is in, the leg [happening]; else the first they have
+/// not got off yet, which during a change is the one they are about to board,
+/// not the one they just left; else, with every vehicle left behind, the
+/// first.
+int? vehicleToFollow(List<({int legId, bool left})> placed, {int? happening}) {
+  if (placed.isEmpty) return null;
+  if (placed.any((vehicle) => vehicle.legId == happening)) return happening;
+  for (final vehicle in placed) {
+    if (!vehicle.left) return vehicle.legId;
+  }
+  return placed.first.legId;
+}
+
 /// How many stops the vehicle still calls at up to and including the one the
 /// traveler boards at, while [progress] has it on its way there; null once it
 /// has reached it, and when it is anywhere else.

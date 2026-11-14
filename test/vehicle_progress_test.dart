@@ -293,6 +293,45 @@ void main() {
     });
   });
 
+  group('progressPastLeg', () {
+    late final calls = legCalls(_leg());
+
+    test('once the vehicle has left the stop the traveler gets off at', () {
+      expect(progressPastLeg(calls, const AtCall(4)), isFalse);
+      expect(progressPastLeg(calls, const BetweenCalls(4, 5, 0.1)), isTrue);
+      expect(progressPastLeg(calls, const AtCall(5)), isTrue);
+      expect(progressPastLeg(calls, const BetweenCalls(1, 2, 0.5)), isFalse);
+    });
+  });
+
+  group('vehicleToFollow', () {
+    test('the one the traveler is in', () {
+      expect(
+        vehicleToFollow([
+          (legId: 1, left: false),
+          (legId: 3, left: false),
+        ], happening: 3),
+        3,
+      );
+    });
+
+    test('during a change, the one about to be boarded', () {
+      // The train just left goes on along its run; the next one is coming.
+      expect(
+        vehicleToFollow([(legId: 1, left: true), (legId: 3, left: false)]),
+        3,
+      );
+    });
+
+    test('with every vehicle left behind, the first', () {
+      expect(
+        vehicleToFollow([(legId: 1, left: true), (legId: 3, left: true)]),
+        1,
+      );
+      expect(vehicleToFollow(const []), isNull);
+    });
+  });
+
   group('stopsUntilBoarding', () {
     late final calls = legCalls(_leg());
 

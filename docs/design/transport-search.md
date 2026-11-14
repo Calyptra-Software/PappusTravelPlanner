@@ -470,4 +470,6 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   same rule as the leg's line), the leg's color elsewhere on the leg, and the run's grey
   outside it. A tap on it, or the follow button, keeps it in the middle of the map above the
   panel each second until the map is moved by hand, framed for a shown run, or centered on
-  the user.
+  the user. The button follows the vehicle the traveler is in, else the first one they have
+  not got off yet (`vehicleToFollow`): during a change that is the train about to be
+  boarded, not the one just left, which goes on along its run while that is shown.

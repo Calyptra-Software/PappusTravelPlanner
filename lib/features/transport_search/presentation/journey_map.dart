@@ -407,10 +407,11 @@ class _JourneyMapState extends ConsumerState<JourneyMap> {
                     builder: (context, _, _) {
                       final placed = _placed(theme);
                       if (placed.isEmpty) return const SizedBox.shrink();
-                      // The traveler's own vehicle first, else the first.
-                      final target = placed.containsKey(widget.happeningItemId)
-                          ? widget.happeningItemId!
-                          : placed.keys.first;
+                      final target = vehicleToFollow([
+                        for (final MapEntry(key: legId, value: at)
+                            in placed.entries)
+                          (legId: legId, left: at.left),
+                      ], happening: widget.happeningItemId)!;
                       final on = _following != null;
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
@@ -502,7 +503,10 @@ List<LatLng>? _drawnRoute(List<TrackLine> lines) {
 }
 
 /// A vehicle placed on the map: where, in what color, with which icon.
-typedef _Placed = ({LatLng point, Color color, IconData icon});
+///
+/// [left] is whether the traveler has already got off it: it is on its run
+/// beyond the leg.
+typedef _Placed = ({LatLng point, Color color, IconData icon, bool left});
 
 /// One leg's vehicle, with what placing it needs read off the leg once per
 /// build rather than on every tick.
@@ -579,6 +583,7 @@ class _Vehicle {
           ? theme.colorScheme.error
           : legColor,
       icon: icon,
+      left: progressPastLeg(calls, progress),
     );
   }
 }
