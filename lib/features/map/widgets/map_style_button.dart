@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,7 +61,7 @@ class _MapStyleSheet extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final basemap in kBasemaps)
+                  for (final basemap in basemapsFor(web: kIsWeb))
                     RadioListTile<Basemap>(
                       value: basemap,
                       title: Text(basemap.name),
@@ -69,6 +70,8 @@ class _MapStyleSheet extends ConsumerWidget {
                         BasemapPurpose.topographic => l10n.mapStyleTopographic,
                         BasemapPurpose.cycling => l10n.mapStyleCycling,
                         BasemapPurpose.muted => l10n.mapStyleMuted,
+                        BasemapPurpose.publicTransport =>
+                          l10n.mapStylePublicTransport,
                       }),
                     ),
                 ],

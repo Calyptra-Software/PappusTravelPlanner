@@ -330,7 +330,7 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   what differs is `maxNativeZoom`, past which the last real level is enlarged. It is
   **measured**, since few sources state it, and getting it wrong is visible: past 17
   OpenTopoMap serves one identical placeholder, past 18 OpenSnowMap a picture reading "No
-  tile here", past 18 Humanitarian a 404. Each `TileLayer` is keyed by source because
+  tile here", past 18 Humanitarian and ÖPNVKarte a 404. Each `TileLayer` is keyed by source because
   `didUpdateWidget` reloads on a new URL but not on a new `maxNativeZoom`.
 - **An overlay is not a second ground, and it is not part of a style.** "Switched, never
   mixed" is about two opaque layers, so a transparent `MapOverlay` does not break it: nothing
@@ -347,6 +347,12 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   OpenSeaMap's tiles no usage policy could be found at all. The `©` lives in each
   `MapAttribution` label, not in the bar, because SRTM is credited rather than claimed;
   `combinedAttributions` lists each source once.
+- **A style the web build cannot draw is not offered there.** A browser hands a page an
+  image from another host only if the reply carries `Access-Control-Allow-Origin`. Every
+  server here sends it except MeMoMaps (ÖPNVKarte), whose tiles would leave the web build's
+  map gray. So `Basemap.servesBrowsers` is false for it, `basemapsFor(web: kIsWeb)` leaves it
+  out of the picker, and `basemapById` treats it as unknown there. The fix is on the
+  server's side, not ours: a proxy of our own would be a host the app contacts.
 - **A 429 means stop.** OpenRailwayMap's terms ask a client to stop on one rather than risk a
   longer block, and flutter_map, though it does not retry a 429, goes on asking for every new
   tile. `tile_client.dart` therefore leaves a host alone for the `Retry-After` it gave, or for
@@ -356,5 +362,6 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
 - **"Raster tiles are pale" holds less well than it did.** The rule above that marks use map
   colors and carry a ring was written for one pale ground. OpenTopoMap is browner and the
   pistes are blue, red and black, which is the reserved red and close to `kLocationBlue`;
-  pins and lines stayed legible on them on a phone. A satellite or dark style would break the
+  pins and lines stayed legible on them on a phone. ÖPNVKarte is grayer still, and draws
+  tram and bus lines in a strong red. A satellite or dark style would break the
   premise outright, and needs that checked before it is added.

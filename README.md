@@ -134,7 +134,7 @@ The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles fro
 OpenStreetMap Foundation's own servers. Their
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) permits ordinary
 interactive viewing and forbids downloading areas in advance. The other map styles come from
-the servers of OpenTopoMap and OpenStreetMap France, and the overlays from OpenSnowMap,
+the servers of OpenTopoMap, OpenStreetMap France and MeMoMaps, and the overlays from OpenSnowMap,
 OpenRailwayMap and OpenSeaMap, which are contacted only once you pick one of them. The app
 never downloads areas in advance from any of them.
 

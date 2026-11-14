@@ -1320,6 +1320,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get mapStyleMuted => 'Ruhigeres, zurückhaltendes Kartenbild';
 
   @override
+  String get mapStylePublicTransport => 'Bus und Bahn, mit Liniennummern';
+
+  @override
   String get mapOverlays => 'Zusätzlich einblenden';
 
   @override

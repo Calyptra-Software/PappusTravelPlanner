@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **A map style for public transport.** ÖPNVKarte shows bus, tram, subway and train lines
+  labeled with their numbers. It is not offered in the web version.
 - **A journey shows where its trains are.** While a journey is under way, its screen shows
   each train's estimated position on the leg's line and on the map, from the timetable and
   the last refreshed delays, and can follow it on the map.

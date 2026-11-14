@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/settings/locale_provider.dart'
@@ -17,8 +18,10 @@ class BasemapController extends Notifier<Basemap> {
   static const _key = 'map_basemap';
 
   @override
-  Basemap build() =>
-      basemapById(ref.read(sharedPreferencesProvider).getString(_key));
+  Basemap build() => basemapById(
+    ref.read(sharedPreferencesProvider).getString(_key),
+    web: kIsWeb,
+  );
 
   Future<void> set(Basemap basemap) async {
     if (basemap == state) return;

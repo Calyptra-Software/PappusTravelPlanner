@@ -47,7 +47,7 @@ typedef MapAttribution = ({String label, String url});
 /// An enum rather than a text on the entry because that line is translated, and
 /// `basemap.dart` knows nothing of localizations: the compiler then insists on a
 /// sentence for every value. Never persisted.
-enum BasemapPurpose { everyday, topographic, cycling, muted }
+enum BasemapPurpose { everyday, topographic, cycling, muted, publicTransport }
 
 sealed class Basemap {
   const Basemap({
@@ -56,6 +56,7 @@ sealed class Basemap {
     required this.purpose,
     required this.attributions,
     required this.offlineDownload,
+    this.servesBrowsers = true,
   });
 
   /// Stable key, used to persist the choice. Append-only, like every other
@@ -69,6 +70,12 @@ sealed class Basemap {
 
   final List<MapAttribution> attributions;
   final OfflineDownload offlineDownload;
+
+  /// Whether a web page may read its tiles: a browser hands a page an image
+  /// from another host only if the reply says so (`Access-Control-Allow-Origin`).
+  /// A server that does not would leave the web build's map grey, so the web
+  /// build does not offer it; see [basemapsFor].
+  final bool servesBrowsers;
 }
 
 /// How far the camera may zoom, on every style alike.
@@ -85,6 +92,7 @@ final class RasterBasemap extends Basemap {
     required super.purpose,
     required super.attributions,
     required super.offlineDownload,
+    super.servesBrowsers,
     required this.urlTemplate,
     required this.maxNativeZoom,
     this.maxZoom = kBasemapMaxZoom,
@@ -181,22 +189,52 @@ const RasterBasemap humanitarianBasemap = RasterBasemap(
   offlineDownload: OfflineDownload.forbidden,
 );
 
+/// Public transport lines labeled with their numbers, over a gray ground. Its
+/// FAQ lets anyone use the map with the credit below, while stating that the
+/// server's capacity is not part of the offer: high-traffic sites are to host
+/// it themselves. A person looking at a map is not that, but a download ahead
+/// of time would be.
+///
+/// The server sends no `Access-Control-Allow-Origin`, hence [servesBrowsers].
+/// Past level 18 it answers with a 404.
+const RasterBasemap publicTransportBasemap = RasterBasemap(
+  id: 'oepnvkarte',
+  name: 'ÖPNVKarte',
+  purpose: BasemapPurpose.publicTransport,
+  urlTemplate: 'https://tile.memomaps.de/tilegen/{z}/{x}/{y}.png',
+  maxNativeZoom: 18,
+  attributions: [
+    _osmAttribution,
+    (label: '© MeMoMaps (CC-BY-SA)', url: 'https://memomaps.de/'),
+  ],
+  offlineDownload: OfflineDownload.forbidden,
+  servesBrowsers: false,
+);
+
 /// Every basemap the user can pick, in menu order.
 const List<Basemap> kBasemaps = [
   osmStandardBasemap,
   openTopoMapBasemap,
   cyclOsmBasemap,
   humanitarianBasemap,
+  publicTransportBasemap,
 ];
 
 const Basemap kDefaultBasemap = osmStandardBasemap;
 
+/// The basemaps a build can draw, in menu order: on the [web], only those whose
+/// server lets a page read its tiles.
+List<Basemap> basemapsFor({required bool web}) => [
+  for (final basemap in kBasemaps)
+    if (!web || basemap.servesBrowsers) basemap,
+];
+
 /// The entry stored under [id], or the default for anything this build cannot
-/// name: nothing stored yet, or a style from a newer version.
-Basemap basemapById(String? id) => kBasemaps.firstWhere(
-  (basemap) => basemap.id == id,
-  orElse: () => kDefaultBasemap,
-);
+/// draw: nothing stored yet, a style from a newer version, or one the [web]
+/// build does not offer.
+Basemap basemapById(String? id, {bool web = false}) => basemapsFor(
+  web: web,
+).firstWhere((basemap) => basemap.id == id, orElse: () => kDefaultBasemap);
 
 /// What an overlay shows, which the picker names in the user's language.
 ///

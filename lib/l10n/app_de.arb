@@ -445,6 +445,7 @@
   "mapStyleTopographic": "Wandern, mit Höhenlinien und Relief",
   "mapStyleCycling": "Radfahren, mit Radrouten und Radwegen",
   "mapStyleMuted": "Ruhigeres, zurückhaltendes Kartenbild",
+  "mapStylePublicTransport": "Bus und Bahn, mit Liniennummern",
   "mapOverlays": "Zusätzlich einblenden",
   "mapOverlaySkiSlopes": "Skipisten und Lifte",
   "mapOverlayRailways": "Bahnstrecken",
