@@ -72,7 +72,7 @@ the obvious change was once made and turned out wrong.
 | --- | --- |
 | [`trips-and-routines.md`](docs/design/trips-and-routines.md) | the overview, `TripQuery`/`RoutineQuery`, tags, the result line, the statistics filter, routines and `materializeRoutine`, `TripPlanDao` (copying a plan, duplicating or moving a trip) |
 | [`itinerary.md`](docs/design/itinerary.md) | `ItineraryItems`, groups, decisions, day blocks, drag/move/copy, the clipboard, "you are here", planned/actual times, `endDayOffset`, transport modes |
-| [`transport-search.md`](docs/design/transport-search.md) | the connection search, import, re-routing (`replaceJourney`), lookups, stopovers, the journey screen and its map, the Transitous usage policy |
+| [`transport-search.md`](docs/design/transport-search.md) | the connection search, import, re-routing (`replaceJourney`), lookups, stopovers, the journey screen and its map, estimated vehicle positions, the Transitous usage policy |
 | [`costs.md`](docs/design/costs.md) | currencies and rates, totals, `computeTripStats`, settlements, reimbursements, invitations |
 | [`sharing.md`](docs/design/sharing.md) | `TripBundle` / `.tpt` versions, PDF, `.ics`, `.gpx` |
 | [`map.md`](docs/design/map.md) | both maps, pins and clusters, the point picker, device location, `PositionFeed`, track recording, basemaps |
