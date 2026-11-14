@@ -2262,6 +2262,23 @@ class AppLocalizationsZh extends AppLocalizations {
   String get journeyGone => 'This journey is no longer in the trip.';
 
   @override
+  String journeyVehicleComing(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'On its way, $count stops away',
+      one: 'On its way, 1 stop away',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get journeyVehicleEstimated => 'Estimated position of the vehicle';
+
+  @override
+  String get journeyFollowVehicle => 'Follow the vehicle';
+
+  @override
   String get liveTimesRefresh => '更新实时信息';
 
   @override

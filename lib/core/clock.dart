@@ -35,3 +35,11 @@ final nowProvider = StreamProvider.autoDispose<DateTime>((ref) {
   });
   return controller.stream;
 });
+
+/// The current time every second, for what moves while it is watched: the
+/// vehicles a journey's screen places on its line and its map. Only that
+/// screen listens, and `autoDispose` stops the ticking when it closes.
+final secondClockProvider = StreamProvider.autoDispose<DateTime>((ref) async* {
+  yield DateTime.now();
+  yield* Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
+});

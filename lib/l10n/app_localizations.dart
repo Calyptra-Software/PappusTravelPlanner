@@ -3844,6 +3844,24 @@ abstract class AppLocalizations {
   /// **'This journey is no longer in the trip.'**
   String get journeyGone;
 
+  /// Above the boarding stop on the journey screen while the vehicle is already running towards it and its run before boarding is hidden; count includes the boarding stop.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{On its way, 1 stop away} other{On its way, {count} stops away}}'**
+  String journeyVehicleComing(int count);
+
+  /// Accessibility label of the vehicle icon placed on a journey's line and map, estimated from its timetable and last known delays.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated position of the vehicle'**
+  String get journeyVehicleEstimated;
+
+  /// Tooltip of the map button that keeps a running vehicle in view on the journey screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the vehicle'**
+  String get journeyFollowVehicle;
+
   /// No description provided for @liveTimesRefresh.
   ///
   /// In en, this message translates to:

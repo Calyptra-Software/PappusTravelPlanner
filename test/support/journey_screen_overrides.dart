@@ -15,9 +15,11 @@ import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 
 /// Everything `JourneyScreen` reads, as plain streams: drift's `.watch()` never
-/// resolves under the fake-async clock, and `nowProvider` would leave a timer
-/// running past the test. Callers add what their own test is about (the modes,
-/// a search backend, a database to write to).
+/// resolves under the fake-async clock, and `nowProvider` and
+/// `secondClockProvider` would leave a timer running past the test. The
+/// vehicles are placed at [now], or at each time [ticks] gives. Callers add
+/// what their own test is about (the modes, a search backend, a database to
+/// write to).
 List<Override> journeyScreenOverrides({
   required int tripId,
   required List<ItineraryItem> items,
@@ -28,6 +30,7 @@ List<Override> journeyScreenOverrides({
   DateTime? now,
   Map<int, List<TrackLine>> tracks = const {},
   RunShapeCache? runShapes,
+  Stream<DateTime>? ticks,
 }) => [
   // The routes of whole runs, in memory only: nothing a test fetches is
   // written to a real cache directory.
@@ -61,6 +64,9 @@ List<Override> journeyScreenOverrides({
   tripTracksProvider(tripId).overrideWith((ref) => Stream.value(tracks)),
   nowProvider.overrideWith(
     (ref) => Stream.value(now ?? DateTime(2026, 1, 1, 3)),
+  ),
+  secondClockProvider.overrideWith(
+    (ref) => ticks ?? Stream.value(now ?? DateTime(2026, 1, 1, 3)),
   ),
 ];
 

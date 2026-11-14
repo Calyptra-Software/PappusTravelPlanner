@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 
 import '../../../core/format/civil_date.dart';
@@ -7,7 +8,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../itinerary/widgets/live_refresh_button.dart';
 import '../journey_preview.dart';
 import '../journey_view.dart';
+import '../vehicle_progress.dart';
 import 'journey_formats.dart';
+import 'journey_timeline.dart';
 
 /// A journey read leg by leg: board here, ride this, change there.
 ///
@@ -292,6 +295,9 @@ class JourneyRows extends StatelessWidget {
     this.onReplanFrom,
     this.shownRuns = const {},
     this.runControl,
+    this.clock,
+    this.happeningItemId,
+    this.accent,
   });
 
   final JourneyView view;
@@ -317,6 +323,19 @@ class JourneyRows extends StatelessWidget {
   /// See [JourneySheet.onReplanFrom].
   final ValueChanged<ItineraryItem>? onReplanFrom;
 
+  /// The time each stored leg's vehicle is placed at on its line, ticking
+  /// while the journey is on screen; null where no vehicle is placed (a
+  /// preview, a routine).
+  final ValueListenable<DateTime?>? clock;
+
+  /// The leg under way, whose vehicle is the one the traveler sits in: drawn
+  /// in the red reserved for it.
+  final int? happeningItemId;
+
+  /// The color of the legs' lines: the trip's, as on its map. The theme's
+  /// primary where none is given.
+  final Color? accent;
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -330,6 +349,9 @@ class JourneyRows extends StatelessWidget {
             onFindConnection: onFindLegConnection,
             runShown: shownRuns.contains(leg.itemId),
             runControl: runControl,
+            clock: clock,
+            happening: leg.itemId != null && leg.itemId == happeningItemId,
+            accent: accent,
           ),
           ChangeRow(:final arriving) => _ChangeTile(
             change: row,
@@ -348,7 +370,15 @@ class JourneyRows extends StatelessWidget {
 /// reads top-to-bottom in the order the leg is lived — and a platform sits on
 /// the line of the stop it belongs to, which is the only place it means
 /// anything.
-class _LegCard extends StatelessWidget {
+///
+/// Down its left side runs the leg's line ([JourneyTimeline]), with a dot for
+/// every stop listed and, on a stored leg whose vehicle is on its way, the
+/// vehicle where its timetable puts it. It is placed between the stops the
+/// card shows: with the stops between the ends folded away, it moves from the
+/// one end to the other in proportion to the time, and once they are opened
+/// it sits between the two it really is between. The run before boarding and
+/// after getting off carries it only while that run is shown.
+class _LegCard extends StatefulWidget {
   const _LegCard({
     required this.leg,
     required this.modesById,
@@ -356,6 +386,9 @@ class _LegCard extends StatelessWidget {
     this.onFindConnection,
     this.runShown = false,
     this.runControl,
+    this.clock,
+    this.happening = false,
+    this.accent,
   });
 
   /// Whether the run outside this leg is to be listed — see
@@ -375,235 +408,379 @@ class _LegCard extends StatelessWidget {
   /// [JourneySheet.onFindLegConnection].
   final ValueChanged<ItineraryItem>? onFindConnection;
 
+  /// See [JourneyRows.clock].
+  final ValueListenable<DateTime?>? clock;
+
+  /// Whether this leg is the one under way — see [JourneyRows.happeningItemId].
+  final bool happening;
+
+  /// See [JourneyRows.accent].
+  final Color? accent;
+
+  @override
+  State<_LegCard> createState() => _LegCardState();
+}
+
+class _LegCardState extends State<_LegCard> {
+  bool _beforeOpen = false;
+  bool _throughOpen = false;
+  bool _afterOpen = false;
+
+  /// The calls of the leg's vehicle, read once per version of its row rather
+  /// than on every tick of the clock.
+  List<RunCall> _calls = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _calls = _callsOf(widget.item);
+  }
+
+  @override
+  void didUpdateWidget(_LegCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item != widget.item) _calls = _callsOf(widget.item);
+  }
+
+  /// A vehicle to place: a stored leg ridden rather than walked, and running.
+  List<RunCall> _callsOf(ItineraryItem? item) =>
+      item == null || widget.leg.ownSteam || widget.leg.cancelled
+      ? const []
+      : legCalls(item);
+
   @override
   Widget build(BuildContext context) {
+    final clock = widget.clock;
+    if (clock == null || _calls.isEmpty) return _card(context, null);
+    return ValueListenableBuilder<DateTime?>(
+      valueListenable: clock,
+      builder: (context, now, _) => _card(context, now),
+    );
+  }
+
+  Widget _card(BuildContext context, DateTime? now) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final leg = widget.leg;
+    final item = widget.item;
     final headsign = leg.headsign;
     final notes = leg.notes;
     // A walking or cycling stretch has no line to name, so it is named by what
     // it is; a service falls back to its mode only when the feed gave no line.
-    final modeLabel = viewModeLabel(leg.mode, l10n, modesById);
+    final modeLabel = viewModeLabel(leg.mode, l10n, widget.modesById);
     final service = leg.line ?? modeLabel ?? '';
     final duration = leg.duration;
-    final refreshable = item != null && item!.sourceTripId != null;
-    final run = runShown ? leg.run : null;
+    final refreshable = item != null && item.sourceTripId != null;
+    final run = widget.runShown ? leg.run : null;
     // Only a vehicle has a run, and only a stored one with its trip id and
     // times can be found in it. Offered whether or not it was loaded before,
     // since the same button shows it and puts it away.
-    final control = runControl;
+    final control = widget.runControl;
     final hasRun =
         control != null &&
         refreshable &&
         !leg.ownSteam &&
-        item!.startMinutes != null &&
-        item!.endMinutes != null;
+        item.startMinutes != null &&
+        item.endMinutes != null;
+    final accent = widget.accent ?? theme.colorScheme.primary;
+    final outside = theme.colorScheme.outline;
+    final surface = leg.cancelled
+        ? theme.colorScheme.errorContainer
+        : theme.colorScheme.surfaceContainerHighest;
+    final modeIcon = viewModeIcon(leg.mode, widget.modesById);
+
+    // The calls the card shows a dot for, in the order it shows them: what
+    // the vehicle is placed between. A folded run is one dot, where the run
+    // starts or ends, since that is what its fold names.
+    final calls = _calls;
+    final board = calls.indexWhere((call) => call.part == CallPart.board);
+    final alight = calls.indexWhere((call) => call.part == CallPart.alight);
+    final shown = <int>[
+      if (run != null && board > 0)
+        if (_beforeOpen) ...[for (var i = 0; i < board; i++) i] else 0,
+      if (board >= 0) board,
+      if (_throughOpen)
+        for (var i = board + 1; i < alight; i++) i,
+      if (alight >= 0) alight,
+      if (run != null && alight >= 0 && alight + 1 < calls.length)
+        if (_afterOpen) ...[
+          for (var i = alight + 1; i < calls.length; i++) i,
+        ] else
+          calls.length - 1,
+    ];
+    TimelineSpot? spot;
+    Color? vehicleColor;
+    int? coming;
+    if (now != null && calls.isNotEmpty) {
+      final progress = progressAt(calls, now, include: shown.contains);
+      if (progress != null) {
+        spot = switch (progress) {
+          AtCall(:final index) => TimelineSpot.at(shown.indexOf(index)),
+          BetweenCalls(:final from, :final to, :final fraction) => TimelineSpot(
+            shown.indexOf(from),
+            shown.indexOf(to),
+            fraction,
+          ),
+        };
+        final onLeg = progressOnLeg(calls, progress);
+        vehicleColor = !onLeg
+            ? outside
+            : widget.happening
+            ? theme.colorScheme.error
+            : accent;
+      }
+      // With the run before boarding put away, the vehicle on it is not
+      // placed, but how far off it is can still be said.
+      if (run == null) {
+        final whole = progressAt(calls, now);
+        if (whole != null) coming = stopsUntilBoarding(calls, whole);
+      }
+    }
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
-      color: leg.cancelled
-          ? theme.colorScheme.errorContainer
-          : theme.colorScheme.surfaceContainerHighest,
+      color: surface,
       elevation: 0,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(4, 10, 12, 10),
+        child: JourneyTimeline(
+          color: accent,
+          outsideColor: outside,
+          surface: surface,
+          vehicle: spot,
           children: [
             // Where the vehicle has been before the traveler boards, above
             // the stop they board at, as the run is read.
-            if (run != null && run.before.isNotEmpty)
-              _StopsSection(
-                stops: run.before,
-                label: l10n.connectionStopsBefore(
-                  run.before.first.name,
-                  run.before.length,
-                ),
+            if (run != null && run.before.isNotEmpty) ...[
+              TimelineRow(
+                dot: _beforeOpen ? TimelineDot.none : TimelineDot.stop,
                 outside: true,
+                child: _FoldLabel(
+                  label: l10n.connectionStopsBefore(
+                    run.before.first.name,
+                    run.before.length,
+                  ),
+                  open: _beforeOpen,
+                  stops: run.before,
+                  onTap: () => setState(() => _beforeOpen = !_beforeOpen),
+                ),
               ),
-            _EndLine(end: leg.from),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  Icon(
-                    viewModeIcon(leg.mode, modesById),
-                    size: 18,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      [
-                        if (service.isNotEmpty) service,
-                        if (headsign != null &&
-                            headsign.isNotEmpty &&
-                            headsign != leg.to.name)
-                          l10n.directionTo(headsign),
-                      ].join(' · '),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+              if (_beforeOpen)
+                for (final stop in run.before) _stopRow(stop, outside: true),
+            ],
+            if (coming != null)
+              TimelineRow(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    l10n.journeyVehicleComing(coming),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  if (duration != null)
-                    Text(
-                      formatJourneyDuration(duration),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            TimelineRow(
+              dot: TimelineDot.end,
+              child: _EndLine(end: leg.from),
+            ),
+            TimelineRow(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Icon(modeIcon, size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        [
+                          if (service.isNotEmpty) service,
+                          if (headsign != null &&
+                              headsign.isNotEmpty &&
+                              headsign != leg.to.name)
+                            l10n.directionTo(headsign),
+                        ].join(' · '),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  // The leg's own live times, asked for from the leg they belong
-                  // to. Only a stored leg has anything to refresh into.
-                  if (refreshable) LiveRefreshButton(item: item!),
-                  // …and its own search, for when it is this leg that has to
-                  // change rather than the whole journey.
-                  if (item != null && onFindConnection != null)
-                    IconButton(
-                      icon: const Icon(Icons.travel_explore),
-                      tooltip: l10n.connectionsFindForLeg,
-                      onPressed: () => onFindConnection!(item!),
-                    ),
-                ],
+                    if (duration != null)
+                      Text(
+                        formatJourneyDuration(duration),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    // The leg's own live times, asked for from the leg they
+                    // belong to. Only a stored leg has anything to refresh
+                    // into.
+                    if (refreshable) LiveRefreshButton(item: item),
+                    // …and its own search, for when it is this leg that has
+                    // to change rather than the whole journey.
+                    if (item != null && widget.onFindConnection != null)
+                      IconButton(
+                        icon: const Icon(Icons.travel_explore),
+                        tooltip: l10n.connectionsFindForLeg,
+                        onPressed: () => widget.onFindConnection!(item),
+                      ),
+                  ],
+                ),
               ),
             ),
             // What the import wrote into the leg (direction, platforms) and
-            // whatever the user has added since — the only place a stored leg's
-            // platform survives, since the trip keeps no column for one.
+            // whatever the user has added since — the only place a stored
+            // leg's platform survives, since the trip keeps no column for one.
             if (notes != null && notes.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  notes,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+              TimelineRow(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    notes,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ),
             if (leg.cancelled)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  l10n.connectionCancelled,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.error,
-                    fontWeight: FontWeight.w700,
+              TimelineRow(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    l10n.connectionCancelled,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ),
-            if (leg.stops.isNotEmpty)
-              _StopsSection(
-                stops: leg.stops,
-                label: l10n.connectionStops(leg.stops.length),
-              ),
-            _EndLine(
-              end: leg.to,
-              // Calendar days, not 24-hour spans: across the spring change a
-              // night is 23 hours, and `difference().inDays` read it as none.
-              dayOffset: daysBetween(leg.from.date, leg.to.date),
-            ),
-            if (run != null && run.after.isNotEmpty)
-              _StopsSection(
-                stops: run.after,
-                label: l10n.connectionStopsAfter(
-                  run.after.last.name,
-                  run.after.length,
+            if (leg.stops.isNotEmpty) ...[
+              TimelineRow(
+                child: _FoldLabel(
+                  label: l10n.connectionStops(leg.stops.length),
+                  open: _throughOpen,
+                  stops: leg.stops,
+                  onTap: () => setState(() => _throughOpen = !_throughOpen),
                 ),
-                outside: true,
               ),
-            if (hasRun) control(item!),
+              if (_throughOpen)
+                for (final stop in leg.stops) _stopRow(stop),
+            ],
+            TimelineRow(
+              dot: TimelineDot.end,
+              child: _EndLine(
+                end: leg.to,
+                // Calendar days, not 24-hour spans: across the spring change a
+                // night is 23 hours, and `difference().inDays` read it as none.
+                dayOffset: daysBetween(leg.from.date, leg.to.date),
+              ),
+            ),
+            if (run != null && run.after.isNotEmpty) ...[
+              TimelineRow(
+                dot: _afterOpen ? TimelineDot.none : TimelineDot.stop,
+                outside: true,
+                child: _FoldLabel(
+                  label: l10n.connectionStopsAfter(
+                    run.after.last.name,
+                    run.after.length,
+                  ),
+                  open: _afterOpen,
+                  stops: run.after,
+                  onTap: () => setState(() => _afterOpen = !_afterOpen),
+                ),
+              ),
+              if (_afterOpen)
+                for (final stop in run.after) _stopRow(stop, outside: true),
+            ],
+            if (hasRun) TimelineRow(child: control(item)),
+            if (spot != null && vehicleColor != null)
+              TimelineVehicle(
+                child: Semantics(
+                  label: l10n.journeyVehicleEstimated,
+                  child: VehicleBadge(
+                    icon: modeIcon,
+                    color: vehicleColor,
+                    size: 20,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
+
+  TimelineRow _stopRow(ViewStop stop, {bool outside = false}) => TimelineRow(
+    dot: stop.cancelled ? TimelineDot.skipped : TimelineDot.stop,
+    outside: outside,
+    child: _StopLine(stop: stop, outside: outside),
+  );
 }
 
-/// A run of stops folded away behind a [label]: the ones between a leg's ends,
-/// or, [outside] the leg, the ones its vehicle calls at before boarding or after
-/// getting off.
+/// The label a run of stops is folded away behind: the ones between a leg's
+/// ends, or, outside the leg, the ones its vehicle calls at before boarding or
+/// after getting off.
 ///
-/// Collapsed by default and on purpose: a regional train calls at thirty places
+/// Folded by default and on purpose: a regional train calls at thirty places
 /// and the two that matter are the ones already on the card. Opened, it answers
 /// the question a stop list is actually for — *does it stop at mine, and when
 /// am I there?* — and, outside the leg, *where is this train coming from, and
 /// where does it go on to?*
-class _StopsSection extends StatefulWidget {
-  const _StopsSection({
-    required this.stops,
+class _FoldLabel extends StatelessWidget {
+  const _FoldLabel({
     required this.label,
-    this.outside = false,
+    required this.open,
+    required this.stops,
+    required this.onTap,
   });
 
-  final List<ViewStop> stops;
   final String label;
-
-  /// Whether these stops lie outside the leg, drawn fainter than the ones the
-  /// traveler passes through.
-  final bool outside;
-
-  @override
-  State<_StopsSection> createState() => _StopsSectionState();
-}
-
-class _StopsSectionState extends State<_StopsSection> {
-  bool _open = false;
+  final bool open;
+  final List<ViewStop> stops;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final muted = theme.colorScheme.onSurfaceVariant;
-    final cancelled = widget.stops.where((stop) => stop.cancelled).length;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        InkWell(
-          onTap: () => setState(() => _open = !_open),
-          borderRadius: BorderRadius.circular(8),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              children: [
-                Icon(
-                  _open ? Icons.expand_less : Icons.expand_more,
-                  size: 18,
-                  color: muted,
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    style: theme.textTheme.bodySmall?.copyWith(color: muted),
-                  ),
-                ),
-                // The list is folded away by default, so the one thing that
-                // cannot wait to be opened is said on the fold itself.
-                if (cancelled > 0) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.connectionStopsCancelled(cancelled),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ],
+    final cancelled = stops.where((stop) => stop.cancelled).length;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(
+              open ? Icons.expand_less : Icons.expand_more,
+              size: 18,
+              color: muted,
             ),
-          ),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                style: theme.textTheme.bodySmall?.copyWith(color: muted),
+              ),
+            ),
+            // The list is folded away by default, so the one thing that
+            // cannot wait to be opened is said on the fold itself.
+            if (cancelled > 0) ...[
+              const SizedBox(width: 8),
+              Text(
+                l10n.connectionStopsCancelled(cancelled),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ],
         ),
-        if (_open)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Column(
-              children: [
-                for (final stop in widget.stops)
-                  _StopLine(stop: stop, outside: widget.outside),
-              ],
-            ),
-          ),
-      ],
+      ),
     );
   }
 }
@@ -622,7 +799,8 @@ class _StopLine extends StatelessWidget {
 
   final ViewStop stop;
 
-  /// Whether the stop lies outside the leg — see [_StopsSection.outside].
+  /// Whether the stop lies outside the leg, on the run before boarding or
+  /// after getting off: drawn fainter than the ones the traveler passes.
   final bool outside;
 
   @override
@@ -636,8 +814,10 @@ class _StopLine extends StatelessWidget {
         : theme.colorScheme.onSurfaceVariant;
     final struck = stop.cancelled ? TextDecoration.lineThrough : null;
 
+    // Room enough between two stops' dots for the vehicle to sit between
+    // them without covering either.
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

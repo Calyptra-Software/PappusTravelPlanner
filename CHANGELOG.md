@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **A journey shows where its trains are.** While a journey is under way, its screen shows
+  each train's estimated position on the leg's line and on the map, from the timetable and
+  the last refreshed delays, and can follow it on the map.
 - **A journey opens on a map.** *Show journey* now shows the route with its stops on a map,
   with the legs, changes and stops in a panel below that can be pulled up over it.
 - **Live times work for connections imported long before the trip.** A connection the

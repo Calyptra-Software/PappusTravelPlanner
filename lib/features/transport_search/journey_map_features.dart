@@ -155,8 +155,8 @@ LatLng? _point(double? lat, double? lon) =>
   required LatLng? alight,
 }) {
   if (shape.length < 2 || board == null || alight == null) return null;
-  final boardAt = _nearest(shape, board, from: 0);
-  final alightAt = _nearest(shape, alight, from: boardAt);
+  final boardAt = nearestShapeIndex(shape, board, from: 0);
+  final alightAt = nearestShapeIndex(shape, alight, from: boardAt);
   return (
     before: shape.sublist(0, boardAt + 1),
     after: shape.sublist(alightAt),
@@ -166,7 +166,7 @@ LatLng? _point(double? lat, double? lon) =>
 /// The index of the point in [points] from [from] on that lies nearest [to],
 /// by an equirectangular distance: exact enough to tell a station from the
 /// next, and cheap over the ten thousand points of a long-distance run.
-int _nearest(List<LatLng> points, LatLng to, {required int from}) {
+int nearestShapeIndex(List<LatLng> points, LatLng to, {required int from}) {
   final scale = math.cos(to.latitude * math.pi / 180);
   var best = from;
   var bestDistance = double.infinity;

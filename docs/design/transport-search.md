@@ -439,3 +439,35 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   The window is placed in the zone of the stop nearest the boarding station
   (`relocationWindowStart`), else the device's, which is right for a leg refreshed on the day
   from where it leaves; a zone guessed an hour wrong misses and is reported the same way.
+- **Where a vehicle is, is estimated from the timetable the trip holds, never asked on a
+  timer.** The journey screen places each leg's vehicle on its line in the panel and on the
+  map (`vehicle_progress.dart`), as the Transitous map estimates its vehicles between two
+  answers: it stands at a stop from its arrival to its departure (the departure less the
+  stored dwell) and moves between two stops in proportion to the time, at an even pace
+  along the route. The times are the plan moved by the delays the last live-times refresh
+  wrote, the leg's ends by their actual times; nothing is fetched to place a vehicle, and a
+  clock ticking once a second (`secondClockProvider`) moves it while the screen is open.
+  Each time is made an instant in **its own stop's zone**; the leg's ends store none and take
+  the nearest stop's, else the device's (`legCalls`). Times that run backwards (a delay known
+  at one stop and not the next) hold the vehicle rather than moving it back. A skipped stop
+  does not time it, since it does not stand there. A vehicle is shown from the first call the
+  trip knows until it leaves the last, so on a leg whose run is not stored it appears at
+  boarding and goes at the arrival.
+- **A vehicle is placed only on what the screen shows, and only on a route.** In the panel it
+  moves between the stops listed (`progressAt` with `include`): with the stops between the
+  ends folded away it crosses the fold in proportion to the time, a folded run is one dot
+  where the run starts or ends, and opening a fold puts it between the two stops it really is
+  between. The rows carry their dots in `JourneyTimeline`, a render object of its own,
+  because the vehicle sits *between* rows and how far apart two dots are is known only after
+  layout. The run around a leg carries it only while that run is shown; while it is put away,
+  a vehicle on its way to the boarding stop is said in words above that stop ("2 stops away")
+  rather than placed. On the map it is placed along the route the map draws (the run's route
+  while the run is shown, else the leg's own drawn line, the router's before a recording),
+  counting only the stops placed on that route, so a stop stored without a position is
+  passed along the line. **A leg drawn only as a chord gets no vehicle on the map**, for the
+  reason the run gets no chord: a train halfway along a straight line across country is a
+  position nobody is at. It is red while its leg is under way (the traveler is in it, by the
+  same rule as the leg's line), the leg's color elsewhere on the leg, and the run's grey
+  outside it. A tap on it, or the follow button, keeps it in the middle of the map above the
+  panel each second until the map is moved by hand, framed for a shown run, or centered on
+  the user.
