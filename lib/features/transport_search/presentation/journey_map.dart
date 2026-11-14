@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -104,15 +106,18 @@ class _JourneyMapState extends ConsumerState<JourneyMap> {
 
   /// The view holding [points] with room around them, the part of the map's
   /// [height] the panel covers left out at the bottom.
-  CameraFit _fit(List<LatLng> points, double height) => CameraFit.bounds(
-    bounds: LatLngBounds.fromPoints(points),
-    padding: EdgeInsets.fromLTRB(
-      48,
-      48,
-      48,
-      48 + height * (widget.panelExtent?.value ?? 0),
-    ),
-  );
+  ///
+  /// The room above and below shrinks with the strip the panel leaves: a
+  /// panel pulled up to the top leaves less than two fixed margins, and a view
+  /// asked to fit into less than nothing is zoomed out to the whole world.
+  CameraFit _fit(List<LatLng> points, double height) {
+    final covered = height * (widget.panelExtent?.value ?? 0);
+    final margin = math.min(48.0, math.max(0.0, height - covered) / 4);
+    return CameraFit.bounds(
+      bounds: LatLngBounds.fromPoints(points),
+      padding: EdgeInsets.fromLTRB(48, margin, 48, covered + margin),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

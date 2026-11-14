@@ -545,6 +545,67 @@ void main() {
       await settleTiles(tester);
     });
 
+    testWidgets('frames a shown run in the strip a raised panel leaves', (
+      tester,
+    ) async {
+      final withRun = _journey.first.copyWith(
+        fromLat: const Value(53.553),
+        fromLon: const Value(10.007),
+        toLat: const Value(50.107),
+        toLon: const Value(8.663),
+        runStops: Value(
+          encodeRunStops(
+            const RunStops(
+              before: [
+                Stopover(
+                  name: 'Kiel Hbf',
+                  minutes: 400,
+                  lat: 54.31,
+                  lon: 10.13,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      final cache = RunShapeCache(Future.value());
+      await cache.write(
+        'trip-507',
+        encodeTrackPoints(const [
+          LatLng(54.31, 10.13),
+          LatLng(53.553, 10.007),
+          LatLng(50.107, 8.663),
+        ], precision: kRoutedShapePrecision),
+        lastDay: DateTime(2026, 7, 27),
+      );
+      await _pumpSheet(tester, [withRun], runShapes: cache);
+      // A phone's screen, where the strip is narrower than the margins a
+      // framed view keeps on a larger one.
+      tester.view.physicalSize = const Size(400, 800);
+      await tester.pumpAndSettle();
+
+      // The panel pulled up to the top, leaving a strip of the map.
+      await tester.drag(find.byType(JourneyHeader), const Offset(0, -700));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+
+      final map = find.byType(FlutterMap);
+      final camera = MapCamera.of(
+        tester.element(
+          find.descendant(of: map, matching: find.byType(PolylineLayer)).first,
+        ),
+      );
+      final strip = tester.getRect(map).height * 0.1;
+      // Not the whole world: the run from Kiel fills the strip it is seen in.
+      for (final point in const [LatLng(54.31, 10.13), LatLng(50.107, 8.663)]) {
+        final y = camera.latLngToScreenOffset(point).dy;
+        expect(y, inInclusiveRange(0, strip));
+      }
+      expect(camera.zoom, greaterThan(kMinMapZoom));
+      await settleTiles(tester);
+    });
+
     /// ICE 507 placed on the map, Hamburg to Frankfurt.
     final placed = _journey.first.copyWith(
       fromLat: const Value(53.553),
