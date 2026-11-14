@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.16.0 — 2026-11-14
 
 - **A map style for public transport.** ÖPNVKarte shows bus, tram, subway and train lines
   labeled with their numbers. It is not offered in the web version.

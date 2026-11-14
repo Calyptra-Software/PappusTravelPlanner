@@ -1,7 +1,7 @@
-1.15.0:
-• GPS-Track auf der Karte der Reise aufzeichnen, auch bei ausgeschaltetem Bildschirm
-• Aufzeichnung den Einträgen der Reise zuordnen, mit Ist-Zeiten
-• Kalender in Monaten mit Zeitumstellung korrigiert
-• Verspätungen über Mitternacht in den Suchergebnissen richtig angezeigt
-• Verbindungssuche übernimmt die schon eingetragenen Stationen
-• Die Web-App lädt ihre Schrift nicht mehr von Google
+1.16.0:
+• Verbindungen öffnen sich in einer eigenen Ansicht mit Karte der Strecke und aller Halte
+• Geschätzte Position der Züge auf der Linie und auf der Karte
+• Der ganze Laufweg eines Zuges, auch vor dem Einstieg und nach dem Ausstieg
+• Reise auf neue Termine duplizieren oder Einträge mit dem Startdatum verschieben
+• Mehr Kartenstile und Overlays, darunter ÖPNVKarte für den Nahverkehr
+• App stürzt beim Öffnen großer Reisedateien aus dem Dateimanager nicht mehr ab
