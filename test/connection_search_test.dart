@@ -238,6 +238,14 @@ class _FakeSearch implements TransportSearch {
   Future<List<TransportPlace>> searchPlaces(String query) async => [_place];
 
   @override
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  }) => throw UnimplementedError();
+
+  @override
   Future<List<TripStop>> tripStops(String tripId) => throw UnimplementedError();
 }
 

@@ -5,6 +5,9 @@ exact commits.
 
 ## Unreleased
 
+- **Live times work for connections imported long before the trip.** A connection the
+  timetable has since renumbered internally is found again by its train and departure time
+  instead of being reported as unavailable.
 - **A journey shows where its trains come from and go on to.** On an imported leg,
   *Show the whole route* loads the stops before you board and after you get off, and
   refreshing the live times keeps them current.

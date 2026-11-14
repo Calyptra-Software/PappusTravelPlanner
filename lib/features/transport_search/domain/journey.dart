@@ -204,6 +204,29 @@ class TripStop {
   final bool cancelled;
 }
 
+/// One departure on a stop's board, as the router lists the services leaving
+/// it around a time — what an imported leg is found again by once the router
+/// has reissued its trip ids (see `relocatedTripId`).
+class StopDeparture {
+  const StopDeparture({
+    required this.tripId,
+    required this.name,
+    required this.scheduledDeparture,
+    this.timeZone,
+  });
+
+  /// The router's id for this run, current as of the timetable it now holds.
+  final String tripId;
+
+  /// The service's label, read the way a leg's `line` is (`ICE 585`,
+  /// `RB31 (81617)`), so it compares with what an import stored as the title.
+  final String name;
+
+  /// The planned departure, a UTC instant like every other time here.
+  final DateTime scheduledDeparture;
+  final String? timeZone;
+}
+
 /// The journeys found, plus the handles that fetch the ones either side.
 ///
 /// A plan query is answered with the options in a **time window** around the

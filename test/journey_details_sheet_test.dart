@@ -63,6 +63,14 @@ ItineraryItem _leg({
 /// trip it is asked about is gone.
 class _ForgetfulSearch implements TransportSearch {
   @override
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  }) => throw UnimplementedError();
+
+  @override
   Future<List<TripStop>> tripStops(String tripId) async =>
       throw const TransportSearchException(
         'MOTIS request failed (404)',

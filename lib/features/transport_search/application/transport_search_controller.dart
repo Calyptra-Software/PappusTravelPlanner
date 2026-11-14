@@ -6,10 +6,13 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/stopovers.dart';
 import '../data/journey_mapper.dart';
 import '../data/live_refresh.dart';
+import '../data/motis_client.dart' show TransportSearchException;
+import '../data/trip_relocation.dart';
 import '../../trips/planned_journey.dart';
 import '../domain/journey.dart';
 import '../domain/journey_ends.dart';
 import 'journey_search_options_provider.dart';
+import 'transport_search.dart';
 import 'transport_search_providers.dart';
 
 final transportSearchControllerProvider = Provider<TransportSearchController>(
@@ -289,9 +292,7 @@ class TransportSearchController {
       return LegRefresh.nothing;
     }
 
-    final stops = await _ref
-        .read(transportSearchProvider)
-        .tripStops(sourceTripId);
+    final stops = await _tripStopsOf(item, sourceTripId);
     // The same answer names every stop of the run, so the stops outside the
     // leg are kept current too, whatever the times turn out to say: a train
     // that runs tomorrow has no live times yet, and still has a run.
@@ -346,10 +347,61 @@ class TransportSearchController {
         item.endMinutes == null) {
       return false;
     }
-    final stops = await _ref
-        .read(transportSearchProvider)
-        .tripStops(sourceTripId);
+    final stops = await _tripStopsOf(item, sourceTripId);
     return _storeRunStops(item, stops);
+  }
+
+  /// The live stops of the run [item] is, asked by its stored [sourceTripId]
+  /// and, when the router no longer knows that id, by the one it has now.
+  ///
+  /// The router reissues trip ids with every timetable it loads, so a leg
+  /// imported a while ago answers 404 although its train runs as planned. Then
+  /// the leg is looked up on its boarding station's departure board
+  /// ([relocatedTripId]) and, if exactly one departure is unmistakably it, the
+  /// new id is stored on the leg and asked instead, so the next tap goes
+  /// straight there. If not, the 404 goes to the caller as it came: the
+  /// service is not in the timetable as the leg describes it.
+  Future<List<TripStop>> _tripStopsOf(
+    ItineraryItem item,
+    String sourceTripId,
+  ) async {
+    final search = _ref.read(transportSearchProvider);
+    try {
+      return await search.tripStops(sourceTripId);
+    } on TransportSearchException catch (e) {
+      if (e.statusCode != 404) rethrow;
+      final relocated = await _relocate(item, search);
+      if (relocated == null || relocated == sourceTripId) rethrow;
+      await _ref.read(repositoryProvider).setSourceTripId(item.id, relocated);
+      return search.tripStops(relocated);
+    }
+  }
+
+  /// The current trip id of [item]'s run, read off the departure board where
+  /// it boards, or null when the leg lacks what it would be found by (where it
+  /// boards, when, and its line) or the board does not settle it.
+  Future<String?> _relocate(ItineraryItem item, TransportSearch search) async {
+    final lat = item.fromLat;
+    final lon = item.fromLon;
+    final start = item.startMinutes;
+    if (lat == null || lon == null || start == null) return null;
+    final departures = await search.departures(
+      lat: lat,
+      lon: lon,
+      from: relocationWindowStart(
+        date: item.date,
+        startMinutes: start,
+        stopovers: decodeStopovers(item.stopovers),
+        run: decodeRunStops(item.runStops),
+      ),
+      window: kRelocationSlack * 2,
+    );
+    return relocatedTripId(
+      departures: departures,
+      line: item.title,
+      date: item.date,
+      startMinutes: start,
+    );
   }
 
   /// Reads the run around [item] off its trip's [stops] and writes it, unless
