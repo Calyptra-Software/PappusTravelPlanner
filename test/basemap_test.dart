@@ -71,6 +71,19 @@ void main() {
       expect(basemapById('from-a-newer-version'), same(kDefaultBasemap));
       expect(basemapById('cyclosm'), same(cyclOsmBasemap));
     });
+
+    // A server without `Access-Control-Allow-Origin` leaves a web page's map
+    // grey, so the web build neither offers nor restores such a style.
+    test('the web build offers only styles a page may read', () {
+      expect(basemapsFor(web: false), kBasemaps);
+      expect(
+        basemapsFor(web: true),
+        isNot(contains(same(publicTransportBasemap))),
+      );
+      expect(basemapsFor(web: true), contains(same(kDefaultBasemap)));
+      expect(basemapById('oepnvkarte'), same(publicTransportBasemap));
+      expect(basemapById('oepnvkarte', web: true), same(kDefaultBasemap));
+    });
   });
 
   group('overlays', () {
@@ -245,6 +258,9 @@ void main() {
     }
 
     await tester.tap(find.text('OpenTopoMap'));
+    await tester.pumpAndSettle();
+    // Past the bottom of the test's screen since the fifth style.
+    await tester.ensureVisible(find.text('OpenRailwayMap'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('OpenRailwayMap'));
     await tester.pumpAndSettle();

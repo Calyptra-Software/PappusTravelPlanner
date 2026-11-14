@@ -1295,6 +1295,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mapStyleMuted => 'A calmer, more muted look';
 
   @override
+  String get mapStylePublicTransport => 'Public transport, with line numbers';
+
+  @override
   String get mapOverlays => 'Show on top';
 
   @override

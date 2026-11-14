@@ -2230,6 +2230,12 @@ abstract class AppLocalizations {
   /// **'A calmer, more muted look'**
   String get mapStyleMuted;
 
+  /// Line under the ÖPNVKarte entry in the list of map styles: a map showing bus, tram, subway and train lines labeled with their numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Public transport, with line numbers'**
+  String get mapStylePublicTransport;
+
   /// Heading of the optional layers drawn over any map style, in the map style sheet.
   ///
   /// In en, this message translates to:
