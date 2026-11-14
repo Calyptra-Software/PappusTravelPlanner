@@ -2540,6 +2540,17 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _runStopsMeta = const VerificationMeta(
+    'runStops',
+  );
+  @override
+  late final GeneratedColumn<String> runStops = GeneratedColumn<String>(
+    'run_stops',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2572,6 +2583,7 @@ class $ItineraryItemsTable extends ItineraryItems
     fromPlaceId,
     toPlaceId,
     stopovers,
+    runStops,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2778,6 +2790,12 @@ class $ItineraryItemsTable extends ItineraryItems
         stopovers.isAcceptableOrUnknown(data['stopovers']!, _stopoversMeta),
       );
     }
+    if (data.containsKey('run_stops')) {
+      context.handle(
+        _runStopsMeta,
+        runStops.isAcceptableOrUnknown(data['run_stops']!, _runStopsMeta),
+      );
+    }
     return context;
   }
 
@@ -2910,6 +2928,10 @@ class $ItineraryItemsTable extends ItineraryItems
       stopovers: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}stopovers'],
+      ),
+      runStops: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}run_stops'],
       ),
     );
   }
@@ -3068,6 +3090,14 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   /// rather than in a table of their own so they are read offline, with the row
   /// they belong to, long after the routing service is out of reach.
   final String? stopovers;
+
+  /// The rest of the vehicle's run around this leg (the stops before boarding
+  /// and after getting off), encoded by `encodeRunStops`. Null until the run is
+  /// asked for: the search that imports a leg does not return it, so it is
+  /// written by the leg's live-times refresh or on request from the journey
+  /// view. A separate column rather than more [stopovers], which an older app
+  /// would read as stops between the ends (see `RunStops`).
+  final String? runStops;
   const ItineraryItem({
     required this.id,
     required this.tripId,
@@ -3099,6 +3129,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     this.fromPlaceId,
     this.toPlaceId,
     this.stopovers,
+    this.runStops,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3187,6 +3218,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     if (!nullToAbsent || stopovers != null) {
       map['stopovers'] = Variable<String>(stopovers);
     }
+    if (!nullToAbsent || runStops != null) {
+      map['run_stops'] = Variable<String>(runStops);
+    }
     return map;
   }
 
@@ -3262,6 +3296,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       stopovers: stopovers == null && nullToAbsent
           ? const Value.absent()
           : Value(stopovers),
+      runStops: runStops == null && nullToAbsent
+          ? const Value.absent()
+          : Value(runStops),
     );
   }
 
@@ -3305,6 +3342,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       fromPlaceId: serializer.fromJson<String?>(json['fromPlaceId']),
       toPlaceId: serializer.fromJson<String?>(json['toPlaceId']),
       stopovers: serializer.fromJson<String?>(json['stopovers']),
+      runStops: serializer.fromJson<String?>(json['runStops']),
     );
   }
   @override
@@ -3345,6 +3383,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'fromPlaceId': serializer.toJson<String?>(fromPlaceId),
       'toPlaceId': serializer.toJson<String?>(toPlaceId),
       'stopovers': serializer.toJson<String?>(stopovers),
+      'runStops': serializer.toJson<String?>(runStops),
     };
   }
 
@@ -3379,6 +3418,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<String?> fromPlaceId = const Value.absent(),
     Value<String?> toPlaceId = const Value.absent(),
     Value<String?> stopovers = const Value.absent(),
+    Value<String?> runStops = const Value.absent(),
   }) => ItineraryItem(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
@@ -3416,6 +3456,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     fromPlaceId: fromPlaceId.present ? fromPlaceId.value : this.fromPlaceId,
     toPlaceId: toPlaceId.present ? toPlaceId.value : this.toPlaceId,
     stopovers: stopovers.present ? stopovers.value : this.stopovers,
+    runStops: runStops.present ? runStops.value : this.runStops,
   );
   ItineraryItem copyWithCompanion(ItineraryItemsCompanion data) {
     return ItineraryItem(
@@ -3473,6 +3514,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           : this.fromPlaceId,
       toPlaceId: data.toPlaceId.present ? data.toPlaceId.value : this.toPlaceId,
       stopovers: data.stopovers.present ? data.stopovers.value : this.stopovers,
+      runStops: data.runStops.present ? data.runStops.value : this.runStops,
     );
   }
 
@@ -3508,7 +3550,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('sourceTripId: $sourceTripId, ')
           ..write('fromPlaceId: $fromPlaceId, ')
           ..write('toPlaceId: $toPlaceId, ')
-          ..write('stopovers: $stopovers')
+          ..write('stopovers: $stopovers, ')
+          ..write('runStops: $runStops')
           ..write(')'))
         .toString();
   }
@@ -3545,6 +3588,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     fromPlaceId,
     toPlaceId,
     stopovers,
+    runStops,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -3579,7 +3623,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.sourceTripId == this.sourceTripId &&
           other.fromPlaceId == this.fromPlaceId &&
           other.toPlaceId == this.toPlaceId &&
-          other.stopovers == this.stopovers);
+          other.stopovers == this.stopovers &&
+          other.runStops == this.runStops);
 }
 
 class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
@@ -3613,6 +3658,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<String?> fromPlaceId;
   final Value<String?> toPlaceId;
   final Value<String?> stopovers;
+  final Value<String?> runStops;
   const ItineraryItemsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
@@ -3644,6 +3690,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.fromPlaceId = const Value.absent(),
     this.toPlaceId = const Value.absent(),
     this.stopovers = const Value.absent(),
+    this.runStops = const Value.absent(),
   });
   ItineraryItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -3676,6 +3723,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.fromPlaceId = const Value.absent(),
     this.toPlaceId = const Value.absent(),
     this.stopovers = const Value.absent(),
+    this.runStops = const Value.absent(),
   }) : tripId = Value(tripId),
        date = Value(date),
        kind = Value(kind);
@@ -3710,6 +3758,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<String>? fromPlaceId,
     Expression<String>? toPlaceId,
     Expression<String>? stopovers,
+    Expression<String>? runStops,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3743,6 +3792,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (fromPlaceId != null) 'from_place_id': fromPlaceId,
       if (toPlaceId != null) 'to_place_id': toPlaceId,
       if (stopovers != null) 'stopovers': stopovers,
+      if (runStops != null) 'run_stops': runStops,
     });
   }
 
@@ -3777,6 +3827,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<String?>? fromPlaceId,
     Value<String?>? toPlaceId,
     Value<String?>? stopovers,
+    Value<String?>? runStops,
   }) {
     return ItineraryItemsCompanion(
       id: id ?? this.id,
@@ -3809,6 +3860,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       fromPlaceId: fromPlaceId ?? this.fromPlaceId,
       toPlaceId: toPlaceId ?? this.toPlaceId,
       stopovers: stopovers ?? this.stopovers,
+      runStops: runStops ?? this.runStops,
     );
   }
 
@@ -3909,6 +3961,9 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (stopovers.present) {
       map['stopovers'] = Variable<String>(stopovers.value);
     }
+    if (runStops.present) {
+      map['run_stops'] = Variable<String>(runStops.value);
+    }
     return map;
   }
 
@@ -3944,7 +3999,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('sourceTripId: $sourceTripId, ')
           ..write('fromPlaceId: $fromPlaceId, ')
           ..write('toPlaceId: $toPlaceId, ')
-          ..write('stopovers: $stopovers')
+          ..write('stopovers: $stopovers, ')
+          ..write('runStops: $runStops')
           ..write(')'))
         .toString();
   }
@@ -13668,6 +13724,7 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<String?> fromPlaceId,
       Value<String?> toPlaceId,
       Value<String?> stopovers,
+      Value<String?> runStops,
     });
 typedef $$ItineraryItemsTableUpdateCompanionBuilder =
     ItineraryItemsCompanion Function({
@@ -13701,6 +13758,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<String?> fromPlaceId,
       Value<String?> toPlaceId,
       Value<String?> stopovers,
+      Value<String?> runStops,
     });
 
 final class $$ItineraryItemsTableReferences
@@ -13975,6 +14033,11 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<String> get stopovers => $composableBuilder(
     column: $table.stopovers,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get runStops => $composableBuilder(
+    column: $table.runStops,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14285,6 +14348,11 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get runStops => $composableBuilder(
+    column: $table.runStops,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -14487,6 +14555,9 @@ class $$ItineraryItemsTableAnnotationComposer
 
   GeneratedColumn<String> get stopovers =>
       $composableBuilder(column: $table.stopovers, builder: (column) => column);
+
+  GeneratedColumn<String> get runStops =>
+      $composableBuilder(column: $table.runStops, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -14724,6 +14795,7 @@ class $$ItineraryItemsTableTableManager
                 Value<String?> fromPlaceId = const Value.absent(),
                 Value<String?> toPlaceId = const Value.absent(),
                 Value<String?> stopovers = const Value.absent(),
+                Value<String?> runStops = const Value.absent(),
               }) => ItineraryItemsCompanion(
                 id: id,
                 tripId: tripId,
@@ -14755,6 +14827,7 @@ class $$ItineraryItemsTableTableManager
                 fromPlaceId: fromPlaceId,
                 toPlaceId: toPlaceId,
                 stopovers: stopovers,
+                runStops: runStops,
               ),
           createCompanionCallback:
               ({
@@ -14788,6 +14861,7 @@ class $$ItineraryItemsTableTableManager
                 Value<String?> fromPlaceId = const Value.absent(),
                 Value<String?> toPlaceId = const Value.absent(),
                 Value<String?> stopovers = const Value.absent(),
+                Value<String?> runStops = const Value.absent(),
               }) => ItineraryItemsCompanion.insert(
                 id: id,
                 tripId: tripId,
@@ -14819,6 +14893,7 @@ class $$ItineraryItemsTableTableManager
                 fromPlaceId: fromPlaceId,
                 toPlaceId: toPlaceId,
                 stopovers: stopovers,
+                runStops: runStops,
               ),
           withReferenceMapper: (p0) => p0
               .map(

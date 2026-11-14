@@ -375,6 +375,8 @@ class TripRepository {
     actualEnd: actualEnd,
     stopovers: stopovers,
   );
+  Future<void> setRunStops(int itemId, String? runStops) =>
+      _db.itineraryDao.setRunStops(itemId, runStops);
   // Routes through GroupDao so deleting a grouped item also tidies its group
   // (dissolving a group left with <2 members, preserving its shared costs).
   Future<void> deleteItem(int id) => _db.groupDao.deleteItem(id);

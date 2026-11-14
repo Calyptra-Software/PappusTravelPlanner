@@ -161,6 +161,7 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
           actualStartMinutes: const Value(null),
           actualEndMinutes: const Value(null),
           stopovers: Value(stopoversWithoutLive(item.stopovers)),
+          runStops: Value(runStopsWithoutLive(item.runStops)),
         );
       }
       final copy = await into(itineraryItems).insert(entry);
@@ -331,6 +332,7 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
               actualStartMinutes: const Value(null),
               actualEndMinutes: const Value(null),
               stopovers: Value(stopoversWithoutLive(item.stopovers)),
+              runStops: Value(runStopsWithoutLive(item.runStops)),
             ),
           );
         }

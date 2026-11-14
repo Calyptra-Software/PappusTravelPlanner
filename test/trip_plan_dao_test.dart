@@ -187,6 +187,13 @@ void main() {
               Stopover(name: 'Y', minutes: 660, cancelled: true),
             ]),
           ),
+          runStops: Value(
+            encodeRunStops(
+              const RunStops(
+                before: [Stopover(name: 'W', minutes: 570, delayMinutes: 9)],
+              ),
+            ),
+          ),
         ),
       );
 
@@ -206,6 +213,10 @@ void main() {
         Stopover(name: 'X', minutes: 630),
         Stopover(name: 'Y', minutes: 660),
       ]);
+      expect(
+        decodeRunStops(leg.runStops),
+        const RunStops(before: [Stopover(name: 'W', minutes: 570)]),
+      );
       // …but not the one dated run it was, nor how that run went.
       expect(leg.sourceTripId, isNull);
       expect(leg.actualStartMinutes, isNull);

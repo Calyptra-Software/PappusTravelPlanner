@@ -9,6 +9,13 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/timeline_tile.dart';
+import 'package:travelplanner/features/transport_search/application/transport_search.dart';
+import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
+import 'package:travelplanner/features/transport_search/data/motis_client.dart';
+import 'package:travelplanner/features/transport_search/domain/journey.dart';
+import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
+import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
+import 'package:travelplanner/features/transport_search/domain/via_stop.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_details_sheet.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
@@ -29,6 +36,7 @@ ItineraryItem _leg({
   int? groupId = 1,
   String? notes,
   String? stopovers,
+  String? runStops,
   String? sourceTripId,
 }) => ItineraryItem(
   id: id,
@@ -47,8 +55,34 @@ ItineraryItem _leg({
   fromLocation: from,
   toLocation: to,
   stopovers: stopovers,
+  runStops: runStops,
   sourceTripId: sourceTripId,
 );
+
+/// A router that has reissued its trip ids since the leg was imported: every
+/// trip it is asked about is gone.
+class _ForgetfulSearch implements TransportSearch {
+  @override
+  Future<List<TripStop>> tripStops(String tripId) async =>
+      throw const TransportSearchException(
+        'MOTIS request failed (404)',
+        statusCode: 404,
+      );
+
+  @override
+  Future<List<TransportPlace>> searchPlaces(String query) =>
+      throw UnimplementedError();
+  @override
+  Future<JourneyResults> journeys({
+    required String fromId,
+    required String toId,
+    required DateTime time,
+    bool arriveBy = false,
+    JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
+    String? pageCursor,
+  }) => throw UnimplementedError();
+}
 
 /// Hamburg → Basel as the import wrote it: an ICE calling at three places, a
 /// walk across Frankfurt, then a second ICE — all in one group.
@@ -90,7 +124,11 @@ final _journey = [
   ),
 ];
 
-Future<void> _pumpSheet(WidgetTester tester, List<ItineraryItem> items) async {
+Future<void> _pumpSheet(
+  WidgetTester tester,
+  List<ItineraryItem> items, {
+  TransportSearch? search,
+}) async {
   tester.view.physicalSize = const Size(1000, 2400);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
@@ -101,6 +139,7 @@ Future<void> _pumpSheet(WidgetTester tester, List<ItineraryItem> items) async {
         transportModesByIdProvider.overrideWith(
           (ref) => {_train.id: _train, _walk.id: _walk},
         ),
+        if (search != null) transportSearchProvider.overrideWithValue(search),
       ],
       child: MaterialApp(
         localizationsDelegates: const [
@@ -189,6 +228,70 @@ void main() {
 
     // One per service; the walk transfer has no trip to ask about.
     expect(find.byIcon(Icons.sync), findsNWidgets(2));
+  });
+
+  group('the run around a leg', () {
+    // ICE 507 as the import wrote it, with its run since loaded: it set out
+    // from Kiel the evening before and goes on past Frankfurt to München.
+    final withRun = _journey.first.copyWith(
+      runStops: Value(
+        encodeRunStops(
+          const RunStops(
+            before: [
+              Stopover(name: 'Kiel Hbf', minutes: 1410, dayOffset: -1),
+              Stopover(name: 'Neumünster', minutes: 1440 - 5, dayOffset: -1),
+            ],
+            after: [
+              Stopover(name: 'Mannheim Hbf', minutes: 630, delayMinutes: 3),
+              Stopover(name: 'München Hbf', minutes: 800),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    testWidgets('is folded on either side of the leg, named by its ends', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, [withRun]);
+
+      expect(find.text('From Kiel Hbf · 2 earlier stops'), findsOneWidget);
+      expect(find.text('To München Hbf · 2 more stops'), findsOneWidget);
+      expect(find.text('Neumünster'), findsNothing);
+
+      await tester.tap(find.text('From Kiel Hbf · 2 earlier stops'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Neumünster'), findsOneWidget);
+      // The evening before the leg's own day is said, as the morning after is.
+      expect(find.text(' -1'), findsNWidgets(2));
+      // Loaded already, so nothing is offered to load it.
+      expect(find.text('Show the whole route'), findsNothing);
+    });
+
+    testWidgets('is offered to load on a service, never on a walk', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, _journey);
+
+      // Both trains have a trip to ask; the walk between them does not.
+      expect(find.text('Show the whole route'), findsNWidgets(2));
+    });
+
+    testWidgets('a service gone from the timetable is said beside the button', (
+      tester,
+    ) async {
+      await _pumpSheet(tester, [_journey.last], search: _ForgetfulSearch());
+
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+
+      // Inside the sheet, where a snackbar would be drawn behind it.
+      expect(
+        find.text('This service is no longer in the current timetable'),
+        findsOneWidget,
+      );
+    });
   });
 
   group('where the button is offered', () {

@@ -2204,6 +2204,38 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String connectionStopsBefore(String origin, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count earlier stops',
+      one: '1 earlier stop',
+    );
+    return 'From $origin · $_temp0';
+  }
+
+  @override
+  String connectionStopsAfter(String terminus, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count more stops',
+      one: '1 more stop',
+    );
+    return 'To $terminus · $_temp0';
+  }
+
+  @override
+  String get connectionShowRun => 'Show the whole route';
+
+  @override
+  String get connectionRunNotFound =>
+      'This service is no longer in the current timetable';
+
+  @override
+  String get connectionRunError => 'Couldn\'t load the route';
+
+  @override
   String connectionChangePlace(String place) {
     return '在 $place 换乘';
   }

@@ -298,6 +298,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             toLat: i.toLat,
             toLon: i.toLon,
             stopovers: i.stopovers,
+            runStops: i.runStops,
             fromPlaceId: i.fromPlaceId,
             toPlaceId: i.toPlaceId,
             // The line the entry followed. Read in one query above rather than
@@ -509,6 +510,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             toLat: Value(i.toLat),
             toLon: Value(i.toLon),
             stopovers: Value(i.stopovers),
+            runStops: Value(i.runStops),
             fromPlaceId: Value(i.fromPlaceId),
             toPlaceId: Value(i.toPlaceId),
           ),

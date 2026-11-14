@@ -482,6 +482,7 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
           fromPlaceId: Value(_isTransport ? _fromPlaceId : null),
           toPlaceId: Value(_isTransport ? _toPlaceId : null),
           stopovers: Value(_isTransport ? base.stopovers : null),
+          runStops: Value(_isTransport ? base.runStops : null),
         ),
       );
     } else {

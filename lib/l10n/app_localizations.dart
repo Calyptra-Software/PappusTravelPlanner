@@ -3772,6 +3772,36 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 stop canceled} other{{count} stops canceled}}'**
   String connectionStopsCancelled(int count);
 
+  /// Folded list of the stops a vehicle calls at before the traveler boards; origin is where its run starts.
+  ///
+  /// In en, this message translates to:
+  /// **'From {origin} · {count, plural, =1{1 earlier stop} other{{count} earlier stops}}'**
+  String connectionStopsBefore(String origin, int count);
+
+  /// Folded list of the stops a vehicle calls at after the traveler gets off; terminus is where its run ends.
+  ///
+  /// In en, this message translates to:
+  /// **'To {terminus} · {count, plural, =1{1 more stop} other{{count} more stops}}'**
+  String connectionStopsAfter(String terminus, int count);
+
+  /// Button on an imported leg that loads every stop of the vehicle's run, including those before boarding and after getting off.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the whole route'**
+  String get connectionShowRun;
+
+  /// No description provided for @connectionRunNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This service is no longer in the current timetable'**
+  String get connectionRunNotFound;
+
+  /// No description provided for @connectionRunError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the route'**
+  String get connectionRunError;
+
   /// No description provided for @connectionChangePlace.
   ///
   /// In en, this message translates to:

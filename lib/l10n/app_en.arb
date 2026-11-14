@@ -1304,6 +1304,28 @@
       "count": { "type": "int" }
     }
   },
+  "connectionStopsBefore": "From {origin} · {count, plural, =1{1 earlier stop} other{{count} earlier stops}}",
+  "@connectionStopsBefore": {
+    "description": "Folded list of the stops a vehicle calls at before the traveler boards; origin is where its run starts.",
+    "placeholders": {
+      "origin": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "connectionStopsAfter": "To {terminus} · {count, plural, =1{1 more stop} other{{count} more stops}}",
+  "@connectionStopsAfter": {
+    "description": "Folded list of the stops a vehicle calls at after the traveler gets off; terminus is where its run ends.",
+    "placeholders": {
+      "terminus": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "connectionShowRun": "Show the whole route",
+  "@connectionShowRun": {
+    "description": "Button on an imported leg that loads every stop of the vehicle's run, including those before boarding and after getting off."
+  },
+  "connectionRunNotFound": "This service is no longer in the current timetable",
+  "connectionRunError": "Couldn't load the route",
   "connectionChangePlace": "Change in {place}",
   "@connectionChangePlace": {
     "placeholders": {

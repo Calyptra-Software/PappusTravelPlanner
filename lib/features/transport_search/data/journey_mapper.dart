@@ -191,16 +191,25 @@ List<Stopover> _mapStops(JourneyLeg leg, DateTime legDate) => [
 
 Stopover _mapStop(LegStop stop, DateTime legDate) {
   final local = localParts(stop.scheduledDeparture, stop.timeZone);
+  final arrival = stop.scheduledArrival;
   return Stopover(
     name: stop.name,
     minutes: local.minutes,
-    dayOffset: local.date.difference(legDate).inDays,
+    // Calendar days: across the spring change a night is 23 hours, which
+    // `difference().inDays` reads as none.
+    dayOffset: daysBetween(legDate, local.date),
     // A skipped stop is not a punctual one: the feed goes on repeating its
     // planned departure, which would otherwise import as "(+0)".
     delayMinutes: stop.cancelled
         ? null
         : stop.actualDeparture?.difference(stop.scheduledDeparture).inMinutes,
     cancelled: stop.cancelled,
+    dwellMinutes: arrival == null
+        ? null
+        : stop.scheduledDeparture.difference(arrival).inMinutes,
+    lat: stop.lat,
+    lon: stop.lon,
+    timeZone: stop.timeZone,
   );
 }
 

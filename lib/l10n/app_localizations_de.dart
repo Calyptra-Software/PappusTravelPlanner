@@ -2256,6 +2256,38 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String connectionStopsBefore(String origin, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Halte vorher',
+      one: '1 Halt vorher',
+    );
+    return 'Von $origin · $_temp0';
+  }
+
+  @override
+  String connectionStopsAfter(String terminus, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count weitere Halte',
+      one: '1 weiterer Halt',
+    );
+    return 'Bis $terminus · $_temp0';
+  }
+
+  @override
+  String get connectionShowRun => 'Gesamten Fahrtverlauf anzeigen';
+
+  @override
+  String get connectionRunNotFound =>
+      'Diese Fahrt steht nicht mehr im aktuellen Fahrplan';
+
+  @override
+  String get connectionRunError => 'Fahrtverlauf konnte nicht geladen werden';
+
+  @override
   String connectionChangePlace(String place) {
     return 'Umstieg in $place';
   }
