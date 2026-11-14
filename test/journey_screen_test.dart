@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/transport_search/data/run_shape_cache.dart';
+import 'package:travelplanner/data/database/track_points.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/widgets/timeline_tile.dart';
 import 'package:travelplanner/features/transport_search/application/transport_search.dart';
@@ -68,6 +70,49 @@ ItineraryItem _leg({
   sourceTripId: sourceTripId,
 );
 
+/// A router that counts what it is asked and answers nothing: for the tests
+/// that must send no request at all.
+class _CountingSearch implements TransportSearch {
+  int requests = 0;
+
+  @override
+  Future<List<StopDeparture>> departures({
+    required double lat,
+    required double lon,
+    required DateTime from,
+    required Duration window,
+  }) async {
+    requests++;
+    return const [];
+  }
+
+  @override
+  Future<TripRun> tripRun(String tripId) async {
+    requests++;
+    return const TripRun(stops: []);
+  }
+
+  @override
+  Future<List<TripStop>> tripStops(String tripId) async {
+    requests++;
+    return const [];
+  }
+
+  @override
+  Future<List<TransportPlace>> searchPlaces(String query) =>
+      throw UnimplementedError();
+  @override
+  Future<JourneyResults> journeys({
+    required String fromId,
+    required String toId,
+    required DateTime time,
+    bool arriveBy = false,
+    JourneySearchOptions options = const JourneySearchOptions(),
+    ViaStops via = ViaStops.none,
+    String? pageCursor,
+  }) => throw UnimplementedError();
+}
+
 /// A router that has reissued its trip ids since the leg was imported: every
 /// trip it is asked about is gone.
 class _ForgetfulSearch implements TransportSearch {
@@ -78,6 +123,13 @@ class _ForgetfulSearch implements TransportSearch {
     required DateTime from,
     required Duration window,
   }) => throw UnimplementedError();
+
+  @override
+  Future<TripRun> tripRun(String tripId) async =>
+      throw const TransportSearchException(
+        'MOTIS request failed (404)',
+        statusCode: 404,
+      );
 
   @override
   Future<List<TripStop>> tripStops(String tripId) async =>
@@ -148,6 +200,7 @@ Future<void> _pumpSheet(
   String? label = 'To Basel',
   DateTime? now,
   Map<int, List<TrackLine>> tracks = const {},
+  RunShapeCache? runShapes,
 }) async {
   tester.view.physicalSize = const Size(1000, 2400);
   tester.view.devicePixelRatio = 1;
@@ -168,6 +221,7 @@ Future<void> _pumpSheet(
           },
           now: now,
           tracks: tracks,
+          runShapes: runShapes,
         ),
       ],
       child: MaterialApp(
@@ -283,11 +337,49 @@ void main() {
       ),
     );
 
-    testWidgets('is folded on either side of the leg, named by its ends', (
+    /// A cache already holding the ICE's route: what a run shown before
+    /// leaves behind, so showing it again asks nobody.
+    RunShapeCache cachedRoute() {
+      final cache = RunShapeCache(Future.value());
+      cache.write(
+        'trip-507',
+        encodeTrackPoints(const [
+          LatLng(54.31, 10.13),
+          LatLng(53.553, 10.007),
+          LatLng(50.107, 8.663),
+          LatLng(48.14, 11.56),
+        ], precision: kRoutedShapePrecision),
+        lastDay: DateTime(2026, 7, 27),
+      );
+      return cache;
+    }
+
+    testWidgets('is put away until asked for, though it is stored', (
       tester,
     ) async {
-      await _pumpSheet(tester, [withRun]);
+      await _pumpSheet(tester, [withRun], runShapes: cachedRoute());
 
+      expect(find.text('From Kiel Hbf · 2 earlier stops'), findsNothing);
+      // Offered all the same: the stored run is shown by the same button.
+      expect(find.text('Show the whole route'), findsOneWidget);
+    });
+
+    testWidgets('is folded on either side of the leg once asked for', (
+      tester,
+    ) async {
+      final search = _CountingSearch();
+      await _pumpSheet(
+        tester,
+        [withRun],
+        search: search,
+        runShapes: cachedRoute(),
+      );
+
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+
+      // Stored stops and a kept route: nobody was asked.
+      expect(search.requests, 0);
       expect(find.text('From Kiel Hbf · 2 earlier stops'), findsOneWidget);
       expect(find.text('To München Hbf · 2 more stops'), findsOneWidget);
       expect(find.text('Neumünster'), findsNothing);
@@ -298,13 +390,28 @@ void main() {
       expect(find.text('Neumünster'), findsOneWidget);
       // The evening before the leg's own day is said, as the morning after is.
       expect(find.text(' -1'), findsNWidgets(2));
-      // Loaded already, so nothing is offered to load it.
-      expect(find.text('Show the whole route'), findsNothing);
+      await settleTiles(tester);
     });
 
-    testWidgets('is offered to load on a service, never on a walk', (
-      tester,
-    ) async {
+    testWidgets('is put away again by the same button', (tester) async {
+      await _pumpSheet(
+        tester,
+        [withRun],
+        search: _CountingSearch(),
+        runShapes: cachedRoute(),
+      );
+
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hide the whole route'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('From Kiel Hbf · 2 earlier stops'), findsNothing);
+      expect(find.text('Show the whole route'), findsOneWidget);
+      await settleTiles(tester);
+    });
+
+    testWidgets('is offered on a service, never on a walk', (tester) async {
       await _pumpSheet(tester, _journey);
 
       // Both trains have a trip to ask; the walk between them does not.
@@ -319,11 +426,29 @@ void main() {
       await tester.tap(find.text('Show the whole route'));
       await tester.pumpAndSettle();
 
-      // Inside the sheet, where a snackbar would be drawn behind it.
+      // Inside the panel, where it was asked.
       expect(
         find.text('This service is no longer in the current timetable'),
         findsOneWidget,
       );
+      expect(find.text('Hide the whole route'), findsNothing);
+    });
+
+    testWidgets('stored stops without a route are shown, and say so', (
+      tester,
+    ) async {
+      // Offline: the stops are in the trip, the route is nowhere.
+      await _pumpSheet(tester, [withRun], search: _ForgetfulSearch());
+
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('From Kiel Hbf · 2 earlier stops'), findsOneWidget);
+      expect(
+        find.text("The route's path can't be loaded right now"),
+        findsOneWidget,
+      );
+      await settleTiles(tester);
     });
   });
 
@@ -361,7 +486,7 @@ void main() {
       expect(find.widgetWithText(AppBar, 'Journey'), findsOneWidget);
     });
 
-    testWidgets('draws the run outside the legs in the quiet grey', (
+    testWidgets('draws a shown run along its route, in the quiet grey', (
       tester,
     ) async {
       final withRun = _journey.first.copyWith(
@@ -384,18 +509,40 @@ void main() {
           ),
         ),
       );
-      await _pumpSheet(tester, [withRun]);
+      final cache = RunShapeCache(Future.value());
+      await cache.write(
+        'trip-507',
+        encodeTrackPoints(const [
+          LatLng(54.31, 10.13),
+          LatLng(54.0, 10.2),
+          LatLng(53.553, 10.007),
+          LatLng(50.107, 8.663),
+        ], precision: kRoutedShapePrecision),
+        lastDay: DateTime(2026, 7, 27),
+      );
+      await _pumpSheet(tester, [withRun], runShapes: cache);
 
-      final run = [
+      List<Polyline> runLines() => [
         for (final layer in tester.widgetList<PolylineLayer>(
           find.byWidgetPredicate((w) => w is PolylineLayer),
         ))
           for (final line in layer.polylines)
             if (line.color == kJourneyRunColor) line,
       ];
-      expect(run.single.points.first.latitude, 54.31);
-      // Joined to where the traveler boards.
-      expect(run.single.points.last.latitude, 53.553);
+      // Nothing outside the leg until it is asked for, and never a straight
+      // line from stop to stop.
+      expect(runLines(), isEmpty);
+
+      await tester.tap(find.text('Show the whole route'));
+      await tester.pumpAndSettle();
+
+      // Along the route, from Kiel to where the traveler boards.
+      expect(runLines().single.points, const [
+        LatLng(54.31, 10.13),
+        LatLng(54.0, 10.2),
+        LatLng(53.553, 10.007),
+      ]);
+      await settleTiles(tester);
     });
 
     /// ICE 507 placed on the map, Hamburg to Frankfurt.

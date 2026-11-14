@@ -68,6 +68,17 @@ List<TripStop> parseTripResponse(dynamic json) {
   ];
 }
 
+/// Parses the body of `GET /api/v6/trip` asked with its geometry: the stops as
+/// [parseTripResponse] reads them, and the route of the whole run.
+TripRun parseTripRun(dynamic json) {
+  final legs = (json as Map<String, dynamic>)['legs'] as List<dynamic>?;
+  final leg = legs == null || legs.isEmpty ? null : legs.first;
+  return TripRun(
+    stops: parseTripResponse(json),
+    shape: leg is Map<String, dynamic> ? _legShape(leg['legGeometry']) : null,
+  );
+}
+
 /// Parses the body of `GET /api/v6/stoptimes` — a departure board. An event
 /// with no planned departure (a service ending here) is not a departure and is
 /// left out, as is one without a trip id to ask about.

@@ -310,6 +310,17 @@ class MotisTransportSearch implements TransportSearch {
     return parseTripResponse(body);
   }
 
+  @override
+  Future<TripRun> tripRun(String tripId) async {
+    final body = await _get('/api/v6/trip', {
+      'tripId': tripId,
+      'language': language,
+      // The one call that wants the geometry: the run is to be drawn.
+      _detailedLegs: 'true',
+    });
+    return parseTripRun(body);
+  }
+
   /// How far from the given point a stop may be and still count as the
   /// station asked about, in meters. Small on purpose: the point is the stop
   /// an import stored, and `exactRadius=false` lets the router add what it

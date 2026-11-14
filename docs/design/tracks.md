@@ -175,7 +175,8 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   timetable just returned, and carrying the old line onto it would draw the old route under
   the new one and claim it was followed.
 - **A connection brings the route it takes, and says so by being dashed.** The search asks
-  the router for `legGeometry` (`detailedLegs=true` on `/plan` **only**), and the import
+  the router for `legGeometry` (`detailedLegs=true` on `/plan`, and on `/trip` only when a
+  run is asked to be shown, see `transport-search.md`), and the import
   writes each leg's polyline as a `TrackSource.routed` track — so a train draws along its
   line instead of as a chord across the country. The live refresh keeps `detailedLegs=false`
   and that is the point of sending it per call rather than as a constant: it is the button

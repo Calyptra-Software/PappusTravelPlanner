@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/format/civil_date.dart';
 import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/stopovers.dart';
@@ -331,28 +332,70 @@ class TransportSearchController {
     return LegRefresh.updated;
   }
 
-  /// Loads the rest of an imported leg's run (the stops before boarding and
-  /// after getting off) from its trip, and stores it on the leg. Returns
-  /// whether there was a run to store: false for a leg with no trip id or
-  /// times to find itself by, and for one the trip no longer lines up with. A
-  /// network failure propagates, as the refresh's does.
+  /// The rest of [item]'s run, for the journey screen to show: its stops,
+  /// stored on the leg, and its route, kept in [RunShapeCache] and never in the
+  /// database. Asked for by a tap, and the one thing that may send the request
+  /// for a route (about 62 KB for an ICE across Germany).
   ///
-  /// Writes nothing else. The same answer carries live times, but asking for
-  /// the stops is not asking to overwrite actual times someone may have typed
-  /// in; that stays the live-times button's act.
-  Future<bool> loadRunStops(ItineraryItem item) async {
+  /// At most one request, and none when both are already to hand: the stops in
+  /// the database and the route in the cache. Otherwise one `/trip` with the
+  /// geometry answers both, so the stops are written again too, where they
+  /// have changed; the actual times it carries are not, for the reason the
+  /// live-times button is a button of its own. An expired trip id is found
+  /// again on the departure board, as the refresh does it, since this too was
+  /// asked for.
+  ///
+  /// When the request fails and the stops are stored, those are shown without
+  /// a route rather than not at all ([RunShown.shape] null); when there are no
+  /// stops to fall back on, the failure goes to the caller.
+  Future<RunShown> showRun(ItineraryItem item) async {
+    final stored = decodeRunStops(item.runStops);
     final sourceTripId = item.sourceTripId;
     if (sourceTripId == null ||
         item.startMinutes == null ||
         item.endMinutes == null) {
-      return false;
+      return RunShown(stops: stored);
     }
-    final stops = await _tripStopsOf(item, sourceTripId);
-    return _storeRunStops(item, stops);
+    final cache = _ref.read(runShapeCacheProvider);
+    final cached = await cache.read(sourceTripId);
+    if (stored != null && cached != null) {
+      return RunShown(stops: stored, shape: cached);
+    }
+    try {
+      final (run, tripId) = await _askTrip(
+        item,
+        sourceTripId,
+        (search, id) => search.tripRun(id),
+      );
+      final stops = await _storeRunStops(item, run.stops) ?? stored;
+      final shape = run.shape;
+      if (shape != null) {
+        await cache.write(
+          tripId,
+          shape,
+          lastDay: addDays(item.date, item.endDayOffset),
+        );
+      }
+      return RunShown(stops: stops, shape: shape);
+    } on Exception {
+      if (stored == null) rethrow;
+      return RunShown(stops: stored);
+    }
   }
 
-  /// The live stops of the run [item] is, asked by its stored [sourceTripId]
-  /// and, when the router no longer knows that id, by the one it has now.
+  /// The live stops of the run [item] is; see [_askTrip].
+  Future<List<TripStop>> _tripStopsOf(
+    ItineraryItem item,
+    String sourceTripId,
+  ) async => (await _askTrip(
+    item,
+    sourceTripId,
+    (search, id) => search.tripStops(id),
+  )).$1;
+
+  /// Asks the router about the run [item] is, by its stored [sourceTripId]
+  /// and, when the router no longer knows that id, by the one it has now;
+  /// answers with what [ask] returned and the id it was asked under.
   ///
   /// The router reissues trip ids with every timetable it loads, so a leg
   /// imported a while ago answers 404 although its train runs as planned. Then
@@ -361,19 +404,20 @@ class TransportSearchController {
   /// new id is stored on the leg and asked instead, so the next tap goes
   /// straight there. If not, the 404 goes to the caller as it came: the
   /// service is not in the timetable as the leg describes it.
-  Future<List<TripStop>> _tripStopsOf(
+  Future<(T, String)> _askTrip<T>(
     ItineraryItem item,
     String sourceTripId,
+    Future<T> Function(TransportSearch search, String tripId) ask,
   ) async {
     final search = _ref.read(transportSearchProvider);
     try {
-      return await search.tripStops(sourceTripId);
+      return (await ask(search, sourceTripId), sourceTripId);
     } on TransportSearchException catch (e) {
       if (e.statusCode != 404) rethrow;
       final relocated = await _relocate(item, search);
       if (relocated == null || relocated == sourceTripId) rethrow;
       await _ref.read(repositoryProvider).setSourceTripId(item.id, relocated);
-      return search.tripStops(relocated);
+      return (await ask(search, relocated), relocated);
     }
   }
 
@@ -404,12 +448,16 @@ class TransportSearchController {
     );
   }
 
-  /// Reads the run around [item] off its trip's [stops] and writes it, unless
-  /// the two cannot be lined up, in which case what was stored stays.
-  Future<bool> _storeRunStops(ItineraryItem item, List<TripStop> stops) async {
+  /// Reads the run around [item] off its trip's [stops] and writes it where it
+  /// differs from what is stored, answering with the run; null, with what was
+  /// stored left as it was, when the two cannot be lined up.
+  Future<RunStops?> _storeRunStops(
+    ItineraryItem item,
+    List<TripStop> stops,
+  ) async {
     final start = item.startMinutes;
     final end = item.endMinutes;
-    if (start == null || end == null) return false;
+    if (start == null || end == null) return null;
     final run = runStopsAround(
       stops: stops,
       date: item.date,
@@ -419,12 +467,26 @@ class TransportSearchController {
       fromName: item.fromLocation ?? '',
       toName: item.toLocation ?? '',
     );
-    if (run == null) return false;
-    await _ref
-        .read(repositoryProvider)
-        .setRunStops(item.id, encodeRunStops(run));
-    return true;
+    if (run == null) return null;
+    final encoded = encodeRunStops(run);
+    // The stops of a run rarely change; a write that says nothing new would
+    // only have every screen reading the trip draw itself again.
+    if (encoded != item.runStops) {
+      await _ref.read(repositoryProvider).setRunStops(item.id, encoded);
+    }
+    return run;
   }
+}
+
+/// What [TransportSearchController.showRun] found: the run's [stops] (null
+/// when there are none to show), and its route at the router's precision (null
+/// when it could not be had: no network, or a service the router has no route
+/// for).
+class RunShown {
+  const RunShown({this.stops, this.shape});
+
+  final RunStops? stops;
+  final String? shape;
 }
 
 /// What asking a leg's trip for live information turned up.

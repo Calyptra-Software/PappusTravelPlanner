@@ -739,5 +739,8 @@ class _FakeSearch implements TransportSearch {
   }) => throw UnimplementedError();
 
   @override
+  Future<TripRun> tripRun(String tripId) => throw UnimplementedError();
+
+  @override
   Future<List<TripStop>> tripStops(String tripId) => throw UnimplementedError();
 }

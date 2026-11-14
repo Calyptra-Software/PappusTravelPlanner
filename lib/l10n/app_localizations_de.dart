@@ -2281,6 +2281,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get connectionShowRun => 'Gesamten Fahrtverlauf anzeigen';
 
   @override
+  String get connectionHideRun => 'Gesamten Fahrtverlauf ausblenden';
+
+  @override
+  String get connectionRunShapeUnavailable =>
+      'Der Streckenverlauf kann gerade nicht geladen werden';
+
+  @override
   String get connectionRunNotFound =>
       'Diese Fahrt steht nicht mehr im aktuellen Fahrplan';
 

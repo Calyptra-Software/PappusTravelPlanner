@@ -13,6 +13,7 @@ import 'package:travelplanner/features/transport_search/application/transport_se
 import 'package:travelplanner/features/transport_search/application/transport_search_providers.dart';
 import 'package:travelplanner/features/transport_search/data/motis_client.dart';
 import 'package:travelplanner/features/transport_search/data/motis_parser.dart';
+import 'package:travelplanner/features/transport_search/data/run_shape_cache.dart';
 import 'package:travelplanner/features/transport_search/domain/journey.dart';
 import 'package:travelplanner/features/transport_search/domain/journey_options.dart';
 import 'package:travelplanner/features/transport_search/domain/transport_place.dart';
@@ -46,6 +47,10 @@ class _ReloadedSearch implements TransportSearch {
   }
 
   @override
+  Future<TripRun> tripRun(String tripId) async =>
+      TripRun(stops: await tripStops(tripId), shape: 'route');
+
+  @override
   Future<List<TripStop>> tripStops(String tripId) async {
     askedTrips.add(tripId);
     if (tripId == currentId) return stops;
@@ -73,8 +78,15 @@ class _ReloadedSearch implements TransportSearch {
 /// A backend that only answers tripStops (all the refresh needs), from a fixed
 /// list of stops.
 class _FakeSearch implements TransportSearch {
-  _FakeSearch(this.stops);
+  _FakeSearch(this.stops, {this.shape, this.failure});
   final List<TripStop> stops;
+
+  /// The run's route, as `/trip` asked with its geometry would give it.
+  final String? shape;
+
+  /// What every request fails with, when set.
+  final Exception? failure;
+  int requests = 0;
 
   @override
   Future<List<StopDeparture>> departures({
@@ -85,7 +97,18 @@ class _FakeSearch implements TransportSearch {
   }) => throw UnimplementedError();
 
   @override
-  Future<List<TripStop>> tripStops(String tripId) async => stops;
+  Future<TripRun> tripRun(String tripId) async {
+    requests++;
+    if (failure case final failure?) throw failure;
+    return TripRun(stops: stops, shape: shape);
+  }
+
+  @override
+  Future<List<TripStop>> tripStops(String tripId) async {
+    requests++;
+    if (failure case final failure?) throw failure;
+    return stops;
+  }
 
   @override
   Future<List<TransportPlace>> searchPlaces(String query) =>
@@ -170,11 +193,18 @@ void main() {
     )..where((i) => i.id.equals(id))).getSingle();
   }
 
-  ProviderContainer containerWith(TransportSearch search) {
+  ProviderContainer containerWith(
+    TransportSearch search, {
+    RunShapeCache? cache,
+  }) {
     final c = ProviderContainer(
       overrides: [
         repositoryProvider.overrideWithValue(repo),
         transportSearchProvider.overrideWithValue(search),
+        // Memory only: the routes this test fetches go nowhere on disk.
+        runShapeCacheProvider.overrideWithValue(
+          cache ?? RunShapeCache(Future.value()),
+        ),
       ],
     );
     addTearDown(c.dispose);
@@ -372,46 +402,119 @@ void main() {
     expect(run.after.single.minutes, 17 * 60 + 30);
   });
 
-  test('loading the run writes the run and nothing else', () async {
-    // Someone typed in when the train really left; asking for the stops is not
-    // asking to overwrite that with the live figure.
-    final seeded = await seedLeg(sourceTripId: 'trip-1');
-    await db.itineraryDao.setLiveTimes(
-      seeded.id,
-      actualStart: 16 * 60 + 20,
-      actualEnd: null,
-      stopovers: null,
-    );
-    final item = await reread(seeded.id);
-    final controller = containerWith(
-      _FakeSearch(stopsWithRun()),
-    ).read(transportSearchControllerProvider);
+  group('showing the run around a leg', () {
+    test('one request brings its stops and its route', () async {
+      final item = await seedLeg(sourceTripId: 'trip-1');
+      final search = _FakeSearch(stopsWithRun(), shape: 'route');
+      final cache = RunShapeCache(Future.value());
+      final controller = containerWith(
+        search,
+        cache: cache,
+      ).read(transportSearchControllerProvider);
 
-    expect(await controller.loadRunStops(item), isTrue);
+      final shown = await controller.showRun(item);
 
-    final after = await reread(item.id);
-    expect(decodeRunStops(after.runStops)!.after.single.name, 'Terminus');
-    expect(after.actualStartMinutes, 16 * 60 + 20);
-  });
+      expect(shown.stops!.after.single.name, 'Terminus');
+      expect(shown.shape, 'route');
+      expect(search.requests, 1);
+      // The stops go to the trip; the route only to the cache.
+      final after = await reread(item.id);
+      expect(decodeRunStops(after.runStops)!.before.single.name, 'Origin');
+      expect(await cache.read('trip-1'), 'route');
+    });
 
-  test('a run that cannot be lined up with the leg is not stored', () async {
-    final item = await seedLeg(sourceTripId: 'trip-1');
-    final controller = containerWith(
-      _FakeSearch(cancelledStops().sublist(0, 1)),
-    ).read(transportSearchControllerProvider);
+    test('a run with both to hand sends nothing', () async {
+      final item = await seedLeg(sourceTripId: 'trip-1');
+      final search = _FakeSearch(stopsWithRun(), shape: 'route');
+      final controller = containerWith(
+        search,
+      ).read(transportSearchControllerProvider);
 
-    expect(await controller.loadRunStops(item), isFalse);
-    expect((await reread(item.id)).runStops, isNull);
-  });
+      await controller.showRun(item);
+      final again = await controller.showRun(await reread(item.id));
 
-  test('a leg with no source trip id has no run to load', () async {
-    final item = await seedLeg(sourceTripId: null);
-    final controller = containerWith(
-      _FakeSearch(stopsWithRun()),
-    ).read(transportSearchControllerProvider);
+      expect(again.shape, 'route');
+      expect(again.stops!.before.single.name, 'Origin');
+      expect(search.requests, 1);
+    });
 
-    expect(await controller.loadRunStops(item), isFalse);
-    expect((await reread(item.id)).runStops, isNull);
+    test('the request for the route leaves typed-in times alone', () async {
+      // Someone typed in when the train really left; asking for the run is not
+      // asking to overwrite that with the live figure the same answer carries.
+      final seeded = await seedLeg(sourceTripId: 'trip-1');
+      await db.itineraryDao.setLiveTimes(
+        seeded.id,
+        actualStart: 16 * 60 + 20,
+        actualEnd: null,
+        stopovers: null,
+      );
+      final item = await reread(seeded.id);
+      final controller = containerWith(
+        _FakeSearch(stopsWithRun(), shape: 'route'),
+      ).read(transportSearchControllerProvider);
+
+      await controller.showRun(item);
+
+      expect((await reread(item.id)).actualStartMinutes, 16 * 60 + 20);
+    });
+
+    test('stops stored, no network: the stops without a route', () async {
+      final seeded = await seedLeg(sourceTripId: 'trip-1');
+      await db.itineraryDao.setRunStops(
+        seeded.id,
+        encodeRunStops(
+          const RunStops(before: [Stopover(name: 'Origin', minutes: 930)]),
+        ),
+      );
+      final item = await reread(seeded.id);
+      final controller = containerWith(
+        _FakeSearch(
+          const [],
+          failure: const TransportSearchException('offline'),
+        ),
+      ).read(transportSearchControllerProvider);
+
+      final shown = await controller.showRun(item);
+
+      expect(shown.stops!.before.single.name, 'Origin');
+      expect(shown.shape, isNull);
+    });
+
+    test('nothing stored and no network: the failure is said', () async {
+      final item = await seedLeg(sourceTripId: 'trip-1');
+      final controller = containerWith(
+        _FakeSearch(
+          const [],
+          failure: const TransportSearchException('offline'),
+        ),
+      ).read(transportSearchControllerProvider);
+
+      await expectLater(
+        controller.showRun(item),
+        throwsA(isA<TransportSearchException>()),
+      );
+    });
+
+    test('a run that cannot be lined up with the leg is not stored', () async {
+      final item = await seedLeg(sourceTripId: 'trip-1');
+      final controller = containerWith(
+        _FakeSearch(cancelledStops().sublist(0, 1)),
+      ).read(transportSearchControllerProvider);
+
+      expect((await controller.showRun(item)).stops, isNull);
+      expect((await reread(item.id)).runStops, isNull);
+    });
+
+    test('a leg with no source trip id asks nobody', () async {
+      final item = await seedLeg(sourceTripId: null);
+      final search = _FakeSearch(stopsWithRun());
+      final controller = containerWith(
+        search,
+      ).read(transportSearchControllerProvider);
+
+      expect((await controller.showRun(item)).stops, isNull);
+      expect(search.requests, 0);
+    });
   });
 
   group('a trip id the router has since reissued', () {
@@ -462,7 +565,7 @@ void main() {
       expect(search.askedTrips, ['old-id', 'new-id']);
     });
 
-    test('loading the run finds it again the same way', () async {
+    test('showing the run finds it again the same way', () async {
       final item = await seedImported();
       final search = _ReloadedSearch(
         currentId: 'new-id',
@@ -473,7 +576,7 @@ void main() {
         search,
       ).read(transportSearchControllerProvider);
 
-      expect(await controller.loadRunStops(item), isTrue);
+      expect((await controller.showRun(item)).shape, 'route');
       expect((await reread(item.id)).sourceTripId, 'new-id');
     });
 

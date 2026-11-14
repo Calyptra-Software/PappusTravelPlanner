@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_info.dart';
 import '../../../core/providers.dart';
 import '../data/motis_client.dart';
+import '../data/run_shape_cache.dart';
+import '../data/run_shape_files.dart';
 import '../domain/journey.dart';
 import '../domain/journey_ends.dart';
 import '../domain/journey_options.dart';
@@ -31,6 +33,13 @@ final transportSearchProvider = Provider<TransportSearch>((ref) {
   ref.onDispose(client.close);
   return client;
 });
+
+/// The routes of whole runs fetched for the journey screen, kept outside the
+/// database (see [RunShapeCache]). One for the app's whole session, so a route
+/// fetched once is not fetched again while the app runs.
+final runShapeCacheProvider = Provider<RunShapeCache>(
+  (ref) => RunShapeCache(openRunShapeFiles()),
+);
 
 /// Station/place suggestions for a (partial) query, **debounced** so typing
 /// doesn't fire a request per keystroke: a query is held briefly, and if it is

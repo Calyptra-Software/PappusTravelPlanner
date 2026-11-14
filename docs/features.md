@@ -319,9 +319,9 @@ This also works for a connection imported weeks ahead: if the timetable no longe
 under the reference it was imported with, it is looked up again by its train and departure
 time at its station.
 
-**Show the whole route** on a leg loads the stops its vehicle calls at before you board and
-after you get off, folded above and below the leg in the journey view and drawn in grey on
-its map. A refresh keeps them current too.
+**Show the whole route** on a leg shows the stops its vehicle calls at before you board and
+after you get off, in the journey's list and on its map along the route the vehicle takes;
+the same button hides them again. A refresh keeps the stops current too.
 
 ### Asking the timetable again
 

@@ -45,6 +45,11 @@ abstract interface class TransportSearch {
   /// used to refresh an imported leg's actual departure/arrival.
   Future<List<TripStop>> tripStops(String tripId);
 
+  /// The same trip with the route the whole run takes, about eight times the
+  /// answer [tripStops] gives (62 KB against 8 KB for an ICE across Germany),
+  /// so asked only when somebody wants the run drawn.
+  Future<TripRun> tripRun(String tripId);
+
   /// The services leaving the station at ([lat], [lon]) with a planned
   /// departure from [from] to [from] + [window]: its departure board. Used to
   /// find an imported leg's run again when its stored trip id has expired.

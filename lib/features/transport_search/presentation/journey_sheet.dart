@@ -8,7 +8,6 @@ import '../../itinerary/widgets/live_refresh_button.dart';
 import '../journey_preview.dart';
 import '../journey_view.dart';
 import 'journey_formats.dart';
-import 'load_run_button.dart';
 
 /// A journey read leg by leg: board here, ride this, change there.
 ///
@@ -291,9 +290,20 @@ class JourneyRows extends StatelessWidget {
     this.itemsById = const {},
     this.onFindLegConnection,
     this.onReplanFrom,
+    this.shownRuns = const {},
+    this.runControl,
   });
 
   final JourneyView view;
+
+  /// The legs (by item id) whose run outside them is shown: the stops before
+  /// boarding and after getting off are listed for these and folded away for
+  /// no other, however many of them are stored.
+  final Set<int> shownRuns;
+
+  /// The control that shows and puts away a stored leg's run, built by the
+  /// screen that owns that state; null on a preview, whose legs have no run.
+  final Widget Function(ItineraryItem item)? runControl;
 
   /// See [JourneySheet.modesById].
   final Map<int, TransportModeRow> modesById;
@@ -318,6 +328,8 @@ class JourneyRows extends StatelessWidget {
             modesById: modesById,
             item: itemsById[leg.itemId],
             onFindConnection: onFindLegConnection,
+            runShown: shownRuns.contains(leg.itemId),
+            runControl: runControl,
           ),
           ChangeRow(:final arriving) => _ChangeTile(
             change: row,
@@ -342,7 +354,16 @@ class _LegCard extends StatelessWidget {
     required this.modesById,
     this.item,
     this.onFindConnection,
+    this.runShown = false,
+    this.runControl,
   });
+
+  /// Whether the run outside this leg is to be listed — see
+  /// [JourneyRows.shownRuns].
+  final bool runShown;
+
+  /// See [JourneyRows.runControl].
+  final Widget Function(ItineraryItem item)? runControl;
 
   final ViewLeg leg;
   final Map<int, TransportModeRow> modesById;
@@ -366,12 +387,14 @@ class _LegCard extends StatelessWidget {
     final service = leg.line ?? modeLabel ?? '';
     final duration = leg.duration;
     final refreshable = item != null && item!.sourceTripId != null;
-    final run = leg.run;
+    final run = runShown ? leg.run : null;
     // Only a vehicle has a run, and only a stored one with its trip id and
-    // times can be found in it.
-    final canLoadRun =
+    // times can be found in it. Offered whether or not it was loaded before,
+    // since the same button shows it and puts it away.
+    final control = runControl;
+    final hasRun =
+        control != null &&
         refreshable &&
-        run == null &&
         !leg.ownSteam &&
         item!.startMinutes != null &&
         item!.endMinutes != null;
@@ -488,7 +511,7 @@ class _LegCard extends StatelessWidget {
                 ),
                 outside: true,
               ),
-            if (canLoadRun) LoadRunButton(item: item!),
+            if (hasRun) control(item!),
           ],
         ),
       ),
