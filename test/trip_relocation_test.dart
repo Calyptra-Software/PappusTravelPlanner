@@ -187,5 +187,20 @@ void main() {
       // 12:00 in Lisbon (+1 in July) is 11:00Z.
       expect(start, DateTime.utc(2026, 7, 1, 11).subtract(kRelocationSlack));
     });
+
+    test('a zone this build does not know is passed over', () {
+      final start = relocationWindowStart(
+        date: _day,
+        startMinutes: 9 * 60 + 13,
+        stopovers: const [
+          Stopover(name: 'X', minutes: 560, timeZone: 'Mars/Olympus_Mons'),
+          Stopover(name: 'Y', minutes: 570, timeZone: 'Europe/Berlin'),
+        ],
+      );
+      expect(
+        start,
+        DateTime.utc(2026, 11, 15, 8, 13).subtract(kRelocationSlack),
+      );
+    });
   });
 }
