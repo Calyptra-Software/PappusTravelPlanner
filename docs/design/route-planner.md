@@ -83,6 +83,24 @@ yet** (next section): that has to happen before a release carrying this.
 - **A run still unanswered is a thin dotted chord**, not the dashed line of a route, so
   what is drawn never claims a way the router has not given. *Add to day* is disabled
   until every routed run has its answer.
+- **A waypoint is moved by a tap, not by a drag.** *Move point* in the waypoint's sheet
+  makes the next tap on the map (or on a line) put that waypoint there. A drag would pass
+  through a hundred positions the router must not be asked about, and a marker's drag
+  competes with the map's pan. The state is said in the panel for as long as it lasts,
+  with *Cancel* beside it and the mode chips at rest, since a tap now means one thing.
+- **A tap on a line opens the section it landed in**, not the run: `locateOnRun`
+  (`tour_geometry.dart`) finds the section by where the run's shaping waypoints lie along
+  the line, searched in order, and by the nearest *segment* rather than the nearest
+  vertex, which on a long straight section would name its neighbor. The sheet changes
+  that section's mode or sets a point into it, snapped onto the line. The line's
+  `GestureDetector` takes the tap, so the map's own `onTap` does not also add a waypoint
+  (a test holds this, for a line and for a waypoint).
+- **A point set into an answered line keeps the answer** (`insertWaypoint`): the way
+  through a point on it is the way already given, so the cache is told so and the router
+  is not asked for a line it has just returned. Moving or naming the point asks as usual.
+- **The panel keeps its height whatever it says.** It sits under the map in a `Column`,
+  so a panel growing by a line resizes the map and shifts it under a finger on its way
+  to it. The status line has a minimum height and the hint line is always there.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
 - **Ski is a straight line under its own chip**, filed under the ski mode; *Straight line*
   is the same with no mode.
@@ -91,8 +109,7 @@ yet** (next section): that has to happen before a release carrying this.
 
 - The door from a decision's option, from a routine's own screen and from the overview
   (a tour planned before there is a trip). Only a day's add row opens the planner.
-- Changing the mode of a section already set, moving a waypoint, inserting one into a
-  line, and centering on the device.
+- Centering on the device and taking its position as a waypoint.
 - The base URL as a setting, and a link crediting BRouter beside the map's attribution.
 - Whether `brouter.de` sends the CORS header the web build needs (unverified).
 - Heights: the parser reads them, nothing stores them. That needs a column on `Tracks`

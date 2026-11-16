@@ -2892,4 +2892,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get routeWaypointRemove => 'Punkt entfernen';
+
+  @override
+  String get routeWaypointMove => 'Punkt verschieben';
+
+  @override
+  String get routePlanMoveHint => 'Tippe auf die Karte, wohin der Punkt soll.';
+
+  @override
+  String get routeSectionTitle => 'Abschnitt';
+
+  @override
+  String get routeSectionAddPoint => 'Hier einen Punkt einfügen';
 }

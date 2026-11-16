@@ -116,6 +116,40 @@ class TourPlannerController extends Notifier<TourPlannerState> {
 
   void removeWaypoint(int index) => _setTour(state.tour.without(index));
 
+  /// Puts the waypoint at [index] somewhere else, keeping its name and whether
+  /// it is a place.
+  void moveWaypoint(int index, LatLng position) {
+    final waypoint = state.tour.waypoints[index];
+    updateWaypoint(
+      index,
+      TourWaypoint(position, name: waypoint.name, isPlace: waypoint.isPlace),
+    );
+  }
+
+  /// Travels the section at [section] by [mode] instead.
+  void setSectionMode(int section, SectionMode mode) =>
+      _setTour(state.tour.withMode(section, mode));
+
+  /// Sets a waypoint into the section at [section], at [position] on its line.
+  ///
+  /// A point on the way the router found does not change that way, so the run's
+  /// answer is kept for the run it becomes and the router is not asked about a
+  /// line it has just given. Moving or naming the new point asks as usual.
+  void insertWaypoint(int section, LatLng position) {
+    final before = state.tour;
+    final after = before.withInserted(section, TourWaypoint(position));
+    final run = state.runs.firstWhere(
+      (run) => run.first <= section && section < run.last,
+    );
+    final path = state.pathOf(run);
+    final grown = tourRuns(after).firstWhere((r) => r.first == run.first);
+    final key = runKey(after, grown);
+    if (path != null && key != null) {
+      state = state.copyWith(paths: {...state.paths, key: path});
+    }
+    _setTour(after);
+  }
+
   /// Asks again about every run the router refused.
   void retry() {
     state = state.copyWith(failures: const {});

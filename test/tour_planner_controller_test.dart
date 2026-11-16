@@ -199,6 +199,71 @@ void main() {
     },
   );
 
+  test('moving a waypoint asks for its run again and keeps its name', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_b);
+    await engine.answer();
+    planner().updateWaypoint(1, const TourWaypoint(_b, name: 'Hut'));
+
+    planner().moveWaypoint(1, _c);
+
+    expect(engine.asked.last.$1, [_a, _c]);
+    expect(state().tour.waypoints.last.name, 'Hut');
+    expect(state().entries, isNull);
+  });
+
+  test('changing a section to another mode asks for it in that mode', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_b)
+      ..addWaypoint(_c);
+    await engine.answer();
+    await engine.answer();
+
+    planner().setSectionMode(1, const RoutedMode(RouteProfile.car));
+
+    // From a to b on foot was answered when b was the tour's end.
+    expect(engine.asked.last.$1, [_b, _c]);
+    expect(engine.asked.last.$2, RouteProfile.car);
+    expect(engine.asked, hasLength(3));
+  });
+
+  test('changing a section to a straight line asks nothing', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_b);
+    await engine.answer();
+
+    planner().setSectionMode(0, const StraightMode(TransportMode.ski));
+
+    expect(engine.asked, hasLength(1));
+    expect(state().entries, hasLength(1));
+  });
+
+  test('a point set into an answered line keeps the answer', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_c);
+    await engine.answer();
+
+    planner().insertWaypoint(0, _b);
+
+    expect(state().tour.waypoints.map((w) => w.position), [_a, _b, _c]);
+    expect(engine.asked, hasLength(1), reason: 'the way has not changed');
+    expect(state().entries, hasLength(1));
+  });
+
+  test('a point set into an unanswered line is asked about with it', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_c);
+
+    planner().insertWaypoint(0, _b);
+
+    expect(engine.asked.last.$1, [_a, _b, _c]);
+  });
+
   test('save writes the tour into the trip', () async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'Hike'),

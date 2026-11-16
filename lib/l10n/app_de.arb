@@ -986,5 +986,9 @@
   "routeWaypointTitle": "Wegpunkt",
   "routeWaypointName": "Name",
   "routeWaypointAsPlace": "Als Ort in den Plan aufnehmen",
-  "routeWaypointRemove": "Punkt entfernen"
+  "routeWaypointRemove": "Punkt entfernen",
+  "routeWaypointMove": "Punkt verschieben",
+  "routePlanMoveHint": "Tippe auf die Karte, wohin der Punkt soll.",
+  "routeSectionTitle": "Abschnitt",
+  "routeSectionAddPoint": "Hier einen Punkt einfügen"
 }

@@ -291,6 +291,157 @@ void main() {
     expect(find.byKey(const ValueKey('waypoint-1')), findsNothing);
   });
 
+  Finder inSheet(Finder finder) =>
+      find.descendant(of: find.byType(BottomSheet), matching: finder);
+
+  int waypointCount(WidgetTester tester) => ProviderScope.containerOf(
+    tester.element(find.byType(RoutePlannerScreen)),
+  ).read(tourPlannerProvider).tour.waypoints.length;
+
+  testWidgets('a tap on a waypoint is not also a tap on the map', (
+    tester,
+  ) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('waypoint-0')));
+    // Past the wait in which the map would report a tap of its own.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(inSheet(find.text('Waypoint')), findsOneWidget);
+    expect(waypointCount(tester), 2);
+  });
+
+  testWidgets('Move point puts the waypoint where the next tap lands', (
+    tester,
+  ) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+    final before = engine.asked.single.$1.last;
+
+    await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move point'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tap the map where the point should go.'), findsOneWidget);
+    // The chips are at rest: a tap now means one thing.
+    expect(
+      tester
+          .widgetList<ChoiceChip>(find.byType(ChoiceChip))
+          .map((chip) => chip.onSelected),
+      everyElement(isNull),
+    );
+
+    await tapMap(tester, const Offset(150, -200));
+    await tester.pumpAndSettle();
+
+    expect(waypointCount(tester), 2);
+    expect(engine.asked, hasLength(2));
+    expect(engine.asked.last.$1.last, isNot(before));
+    expect(find.text('Tap the map where the point should go.'), findsNothing);
+    expect(
+      tester.widget<ChoiceChip>(find.byType(ChoiceChip).first).onSelected,
+      isNotNull,
+    );
+  });
+
+  testWidgets('a move can be called off', (tester) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move point'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    // A tap adds a waypoint again.
+    await tapMap(tester, const Offset(150, -200));
+    await tester.pumpAndSettle();
+    expect(waypointCount(tester), 3);
+  });
+
+  testWidgets('a tap on a line changes how that section is traveled', (
+    tester,
+  ) async {
+    await open(tester);
+    await choose(tester, 'Ski');
+    await tapMap(tester, const Offset(-200, 0));
+    await tapMap(tester, const Offset(200, 0));
+    await tester.pumpAndSettle();
+    expect(engine.asked, isEmpty);
+
+    // Half way along the straight line between the two.
+    await tapMap(tester, Offset.zero);
+    await tester.pumpAndSettle();
+
+    expect(inSheet(find.text('Section')), findsOneWidget);
+    expect(waypointCount(tester), 2, reason: 'a tap on the line adds nothing');
+    expect(
+      tester
+          .widget<ChoiceChip>(inSheet(find.widgetWithText(ChoiceChip, 'Ski')))
+          .selected,
+      isTrue,
+    );
+
+    await tester.tap(inSheet(find.widgetWithText(ChoiceChip, 'On foot')));
+    await tester.pumpAndSettle();
+
+    expect(engine.asked.single.$2, RouteProfile.foot);
+    expect(waypointCount(tester), 2);
+  });
+
+  testWidgets('a tap on a line sets a point into it', (tester) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-200, 0));
+    await tapMap(tester, const Offset(200, 0));
+    await tester.pumpAndSettle();
+
+    await tapMap(tester, Offset.zero);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add a point here'));
+    await tester.pumpAndSettle();
+
+    expect(waypointCount(tester), 3);
+    expect(find.byKey(const ValueKey('waypoint-2')), findsOneWidget);
+    // The way through a point on it is the way already given.
+    expect(engine.asked, hasLength(1));
+    expect(addButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('the map keeps its size whatever the panel says', (tester) async {
+    await open(tester);
+    Size map() => tester.getSize(find.byType(FlutterMap));
+    final size = map();
+
+    // The hint for the next point, then the totals.
+    await tapMap(tester, const Offset(-150, -100));
+    expect(map(), size);
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+    expect(map(), size);
+
+    // The line under a straight mode.
+    await choose(tester, 'Ski');
+    expect(map(), size);
+
+    // A point waiting to be put down.
+    await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move point'));
+    await tester.pumpAndSettle();
+    expect(map(), size);
+  });
+
   testWidgets('Add to day writes the tour and closes the planner', (
     tester,
   ) async {

@@ -18,6 +18,7 @@ import '../application/tour_planner_controller.dart';
 import '../domain/route_profile.dart';
 import '../domain/tour.dart';
 import '../tour_entries.dart';
+import '../tour_geometry.dart';
 
 /// Opens the tour planner for [day] of the trip [tripId], and answers whether
 /// a tour was added to it.
@@ -62,9 +63,10 @@ const List<SectionMode> kPlannerModes = [
 ///
 /// A tap sets the next waypoint, reached by the mode selected below the map;
 /// selecting another mode before a tap is what makes the tour change from the
-/// car to the trail there. A waypoint is named, marked as a place or removed
-/// from the sheet a tap on it opens. *Add to day* stays disabled until every
-/// section has a line.
+/// car to the trail there. A waypoint is named, marked as a place, moved or
+/// removed from the sheet a tap on it opens; a tap on a line opens the section
+/// it landed in, to travel it another way or to set a point into it. *Add to
+/// day* stays disabled until every section has a line.
 class RoutePlannerScreen extends ConsumerStatefulWidget {
   const RoutePlannerScreen({
     super.key,
@@ -95,6 +97,75 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   int? _startMinutes;
 
   bool _saving = false;
+
+  /// The waypoint the next tap on the map moves, or null when a tap adds one.
+  ///
+  /// Moved by a tap and not by a drag: the router is asked when a point is
+  /// set, and a point being dragged is not set. The state is said in the panel
+  /// for as long as it lasts, with the way out beside it.
+  int? _moving;
+
+  /// Which line the last tap landed on, filled in by `PolylineLayer` before
+  /// the gesture around it reads it, as on the trip map.
+  final _lineHits = ValueNotifier<LayerHitResult<int>?>(null);
+
+  @override
+  void dispose() {
+    _lineHits.dispose();
+    super.dispose();
+  }
+
+  /// A tap on the map away from any line or waypoint.
+  void _onMapTap(LatLng point) {
+    final planner = ref.read(tourPlannerProvider.notifier);
+    final moving = _moving;
+    if (moving == null) {
+      planner.addWaypoint(point);
+      return;
+    }
+    planner.moveWaypoint(moving, point);
+    setState(() => _moving = null);
+  }
+
+  /// A tap on a line: the section it landed in, unless a waypoint is waiting
+  /// to be put down, which a line is as good a place for as any.
+  Future<void> _onLineTap() async {
+    final hit = _lineHits.value;
+    if (hit == null || hit.hitValues.isEmpty) return;
+    if (_moving != null) {
+      _onMapTap(hit.coordinate);
+      return;
+    }
+    final state = ref.read(tourPlannerProvider);
+    final run = state.runs[hit.hitValues.first];
+    final location = locateOnRun(
+      state.tour,
+      run,
+      _linePoints(state, run),
+      hit.coordinate,
+    );
+    if (location == null) return;
+    final edit = await showAppSheet<_SectionEdit>(
+      context,
+      builder: (_) => _SectionSheet(mode: state.tour.modes[location.section]),
+    );
+    if (!mounted) return;
+    final planner = ref.read(tourPlannerProvider.notifier);
+    switch (edit) {
+      case null:
+        return;
+      case _InsertPoint():
+        planner.insertWaypoint(location.section, location.point);
+      case _SetSectionMode(:final mode):
+        planner.setSectionMode(location.section, mode);
+    }
+  }
+
+  /// The line a run is drawn as: the router's, or straight through its
+  /// waypoints while there is none.
+  List<LatLng> _linePoints(TourPlannerState state, TourRun run) =>
+      state.pathOf(run)?.points ??
+      [for (final waypoint in run.waypointsOf(state.tour)) waypoint.position];
 
   Future<void> _save() async {
     setState(() => _saving = true);
@@ -135,6 +206,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         return;
       case _RemoveWaypoint():
         planner.removeWaypoint(index);
+      case _MoveWaypoint():
+        setState(() => _moving = index);
       case _ChangeWaypoint(:final waypoint):
         planner.updateWaypoint(index, waypoint);
     }
@@ -187,7 +260,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                     interactionOptions: const InteractionOptions(
                       flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
                     ),
-                    onTap: (_, point) => planner.addWaypoint(point),
+                    onTap: (_, point) => _onMapTap(point),
                   ),
                   children: [
                     ...basemapTileLayers(
@@ -195,11 +268,22 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                       overlays,
                       ref.watch(appVersionProvider),
                     ),
-                    PolylineLayer(
-                      polylines: [
-                        for (final run in state.runs)
-                          _lineOf(state, run, theme.colorScheme.surface),
-                      ],
+                    GestureDetector(
+                      onTap: _onLineTap,
+                      child: PolylineLayer<int>(
+                        hitNotifier: _lineHits,
+                        // A fingertip, not the stroke: the trip map's constant.
+                        minimumHitbox: kLineHitbox,
+                        polylines: [
+                          for (final (index, run) in state.runs.indexed)
+                            _lineOf(
+                              state,
+                              run,
+                              index,
+                              theme.colorScheme.surface,
+                            ),
+                        ],
+                      ),
                     ),
                     MarkerLayer(
                       markers: [
@@ -220,6 +304,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                                     index == tour.waypoints.length - 1 ||
                                     waypoint.splitsLeg,
                                 filled: waypoint.isPlace,
+                                moving: index == _moving,
                               ),
                             ),
                           ),
@@ -264,6 +349,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                 : () => planner.removeWaypoint(tour.waypoints.length - 1),
             onRetry: planner.retry,
             onPickStartTime: _pickStartTime,
+            moving: _moving != null,
+            onCancelMove: () => setState(() => _moving = null),
           ),
         ],
       ),
@@ -273,16 +360,16 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   /// One run's line. Dashed like every line that is a proposal and not a
   /// record; a routed run still waiting for its answer is a thin dotted chord,
   /// so it reads as "not known yet" rather than as the way.
-  Polyline _lineOf(TourPlannerState state, TourRun run, Color casing) {
-    final path = state.pathOf(run);
-    final known = path != null || run.mode is StraightMode;
-    return Polyline(
-      points:
-          path?.points ??
-          [
-            for (final waypoint in run.waypointsOf(state.tour))
-              waypoint.position,
-          ],
+  Polyline<int> _lineOf(
+    TourPlannerState state,
+    TourRun run,
+    int index,
+    Color casing,
+  ) {
+    final known = state.pathOf(run) != null || run.mode is StraightMode;
+    return Polyline<int>(
+      points: _linePoints(state, run),
+      hitValue: index,
       strokeWidth: known ? 3.5 : 2,
       pattern: known
           ? StrokePattern.dashed(segments: const [7, 5])
@@ -301,15 +388,22 @@ class _WaypointMark extends StatelessWidget {
     required this.color,
     required this.large,
     required this.filled,
+    this.moving = false,
   });
 
   final Color color;
   final bool large;
   final bool filled;
 
+  /// Whether this is the waypoint the next tap moves: drawn dark and large, so
+  /// the one being moved is the one that stands out.
+  final bool moving;
+
   @override
   Widget build(BuildContext context) {
-    final size = large ? 18.0 : 12.0;
+    final size = large || moving ? 18.0 : 12.0;
+    final color = moving ? const Color(0xFF202124) : this.color;
+    final filled = this.filled || moving;
     return Center(
       child: Container(
         width: size,
@@ -319,7 +413,7 @@ class _WaypointMark extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(
             color: filled ? const Color(0xFFFFFFFF) : color,
-            width: large ? 4 : 3,
+            width: large || moving ? 4 : 3,
           ),
           boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 2)],
         ),
@@ -338,7 +432,15 @@ class _PlannerPanel extends StatelessWidget {
     required this.onUndo,
     required this.onRetry,
     required this.onPickStartTime,
+    required this.moving,
+    required this.onCancelMove,
   });
+
+  /// Whether a waypoint is waiting to be put down. The panel then says that
+  /// and how to call it off, with the chips at rest, and keeps its height: a
+  /// map that changed size now would shift under the finger about to tap it.
+  final bool moving;
+  final VoidCallback onCancelMove;
 
   final TourPlannerState state;
   final int? startMinutes;
@@ -376,42 +478,60 @@ class _PlannerPanel extends StatelessWidget {
                           avatar: Icon(plannerModeIcon(mode), size: 18),
                           label: Text(plannerModeLabel(mode, l10n)),
                           selected: mode == state.mode,
-                          onSelected: (_) => onSelectMode(mode),
+                          onSelected: moving ? null : (_) => onSelectMode(mode),
                         ),
                       ),
                   ],
                 ),
               ),
+              // Both lines keep their height whatever they say: the panel sits
+              // under the map, and a panel that grew by a line would shift the
+              // map under a finger on its way to it.
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: _status(context, l10n, theme),
-              ),
-              if (state.mode is StraightMode)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
-                  child: Text(l10n.routePlanStraightHint, style: muted),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: _status(context, l10n, theme),
+                  ),
                 ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  state.mode is StraightMode ? l10n.routePlanStraightHint : '',
+                  style: muted,
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: Row(
                   children: [
-                    TextButton.icon(
-                      onPressed: onUndo,
-                      icon: const Icon(Icons.undo, size: 18),
-                      label: Text(l10n.routePlanUndo),
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: onPickStartTime,
-                      icon: const Icon(Icons.schedule, size: 18),
-                      label: Text(
-                        startMinutes == null
-                            ? l10n.routePlanStartTime
-                            : l10n.routePlanStartsAt(
-                                formatMinutes(startMinutes),
-                              ),
+                    if (moving)
+                      TextButton(
+                        onPressed: onCancelMove,
+                        child: Text(l10n.cancel),
+                      )
+                    else ...[
+                      TextButton.icon(
+                        onPressed: onUndo,
+                        icon: const Icon(Icons.undo, size: 18),
+                        label: Text(l10n.routePlanUndo),
                       ),
-                    ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: onPickStartTime,
+                        icon: const Icon(Icons.schedule, size: 18),
+                        label: Text(
+                          startMinutes == null
+                              ? l10n.routePlanStartTime
+                              : l10n.routePlanStartsAt(
+                                  formatMinutes(startMinutes),
+                                ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -425,6 +545,7 @@ class _PlannerPanel extends StatelessWidget {
   /// One line saying where the tour stands: refused, being routed, complete
   /// with its totals, or what to do next.
   Widget _status(BuildContext context, AppLocalizations l10n, ThemeData theme) {
+    if (moving) return Text(l10n.routePlanMoveHint);
     final failure = state.failure;
     if (failure != null) {
       return Row(
@@ -521,6 +642,10 @@ class _RemoveWaypoint extends _WaypointEdit {
   const _RemoveWaypoint();
 }
 
+class _MoveWaypoint extends _WaypointEdit {
+  const _MoveWaypoint();
+}
+
 class _ChangeWaypoint extends _WaypointEdit {
   const _ChangeWaypoint(this.waypoint);
 
@@ -577,6 +702,14 @@ class _WaypointSheetState extends State<_WaypointSheet> {
             value: _isPlace,
             onChanged: (value) => setState(() => _isPlace = value),
           ),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(const _MoveWaypoint()),
+              icon: const Icon(Icons.open_with, size: 18),
+              label: Text(l10n.routeWaypointMove),
+            ),
+          ),
           const SizedBox(height: 8),
           Row(
             children: [
@@ -605,6 +738,67 @@ class _WaypointSheetState extends State<_WaypointSheet> {
                 child: Text(l10n.save),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// What the section sheet answers with.
+sealed class _SectionEdit {
+  const _SectionEdit();
+}
+
+class _InsertPoint extends _SectionEdit {
+  const _InsertPoint();
+}
+
+class _SetSectionMode extends _SectionEdit {
+  const _SetSectionMode(this.mode);
+
+  final SectionMode mode;
+}
+
+/// One section of the tour: how it is traveled, and setting a point into it
+/// where the line was tapped.
+class _SectionSheet extends StatelessWidget {
+  const _SectionSheet({required this.mode});
+
+  /// How the section is traveled now.
+  final SectionMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.routeSectionTitle, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final option in kPlannerModes)
+                ChoiceChip(
+                  avatar: Icon(plannerModeIcon(option), size: 18),
+                  label: Text(plannerModeLabel(option, l10n)),
+                  selected: option == mode,
+                  onSelected: (_) =>
+                      Navigator.of(context).pop(_SetSectionMode(option)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).pop(const _InsertPoint()),
+            icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+            label: Text(l10n.routeSectionAddPoint),
           ),
         ],
       ),

@@ -2820,4 +2820,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get routeWaypointRemove => 'Remove point';
+
+  @override
+  String get routeWaypointMove => 'Move point';
+
+  @override
+  String get routePlanMoveHint => 'Tap the map where the point should go.';
+
+  @override
+  String get routeSectionTitle => 'Section';
+
+  @override
+  String get routeSectionAddPoint => 'Add a point here';
 }

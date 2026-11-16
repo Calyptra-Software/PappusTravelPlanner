@@ -4779,6 +4779,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove point'**
   String get routeWaypointRemove;
+
+  /// No description provided for @routeWaypointMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move point'**
+  String get routeWaypointMove;
+
+  /// No description provided for @routePlanMoveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map where the point should go.'**
+  String get routePlanMoveHint;
+
+  /// No description provided for @routeSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get routeSectionTitle;
+
+  /// No description provided for @routeSectionAddPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a point here'**
+  String get routeSectionAddPoint;
 }
 
 class _AppLocalizationsDelegate

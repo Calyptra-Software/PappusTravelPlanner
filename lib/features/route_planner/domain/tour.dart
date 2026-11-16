@@ -96,6 +96,17 @@ class Tour {
   Tour withWaypoint(int index, TourWaypoint waypoint) =>
       Tour(waypoints: [...waypoints]..[index] = waypoint, modes: modes);
 
+  /// The tour with [waypoint] set into the section at [section], between the
+  /// two waypoints that section joins. Both halves keep the section's mode.
+  Tour withInserted(int section, TourWaypoint waypoint) => Tour(
+    waypoints: [...waypoints]..insert(section + 1, waypoint),
+    modes: [...modes]..insert(section, modes[section]),
+  );
+
+  /// The tour with the section at [section] traveled by [mode] instead.
+  Tour withMode(int section, SectionMode mode) =>
+      Tour(waypoints: waypoints, modes: [...modes]..[section] = mode);
+
   /// The tour without the waypoint at [index].
   ///
   /// The section that reached it goes with it, so the one that left it now

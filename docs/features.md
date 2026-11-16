@@ -367,8 +367,10 @@ it at that point, so a drive to the car park and the walk from there are one rou
 and *Straight line* draw a straight line between your points, since no routing server
 knows pistes and lifts.
 
-Tap a point to name it, to add it to the plan as a place of its own, or to remove it.
-*Start time* gives the entries times, running on from the durations.
+Tap a point to name it, to add it to the plan as a place of its own, to move it (the next
+tap on the map says where to) or to remove it. Tap a line to travel that section another
+way, or to add a point there. *Start time* gives the entries times, running on from the
+durations.
 
 *Add to day* writes one leg per way of travel, split at named points, each with its line.
 Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
