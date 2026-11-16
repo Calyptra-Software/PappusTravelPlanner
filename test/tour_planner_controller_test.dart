@@ -264,6 +264,31 @@ void main() {
     expect(engine.asked.last.$1, [_a, _b, _c]);
   });
 
+  test('a new order asks only for the runs it made', () async {
+    planner()
+      ..selectMode(const RoutedMode(RouteProfile.car))
+      ..addWaypoint(_a)
+      ..addWaypoint(_b)
+      ..selectMode(const RoutedMode(RouteProfile.foot))
+      ..addWaypoint(_c);
+    await engine.answer();
+    await engine.answer();
+
+    // a -car-> b -foot-> c becomes a -foot-> c -car-> b.
+    planner().reorderWaypoint(2, 1);
+
+    expect(state().tour.waypoints.map((w) => w.position), [_a, _c, _b]);
+    final asked = engine.asked.skip(2).toList();
+    expect(asked.map((request) => request.$1), [
+      [_a, _c],
+      [_c, _b],
+    ]);
+    expect(asked.map((request) => request.$2), [
+      RouteProfile.foot,
+      RouteProfile.car,
+    ]);
+  });
+
   test('save writes the tour into the trip', () async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'Hike'),

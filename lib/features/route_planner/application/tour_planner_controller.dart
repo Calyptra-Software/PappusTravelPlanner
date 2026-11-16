@@ -126,6 +126,11 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     );
   }
 
+  /// Changes the order of the waypoints; see [Tour.reordered] for what becomes
+  /// of the modes.
+  void reorderWaypoint(int oldIndex, int newIndex) =>
+      _setTour(state.tour.reordered(oldIndex, newIndex));
+
   /// Travels the section at [section] by [mode] instead.
   void setSectionMode(int section, SectionMode mode) =>
       _setTour(state.tour.withMode(section, mode));

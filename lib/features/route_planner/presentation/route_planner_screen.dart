@@ -11,8 +11,10 @@ import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/basemap_provider.dart';
 import '../../map/finite_camera.dart';
+import '../../map/presentation/map_picker_screen.dart' show formatCoordinates;
 import '../../map/widgets/map_overlays.dart';
 import '../../map/widgets/map_style_button.dart';
+import '../../transport_search/presentation/journey_formats.dart';
 import '../application/route_engine.dart';
 import '../application/tour_planner_controller.dart';
 import '../domain/route_profile.dart';
@@ -297,6 +299,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                               behavior: HitTestBehavior.opaque,
                               onTap: () => _editWaypoint(index),
                               child: _WaypointMark(
+                                number: index + 1,
                                 color: widget.color,
                                 // The ends are what a tour is read from.
                                 large:
@@ -351,6 +354,12 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
             onCancelMove: () => setState(() => _moving = null),
+            onShowPoints: tour.waypoints.length < 2
+                ? null
+                : () => showAppSheet<void>(
+                    context,
+                    builder: (_) => _PointsSheet(color: widget.color),
+                  ),
           ),
         ],
       ),
@@ -381,41 +390,62 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   }
 }
 
-/// A waypoint on the map: a ringed dot in map colors, larger where a leg ends
-/// and filled where the point is a place of its own.
+/// A waypoint: its number in the tour on a ringed disc in map colors. The ring
+/// is heavier where a leg ends, and the disc is filled where the point is a
+/// place of its own.
+///
+/// Numbered so that a point in the list of waypoints can be found on the map,
+/// most of them having no name to go by.
 class _WaypointMark extends StatelessWidget {
   const _WaypointMark({
+    required this.number,
     required this.color,
     required this.large,
     required this.filled,
     this.moving = false,
   });
 
+  final int number;
   final Color color;
   final bool large;
   final bool filled;
 
-  /// Whether this is the waypoint the next tap moves: drawn dark and large, so
-  /// the one being moved is the one that stands out.
+  /// Whether this is the waypoint the next tap moves: drawn dark, so the one
+  /// being moved is the one that stands out.
   final bool moving;
 
   @override
   Widget build(BuildContext context) {
-    final size = large || moving ? 18.0 : 12.0;
-    final color = moving ? const Color(0xFF202124) : this.color;
-    final filled = this.filled || moving;
+    const ink = Color(0xFF202124);
+    const paper = Color(0xFFFFFFFF);
+    final fill = moving ? ink : (filled ? color : paper);
+    // A trip's accent is the user's choice and may be pale: the number takes
+    // whichever of the two reads on it.
+    final onFill = ThemeData.estimateBrightnessForColor(fill) == Brightness.dark
+        ? paper
+        : ink;
     return Center(
       child: Container(
-        width: size,
-        height: size,
+        width: 24,
+        height: 24,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: filled ? color : const Color(0xFFFFFFFF),
+          color: fill,
           shape: BoxShape.circle,
           border: Border.all(
-            color: filled ? const Color(0xFFFFFFFF) : color,
-            width: large || moving ? 4 : 3,
+            color: moving || filled ? paper : color,
+            width: large || moving ? 3 : 2,
           ),
           boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 2)],
+        ),
+        child: Text(
+          '$number',
+          style: TextStyle(
+            color: onFill,
+            fontSize: 11,
+            height: 1,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );
@@ -434,7 +464,12 @@ class _PlannerPanel extends StatelessWidget {
     required this.onPickStartTime,
     required this.moving,
     required this.onCancelMove,
+    required this.onShowPoints,
   });
+
+  /// Opens the list of waypoints, where their order is changed. Null while
+  /// there are fewer than two to order.
+  final VoidCallback? onShowPoints;
 
   /// Whether a waypoint is waiting to be put down. The panel then says that
   /// and how to call it off, with the chips at rest, and keeps its height: a
@@ -514,10 +549,16 @@ class _PlannerPanel extends StatelessWidget {
                         child: Text(l10n.cancel),
                       )
                     else ...[
-                      TextButton.icon(
+                      // Icons, so the row fits a narrow phone in any language.
+                      IconButton(
                         onPressed: onUndo,
-                        icon: const Icon(Icons.undo, size: 18),
-                        label: Text(l10n.routePlanUndo),
+                        icon: const Icon(Icons.undo),
+                        tooltip: l10n.routePlanUndo,
+                      ),
+                      IconButton(
+                        onPressed: onShowPoints,
+                        icon: const Icon(Icons.format_list_numbered),
+                        tooltip: l10n.routePlanPoints,
                       ),
                       const Spacer(),
                       TextButton.icon(
@@ -568,17 +609,36 @@ class _PlannerPanel extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(width: 12),
-          Text(l10n.routePlanRouting),
+          Flexible(child: Text(l10n.routePlanRouting)),
         ],
       );
     }
     final entries = state.entries;
     if (entries != null) {
-      return Text(
-        formatTourTotals(tourTotals(entries)),
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontFeatures: const [FontFeature.tabularFigures()],
+      final totals = tourTotals(entries);
+      final style = theme.textTheme.titleMedium?.copyWith(
+        fontFeatures: const [FontFeature.tabularFigures()],
+      );
+      // The duration wears a clock and is written "1 h 35 min": beside two
+      // figures in meters, the compact "1h 35m" read as a third distance.
+      return Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(text: formatTourTotals(totals)),
+            if (totals.duration case final duration?) ...[
+              const TextSpan(text: ' · '),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Icon(Icons.schedule, size: 18, color: style?.color),
+              ),
+              TextSpan(
+                text:
+                    ' ${formatStayDuration(l10n, (duration.inSeconds / 60).ceil())}',
+              ),
+            ],
+          ],
         ),
+        style: style,
       );
     }
     return Text(
@@ -589,14 +649,13 @@ class _PlannerPanel extends StatelessWidget {
   }
 }
 
-/// A tour's totals on one line: `12 km · ↑ 850 m · ↓ 850 m · 4h 10m`, with
-/// each figure left out when the tour has none.
+/// A tour's length and climb on one line: `12 km · ↑ 850 m · ↓ 850 m`, with
+/// the climb or the descent left out when the tour has none. The duration is
+/// written beside it by the panel, behind a clock.
 String formatTourTotals(TourTotals totals) => [
   formatDistance(totals.lengthMeters),
   if (totals.ascentMeters case final ascent?) '↑ ${ascent.round()} m',
   if (totals.descentMeters case final descent?) '↓ ${descent.round()} m',
-  if (totals.duration case final duration?)
-    formatDurationHm((duration.inSeconds / 60).ceil()),
 ].join(' · ');
 
 String plannerModeLabel(SectionMode mode, AppLocalizations l10n) =>
@@ -711,7 +770,12 @@ class _WaypointSheetState extends State<_WaypointSheet> {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
+          // A Wrap, so the two part onto two lines where one is too narrow
+          // for both.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 4,
             children: [
               TextButton(
                 onPressed: () =>
@@ -721,7 +785,6 @@ class _WaypointSheetState extends State<_WaypointSheet> {
                 ),
                 child: Text(l10n.routeWaypointRemove),
               ),
-              const Spacer(),
               FilledButton(
                 onPressed: () {
                   final name = _name.text.trim();
@@ -802,6 +865,88 @@ class _SectionSheet extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// The waypoints in order, to change that order by dragging.
+///
+/// Watches the tour itself, so a drop is the change: the list and the map
+/// behind it follow at once, and the router is asked about the runs the new
+/// order made.
+class _PointsSheet extends ConsumerWidget {
+  const _PointsSheet({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final tour = ref.watch(tourPlannerProvider).tour;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(l10n.routePlanPoints, style: theme.textTheme.titleLarge),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: Text(
+            l10n.routePlanPointsHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Flexible(
+          child: ReorderableListView(
+            shrinkWrap: true,
+            buildDefaultDragHandles: false,
+            padding: const EdgeInsets.only(bottom: 16),
+            // newIndex is already adjusted for the removal at oldIndex.
+            onReorderItem: ref
+                .read(tourPlannerProvider.notifier)
+                .reorderWaypoint,
+            children: [
+              for (final (index, waypoint) in tour.waypoints.indexed)
+                ListTile(
+                  key: ValueKey('point-$index'),
+                  leading: SizedBox.square(
+                    dimension: 28,
+                    child: _WaypointMark(
+                      number: index + 1,
+                      color: color,
+                      large: true,
+                      filled: waypoint.isPlace,
+                    ),
+                  ),
+                  title: Text(
+                    waypoint.isNamed
+                        ? waypoint.name!.trim()
+                        : formatCoordinates(waypoint.position),
+                  ),
+                  // What a point keeps when it is moved: how it is reached.
+                  subtitle: Text(
+                    index == 0
+                        ? l10n.routePointStart
+                        : plannerModeLabel(tour.modes[index - 1], l10n),
+                  ),
+                  trailing: ReorderableDragStartListener(
+                    key: ValueKey('point-handle-$index'),
+                    index: index,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(Icons.drag_handle),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

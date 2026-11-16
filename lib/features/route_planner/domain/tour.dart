@@ -107,6 +107,25 @@ class Tour {
   Tour withMode(int section, SectionMode mode) =>
       Tour(waypoints: waypoints, modes: [...modes]..[section] = mode);
 
+  /// The tour with the waypoint at [oldIndex] taken out and put back at
+  /// [newIndex], counted in the list without it.
+  ///
+  /// A waypoint keeps the mode it is **reached by**: the summit walked up to is
+  /// still walked up to wherever it comes in the tour. The first waypoint is
+  /// reached by nothing, so it carries the mode it is left by, which is what it
+  /// is reached by once something stands before it; whichever waypoint ends up
+  /// first has its own set aside.
+  Tour reordered(int oldIndex, int newIndex) {
+    if (waypoints.length < 2 || oldIndex == newIndex) return this;
+    final reachedBy = [modes.first, ...modes];
+    final order = [for (var i = 0; i < waypoints.length; i++) i];
+    order.insert(newIndex, order.removeAt(oldIndex));
+    return Tour(
+      waypoints: [for (final index in order) waypoints[index]],
+      modes: [for (final index in order.skip(1)) reachedBy[index]],
+    );
+  }
+
   /// The tour without the waypoint at [index].
   ///
   /// The section that reached it goes with it, so the one that left it now

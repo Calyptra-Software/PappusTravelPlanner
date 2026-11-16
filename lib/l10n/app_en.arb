@@ -1595,5 +1595,8 @@
   "routeWaypointMove": "Move point",
   "routePlanMoveHint": "Tap the map where the point should go.",
   "routeSectionTitle": "Section",
-  "routeSectionAddPoint": "Add a point here"
+  "routeSectionAddPoint": "Add a point here",
+  "routePlanPoints": "Points",
+  "routePlanPointsHint": "Drag a point to change the order.",
+  "routePointStart": "Start"
 }

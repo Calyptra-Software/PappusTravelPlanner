@@ -98,9 +98,21 @@ yet** (next section): that has to happen before a release carrying this.
 - **A point set into an answered line keeps the answer** (`insertWaypoint`): the way
   through a point on it is the way already given, so the cache is told so and the router
   is not asked for a line it has just returned. Moving or naming the point asks as usual.
+- **The order of the waypoints is changed in a list, and a waypoint keeps the mode it
+  is reached by** (`Tour.reordered`). Modes belong to sections, and a section does not
+  survive its ends being pulled apart, so something has to say which mode goes where:
+  the summit walked up to is still walked up to wherever it comes. The first waypoint,
+  reached by nothing, carries the mode it is left by; whichever waypoint ends up first
+  has its own set aside. The list (`_PointsSheet`) watches the tour, so a drop is the
+  change and the router is asked about the runs the new order made. The marks on the map
+  are **numbered** for this: most waypoints have no name, and a row saying only a
+  coordinate could not be found on the map.
 - **The panel keeps its height whatever it says.** It sits under the map in a `Column`,
   so a panel growing by a line resizes the map and shifts it under a finger on its way
   to it. The status line has a minimum height and the hint line is always there.
+- **The duration wears a clock and is written "1 h 35 min"** (`formatStayDuration`), not
+  the compact "1h 35m" used elsewhere: beside two figures in meters it read as a third
+  distance.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
 - **Ski is a straight line under its own chip**, filed under the ski mode; *Straight line*
   is the same with no mode.

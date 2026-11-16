@@ -66,8 +66,13 @@ void main() {
 
   /// Pumps a page with a button that opens the planner on [tripId], on a tall
   /// window so the panel below the map is laid out whole.
-  Future<List<bool>> open(WidgetTester tester, {int tripId = 1}) async {
-    tester.view.physicalSize = const Size(1000, 2000);
+  Future<List<bool>> open(
+    WidgetTester tester, {
+    int tripId = 1,
+    Size size = const Size(1000, 2000),
+    Locale? locale,
+  }) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     final results = <bool>[];
@@ -87,6 +92,7 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          locale: locale,
           home: Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
@@ -156,7 +162,13 @@ void main() {
 
     expect(engine.asked.single.$2, RouteProfile.foot);
     expect(engine.asked.single.$1, hasLength(2));
-    expect(find.text('4.2 km · ↑ 300 m · ↓ 120 m · 1h 35m'), findsOneWidget);
+    // The duration behind a clock and in "min", not a third figure in "m".
+    expect(
+      find.textContaining('4.2 km · ↑ 300 m · ↓ 120 m · '),
+      findsOneWidget,
+    );
+    expect(find.textContaining('1 h 35 min'), findsOneWidget);
+    expect(find.byIcon(Icons.schedule), findsNWidgets(2));
     expect(addButton(tester).onPressed, isNotNull);
   });
 
@@ -239,7 +251,7 @@ void main() {
     await tapMap(tester, const Offset(-150, -100));
     await tapMap(tester, const Offset(150, 100));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Remove last point'));
+    await tester.tap(find.byTooltip('Remove last point'));
     await tester.pumpAndSettle();
 
     expect(find.text('Tap the map to set the next point.'), findsOneWidget);
@@ -416,6 +428,129 @@ void main() {
     // The way through a point on it is the way already given.
     expect(engine.asked, hasLength(1));
     expect(addButton(tester).onPressed, isNotNull);
+  });
+
+  /// Drags [handle] by [dy] the way a finger does: a reorderable's handle
+  /// starts the drag at once, and the list has to see it cross each row.
+  Future<void> dragBy(WidgetTester tester, Finder handle, double dy) async {
+    final gesture = await tester.startGesture(tester.getCenter(handle));
+    await tester.pump(const Duration(milliseconds: 50));
+    for (var moved = 0.0; moved.abs() < dy.abs(); moved += dy / 8) {
+      await gesture.moveBy(Offset(0, dy / 8));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('the points are numbered on the map in their order', (
+    tester,
+  ) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+
+    for (final (index, number) in ['1', '2'].indexed) {
+      expect(
+        find.descendant(
+          of: find.byKey(ValueKey('waypoint-$index')),
+          matching: find.text(number),
+        ),
+        findsOneWidget,
+      );
+    }
+  });
+
+  testWidgets('Points is offered once there is an order to change', (
+    tester,
+  ) async {
+    await open(tester);
+    IconButton points() => tester.widget(
+      find.widgetWithIcon(IconButton, Icons.format_list_numbered),
+    );
+
+    await tapMap(tester, const Offset(-150, -100));
+    expect(points().onPressed, isNull);
+
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+    expect(points().onPressed, isNotNull);
+  });
+
+  testWidgets('dragging a point in the list changes the order of the tour', (
+    tester,
+  ) async {
+    await open(tester);
+    await choose(tester, 'Car');
+    await tapMap(tester, const Offset(-200, -100));
+    await tapMap(tester, const Offset(0, 0));
+    await choose(tester, 'On foot');
+    await tapMap(tester, const Offset(200, 100));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RoutePlannerScreen)),
+    );
+    List<LatLng> positions() => [
+      for (final w in container.read(tourPlannerProvider).tour.waypoints)
+        w.position,
+    ];
+    final before = positions();
+
+    await tester.tap(find.byTooltip('Points'));
+    await tester.pumpAndSettle();
+    // Each row says how its point is reached.
+    expect(inSheet(find.text('Start')), findsOneWidget);
+    expect(inSheet(find.text('Car')), findsOneWidget);
+    expect(inSheet(find.text('On foot')), findsOneWidget);
+
+    // The last point, up past the one before it.
+    final row = tester.getSize(find.byKey(const ValueKey('point-2'))).height;
+    await dragBy(
+      tester,
+      find.byKey(const ValueKey('point-handle-2')),
+      -row * 1.2,
+    );
+
+    expect(positions(), [before[0], before[2], before[1]]);
+    // It is still reached on foot, and the list says so in its new place.
+    final tiles = tester
+        .widgetList<ListTile>(inSheet(find.byType(ListTile)))
+        .map((tile) => (tile.subtitle! as Text).data)
+        .toList();
+    expect(tiles, ['Start', 'On foot', 'Car']);
+    expect(engine.asked.skip(2).map((request) => request.$2), [
+      RouteProfile.foot,
+      RouteProfile.car,
+    ]);
+  });
+
+  testWidgets('nothing overflows on a narrow phone in German', (tester) async {
+    // An overflow fails a test by itself. The German texts are the long ones,
+    // and the test font is about twice as wide as a real one, so this is the
+    // strict end of what a phone shows.
+    engine.hold = Completer<void>();
+    await open(tester, size: const Size(360, 800), locale: const Locale('de'));
+    await tapMap(tester, const Offset(-60, -60));
+    await tapMap(tester, const Offset(60, 60));
+    expect(find.text('Route wird berechnet …'), findsOneWidget);
+
+    engine.hold!.complete();
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Punkte'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Punkte'));
+    await tester.pumpAndSettle();
+    expect(inSheet(find.text('Zu Fuß')), findsOneWidget);
+    await tester.tapAt(const Offset(180, 20));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+    await tester.pumpAndSettle();
+    expect(find.text('Punkt entfernen'), findsOneWidget);
+    await tester.tap(find.text('Punkt verschieben'));
+    await tester.pumpAndSettle();
+    expect(find.text('Abbrechen'), findsOneWidget);
   });
 
   testWidgets('the map keeps its size whatever the panel says', (tester) async {

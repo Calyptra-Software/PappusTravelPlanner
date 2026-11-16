@@ -369,8 +369,10 @@ knows pistes and lifts.
 
 Tap a point to name it, to add it to the plan as a place of its own, to move it (the next
 tap on the map says where to) or to remove it. Tap a line to travel that section another
-way, or to add a point there. *Start time* gives the entries times, running on from the
-durations.
+way, or to add a point there. The points are numbered in the order of the route; the list
+button under the map shows them in that order, where dragging one changes it. A point
+moved this way is still reached the way it was. *Start time* gives the entries times,
+running on from the durations.
 
 *Add to day* writes one leg per way of travel, split at named points, each with its line.
 Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces

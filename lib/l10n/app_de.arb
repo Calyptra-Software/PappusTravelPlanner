@@ -990,5 +990,8 @@
   "routeWaypointMove": "Punkt verschieben",
   "routePlanMoveHint": "Tippe auf die Karte, wohin der Punkt soll.",
   "routeSectionTitle": "Abschnitt",
-  "routeSectionAddPoint": "Hier einen Punkt einfügen"
+  "routeSectionAddPoint": "Hier einen Punkt einfügen",
+  "routePlanPoints": "Punkte",
+  "routePlanPointsHint": "Ziehe einen Punkt, um die Reihenfolge zu ändern.",
+  "routePointStart": "Start"
 }

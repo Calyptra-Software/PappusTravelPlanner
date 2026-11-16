@@ -2832,4 +2832,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get routeSectionAddPoint => 'Add a point here';
+
+  @override
+  String get routePlanPoints => 'Points';
+
+  @override
+  String get routePlanPointsHint => 'Drag a point to change the order.';
+
+  @override
+  String get routePointStart => 'Start';
 }

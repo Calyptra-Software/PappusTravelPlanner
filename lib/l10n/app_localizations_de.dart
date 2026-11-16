@@ -2904,4 +2904,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get routeSectionAddPoint => 'Hier einen Punkt einfügen';
+
+  @override
+  String get routePlanPoints => 'Punkte';
+
+  @override
+  String get routePlanPointsHint =>
+      'Ziehe einen Punkt, um die Reihenfolge zu ändern.';
+
+  @override
+  String get routePointStart => 'Start';
 }

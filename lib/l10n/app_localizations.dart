@@ -4803,6 +4803,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a point here'**
   String get routeSectionAddPoint;
+
+  /// No description provided for @routePlanPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get routePlanPoints;
+
+  /// No description provided for @routePlanPointsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag a point to change the order.'**
+  String get routePlanPointsHint;
+
+  /// No description provided for @routePointStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get routePointStart;
 }
 
 class _AppLocalizationsDelegate

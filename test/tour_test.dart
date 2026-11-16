@@ -144,6 +144,51 @@ void main() {
     });
   });
 
+  group('Tour.reordered', () {
+    final tour = Tour(
+      waypoints: [
+        _at(47, name: 'Home'),
+        _at(47.1, name: 'Car park'),
+        _at(47.2, name: 'Summit'),
+      ],
+      modes: const [_car, _foot],
+    );
+
+    List<String?> names(Tour tour) => [for (final w in tour.waypoints) w.name];
+
+    test('a waypoint keeps the mode it is reached by', () {
+      final moved = tour.reordered(2, 1);
+
+      expect(names(moved), ['Home', 'Summit', 'Car park']);
+      // Still walked up to, and the car park still driven to.
+      expect(moved.modes, [_foot, _car]);
+    });
+
+    test('the first waypoint, moved back, is reached as it was left', () {
+      final moved = tour.reordered(0, 2);
+
+      expect(names(moved), ['Car park', 'Summit', 'Home']);
+      expect(moved.modes, [_foot, _car]);
+    });
+
+    test('a waypoint moved to the front sets its own mode aside', () {
+      final moved = tour.reordered(2, 0);
+
+      expect(names(moved), ['Summit', 'Home', 'Car park']);
+      expect(moved.modes, [_car, _car]);
+    });
+
+    test('moving a waypoint onto its own place changes nothing', () {
+      expect(identical(tour.reordered(1, 1), tour), isTrue);
+    });
+
+    test('a single waypoint has no order to change', () {
+      final one = Tour(waypoints: [_at(47)], modes: const []);
+
+      expect(identical(one.reordered(0, 0), one), isTrue);
+    });
+  });
+
   group('Tour.withWaypoint', () {
     test('exchanges one waypoint and keeps the modes', () {
       final tour = Tour(
