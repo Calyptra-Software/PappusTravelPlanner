@@ -71,15 +71,30 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
   Selectable<Track> _liveTracks(Expression<bool>? extra) =>
       _liveTracksQuery(extra).map((row) => row.readTable(tracks));
 
+  /// Every stored line of [itemIds], in each entry's own order.
+  Future<List<Track>> tracksOfItems(Iterable<int> itemIds) =>
+      (select(tracks)
+            ..where((t) => t.itemId.isIn(itemIds))
+            ..orderBy([
+              (t) => OrderingTerm(expression: t.itemId),
+              (t) => OrderingTerm(expression: t.sortOrder),
+            ]))
+          .get();
+
   /// Writes [lines] onto [itemId], appended after whatever it already carries.
   ///
   /// Takes the points rather than a file: parsing belongs to `parseGpx`, which
   /// is pure and has no database under it, and a later recorder or router will
   /// arrive here with points and no file at all.
+  ///
+  /// [elevations] runs parallel to [lines]: the height of each point of a
+  /// line, or null for a line that came with none. Heights that do not number
+  /// the line's points are left out rather than stored against the wrong ones.
   Future<void> addTracks(
     int itemId,
     List<({List<LatLng> points, String? name})> lines, {
     TrackSource source = TrackSource.imported,
+    List<List<double>?> elevations = const [],
   }) async {
     if (lines.isEmpty) return;
     final existing =
@@ -90,7 +105,8 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
             .getSingleOrNull();
     var next = (existing ?? -1) + 1;
     await batch((b) {
-      for (final line in lines) {
+      for (final (index, line) in lines.indexed) {
+        final heights = index < elevations.length ? elevations[index] : null;
         b.insert(
           tracks,
           TracksCompanion.insert(
@@ -98,6 +114,11 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
             source: Value(source),
             name: Value(line.name),
             points: encodeTrackPoints(line.points),
+            elevations: Value(
+              heights != null && heights.length == line.points.length
+                  ? encodeTrackElevations(heights)
+                  : null,
+            ),
             sortOrder: Value(next++),
           ),
         );
@@ -266,10 +287,30 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
                     decodeTrackPoints(track.points).reversed.toList(),
                   )
                 : track.points,
+            // The heights go where their points go, turned round with them.
+            elevations: Value(
+              reversed
+                  ? _reversedElevations(track.elevations)
+                  : track.elevations,
+            ),
             sortOrder: Value(track.sortOrder),
           ),
         );
       }
     });
+  }
+
+  /// [encoded] heights in the other order, or null where they will not decode:
+  /// a line turned round with its heights left as they were would climb where
+  /// it falls.
+  static String? _reversedElevations(String? encoded) {
+    if (encoded == null) return null;
+    try {
+      return encodeTrackElevations(
+        decodeTrackElevations(encoded).reversed.toList(),
+      );
+    } on FormatException {
+      return null;
+    }
   }
 }

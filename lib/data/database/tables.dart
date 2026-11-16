@@ -437,6 +437,12 @@ class ItineraryItems extends Table {
   /// view. A separate column rather than more [stopovers], which an older app
   /// would read as stops between the ends (see `RunStops`).
   TextColumn get runStops => text().nullable()();
+
+  /// What the route planner made this entry from, encoded by `encodeRoutePlan`:
+  /// the tour it belongs to and, on a leg, the waypoints and the way of travel
+  /// the router was asked with. It is what lets the planner be opened on a
+  /// saved tour again. Null on every entry the planner did not make.
+  TextColumn get routePlan => text().nullable()();
 }
 
 /// A single cost. Attached to exactly one of: a single itinerary item (via
@@ -681,6 +687,12 @@ class Tracks extends Table {
   /// Manual ordering among the tracks of one item, appended at the end — a leg
   /// can carry the walk out of the station and the walk into the next one.
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// The height of each point of [points] in meters, packed by
+  /// `encodeTrackElevations`, or null when the line came with none. One per
+  /// point or nothing: readers go through `trackElevationsOrNull`, which
+  /// refuses a count that does not match.
+  TextColumn get elevations => text().nullable()();
 }
 
 /// A recording the app is making, or has made and not yet filed onto a plan.

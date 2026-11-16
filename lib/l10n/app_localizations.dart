@@ -4815,6 +4815,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start'**
   String get routePointStart;
+
+  /// No description provided for @routeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit route'**
+  String get routeEdit;
+
+  /// No description provided for @elevationProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Elevation profile'**
+  String get elevationProfile;
 }
 
 class _AppLocalizationsDelegate

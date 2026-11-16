@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/providers.dart';
+import '../data/saved_tour.dart';
 import '../data/tour_mapper.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
@@ -84,26 +85,33 @@ class TourPlannerState {
   );
 }
 
-/// What a routed run is asked as: its profile and its waypoints. Two runs with
-/// the same key get the same answer. Null for a run nobody routes.
-String? runKey(Tour tour, TourRun run) => switch (run.mode) {
-  StraightMode() => null,
-  RoutedMode(:final profile) => [
-    profile.name,
-    for (final waypoint in run.waypointsOf(tour))
-      '${waypoint.position.latitude.toStringAsFixed(6)},'
-          '${waypoint.position.longitude.toStringAsFixed(6)}',
-  ].join('|'),
-};
-
 /// Holds a tour being planned and asks the router for each run once.
 ///
 /// The router is somebody else's server: a run is asked about when a waypoint
 /// is set, never on a timer and never again after a refusal unless [retry] is
 /// pressed, and one request covers a whole run.
 class TourPlannerController extends Notifier<TourPlannerState> {
+  TourPlannerController(this.saved);
+
+  /// The saved tour the planner was opened on, or null for a new one.
+  final SavedTour? saved;
+
   @override
-  TourPlannerState build() => const TourPlannerState();
+  TourPlannerState build() {
+    final saved = this.saved;
+    if (saved == null) return const TourPlannerState();
+    // A leg whose stored line was removed since has no answer among the saved
+    // ones and is asked about once the state stands; the rest ask nothing.
+    Future.microtask(() {
+      if (ref.mounted) _route();
+    });
+    return TourPlannerState(
+      tour: saved.tour,
+      // The next section goes on as the tour ended.
+      mode: saved.tour.modes.lastOrNull ?? const RoutedMode(RouteProfile.foot),
+      paths: saved.paths,
+    );
+  }
 
   void selectMode(SectionMode mode) => state = state.copyWith(mode: mode);
 
@@ -211,6 +219,12 @@ class TourPlannerController extends Notifier<TourPlannerState> {
   /// Writes the tour into [tripId] on [date] and returns the new rows' ids, or
   /// null when the tour is not complete (see [TourPlannerState.entries]).
   ///
+  /// A tour opened from its entries **replaces** them, the way a connection
+  /// searched again replaces its legs (`replaceJourneyLegs`): the new entries
+  /// take the slot and the group of the old ones, and a cost or a file hung on
+  /// an old entry is kept. What an old entry held of its own (a note, actual
+  /// times, a recording) goes with it.
+  ///
   /// The modes are read once from the repository, not from the autoDispose
   /// provider, for the reason `TransportSearchController._modes` gives.
   Future<List<int>?> save({
@@ -221,24 +235,43 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     final entries = state.entries;
     if (entries == null) return null;
     final repository = ref.read(repositoryProvider);
+    final saved = this.saved;
     final mapped = tourToItems(
       entries,
       tripId: tripId,
       date: date,
       resolveMode: builtinModeResolver(await repository.transportModes()),
+      tourId: saved?.tourId ?? _newTourId(),
       startMinutes: startMinutes,
     );
+    if (saved != null) {
+      return repository.replaceJourneyLegs(
+        tripId,
+        oldLegIds: saved.itemIds,
+        legs: mapped.items,
+        groupId: saved.groupId,
+        shapes: mapped.shapes,
+        elevations: mapped.elevations,
+      );
+    }
     return repository.insertJourney(
       tripId,
       mapped.items,
       shapes: mapped.shapes,
+      elevations: mapped.elevations,
     );
   }
+
+  /// A mark no other tour of the trip carries: the moment it was saved, which
+  /// is all it has to be told apart by.
+  static String _newTourId() =>
+      DateTime.now().microsecondsSinceEpoch.toRadixString(36);
 }
 
-/// The tour being planned on the planner screen. Disposed with the screen: a
-/// tour not saved is not kept.
-final tourPlannerProvider =
-    NotifierProvider.autoDispose<TourPlannerController, TourPlannerState>(
+/// The tour being planned on the planner screen, opened on a saved tour or,
+/// with null, on an empty one. Disposed with the screen: a tour not saved is
+/// not kept.
+final tourPlannerProvider = NotifierProvider.autoDispose
+    .family<TourPlannerController, TourPlannerState, SavedTour?>(
       TourPlannerController.new,
     );

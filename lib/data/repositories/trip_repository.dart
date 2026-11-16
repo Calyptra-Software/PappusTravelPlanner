@@ -44,7 +44,14 @@ class TripRepository {
   /// A shape that will not decode costs its own leg a line and nothing else: the
   /// rest of the journey is perfectly good. So does one of fewer than two points,
   /// which is not a line.
-  Future<void> _writeRoutedShapes(List<int> ids, List<String?> shapes) async {
+  ///
+  /// [elevations] runs parallel to [shapes]: the height of each point of a
+  /// shape, for a router that gives them. The connection search gives none.
+  Future<void> _writeRoutedShapes(
+    List<int> ids,
+    List<String?> shapes, [
+    List<List<double>?> elevations = const [],
+  ]) async {
     for (final (index, shape) in shapes.indexed) {
       if (shape == null || index >= ids.length) continue;
       final List<LatLng> points;
@@ -54,11 +61,16 @@ class TripRepository {
         continue;
       }
       if (points.length < 2) continue;
-      await _db.trackDao.addTracks(ids[index], [
-        // No name: it is the leg's own route, and "ICE 1081" is already written
-        // above it. A name here would only repeat the label the entry carries.
-        (points: points, name: null),
-      ], source: TrackSource.routed);
+      await _db.trackDao.addTracks(
+        ids[index],
+        [
+          // No name: it is the leg's own route, and "ICE 1081" is already written
+          // above it. A name here would only repeat the label the entry carries.
+          (points: points, name: null),
+        ],
+        source: TrackSource.routed,
+        elevations: [index < elevations.length ? elevations[index] : null],
+      );
     }
   }
 
@@ -113,6 +125,7 @@ class TripRepository {
     required List<ItineraryItemsCompanion> legs,
     int? groupId,
     List<String?> shapes = const [],
+    List<List<double>?> elevations = const [],
   }) async {
     final ids = await _db.routineDao.replaceJourneyLegs(
       tripId,
@@ -120,7 +133,7 @@ class TripRepository {
       legs: legs,
       groupId: groupId,
     );
-    await _writeRoutedShapes(ids, shapes);
+    await _writeRoutedShapes(ids, shapes, elevations);
     return ids;
   }
 
@@ -192,6 +205,11 @@ class TripRepository {
     int itemId,
     List<({List<LatLng> points, String? name})> lines,
   ) => _db.trackDao.addTracks(itemId, lines);
+
+  /// The stored lines of [itemIds], read once: what opening a saved tour in
+  /// the planner needs, with nothing to watch.
+  Future<List<Track>> tracksOfItems(Iterable<int> itemIds) =>
+      _db.trackDao.tracksOfItems(itemIds);
 
   /// Whether the map draws one stored line — the user overruling the default,
   /// or putting it back. See [TrackDisplay].
@@ -420,13 +438,14 @@ class TripRepository {
     bool group = true,
     int? alternativeId,
     List<String?> shapes = const [],
+    List<List<double>?> elevations = const [],
   }) async {
     final ids = await _db.itineraryDao.insertJourneyLegs(
       tripId,
       legs,
       alternativeId: alternativeId,
     );
-    await _writeRoutedShapes(ids, shapes);
+    await _writeRoutedShapes(ids, shapes, elevations);
     if (group) {
       var i = 0;
       while (i < legs.length) {

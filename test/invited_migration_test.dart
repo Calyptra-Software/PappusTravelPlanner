@@ -49,6 +49,9 @@ void main() {
 
     final raw = sqlite3.open(path);
     raw.execute('ALTER TABLE cost_beneficiaries DROP COLUMN invited');
+    // A later version's column on another table, so the file is a v37 one:
+    // the migration that adds it does not look first.
+    raw.execute('ALTER TABLE tracks DROP COLUMN elevations');
     raw.execute('PRAGMA user_version = 37');
     raw.close();
     return costId;

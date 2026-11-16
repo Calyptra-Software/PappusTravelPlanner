@@ -176,3 +176,15 @@ List<TourRun> tourRuns(Tour tour) {
   }
   return runs;
 }
+
+/// What a routed run is asked as: its profile and its waypoints. Two runs with
+/// the same key get the same answer. Null for a run nobody routes.
+String? runKey(Tour tour, TourRun run) => switch (run.mode) {
+  StraightMode() => null,
+  RoutedMode(:final profile) => [
+    profile.name,
+    for (final waypoint in run.waypointsOf(tour))
+      '${waypoint.position.latitude.toStringAsFixed(6)},'
+          '${waypoint.position.longitude.toStringAsFixed(6)}',
+  ].join('|'),
+};

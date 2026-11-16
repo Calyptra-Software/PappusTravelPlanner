@@ -29,8 +29,9 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   because the schema fixes that order, not because the plan does. A line the map is **not**
   drawing is exported all the same: `TrackDisplay` is a statement about the picture and a GPX
   is the record, so an eye must not quietly change what a file contains. And nothing is
-  invented to fill the format's other fields — no `<ele>`, no per-point `<time>` (the import
-  dropped both on purpose), coordinates at the five decimals the column actually holds, and on
+  invented to fill the format's other fields — no per-point `<time>` (the import dropped
+  it on purpose), an `<ele>` only on a line stored with a height for every point
+  (`tracks.md`), coordinates at the five decimals the column actually holds, and on
   a **routine** not even the day, since its entries sit on `kRoutineAnchorDay`, which is a sort
   origin and not a date anybody travelled. That is also why a routine *is* offered this export
   while paper and the calendar are not: a line needs no dates to be a line. So the file is not

@@ -502,6 +502,7 @@ class BundleItem {
     this.toLon,
     this.stopovers,
     this.runStops,
+    this.routePlan,
     this.fromPlaceId,
     this.toPlaceId,
     this.tracks = const [],
@@ -588,6 +589,11 @@ class BundleItem {
   /// ignores the key, which is why it needs no format version of its own.
   final String? runStops;
 
+  /// What the route planner made this entry from, as `encodeRoutePlan` writes
+  /// it. Plan, so it travels and lets the recipient open the tour in their own
+  /// planner; an app that predates it ignores the key.
+  final String? routePlan;
+
   /// How the routing service addresses this leg's ends, when it came from a
   /// search. Part of the plan — they say *where*, never *when* — so they travel
   /// with it and let the recipient look the journey up for their own dates.
@@ -636,6 +642,7 @@ class BundleItem {
     'toLon': toLon,
     'stopovers': stopovers,
     if (runStops != null) 'runStops': runStops,
+    if (routePlan != null) 'routePlan': routePlan,
     'fromPlaceId': fromPlaceId,
     'toPlaceId': toPlaceId,
     // Omitted entirely when there are none, so an ordinary trip's bundle is
@@ -682,6 +689,7 @@ class BundleItem {
     toLon: (json['toLon'] as num?)?.toDouble(),
     stopovers: json['stopovers'] as String?,
     runStops: json['runStops'] as String?,
+    routePlan: json['routePlan'] as String?,
     fromPlaceId: json['fromPlaceId'] as String?,
     toPlaceId: json['toPlaceId'] as String?,
     tracks: [
@@ -826,7 +834,12 @@ class BundleTrack {
     this.name,
     this.sortOrder = 0,
     this.display = TrackDisplay.auto,
+    this.elevations,
   });
+
+  /// The line's heights as `encodeTrackElevations` packs them, one per point,
+  /// or null. The packed string for the reason [points] is one.
+  final String? elevations;
 
   final String points;
   final TrackSource source;
@@ -843,6 +856,9 @@ class BundleTrack {
     // great majority of lines after it, mean `auto`, and writing it out would
     // grow every bundle to state the default.
     if (display != TrackDisplay.auto) 'display': display.name,
+    // Only when the line has heights; an older app ignores the key and imports
+    // the line it would have imported anyway.
+    if (elevations != null) 'elevations': elevations,
   };
 
   factory BundleTrack.fromJson(Map<String, dynamic> json) => BundleTrack(
@@ -861,6 +877,7 @@ class BundleTrack {
       (d) => d.name == json['display'],
       orElse: () => TrackDisplay.auto,
     ),
+    elevations: json['elevations'] as String?,
   );
 }
 

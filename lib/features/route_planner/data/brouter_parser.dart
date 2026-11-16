@@ -1,10 +1,15 @@
 import 'package:latlong2/latlong.dart';
 
+import '../../map/elevation.dart';
 import '../domain/routed_path.dart';
 
 /// Reads BRouter's `format=geojson` answer: one `LineString` feature whose
 /// coordinates are `[lon, lat, elevation]` and whose properties carry the
 /// totals as **strings** (`"track-length": "6396"`).
+///
+/// The climb is counted from the heights by [climbOf] and not read from the
+/// router's own "filtered ascend": the line is stored with its heights and
+/// counted again wherever it is shown, and one line must not have two figures.
 ///
 /// Pure. Throws [FormatException] on anything that is not such an answer, or
 /// that holds fewer than two usable points: a route of one point is no route.
@@ -43,18 +48,12 @@ RoutedPath parseBrouterResponse(dynamic json) {
   if (length == null) {
     throw const FormatException('BRouter route without a length');
   }
-  final ascent = _number(totals['filtered ascend']);
-  // "plain-ascend" is the height of the end above the start, so what was
-  // climbed less that is what was descended.
-  final net = _number(totals['plain-ascend']);
   final seconds = _number(totals['total-time']);
 
-  return RoutedPath(
+  return RoutedPath.measured(
     points: points,
     elevations: elevations.length == points.length ? elevations : null,
     lengthMeters: length,
-    ascentMeters: ascent,
-    descentMeters: ascent != null && net != null ? ascent - net : null,
     duration: seconds == null ? null : Duration(seconds: seconds.round()),
   );
 }

@@ -50,6 +50,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: _resolve,
+        tourId: 't1',
       );
 
       final leg = mapped.items.single;
@@ -73,6 +74,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: _resolve,
+        tourId: 't1',
       );
 
       expect(
@@ -92,6 +94,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: _resolve,
+        tourId: 't1',
       );
 
       expect(mapped.shapes, [null]);
@@ -106,6 +109,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: (_) => null,
+        tourId: 't1',
       );
 
       expect(mapped.items.map((item) => item.mode.value), [null, null]);
@@ -123,6 +127,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: _resolve,
+        tourId: 't1',
         startMinutes: 8 * 60,
       );
 
@@ -147,6 +152,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: _resolve,
+        tourId: 't1',
         startMinutes: 9 * 60,
       );
 
@@ -165,6 +171,7 @@ void main() {
         tripId: 7,
         date: _day,
         resolveMode: _resolve,
+        tourId: 't1',
         startMinutes: 23 * 60,
       );
 
@@ -200,6 +207,7 @@ void main() {
         tripId: tripId,
         date: _day,
         resolveMode: builtinModeResolver(modes),
+        tourId: 't1',
       );
 
       final ids = await repo.insertJourney(

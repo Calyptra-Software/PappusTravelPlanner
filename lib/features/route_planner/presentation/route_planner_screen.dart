@@ -10,20 +10,24 @@ import '../../../core/widgets/app_sheet.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/basemap_provider.dart';
+import '../../map/elevation.dart';
 import '../../map/finite_camera.dart';
 import '../../map/presentation/map_picker_screen.dart' show formatCoordinates;
+import '../../map/widgets/elevation_profile_chart.dart';
 import '../../map/widgets/map_overlays.dart';
 import '../../map/widgets/map_style_button.dart';
 import '../../transport_search/presentation/journey_formats.dart';
 import '../application/route_engine.dart';
 import '../application/tour_planner_controller.dart';
+import '../data/saved_tour.dart';
 import '../domain/route_profile.dart';
 import '../domain/tour.dart';
 import '../tour_entries.dart';
 import '../tour_geometry.dart';
 
 /// Opens the tour planner for [day] of the trip [tripId], and answers whether
-/// a tour was added to it.
+/// a tour was added to it. With [editing] it opens on that saved tour, and
+/// saving replaces the entries the tour was read from.
 ///
 /// A full screen route for the reason the point picker is one: a sheet answers
 /// a vertical drag by closing, which is the gesture that pans a map.
@@ -33,6 +37,7 @@ Future<bool> planRoute(
   required DateTime day,
   required Color color,
   List<LatLng> nearby = const [],
+  SavedTour? editing,
 }) async {
   final saved = await Navigator.of(context).push<bool>(
     MaterialPageRoute(
@@ -42,6 +47,7 @@ Future<bool> planRoute(
         day: day,
         color: color,
         nearby: nearby,
+        editing: editing,
       ),
     ),
   );
@@ -76,7 +82,11 @@ class RoutePlannerScreen extends ConsumerStatefulWidget {
     required this.day,
     required this.color,
     this.nearby = const [],
+    this.editing,
   });
+
+  /// The saved tour being edited, or null for a new one.
+  final SavedTour? editing;
 
   final int tripId;
   final DateTime day;
@@ -95,8 +105,19 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   final MapController _controller = MapController();
 
   /// When the tour starts, in minutes since midnight; null leaves its entries
-  /// untimed.
-  int? _startMinutes;
+  /// untimed. A saved tour opens on the time its first entry has.
+  late int? _startMinutes = widget.editing?.startMinutes;
+
+  /// The tour this screen plans: its own, so two planners never share one.
+  late final _planner = tourPlannerProvider(widget.editing);
+
+  /// What the map opens on: a saved tour's own points, else the trip's.
+  late final List<LatLng> _opensOn = widget.editing == null
+      ? widget.nearby
+      : [
+          for (final waypoint in widget.editing!.tour.waypoints)
+            waypoint.position,
+        ];
 
   bool _saving = false;
 
@@ -119,7 +140,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
 
   /// A tap on the map away from any line or waypoint.
   void _onMapTap(LatLng point) {
-    final planner = ref.read(tourPlannerProvider.notifier);
+    final planner = ref.read(_planner.notifier);
     final moving = _moving;
     if (moving == null) {
       planner.addWaypoint(point);
@@ -138,7 +159,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       _onMapTap(hit.coordinate);
       return;
     }
-    final state = ref.read(tourPlannerProvider);
+    final state = ref.read(_planner);
     final run = state.runs[hit.hitValues.first];
     final location = locateOnRun(
       state.tour,
@@ -152,7 +173,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       builder: (_) => _SectionSheet(mode: state.tour.modes[location.section]),
     );
     if (!mounted) return;
-    final planner = ref.read(tourPlannerProvider.notifier);
+    final planner = ref.read(_planner.notifier);
     switch (edit) {
       case null:
         return;
@@ -172,7 +193,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final ids = await ref
-        .read(tourPlannerProvider.notifier)
+        .read(_planner.notifier)
         .save(
           tripId: widget.tripId,
           date: widget.day,
@@ -197,8 +218,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   }
 
   Future<void> _editWaypoint(int index) async {
-    final planner = ref.read(tourPlannerProvider.notifier);
-    final waypoint = ref.read(tourPlannerProvider).tour.waypoints[index];
+    final planner = ref.read(_planner.notifier);
+    final waypoint = ref.read(_planner).tour.waypoints[index];
     final edit = await showAppSheet<_WaypointEdit>(
       context,
       builder: (_) => _WaypointSheet(waypoint: waypoint),
@@ -221,10 +242,11 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     final theme = Theme.of(context);
     final basemap = ref.watch(basemapProvider);
     final overlays = ref.watch(mapOverlaysProvider);
-    final state = ref.watch(tourPlannerProvider);
-    final planner = ref.read(tourPlannerProvider.notifier);
+    final state = ref.watch(_planner);
+    final planner = ref.read(_planner.notifier);
     final tour = state.tour;
     final entries = state.entries;
+    final profile = entries == null ? LaidProfile.empty : tourProfile(entries);
 
     return Scaffold(
       appBar: AppBar(
@@ -232,7 +254,10 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
         actions: [
           TextButton(
             onPressed: entries == null || _saving ? null : _save,
-            child: Text(l10n.connectionAddToDay),
+            // Editing replaces what is there, which "add" would not say.
+            child: Text(
+              widget.editing == null ? l10n.connectionAddToDay : l10n.save,
+            ),
           ),
         ],
       ),
@@ -249,13 +274,13 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                     // See finite_camera.dart: a pinch can hand over a NaN.
                     cameraConstraint: const FiniteCamera(),
                     maxZoom: maxZoomOf(basemap),
-                    initialCenter: widget.nearby.isNotEmpty
-                        ? widget.nearby.first
+                    initialCenter: _opensOn.isNotEmpty
+                        ? _opensOn.first
                         : const LatLng(0, 0),
-                    initialZoom: widget.nearby.isNotEmpty ? 12 : 2,
-                    initialCameraFit: widget.nearby.length > 1
+                    initialZoom: _opensOn.isNotEmpty ? 12 : 2,
+                    initialCameraFit: _opensOn.length > 1
                         ? CameraFit.bounds(
-                            bounds: LatLngBounds.fromPoints(widget.nearby),
+                            bounds: LatLngBounds.fromPoints(_opensOn),
                             padding: const EdgeInsets.all(48),
                           )
                         : null,
@@ -351,11 +376,22 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
             onCancelMove: () => setState(() => _moving = null),
+            onShowProfile: profile.isEmpty
+                ? null
+                : () => showAppSheet<void>(
+                    context,
+                    builder: (_) => _ProfileSheet(
+                      profile: profile,
+                      totals: tourTotals(entries!),
+                      color: widget.color,
+                    ),
+                  ),
             onShowPoints: tour.waypoints.isEmpty
                 ? null
                 : () => showAppSheet<void>(
                     context,
-                    builder: (_) => _PointsSheet(color: widget.color),
+                    builder: (_) =>
+                        _PointsSheet(planner: _planner, color: widget.color),
                   ),
           ),
         ],
@@ -461,7 +497,12 @@ class _PlannerPanel extends StatelessWidget {
     required this.moving,
     required this.onCancelMove,
     required this.onShowPoints,
+    required this.onShowProfile,
   });
+
+  /// Opens the tour's elevation profile. Null while the tour is not complete
+  /// or none of its legs has heights.
+  final VoidCallback? onShowProfile;
 
   /// Opens the list of waypoints, where one is removed and their order is
   /// changed. Null while there is none.
@@ -548,6 +589,11 @@ class _PlannerPanel extends StatelessWidget {
                         onPressed: onShowPoints,
                         icon: const Icon(Icons.format_list_numbered),
                         tooltip: l10n.routePlanPoints,
+                      ),
+                      IconButton(
+                        onPressed: onShowProfile,
+                        icon: const Icon(Icons.area_chart_outlined),
+                        tooltip: l10n.elevationProfile,
                       ),
                       const Spacer(),
                       TextButton.icon(
@@ -865,15 +911,17 @@ class _SectionSheet extends StatelessWidget {
 /// runs that made. Removing lives here, on each point, rather than as one
 /// button taking the last: the unit an act applies to is where it is offered.
 class _PointsSheet extends ConsumerWidget {
-  const _PointsSheet({required this.color});
+  const _PointsSheet({required this.planner, required this.color});
 
+  /// The tour of the screen that opened this list.
+  final NotifierProvider<TourPlannerController, TourPlannerState> planner;
   final Color color;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final tour = ref.watch(tourPlannerProvider).tour;
+    final tour = ref.watch(planner).tour;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -897,9 +945,7 @@ class _PointsSheet extends ConsumerWidget {
             buildDefaultDragHandles: false,
             padding: const EdgeInsets.only(bottom: 16),
             // newIndex is already adjusted for the removal at oldIndex.
-            onReorderItem: ref
-                .read(tourPlannerProvider.notifier)
-                .reorderWaypoint,
+            onReorderItem: ref.read(planner.notifier).reorderWaypoint,
             children: [
               for (final (index, waypoint) in tour.waypoints.indexed)
                 ListTile(
@@ -933,9 +979,7 @@ class _PointsSheet extends ConsumerWidget {
                         color: theme.colorScheme.error,
                         tooltip: l10n.routeWaypointRemove,
                         onPressed: () {
-                          ref
-                              .read(tourPlannerProvider.notifier)
-                              .removeWaypoint(index);
+                          ref.read(planner.notifier).removeWaypoint(index);
                           // An empty list has nothing left to offer.
                           if (tour.waypoints.length == 1) {
                             Navigator.of(context).pop();
@@ -957,6 +1001,44 @@ class _PointsSheet extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The tour's heights along its length, with what they add up to above.
+class _ProfileSheet extends StatelessWidget {
+  const _ProfileSheet({
+    required this.profile,
+    required this.totals,
+    required this.color,
+  });
+
+  final LaidProfile profile;
+  final TourTotals totals;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(l10n.elevationProfile, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 4),
+          Text(
+            formatTourTotals(totals),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ElevationProfileChart(profile: profile, color: color, height: 160),
+        ],
+      ),
     );
   }
 }

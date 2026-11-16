@@ -299,6 +299,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             toLon: i.toLon,
             stopovers: i.stopovers,
             runStops: i.runStops,
+            routePlan: i.routePlan,
             fromPlaceId: i.fromPlaceId,
             toPlaceId: i.toPlaceId,
             // The line the entry followed. Read in one query above rather than
@@ -311,6 +312,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
                   name: t.name,
                   sortOrder: t.sortOrder,
                   display: t.display,
+                  elevations: t.elevations,
                 ),
             ],
             attachments: attachmentsOf(itemId: i.id),
@@ -511,6 +513,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
             toLon: Value(i.toLon),
             stopovers: Value(i.stopovers),
             runStops: Value(i.runStops),
+            routePlan: Value(i.routePlan),
             fromPlaceId: Value(i.fromPlaceId),
             toPlaceId: Value(i.toPlaceId),
           ),
@@ -527,6 +530,7 @@ class SharingDao extends DatabaseAccessor<AppDatabase> with _$SharingDaoMixin {
               // fails when the map first reads it, which is where the error
               // belongs — an unreadable line must not cost the whole import.
               points: t.points,
+              elevations: Value(t.elevations),
               sortOrder: Value(t.sortOrder),
               display: Value(t.display),
             ),

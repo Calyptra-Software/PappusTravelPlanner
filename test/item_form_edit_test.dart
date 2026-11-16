@@ -6,11 +6,13 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/route_plan.dart';
 import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
@@ -18,6 +20,11 @@ import 'package:travelplanner/features/costs/application/cost_providers.dart';
 import 'package:travelplanner/features/itinerary/application/itinerary_providers.dart';
 import 'package:travelplanner/features/itinerary/application/transport_mode_providers.dart';
 import 'package:travelplanner/features/itinerary/presentation/item_form_sheet.dart';
+import 'package:travelplanner/features/route_planner/application/route_engine.dart';
+import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
+import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
+import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
+import 'package:travelplanner/features/route_planner/presentation/route_planner_screen.dart';
 import 'package:travelplanner/features/trips/application/trip_providers.dart';
 import 'package:travelplanner/features/transport_search/presentation/connection_search_sheet.dart';
 import 'package:travelplanner/features/transport_search/presentation/journey_destination.dart';
@@ -104,6 +111,10 @@ void main() {
     overrides: [
       ...currencyOverrides,
       repositoryProvider.overrideWithValue(repo),
+      // The route planner the form can open draws a map, which names the app
+      // to its tile server, and would ask this router if it asked anything.
+      appVersionProvider.overrideWithValue('0.0.0-test'),
+      routeEngineProvider.overrideWithValue(_NoRouter()),
       ...attachmentTestOverrides,
       sharedPreferencesProvider.overrideWithValue(prefs),
       // Every drift-backed stream the sheet touches is stubbed: the real
@@ -717,4 +728,146 @@ void main() {
       expect(saved.endDayOffset, 0);
     });
   });
+
+  group('an entry the route planner made', () {
+    final plan = encodeRoutePlan(
+      const RoutePlan(
+        tour: 't1',
+        profile: 'foot',
+        waypoints: [
+          RoutePlanPoint(lat: 47.4, lon: 11, name: 'Car park'),
+          RoutePlanPoint(lat: 47.45, lon: 11.05, name: 'Summit'),
+        ],
+        seconds: 4800,
+        meters: 5000,
+      ),
+    );
+
+    Future<ItineraryItem> plannedLeg() async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          mode: const Value(1),
+          fromLocation: const Value('Car park'),
+          toLocation: const Value('Summit'),
+          fromLat: const Value(47.4),
+          fromLon: const Value(11),
+          toLat: const Value(47.45),
+          toLon: const Value(11.05),
+          routePlan: Value(plan),
+        ),
+      );
+      await repo.addTracks(id, [
+        (
+          points: const [
+            LatLng(47.4, 11),
+            LatLng(47.42, 11.03),
+            LatLng(47.45, 11.05),
+          ],
+          name: null,
+        ),
+      ]);
+      await (db.update(db.tracks)..where((t) => t.itemId.equals(id))).write(
+        const TracksCompanion(source: Value(TrackSource.routed)),
+      );
+      return reread(id);
+    }
+
+    testWidgets('keeps its route plan through an edit in the form', (
+      tester,
+    ) async {
+      final leg = await plannedLeg();
+
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: leg),
+          items: [leg],
+        ),
+      );
+      await tester.pump();
+      await save(tester);
+
+      expect((await reread(leg.id)).routePlan, plan);
+    });
+
+    testWidgets('offers Edit route, which no other entry does', (tester) async {
+      final planned = await plannedLeg();
+      final imported = await importedLeg();
+
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: planned),
+          items: [planned],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Edit route'), findsOneWidget);
+
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(
+            key: const ValueKey('imported'),
+            tripId: 1,
+            kind: ItemKind.transport,
+            existing: imported,
+          ),
+          items: [imported],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Edit route'), findsNothing);
+    });
+
+    testWidgets(
+      'Edit route closes the form and opens the planner on the tour',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 2000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final leg = await plannedLeg();
+
+        await tester.pumpWidget(
+          wrap(
+            Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showItemFormSheet(
+                  context,
+                  tripId: 1,
+                  kind: ItemKind.transport,
+                  existing: leg,
+                ),
+                child: const Text('open'),
+              ),
+            ),
+            items: [leg],
+          ),
+        );
+        await tester.tap(find.text('open'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Edit route'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ItemFormSheet), findsNothing);
+        expect(find.byType(RoutePlannerScreen), findsOneWidget);
+        // The tour as it was saved: both points, complete, saved over.
+        expect(find.byKey(const ValueKey('waypoint-0')), findsOneWidget);
+        expect(find.byKey(const ValueKey('waypoint-1')), findsOneWidget);
+        expect(find.textContaining('5 km'), findsOneWidget);
+        expect(find.widgetWithText(TextButton, 'Save'), findsOneWidget);
+      },
+    );
+  });
+}
+
+/// A router nobody may ask: opening a saved tour reads its lines from the
+/// trip, so a request here is the bug.
+class _NoRouter implements RouteEngine {
+  @override
+  Future<RoutedPath> route({
+    required List<LatLng> waypoints,
+    required RouteProfile profile,
+  }) => fail('the router was asked');
 }

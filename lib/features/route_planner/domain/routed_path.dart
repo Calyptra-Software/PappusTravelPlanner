@@ -1,5 +1,7 @@
 import 'package:latlong2/latlong.dart';
 
+import '../../map/elevation.dart';
+
 /// What a router answered for one stretch: the line, and what it measured
 /// along it.
 ///
@@ -15,6 +17,25 @@ class RoutedPath {
     this.duration,
   }) : assert(elevations == null || elevations.length == points.length);
 
+  /// A path whose climb is counted from its [elevations] (`climbOf`), the way
+  /// every line with heights is counted: null without heights.
+  factory RoutedPath.measured({
+    required List<LatLng> points,
+    required double lengthMeters,
+    List<double>? elevations,
+    Duration? duration,
+  }) {
+    final climb = elevations == null ? null : climbOf(elevations);
+    return RoutedPath(
+      points: points,
+      lengthMeters: lengthMeters,
+      elevations: elevations,
+      ascentMeters: climb?.ascent,
+      descentMeters: climb?.descent,
+      duration: duration,
+    );
+  }
+
   /// The line, in travel order. At least two points.
   final List<LatLng> points;
 
@@ -26,9 +47,9 @@ class RoutedPath {
   /// The length of the line as the router measured it.
   final double lengthMeters;
 
-  /// Meters climbed and descended, as the router counts them (it filters the
-  /// noise of its elevation model, which a plain sum over [elevations] would
-  /// count as climbing). Null when it gave none.
+  /// Meters climbed and descended, counted from [elevations] past a threshold
+  /// (see `climbOf`), since a plain sum would count the noise of the elevation
+  /// model as climbing. Null without heights.
   final double? ascentMeters;
   final double? descentMeters;
 

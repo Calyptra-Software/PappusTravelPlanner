@@ -138,6 +138,7 @@ void _line(
     return;
   }
   if (points.length < 2) return;
+  final elevations = trackElevationsOrNull(track.elevations, points.length);
 
   builder.element(
     element,
@@ -154,17 +155,22 @@ void _line(
       if (element == 'trk') {
         builder.element(
           'trkseg',
-          nest: () => _points(builder, points, pointElement),
+          nest: () => _points(builder, points, elevations, pointElement),
         );
       } else {
-        _points(builder, points, pointElement);
+        _points(builder, points, elevations, pointElement);
       }
     },
   );
 }
 
-void _points(XmlBuilder builder, List<LatLng> points, String pointElement) {
-  for (final point in points) {
+void _points(
+  XmlBuilder builder,
+  List<LatLng> points,
+  List<double>? elevations,
+  String pointElement,
+) {
+  for (final (index, point) in points.indexed) {
     builder.element(
       pointElement,
       attributes: {
@@ -173,6 +179,11 @@ void _points(XmlBuilder builder, List<LatLng> points, String pointElement) {
         'lat': point.latitude.toStringAsFixed(5),
         'lon': point.longitude.toStringAsFixed(5),
       },
+      // The height, where the line has one for every point: a tenth of a
+      // meter, which is what the column holds.
+      nest: elevations == null
+          ? null
+          : () => _text(builder, 'ele', elevations[index].toStringAsFixed(1)),
     );
   }
 }

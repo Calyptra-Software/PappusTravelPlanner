@@ -18,7 +18,10 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/route_planner/application/route_engine.dart';
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
+import 'package:travelplanner/features/map/widgets/elevation_profile_chart.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
+import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
+import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/presentation/route_planner_screen.dart';
@@ -32,6 +35,9 @@ class _FakeEngine implements RouteEngine {
   RouteEngineException? refusal;
   Completer<void>? hold;
 
+  /// Whether the answers come with a height for every point.
+  bool heights = false;
+
   @override
   Future<RoutedPath> route({
     required List<LatLng> waypoints,
@@ -42,6 +48,9 @@ class _FakeEngine implements RouteEngine {
     if (refusal case final refusal?) throw refusal;
     return RoutedPath(
       points: waypoints,
+      elevations: heights
+          ? [for (var i = 0; i < waypoints.length; i++) 900.0 + i * 300]
+          : null,
       lengthMeters: 4200,
       ascentMeters: 300,
       descentMeters: 120,
@@ -71,6 +80,7 @@ void main() {
     int tripId = 1,
     Size size = const Size(1000, 2000),
     Locale? locale,
+    SavedTour? editing,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -103,6 +113,7 @@ void main() {
                     day: day,
                     color: const Color(0xFF00695C),
                     nearby: const [LatLng(47.4, 11.0), LatLng(47.5, 11.2)],
+                    editing: editing,
                   ),
                 ),
                 child: const Text('open'),
@@ -271,7 +282,7 @@ void main() {
     // Read through the screen's own scope: the summit is now a place entry.
     expect(
       container
-          .read(tourPlannerProvider)
+          .read(tourPlannerProvider(null))
           .entries
           ?.whereType<TourPlace>()
           .single
@@ -294,7 +305,7 @@ void main() {
 
   int waypointCount(WidgetTester tester) => ProviderScope.containerOf(
     tester.element(find.byType(RoutePlannerScreen)),
-  ).read(tourPlannerProvider).tour.waypoints.length;
+  ).read(tourPlannerProvider(null)).tour.waypoints.length;
 
   testWidgets('a tap on a waypoint is not also a tap on the map', (
     tester,
@@ -471,7 +482,7 @@ void main() {
       tester.element(find.byType(RoutePlannerScreen)),
     );
     List<LatLng> positions() => [
-      for (final w in container.read(tourPlannerProvider).tour.waypoints)
+      for (final w in container.read(tourPlannerProvider(null)).tour.waypoints)
         w.position,
     ];
     final before = positions();
@@ -520,7 +531,7 @@ void main() {
       tester.element(find.byType(RoutePlannerScreen)),
     );
     List<LatLng> positions() => [
-      for (final w in container.read(tourPlannerProvider).tour.waypoints)
+      for (final w in container.read(tourPlannerProvider(null)).tour.waypoints)
         w.position,
     ];
     final before = positions();
@@ -579,6 +590,94 @@ void main() {
     await tester.tap(find.text('Punkt verschieben'));
     await tester.pumpAndSettle();
     expect(find.text('Abbrechen'), findsOneWidget);
+  });
+
+  group('the elevation profile', () {
+    IconButton button(WidgetTester tester) => tester.widget(
+      find.widgetWithIcon(IconButton, Icons.area_chart_outlined),
+    );
+
+    testWidgets('is offered once a routed line came with heights', (
+      tester,
+    ) async {
+      engine.heights = true;
+      await open(tester);
+      expect(button(tester).onPressed, isNull);
+
+      await tapMap(tester, const Offset(-150, -100));
+      await tapMap(tester, const Offset(150, 100));
+      await tester.pumpAndSettle();
+      expect(button(tester).onPressed, isNotNull);
+
+      await tester.tap(find.byTooltip('Elevation profile'));
+      await tester.pumpAndSettle();
+
+      expect(inSheet(find.text('Elevation profile')), findsOneWidget);
+      expect(inSheet(find.byType(ElevationProfileChart)), findsOneWidget);
+      // The lowest and the highest point, as the chart's scale.
+      expect(inSheet(find.text('900 m')), findsOneWidget);
+      expect(inSheet(find.text('1200 m')), findsOneWidget);
+    });
+
+    testWidgets('is not offered for a tour without heights', (tester) async {
+      await open(tester);
+      await choose(tester, 'Ski');
+      await tapMap(tester, const Offset(-150, -100));
+      await tapMap(tester, const Offset(150, 100));
+      await tester.pumpAndSettle();
+
+      expect(button(tester).onPressed, isNull);
+    });
+  });
+
+  group('opened on a saved tour', () {
+    const start = LatLng(47.4, 11.0);
+    const end = LatLng(47.5, 11.2);
+    final tour = Tour(
+      waypoints: const [
+        TourWaypoint(start, name: 'Car park'),
+        TourWaypoint(end, name: 'Summit'),
+      ],
+      modes: const [RoutedMode(RouteProfile.foot)],
+    );
+    SavedTour saved() => SavedTour(
+      tourId: 't1',
+      itemIds: const [],
+      groupId: null,
+      tour: tour,
+      startMinutes: 7 * 60 + 30,
+      paths: {
+        runKey(tour, tourRuns(tour).single)!: const RoutedPath(
+          points: [start, end],
+          lengthMeters: 5000,
+          duration: Duration(minutes: 80),
+        ),
+      },
+    );
+
+    testWidgets('shows the tour complete and asks the router nothing', (
+      tester,
+    ) async {
+      await open(tester, editing: saved());
+
+      expect(engine.asked, isEmpty);
+      expect(find.byKey(const ValueKey('waypoint-0')), findsOneWidget);
+      expect(find.byKey(const ValueKey('waypoint-1')), findsOneWidget);
+      expect(find.textContaining('5 km'), findsOneWidget);
+      expect(find.textContaining('1 h 20 min'), findsOneWidget);
+      // The time its first entry has.
+      expect(find.text('Start 07:30'), findsOneWidget);
+    });
+
+    testWidgets('saves over what is there, and says so', (tester) async {
+      await open(tester, editing: saved());
+
+      expect(find.widgetWithText(TextButton, 'Add to day'), findsNothing);
+      final save = tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Save'),
+      );
+      expect(save.onPressed, isNotNull);
+    });
   });
 
   testWidgets('the map keeps its size whatever the panel says', (tester) async {

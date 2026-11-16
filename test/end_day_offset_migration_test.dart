@@ -74,6 +74,9 @@ void main() {
       'WHERE id = ${ids['imported']}',
     );
     raw.execute('ALTER TABLE itinerary_items DROP COLUMN end_day_offset');
+    // A later version's column on another table, so the file is a v39 one:
+    // the migration that adds it does not look first.
+    raw.execute('ALTER TABLE tracks DROP COLUMN elevations');
     raw.execute('PRAGMA user_version = 39');
     raw.close();
     return ids;

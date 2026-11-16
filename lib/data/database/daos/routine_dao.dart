@@ -6,6 +6,7 @@ import '../../../core/format/civil_date.dart';
 import '../../../features/itinerary/entry_times.dart';
 import '../app_database.dart';
 import '../item_copy.dart';
+import '../route_plan.dart';
 import '../tables.dart';
 
 part 'routine_dao.g.dart';
@@ -668,6 +669,9 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             stopovers: const Value(null),
             runStops: const Value(null),
             sourceTripId: const Value(null),
+            // The way back is the way out, led through the same waypoints in
+            // the other order, as its line is its line turned round.
+            routePlan: Value(reversedRoutePlan(item.routePlan)),
           ),
         );
         // The line *does* travel, where the times did not: a path from A to B is

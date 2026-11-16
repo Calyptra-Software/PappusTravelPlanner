@@ -71,7 +71,7 @@ void main() {
       ],
     );
     // The screen's watch, which is what keeps an autoDispose tour alive.
-    container.listen(tourPlannerProvider, (_, _) {});
+    container.listen(tourPlannerProvider(null), (_, _) {});
   });
   tearDown(() async {
     container.dispose();
@@ -79,8 +79,8 @@ void main() {
   });
 
   TourPlannerController planner() =>
-      container.read(tourPlannerProvider.notifier);
-  TourPlannerState state() => container.read(tourPlannerProvider);
+      container.read(tourPlannerProvider(null).notifier);
+  TourPlannerState state() => container.read(tourPlannerProvider(null));
 
   test('one waypoint asks nothing, the second asks for the run', () {
     planner().addWaypoint(_a);

@@ -9,13 +9,29 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   route and a path a router computes later are the same row wearing different `TrackSource`
   values, which is why the enum names all three though only the first can be made today: a
   table that could not say "this one was actually walked" would have to be migrated to say
-  it. Elevation and the file's markup are dropped on the way in (`parseGpx`), each for a
-  stated reason — the app has no reading for a profile, and the file remains where those
-  live. Timestamps are *read* but never stored: the import uses them once (below) and they
+  it. The file's markup is dropped on the way in (`parseGpx`), and so, still, are a GPX
+  file's heights (see the note on heights below). Timestamps are *read* but never stored: the import uses them once (below) and they
   leave with the file. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
+- **A line may carry a height for every point, in a column of its own** (`Tracks.elevations`,
+  v43, packed by `encodeTrackElevations`). This overturns the rule that elevation is
+  dropped because "the app has no reading for a profile": the route planner gave it one.
+  A second column and not a third number in `points`, which stays the encoded polyline
+  every mapping tool reads, and so that "no heights" is a null and not a run of zeros.
+  **One per point or nothing**: every reader goes through `trackElevationsOrNull`, which
+  refuses a count that does not match and a string that will not decode, since a profile
+  drawn from heights that belong to other points is a picture of nothing. Climb is
+  counted in one place, `climbOf` (`features/map/elevation.dart`), with a threshold,
+  because a plain sum counts an elevation model's noise as climbing; the planner's totals
+  and a stored line's row both read it, so one line cannot have two figures. The heights
+  go where the points go: `copyItemTracks` (turned round with the points for the reversed
+  routine), the `.tpt` (key `elevations`, written only when present, no version bump) and
+  the `.gpx` export (`<ele>`). **Only a routed line from the planner has heights so
+  far**: `parseGpx` still drops a file's `<ele>`, and a recording stores none, because the
+  import divides a line among entries (`splitTracksAt`) and the heights are not yet
+  carried through that division.
 - **The codec does its arithmetic with `*` and `~/`, never with shifts and masks**, and that
   is a platform fact rather than a style: on the web an `int` is a JavaScript number and the
   bitwise operators truncate to **32 bits, unsigned**, so `~n` answers `2^32 - n - 1` where

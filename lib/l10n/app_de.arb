@@ -992,5 +992,7 @@
   "routeSectionAddPoint": "Hier einen Punkt einfügen",
   "routePlanPoints": "Punkte",
   "routePlanPointsHint": "Ziehe einen Punkt, um die Reihenfolge zu ändern.",
-  "routePointStart": "Start"
+  "routePointStart": "Start",
+  "routeEdit": "Route bearbeiten",
+  "elevationProfile": "Höhenprofil"
 }

@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../data/database/app_database.dart';
+import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
 import '../domain/tour.dart';
@@ -8,12 +9,18 @@ import '../tour_entries.dart';
 
 /// A tour as the rows it is saved as: [items] in plan order, and beside each
 /// the line it draws along, packed the way `TripRepository.insertJourney`
-/// takes a routed connection's shapes (null where an item has none).
+/// takes a routed connection's shapes (null where an item has none), and the
+/// heights of that line where the router gave them.
 class MappedTour {
-  const MappedTour({required this.items, required this.shapes});
+  const MappedTour({
+    required this.items,
+    required this.shapes,
+    required this.elevations,
+  });
 
   final List<ItineraryItemsCompanion> items;
   final List<String?> shapes;
+  final List<List<double>?> elevations;
 }
 
 /// Maps a planned tour onto itinerary rows of [tripId] on [date].
@@ -22,6 +29,10 @@ class MappedTour {
 /// entry at its own. [resolveMode] turns a built-in mode into the row the user
 /// keeps for it, or null when they deleted it; the leg is then filed under no
 /// mode, as an imported connection's would be.
+///
+/// Every entry is marked with [tourId] and, on a leg, with the waypoints and
+/// the way of travel it was planned with (`RoutePlan`), which is what lets the
+/// planner be opened on the saved tour again.
 ///
 /// With [startMinutes] the entries are timed one after the other from the
 /// router's durations. The chain stops at the first leg without one (a line
@@ -33,10 +44,12 @@ MappedTour tourToItems(
   required int tripId,
   required DateTime date,
   required int? Function(TransportMode mode) resolveMode,
+  required String tourId,
   int? startMinutes,
 }) {
   final items = <ItineraryItemsCompanion>[];
   final shapes = <String?>[];
+  final elevations = <List<double>?>[];
   // Minutes since midnight of [date] at which the next entry starts; null once
   // nothing is known about it any more.
   var clock = startMinutes;
@@ -53,9 +66,11 @@ MappedTour tourToItems(
             lat: Value(waypoint.position.latitude),
             lon: Value(waypoint.position.longitude),
             startMinutes: Value(clock),
+            routePlan: Value(encodeRoutePlan(RoutePlan(tour: tourId))),
           ),
         );
         shapes.add(null);
+        elevations.add(null);
       case TourLeg(:final from, :final to, :final mode, :final path):
         final start = clock;
         final minutes = path.duration == null
@@ -78,19 +93,45 @@ MappedTour tourToItems(
             startMinutes: Value(start),
             endMinutes: Value(end == null ? null : end % _minutesPerDay),
             endDayOffset: Value(end == null ? 0 : end ~/ _minutesPerDay),
+            routePlan: Value(encodeRoutePlan(_planOf(entry, tourId))),
           ),
         );
         // Two points are the chord the leg draws anyway; a stored line would
         // only repeat it.
+        final stored = path.points.length > 2;
         shapes.add(
-          path.points.length > 2
+          stored
               ? encodeTrackPoints(path.points, precision: kRoutedShapePrecision)
               : null,
         );
+        elevations.add(stored ? path.elevations : null);
         clock = end != null && end < _minutesPerDay ? end : null;
     }
   }
-  return MappedTour(items: items, shapes: shapes);
+  return MappedTour(items: items, shapes: shapes, elevations: elevations);
+}
+
+/// What a leg was planned with, as its row keeps it.
+RoutePlan _planOf(TourLeg leg, String tourId) {
+  final mode = leg.mode;
+  final waypoints = leg.waypoints.isEmpty ? [leg.from, leg.to] : leg.waypoints;
+  return RoutePlan(
+    tour: tourId,
+    profile: mode is RoutedMode ? mode.profile.name : null,
+    straight: mode is StraightMode,
+    straightMode: mode is StraightMode ? mode.transportMode?.name : null,
+    waypoints: [
+      for (final waypoint in waypoints)
+        RoutePlanPoint(
+          lat: waypoint.position.latitude,
+          lon: waypoint.position.longitude,
+          name: _name(waypoint),
+          isPlace: waypoint.isPlace,
+        ),
+    ],
+    seconds: leg.path.duration?.inSeconds,
+    meters: leg.path.lengthMeters,
+  );
 }
 
 /// Resolves a built-in mode to the user's row for it by `builtinKey`, as

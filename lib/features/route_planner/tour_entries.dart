@@ -1,5 +1,6 @@
 import 'package:latlong2/latlong.dart';
 
+import '../map/elevation.dart';
 import '../map/map_features.dart';
 import 'domain/routed_path.dart';
 import 'domain/tour.dart';
@@ -17,7 +18,13 @@ class TourLeg extends TourEntry {
     required this.to,
     required this.mode,
     required this.path,
-  });
+    List<TourWaypoint>? waypoints,
+  }) : waypoints = waypoints ?? const [];
+
+  /// Every waypoint the leg is led through, ends included: what the router was
+  /// asked with, kept so the tour can be opened again. Empty where a leg was
+  /// built without them.
+  final List<TourWaypoint> waypoints;
 
   final TourWaypoint from;
   final TourWaypoint to;
@@ -64,12 +71,23 @@ List<TourEntry>? tourEntries(Tour tour, Map<int, RoutedPath> paths) {
         to: waypoints.last,
         mode: run.mode,
         path: path,
+        waypoints: waypoints,
       ),
     );
     if (waypoints.last.isPlace) entries.add(TourPlace(waypoints.last));
   }
   return entries;
 }
+
+/// The heights along a tour: each leg's profile at its distance from the
+/// start, with a gap where a leg has no heights (a line drawn by hand).
+LaidProfile tourProfile(List<TourEntry> entries) => layProfiles([
+  for (final leg in entries.whereType<TourLeg>())
+    (
+      profile: elevationProfile(leg.path.points, leg.path.elevations),
+      meters: leg.path.lengthMeters,
+    ),
+]);
 
 /// What a tour adds up to.
 class TourTotals {

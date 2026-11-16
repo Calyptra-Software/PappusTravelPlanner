@@ -97,6 +97,61 @@ List<LatLng> decodeTrackPoints(
   return points;
 }
 
+/// How finely a height is kept: a tenth of a meter. Finer than any elevation
+/// model the app is handed, and coarse enough that a path's steps stay one or
+/// two characters each.
+const int kElevationPrecision = 10;
+
+/// A line's heights in meters, one per point, packed like the points beside
+/// them: each as the **difference** from the one before, in tenths of a meter.
+///
+/// A column of its own rather than a third number in the points: the points
+/// string is the encoded-polyline format every mapping tool reads, and a
+/// height woven into it would be a format only this app reads. It also keeps
+/// "this line has no heights" a null and not a run of zeros.
+///
+/// The inverse is [decodeTrackElevations]. The reader checks the count against
+/// the points; nothing here knows how many there should be.
+String encodeTrackElevations(List<double> meters) {
+  final out = StringBuffer();
+  var last = 0;
+  for (final height in meters) {
+    final value = (height * kElevationPrecision).round();
+    _writeValue(out, value - last);
+    last = value;
+  }
+  return out.toString();
+}
+
+/// Reads back what [encodeTrackElevations] wrote. Throws [FormatException] on
+/// a string that is not one of ours.
+List<double> decodeTrackElevations(String encoded) {
+  final meters = <double>[];
+  var index = 0;
+  var value = 0;
+  while (index < encoded.length) {
+    final (step, after) = _readValue(encoded, index);
+    index = after;
+    value += step;
+    meters.add(value / kElevationPrecision);
+  }
+  return meters;
+}
+
+/// The heights of a stored line, or null when it has none it can be read
+/// with: no column, a string that will not decode (a shared bundle is a file
+/// from outside), or a count that does not match [pointCount]. A profile drawn
+/// from heights that belong to other points would be a picture of nothing.
+List<double>? trackElevationsOrNull(String? encoded, int pointCount) {
+  if (encoded == null) return null;
+  try {
+    final meters = decodeTrackElevations(encoded);
+    return meters.length == pointCount ? meters : null;
+  } on FormatException {
+    return null;
+  }
+}
+
 /// One signed value, zig-zag encoded so a small negative step costs as little as
 /// a small positive one, then written five bits at a time.
 ///

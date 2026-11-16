@@ -2893,4 +2893,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routePointStart => 'Start';
+
+  @override
+  String get routeEdit => 'Edit route';
+
+  @override
+  String get elevationProfile => 'Elevation profile';
 }

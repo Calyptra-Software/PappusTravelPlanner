@@ -36,9 +36,9 @@ void main() {
 
     test('reads the totals, which arrive as strings', () {
       expect(path.lengthMeters, 6396);
-      expect(path.ascentMeters, 123);
-      // 123 m climbed on a way ending 676 m below its start.
-      expect(path.descentMeters, 799);
+      // Counted from the heights; the router's own figures are 123 and 799.
+      expect(path.ascentMeters, closeTo(123, 5));
+      expect(path.descentMeters, closeTo(799, 5));
       expect(path.duration, const Duration(seconds: 6204));
     });
 

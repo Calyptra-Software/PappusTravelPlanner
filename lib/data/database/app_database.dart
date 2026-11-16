@@ -87,7 +87,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 42;
+  int get schemaVersion => 43;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -471,6 +471,16 @@ class AppDatabase extends _$AppDatabase {
       if (from < 42) {
         await _addItineraryColumnsIfMissing(m, [itineraryItems.runStops]);
       }
+      // v43 keeps a line's heights and what the route planner made an entry
+      // from. Both null on every existing row: no line was stored with heights
+      // (a GPX file's were dropped on the way in), and no entry came from the
+      // planner. The track column is skipped below v29, where the table was
+      // created above from the current schema; the item column goes through
+      // the if-missing helper for the reason v30's does.
+      if (from < 43) {
+        if (from >= 29) await m.addColumn(tracks, tracks.elevations);
+        await _addItineraryColumnsIfMissing(m, [itineraryItems.routePlan]);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -623,7 +633,7 @@ class AppDatabase extends _$AppDatabase {
         // This recreates itinerary_items from the *current* schema, so any
         // column added to the table *after* v20 must be declared new here —
         // otherwise the copy step selects a column the old table lacks. The v24
-        // through v42 additions; extend this list when a later version adds more.
+        // through v43 additions; extend this list when a later version adds more.
         newColumns: [
           itineraryItems.endDayOffset,
           itineraryItems.fromLat,
@@ -639,6 +649,7 @@ class AppDatabase extends _$AppDatabase {
           itineraryItems.colorValue,
           itineraryItems.chordDisplay,
           itineraryItems.runStops,
+          itineraryItems.routePlan,
         ],
       ),
     );

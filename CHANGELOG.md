@@ -10,6 +10,10 @@ exact commits.
   duration. The way of travel can change from point to point, and the route is added to
   the day with its line. The route is computed by the BRouter server at brouter.de, which
   receives the points you set.
+- **A planned route can be edited again.** *Edit route* on one of its entries opens the
+  route in the planner as it was saved.
+- **Elevation profiles.** A planned route shows its climb and its elevation profile, in
+  the planner and on its entries, and the GPX export includes the heights.
 - **Screens are animated again.** Since 1.10.0, opening and leaving a screen switched
   without the platform's transition.
 

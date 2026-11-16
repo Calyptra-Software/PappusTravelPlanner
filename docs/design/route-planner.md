@@ -68,6 +68,43 @@ yet** (next section): that has to happen before a release carrying this.
 - **A hand-drawn line is stored as `routed`**, there being no source for "drawn": it is a
   proposal and not a record, which is what the dash says. A straight line of two points is
   not stored at all, since the leg's chord is the same line.
+- **A routed line is stored with its heights** (`Tracks.elevations`, see `tracks.md`),
+  and its climb is counted from them by `climbOf`, not read from the router's own
+  "filtered ascend". The stored line is counted again wherever it is shown, and the
+  planner must not show another figure for the same line. The threshold (8 m) puts the
+  one recorded route at 122 m up and 796 m down against the router's 123 and 799; it was
+  checked on that route only.
+
+## Opening a saved tour again
+
+- **Every entry of a saved tour says what it was made from** (`ItineraryItems.routePlan`,
+  v43, `data/database/route_plan.dart`): one tour id shared by the legs and the places,
+  and on a leg its waypoints, its way of travel and the router's duration and length. A
+  JSON column for the reason the stopovers are one. The id is the moment the tour was
+  first saved and is kept when it is saved again.
+- **A tour id alone is not a tour**, since a copy of an entry carries it too.
+  `tourItemsAround` takes the entries with the opened entry's id that are on its day, in
+  its group and option, and **connected**: each leg starts where the one before ended.
+  So a duplicated leg opens as a tour of its own, and a leg moved to another day leaves
+  the tour in two. That is the stretch the planner could have written in one go.
+- **Opening asks the router nothing.** `savedTourOf` reads each leg's routed track back
+  as the answer for its run (`SavedTour.paths`), with the heights the track holds and the
+  duration and length the plan kept. Only a leg whose line was removed since is asked
+  about. `tourPlannerProvider` is a family keyed by the saved tour, so the controller's
+  first state is the tour and no frame shows an empty planner.
+- **Saving replaces the entries, as a connection searched again replaces its legs**
+  (`replaceJourneyLegs`): the slot, the group and the color are kept and a cost or a file
+  on a replaced entry is rescued. A note, actual times or a recording on a replaced entry
+  goes with it, as it does there. Every entry is replaced, changed or not; keeping the
+  rows of legs the edit did not touch is not built.
+- **A profile this version does not know cannot be opened** (`savedTourOf` answers null),
+  rather than opened with a section it would save back as something else. The form then
+  stays as it is.
+- **The door is the entry's form** (*Edit route*, on a leg or a place with a readable
+  plan), which closes first as it does for a search: the entry it was editing is about to
+  be replaced. The plan itself rides through an ordinary edit of the form untouched.
+- **The reversed routine turns the plan round with the line** (`reversedRoutePlan`), so
+  the way back can be opened too.
 
 ## The screen
 
@@ -114,6 +151,11 @@ yet** (next section): that has to happen before a release carrying this.
 - **The duration wears a clock and is written "1 h 35 min"** (`formatStayDuration`), not
   the compact "1h 35m" used elsewhere: beside two figures in meters it read as a third
   distance.
+- **The elevation profile is a sheet, opened from the panel**, not a strip in it: the
+  panel keeps its height. `tourProfile` lays the legs' profiles end to end and leaves a
+  **gap** as long as a leg that has no heights (a line drawn by hand), since a profile
+  closed up over it would show a tour shorter than it is. The chart runs from the lowest
+  point to the highest, with both written beside it and the length under it.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
 - **Ski is a straight line under its own chip**, filed under the ski mode; *Straight line*
   is the same with no mode.
@@ -125,10 +167,9 @@ yet** (next section): that has to happen before a release carrying this.
 - Centering on the device and taking its position as a waypoint.
 - The base URL as a setting, and a link crediting BRouter beside the map's attribution.
 - Whether `brouter.de` sends the CORS header the web build needs (unverified).
-- Heights: the parser reads them, nothing stores them. That needs a column on `Tracks`
-  and overturns the "elevation is dropped" rule in `tracks.md`.
-- Reopening a saved tour for editing, which needs the waypoints and profile kept on the
-  leg (a JSON column like `stopovers`).
+- Heights on an imported GPX file and on a recording (`tracks.md`), and a walking-time
+  model with the user's own pace in place of the router's duration.
+- *Edit route* from the group's label and from the map, beside the entry's form.
 - Timetabled sections inside a tour, through the connection search.
 - Pistes and lifts, including a short walk between the end of a piste and a lift.
 - A run made by the planner must be kept out of the unattended connection lookup
