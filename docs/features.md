@@ -378,12 +378,14 @@ running on from the durations.
 Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
 it.
 
-The chart button under the map shows the route's **elevation profile**. A leg drawn as a
+The chart button under the map shows the route's **elevation profile** over the bottom of
+the map. Move the pointer over it, or draw a finger across it, and a line marks that
+distance with its height, and a dot shows where it is on the map. A leg drawn as a
 straight line has no heights and is left as a gap. A saved leg lists its line with its
 climb and profile too, and the GPX export writes the heights.
 
-*Edit route* on an entry the planner made opens the whole route in the planner again, as
-it was saved. Saving there replaces the route's entries: a cost or a file on one of them
+*Edit route* on the route's label, beside *Show journey* (or on the leg itself, for a
+route of one leg), opens the whole route in the planner again, as it was saved. Saving there replaces the route's entries: a cost or a file on one of them
 is kept, a note, actual times or a recording on a replaced entry is not.
 
 The routes come from the [BRouter](https://brouter.de) server at brouter.de, which

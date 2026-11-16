@@ -2917,4 +2917,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get elevationProfile => 'Höhenprofil';
+
+  @override
+  String get routeEditUnavailable =>
+      'Diese Route lässt sich nicht im Planer öffnen. Vielleicht wurde sie mit einer neueren Version der App geplant.';
 }

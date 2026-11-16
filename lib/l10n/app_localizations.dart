@@ -4827,6 +4827,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Elevation profile'**
   String get elevationProfile;
+
+  /// No description provided for @routeEditUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This route can\'t be opened in the planner. It may have been planned with a newer version of the app.'**
+  String get routeEditUnavailable;
 }
 
 class _AppLocalizationsDelegate

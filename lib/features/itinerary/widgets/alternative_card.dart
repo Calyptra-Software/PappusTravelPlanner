@@ -21,6 +21,7 @@ import 'now_line.dart';
 import 'put_down_chip.dart';
 import 'timeline_rail.dart';
 import 'timeline_tile.dart';
+import '../../route_planner/presentation/saved_route.dart';
 
 /// An option's name: its own label, or its position spelled as a letter
 /// ("Option B") when it has none. Top-level so anything that has to name an
@@ -586,6 +587,9 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                           itemId: item.id,
                         )
                       : null,
+                  onEditRoute: item.groupId == null && isPlannedLeg(item)
+                      ? () => editSavedRoute(context, ref, item)
+                      : null,
                   item: item,
                   accent: widget.accent,
                   onTap: () => widget.onTapItem(item),
@@ -617,6 +621,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                           groupId: groupId,
                         )
                       : null,
+                  onEditRoute: switch (items.where(isPlannedLeg).firstOrNull) {
+                    final leg? => () => editSavedRoute(context, ref, leg),
+                    null => null,
+                  },
                   dragHandle: dragHandle,
                   isNow: i == nowIndex,
                   // Only the chosen option can be under way, which [marker] has

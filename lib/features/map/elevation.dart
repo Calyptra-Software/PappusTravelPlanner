@@ -37,8 +37,9 @@ Climb climbOf(List<double> elevations) {
   return (ascent: ascent, descent: descent);
 }
 
-/// One point of an elevation profile: how far along the line, and how high.
-typedef ProfilePoint = ({double meters, double elevation});
+/// One point of an elevation profile: how far along the line, how high, and
+/// where it is, so a point of the profile can be found on the map.
+typedef ProfilePoint = ({double meters, double elevation, LatLng position});
 
 /// The profile of a line: each of [points] by its distance from the start.
 ///
@@ -52,11 +53,13 @@ List<ProfilePoint> elevationProfile(
       elevations.length != points.length) {
     return const [];
   }
-  final profile = <ProfilePoint>[(meters: 0, elevation: elevations.first)];
+  final profile = <ProfilePoint>[
+    (meters: 0, elevation: elevations.first, position: points.first),
+  ];
   var along = 0.0;
   for (var i = 1; i < points.length; i++) {
     along += lineLength([points[i - 1], points[i]]);
-    profile.add((meters: along, elevation: elevations[i]));
+    profile.add((meters: along, elevation: elevations[i], position: points[i]));
   }
   return profile;
 }
@@ -89,6 +92,39 @@ class LaidProfile {
     }
     return low == null || high == null ? null : (low: low, high: high);
   }
+
+  /// The point [meters] from the start, between the two profile points it
+  /// falls between, or null where the profile has a gap or the whole ends.
+  ///
+  /// Interpolated in a straight line, height and position alike: the points
+  /// of a routed line lie a few meters apart, and between two of them the
+  /// line is straight.
+  ProfilePoint? at(double meters) {
+    for (final stretch in stretches) {
+      if (meters < stretch.first.meters || meters > stretch.last.meters) {
+        continue;
+      }
+      for (var i = 1; i < stretch.length; i++) {
+        final a = stretch[i - 1];
+        final b = stretch[i];
+        if (meters > b.meters) continue;
+        final span = b.meters - a.meters;
+        final t = span <= 0 ? 0.0 : (meters - a.meters) / span;
+        return (
+          meters: meters,
+          elevation: a.elevation + t * (b.elevation - a.elevation),
+          position: LatLng(
+            a.position.latitude +
+                t * (b.position.latitude - a.position.latitude),
+            a.position.longitude +
+                t * (b.position.longitude - a.position.longitude),
+          ),
+        );
+      }
+      return stretch.last;
+    }
+    return null;
+  }
 }
 
 /// Lays [lines] end to end. Each is a profile and how long the line is; a
@@ -106,7 +142,11 @@ LaidProfile layProfiles(
     }
     stretches.add([
       for (final point in line.profile)
-        (meters: offset + point.meters, elevation: point.elevation),
+        (
+          meters: offset + point.meters,
+          elevation: point.elevation,
+          position: point.position,
+        ),
     ]);
     offset += line.profile.last.meters;
   }

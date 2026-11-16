@@ -18,6 +18,7 @@ import 'alternative_card.dart';
 import 'now_line.dart';
 import 'put_down_chip.dart';
 import 'timeline_tile.dart';
+import '../../route_planner/presentation/saved_route.dart';
 
 /// Renders a trip's itinerary as day sections. A day is a reorderable list of
 /// **blocks**: single place/transport tiles, and decisions — a set of competing
@@ -549,14 +550,14 @@ class _DaySection extends ConsumerWidget {
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: expanded
-              ? _buildBody(context, theme)
+              ? _buildBody(context, ref, theme)
               : const SizedBox(width: double.infinity),
         ),
       ],
     );
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
     final live = _liveItems;
     // Where the day leaves you is where its last entry does — or, on a morning
@@ -643,6 +644,7 @@ class _DaySection extends ConsumerWidget {
               );
               return switch (block) {
                 ItemBlock(:final item) => _itemTile(
+                  ref: ref,
                   context: context,
                   item: item,
                   dragHandle: dragHandle,
@@ -669,6 +671,10 @@ class _DaySection extends ConsumerWidget {
                           groupId: groupId,
                         )
                       : null,
+                  onEditRoute: switch (items.where(isPlannedLeg).firstOrNull) {
+                    final leg? => () => editSavedRoute(context, ref, leg),
+                    null => null,
+                  },
                   dragHandle: dragHandle,
                   isNow: index == happeningIndex,
                   nowMinutes: isToday ? nowMinutes : null,
@@ -757,6 +763,7 @@ class _DaySection extends ConsumerWidget {
   /// block, and [GroupRunTile] hands it its row.
   Widget _itemTile({
     required BuildContext context,
+    required WidgetRef ref,
     required ItineraryItem item,
     required Widget dragHandle,
     required bool isNow,
@@ -768,6 +775,9 @@ class _DaySection extends ConsumerWidget {
       // journey sheet; inside one the run's label carries it.
       onShowJourney: hasStandaloneJourney(item)
           ? () => openJourney(context, tripId: item.tripId, itemId: item.id)
+          : null,
+      onEditRoute: item.groupId == null && isPlannedLeg(item)
+          ? () => editSavedRoute(context, ref, item)
           : null,
       item: item,
       accent: accent,

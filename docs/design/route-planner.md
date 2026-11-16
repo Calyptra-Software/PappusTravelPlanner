@@ -98,11 +98,15 @@ yet** (next section): that has to happen before a release carrying this.
   goes with it, as it does there. Every entry is replaced, changed or not; keeping the
   rows of legs the edit did not touch is not built.
 - **A profile this version does not know cannot be opened** (`savedTourOf` answers null),
-  rather than opened with a section it would save back as something else. The form then
-  stays as it is.
-- **The door is the entry's form** (*Edit route*, on a leg or a place with a readable
-  plan), which closes first as it does for a search: the entry it was editing is about to
-  be replaced. The plan itself rides through an ordinary edit of the form untouched.
+  rather than opened with a section it would save back as something else. The button then
+  says so in a snack bar (`routeEditUnavailable`) instead of doing nothing.
+- **The door is the run's label, beside *Show journey*** (`GroupRunTile.onEditRoute`),
+  and the leg itself for a planned leg standing alone (`TimelineTile.onEditRoute`), the
+  way an imported leg carries its own journey button. A route is the whole run, so it is
+  offered on the unit it applies to and not inside one member's form, where it first was:
+  saving there replaced the very entry the form was editing. `isPlannedLeg` decides, and a
+  place of a tour opens nothing of its own. The plan rides through an ordinary edit of the
+  entry's form untouched.
 - **The reversed routine turns the plan round with the line** (`reversedRoutePlan`), so
   the way back can be opened too.
 
@@ -151,11 +155,22 @@ yet** (next section): that has to happen before a release carrying this.
 - **The duration wears a clock and is written "1 h 35 min"** (`formatStayDuration`), not
   the compact "1h 35m" used elsewhere: beside two figures in meters it read as a third
   distance.
-- **The elevation profile is a sheet, opened from the panel**, not a strip in it: the
-  panel keeps its height. `tourProfile` lays the legs' profiles end to end and leaves a
-  **gap** as long as a leg that has no heights (a line drawn by hand), since a profile
-  closed up over it would show a tour shorter than it is. The chart runs from the lowest
-  point to the highest, with both written beside it and the length under it.
+- **The elevation profile lies over the bottom of the map, switched on from the panel**,
+  not in a sheet, whose scrim would hide the map it is read against, and not in the
+  panel, which keeps its height. The map keeps its size too. `tourProfile` lays the legs'
+  profiles end to end and leaves a **gap** as long as a leg that has no heights (a line
+  drawn by hand), since a profile closed up over it would show a tour shorter than it is.
+  The chart runs from the lowest point to the highest, with both written beside it and
+  the length under it.
+- **The profile is read point by point**: a pointer hovering over it, or a finger drawn
+  across it, puts a line at that distance with the distance and height written under the
+  chart, and a dark dot on the map where that point is (`LaidProfile.at`, interpolated
+  between two points of the line, which lie a few meters apart). Letting go or leaving
+  the chart takes both away. In a gap the line shows the distance only and the map shows
+  nothing, there being no height there. The chart takes the drag, so the map does not
+  pan under it. The dot is a `ValueNotifier` of its own and the profile is worked out
+  once per planner state: a cursor moving redraws one marker, and the chart keeps its
+  cursor only while it is handed the same profile.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
 - **Ski is a straight line under its own chip**, filed under the ski mode; *Straight line*
   is the same with no mode.
@@ -168,7 +183,7 @@ yet** (next section): that has to happen before a release carrying this.
 - The base URL as a setting, and a link crediting BRouter beside the map's attribution.
 - Whether `brouter.de` sends the CORS header the web build needs (unverified).
 - A walking-time model with the user's own pace in place of the router's duration.
-- *Edit route* from the group's label and from the map, beside the entry's form.
+- *Edit route* from the map.
 - Timetabled sections inside a tour, through the connection search.
 - Pistes and lifts, including a short walk between the end of a piste and a lift.
 - A run made by the planner must be kept out of the unattended connection lookup

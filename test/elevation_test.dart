@@ -6,6 +6,8 @@ import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/track_points.dart';
 import 'package:travelplanner/features/map/elevation.dart';
 
+const _here = LatLng(47, 11);
+
 void main() {
   group('the height codec', () {
     test('reads back what it wrote, to a tenth of a meter', () {
@@ -125,13 +127,16 @@ void main() {
       final laid = layProfiles([
         (
           profile: [
-            (meters: 0, elevation: 500),
-            (meters: 1000, elevation: 600),
+            (meters: 0, elevation: 500, position: _here),
+            (meters: 1000, elevation: 600, position: _here),
           ],
           meters: 1000,
         ),
         (
-          profile: [(meters: 0, elevation: 600), (meters: 500, elevation: 580)],
+          profile: [
+            (meters: 0, elevation: 600, position: _here),
+            (meters: 500, elevation: 580, position: _here),
+          ],
           meters: 500,
         ),
       ]);
@@ -146,14 +151,17 @@ void main() {
       final laid = layProfiles([
         (
           profile: [
-            (meters: 0, elevation: 500),
-            (meters: 1000, elevation: 600),
+            (meters: 0, elevation: 500, position: _here),
+            (meters: 1000, elevation: 600, position: _here),
           ],
           meters: 1000,
         ),
         (profile: const [], meters: 700),
         (
-          profile: [(meters: 0, elevation: 400), (meters: 300, elevation: 420)],
+          profile: [
+            (meters: 0, elevation: 400, position: _here),
+            (meters: 300, elevation: 420, position: _here),
+          ],
           meters: 300,
         ),
       ]);
@@ -170,5 +178,62 @@ void main() {
       expect(laid.range, isNull);
       expect(LaidProfile.empty.isEmpty, isTrue);
     });
+  });
+
+  group('LaidProfile.at', () {
+    // A climb of 100 m over 1 km heading north, a gap of 500 m, then 200 m
+    // more of level ground.
+    final laid = layProfiles([
+      (
+        profile: const [
+          (meters: 0, elevation: 500, position: LatLng(47, 11)),
+          (meters: 1000, elevation: 600, position: LatLng(47.009, 11)),
+        ],
+        meters: 1000,
+      ),
+      (profile: const [], meters: 500),
+      (
+        profile: const [
+          (meters: 0, elevation: 650, position: LatLng(47.02, 11)),
+          (meters: 200, elevation: 650, position: LatLng(47.022, 11)),
+        ],
+        meters: 200,
+      ),
+    ]);
+
+    test('interpolates height and position between two points', () {
+      final point = laid.at(250)!;
+
+      expect(point.meters, 250);
+      expect(point.elevation, closeTo(525, 1e-9));
+      expect(point.position.latitude, closeTo(47.00225, 1e-9));
+      expect(point.position.longitude, 11);
+    });
+
+    test('answers at the ends of a stretch', () {
+      expect(laid.at(0)!.elevation, 500);
+      expect(laid.at(1000)!.elevation, 600);
+      expect(laid.at(1500)!.elevation, 650);
+      expect(laid.at(1700)!.position, const LatLng(47.022, 11));
+    });
+
+    test('has nothing in a gap or past the end', () {
+      expect(laid.at(1200), isNull);
+      expect(laid.at(1701), isNull);
+      expect(laid.at(-1), isNull);
+      expect(LaidProfile.empty.at(0), isNull);
+    });
+  });
+
+  test('a profile carries where each of its points is', () {
+    final profile = elevationProfile(
+      const [LatLng(47, 11), LatLng(47.01, 11)],
+      const [500, 600],
+    );
+
+    expect(profile.map((p) => p.position), const [
+      LatLng(47, 11),
+      LatLng(47.01, 11),
+    ]);
   });
 }

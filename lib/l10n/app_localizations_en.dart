@@ -2899,4 +2899,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get elevationProfile => 'Elevation profile';
+
+  @override
+  String get routeEditUnavailable =>
+      'This route can\'t be opened in the planner. It may have been planned with a newer version of the app.';
 }

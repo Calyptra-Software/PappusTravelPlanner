@@ -30,8 +30,6 @@ import '../application/itinerary_providers.dart';
 import '../application/transport_mode_providers.dart';
 import '../entry_times.dart';
 import '../widgets/transport_mode.dart';
-import '../../route_planner/presentation/saved_route.dart';
-import '../../route_planner/presentation/route_planner_screen.dart';
 
 /// Opens the add/edit sheet for an itinerary item and persists on save.
 Future<void> showItemFormSheet(
@@ -341,26 +339,6 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
   /// Either way the form behind it has nothing left to do afterwards — a new leg
   /// would be an empty duplicate of what the search wrote, and an edited one no
   /// longer exists — so it closes with the search.
-  /// Opens the route planner on the tour this entry belongs to. The form
-  /// closes first, as it does for a search: saving in the planner replaces the
-  /// entry being edited here, so there is nothing left for the form to save.
-  Future<void> _editRoute() async {
-    final navigator = Navigator.of(context);
-    final repository = ref.read(repositoryProvider);
-    final saved = await loadSavedRoute(repository, widget.existing!);
-    // No tour to open (a profile from a newer version): the form stays.
-    if (saved == null || !navigator.mounted) return;
-    navigator.pop();
-    await planRoute(
-      navigator.context,
-      tripId: widget.tripId,
-      day: widget.existing!.date,
-      color: saved.color,
-      nearby: _tripPoints(),
-      editing: saved.tour,
-    );
-  }
-
   Future<void> _searchOnline() async {
     final navigator = Navigator.of(context);
     final existing = widget.existing;
@@ -752,16 +730,6 @@ class _ItemFormSheetState extends ConsumerState<ItemFormSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(heading, style: theme.textTheme.titleLarge),
-                // An entry the route planner made is edited there: its line,
-                // its waypoints and the entries around it are one tour.
-                if (_isEditing && hasRoutePlan(widget.existing!)) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    icon: const Icon(Icons.polyline_outlined),
-                    label: Text(l10n.routeEdit),
-                    onPressed: _editRoute,
-                  ),
-                ],
                 if (_isTransport && (!_isEditing || _canReplaceLeg)) ...[
                   const SizedBox(height: 12),
                   OutlinedButton.icon(

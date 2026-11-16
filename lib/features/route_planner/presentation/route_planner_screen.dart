@@ -132,9 +132,33 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   /// the gesture around it reads it, as on the trip map.
   final _lineHits = ValueNotifier<LayerHitResult<int>?>(null);
 
+  /// Whether the elevation profile is shown over the bottom of the map.
+  bool _profileShown = false;
+
+  /// The point of the profile the cursor stands on, drawn on the map. A
+  /// notifier of its own, so a finger drawn across the profile redraws one
+  /// marker and not the screen.
+  final _scrub = ValueNotifier<ProfilePoint?>(null);
+
+  /// The profile of the tour as it stands, worked out once per state of the
+  /// planner rather than on every build: the chart keeps its cursor only while
+  /// it is handed the same profile.
+  TourPlannerState? _profiledState;
+  LaidProfile _profile = LaidProfile.empty;
+
+  LaidProfile _profileOf(TourPlannerState state) {
+    if (!identical(state, _profiledState)) {
+      _profiledState = state;
+      final entries = state.entries;
+      _profile = entries == null ? LaidProfile.empty : tourProfile(entries);
+    }
+    return _profile;
+  }
+
   @override
   void dispose() {
     _lineHits.dispose();
+    _scrub.dispose();
     super.dispose();
   }
 
@@ -246,7 +270,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     final planner = ref.read(_planner.notifier);
     final tour = state.tour;
     final entries = state.entries;
-    final profile = entries == null ? LaidProfile.empty : tourProfile(entries);
+    final profile = _profileOf(state);
+    final profileShown = _profileShown && !profile.isEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -338,6 +363,21 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           ),
                       ],
                     ),
+                    // Where the point of the profile under the cursor is.
+                    ValueListenableBuilder(
+                      valueListenable: _scrub,
+                      builder: (context, point, _) => MarkerLayer(
+                        markers: [
+                          if (point != null)
+                            Marker(
+                              point: point.position,
+                              width: 22,
+                              height: 22,
+                              child: const IgnorePointer(child: _ScrubMark()),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
                 Positioned(
@@ -360,9 +400,36 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: MapAttributionBar(
-                    basemap: basemap,
-                    overlays: overlays,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Over the map rather than in a sheet: the map is what
+                      // the profile is read against, and a sheet's scrim would
+                      // hide it.
+                      if (profileShown)
+                        Material(
+                          key: const ValueKey('profile-overlay'),
+                          color: theme.colorScheme.surface.withValues(
+                            alpha: 0.94,
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              12 + MediaQuery.paddingOf(context).left,
+                              8,
+                              12 + MediaQuery.paddingOf(context).right,
+                              4,
+                            ),
+                            child: ElevationProfileChart(
+                              profile: profile,
+                              color: widget.color,
+                              height: 96,
+                              onScrub: (point) => _scrub.value = point,
+                            ),
+                          ),
+                        ),
+                      MapAttributionBar(basemap: basemap, overlays: overlays),
+                    ],
                   ),
                 ),
               ],
@@ -376,16 +443,13 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
             onCancelMove: () => setState(() => _moving = null),
-            onShowProfile: profile.isEmpty
+            profileShown: profileShown,
+            onToggleProfile: profile.isEmpty
                 ? null
-                : () => showAppSheet<void>(
-                    context,
-                    builder: (_) => _ProfileSheet(
-                      profile: profile,
-                      totals: tourTotals(entries!),
-                      color: widget.color,
-                    ),
-                  ),
+                : () => setState(() {
+                    _profileShown = !_profileShown;
+                    _scrub.value = null;
+                  }),
             onShowPoints: tour.waypoints.isEmpty
                 ? null
                 : () => showAppSheet<void>(
@@ -497,12 +561,14 @@ class _PlannerPanel extends StatelessWidget {
     required this.moving,
     required this.onCancelMove,
     required this.onShowPoints,
-    required this.onShowProfile,
+    required this.profileShown,
+    required this.onToggleProfile,
   });
 
-  /// Opens the tour's elevation profile. Null while the tour is not complete
-  /// or none of its legs has heights.
-  final VoidCallback? onShowProfile;
+  /// Shows or hides the tour's elevation profile over the map. Null while the
+  /// tour is not complete or none of its legs has heights.
+  final VoidCallback? onToggleProfile;
+  final bool profileShown;
 
   /// Opens the list of waypoints, where one is removed and their order is
   /// changed. Null while there is none.
@@ -591,8 +657,10 @@ class _PlannerPanel extends StatelessWidget {
                         tooltip: l10n.routePlanPoints,
                       ),
                       IconButton(
-                        onPressed: onShowProfile,
+                        onPressed: onToggleProfile,
+                        isSelected: profileShown,
                         icon: const Icon(Icons.area_chart_outlined),
+                        selectedIcon: const Icon(Icons.area_chart),
                         tooltip: l10n.elevationProfile,
                       ),
                       const Spacer(),
@@ -1005,40 +1073,24 @@ class _PointsSheet extends ConsumerWidget {
   }
 }
 
-/// The tour's heights along its length, with what they add up to above.
-class _ProfileSheet extends StatelessWidget {
-  const _ProfileSheet({
-    required this.profile,
-    required this.totals,
-    required this.color,
-  });
-
-  final LaidProfile profile;
-  final TourTotals totals;
-  final Color color;
+/// The point of the profile under the cursor, on the map: ink on a white
+/// ring, in map colors like every mark here, and neither the reserved red nor
+/// the device's blue.
+class _ScrubMark extends StatelessWidget {
+  const _ScrubMark();
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(l10n.elevationProfile, style: theme.textTheme.titleLarge),
-          const SizedBox(height: 4),
-          Text(
-            formatTourTotals(totals),
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ElevationProfileChart(profile: profile, color: color, height: 160),
-        ],
+  Widget build(BuildContext context) => Center(
+    child: Container(
+      key: const ValueKey('profile-scrub-mark'),
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: const Color(0xFF202124),
+        shape: BoxShape.circle,
+        border: Border.all(color: const Color(0xFFFFFFFF), width: 3),
+        boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 2)],
       ),
-    );
-  }
+    ),
+  );
 }

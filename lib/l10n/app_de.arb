@@ -994,5 +994,6 @@
   "routePlanPointsHint": "Ziehe einen Punkt, um die Reihenfolge zu ändern.",
   "routePointStart": "Start",
   "routeEdit": "Route bearbeiten",
-  "elevationProfile": "Höhenprofil"
+  "elevationProfile": "Höhenprofil",
+  "routeEditUnavailable": "Diese Route lässt sich nicht im Planer öffnen. Vielleicht wurde sie mit einer neueren Version der App geplant."
 }

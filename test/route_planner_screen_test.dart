@@ -5,6 +5,7 @@ import 'package:cupertino_ui/cupertino_ui.dart'
 import 'package:drift/native.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -593,30 +594,123 @@ void main() {
   });
 
   group('the elevation profile', () {
+    // By its tooltip: shown, it wears its filled icon.
     IconButton button(WidgetTester tester) => tester.widget(
-      find.widgetWithIcon(IconButton, Icons.area_chart_outlined),
+      find.byWidgetPredicate(
+        (w) => w is IconButton && w.tooltip == 'Elevation profile',
+      ),
     );
 
-    testWidgets('is offered once a routed line came with heights', (
-      tester,
-    ) async {
+    /// A tour of three points whose route came with heights, its profile
+    /// shown over the map.
+    Future<void> showProfile(WidgetTester tester) async {
       engine.heights = true;
       await open(tester);
       expect(button(tester).onPressed, isNull);
 
-      await tapMap(tester, const Offset(-150, -100));
-      await tapMap(tester, const Offset(150, 100));
+      await tapMap(tester, const Offset(-200, -100));
+      await tapMap(tester, const Offset(200, 100));
       await tester.pumpAndSettle();
       expect(button(tester).onPressed, isNotNull);
 
       await tester.tap(find.byTooltip('Elevation profile'));
       await tester.pumpAndSettle();
+    }
 
-      expect(inSheet(find.text('Elevation profile')), findsOneWidget);
-      expect(inSheet(find.byType(ElevationProfileChart)), findsOneWidget);
+    Finder plot() => find.descendant(
+      of: find.byType(ElevationProfileChart),
+      matching: find.byType(GestureDetector),
+    );
+
+    testWidgets('is shown over the map once a line came with heights', (
+      tester,
+    ) async {
+      Size mapSize() => tester.getSize(find.byType(FlutterMap));
+      await showProfile(tester);
+      final size = mapSize();
+
+      expect(find.byKey(const ValueKey('profile-overlay')), findsOneWidget);
+      expect(button(tester).isSelected, isTrue);
       // The lowest and the highest point, as the chart's scale.
-      expect(inSheet(find.text('900 m')), findsOneWidget);
-      expect(inSheet(find.text('1200 m')), findsOneWidget);
+      expect(find.text('900 m'), findsOneWidget);
+      expect(find.text('1200 m'), findsOneWidget);
+      // Over the map, not in a sheet: no scrim, and the map keeps its size.
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(mapSize(), size);
+
+      await tester.tap(find.byTooltip('Elevation profile'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('profile-overlay')), findsNothing);
+    });
+
+    testWidgets('a finger drawn across it shows the point on the map', (
+      tester,
+    ) async {
+      await showProfile(tester);
+      final rect = tester.getRect(plot());
+
+      final gesture = await tester.startGesture(
+        rect.centerLeft + const Offset(10, 0),
+      );
+      await tester.pump();
+      await gesture.moveTo(rect.center);
+      await tester.pump();
+
+      // The cursor's distance and height, and its point on the map.
+      final cursor = tester.widget<Text>(
+        find.byKey(const ValueKey('profile-cursor')),
+      );
+      expect(cursor.data, contains(' m'));
+      expect(cursor.data, contains(' · '));
+      expect(find.byKey(const ValueKey('profile-scrub-mark')), findsOneWidget);
+      // Half way along the line from the first point to the second: between
+      // them on the map too.
+      final mark = tester.getCenter(
+        find.byKey(const ValueKey('profile-scrub-mark')),
+      );
+      final from = tester.getCenter(find.byKey(const ValueKey('waypoint-0')));
+      final to = tester.getCenter(find.byKey(const ValueKey('waypoint-1')));
+      expect(mark.dx, inExclusiveRange(from.dx, to.dx));
+      expect(mark.dy, inExclusiveRange(from.dy, to.dy));
+
+      await gesture.up();
+      await tester.pump();
+      expect(find.byKey(const ValueKey('profile-scrub-mark')), findsNothing);
+      expect(find.byKey(const ValueKey('profile-cursor')), findsNothing);
+    });
+
+    testWidgets('a pointer hovering over it does the same', (tester) async {
+      await showProfile(tester);
+      final rect = tester.getRect(plot());
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(rect.center);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('profile-scrub-mark')), findsOneWidget);
+
+      // Leaving the chart takes it away.
+      await mouse.moveTo(rect.topCenter - const Offset(0, 40));
+      await tester.pump();
+      expect(find.byKey(const ValueKey('profile-scrub-mark')), findsNothing);
+    });
+
+    testWidgets('a drag across it does not pan the map', (tester) async {
+      await showProfile(tester);
+      final before = tester.getCenter(find.byKey(const ValueKey('waypoint-0')));
+      final rect = tester.getRect(plot());
+
+      await tester.dragFrom(
+        rect.centerLeft + const Offset(10, 0),
+        const Offset(200, 0),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('waypoint-0'))),
+        before,
+      );
     });
 
     testWidgets('is not offered for a tour without heights', (tester) async {
