@@ -4641,6 +4641,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photos'**
   String get photosTitle;
+
+  /// No description provided for @routePlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan route'**
+  String get routePlanTitle;
+
+  /// No description provided for @routePlanHintStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to set the start.'**
+  String get routePlanHintStart;
+
+  /// No description provided for @routePlanHintNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to set the next point.'**
+  String get routePlanHintNext;
+
+  /// No description provided for @routePlanStraightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawn as a straight line between your points.'**
+  String get routePlanStraightHint;
+
+  /// No description provided for @routePlanRouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the route…'**
+  String get routePlanRouting;
+
+  /// No description provided for @routePlanUndo.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove last point'**
+  String get routePlanUndo;
+
+  /// No description provided for @routePlanStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get routePlanStartTime;
+
+  /// No description provided for @routePlanStartsAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Start {time}'**
+  String routePlanStartsAt(String time);
+
+  /// No description provided for @routeProfileFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'On foot'**
+  String get routeProfileFoot;
+
+  /// No description provided for @routeProfileBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get routeProfileBike;
+
+  /// No description provided for @routeProfileRoadBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Road bike'**
+  String get routeProfileRoadBike;
+
+  /// No description provided for @routeProfileGravelBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Gravel bike'**
+  String get routeProfileGravelBike;
+
+  /// No description provided for @routeProfileMountainBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain bike'**
+  String get routeProfileMountainBike;
+
+  /// No description provided for @routeProfileCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get routeProfileCar;
+
+  /// No description provided for @routeModeSki.
+  ///
+  /// In en, this message translates to:
+  /// **'Ski'**
+  String get routeModeSki;
+
+  /// No description provided for @routeModeStraight.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight line'**
+  String get routeModeStraight;
+
+  /// No description provided for @routeFailureUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the routing service.'**
+  String get routeFailureUnreachable;
+
+  /// No description provided for @routeFailureNoRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'No route found between these points.'**
+  String get routeFailureNoRoute;
+
+  /// No description provided for @routeFailureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing service answered with an error.'**
+  String get routeFailureFailed;
+
+  /// No description provided for @routeWaypointTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waypoint'**
+  String get routeWaypointTitle;
+
+  /// No description provided for @routeWaypointName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get routeWaypointName;
+
+  /// No description provided for @routeWaypointAsPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the plan as a place'**
+  String get routeWaypointAsPlace;
+
+  /// No description provided for @routeWaypointRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove point'**
+  String get routeWaypointRemove;
 }
 
 class _AppLocalizationsDelegate

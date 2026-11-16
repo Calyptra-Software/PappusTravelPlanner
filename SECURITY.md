@@ -120,8 +120,9 @@ point the app at any `.sqlite` a file picker hands back, and the app writes to
 it. The header check (`kApplicationId`) is a sanity check, not a security
 boundary.
 
-**It parses replies from two network services.** The connection search talks to
+**It parses replies from three network services.** The connection search talks to
 `https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`),
+the route planner to `https://brouter.de` (`lib/features/route_planner/data/brouter_client.dart`),
 and the map fetches tile images from the server of the chosen map style
 (`lib/features/map/basemap.dart`): `tile.openstreetmap.org` by default, and
 `tile.opentopomap.org`, `tile-cyclosm.openstreetmap.fr`, `tile.openstreetmap.fr` or
@@ -223,6 +224,14 @@ and linking this repository — its
 [usage policy](https://transitous.org/api/) asks for exactly that. Searching a
 connection without telling anyone where and when you want to go is not a thing
 that can be built.
+
+**The route planner tells the router the points of the route.** The coordinates of
+the points you set on its map and the way of travel you chose go to `brouter.de`, with
+the same `User-Agent`. Nothing is sent before the second point is set, and nothing for
+a section drawn as a straight line. The server's
+[privacy policy](https://brouter.de/privacypolicy.html) says it logs the address a
+request came from, the user agent and the requested coordinates, and keeps the logs
+for two weeks and their backups for ten days more.
 
 **The map tells its tile server which tiles it is looking at.** Opening a trip's
 map requests the image tiles covering it, which means the server of the chosen

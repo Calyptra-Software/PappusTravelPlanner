@@ -35,6 +35,7 @@ class ItineraryTimeline extends StatefulWidget {
     required this.onAddPlace,
     required this.onQuickAddPlace,
     required this.onAddTransport,
+    this.onPlanRoute,
     required this.onReorder,
     required this.onReorderBranch,
     required this.onReorderRun,
@@ -126,6 +127,9 @@ class ItineraryTimeline extends StatefulWidget {
   /// leaves you — pre-filled into the "from" field, or null if there is none.
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
+
+  /// Opens the tour planner for [day]. Null leaves the offer out.
+  final void Function(DateTime day)? onPlanRoute;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -225,6 +229,7 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
         onAddPlace: widget.onAddPlace,
         onQuickAddPlace: widget.onQuickAddPlace,
         onAddTransport: widget.onAddTransport,
+        onPlanRoute: widget.onPlanRoute,
         onReorder: widget.onReorder,
         onReorderBranch: widget.onReorderBranch,
         onReorderRun: widget.onReorderRun,
@@ -269,6 +274,7 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
             onAddPlace: widget.onAddPlace,
             onQuickAddPlace: widget.onQuickAddPlace,
             onAddTransport: widget.onAddTransport,
+            onPlanRoute: widget.onPlanRoute,
             onReorder: widget.onReorder,
             onReorderBranch: widget.onReorderBranch,
             onReorderRun: widget.onReorderRun,
@@ -339,6 +345,7 @@ class _DaySection extends ConsumerWidget {
     required this.onAddPlace,
     required this.onQuickAddPlace,
     required this.onAddTransport,
+    this.onPlanRoute,
     required this.onReorder,
     required this.onReorderBranch,
     required this.onReorderRun,
@@ -399,6 +406,7 @@ class _DaySection extends ConsumerWidget {
   onQuickAddPlace;
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
+  final void Function(DateTime day)? onPlanRoute;
   final void Function(List<DayBlock>, int, int) onReorder;
   final void Function(List<DayBlock>, int, int) onReorderBranch;
   final void Function(List<ItineraryItem>, int, int) onReorderRun;
@@ -727,6 +735,12 @@ class _DaySection extends ConsumerWidget {
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: Text(l10n.addTransport),
               ),
+              if (onPlanRoute case final onPlanRoute?)
+                TextButton.icon(
+                  onPressed: () => onPlanRoute(day),
+                  icon: const Icon(Icons.polyline_outlined, size: 18),
+                  label: Text(l10n.routePlanTitle),
+                ),
               // Where something new goes is where a held entry can go too, so
               // the offer sits in the row already used for "put something here"
               // — and disappears entirely when nothing is held.

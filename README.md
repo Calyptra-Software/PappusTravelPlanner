@@ -14,7 +14,8 @@ Plan a trip day by day — where you go, how you get there, and what it costs, b
 category and by person — and keep the whole database in **one portable SQLite file that belongs to
 you**. No account, no server, nothing uploaded. The app works with the network switched
 off; the exceptions are an optional connection search that looks up real timetables and
-writes the answer into your local plan, and the map, whose background tiles are fetched
+writes the answer into your local plan, the route planner, which asks a routing server for
+the way between the points you set, and the map, whose background tiles are fetched
 while you look at them.
 
 You can plan all kinds of trips: an afternoon out, the daily commute, and two weeks abroad
@@ -79,6 +80,9 @@ For macOS and iOS, which have no release builds, or to build any of the four you
   long-distance trains, buses, and more from operators around the world, compare the results,
   import one as that day's legs, and refresh its live times later. On the way, the journey's
   own screen shows its route on a map and where each train is estimated to be.
+- **Route planning** — tap the points of a walk, ride or drive on a map and the app finds
+  the way between them, changing the way of travel from point to point, and adds it to the
+  day with its line.
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
   is under way marked as the timeline marks it. Record a **track** from the map, or import a
   **GPX** file, and the map draws the line you actually followed instead of the straight one.
@@ -130,6 +134,9 @@ the plan, and only the `.tpt` bundle can be imported back.
 The connection search talks to [Transitous](https://transitous.org), a community-run,
 donated MOTIS instance serving [public-transport open data](https://transitous.org/sources/)
 on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
+
+The route planner asks the [BRouter](https://brouter.de) server at brouter.de, which routes
+on OpenStreetMap data.
 
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles from the
 OpenStreetMap Foundation's own servers. Their
@@ -196,6 +203,7 @@ lib/
     trips/                  # overview, calendar, create/edit, detail, participants, tags, routines
     itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
+    route_planner/          # planning a route on the map (BRouter)
     map/                    # trip map: pure feature building + the basemap and its screen
     attachments/            # photos and files on an entry, a group, or the trip; gallery
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies

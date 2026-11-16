@@ -960,5 +960,31 @@
   "photosCount": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
   "documentsCount": "{count, plural, =1{1 Dokument} other{{count} Dokumente}}",
   "documentsTitle": "Dokumente",
-  "photosTitle": "Fotos"
+  "photosTitle": "Fotos",
+  "routePlanTitle": "Route planen",
+  "routePlanHintStart": "Tippe auf die Karte, um den Start zu setzen.",
+  "routePlanHintNext": "Tippe auf die Karte, um den nächsten Punkt zu setzen.",
+  "routePlanStraightHint": "Wird als gerade Linie zwischen deinen Punkten gezeichnet.",
+  "routePlanRouting": "Route wird berechnet …",
+  "routePlanUndo": "Letzten Punkt entfernen",
+  "routePlanStartTime": "Startzeit",
+  "routePlanStartsAt": "Start {time}",
+  "@routePlanStartsAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "routeProfileFoot": "Zu Fuß",
+  "routeProfileBike": "Fahrrad",
+  "routeProfileRoadBike": "Rennrad",
+  "routeProfileGravelBike": "Gravelbike",
+  "routeProfileMountainBike": "Mountainbike",
+  "routeProfileCar": "Auto",
+  "routeModeSki": "Ski",
+  "routeModeStraight": "Gerade Linie",
+  "routeFailureUnreachable": "Der Routing-Dienst ist nicht erreichbar.",
+  "routeFailureNoRoute": "Zwischen diesen Punkten wurde keine Route gefunden.",
+  "routeFailureFailed": "Der Routing-Dienst hat mit einem Fehler geantwortet.",
+  "routeWaypointTitle": "Wegpunkt",
+  "routeWaypointName": "Name",
+  "routeWaypointAsPlace": "Als Ort in den Plan aufnehmen",
+  "routeWaypointRemove": "Punkt entfernen"
 }

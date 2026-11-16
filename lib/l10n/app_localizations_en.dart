@@ -2802,4 +2802,77 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photosTitle => 'Photos';
+
+  @override
+  String get routePlanTitle => 'Plan route';
+
+  @override
+  String get routePlanHintStart => 'Tap the map to set the start.';
+
+  @override
+  String get routePlanHintNext => 'Tap the map to set the next point.';
+
+  @override
+  String get routePlanStraightHint =>
+      'Drawn as a straight line between your points.';
+
+  @override
+  String get routePlanRouting => 'Finding the route…';
+
+  @override
+  String get routePlanUndo => 'Remove last point';
+
+  @override
+  String get routePlanStartTime => 'Start time';
+
+  @override
+  String routePlanStartsAt(String time) {
+    return 'Start $time';
+  }
+
+  @override
+  String get routeProfileFoot => 'On foot';
+
+  @override
+  String get routeProfileBike => 'Bike';
+
+  @override
+  String get routeProfileRoadBike => 'Road bike';
+
+  @override
+  String get routeProfileGravelBike => 'Gravel bike';
+
+  @override
+  String get routeProfileMountainBike => 'Mountain bike';
+
+  @override
+  String get routeProfileCar => 'Car';
+
+  @override
+  String get routeModeSki => 'Ski';
+
+  @override
+  String get routeModeStraight => 'Straight line';
+
+  @override
+  String get routeFailureUnreachable => 'Couldn\'t reach the routing service.';
+
+  @override
+  String get routeFailureNoRoute => 'No route found between these points.';
+
+  @override
+  String get routeFailureFailed =>
+      'The routing service answered with an error.';
+
+  @override
+  String get routeWaypointTitle => 'Waypoint';
+
+  @override
+  String get routeWaypointName => 'Name';
+
+  @override
+  String get routeWaypointAsPlace => 'Add to the plan as a place';
+
+  @override
+  String get routeWaypointRemove => 'Remove point';
 }

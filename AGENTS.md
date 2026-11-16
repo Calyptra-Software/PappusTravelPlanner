@@ -51,7 +51,7 @@ change is not written at all.
 
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
 without touching it: which hosts are contacted (`api.transitous.org` for a connection
-search, the tile servers of the map styles and overlays in `basemap.dart` while a map is open, and nothing else), which permissions
+search, `brouter.de` for the route planner, the tile servers of the map styles and overlays in `basemap.dart` while a map is open, and nothing else), which permissions
 the app asks for and which its libraries merge in, that there is no telemetry of any kind,
 and the list of foreign files the app parses. A third host, a new permission, an analytics
 or crash-reporting dependency, or another format read from outside all turn a sentence
@@ -75,6 +75,7 @@ the obvious change was once made and turned out wrong.
 | [`transport-search.md`](docs/design/transport-search.md) | the connection search, import, re-routing (`replaceJourney`), lookups, stopovers, the journey screen and its map, estimated vehicle positions, the Transitous usage policy |
 | [`costs.md`](docs/design/costs.md) | currencies and rates, totals, `computeTripStats`, settlements, reimbursements, invitations |
 | [`sharing.md`](docs/design/sharing.md) | `TripBundle` / `.tpt` versions, PDF, `.ics`, `.gpx` |
+| [`route-planner.md`](docs/design/route-planner.md) | the tour planner: `RouteEngine` and BRouter, `Tour`, runs and legs, `tourToItems` |
 | [`map.md`](docs/design/map.md) | both maps, pins and clusters, the point picker, device location, `PositionFeed`, track recording, basemaps |
 | [`tracks.md`](docs/design/tracks.md) | `Tracks`, the polyline codec, GPX import and splitting, routed shapes, `TrackDisplay`, chords, entry colors |
 | [`countries.md`](docs/design/countries.md) | the countries tab, `assets/geo/countries.json` and its builder, hand marks |

@@ -2815,4 +2815,81 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get photosTitle => 'Fotos';
+
+  @override
+  String get routePlanTitle => 'Route planen';
+
+  @override
+  String get routePlanHintStart =>
+      'Tippe auf die Karte, um den Start zu setzen.';
+
+  @override
+  String get routePlanHintNext =>
+      'Tippe auf die Karte, um den nächsten Punkt zu setzen.';
+
+  @override
+  String get routePlanStraightHint =>
+      'Wird als gerade Linie zwischen deinen Punkten gezeichnet.';
+
+  @override
+  String get routePlanRouting => 'Route wird berechnet …';
+
+  @override
+  String get routePlanUndo => 'Letzten Punkt entfernen';
+
+  @override
+  String get routePlanStartTime => 'Startzeit';
+
+  @override
+  String routePlanStartsAt(String time) {
+    return 'Start $time';
+  }
+
+  @override
+  String get routeProfileFoot => 'Zu Fuß';
+
+  @override
+  String get routeProfileBike => 'Fahrrad';
+
+  @override
+  String get routeProfileRoadBike => 'Rennrad';
+
+  @override
+  String get routeProfileGravelBike => 'Gravelbike';
+
+  @override
+  String get routeProfileMountainBike => 'Mountainbike';
+
+  @override
+  String get routeProfileCar => 'Auto';
+
+  @override
+  String get routeModeSki => 'Ski';
+
+  @override
+  String get routeModeStraight => 'Gerade Linie';
+
+  @override
+  String get routeFailureUnreachable =>
+      'Der Routing-Dienst ist nicht erreichbar.';
+
+  @override
+  String get routeFailureNoRoute =>
+      'Zwischen diesen Punkten wurde keine Route gefunden.';
+
+  @override
+  String get routeFailureFailed =>
+      'Der Routing-Dienst hat mit einem Fehler geantwortet.';
+
+  @override
+  String get routeWaypointTitle => 'Wegpunkt';
+
+  @override
+  String get routeWaypointName => 'Name';
+
+  @override
+  String get routeWaypointAsPlace => 'Als Ort in den Plan aufnehmen';
+
+  @override
+  String get routeWaypointRemove => 'Punkt entfernen';
 }

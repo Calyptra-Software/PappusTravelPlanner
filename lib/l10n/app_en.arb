@@ -1565,5 +1565,31 @@
     "placeholders": { "count": { "type": "int" } }
   },
   "documentsTitle": "Documents",
-  "photosTitle": "Photos"
+  "photosTitle": "Photos",
+  "routePlanTitle": "Plan route",
+  "routePlanHintStart": "Tap the map to set the start.",
+  "routePlanHintNext": "Tap the map to set the next point.",
+  "routePlanStraightHint": "Drawn as a straight line between your points.",
+  "routePlanRouting": "Finding the route…",
+  "routePlanUndo": "Remove last point",
+  "routePlanStartTime": "Start time",
+  "routePlanStartsAt": "Start {time}",
+  "@routePlanStartsAt": {
+    "placeholders": { "time": { "type": "String" } }
+  },
+  "routeProfileFoot": "On foot",
+  "routeProfileBike": "Bike",
+  "routeProfileRoadBike": "Road bike",
+  "routeProfileGravelBike": "Gravel bike",
+  "routeProfileMountainBike": "Mountain bike",
+  "routeProfileCar": "Car",
+  "routeModeSki": "Ski",
+  "routeModeStraight": "Straight line",
+  "routeFailureUnreachable": "Couldn't reach the routing service.",
+  "routeFailureNoRoute": "No route found between these points.",
+  "routeFailureFailed": "The routing service answered with an error.",
+  "routeWaypointTitle": "Waypoint",
+  "routeWaypointName": "Name",
+  "routeWaypointAsPlace": "Add to the plan as a place",
+  "routeWaypointRemove": "Remove point"
 }

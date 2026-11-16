@@ -6,10 +6,11 @@ piece does, and, where the behavior is a decision rather than an obvious default
 works that way. The [README](../README.md) has the same list in a sentence each.
 
 Everything described here happens on your device, against a single SQLite file that
-belongs to you. Two things reach outside it: the connection search, which asks a routing
-service about real timetables and writes the answer into your local plan, and the map,
-which fetches its background tiles while you look at them. Neither sends anything about
-your trip anywhere.
+belongs to you. Three things reach outside it: the connection search, which asks a routing
+service about real timetables and writes the answer into your local plan, the route
+planner, which sends the points you set to a routing server, and the map, which fetches
+its background tiles while you look at them. None of them sends anything else about your
+trip anywhere.
 
 ---
 
@@ -260,7 +261,7 @@ shows up here either.
 
 ## Connections from a real timetable
 
-This is the app's one online feature. It asks [Transitous](https://transitous.org), a
+It asks [Transitous](https://transitous.org), a
 community-run MOTIS instance built on OpenStreetMap and open timetable data from operators
 around the world — local public transport, long-distance trains, buses, and more. No
 account, no API key, and nothing to sign up for.
@@ -351,6 +352,30 @@ A duplicated trip, or one whose entries moved with a new start date, is offered 
 Declining it, finding nothing, or having no signal all leave the copied plan standing. A
 journey for which nothing was found says so, with the same way into the search. And
 "no train" is never reported when it was "no network".
+
+---
+
+## Planning a route
+
+*Plan route* under a day opens a map. Tap the start, then each further point: the app asks
+a routing server for the way between them and shows the length, the climb and descent, and
+how long it takes.
+
+The chips under the map choose the way of travel for the **next** section: on foot, by
+bike (also road, gravel and mountain bike) or by car. Choosing another before a tap changes
+it at that point, so a drive to the car park and the walk from there are one route. *Ski*
+and *Straight line* draw a straight line between your points, since no routing server
+knows pistes and lifts.
+
+Tap a point to name it, to add it to the plan as a place of its own, or to remove it.
+*Start time* gives the entries times, running on from the durations.
+
+*Add to day* writes one leg per way of travel, split at named points, each with its line.
+Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
+it.
+
+The routes come from the [BRouter](https://brouter.de) server at brouter.de, which
+receives the points you set.
 
 ---
 
@@ -818,6 +843,7 @@ asks the routing service for its results in the app's language too.
 with the same planned-time-plus-delay marks the timeline uses. Tapping a row opens that
 entry.
 
-**Offline-first.** No account, no server, no network required. The connection search and the
-map's background tiles are the only things that reach the network, and what the search
-brings back becomes part of your local plan like anything else.
+**Offline-first.** No account, no server, no network required. The connection search, the
+route planner and the map's background tiles are the only things that reach the network,
+and what a search or the planner brings back becomes part of your local plan like anything
+else.
