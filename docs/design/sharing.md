@@ -23,10 +23,15 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   willing to write the decoder. `buildTripGpx` returns **null** rather than an empty document
   when a trip holds no line, and the caller says so — the menu entry cannot know in advance
   without decoding every point of the trip, which is the one expensive thing a track does.
-  Three decisions in it are worth keeping: a recording is a **`<trk>`** and a routed shape an
-  **`<rte>`**, which is the distinction GPX itself draws (where something went, against how it
-  could go) and the one the map dashes — and the routes are written **before** the tracks
-  because the schema fixes that order, not because the plan does. A line the map is **not**
+  Three decisions in it are worth keeping: **every line is a `<trk>`**, a computed route
+  included, in plan order, with what `TrackSource` says about it in the track's `<src>`
+  (`routed`, `recorded`, `imported`). Routed shapes were first written as `<rte>`, the
+  distinction GPX itself draws between where something went and how it could go; but the
+  apps the file is read in analyze tracks only (OsmAnd's analysis reads `<trk>` segments and
+  nothing else, read off its source, so *Analyze on map* did nothing with our routes), and
+  BRouter, Komoot and OsmAnd's own planner export a planned route as a track too. The
+  children of a `<trk>` are written in the order GPX 1.1 fixes (name, desc, src, type,
+  trkseg). A line the map is **not**
   drawing is exported all the same: `TrackDisplay` is a statement about the picture and a GPX
   is the record, so an eye must not quietly change what a file contains. And nothing is
   invented to fill the format's other fields — no per-point `<time>` (the import dropped

@@ -26,23 +26,25 @@ const String tripGpxExtension = 'gpx';
 /// A one-way view, like the PDF and the `.ics` — `.tpt` is still the export that
 /// round-trips. What it keeps and what it cannot:
 ///
-/// - **A recording is a `<trk>`, a computed route is an `<rte>`.** GPX draws
-///   exactly the distinction [TrackSource] draws — a track is where something
-///   went, a route is how it could go — and it is the same one the map draws
-///   with its dash. `parseGpx` reads both, so what leaves as a route comes back
-///   as one. The routes are written **before** the tracks because the GPX schema
-///   says so (`metadata`, then `wpt*`, `rte*`, `trk*`), and a strict reader
-///   rejects a file that orders them by anything else — including by the plan.
+/// - **Every line is a `<trk>`, a computed route included**, in plan order.
+///   GPX has an `<rte>` for how something could go, and this export once wrote
+///   computed routes as one; but the apps it is read in analyze tracks only
+///   (OsmAnd's elevation and speed analysis reads `<trk>` segments and nothing
+///   else), and a planned route written as a track is what BRouter, Komoot and
+///   OsmAnd's own planner export too. What [TrackSource] says about the line
+///   (`routed`, `recorded`, `imported`) is kept in the track's `<src>`, the
+///   element GPX has for where data came from.
 /// - **Only live entries**, the rule the PDF and the calendar already follow:
 ///   the road not taken does not leave the app.
 /// - **A line the map is not drawing is still exported.** Hiding one is a
 ///   statement about the *picture* (see [TrackDisplay]); a GPX is the record.
 ///   An eye quietly changing what a file contains would be the worse surprise.
-/// - **No elevation and no timestamps**, because the import dropped them
-///   deliberately and this cannot invent them. The day the entry sits on is
-///   written as the track's `<desc>` — that much is real — and nothing is
-///   claimed about when anybody was at any point. So this is *not* the file that
-///   was imported: it is the geometry, at the ~1 m the column stores.
+/// - **Heights where the line has them, and no timestamps**, because the import
+///   dropped the times deliberately and this cannot invent them. The day the
+///   entry sits on is written as the track's `<desc>` — that much is real — and
+///   nothing is claimed about when anybody was at any point. So this is *not*
+///   the file that was imported: it is the geometry, at the ~1 m the column
+///   stores, with a height on every point of a line stored with heights.
 /// - **A routine's lines carry no day at all.** Its entries sit on
 ///   `kRoutineAnchorDay`, which is a sort origin and not a date anybody
 ///   travelled; writing it out would be the "1970" fiction the app refuses
@@ -90,28 +92,8 @@ String? buildTripGpx({
           );
         },
       );
-      // Routes first, tracks second — the schema's order, not the plan's.
       for (final line in lines) {
-        if (line.track.source != TrackSource.routed) continue;
-        _line(
-          builder,
-          line.item,
-          line.track,
-          'rte',
-          'rtept',
-          isRoutine: isRoutine,
-        );
-      }
-      for (final line in lines) {
-        if (line.track.source == TrackSource.routed) continue;
-        _line(
-          builder,
-          line.item,
-          line.track,
-          'trk',
-          'trkpt',
-          isRoutine: isRoutine,
-        );
+        _line(builder, line.item, line.track, isRoutine: isRoutine);
       }
     },
   );
@@ -123,9 +105,7 @@ String? buildTripGpx({
 void _line(
   XmlBuilder builder,
   BundleItem item,
-  BundleTrack track,
-  String element,
-  String pointElement, {
+  BundleTrack track, {
   required bool isRoutine,
 }) {
   final List<LatLng> points;
@@ -140,8 +120,10 @@ void _line(
   if (points.length < 2) return;
   final elevations = trackElevationsOrNull(track.elevations, points.length);
 
+  // The children in the order GPX 1.1 fixes for a <trk>: name, desc, src,
+  // type, then the segment. A strict reader rejects any other.
   builder.element(
-    element,
+    'trk',
     nest: () {
       final name = _nameOf(item, track);
       if (name != null) _text(builder, 'name', name);
@@ -149,17 +131,15 @@ void _line(
       // time: the points carry no clock, and writing one would invent the very
       // thing the import dropped.
       if (!isRoutine) _text(builder, 'desc', _isoDay(item.date));
+      // Where the line came from: a router's proposal, a recording, a file.
+      _text(builder, 'src', track.source.name);
       // The portable mode key the bundle already denormalized — "walk",
       // "train", or whatever the user called their own mode.
       if (item.mode != null) _text(builder, 'type', item.mode!);
-      if (element == 'trk') {
-        builder.element(
-          'trkseg',
-          nest: () => _points(builder, points, elevations, pointElement),
-        );
-      } else {
-        _points(builder, points, elevations, pointElement);
-      }
+      builder.element(
+        'trkseg',
+        nest: () => _points(builder, points, elevations, 'trkpt'),
+      );
     },
   );
 }
