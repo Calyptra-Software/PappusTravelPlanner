@@ -966,7 +966,6 @@
   "routePlanHintNext": "Tippe auf die Karte, um den nächsten Punkt zu setzen.",
   "routePlanStraightHint": "Wird als gerade Linie zwischen deinen Punkten gezeichnet.",
   "routePlanRouting": "Route wird berechnet …",
-  "routePlanUndo": "Letzten Punkt entfernen",
   "routePlanStartTime": "Startzeit",
   "routePlanStartsAt": "Start {time}",
   "@routePlanStartsAt": {

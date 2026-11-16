@@ -347,14 +347,11 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
             state: state,
             startMinutes: _startMinutes,
             onSelectMode: planner.selectMode,
-            onUndo: tour.waypoints.isEmpty
-                ? null
-                : () => planner.removeWaypoint(tour.waypoints.length - 1),
             onRetry: planner.retry,
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
             onCancelMove: () => setState(() => _moving = null),
-            onShowPoints: tour.waypoints.length < 2
+            onShowPoints: tour.waypoints.isEmpty
                 ? null
                 : () => showAppSheet<void>(
                     context,
@@ -453,13 +450,12 @@ class _WaypointMark extends StatelessWidget {
 }
 
 /// Below the map: the mode the next section takes, what the tour adds up to
-/// (or what is in its way), and the two acts on the tour as a whole.
+/// (or what is in its way), the list of its points and its start time.
 class _PlannerPanel extends StatelessWidget {
   const _PlannerPanel({
     required this.state,
     required this.startMinutes,
     required this.onSelectMode,
-    required this.onUndo,
     required this.onRetry,
     required this.onPickStartTime,
     required this.moving,
@@ -467,8 +463,8 @@ class _PlannerPanel extends StatelessWidget {
     required this.onShowPoints,
   });
 
-  /// Opens the list of waypoints, where their order is changed. Null while
-  /// there are fewer than two to order.
+  /// Opens the list of waypoints, where one is removed and their order is
+  /// changed. Null while there is none.
   final VoidCallback? onShowPoints;
 
   /// Whether a waypoint is waiting to be put down. The panel then says that
@@ -480,7 +476,6 @@ class _PlannerPanel extends StatelessWidget {
   final TourPlannerState state;
   final int? startMinutes;
   final ValueChanged<SectionMode> onSelectMode;
-  final VoidCallback? onUndo;
   final VoidCallback onRetry;
   final VoidCallback onPickStartTime;
 
@@ -549,12 +544,6 @@ class _PlannerPanel extends StatelessWidget {
                         child: Text(l10n.cancel),
                       )
                     else ...[
-                      // Icons, so the row fits a narrow phone in any language.
-                      IconButton(
-                        onPressed: onUndo,
-                        icon: const Icon(Icons.undo),
-                        tooltip: l10n.routePlanUndo,
-                      ),
                       IconButton(
                         onPressed: onShowPoints,
                         icon: const Icon(Icons.format_list_numbered),
@@ -869,11 +858,12 @@ class _SectionSheet extends StatelessWidget {
   }
 }
 
-/// The waypoints in order, to change that order by dragging.
+/// The waypoints in order, to remove one or to change that order by dragging.
 ///
-/// Watches the tour itself, so a drop is the change: the list and the map
-/// behind it follow at once, and the router is asked about the runs the new
-/// order made.
+/// Watches the tour itself, so a drop or a removal is the change: the list
+/// and the map behind it follow at once, and the router is asked about the
+/// runs that made. Removing lives here, on each point, rather than as one
+/// button taking the last: the unit an act applies to is where it is offered.
 class _PointsSheet extends ConsumerWidget {
   const _PointsSheet({required this.color});
 
@@ -934,13 +924,33 @@ class _PointsSheet extends ConsumerWidget {
                         ? l10n.routePointStart
                         : plannerModeLabel(tour.modes[index - 1], l10n),
                   ),
-                  trailing: ReorderableDragStartListener(
-                    key: ValueKey('point-handle-$index'),
-                    index: index,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Icon(Icons.drag_handle),
-                    ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        key: ValueKey('point-remove-$index'),
+                        icon: const Icon(Icons.delete_outline),
+                        color: theme.colorScheme.error,
+                        tooltip: l10n.routeWaypointRemove,
+                        onPressed: () {
+                          ref
+                              .read(tourPlannerProvider.notifier)
+                              .removeWaypoint(index);
+                          // An empty list has nothing left to offer.
+                          if (tour.waypoints.length == 1) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      ),
+                      ReorderableDragStartListener(
+                        key: ValueKey('point-handle-$index'),
+                        index: index,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Icon(Icons.drag_handle),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
             ],

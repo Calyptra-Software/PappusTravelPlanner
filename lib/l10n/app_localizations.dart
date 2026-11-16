@@ -4672,12 +4672,6 @@ abstract class AppLocalizations {
   /// **'Finding the route…'**
   String get routePlanRouting;
 
-  /// No description provided for @routePlanUndo.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove last point'**
-  String get routePlanUndo;
-
   /// No description provided for @routePlanStartTime.
   ///
   /// In en, this message translates to:

@@ -106,7 +106,8 @@ yet** (next section): that has to happen before a release carrying this.
   has its own set aside. The list (`_PointsSheet`) watches the tour, so a drop is the
   change and the router is asked about the runs the new order made. The marks on the map
   are **numbered** for this: most waypoints have no name, and a row saying only a
-  coordinate could not be found on the map.
+  coordinate could not be found on the map. Each row carries its own bin; there is no
+  "remove last point" button, which acted on a point the user had not pointed at.
 - **The panel keeps its height whatever it says.** It sits under the map in a `Column`,
   so a panel growing by a line resizes the map and shifts it under a finger on its way
   to it. The status line has a minimum height and the hint line is always there.

@@ -2835,9 +2835,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routePlanRouting => 'Route wird berechnet …';
 
   @override
-  String get routePlanUndo => 'Letzten Punkt entfernen';
-
-  @override
   String get routePlanStartTime => 'Startzeit';
 
   @override

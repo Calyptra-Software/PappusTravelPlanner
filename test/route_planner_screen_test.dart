@@ -245,20 +245,6 @@ void main() {
     expect(addButton(tester).onPressed, isNotNull);
   });
 
-  testWidgets('Remove last point takes the tour back a step', (tester) async {
-    await open(tester);
-
-    await tapMap(tester, const Offset(-150, -100));
-    await tapMap(tester, const Offset(150, 100));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Remove last point'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Tap the map to set the next point.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('waypoint-1')), findsNothing);
-    expect(find.byKey(const ValueKey('waypoint-0')), findsOneWidget);
-  });
-
   testWidgets('a tap on a waypoint names it or removes it', (tester) async {
     await open(tester);
     await tapMap(tester, const Offset(-150, -100));
@@ -462,20 +448,62 @@ void main() {
     }
   });
 
-  testWidgets('Points is offered once there is an order to change', (
-    tester,
-  ) async {
+  testWidgets('Points is offered from the first point on', (tester) async {
     await open(tester);
     IconButton points() => tester.widget(
       find.widgetWithIcon(IconButton, Icons.format_list_numbered),
     );
-
-    await tapMap(tester, const Offset(-150, -100));
     expect(points().onPressed, isNull);
 
-    await tapMap(tester, const Offset(150, 100));
-    await tester.pumpAndSettle();
+    await tapMap(tester, const Offset(-150, -100));
     expect(points().onPressed, isNotNull);
+  });
+
+  testWidgets('the bin on a point in the list removes that point', (
+    tester,
+  ) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-200, -100));
+    await tapMap(tester, const Offset(0, 0));
+    await tapMap(tester, const Offset(200, 100));
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RoutePlannerScreen)),
+    );
+    List<LatLng> positions() => [
+      for (final w in container.read(tourPlannerProvider).tour.waypoints)
+        w.position,
+    ];
+    final before = positions();
+
+    await tester.tap(find.byTooltip('Points'));
+    await tester.pumpAndSettle();
+    expect(inSheet(find.byIcon(Icons.delete_outline)), findsNWidgets(3));
+
+    // The middle one, not the last.
+    await tester.tap(find.byKey(const ValueKey('point-remove-1')));
+    await tester.pumpAndSettle();
+
+    expect(positions(), [before[0], before[2]]);
+    // The list stays open on what is left, and the map follows.
+    expect(inSheet(find.byType(ListTile)), findsNWidgets(2));
+    expect(find.byKey(const ValueKey('waypoint-2')), findsNothing);
+    // From the first to what was the third, in one run.
+    expect(engine.asked.last.$1, [before[0], before[2]]);
+  });
+
+  testWidgets('removing the only point closes the list', (tester) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+
+    await tester.tap(find.byTooltip('Points'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('point-remove-0')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(waypointCount(tester), 0);
+    expect(find.text('Tap the map to set the start.'), findsOneWidget);
   });
 
   testWidgets('dragging a point in the list changes the order of the tour', (

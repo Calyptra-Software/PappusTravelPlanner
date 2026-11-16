@@ -2765,9 +2765,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get routePlanRouting => 'Finding the route…';
 
   @override
-  String get routePlanUndo => 'Remove last point';
-
-  @override
   String get routePlanStartTime => 'Start time';
 
   @override

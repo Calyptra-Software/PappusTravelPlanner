@@ -1571,7 +1571,6 @@
   "routePlanHintNext": "Tap the map to set the next point.",
   "routePlanStraightHint": "Drawn as a straight line between your points.",
   "routePlanRouting": "Finding the route…",
-  "routePlanUndo": "Remove last point",
   "routePlanStartTime": "Start time",
   "routePlanStartsAt": "Start {time}",
   "@routePlanStartsAt": {
