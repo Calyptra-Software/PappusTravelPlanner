@@ -6,9 +6,20 @@ import 'route_profile.dart';
 /// One point a tour is led through. Pointed at by the user, never derived:
 /// where a tour changes from the car to the trail is a waypoint somebody set.
 class TourWaypoint {
-  const TourWaypoint(this.position, {this.name, this.isPlace = false});
+  const TourWaypoint(
+    this.position, {
+    this.name,
+    this.isPlace = false,
+    this.key,
+  });
 
   final LatLng position;
+
+  /// Which point of a saved tour this is, kept through being moved, renamed
+  /// and reordered; null for a point set since the tour was opened. It is how
+  /// saving the tour again tells an entry that stayed from one that is new
+  /// (`keptEntryIds`).
+  final int? key;
 
   /// What the point is called, when it was given a name. A named waypoint ends
   /// one leg and starts the next, since a leg can only carry names at its ends.

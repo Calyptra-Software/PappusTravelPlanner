@@ -322,70 +322,159 @@ void main() {
       expect(container.read(tourPlannerProvider(saved)).entries, isNotNull);
     });
 
-    test('saving replaces the entries in their slot and group', () async {
-      final ids = await saveTour();
-      // Something planned for after the tour, which must stay after it.
-      final dinner = await repo.addItem(
-        ItineraryItemsCompanion.insert(
-          tripId: tripId,
-          date: _day,
-          kind: ItemKind.place,
-          title: const Value('Dinner'),
-          sortOrder: Value(await repo.nextSortOrder(tripId, _day)),
+    test(
+      'saving keeps the entries that stayed, in their slot and group',
+      () async {
+        final ids = await saveTour();
+        // Something planned for after the tour, which must stay after it.
+        final dinner = await repo.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: tripId,
+            date: _day,
+            kind: ItemKind.place,
+            title: const Value('Dinner'),
+            sortOrder: Value(await repo.nextSortOrder(tripId, _day)),
+          ),
+        );
+        final group = (await items()).first.groupId;
+        expect(group, isNotNull);
+        final saved = await openInPlanner();
+        final planner = container.read(tourPlannerProvider(saved).notifier);
+
+        // Without the ski descent: the tour now ends on the summit.
+        planner.removeWaypoint(4);
+        final newIds = await planner.save(tripId: tripId, date: _day);
+
+        // The drive, the walk and the summit are the rows they were; the
+        // descent is gone.
+        expect(newIds, ids.take(3));
+        final after = await items();
+        expect(after.map((i) => i.id), [...ids.take(3), dinner]);
+        expect(after.take(3).map((i) => i.groupId).toSet(), {group});
+        expect(
+          after.take(3).map((i) => decodeRoutePlan(i.routePlan)!.tour).toSet(),
+          {'t1'},
+        );
+        // Each routed leg holds one computed line again, with its heights.
+        final tracks = await db.select(db.tracks).get();
+        expect(tracks.map((t) => t.itemId), [ids[0], ids[1]]);
+        expect(tracks.every((t) => t.elevations != null), isTrue);
+        expect(engine.asked, isEmpty, reason: 'nothing new was routed');
+      },
+    );
+
+    test('a kept entry keeps what was hung on it', () async {
+      final ids = await saveTour(startMinutes: 8 * 60);
+      // A note and an actual time on the walk, a recording beside its route,
+      // a cost on it, and a note on the summit.
+      await (db.update(
+        db.itineraryItems,
+      )..where((i) => i.id.equals(ids[1]))).write(
+        const ItineraryItemsCompanion(
+          notes: Value('Icy above the hut'),
+          actualStartMinutes: Value(9 * 60),
         ),
       );
-      final group = (await items()).first.groupId;
-      expect(group, isNotNull);
-      final saved = await openInPlanner();
-      final planner = container.read(tourPlannerProvider(saved).notifier);
-
-      // Without the ski descent: the tour now ends on the summit.
-      planner.removeWaypoint(4);
-      final newIds = await planner.save(tripId: tripId, date: _day);
-
-      final after = await items();
-      expect(after.map((i) => i.id), [...newIds!, dinner]);
-      expect(newIds.toSet().intersection(ids.toSet()), isEmpty);
-      expect(after.take(3).map((i) => i.kind), [
-        ItemKind.transport,
-        ItemKind.transport,
-        ItemKind.place,
-      ]);
-      expect(after.take(3).map((i) => i.groupId).toSet(), {group});
-      // Still the same tour, and still drawn along its lines with heights.
-      expect(
-        after.take(3).map((i) => decodeRoutePlan(i.routePlan)!.tour).toSet(),
-        {'t1'},
-      );
-      final tracks = await db.select(db.tracks).get();
-      expect(tracks.map((t) => t.itemId), [newIds[0], newIds[1]]);
-      expect(tracks.every((t) => t.elevations != null), isTrue);
-      expect(engine.asked, isEmpty, reason: 'nothing new was routed');
-    });
-
-    test('a cost on a replaced leg is kept', () async {
-      final ids = await saveTour();
+      await (db.update(db.itineraryItems)..where((i) => i.id.equals(ids[2])))
+          .write(const ItineraryItemsCompanion(notes: Value('Cairn')));
+      await db.trackDao.addTracks(ids[1], [
+        (points: const [_carPark, _summit], name: 'walked'),
+      ], source: TrackSource.recorded);
       await db
           .into(db.costs)
           .insert(
             CostsCompanion.insert(
-              itemId: Value(ids.first),
-              amountMinor: 1200,
+              itemId: Value(ids[1]),
+              amountMinor: 500,
               currency: (await db.select(db.currencies).get()).first.id,
-              reason: 'Lift pass',
+              reason: 'Toll',
             ),
           );
       final saved = await openInPlanner();
+      final planner = container.read(tourPlannerProvider(saved).notifier);
 
-      await container
-          .read(tourPlannerProvider(saved).notifier)
-          .save(tripId: tripId, date: _day);
+      // The bend is moved: the walk is still the walk.
+      planner.moveWaypoint(2, const LatLng(47.16, 11.02));
+      await Future<void>.delayed(Duration.zero);
+      await planner.save(tripId: tripId, date: _day);
 
-      final cost = await db.select(db.costs).getSingle();
-      expect(cost.amountMinor, 1200);
-      expect(cost.itemId == null, isTrue, reason: 'moved onto the group');
-      expect(cost.groupId, isNotNull);
+      final walk = (await items()).firstWhere((i) => i.id == ids[1]);
+      expect(walk.notes, 'Icy above the hut');
+      expect(walk.actualStartMinutes, 9 * 60);
+      // No start time given: the planned times stay as they were.
+      expect(walk.startMinutes, 8 * 60 + 45);
+      // The new route through the moved bend replaced the old one; the
+      // recording stays beside it.
+      final waypoints = decodeRoutePlan(walk.routePlan)!.waypoints;
+      expect(waypoints[1].lat, 47.16);
+      final tracks = await (db.select(
+        db.tracks,
+      )..where((t) => t.itemId.equals(ids[1]))).get();
+      expect(
+        tracks.map((t) => t.source).toList()..sort((a, b) => a.index - b.index),
+        [TrackSource.recorded, TrackSource.routed],
+      );
+      expect((await items()).firstWhere((i) => i.id == ids[2]).notes, 'Cairn');
+      expect((await db.select(db.costs).getSingle()).itemId, ids[1]);
     });
+
+    test(
+      'a start time given rewrites the planned times of kept entries',
+      () async {
+        final ids = await saveTour(startMinutes: 8 * 60);
+        final saved = await openInPlanner();
+
+        await container
+            .read(tourPlannerProvider(saved).notifier)
+            .save(tripId: tripId, date: _day, startMinutes: 6 * 60);
+
+        final drive = (await items()).firstWhere((i) => i.id == ids[0]);
+        expect((drive.startMinutes, drive.endMinutes), (360, 405));
+      },
+    );
+
+    test(
+      'a cost on an entry the tour no longer has moves to its group',
+      () async {
+        final ids = await saveTour();
+        await db
+            .into(db.costs)
+            .insert(
+              CostsCompanion.insert(
+                itemId: Value(ids.last),
+                amountMinor: 1200,
+                currency: (await db.select(db.currencies).get()).first.id,
+                reason: 'Lift pass',
+              ),
+            );
+        final saved = await openInPlanner();
+        final planner = container.read(tourPlannerProvider(saved).notifier);
+
+        planner.removeWaypoint(4);
+        await planner.save(tripId: tripId, date: _day);
+
+        final cost = await db.select(db.costs).getSingle();
+        expect(cost.amountMinor, 1200);
+        expect(cost.itemId, isNull, reason: 'moved onto the group');
+        expect(cost.groupId, (await items()).first.groupId);
+      },
+    );
+
+    test(
+      'a name changed in the entry form is what the planner shows',
+      () async {
+        final ids = await saveTour();
+        await (db.update(db.itineraryItems)..where((i) => i.id.equals(ids[2])))
+            .write(const ItineraryItemsCompanion(title: Value('Gipfelkreuz')));
+        await (db.update(db.itineraryItems)..where((i) => i.id.equals(ids[0])))
+            .write(const ItineraryItemsCompanion(fromLocation: Value('Hotel')));
+
+        final saved = (await open((await items()).first))!;
+
+        expect(saved.tour.waypoints.first.name, 'Hotel');
+        expect(saved.tour.waypoints[3].name, 'Gipfelkreuz');
+      },
+    );
 
     test('the saved tour can be opened again afterwards', () async {
       await saveTour();
@@ -399,6 +488,109 @@ void main() {
       expect(again.itemIds, hasLength(4));
       expect(again.startMinutes, 420);
       expect(again.tour.modes, _tour.modes);
+    });
+  });
+
+  group('keptEntryIds', () {
+    // A saved walk from 0 over the hut (1, a place) to 2: legs (0, 1) and
+    // (1, 2) and the hut's place entry. A waypoint without a name or a place
+    // mark only shapes a leg, so the cases below name what must end one.
+    SavedTour saved() => SavedTour(
+      tourId: 't1',
+      itemIds: const [10, 11, 12],
+      groupId: 5,
+      tour: Tour(
+        waypoints: const [
+          TourWaypoint(_home, key: 0),
+          TourWaypoint(_carPark, name: 'Hut', isPlace: true, key: 1),
+          TourWaypoint(_summit, key: 2),
+        ],
+        modes: const [_foot, _foot],
+      ),
+      paths: const {},
+      legItems: const {(0, 1): 10, (1, 2): 12},
+      placeItems: const {1: 11},
+    );
+
+    List<int?> kept(List<TourWaypoint> waypoints, List<SectionMode> modes) =>
+        keptEntryIds(
+          tourEntries(Tour(waypoints: waypoints, modes: modes), const {})!,
+          saved(),
+        );
+
+    // Straight sections, so the entries need no router.
+    const walk = StraightMode(TransportMode.walk);
+
+    test('an unchanged tour keeps every entry', () {
+      expect(
+        kept(
+          const [
+            TourWaypoint(_home, key: 0),
+            TourWaypoint(_carPark, name: 'Hut', isPlace: true, key: 1),
+            TourWaypoint(_summit, key: 2),
+          ],
+          const [walk, walk],
+        ),
+        [10, 11, 12],
+      );
+    });
+
+    test('a moved and renamed place is the same place', () {
+      expect(
+        kept(
+          const [
+            TourWaypoint(_home, key: 0),
+            TourWaypoint(_bend, name: 'Upper hut', isPlace: true, key: 1),
+            TourWaypoint(_summit, key: 2),
+          ],
+          const [walk, walk],
+        ),
+        [10, 11, 12],
+      );
+    });
+
+    test('a leg split at a new point keeps its row for the first half', () {
+      expect(
+        kept(
+          const [
+            TourWaypoint(_home, key: 0),
+            TourWaypoint(_carPark, name: 'Hut', isPlace: true, key: 1),
+            TourWaypoint(_bend, name: 'Spring'),
+            TourWaypoint(_summit, key: 2),
+          ],
+          const [walk, walk, walk],
+        ),
+        [10, 11, 12, null],
+      );
+    });
+
+    test('a reorder keeps the places but not the legs it rearranged', () {
+      expect(
+        kept(
+          const [
+            TourWaypoint(_home, key: 0),
+            TourWaypoint(_summit, name: 'Summit', key: 2),
+            TourWaypoint(_carPark, name: 'Hut', isPlace: true, key: 1),
+          ],
+          const [walk, walk],
+        ),
+        [null, null, 11],
+      );
+    });
+
+    test('points set since are new, and a removed place is not kept', () {
+      expect(
+        kept(
+          const [
+            TourWaypoint(_home, key: 0),
+            TourWaypoint(_carPark, name: 'Hut', key: 1),
+            TourWaypoint(_summit, name: 'Summit', key: 2),
+            TourWaypoint(_bend),
+          ],
+          const [walk, walk, walk],
+        ),
+        [10, 12, null],
+      );
     });
   });
 }

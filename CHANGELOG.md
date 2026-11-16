@@ -15,6 +15,8 @@ exact commits.
 - **Elevation profiles.** Planned routes, imported GPX files and recorded tracks keep their
   heights. An entry shows the climb and the elevation profile of its line, the planner
   shows them for the route, and the GPX export includes the heights.
+- **GPX exports open fully in other apps.** Routes computed by the app are exported as
+  tracks, so apps such as OsmAnd can analyze them.
 - **Screens are animated again.** Since 1.10.0, opening and leaving a screen switched
   without the platform's transition.
 

@@ -385,8 +385,12 @@ straight line has no heights and is left as a gap. A saved leg lists its line wi
 climb and profile too, and the GPX export writes the heights.
 
 *Edit route* on the route's label, beside *Show journey* (or on the leg itself, for a
-route of one leg), opens the whole route in the planner again, as it was saved. Saving there replaces the route's entries: a cost or a file on one of them
-is kept, a note, actual times or a recording on a replaced entry is not.
+route of one leg), opens the whole route in the planner again, as it was saved. Saving
+there keeps every entry that is still part of the route, with its notes, actual times,
+photos, costs and recordings: a place for as long as its point is there, however moved or
+renamed, and a leg for as long as it runs between the same two points. Without a start
+time the entries keep their times. An entry the route no longer has is removed, and its
+costs and files move to the route's group.
 
 The routes come from the [BRouter](https://brouter.de) server at brouter.de, which
 receives the points you set.
@@ -548,13 +552,13 @@ routine, share the trip, and it comes along. A `.tpt` bundle carries it, which i
 that export lossless.
 
 **Getting the lines out again:** the trip's ⋮ menu has *Export lines (GPX)…*, which writes every
-line the trip's entries carry into one `.gpx` — recordings as tracks, the routes the connection
-search computed as routes. A line you have hidden is exported too: hiding is about the map, and this is
-the record.
+line the trip's entries carry into one `.gpx`, each as a track, so other apps can analyze them;
+whether a line was recorded, imported or computed is noted in it. A line you have hidden is
+exported too: hiding is about the map, and this is the record.
 
-It is **not the file you imported**. Elevation and timestamps are dropped when a GPX comes in and
-cannot be invented on the way out, so what you get is the geometry (to about a metre), the day
-and the mode — keep your original if you want the rest. Routines can be exported as well, without
+It is **not the file you imported**. Timestamps are dropped when a GPX comes in and cannot be
+invented on the way out, so what you get is the geometry (to about a metre) with its heights
+where it has them, the day and the mode — keep your original if you want the rest. Routines can be exported as well, without
 a day, since their entries have none.
 
 ### Which countries you have been to

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -130,7 +131,12 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     final waypoint = state.tour.waypoints[index];
     updateWaypoint(
       index,
-      TourWaypoint(position, name: waypoint.name, isPlace: waypoint.isPlace),
+      TourWaypoint(
+        position,
+        name: waypoint.name,
+        isPlace: waypoint.isPlace,
+        key: waypoint.key,
+      ),
     );
   }
 
@@ -219,11 +225,13 @@ class TourPlannerController extends Notifier<TourPlannerState> {
   /// Writes the tour into [tripId] on [date] and returns the new rows' ids, or
   /// null when the tour is not complete (see [TourPlannerState.entries]).
   ///
-  /// A tour opened from its entries **replaces** them, the way a connection
-  /// searched again replaces its legs (`replaceJourneyLegs`): the new entries
-  /// take the slot and the group of the old ones, and a cost or a file hung on
-  /// an old entry is kept. What an old entry held of its own (a note, actual
-  /// times, a recording) goes with it.
+  /// A tour opened from its entries is written back over them
+  /// (`TripRepository.rewriteRoute`): an entry that stayed the same entry
+  /// (`keptEntryIds`) keeps its row and with it its notes, actual times,
+  /// files, costs and recordings; only its plan is rewritten, and its planned
+  /// times only when the tour is given a start time. A new entry is added, and
+  /// one the tour no longer has is removed, its costs and files moved to the
+  /// tour's group.
   ///
   /// The modes are read once from the repository, not from the autoDispose
   /// provider, for the reason `TransportSearchController._modes` gives.
@@ -245,10 +253,25 @@ class TourPlannerController extends Notifier<TourPlannerState> {
       startMinutes: startMinutes,
     );
     if (saved != null) {
-      return repository.replaceJourneyLegs(
+      final kept = keptEntryIds(entries, saved);
+      return repository.rewriteRoute(
         tripId,
-        oldLegIds: saved.itemIds,
-        legs: mapped.items,
+        oldIds: saved.itemIds,
+        entries: [
+          for (final (index, row) in mapped.items.indexed)
+            (
+              keepId: kept[index],
+              // Without a start time the tour says nothing about when, so an
+              // entry it keeps keeps the times it has.
+              row: kept[index] != null && startMinutes == null
+                  ? row.copyWith(
+                      startMinutes: const Value.absent(),
+                      endMinutes: const Value.absent(),
+                      endDayOffset: const Value.absent(),
+                    )
+                  : row,
+            ),
+        ],
         groupId: saved.groupId,
         shapes: mapped.shapes,
         elevations: mapped.elevations,

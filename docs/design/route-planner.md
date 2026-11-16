@@ -92,11 +92,25 @@ yet** (next section): that has to happen before a release carrying this.
   duration and length the plan kept. Only a leg whose line was removed since is asked
   about. `tourPlannerProvider` is a family keyed by the saved tour, so the controller's
   first state is the tour and no frame shows an empty planner.
-- **Saving replaces the entries, as a connection searched again replaces its legs**
-  (`replaceJourneyLegs`): the slot, the group and the color are kept and a cost or a file
-  on a replaced entry is rescued. A note, actual times or a recording on a replaced entry
-  goes with it, as it does there. Every entry is replaced, changed or not; keeping the
-  rows of legs the edit did not touch is not built.
+- **Saving keeps the entries that stayed the same entry** (`RoutineDao.rewriteRoute`,
+  `keptEntryIds`), rather than replacing them as a connection searched again does. That
+  rule fits a connection, whose notes are composed from its platforms and go with the
+  train; on a route the notes, actual times, photos and recordings are the user's own,
+  and an edit that rewrote every entry took them all. Identity is the **waypoint's key**
+  (`TourWaypoint.key`, its index in the tour as saved, kept through moves, renames and
+  reorders): a place is the same while its waypoint stands, a leg while it runs between
+  the same two keys, and a leg split at a point inside it (a key between its ends, or a
+  point set since) keeps its row for the first half. Nothing is matched by position or
+  order alone, which would hand one entry's notes to another. A kept row is **updated**
+  with the plan's columns only; its planned times are rewritten only when the tour has a
+  start time, and only its *routed* line is replaced, a recording on it staying. A row no
+  entry keeps is deleted with the rescue `replaceJourneyLegs` gives (costs and files to
+  the group). The slot, the group and the option are kept. Places are paired with their
+  waypoints by order (the k-th place entry with the k-th place mark), both having been
+  written from one walk along the tour.
+- **The planner shows the names the entries carry now**: a leg's ends and a place's
+  title renamed in the entry's form since are read back from the rows, not from the plan,
+  so saving does not put the old names back.
 - **A profile this version does not know cannot be opened** (`savedTourOf` answers null),
   rather than opened with a section it would save back as something else. The button then
   says so in a snack bar (`routeEditUnavailable`) instead of doing nothing.

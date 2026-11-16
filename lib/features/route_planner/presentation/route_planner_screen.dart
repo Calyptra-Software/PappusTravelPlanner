@@ -922,6 +922,7 @@ class _WaypointSheetState extends State<_WaypointSheet> {
                         widget.waypoint.position,
                         name: name.isEmpty ? null : name,
                         isPlace: _isPlace,
+                        key: widget.waypoint.key,
                       ),
                     ),
                   );

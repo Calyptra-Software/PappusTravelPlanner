@@ -137,6 +137,31 @@ class TripRepository {
     return ids;
   }
 
+  /// Writes a route the planner saved again over its old entries, keeping the
+  /// rows that stayed the same entry — see [RoutineDao.rewriteRoute]. A kept
+  /// leg's computed line is replaced by the new one ([shapes], parallel to
+  /// [entries], with [elevations]); a recording or an import on it stays.
+  Future<List<int>> rewriteRoute(
+    int tripId, {
+    required List<int> oldIds,
+    required List<({int? keepId, ItineraryItemsCompanion row})> entries,
+    int? groupId,
+    List<String?> shapes = const [],
+    List<List<double>?> elevations = const [],
+  }) async {
+    final ids = await _db.routineDao.rewriteRoute(
+      tripId,
+      oldIds: oldIds,
+      entries: entries,
+      groupId: groupId,
+    );
+    await _db.trackDao.deleteRoutedTracksOf([
+      for (final entry in entries) ?entry.keepId,
+    ]);
+    await _writeRoutedShapes(ids, shapes, elevations);
+    return ids;
+  }
+
   Future<int> routineDaySpan(int routineId) =>
       _db.routineDao.routineDaySpan(routineId);
   Future<List<Trip>> tripsFromRoutineOn(int routineId, DateTime day) =>

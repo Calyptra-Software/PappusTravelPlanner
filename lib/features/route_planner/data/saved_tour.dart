@@ -9,6 +9,7 @@ import '../../map/map_features.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
 import '../domain/tour.dart';
+import '../tour_entries.dart';
 
 /// A tour the planner saved, read back from the entries it was saved as.
 class SavedTour {
@@ -19,7 +20,15 @@ class SavedTour {
     required this.tour,
     required this.paths,
     this.startMinutes,
+    this.legItems = const {},
+    this.placeItems = const {},
   });
+
+  /// The leg entry that runs between two of [tour]'s waypoints, by their
+  /// `TourWaypoint.key`s, and the place entry that stands at one. What saving
+  /// the tour again keeps (`keptEntryIds`).
+  final Map<(int, int), int> legItems;
+  final Map<int, int> placeItems;
 
   /// What marks the entries as one tour; kept when the tour is saved again.
   final String tourId;
@@ -128,7 +137,48 @@ SavedTour? savedTourOf(
     modes.addAll(List.filled(points.length - 1, mode));
     spans.add((first: first, last: waypoints.length - 1));
   }
-  final tour = Tour(waypoints: waypoints, modes: modes);
+  // Each waypoint is keyed by where it stands in the tour as saved, and named
+  // as the entries now name it: an end renamed in the entry's form since, or
+  // a place retitled, is what the planner shows and saves back, rather than
+  // the name the plan was written with.
+  final names = <int, String>{};
+  final legItems = <(int, int), int>{};
+  for (final (index, (:item, plan: _)) in legs.indexed) {
+    final span = spans[index];
+    legItems[(span.first, span.last)] = item.id;
+    if (_nonEmpty(item.fromLocation) case final from?) names[span.first] = from;
+    if (_nonEmpty(item.toLocation) case final to?) names[span.last] = to;
+  }
+  // The places in plan order stand at the waypoints marked as places, in the
+  // same order: both were written from one walk along the tour.
+  final placeEntries = [
+    for (final item in members)
+      if (item.kind == ItemKind.place) item,
+  ];
+  final placeWaypoints = [
+    for (final (index, waypoint) in waypoints.indexed)
+      if (waypoint.isPlace) index,
+  ];
+  final placeItems = <int, int>{};
+  if (placeEntries.length == placeWaypoints.length) {
+    for (final (k, item) in placeEntries.indexed) {
+      placeItems[placeWaypoints[k]] = item.id;
+      if (_nonEmpty(item.title) case final title?) {
+        names[placeWaypoints[k]] = title;
+      }
+    }
+  }
+  final keyed = [
+    for (final (index, waypoint) in waypoints.indexed)
+      TourWaypoint(
+        waypoint.position,
+        name: names[index] ?? waypoint.name,
+        isPlace: waypoint.isPlace,
+        key: index,
+      ),
+  ];
+
+  final tour = Tour(waypoints: keyed, modes: modes);
 
   final paths = <String, RoutedPath>{};
   final runs = tourRuns(tour);
@@ -151,7 +201,60 @@ SavedTour? savedTourOf(
     tour: tour,
     paths: paths,
     startMinutes: members.first.startMinutes,
+    legItems: legItems,
+    placeItems: placeItems,
   );
+}
+
+String? _nonEmpty(String? text) {
+  final trimmed = text?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+/// Which of [entries], the tour about to be saved again, keep the entry they
+/// were saved as: one id per entry, null where the entry is new.
+///
+/// An entry is the same entry for as long as the user can see it is: a place
+/// while its waypoint stands, however moved, renamed or reordered; a leg while
+/// it runs between the same two waypoints. A leg split at a point inside it
+/// keeps its row for the first half, which starts where it did. Nothing is
+/// matched by position or by order alone, which would hand one entry's notes
+/// and photographs to another. Each row is kept at most once.
+List<int?> keptEntryIds(List<TourEntry> entries, SavedTour saved) {
+  final kept = List<int?>.filled(entries.length, null);
+  final claimed = <int>{};
+  int? claim(int? id) {
+    if (id == null || !claimed.add(id)) return null;
+    return id;
+  }
+
+  for (final (index, entry) in entries.indexed) {
+    kept[index] = switch (entry) {
+      TourPlace(:final waypoint) => claim(saved.placeItems[waypoint.key]),
+      TourLeg(:final from, :final to) when from.key != null && to.key != null =>
+        claim(saved.legItems[(from.key!, to.key!)]),
+      TourLeg() => null,
+    };
+  }
+  // The first half of a split leg: it starts where an old leg started and
+  // ends at a point that lay inside that leg (a key between its ends, the keys
+  // being the saved order) or was set since. A leg that merely starts at the
+  // same point after a reorder is not a half of anything.
+  for (final (index, entry) in entries.indexed) {
+    if (kept[index] != null || entry is! TourLeg) continue;
+    final from = entry.from.key;
+    final to = entry.to.key;
+    if (from == null) continue;
+    for (final MapEntry(key: (first, last), value: id)
+        in saved.legItems.entries) {
+      final inside = to == null || (to > first && to < last);
+      if (first == from && inside && !claimed.contains(id)) {
+        kept[index] = claim(id);
+        break;
+      }
+    }
+  }
+  return kept;
 }
 
 /// The line the router gave for a leg, as the leg still holds it: its routed
