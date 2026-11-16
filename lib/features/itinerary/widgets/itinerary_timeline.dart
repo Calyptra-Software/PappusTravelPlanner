@@ -132,7 +132,8 @@ class ItineraryTimeline extends StatefulWidget {
   /// Opens the tour planner for [day], with the latest time the day already
   /// has ([lastTimeOfDay]) as where its start time is picked from. Null leaves
   /// the offer out.
-  final void Function(DateTime day, int? latestTime)? onPlanRoute;
+  final void Function(DateTime day, int? latestTime, {int? alternativeId})?
+  onPlanRoute;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -409,7 +410,8 @@ class _DaySection extends ConsumerWidget {
   onQuickAddPlace;
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
-  final void Function(DateTime day, int? latestTime)? onPlanRoute;
+  final void Function(DateTime day, int? latestTime, {int? alternativeId})?
+  onPlanRoute;
   final void Function(List<DayBlock>, int, int) onReorder;
   final void Function(List<DayBlock>, int, int) onReorderBranch;
   final void Function(List<ItineraryItem>, int, int) onReorderRun;
@@ -704,6 +706,14 @@ class _DaySection extends ConsumerWidget {
                   ),
                   onQuickAddPlace: (branchId, location) =>
                       onQuickAddPlace(day, location, alternativeId: branchId),
+                  onPlanRoute: switch (onPlanRoute) {
+                    final plan? => (branchId, latestTime) => plan(
+                      day,
+                      latestTime,
+                      alternativeId: branchId,
+                    ),
+                    null => null,
+                  },
                   onReorderBranch: onReorderBranch,
                   onReorderRun: onReorderRun,
                   dragHandle: dragHandle,

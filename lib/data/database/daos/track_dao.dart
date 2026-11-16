@@ -71,13 +71,17 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
   Selectable<Track> _liveTracks(Expression<bool>? extra) =>
       _liveTracksQuery(extra).map((row) => row.readTable(tracks));
 
-  /// Removes the lines a router computed for [itemIds], and only those: what
-  /// was recorded or imported onto them stays.
-  Future<void> deleteRoutedTracksOf(Iterable<int> itemIds) =>
+  /// Removes the proposed lines of [itemIds] (computed by a router or drawn
+  /// by hand, [TrackSourceKind.isProposal]), and only those: what was recorded
+  /// or imported onto them stays.
+  Future<void> deleteProposedTracksOf(Iterable<int> itemIds) =>
       (delete(tracks)..where(
             (t) =>
                 t.itemId.isIn(itemIds) &
-                t.source.equalsValue(TrackSource.routed),
+                t.source.isIn([
+                  TrackSource.routed.index,
+                  TrackSource.drawn.index,
+                ]),
           ))
           .go();
 

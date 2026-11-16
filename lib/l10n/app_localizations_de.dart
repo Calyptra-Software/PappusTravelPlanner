@@ -2206,7 +2206,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dataSourcesNote =>
-      'Die Verbindungssuche nutzt frei lizenzierte Fahrplan- und Kartendaten:';
+      'Verbindungssuche und Routenplanung nutzen frei lizenzierte Fahrplan- und Kartendaten:';
 
   @override
   String linkOpenFailed(String url) {
@@ -2921,4 +2921,38 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get routeEditUnavailable =>
       'Diese Route lässt sich nicht im Planer öffnen. Vielleicht wurde sie mit einer neueren Version der App geplant.';
+
+  @override
+  String get trackSourceDrawn => 'Von Hand gezeichnet';
+
+  @override
+  String get attributionBrouter => 'Routen von BRouter';
+
+  @override
+  String get routePlannerSection => 'Routenplaner';
+
+  @override
+  String get routingServer => 'Routing-Server';
+
+  @override
+  String get routingServerAddress => 'Adresse';
+
+  @override
+  String get routingServerHint =>
+      'Ein BRouter-Server, z. B. https://brouter.example.org/brouter';
+
+  @override
+  String routingServerDefault(String url) {
+    return '$url (Standard)';
+  }
+
+  @override
+  String get routingServerInvalid =>
+      'Das ist keine Server-Adresse. Sie beginnt mit https:// oder http://.';
+
+  @override
+  String get routingServerReset => 'Standard-Server verwenden';
+
+  @override
+  String get routePlanUseMyLocation => 'Nächster Punkt an meiner Position';
 }

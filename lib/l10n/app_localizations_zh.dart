@@ -2848,4 +2848,38 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get routeEditUnavailable =>
       'This route can\'t be opened in the planner. It may have been planned with a newer version of the app.';
+
+  @override
+  String get trackSourceDrawn => 'Drawn by hand';
+
+  @override
+  String get attributionBrouter => 'Routes by BRouter';
+
+  @override
+  String get routePlannerSection => 'Route planner';
+
+  @override
+  String get routingServer => 'Routing server';
+
+  @override
+  String get routingServerAddress => 'Address';
+
+  @override
+  String get routingServerHint =>
+      'A BRouter server, e.g. https://brouter.example.org/brouter';
+
+  @override
+  String routingServerDefault(String url) {
+    return '$url (default)';
+  }
+
+  @override
+  String get routingServerInvalid =>
+      'That isn\'t the address of a server. It starts with https:// or http://.';
+
+  @override
+  String get routingServerReset => 'Use the default server';
+
+  @override
+  String get routePlanUseMyLocation => 'Next point at my position';
 }

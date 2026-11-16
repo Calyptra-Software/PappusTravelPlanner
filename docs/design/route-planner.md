@@ -22,8 +22,14 @@ yet** (next section): that has to happen before a release carrying this.
 - **The public BRouter server publishes no usage policy for third-party apps.** It must be
   asked for before a release that calls it (contact: the Google group
   `osm-android-bikerouting`). It logs the address and the requested coordinates for two
-  weeks, which `SECURITY.md` has to say. One of two test requests on 2026-11-16 timed out,
-  so the base URL should become a setting, with self-hosting as the answer to both.
+  weeks, which `SECURITY.md` has to say. One of two test requests on 2026-11-16 timed out.
+  The server is therefore a **setting** (`routingServerProvider`, Settings → Route
+  planner), an answer to both: a self-hosted server sends nothing to brouter.de. Stored in
+  the preferences like the map style, never in the database or a `.tpt`. An address
+  without a path gets `/brouter`, where a bare BRouter server answers; any other path is
+  kept for a server behind a proxy. The planner names BRouter beside the map's own
+  sources, and so do the settings' data sources, with OpenStreetMap, whose data the
+  routes are computed on.
 - **It is somebody else's server, so the connection search's rules apply**: the
   `User-Agent` from `buildUserAgent`, `retry: noAutomaticRetry` on every provider that
   calls it, and a request per waypoint *set*, never while one is dragged. One request
@@ -65,9 +71,13 @@ yet** (next section): that has to happen before a release carrying this.
 - **Times run on from a start time and stop where nothing is known**: behind a leg
   without a duration, and at midnight. A leg reaching past midnight keeps its arrival in
   `endDayOffset`; entries after it stay untimed and on the tour's day.
-- **A hand-drawn line is stored as `routed`**, there being no source for "drawn": it is a
-  proposal and not a record, which is what the dash says. A straight line of two points is
-  not stored at all, since the leg's chord is the same line.
+- **A hand-drawn line is stored as `TrackSource.drawn`** (appended to the enum, and by
+  name in a `.tpt`, which an older app reads as an import). It was stored as `routed`
+  at first, which made the entry's row say "computed route" and the GPX `<src>routed`
+  about a line nobody computed. It is a proposal like a routed one
+  (`TrackSourceKind.isProposal`): drawn dashed, put away by a recording, and replaced when
+  the tour is saved again. A straight line of two points is not stored at all, since the
+  leg's chord is the same line.
 - **A routed line is stored with its heights** (`Tracks.elevations`, see `tracks.md`),
   and its climb is counted from them by `climbOf`, not read from the router's own
   "filtered ascend". The stored line is counted again wherever it is shown, and the
@@ -185,16 +195,21 @@ yet** (next section): that has to happen before a release carrying this.
   pan under it. The dot is a `ValueNotifier` of its own and the profile is worked out
   once per planner state: a cursor moving redraws one marker, and the chart keeps its
   cursor only while it is handed the same profile.
+- **The locate button sets a point where the device is**, the point picker's rule: a
+  pointing act, taking only the reading the press waited for, and a tap on the map while
+  it waits answers the question instead. It sets the next point, or puts the point being
+  moved there, and centers the map. The blue mark is drawn under the tour's own marks.
+- **An option of a decision has its own *Plan route***, and a new route planned from it
+  is saved into that option (`insertJourney`'s `alternativeId`); its start time is
+  picked from the option's own last time. A route opened again keeps the place it has.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
 - **Ski is a straight line under its own chip**, filed under the ski mode; *Straight line*
   is the same with no mode.
 
 ## Not built yet
 
-- The door from a decision's option, from a routine's own screen and from the overview
-  (a tour planned before there is a trip). Only a day's add row opens the planner.
-- Centering on the device and taking its position as a waypoint.
-- The base URL as a setting, and a link crediting BRouter beside the map's attribution.
+- The door from the overview, for a route planned before there is a trip: where it is
+  saved (a trip picked as for a connection, or a new routine) is still to decide.
 - Whether `brouter.de` sends the CORS header the web build needs (unverified).
 - A walking-time model with the user's own pace in place of the router's duration.
 - *Edit route* from the map.

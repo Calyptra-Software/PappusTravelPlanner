@@ -3727,7 +3727,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataSourcesNote.
   ///
   /// In en, this message translates to:
-  /// **'Connection search uses openly licensed timetable and map data:'**
+  /// **'Connection search and route planning use openly licensed timetable and map data:'**
   String get dataSourcesNote;
 
   /// No description provided for @linkOpenFailed.
@@ -4833,6 +4833,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This route can\'t be opened in the planner. It may have been planned with a newer version of the app.'**
   String get routeEditUnavailable;
+
+  /// No description provided for @trackSourceDrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawn by hand'**
+  String get trackSourceDrawn;
+
+  /// No description provided for @attributionBrouter.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes by BRouter'**
+  String get attributionBrouter;
+
+  /// No description provided for @routePlannerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Route planner'**
+  String get routePlannerSection;
+
+  /// No description provided for @routingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing server'**
+  String get routingServer;
+
+  /// No description provided for @routingServerAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get routingServerAddress;
+
+  /// No description provided for @routingServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A BRouter server, e.g. https://brouter.example.org/brouter'**
+  String get routingServerHint;
+
+  /// No description provided for @routingServerDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'{url} (default)'**
+  String routingServerDefault(String url);
+
+  /// No description provided for @routingServerInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t the address of a server. It starts with https:// or http://.'**
+  String get routingServerInvalid;
+
+  /// No description provided for @routingServerReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the default server'**
+  String get routingServerReset;
+
+  /// No description provided for @routePlanUseMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Next point at my position'**
+  String get routePlanUseMyLocation;
 }
 
 class _AppLocalizationsDelegate

@@ -1260,7 +1260,7 @@
   "attributionOsm": "© OpenStreetMap contributors",
   "attributionTransitous": "Timetable data via Transitous",
   "dataSourcesSection": "Data sources",
-  "dataSourcesNote": "Connection search uses openly licensed timetable and map data:",
+  "dataSourcesNote": "Connection search and route planning use openly licensed timetable and map data:",
   "linkOpenFailed": "Could not open {url}",
   "@linkOpenFailed": {
     "placeholders": {
@@ -1600,5 +1600,18 @@
   "routePointStart": "Start",
   "routeEdit": "Edit route",
   "elevationProfile": "Elevation profile",
-  "routeEditUnavailable": "This route can't be opened in the planner. It may have been planned with a newer version of the app."
+  "routeEditUnavailable": "This route can't be opened in the planner. It may have been planned with a newer version of the app.",
+  "trackSourceDrawn": "Drawn by hand",
+  "attributionBrouter": "Routes by BRouter",
+  "routePlannerSection": "Route planner",
+  "routingServer": "Routing server",
+  "routingServerAddress": "Address",
+  "routingServerHint": "A BRouter server, e.g. https://brouter.example.org/brouter",
+  "routingServerDefault": "{url} (default)",
+  "@routingServerDefault": {
+    "placeholders": { "url": { "type": "String" } }
+  },
+  "routingServerInvalid": "That isn't the address of a server. It starts with https:// or http://.",
+  "routingServerReset": "Use the default server",
+  "routePlanUseMyLocation": "Next point at my position"
 }

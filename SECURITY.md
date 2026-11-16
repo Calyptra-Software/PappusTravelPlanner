@@ -123,6 +123,7 @@ boundary.
 **It parses replies from three network services.** The connection search talks to
 `https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`),
 the route planner to `https://brouter.de` (`lib/features/route_planner/data/brouter_client.dart`),
+or instead to a BRouter server you set in its settings,
 and the map fetches tile images from the server of the chosen map style
 (`lib/features/map/basemap.dart`): `tile.openstreetmap.org` by default, and
 `tile.opentopomap.org`, `tile-cyclosm.openstreetmap.fr`, `tile.openstreetmap.fr` or
@@ -226,8 +227,8 @@ connection without telling anyone where and when you want to go is not a thing
 that can be built.
 
 **The route planner tells the router the points of the route.** The coordinates of
-the points you set on its map and the way of travel you chose go to `brouter.de`, with
-the same `User-Agent`. Nothing is sent before the second point is set, and nothing for
+the points you set on its map and the way of travel you chose go to `brouter.de`, or to
+the BRouter server set in the settings instead, with the same `User-Agent`. Nothing is sent before the second point is set, and nothing for
 a section drawn as a straight line. The server's
 [privacy policy](https://brouter.de/privacypolicy.html) says it logs the address a
 request came from, the user agent and the requested coordinates, and keeps the logs

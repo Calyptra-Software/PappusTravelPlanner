@@ -786,7 +786,7 @@
   "attributionOsm": "© OpenStreetMap-Mitwirkende",
   "attributionTransitous": "Fahrplandaten über Transitous",
   "dataSourcesSection": "Datenquellen",
-  "dataSourcesNote": "Die Verbindungssuche nutzt frei lizenzierte Fahrplan- und Kartendaten:",
+  "dataSourcesNote": "Verbindungssuche und Routenplanung nutzen frei lizenzierte Fahrplan- und Kartendaten:",
   "linkOpenFailed": "{url} konnte nicht geöffnet werden",
   "transportModeRestoreBuiltin": "Standard wiederherstellen",
   "platformShort": "Gl. {track}",
@@ -995,5 +995,18 @@
   "routePointStart": "Start",
   "routeEdit": "Route bearbeiten",
   "elevationProfile": "Höhenprofil",
-  "routeEditUnavailable": "Diese Route lässt sich nicht im Planer öffnen. Vielleicht wurde sie mit einer neueren Version der App geplant."
+  "routeEditUnavailable": "Diese Route lässt sich nicht im Planer öffnen. Vielleicht wurde sie mit einer neueren Version der App geplant.",
+  "trackSourceDrawn": "Von Hand gezeichnet",
+  "attributionBrouter": "Routen von BRouter",
+  "routePlannerSection": "Routenplaner",
+  "routingServer": "Routing-Server",
+  "routingServerAddress": "Adresse",
+  "routingServerHint": "Ein BRouter-Server, z. B. https://brouter.example.org/brouter",
+  "routingServerDefault": "{url} (Standard)",
+  "@routingServerDefault": {
+    "placeholders": { "url": { "type": "String" } }
+  },
+  "routingServerInvalid": "Das ist keine Server-Adresse. Sie beginnt mit https:// oder http://.",
+  "routingServerReset": "Standard-Server verwenden",
+  "routePlanUseMyLocation": "Nächster Punkt an meiner Position"
 }

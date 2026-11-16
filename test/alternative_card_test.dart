@@ -117,10 +117,14 @@ void main() {
     },
   );
 
-  Future<void> pumpCard(WidgetTester tester) async {
+  Future<void> pumpCard(
+    WidgetTester tester, {
+    void Function(int alternativeId, int? latestTime)? onPlanRoute,
+  }) async {
     await tester.pumpWidget(
       wrap(
         AlternativeCard(
+          onPlanRoute: onPlanRoute,
           block: block(),
           accent: Colors.teal,
           groups: const {},
@@ -144,6 +148,22 @@ void main() {
     );
     await tester.pumpAndSettle();
   }
+
+  testWidgets('a route is planned into the option on screen', (tester) async {
+    final asked = <int>[];
+    await pumpCard(tester, onPlanRoute: (option, _) => asked.add(option));
+
+    await tester.tap(find.text('Plan route'));
+    expect(asked, [10]);
+  });
+
+  testWidgets('no route is offered where nobody passes the planner', (
+    tester,
+  ) async {
+    await pumpCard(tester);
+
+    expect(find.text('Plan route'), findsNothing);
+  });
 
   testWidgets('opens on the chosen option and hides the other', (tester) async {
     await pumpCard(tester);

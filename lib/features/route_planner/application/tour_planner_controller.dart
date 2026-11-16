@@ -239,6 +239,7 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     required int tripId,
     required DateTime date,
     int? startMinutes,
+    int? alternativeId,
   }) async {
     final entries = state.entries;
     if (entries == null) return null;
@@ -275,13 +276,17 @@ class TourPlannerController extends Notifier<TourPlannerState> {
         groupId: saved.groupId,
         shapes: mapped.shapes,
         elevations: mapped.elevations,
+        sources: mapped.sources,
       );
     }
     return repository.insertJourney(
       tripId,
       mapped.items,
+      // A new tour planned from an option's add row goes into that option.
+      alternativeId: alternativeId,
       shapes: mapped.shapes,
       elevations: mapped.elevations,
+      sources: mapped.sources,
     );
   }
 

@@ -59,6 +59,7 @@ class TrackRow extends StatelessWidget {
       TrackSource.recorded => l10n.trackSourceRecorded,
       TrackSource.imported => l10n.trackSourceImported,
       TrackSource.routed => l10n.trackSourceRouted,
+      TrackSource.drawn => l10n.trackSourceDrawn,
     };
     final length = track.meters == null
         ? l10n.trackNotDrawable
@@ -71,9 +72,10 @@ class TrackRow extends StatelessWidget {
 
     final row = _LineRow(
       icon: switch (track.source) {
-        // A computed route is the one of the three the map draws differently,
-        // so it is the one that reads differently here.
+        // A proposal is what the map draws differently, so it is what reads
+        // differently here: computed, or drawn by hand.
         TrackSource.routed => Icons.alt_route,
+        TrackSource.drawn => Icons.gesture,
         _ => Icons.timeline,
       },
       text: [?track.name, source, length, ?climb].join(' · '),

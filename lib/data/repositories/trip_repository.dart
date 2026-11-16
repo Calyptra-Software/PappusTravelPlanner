@@ -47,10 +47,14 @@ class TripRepository {
   ///
   /// [elevations] runs parallel to [shapes]: the height of each point of a
   /// shape, for a router that gives them. The connection search gives none.
+  /// [sources] does too, for a shape that was not computed: the route
+  /// planner's lines drawn by hand are [TrackSource.drawn]. Routed where it
+  /// says nothing.
   Future<void> _writeRoutedShapes(
     List<int> ids,
     List<String?> shapes, [
     List<List<double>?> elevations = const [],
+    List<TrackSource> sources = const [],
   ]) async {
     for (final (index, shape) in shapes.indexed) {
       if (shape == null || index >= ids.length) continue;
@@ -68,7 +72,7 @@ class TripRepository {
           // above it. A name here would only repeat the label the entry carries.
           (points: points, name: null),
         ],
-        source: TrackSource.routed,
+        source: index < sources.length ? sources[index] : TrackSource.routed,
         elevations: [index < elevations.length ? elevations[index] : null],
       );
     }
@@ -148,6 +152,7 @@ class TripRepository {
     int? groupId,
     List<String?> shapes = const [],
     List<List<double>?> elevations = const [],
+    List<TrackSource> sources = const [],
   }) async {
     final ids = await _db.routineDao.rewriteRoute(
       tripId,
@@ -155,10 +160,10 @@ class TripRepository {
       entries: entries,
       groupId: groupId,
     );
-    await _db.trackDao.deleteRoutedTracksOf([
+    await _db.trackDao.deleteProposedTracksOf([
       for (final entry in entries) ?entry.keepId,
     ]);
-    await _writeRoutedShapes(ids, shapes, elevations);
+    await _writeRoutedShapes(ids, shapes, elevations, sources);
     return ids;
   }
 
@@ -465,13 +470,14 @@ class TripRepository {
     int? alternativeId,
     List<String?> shapes = const [],
     List<List<double>?> elevations = const [],
+    List<TrackSource> sources = const [],
   }) async {
     final ids = await _db.itineraryDao.insertJourneyLegs(
       tripId,
       legs,
       alternativeId: alternativeId,
     );
-    await _writeRoutedShapes(ids, shapes, elevations);
+    await _writeRoutedShapes(ids, shapes, elevations, sources);
     if (group) {
       var i = 0;
       while (i < legs.length) {

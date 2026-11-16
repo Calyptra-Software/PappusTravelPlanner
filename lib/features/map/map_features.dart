@@ -291,7 +291,7 @@ TripMapFeatures tripMapFeatures(
             // On the line making the claim, not on the entry: a routed line
             // the user has asked to see may now stand beside a recording, and
             // the dash is what says which is which.
-            dashed: line.source == TrackSource.routed,
+            dashed: line.source.isProposal,
             segments: splitAtAntimeridian(line.points),
           ));
         }
@@ -487,16 +487,15 @@ Set<int> drawnTrackIds(
   var followedDrawn = false;
   for (final line in lines) {
     if (line.display == TrackDisplay.hidden) continue;
-    if (line.display == TrackDisplay.shown ||
-        line.source != TrackSource.routed) {
+    if (line.display == TrackDisplay.shown || !line.source.isProposal) {
       drawn.add(line.id);
-      if (line.source != TrackSource.routed) followedDrawn = true;
+      if (!line.source.isProposal) followedDrawn = true;
     }
   }
   if (followedDrawn) return drawn;
   for (final line in lines) {
     if (line.display == TrackDisplay.hidden) continue;
-    if (line.source == TrackSource.routed) drawn.add(line.id);
+    if (line.source.isProposal) drawn.add(line.id);
   }
   return drawn;
 }

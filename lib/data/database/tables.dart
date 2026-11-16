@@ -607,6 +607,20 @@ enum TrackSource {
   /// Computed by a router: the road or path between two ends, rather than a
   /// record of anyone travelling it.
   routed,
+
+  /// Drawn by hand in the route planner: straight from point to point where no
+  /// router was asked (a ski descent, a glacier, a section off the paths). A
+  /// proposal like [routed], but nobody computed it.
+  drawn,
+}
+
+/// What follows from a line's [TrackSource].
+extension TrackSourceKind on TrackSource {
+  /// Whether the line is a plan, not a record: computed by a router or drawn
+  /// by hand. The map draws such a line dashed and puts it away when the entry
+  /// carries a recording or an import.
+  bool get isProposal =>
+      this == TrackSource.routed || this == TrackSource.drawn;
 }
 
 /// Whether a stored line is drawn on the map, when the default is not what the

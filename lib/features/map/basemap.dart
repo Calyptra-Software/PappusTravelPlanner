@@ -130,6 +130,10 @@ const RasterBasemap osmStandardBasemap = RasterBasemap(
   offlineDownload: OfflineDownload.forbidden,
 );
 
+/// OpenStreetMap's credit, which data drawn from it (the tiles, and the
+/// route planner's routes) carries.
+const MapAttribution osmAttribution = _osmAttribution;
+
 const MapAttribution _osmAttribution = (
   label: '© OpenStreetMap',
   url: kOsmCopyrightUrl,

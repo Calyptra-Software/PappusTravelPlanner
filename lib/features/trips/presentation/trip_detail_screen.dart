@@ -853,14 +853,16 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                           // the day itself is picked as an ordinal.
                           intoRoutine: trip.kind == TripKind.routine,
                         ),
-                    onPlanRoute: (day, latestTime) => planRoute(
-                      context,
-                      tripId: tripId,
-                      day: day,
-                      latestTime: latestTime,
-                      color: accent,
-                      nearby: itemPositions(items),
-                    ),
+                    onPlanRoute: (day, latestTime, {alternativeId}) =>
+                        planRoute(
+                          context,
+                          tripId: tripId,
+                          day: day,
+                          latestTime: latestTime,
+                          alternativeId: alternativeId,
+                          color: accent,
+                          nearby: itemPositions(items),
+                        ),
                     onTapCost: (cost) => showCostFormSheet(
                       context,
                       itemId: cost.itemId,

@@ -7,8 +7,9 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   format every mapping tool reads, so a dense recording costs a fraction of its point count
   and can leave the app without a decoder being written first. A recorded walk, an imported
   route and a path a router computes later are the same row wearing different `TrackSource`
-  values, which is why the enum names all three though only the first can be made today: a
-  table that could not say "this one was actually walked" would have to be migrated to say
+  values (a fourth, `drawn`, is a line drawn by hand in the route planner, see
+  `route-planner.md`), which is why the enum named all three from the start, though only
+  the first could be made then: a table that could not say "this one was actually walked" would have to be migrated to say
   it. The file's markup is dropped on the way in (`parseGpx`); its heights are kept (see
   the note on heights below). Timestamps are *read* but never stored: the import uses them once (below) and they
   leave with the file. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they

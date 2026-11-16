@@ -16,11 +16,16 @@ class MappedTour {
     required this.items,
     required this.shapes,
     required this.elevations,
+    required this.sources,
   });
 
   final List<ItineraryItemsCompanion> items;
   final List<String?> shapes;
   final List<List<double>?> elevations;
+
+  /// What each line is: [TrackSource.routed] for a section the router found,
+  /// [TrackSource.drawn] for one drawn by hand.
+  final List<TrackSource> sources;
 }
 
 /// Maps a planned tour onto itinerary rows of [tripId] on [date].
@@ -50,6 +55,7 @@ MappedTour tourToItems(
   final items = <ItineraryItemsCompanion>[];
   final shapes = <String?>[];
   final elevations = <List<double>?>[];
+  final sources = <TrackSource>[];
   // Minutes since midnight of [date] at which the next entry starts; null once
   // nothing is known about it any more.
   var clock = startMinutes;
@@ -71,6 +77,7 @@ MappedTour tourToItems(
         );
         shapes.add(null);
         elevations.add(null);
+        sources.add(TrackSource.routed);
       case TourLeg(:final from, :final to, :final mode, :final path):
         final start = clock;
         final minutes = path.duration == null
@@ -105,10 +112,18 @@ MappedTour tourToItems(
               : null,
         );
         elevations.add(stored ? path.elevations : null);
+        sources.add(
+          mode is StraightMode ? TrackSource.drawn : TrackSource.routed,
+        );
         clock = end != null && end < _minutesPerDay ? end : null;
     }
   }
-  return MappedTour(items: items, shapes: shapes, elevations: elevations);
+  return MappedTour(
+    items: items,
+    shapes: shapes,
+    elevations: elevations,
+    sources: sources,
+  );
 }
 
 /// What a leg was planned with, as its row keeps it.

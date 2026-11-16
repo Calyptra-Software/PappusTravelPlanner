@@ -8,8 +8,9 @@ exact commits.
 - **Plan a route on the map.** *Plan route* on a day opens a map: tap the points of a walk,
   ride or drive and the app finds the way between them, with its length, climb and
   duration. The way of travel can change from point to point, and the route is added to
-  the day with its line. The route is computed by the BRouter server at brouter.de, which
-  receives the points you set.
+  the day or to an option of a decision with its line, and a point can be set at your
+  position. The route is computed by the BRouter server at brouter.de, which receives the
+  points you set; another BRouter server can be set in the settings.
 - **A planned route can be edited again.** *Edit route* on the route's label opens it in
   the planner as it was saved.
 - **Elevation profiles.** Planned routes, imported GPX files and recorded tracks keep their

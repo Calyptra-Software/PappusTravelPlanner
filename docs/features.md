@@ -367,6 +367,10 @@ it at that point, so a drive to the car park and the walk from there are one rou
 and *Straight line* draw a straight line between your points, since no routing server
 knows pistes and lifts.
 
+The locate button sets the next point at your position, or puts the point you are moving
+there, and centers the map on it. *Plan route* is also under each option of a decision,
+and plans the route into that option.
+
 Tap a point to name it, to add it to the plan as a place of its own, to move it (the next
 tap on the map says where to) or to remove it. Tap a line to travel that section another
 way, or to add a point there. The points are numbered in the order of the route; the list
@@ -376,7 +380,7 @@ running on from the durations.
 
 *Add to day* writes one leg per way of travel, split at named points, each with its line.
 Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
-it.
+it; a line of a *Ski* or *Straight line* section is listed as drawn by hand.
 
 The chart button under the map shows the route's **elevation profile** over the bottom of
 the map. Move the pointer over it, or draw a finger across it, and a line marks that
@@ -393,7 +397,9 @@ time the entries keep their times. An entry the route no longer has is removed, 
 costs and files move to the route's group.
 
 The routes come from the [BRouter](https://brouter.de) server at brouter.de, which
-receives the points you set.
+receives the points you set. **Settings → Route planner** takes the address of another
+BRouter server instead, your own for example; clearing the field, or the reset button,
+goes back to brouter.de.
 
 ---
 

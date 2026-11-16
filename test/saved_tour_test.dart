@@ -7,6 +7,7 @@ import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/route_plan.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/data/database/track_points.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
 import 'package:travelplanner/features/route_planner/application/route_engine.dart';
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
@@ -417,6 +418,38 @@ void main() {
       expect((await items()).firstWhere((i) => i.id == ids[2]).notes, 'Cairn');
       expect((await db.select(db.costs).getSingle()).itemId, ids[1]);
     });
+
+    test(
+      'a line drawn by hand is stored as drawn, and redrawn on save',
+      () async {
+        final ids = await saveTour();
+        final saved = await openInPlanner();
+        final planner = container.read(tourPlannerProvider(saved).notifier);
+
+        // A bend in the ski descent: three points, so a line of its own.
+        planner.insertWaypoint(3, const LatLng(47.15, 11.02));
+        await planner.save(tripId: tripId, date: _day);
+
+        final lines = await (db.select(
+          db.tracks,
+        )..where((t) => t.itemId.equals(ids[3]))).get();
+        expect(lines.single.source, TrackSource.drawn);
+        expect(decodeTrackPoints(lines.single.points), hasLength(3));
+
+        // Saved again without the bend: the drawn line goes with it.
+        final again = (await open((await items()).first))!;
+        container.listen(tourPlannerProvider(again), (_, _) {});
+        final second = container.read(tourPlannerProvider(again).notifier);
+        second.removeWaypoint(4);
+        await second.save(tripId: tripId, date: _day);
+        expect(
+          await (db.select(
+            db.tracks,
+          )..where((t) => t.itemId.equals(ids[3]))).get(),
+          isEmpty,
+        );
+      },
+    );
 
     test(
       'a start time given rewrites the planned times of kept entries',

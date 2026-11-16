@@ -7,11 +7,15 @@ import '../../../core/format/date_format.dart';
 import '../../../core/format/distance_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_sheet.dart';
+import '../../../core/widgets/attribution.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../map/basemap.dart' show osmAttribution;
 import '../../map/basemap_provider.dart';
 import '../../map/elevation.dart';
 import '../../map/finite_camera.dart';
+import '../../map/widgets/device_location_overlay.dart';
+import '../../map/location/device_location.dart';
 import '../../map/presentation/map_picker_screen.dart' show formatCoordinates;
 import '../../map/widgets/elevation_profile_chart.dart';
 import '../../map/widgets/map_overlays.dart';
@@ -39,6 +43,7 @@ Future<bool> planRoute(
   List<LatLng> nearby = const [],
   SavedTour? editing,
   int? latestTime,
+  int? alternativeId,
 }) async {
   final saved = await Navigator.of(context).push<bool>(
     MaterialPageRoute(
@@ -50,6 +55,7 @@ Future<bool> planRoute(
         nearby: nearby,
         editing: editing,
         latestTime: latestTime,
+        alternativeId: alternativeId,
       ),
     ),
   );
@@ -86,7 +92,12 @@ class RoutePlannerScreen extends ConsumerStatefulWidget {
     this.nearby = const [],
     this.editing,
     this.latestTime,
+    this.alternativeId,
   });
+
+  /// The option of a decision the tour is planned into, or null for the day
+  /// itself. A saved tour keeps the place it has, so this is for a new one.
+  final int? alternativeId;
 
   /// The latest time [day] already has, in minutes since midnight: where the
   /// start-time picker opens, the tour being added after the day's entries.
@@ -169,8 +180,37 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     super.dispose();
   }
 
+  /// Whether the locate button is waiting for the reading it will set as a
+  /// point. A tap on the map in the meantime answers the question instead, and
+  /// the reading that turns up afterwards moves only the blue mark.
+  bool _awaitingFix = false;
+
+  /// Sets where the device is as the next point, or as where the point being
+  /// moved goes, and centers the map there.
+  ///
+  /// A pointing act like a tap, as in the point picker: only the reading the
+  /// press was waiting for is taken, so a receiver that goes on reading does
+  /// not go on moving the tour.
+  void _useMyLocation() {
+    final fix = ref.read(deviceLocationProvider).fix;
+    if (fix != null) {
+      _placeAt(fix.position);
+      centerOnFix(_controller, fix);
+      return;
+    }
+    setState(() => _awaitingFix = true);
+    ref.read(deviceLocationProvider.notifier).start();
+  }
+
   /// A tap on the map away from any line or waypoint.
   void _onMapTap(LatLng point) {
+    _awaitingFix = false;
+    _placeAt(point);
+  }
+
+  /// Puts [point] into the tour: the waypoint being moved goes there, or else
+  /// the next one is set there.
+  void _placeAt(LatLng point) {
     final planner = ref.read(_planner.notifier);
     final moving = _moving;
     if (moving == null) {
@@ -229,6 +269,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
           tripId: widget.tripId,
           date: widget.day,
           startMinutes: _startMinutes,
+          alternativeId: widget.alternativeId,
         );
     if (!mounted) return;
     if (ids == null) {
@@ -279,6 +320,14 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     final basemap = ref.watch(basemapProvider);
     final overlays = ref.watch(mapOverlaysProvider);
     final state = ref.watch(_planner);
+    final location = ref.watch(deviceLocationProvider);
+    reportLocationProblems(context, ref);
+    listenForFirstFix(ref, (fix) {
+      if (!_awaitingFix) return;
+      _awaitingFix = false;
+      _placeAt(fix.position);
+      centerOnFix(_controller, fix);
+    });
     final planner = ref.read(_planner.notifier);
     final tour = state.tour;
     final entries = state.entries;
@@ -384,6 +433,9 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                             ),
                         ],
                       ),
+                      // Where the device is: context for the tour, and the point
+                      // the locate button sets. Under the tour's own marks.
+                      const DeviceLocationLayer(),
                       // Where the point of the profile under the cursor is.
                       ValueListenableBuilder(
                         valueListenable: _scrub,
@@ -411,6 +463,15 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           basemap: basemap,
                           zoomInTooltip: l10n.mapZoomIn,
                           zoomOutTooltip: l10n.mapZoomOut,
+                        ),
+                        const SizedBox(height: 8),
+                        MapRoundButton(
+                          icon: Icons.my_location,
+                          tooltip: _moving == null
+                              ? l10n.routePlanUseMyLocation
+                              : l10n.mapUseMyLocation,
+                          onPressed: _useMyLocation,
+                          busy: location.locating,
                         ),
                         const SizedBox(height: 8),
                         const MapStyleButton(),
@@ -449,7 +510,16 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                               ),
                             ),
                           ),
-                        MapAttributionBar(basemap: basemap, overlays: overlays),
+                        MapAttributionBar(
+                          basemap: basemap,
+                          overlays: overlays,
+                          // The routes are BRouter's, computed on OpenStreetMap
+                          // data, whichever style the map is drawn in.
+                          extra: [
+                            osmAttribution,
+                            (label: l10n.attributionBrouter, url: kBrouterUrl),
+                          ],
+                        ),
                       ],
                     ),
                   ),

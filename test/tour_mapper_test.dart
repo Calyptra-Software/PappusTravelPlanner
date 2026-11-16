@@ -86,6 +86,26 @@ void main() {
       );
     });
 
+    test('a line drawn by hand says so, a routed one says it was routed', () {
+      final mapped = tourToItems(
+        [
+          _leg(_foot, [47, 47.05, 47.1]),
+          TourPlace(_at(47.1, name: 'Hut', isPlace: true)),
+          _leg(_ski, [47.1, 47.05, 47]),
+        ],
+        tripId: 7,
+        date: _day,
+        resolveMode: _resolve,
+        tourId: 't1',
+      );
+
+      expect(mapped.sources, [
+        TrackSource.routed,
+        TrackSource.routed,
+        TrackSource.drawn,
+      ]);
+    });
+
     test('a line of two points is the chord and is not stored', () {
       final mapped = tourToItems(
         [

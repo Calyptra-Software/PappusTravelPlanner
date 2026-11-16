@@ -317,4 +317,39 @@ void main() {
     expect((item.startMinutes, item.endMinutes), (480, 500));
     expect((await db.select(db.tracks).getSingle()).source, TrackSource.routed);
   });
+
+  test('a tour planned from an option is saved into that option', () async {
+    final tripId = await db.tripDao.createTrip(
+      TripsCompanion.insert(title: 'Hike'),
+    );
+    final day = DateTime(2026, 3, 14);
+    // A decision made from an entry, and a second option beside it.
+    final seed = await db.itineraryDao.addItem(
+      ItineraryItemsCompanion.insert(
+        tripId: tripId,
+        date: day,
+        kind: ItemKind.place,
+      ),
+    );
+    final setId = await db.alternativeDao.createSetFromItem(seed);
+    final option = await db.alternativeDao.addAlternative(setId);
+    planner()
+      ..selectMode(const StraightMode(TransportMode.ski))
+      ..addWaypoint(_a)
+      ..addWaypoint(_b)
+      ..selectMode(const StraightMode())
+      ..addWaypoint(_c);
+
+    final ids = await planner().save(
+      tripId: tripId,
+      date: day,
+      alternativeId: option,
+    );
+
+    final rows = await (db.select(
+      db.itineraryItems,
+    )..where((i) => i.id.isIn(ids!))).get();
+    expect(rows, hasLength(2));
+    expect(rows.map((r) => r.alternativeId).toSet(), {option});
+  });
 }

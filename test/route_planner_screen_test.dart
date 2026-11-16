@@ -9,6 +9,7 @@ import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,6 +30,8 @@ import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/presentation/route_planner_screen.dart';
 import 'package:travelplanner/features/route_planner/tour_entries.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+
+import 'location_fixture.dart';
 
 /// A router that answers at once, or refuses while [refusal] is set, and holds
 /// its answers back while [hold] is.
@@ -871,6 +874,97 @@ void main() {
         tester.getRect(inSheet(find.byType(ListTile)).last).bottom,
         lessThanOrEqualTo(screenBottom(tester) - bar),
       );
+    });
+  });
+
+  testWidgets('the attribution names the router and the map data', (
+    tester,
+  ) async {
+    await open(tester);
+    final bar = find.byType(MapAttributionBar);
+
+    expect(
+      find.descendant(of: bar, matching: find.text('Routes by BRouter')),
+      findsOneWidget,
+    );
+    // Named once, though both the map and the routes are OpenStreetMap's.
+    expect(
+      find.descendant(of: bar, matching: find.text('© OpenStreetMap')),
+      findsOneWidget,
+    );
+  });
+
+  group('my position', () {
+    late FakeGeolocator platform;
+
+    setUp(() {
+      platform = FakeGeolocator()..permission = LocationPermission.whileInUse;
+      GeolocatorPlatform.instance = platform;
+    });
+
+    int count(WidgetTester tester) => ProviderScope.containerOf(
+      tester.element(find.byType(RoutePlannerScreen)),
+    ).read(tourPlannerProvider(null)).tour.waypoints.length;
+
+    List<LatLng> points(WidgetTester tester) => [
+      for (final w in ProviderScope.containerOf(
+        tester.element(find.byType(RoutePlannerScreen)),
+      ).read(tourPlannerProvider(null)).tour.waypoints)
+        w.position,
+    ];
+
+    testWidgets('the reading the press waited for is the next point', (
+      tester,
+    ) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Next point at my position'));
+      await tester.pump();
+
+      platform.emit(latitude: 47.42, longitude: 11.08, accuracy: 8);
+      await tester.pumpAndSettle();
+      expect(points(tester), [const LatLng(47.42, 11.08)]);
+
+      // Walking on moves the blue mark, not the tour.
+      platform.emit(latitude: 47.43, longitude: 11.09, accuracy: 8);
+      await tester.pumpAndSettle();
+      expect(count(tester), 1);
+
+      // A second press takes the reading there is now.
+      await tester.tap(find.byTooltip('Next point at my position'));
+      await tester.pumpAndSettle();
+      expect(points(tester).last, const LatLng(47.43, 11.09));
+    });
+
+    testWidgets('a tap made while waiting wins', (tester) async {
+      await open(tester);
+      await tester.tap(find.byTooltip('Next point at my position'));
+      await tester.pump();
+
+      await tapMap(tester, const Offset(-100, 0));
+      platform.emit(latitude: 47.42, longitude: 11.08, accuracy: 8);
+      await tester.pumpAndSettle();
+
+      expect(count(tester), 1);
+      expect(points(tester).single, isNot(const LatLng(47.42, 11.08)));
+    });
+
+    testWidgets('while a point is being moved, it moves there', (tester) async {
+      await open(tester);
+      await tapMap(tester, const Offset(-150, -100));
+      await tapMap(tester, const Offset(150, 100));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Move point'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Use my position'));
+      await tester.pump();
+      platform.emit(latitude: 47.42, longitude: 11.08, accuracy: 8);
+      await tester.pumpAndSettle();
+
+      expect(count(tester), 2);
+      expect(points(tester).last, const LatLng(47.42, 11.08));
     });
   });
 
