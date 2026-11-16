@@ -30,11 +30,12 @@ Nothing here is used to avoid a licence: the package is MIT, and `LICENSE` and
 
 ## What was changed
 
-Exactly four edits against the published 5.0.3, and nothing else — no
+Exactly five edits against the published 5.0.3, and nothing else — no
 tidying, no renaming — so the copy stays a readable diff that can be rebased
-onto a new release, turned into a fork, or offered upstream. All four are in
-Java and Gradle, which `dart format .` never touches; it does cover the five
-Dart files under `lib/`, and currently changes nothing in them:
+onto a new release, turned into a fork, or offered upstream. The first four are
+in Java and Gradle, which `dart format .` never touches; it does cover the five
+Dart files under `lib/`, one of which the fifth edit changes, and must leave
+them as upstream formats them:
 
 1. `android/build.gradle` — the `com.google.android.gms:play-services-location`
    dependency is gone.
@@ -50,6 +51,12 @@ Dart files under `lib/`, and currently changes nothing in them:
    with `NONE` a track recording runs with nothing in the notification drawer
    to say so, and `LOW` lists it there without a sound. Upstream still creates
    it `NONE` as of 5.2.1, so this one could be offered back as an option.
+5. `lib/src/types/android_position.dart` — `AndroidPosition` forwards the
+   presence flags (`hasAltitude` and the others) and the vertical speed that
+   `Position.fromMap` reads. 5.0.3 rebuilt the position without them, so with
+   `geolocator_platform_interface` 4.4.0 every Android position said it had no
+   altitude, and a recording kept no heights. Taken from upstream, which
+   forwards them as of 5.2.1, so this edit disappears with an update to it.
 
 `example/`, `test/` (the Dart tests) and upstream's `analysis_options.yaml` are
 not copied: the first two are not part of what a path dependency builds, and the
@@ -57,7 +64,7 @@ third is a lint configuration for a package this repository does not lint —
 `analysis_options.yaml` at the root excludes `third_party/**`. Leaving it out
 also keeps `flutter pub get` from rewriting it, which it does to any package
 whose analyzer section has no `exclude:` of its own. The Dart side under `lib/`
-is untouched, as is `android/src/test/`.
+is untouched except for edit 5, as is `android/src/test/`.
 
 ## What this costs
 
@@ -86,6 +93,6 @@ two that have one.
 ## Updating
 
 Fetch the new upstream release, diff it against this directory, and re-apply
-the four edits above. Most upstream churn is in the half that is missing here,
+the edits above (the fifth is upstream's own from 5.2.1 on). Most upstream churn is in the half that is missing here,
 so this is usually cheap. Keep the version in `pubspec.yaml` equal to the
 upstream release the copy is taken from.

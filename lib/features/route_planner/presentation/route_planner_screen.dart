@@ -38,6 +38,7 @@ Future<bool> planRoute(
   required Color color,
   List<LatLng> nearby = const [],
   SavedTour? editing,
+  int? latestTime,
 }) async {
   final saved = await Navigator.of(context).push<bool>(
     MaterialPageRoute(
@@ -48,6 +49,7 @@ Future<bool> planRoute(
         color: color,
         nearby: nearby,
         editing: editing,
+        latestTime: latestTime,
       ),
     ),
   );
@@ -83,7 +85,12 @@ class RoutePlannerScreen extends ConsumerStatefulWidget {
     required this.color,
     this.nearby = const [],
     this.editing,
+    this.latestTime,
   });
+
+  /// The latest time [day] already has, in minutes since midnight: where the
+  /// start-time picker opens, the tour being added after the day's entries.
+  final int? latestTime;
 
   /// The saved tour being edited, or null for a new one.
   final SavedTour? editing;
@@ -231,11 +238,16 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     Navigator.of(context).pop(true);
   }
 
+  /// Picks the start time, opening on the one already set, else on where the
+  /// day's entries leave off, else on the current time, as the entry form's
+  /// pickers do.
   Future<void> _pickStartTime() async {
-    final current = _startMinutes ?? 8 * 60;
+    final current = _startMinutes ?? widget.latestTime;
     final picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay(hour: current ~/ 60, minute: current % 60),
+      initialTime: current == null
+          ? TimeOfDay.now()
+          : TimeOfDay(hour: current ~/ 60, minute: current % 60),
     );
     if (picked == null || !mounted) return;
     setState(() => _startMinutes = picked.hour * 60 + picked.minute);
@@ -289,150 +301,160 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       body: Column(
         children: [
           Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                FlutterMap(
-                  mapController: _controller,
-                  options: MapOptions(
-                    minZoom: kMinMapZoom,
-                    // See finite_camera.dart: a pinch can hand over a NaN.
-                    cameraConstraint: const FiniteCamera(),
-                    maxZoom: maxZoomOf(basemap),
-                    initialCenter: _opensOn.isNotEmpty
-                        ? _opensOn.first
-                        : const LatLng(0, 0),
-                    initialZoom: _opensOn.isNotEmpty ? 12 : 2,
-                    initialCameraFit: _opensOn.length > 1
-                        ? CameraFit.bounds(
-                            bounds: LatLngBounds.fromPoints(_opensOn),
-                            padding: const EdgeInsets.all(48),
-                          )
-                        : null,
-                    interactionOptions: const InteractionOptions(
-                      flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+            // Without the system's bottom inset: the map does not reach the
+            // foot of the screen, the panel below it does and takes the inset
+            // itself. Left in, the attribution bar (and the profile over it)
+            // added the navigation bar's height again and stood that much too
+            // high, as it once did on the journey screen.
+            child: MediaQuery.removePadding(
+              context: context,
+              removeBottom: true,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  FlutterMap(
+                    mapController: _controller,
+                    options: MapOptions(
+                      minZoom: kMinMapZoom,
+                      // See finite_camera.dart: a pinch can hand over a NaN.
+                      cameraConstraint: const FiniteCamera(),
+                      maxZoom: maxZoomOf(basemap),
+                      initialCenter: _opensOn.isNotEmpty
+                          ? _opensOn.first
+                          : const LatLng(0, 0),
+                      initialZoom: _opensOn.isNotEmpty ? 12 : 2,
+                      initialCameraFit: _opensOn.length > 1
+                          ? CameraFit.bounds(
+                              bounds: LatLngBounds.fromPoints(_opensOn),
+                              padding: const EdgeInsets.all(48),
+                            )
+                          : null,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                      ),
+                      onTap: (_, point) => _onMapTap(point),
                     ),
-                    onTap: (_, point) => _onMapTap(point),
-                  ),
-                  children: [
-                    ...basemapTileLayers(
-                      basemap,
-                      overlays,
-                      ref.watch(appVersionProvider),
-                    ),
-                    GestureDetector(
-                      onTap: _onLineTap,
-                      child: PolylineLayer<int>(
-                        hitNotifier: _lineHits,
-                        // A fingertip, not the stroke: the trip map's constant.
-                        minimumHitbox: kLineHitbox,
-                        polylines: [
-                          for (final (index, run) in state.runs.indexed)
-                            _lineOf(
-                              state,
-                              run,
-                              index,
-                              theme.colorScheme.surface,
+                    children: [
+                      ...basemapTileLayers(
+                        basemap,
+                        overlays,
+                        ref.watch(appVersionProvider),
+                      ),
+                      GestureDetector(
+                        onTap: _onLineTap,
+                        child: PolylineLayer<int>(
+                          hitNotifier: _lineHits,
+                          // A fingertip, not the stroke: the trip map's constant.
+                          minimumHitbox: kLineHitbox,
+                          polylines: [
+                            for (final (index, run) in state.runs.indexed)
+                              _lineOf(
+                                state,
+                                run,
+                                index,
+                                theme.colorScheme.surface,
+                              ),
+                          ],
+                        ),
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          for (final (index, waypoint)
+                              in tour.waypoints.indexed)
+                            Marker(
+                              point: waypoint.position,
+                              width: 44,
+                              height: 44,
+                              child: GestureDetector(
+                                key: ValueKey('waypoint-$index'),
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => _editWaypoint(index),
+                                child: _WaypointMark(
+                                  number: index + 1,
+                                  color: widget.color,
+                                  // The ends are what a tour is read from.
+                                  large:
+                                      index == 0 ||
+                                      index == tour.waypoints.length - 1 ||
+                                      waypoint.splitsLeg,
+                                  filled: waypoint.isPlace,
+                                  moving: index == _moving,
+                                ),
+                              ),
                             ),
                         ],
                       ),
+                      // Where the point of the profile under the cursor is.
+                      ValueListenableBuilder(
+                        valueListenable: _scrub,
+                        builder: (context, point, _) => MarkerLayer(
+                          markers: [
+                            if (point != null)
+                              Marker(
+                                point: point.position,
+                                width: 22,
+                                height: 22,
+                                child: const IgnorePointer(child: _ScrubMark()),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    top: 12,
+                    right: 12 + MediaQuery.paddingOf(context).right,
+                    child: Column(
+                      children: [
+                        MapZoomButtons(
+                          controller: _controller,
+                          basemap: basemap,
+                          zoomInTooltip: l10n.mapZoomIn,
+                          zoomOutTooltip: l10n.mapZoomOut,
+                        ),
+                        const SizedBox(height: 8),
+                        const MapStyleButton(),
+                      ],
                     ),
-                    MarkerLayer(
-                      markers: [
-                        for (final (index, waypoint) in tour.waypoints.indexed)
-                          Marker(
-                            point: waypoint.position,
-                            width: 44,
-                            height: 44,
-                            child: GestureDetector(
-                              key: ValueKey('waypoint-$index'),
-                              behavior: HitTestBehavior.opaque,
-                              onTap: () => _editWaypoint(index),
-                              child: _WaypointMark(
-                                number: index + 1,
+                  ),
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Over the map rather than in a sheet: the map is what
+                        // the profile is read against, and a sheet's scrim would
+                        // hide it.
+                        if (profileShown)
+                          Material(
+                            key: const ValueKey('profile-overlay'),
+                            color: theme.colorScheme.surface.withValues(
+                              alpha: 0.94,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.fromLTRB(
+                                12 + MediaQuery.paddingOf(context).left,
+                                8,
+                                12 + MediaQuery.paddingOf(context).right,
+                                4,
+                              ),
+                              child: ElevationProfileChart(
+                                profile: profile,
                                 color: widget.color,
-                                // The ends are what a tour is read from.
-                                large:
-                                    index == 0 ||
-                                    index == tour.waypoints.length - 1 ||
-                                    waypoint.splitsLeg,
-                                filled: waypoint.isPlace,
-                                moving: index == _moving,
+                                height: 96,
+                                onScrub: (point) => _scrub.value = point,
                               ),
                             ),
                           ),
+                        MapAttributionBar(basemap: basemap, overlays: overlays),
                       ],
                     ),
-                    // Where the point of the profile under the cursor is.
-                    ValueListenableBuilder(
-                      valueListenable: _scrub,
-                      builder: (context, point, _) => MarkerLayer(
-                        markers: [
-                          if (point != null)
-                            Marker(
-                              point: point.position,
-                              width: 22,
-                              height: 22,
-                              child: const IgnorePointer(child: _ScrubMark()),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12 + MediaQuery.paddingOf(context).right,
-                  child: Column(
-                    children: [
-                      MapZoomButtons(
-                        controller: _controller,
-                        basemap: basemap,
-                        zoomInTooltip: l10n.mapZoomIn,
-                        zoomOutTooltip: l10n.mapZoomOut,
-                      ),
-                      const SizedBox(height: 8),
-                      const MapStyleButton(),
-                    ],
                   ),
-                ),
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Over the map rather than in a sheet: the map is what
-                      // the profile is read against, and a sheet's scrim would
-                      // hide it.
-                      if (profileShown)
-                        Material(
-                          key: const ValueKey('profile-overlay'),
-                          color: theme.colorScheme.surface.withValues(
-                            alpha: 0.94,
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.fromLTRB(
-                              12 + MediaQuery.paddingOf(context).left,
-                              8,
-                              12 + MediaQuery.paddingOf(context).right,
-                              4,
-                            ),
-                            child: ElevationProfileChart(
-                              profile: profile,
-                              color: widget.color,
-                              height: 96,
-                              onScrub: (point) => _scrub.value = point,
-                            ),
-                          ),
-                        ),
-                      MapAttributionBar(basemap: basemap, overlays: overlays),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           _PlannerPanel(
@@ -836,8 +858,11 @@ class _WaypointSheetState extends State<_WaypointSheet> {
     super.dispose();
   }
 
+  // Clear of the navigation bar, which a sheet leaves to its body.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SafeArea(child: _content(context));
+
+  Widget _content(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Padding(
@@ -934,8 +959,11 @@ class _SectionSheet extends StatelessWidget {
   /// How the section is traveled now.
   final SectionMode mode;
 
+  // Clear of the navigation bar, which a sheet leaves to its body.
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SafeArea(child: _content(context));
+
+  Widget _content(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     return Padding(
@@ -985,8 +1013,12 @@ class _PointsSheet extends ConsumerWidget {
   final NotifierProvider<TourPlannerController, TourPlannerState> planner;
   final Color color;
 
+  // Clear of the navigation bar, which a sheet leaves to its body.
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context, WidgetRef ref) =>
+      SafeArea(child: _content(context, ref));
+
+  Widget _content(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final tour = ref.watch(planner).tour;

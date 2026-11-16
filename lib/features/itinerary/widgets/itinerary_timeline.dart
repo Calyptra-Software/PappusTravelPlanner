@@ -129,8 +129,10 @@ class ItineraryTimeline extends StatefulWidget {
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
 
-  /// Opens the tour planner for [day]. Null leaves the offer out.
-  final void Function(DateTime day)? onPlanRoute;
+  /// Opens the tour planner for [day], with the latest time the day already
+  /// has ([lastTimeOfDay]) as where its start time is picked from. Null leaves
+  /// the offer out.
+  final void Function(DateTime day, int? latestTime)? onPlanRoute;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -407,7 +409,7 @@ class _DaySection extends ConsumerWidget {
   onQuickAddPlace;
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
-  final void Function(DateTime day)? onPlanRoute;
+  final void Function(DateTime day, int? latestTime)? onPlanRoute;
   final void Function(List<DayBlock>, int, int) onReorder;
   final void Function(List<DayBlock>, int, int) onReorderBranch;
   final void Function(List<ItineraryItem>, int, int) onReorderRun;
@@ -743,7 +745,16 @@ class _DaySection extends ConsumerWidget {
               ),
               if (onPlanRoute case final onPlanRoute?)
                 TextButton.icon(
-                  onPressed: () => onPlanRoute(day),
+                  onPressed: () => onPlanRoute(
+                    day,
+                    lastTimeOfDay(
+                      live,
+                      continuations: [
+                        for (final c in continuations)
+                          (item: c.item, daysAfter: c.daysAfter),
+                      ],
+                    ),
+                  ),
                   icon: const Icon(Icons.polyline_outlined, size: 18),
                   label: Text(l10n.routePlanTitle),
                 ),

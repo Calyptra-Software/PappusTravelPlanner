@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/itinerary/entry_times.dart';
 
 /// The one derivation of an entry's times on a single minute line — what the
@@ -208,5 +210,63 @@ void main() {
       // Across the night the clocks go back, still the next midnight.
       DateTime(2026, 10, 26),
     ]);
+  });
+
+  group('lastTimeOfDay', () {
+    ItineraryItem entry({
+      int id = 1,
+      int? start,
+      int? end,
+      int endDayOffset = 0,
+    }) => ItineraryItem(
+      id: id,
+      tripId: 1,
+      date: DateTime(2026, 3, 14),
+      sortOrder: id,
+      kind: ItemKind.transport,
+      startMinutes: start,
+      endMinutes: end,
+      endDayOffset: endDayOffset,
+      chordDisplay: TrackDisplay.auto,
+    );
+
+    test('is where the last timed entry ends, else where it starts', () {
+      expect(
+        lastTimeOfDay([
+          entry(start: 480, end: 540),
+          entry(id: 2, start: 600, end: 630),
+        ]),
+        630,
+      );
+      expect(lastTimeOfDay([entry(start: 600)]), 600);
+    });
+
+    test('passes over entries without a time', () {
+      expect(lastTimeOfDay([entry(start: 480, end: 540), entry(id: 2)]), 540);
+    });
+
+    test('an end past midnight is not this day\'s; its start is', () {
+      expect(
+        lastTimeOfDay([entry(start: 1320, end: 420, endDayOffset: 1)]),
+        1320,
+      );
+    });
+
+    test('a night train arriving this morning gives its arrival', () {
+      expect(
+        lastTimeOfDay(
+          const [],
+          continuations: [
+            (item: entry(start: 1320, end: 420, endDayOffset: 1), daysAfter: 1),
+          ],
+        ),
+        420,
+      );
+    });
+
+    test('a day without times has none', () {
+      expect(lastTimeOfDay([entry()]), isNull);
+      expect(lastTimeOfDay(const []), isNull);
+    });
   });
 }

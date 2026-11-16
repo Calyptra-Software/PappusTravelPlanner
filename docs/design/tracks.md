@@ -33,7 +33,10 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   too, since a height says where the ground is and not when anybody was there), and a
   recording, whose fixes keep the height the receiver reported (`RecordingFixes.altitude`,
   v44, only where `Position.hasAltitude`: without one the platform reports 0.0, which
-  would read as sea level). The import divides the heights with the points by **one**
+  would read as sea level). That flag reached Dart on Android only after a backport into
+  the vendored plugin (edit 5 in `third_party/geolocator_android/README.md`): 5.0.3
+  rebuilt every position without it, so it read false on every fix and the first
+  recordings made with heights on a phone had none. The import divides the heights with the points by **one**
   function (`splitElevationsAt` runs the generic `_splitAt` that `splitTracksAt` runs), so
   the two cannot come apart, and a piece made partly of a line without heights has none.
   A recording on Android asks for heights **above sea level** (`useMSLAltitude` in

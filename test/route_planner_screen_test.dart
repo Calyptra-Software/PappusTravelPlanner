@@ -20,6 +20,7 @@ import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/route_planner/application/route_engine.dart';
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
 import 'package:travelplanner/features/map/widgets/elevation_profile_chart.dart';
+import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
 import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
@@ -82,6 +83,7 @@ void main() {
     Size size = const Size(1000, 2000),
     Locale? locale,
     SavedTour? editing,
+    int? latestTime,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -115,6 +117,7 @@ void main() {
                     color: const Color(0xFF00695C),
                     nearby: const [LatLng(47.4, 11.0), LatLng(47.5, 11.2)],
                     editing: editing,
+                    latestTime: latestTime,
                   ),
                 ),
                 child: const Text('open'),
@@ -771,6 +774,103 @@ void main() {
         find.widgetWithText(TextButton, 'Save'),
       );
       expect(save.onPressed, isNotNull);
+    });
+  });
+
+  testWidgets(
+    'the attribution sits on the panel, not a navigation bar higher',
+    (tester) async {
+      // A phone with a gesture or button bar along its foot.
+      tester.view.padding = const FakeViewPadding(bottom: 48);
+      addTearDown(tester.view.resetPadding);
+      await open(tester);
+
+      final bar = tester.getRect(find.byType(MapAttributionBar));
+      final map = tester.getRect(find.byType(FlutterMap));
+      // At the map's foot, and only as tall as its line of text: the inset is
+      // the panel's to take, below it.
+      expect(bar.bottom, map.bottom);
+      expect(bar.height, lessThan(30));
+
+      // The same with the profile shown over it.
+      engine.heights = true;
+      await tapMap(tester, const Offset(-150, -100));
+      await tapMap(tester, const Offset(150, 100));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Elevation profile'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(find.byType(MapAttributionBar)).height,
+        lessThan(30),
+      );
+    },
+  );
+
+  testWidgets('the start time is picked from where the day leaves off', (
+    tester,
+  ) async {
+    await open(tester, latestTime: 10 * 60 + 30);
+
+    await tester.tap(find.text('Start time'));
+    await tester.pumpAndSettle();
+
+    // The dial opens on half past ten.
+    expect(find.text('10'), findsWidgets);
+    expect(find.text('30'), findsWidgets);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text('Start 10:30'), findsOneWidget);
+  });
+
+  group('the sheets keep clear of the navigation bar', () {
+    const bar = 48.0;
+
+    Future<void> withBar(WidgetTester tester) async {
+      tester.view.padding = const FakeViewPadding(bottom: bar);
+      addTearDown(tester.view.resetPadding);
+      await open(tester);
+      await tapMap(tester, const Offset(-200, 0));
+      await tapMap(tester, const Offset(200, 0));
+      await tester.pumpAndSettle();
+    }
+
+    double screenBottom(WidgetTester tester) =>
+        tester.view.physicalSize.height / tester.view.devicePixelRatio;
+
+    testWidgets('the waypoint sheet', (tester) async {
+      await withBar(tester);
+      await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+      await tester.pumpAndSettle();
+
+      for (final label in ['Remove point', 'Save']) {
+        expect(
+          tester.getRect(inSheet(find.text(label))).bottom,
+          lessThanOrEqualTo(screenBottom(tester) - bar),
+          reason: label,
+        );
+      }
+    });
+
+    testWidgets('the section sheet', (tester) async {
+      await withBar(tester);
+      await tapMap(tester, Offset.zero);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(inSheet(find.text('Add a point here'))).bottom,
+        lessThanOrEqualTo(screenBottom(tester) - bar),
+      );
+    });
+
+    testWidgets('the list of points', (tester) async {
+      await withBar(tester);
+      await tester.tap(find.byTooltip('Points'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(inSheet(find.byType(ListTile)).last).bottom,
+        lessThanOrEqualTo(screenBottom(tester) - bar),
+      );
     });
   });
 
