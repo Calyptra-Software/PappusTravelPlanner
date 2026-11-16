@@ -56,6 +56,7 @@ void main() {
     // A later version's column on another table, so the file is a v41 one:
     // the migration that adds it does not look first.
     raw.execute('ALTER TABLE tracks DROP COLUMN elevations');
+    raw.execute('ALTER TABLE recording_fixes DROP COLUMN altitude');
     raw.execute('PRAGMA user_version = 41');
     raw.close();
     return legId;

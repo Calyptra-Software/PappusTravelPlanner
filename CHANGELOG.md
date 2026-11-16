@@ -12,8 +12,9 @@ exact commits.
   receives the points you set.
 - **A planned route can be edited again.** *Edit route* on one of its entries opens the
   route in the planner as it was saved.
-- **Elevation profiles.** A planned route shows its climb and its elevation profile, in
-  the planner and on its entries, and the GPX export includes the heights.
+- **Elevation profiles.** Planned routes, imported GPX files and recorded tracks keep their
+  heights. An entry shows the climb and the elevation profile of its line, the planner
+  shows them for the route, and the GPX export includes the heights.
 - **Screens are animated again.** Since 1.10.0, opening and leaving a screen switched
   without the platform's transition.
 

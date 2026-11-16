@@ -10090,6 +10090,17 @@ class $RecordingFixesTable extends RecordingFixes
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _altitudeMeta = const VerificationMeta(
+    'altitude',
+  );
+  @override
+  late final GeneratedColumn<double> altitude = GeneratedColumn<double>(
+    'altitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -10098,6 +10109,7 @@ class $RecordingFixesTable extends RecordingFixes
     lat,
     lon,
     recordedAt,
+    altitude,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -10155,6 +10167,12 @@ class $RecordingFixesTable extends RecordingFixes
     } else if (isInserting) {
       context.missing(_recordedAtMeta);
     }
+    if (data.containsKey('altitude')) {
+      context.handle(
+        _altitudeMeta,
+        altitude.isAcceptableOrUnknown(data['altitude']!, _altitudeMeta),
+      );
+    }
     return context;
   }
 
@@ -10188,6 +10206,10 @@ class $RecordingFixesTable extends RecordingFixes
         DriftSqlType.int,
         data['${effectivePrefix}recorded_at'],
       )!,
+      altitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}altitude'],
+      ),
     );
   }
 
@@ -10211,6 +10233,11 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
 
   /// When the fix was taken, in milliseconds since the epoch (UTC).
   final int recordedAt;
+
+  /// The height the receiver reported with the fix, in meters, or null when
+  /// it reported none. Above sea level where the platform says so (see
+  /// `positionSettingsFor`); filed onto the line as `Tracks.elevations`.
+  final double? altitude;
   const RecordingFix({
     required this.id,
     required this.recordingId,
@@ -10218,6 +10245,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     required this.lat,
     required this.lon,
     required this.recordedAt,
+    this.altitude,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10228,6 +10256,9 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     map['lat'] = Variable<double>(lat);
     map['lon'] = Variable<double>(lon);
     map['recorded_at'] = Variable<int>(recordedAt);
+    if (!nullToAbsent || altitude != null) {
+      map['altitude'] = Variable<double>(altitude);
+    }
     return map;
   }
 
@@ -10239,6 +10270,9 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       lat: Value(lat),
       lon: Value(lon),
       recordedAt: Value(recordedAt),
+      altitude: altitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(altitude),
     );
   }
 
@@ -10254,6 +10288,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       lat: serializer.fromJson<double>(json['lat']),
       lon: serializer.fromJson<double>(json['lon']),
       recordedAt: serializer.fromJson<int>(json['recordedAt']),
+      altitude: serializer.fromJson<double?>(json['altitude']),
     );
   }
   @override
@@ -10266,6 +10301,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       'lat': serializer.toJson<double>(lat),
       'lon': serializer.toJson<double>(lon),
       'recordedAt': serializer.toJson<int>(recordedAt),
+      'altitude': serializer.toJson<double?>(altitude),
     };
   }
 
@@ -10276,6 +10312,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     double? lat,
     double? lon,
     int? recordedAt,
+    Value<double?> altitude = const Value.absent(),
   }) => RecordingFix(
     id: id ?? this.id,
     recordingId: recordingId ?? this.recordingId,
@@ -10283,6 +10320,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     lat: lat ?? this.lat,
     lon: lon ?? this.lon,
     recordedAt: recordedAt ?? this.recordedAt,
+    altitude: altitude.present ? altitude.value : this.altitude,
   );
   RecordingFix copyWithCompanion(RecordingFixesCompanion data) {
     return RecordingFix(
@@ -10296,6 +10334,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       recordedAt: data.recordedAt.present
           ? data.recordedAt.value
           : this.recordedAt,
+      altitude: data.altitude.present ? data.altitude.value : this.altitude,
     );
   }
 
@@ -10307,14 +10346,15 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
           ..write('segment: $segment, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
-          ..write('recordedAt: $recordedAt')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('altitude: $altitude')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, recordingId, segment, lat, lon, recordedAt);
+      Object.hash(id, recordingId, segment, lat, lon, recordedAt, altitude);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -10324,7 +10364,8 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
           other.segment == this.segment &&
           other.lat == this.lat &&
           other.lon == this.lon &&
-          other.recordedAt == this.recordedAt);
+          other.recordedAt == this.recordedAt &&
+          other.altitude == this.altitude);
 }
 
 class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
@@ -10334,6 +10375,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
   final Value<double> lat;
   final Value<double> lon;
   final Value<int> recordedAt;
+  final Value<double?> altitude;
   const RecordingFixesCompanion({
     this.id = const Value.absent(),
     this.recordingId = const Value.absent(),
@@ -10341,6 +10383,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
     this.recordedAt = const Value.absent(),
+    this.altitude = const Value.absent(),
   });
   RecordingFixesCompanion.insert({
     this.id = const Value.absent(),
@@ -10349,6 +10392,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     required double lat,
     required double lon,
     required int recordedAt,
+    this.altitude = const Value.absent(),
   }) : recordingId = Value(recordingId),
        lat = Value(lat),
        lon = Value(lon),
@@ -10360,6 +10404,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     Expression<double>? lat,
     Expression<double>? lon,
     Expression<int>? recordedAt,
+    Expression<double>? altitude,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -10368,6 +10413,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
       if (lat != null) 'lat': lat,
       if (lon != null) 'lon': lon,
       if (recordedAt != null) 'recorded_at': recordedAt,
+      if (altitude != null) 'altitude': altitude,
     });
   }
 
@@ -10378,6 +10424,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     Value<double>? lat,
     Value<double>? lon,
     Value<int>? recordedAt,
+    Value<double?>? altitude,
   }) {
     return RecordingFixesCompanion(
       id: id ?? this.id,
@@ -10386,6 +10433,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
       recordedAt: recordedAt ?? this.recordedAt,
+      altitude: altitude ?? this.altitude,
     );
   }
 
@@ -10410,6 +10458,9 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     if (recordedAt.present) {
       map['recorded_at'] = Variable<int>(recordedAt.value);
     }
+    if (altitude.present) {
+      map['altitude'] = Variable<double>(altitude.value);
+    }
     return map;
   }
 
@@ -10421,7 +10472,8 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
           ..write('segment: $segment, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
-          ..write('recordedAt: $recordedAt')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('altitude: $altitude')
           ..write(')'))
         .toString();
   }
@@ -21286,6 +21338,7 @@ typedef $$RecordingFixesTableCreateCompanionBuilder =
       required double lat,
       required double lon,
       required int recordedAt,
+      Value<double?> altitude,
     });
 typedef $$RecordingFixesTableUpdateCompanionBuilder =
     RecordingFixesCompanion Function({
@@ -21295,6 +21348,7 @@ typedef $$RecordingFixesTableUpdateCompanionBuilder =
       Value<double> lat,
       Value<double> lon,
       Value<int> recordedAt,
+      Value<double?> altitude,
     });
 
 final class $$RecordingFixesTableReferences
@@ -21357,6 +21411,11 @@ class $$RecordingFixesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get altitude => $composableBuilder(
+    column: $table.altitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$RecordingsTableFilterComposer get recordingId {
     final $$RecordingsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -21415,6 +21474,11 @@ class $$RecordingFixesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get altitude => $composableBuilder(
+    column: $table.altitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RecordingsTableOrderingComposer get recordingId {
     final $$RecordingsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -21464,6 +21528,9 @@ class $$RecordingFixesTableAnnotationComposer
     column: $table.recordedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<double> get altitude =>
+      $composableBuilder(column: $table.altitude, builder: (column) => column);
 
   $$RecordingsTableAnnotationComposer get recordingId {
     final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
@@ -21525,6 +21592,7 @@ class $$RecordingFixesTableTableManager
                 Value<double> lat = const Value.absent(),
                 Value<double> lon = const Value.absent(),
                 Value<int> recordedAt = const Value.absent(),
+                Value<double?> altitude = const Value.absent(),
               }) => RecordingFixesCompanion(
                 id: id,
                 recordingId: recordingId,
@@ -21532,6 +21600,7 @@ class $$RecordingFixesTableTableManager
                 lat: lat,
                 lon: lon,
                 recordedAt: recordedAt,
+                altitude: altitude,
               ),
           createCompanionCallback:
               ({
@@ -21541,6 +21610,7 @@ class $$RecordingFixesTableTableManager
                 required double lat,
                 required double lon,
                 required int recordedAt,
+                Value<double?> altitude = const Value.absent(),
               }) => RecordingFixesCompanion.insert(
                 id: id,
                 recordingId: recordingId,
@@ -21548,6 +21618,7 @@ class $$RecordingFixesTableTableManager
                 lat: lat,
                 lon: lon,
                 recordedAt: recordedAt,
+                altitude: altitude,
               ),
           withReferenceMapper: (p0) => p0
               .map(

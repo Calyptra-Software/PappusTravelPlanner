@@ -64,7 +64,11 @@ void main() {
       utcOffset: const Duration(hours: 2),
     );
     await db.recordingDao.addFixes(id, 0, [
-      (position: const LatLng(53.5, 9.9), at: DateTime.utc(2026, 5, 1, 12)),
+      (
+        position: const LatLng(53.5, 9.9),
+        at: DateTime.utc(2026, 5, 1, 12),
+        altitude: null,
+      ),
     ]);
     expect(await db.recordingDao.fixesOf(id), hasLength(1));
 

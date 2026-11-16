@@ -87,7 +87,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 43;
+  int get schemaVersion => 44;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -480,6 +480,13 @@ class AppDatabase extends _$AppDatabase {
       if (from < 43) {
         if (from >= 29) await m.addColumn(tracks, tracks.elevations);
         await _addItineraryColumnsIfMissing(m, [itineraryItems.routePlan]);
+      }
+      // v44 keeps the height of each recorded fix, so a recording is filed
+      // with its heights. Null on every fix already recorded, which is what
+      // "none reported" means. Skipped below v41, where the table was created
+      // above from the current schema.
+      if (from < 44 && from >= 41) {
+        await m.addColumn(recordingFixes, recordingFixes.altitude);
       }
     },
     beforeOpen: (details) async {

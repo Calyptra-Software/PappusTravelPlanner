@@ -229,7 +229,8 @@ class TripRepository {
   /// came from a file or from this app's own recorder.
   Future<void> importTrackAcross({
     required String? name,
-    required List<({int itemId, List<LatLng> points})> pieces,
+    required List<({int itemId, List<LatLng> points, List<double>? elevations})>
+    pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
     List<({int itemId, TrackEnd end, int minutes})> times = const [],
     TrackSource source = TrackSource.imported,
@@ -257,7 +258,7 @@ class TripRepository {
   Future<void> addRecordingFixes(
     int recordingId,
     int segment,
-    List<({LatLng position, DateTime at})> fixes,
+    List<({LatLng position, DateTime at, double? altitude})> fixes,
   ) => _db.recordingDao.addFixes(recordingId, segment, fixes);
 
   Future<void> stopRecording(int id, DateTime at) =>

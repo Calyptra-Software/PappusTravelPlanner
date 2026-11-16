@@ -772,6 +772,11 @@ class RecordingFixes extends Table {
 
   /// When the fix was taken, in milliseconds since the epoch (UTC).
   IntColumn get recordedAt => integer()();
+
+  /// The height the receiver reported with the fix, in meters, or null when
+  /// it reported none. Above sea level where the platform says so (see
+  /// `positionSettingsFor`); filed onto the line as `Tracks.elevations`.
+  RealColumn get altitude => real().nullable()();
 }
 
 /// The modes of transport a leg can use, managed in settings and reused in the

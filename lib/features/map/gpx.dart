@@ -5,7 +5,12 @@ import 'package:xml/xml.dart';
 ///
 /// Pure data, and deliberately less than the file held — see [parseGpx].
 class GpxTrack {
-  const GpxTrack({required this.points, this.name, this.times});
+  const GpxTrack({
+    required this.points,
+    this.name,
+    this.times,
+    this.elevations,
+  });
 
   final List<LatLng> points;
 
@@ -23,6 +28,14 @@ class GpxTrack {
   /// for a `<rte>`: a route is how something *could* go, and a time on one is
   /// a schedule somebody computed, not a moment anybody was there.
   final List<DateTime>? times;
+
+  /// The height of each of [points] in meters, from its `<ele>`, or null.
+  ///
+  /// All or nothing per line, like [times]: null unless **every** point
+  /// carries an `<ele>` that reads as a number. A profile with a hole in it
+  /// would draw a cliff at the hole. Read on a `<rte>` as on a `<trk>`: a
+  /// height says where the ground is, not when anybody was there.
+  final List<double>? elevations;
 }
 
 /// Reads the lines out of a GPX document.
@@ -43,9 +56,9 @@ class GpxTrack {
 ///   separate tracks under one name, which is the same rule the map already
 ///   follows between two places: the plan says one followed the other, not that
 ///   anyone walked the line between.
-/// * **Elevation is dropped, and time is read but not kept.** What is stored is
-///   a line on a map, and the app has no reading for a profile or a moving
-///   average. The times are handed back ([GpxTrack.times]) because the import
+/// * **Elevation is kept, and time is read but not kept.** The heights are
+///   handed back ([GpxTrack.elevations]) and stored with the line, which is
+///   what its profile and climb are read from. The times are handed back ([GpxTrack.times]) because the import
 ///   reads two things off them once — which day the recording was made on, and
 ///   when each leg it is divided into actually began and ended — and then they
 ///   are gone with the file. The file remains the place they live; importing it
@@ -96,7 +109,12 @@ void _add(
   final read = [for (final point in elements) _point(point)];
   if (read.length < 2) return;
   into.add(
-    GpxTrack(points: read, name: name, times: timed ? _times(elements) : null),
+    GpxTrack(
+      points: read,
+      name: name,
+      times: timed ? _times(elements) : null,
+      elevations: _elevations(elements),
+    ),
   );
 }
 
@@ -106,6 +124,19 @@ void _add(
 /// A zone is recognised by what [DateTime.tryParse] answers: it returns a UTC
 /// instant exactly when the text carried `Z` or an offset, and a local one when
 /// it carried neither.
+/// The `<ele>` of every point, or null when one has none or one that is not a
+/// number.
+List<double>? _elevations(List<XmlElement> points) {
+  final out = <double>[];
+  for (final point in points) {
+    final text = _children(point, 'ele').firstOrNull?.innerText.trim();
+    final meters = text == null ? null : double.tryParse(text);
+    if (meters == null || !meters.isFinite) return null;
+    out.add(meters);
+  }
+  return out;
+}
+
 List<DateTime>? _times(List<XmlElement> points) {
   final out = <DateTime>[];
   for (final point in points) {

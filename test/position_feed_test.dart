@@ -169,6 +169,9 @@ void main() {
       expect(config.notificationIcon.name, 'ic_stat_recording');
       expect(config.enableWakeLock, isFalse);
       expect(settings.distanceFilter, 0, reason: 'acceptFix decides');
+      // Heights above sea level, which a profile is read in, rather than
+      // above the ellipsoid.
+      expect(settings.useMSLAltitude, isTrue);
     });
 
     test('the mark never does, on Android or anywhere', () {

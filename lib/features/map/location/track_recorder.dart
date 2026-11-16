@@ -420,6 +420,11 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
       position: LatLng(position.latitude, position.longitude),
       accuracyMeters: position.accuracy.abs(),
       at: position.timestamp.toUtc(),
+      // Only a height the platform reported: without one `altitude` is 0.0,
+      // which would read as sea level.
+      altitude: position.hasAltitude && position.altitude.isFinite
+          ? position.altitude
+          : null,
     );
     final last = _last;
     if (!acceptFix(last, reading)) return;
@@ -429,7 +434,11 @@ class TrackRecorderController extends Notifier<TrackRecorderState> {
     _writes = _writes
         .then(
           (_) => _repo.addRecordingFixes(id, segment, [
-            (position: reading.position, at: reading.at),
+            (
+              position: reading.position,
+              at: reading.at,
+              altitude: reading.altitude,
+            ),
           ]),
         )
         // Reported, and not allowed to stop the writes after it: one failed

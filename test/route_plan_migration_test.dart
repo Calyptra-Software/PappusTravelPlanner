@@ -61,6 +61,8 @@ void main() {
     final raw = sqlite3.open(path);
     raw.execute('ALTER TABLE itinerary_items DROP COLUMN route_plan');
     raw.execute('ALTER TABLE tracks DROP COLUMN elevations');
+    // And what v44 added, so the file is a v42 one.
+    raw.execute('ALTER TABLE recording_fixes DROP COLUMN altitude');
     raw.execute('PRAGMA user_version = 42');
     raw.close();
     return (legId: legId, trackId: trackId);

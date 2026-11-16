@@ -492,6 +492,11 @@ can throw away the detour and keep the walk. *Remove all* is there from two line
 line that cannot be drawn is listed too, with nothing where its length would be, which is
 how you get rid of it.
 
+A line that came with **heights** (a planned route, a GPX file with elevations, or a
+recording on a device that reports them) shows its climb and descent in its row, with
+its elevation profile underneath. The heights of a recording are the receiver's own and
+noisier than those of a planned route.
+
 Each row also says whether that line is **on the map**, and the eye beside it switches that:
 by default a recording (or an import) is drawn and a route the search computed is not, and
 you can overrule it either way. Hide every line of a leg and the map draws the straight segment

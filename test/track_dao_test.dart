@@ -291,8 +291,16 @@ void main() {
       await db.trackDao.importTrackAcross(
         name: 'Walk',
         pieces: [
-          (itemId: a, points: const [LatLng(50, 8), LatLng(51, 8.2)]),
-          (itemId: b, points: const [LatLng(51, 8.2), LatLng(52, 8.5)]),
+          (
+            itemId: a,
+            points: const [LatLng(50, 8), LatLng(51, 8.2)],
+            elevations: null,
+          ),
+          (
+            itemId: b,
+            points: const [LatLng(51, 8.2), LatLng(52, 8.5)],
+            elevations: null,
+          ),
         ],
         ends: [
           (itemId: a, end: TrackEnd.from, at: const LatLng(50, 8)),
@@ -330,7 +338,7 @@ void main() {
       await db.trackDao.importTrackAcross(
         name: null,
         pieces: [
-          (itemId: leg, points: const [LatLng(50, 8)]),
+          (itemId: leg, points: const [LatLng(50, 8)], elevations: null),
         ],
         ends: const [],
       );
@@ -346,7 +354,7 @@ void main() {
 
       await db.trackDao.importTrackAcross(
         name: 'Walk',
-        pieces: [(itemId: leg, points: line)],
+        pieces: [(itemId: leg, points: line, elevations: null)],
         ends: const [],
         times: [
           (itemId: leg, end: TrackEnd.from, minutes: 8 * 60 + 2),
@@ -370,7 +378,7 @@ void main() {
 
       await db.trackDao.importTrackAcross(
         name: 'Walk',
-        pieces: [(itemId: leg, points: line)],
+        pieces: [(itemId: leg, points: line, elevations: null)],
         ends: const [],
         times: [(itemId: leg, end: TrackEnd.from, minutes: 8 * 60)],
       );

@@ -167,8 +167,7 @@ yet** (next section): that has to happen before a release carrying this.
 - Centering on the device and taking its position as a waypoint.
 - The base URL as a setting, and a link crediting BRouter beside the map's attribution.
 - Whether `brouter.de` sends the CORS header the web build needs (unverified).
-- Heights on an imported GPX file and on a recording (`tracks.md`), and a walking-time
-  model with the user's own pace in place of the router's duration.
+- A walking-time model with the user's own pace in place of the router's duration.
 - *Edit route* from the group's label and from the map, beside the entry's form.
 - Timetabled sections inside a tour, through the connection search.
 - Pistes and lifts, including a short walk between the end of a piste and a lift.

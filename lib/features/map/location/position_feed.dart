@@ -93,6 +93,12 @@ LocationSettings positionSettingsFor(
     AndroidSettings(
       accuracy: LocationAccuracy.high,
       intervalDuration: const Duration(seconds: 1),
+      // The height above sea level, which a profile is read in. Without it
+      // Android reports the height above the WGS84 ellipsoid, some 40 to 50 m
+      // more in central Europe. Taken from the receiver's NMEA sentences, or
+      // from the platform on Android 14 and later; a device offering neither
+      // still reports the ellipsoid's, and the app cannot tell which it got.
+      useMSLAltitude: true,
       foregroundNotificationConfig: notice == null
           ? null
           : ForegroundNotificationConfig(

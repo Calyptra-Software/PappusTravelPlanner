@@ -45,5 +45,5 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   default path can be sent back to it; elsewhere it would be a no-op wearing a destructive
   label. WAL mode writes `-wal`/`-shm` sidecars; call `checkpoint()`
   before copying and `deleteSidecars()` before replacing a file (see `core/database/database_location.dart`).
-- Bump `AppDatabase.schemaVersion` (currently 43) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 44) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.

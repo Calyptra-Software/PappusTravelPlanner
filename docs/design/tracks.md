@@ -9,8 +9,8 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   route and a path a router computes later are the same row wearing different `TrackSource`
   values, which is why the enum names all three though only the first can be made today: a
   table that could not say "this one was actually walked" would have to be migrated to say
-  it. The file's markup is dropped on the way in (`parseGpx`), and so, still, are a GPX
-  file's heights (see the note on heights below). Timestamps are *read* but never stored: the import uses them once (below) and they
+  it. The file's markup is dropped on the way in (`parseGpx`); its heights are kept (see
+  the note on heights below). Timestamps are *read* but never stored: the import uses them once (below) and they
   leave with the file. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
@@ -28,10 +28,21 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   and a stored line's row both read it, so one line cannot have two figures. The heights
   go where the points go: `copyItemTracks` (turned round with the points for the reversed
   routine), the `.tpt` (key `elevations`, written only when present, no version bump) and
-  the `.gpx` export (`<ele>`). **Only a routed line from the planner has heights so
-  far**: `parseGpx` still drops a file's `<ele>`, and a recording stores none, because the
-  import divides a line among entries (`splitTracksAt`) and the heights are not yet
-  carried through that division.
+  the `.gpx` export (`<ele>`). **All three sources carry them**: the planner's routed
+  line, a GPX file's `<ele>` (`GpxTrack.elevations`, all or nothing per line, on a `<rte>`
+  too, since a height says where the ground is and not when anybody was there), and a
+  recording, whose fixes keep the height the receiver reported (`RecordingFixes.altitude`,
+  v44, only where `Position.hasAltitude`: without one the platform reports 0.0, which
+  would read as sea level). The import divides the heights with the points by **one**
+  function (`splitElevationsAt` runs the generic `_splitAt` that `splitTracksAt` runs), so
+  the two cannot come apart, and a piece made partly of a line without heights has none.
+  A recording on Android asks for heights **above sea level** (`useMSLAltitude` in
+  `positionSettingsFor`), read from the receiver's NMEA sentences or, from Android 14, the
+  platform; a device offering neither still reports the height above the WGS84 ellipsoid
+  (some 40 to 50 m more in central Europe) and the app cannot tell which it got. Climb is
+  unaffected by that offset. A GPS height is far noisier than a router's elevation model,
+  and the threshold in `climbOf` was set on the latter: the climb of a recording is not
+  checked against anything yet.
 - **The codec does its arithmetic with `*` and `~/`, never with shifts and masks**, and that
   is a platform fact rather than a style: on the web an `int` is a JavaScript number and the
   bitwise operators truncate to **32 bits, unsigned**, so `~n` answers `2^32 - n - 1` where

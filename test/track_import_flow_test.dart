@@ -11,6 +11,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/data/database/track_points.dart';
 import 'package:travelplanner/features/map/location/track_recorder.dart';
 import 'package:travelplanner/features/map/presentation/track_import_screen.dart';
 import 'package:travelplanner/features/map/track_import_flow.dart';
@@ -154,6 +155,22 @@ void main() {
 </trkseg></trk></gpx>
 ''';
 
+  testWidgets('a file\'s heights are stored with the line', (tester) async {
+    await run(
+      tester,
+      () async => '''
+<gpx version="1.1"><trk><name>Walk</name><trkseg>
+  <trkpt lat="53.50" lon="9.9"><ele>12.5</ele></trkpt>
+  <trkpt lat="53.51" lon="9.9"><ele>30</ele></trkpt>
+</trkseg></trk></gpx>
+''',
+    );
+    await importTheLeg(tester);
+
+    final track = await db.select(db.tracks).getSingle();
+    expect(trackElevationsOrNull(track.elevations, 2), [12.5, 30]);
+  });
+
   testWidgets('a timed recording fills the leg\'s empty actual times', (
     tester,
   ) async {
@@ -241,7 +258,7 @@ void main() {
   group('a recording the app made', () {
     /// A stopped recording in the database, as the recorder leaves one: two
     /// fixes, at [departed] and [arrived], noted in a zone no test runs in.
-    Future<int> recorded(List<DateTime> at) async {
+    Future<int> recorded(List<DateTime> at, {List<double>? heights}) async {
       final id = await db.recordingDao.startRecording(
         tripId: tripId,
         startedAt: at.first,
@@ -249,7 +266,11 @@ void main() {
       );
       await db.recordingDao.addFixes(id, 0, [
         for (final (i, time) in at.indexed)
-          (position: LatLng(53.50 + i * 0.01, 9.9), at: time),
+          (
+            position: LatLng(53.50 + i * 0.01, 9.9),
+            at: time,
+            altitude: heights?[i],
+          ),
       ]);
       await db.recordingDao.stopRecording(id, at.last);
       return id;
@@ -318,6 +339,20 @@ void main() {
         reason: 'filed, so no longer held',
       );
       expect(container.read(trackRecorderProvider).recordingId, isNull);
+    });
+
+    testWidgets('keeps the heights its fixes were taken with', (tester) async {
+      await tester.runAsync(
+        () => recorded([departed, arrived], heights: [480, 495.5]),
+      );
+      await fileIt(tester);
+      await importTheLeg(tester);
+
+      final track = (await tester.runAsync(
+        () => db.select(db.tracks).getSingle(),
+      ))!;
+      expect(track.source, TrackSource.recorded);
+      expect(trackElevationsOrNull(track.elevations, 2), [480, 495.5]);
     });
 
     testWidgets('with nothing drawable says so, and is kept', (tester) async {

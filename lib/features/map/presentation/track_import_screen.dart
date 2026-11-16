@@ -87,6 +87,7 @@ Future<bool?> importTrackAcrossEntries(
   BuildContext context, {
   required List<List<LatLng>> lines,
   List<List<DateTime>?> times = const [],
+  List<List<double>?> elevations = const [],
   required String? name,
   required List<ItineraryItem> selection,
   bool readTimes = true,
@@ -97,6 +98,7 @@ Future<bool?> importTrackAcrossEntries(
     builder: (_) => TrackImportScreen(
       lines: lines,
       times: times,
+      elevations: elevations,
       name: name,
       selection: selection,
       readTimes: readTimes,
@@ -111,6 +113,7 @@ class TrackImportScreen extends ConsumerStatefulWidget {
     super.key,
     required this.lines,
     this.times = const [],
+    this.elevations = const [],
     required this.name,
     required this.selection,
     this.readTimes = true,
@@ -125,6 +128,11 @@ class TrackImportScreen extends ConsumerStatefulWidget {
   /// without times (`GpxTrack.times`). Shorter than [lines], or empty, where
   /// nothing is known.
   final List<List<DateTime>?> times;
+
+  /// The height of each point of [lines], line by line, or null for a line
+  /// without heights. Shorter than [lines], or empty, where nothing is known.
+  /// Divided with the points and stored with each piece.
+  final List<List<double>?> elevations;
 
   /// Whether the times may be read at all — false for a routine, whose
   /// entries stand on no real day.
@@ -360,9 +368,9 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
 
   Future<void> _confirm() async {
     final navigator = Navigator.of(context);
-    final stretches = splitTracksAt(widget.lines, [
-      for (final cut in _cuts) cut!,
-    ]);
+    final cuts = [for (final cut in _cuts) cut!];
+    final stretches = splitTracksAt(widget.lines, cuts);
+    final heights = splitElevationsAt(widget.lines, widget.elevations, cuts);
     final ends = trackImportEnds(
       TrackImportPlan(
         legs: _plan.legs,
@@ -379,8 +387,12 @@ class _TrackImportScreenState extends ConsumerState<TrackImportScreen> {
           name: widget.name,
           pieces: [
             for (var i = 0; i < _plan.legs.length; i++)
-              for (final line in stretches[i])
-                (itemId: _plan.legs[i].id, points: line),
+              for (final (j, line) in stretches[i].indexed)
+                (
+                  itemId: _plan.legs[i].id,
+                  points: line,
+                  elevations: heights[i][j],
+                ),
           ],
           ends: ends,
           times: [

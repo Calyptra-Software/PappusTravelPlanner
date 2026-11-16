@@ -135,13 +135,72 @@ void main() {
     final a = [const LatLng(53.5, 9.9), const LatLng(53.501, 9.9)];
     final b = [const LatLng(53.6, 9.9), const LatLng(53.601, 9.9)];
     final lines = <RecordedLine>[
-      (points: a, times: [t0, t0]),
-      (points: b, times: [t0, t0]),
+      (points: a, times: [t0, t0], elevations: null),
+      (points: b, times: [t0, t0], elevations: null),
     ];
     expect(
       recordedDistanceMeters(lines),
       closeTo(lineLength(a) + lineLength(b), 1e-9),
     );
     expect(recordedDistanceMeters(lines), lessThan(300));
+  });
+
+  group('recordedLines keeps the heights', () {
+    RecordingFix fix(int id, int segment, double lat, double? altitude) =>
+        RecordingFix(
+          id: id,
+          recordingId: 1,
+          segment: segment,
+          lat: lat,
+          lon: 9.9,
+          recordedAt: DateTime.utc(2026, 5, 1, 12, id).millisecondsSinceEpoch,
+          altitude: altitude,
+        );
+
+    test('a line whose every fix has one has them all', () {
+      final lines = recordedLines([
+        fix(0, 0, 53.50, 500),
+        fix(1, 0, 53.51, 510.5),
+        fix(2, 0, 53.52, 505),
+      ]);
+
+      expect(lines.single.elevations, [500, 510.5, 505]);
+    });
+
+    test('one fix without a height leaves its line without', () {
+      final lines = recordedLines([
+        fix(0, 0, 53.50, 500),
+        fix(1, 0, 53.51, null),
+        fix(2, 0, 53.52, 505),
+        // The next segment is a line of its own and keeps its heights.
+        fix(3, 1, 53.60, 600),
+        fix(4, 1, 53.61, 601),
+      ]);
+
+      expect(lines.map((line) => line.elevations), [
+        null,
+        [600, 601],
+      ]);
+    });
+
+    test('a fix dropped for its time takes its height with it', () {
+      final lines = recordedLines([
+        fix(0, 0, 53.50, 500),
+        fix(1, 0, 53.51, 510),
+        // No later than the one before: dropped, as the points are.
+        RecordingFix(
+          id: 2,
+          recordingId: 1,
+          segment: 0,
+          lat: 53.52,
+          lon: 9.9,
+          recordedAt: DateTime.utc(2026, 5, 1, 12, 1).millisecondsSinceEpoch,
+          altitude: 999,
+        ),
+      ]);
+
+      expect(lines.single.points, hasLength(2));
+      expect(lines.single.elevations, [500, 510]);
+    });
   });
 }

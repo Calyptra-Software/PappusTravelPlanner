@@ -147,7 +147,8 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
   /// Tuesday is not part of a plan.
   Future<void> importTrackAcross({
     required String? name,
-    required List<({int itemId, List<LatLng> points})> pieces,
+    required List<({int itemId, List<LatLng> points, List<double>? elevations})>
+    pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
     List<({int itemId, TrackEnd end, int minutes})> times = const [],
     TrackSource source = TrackSource.imported,
@@ -197,9 +198,12 @@ class TrackDao extends DatabaseAccessor<AppDatabase> with _$TrackDaoMixin {
       }
       for (final piece in pieces) {
         if (piece.points.length < 2) continue;
-        await addTracks(piece.itemId, [
-          (points: piece.points, name: name),
-        ], source: source);
+        await addTracks(
+          piece.itemId,
+          [(points: piece.points, name: name)],
+          source: source,
+          elevations: [piece.elevations],
+        );
       }
     });
   }

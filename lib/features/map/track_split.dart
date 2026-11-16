@@ -75,10 +75,45 @@ List<List<List<LatLng>>> splitTracks(
 List<List<List<LatLng>>> splitTracksAt(
   List<List<LatLng>> lines,
   List<int> cuts,
+) => _splitAt(lines, cuts);
+
+/// The heights of [lines], divided at [cuts] exactly as [splitTracksAt]
+/// divides the points: the result runs parallel to its result, piece for
+/// piece.
+///
+/// [elevations] runs parallel to [lines], null for a line without heights. A
+/// piece is given heights only when every point of it has one, so a piece
+/// made partly of a line without heights has none, by the rule that a stored
+/// line's heights are all or nothing.
+List<List<List<double>?>> splitElevationsAt(
+  List<List<LatLng>> lines,
+  List<List<double>?> elevations,
+  List<int> cuts,
 ) {
+  final heights = [
+    for (final (index, line) in lines.indexed)
+      () {
+        final own = index < elevations.length ? elevations[index] : null;
+        return own != null && own.length == line.length
+            ? <double?>[...own]
+            : List<double?>.filled(line.length, null);
+      }(),
+  ];
+  return [
+    for (final stretch in _splitAt(heights, cuts))
+      [
+        for (final piece in stretch)
+          piece.any((height) => height == null) ? null : piece.cast<double>(),
+      ],
+  ];
+}
+
+/// The division itself, for any value per point, so the points and their
+/// heights are divided by one piece of code and cannot come apart.
+List<List<List<T>>> _splitAt<T>(List<List<T>> lines, List<int> cuts) {
   // Flattened, with each point remembering which line it came from, so a cut
   // can be looked for along the outing and rebuilt within its segments.
-  final flat = <LatLng>[];
+  final flat = <T>[];
   final owner = <int>[];
   for (var i = 0; i < lines.length; i++) {
     for (final point in lines[i]) {
@@ -102,13 +137,13 @@ List<List<List<LatLng>>> splitTracksAt(
 
 /// The flattened points from [from] to [to], cut back apart wherever the
 /// recording had stopped.
-List<List<LatLng>> _linesBetween(
-  List<LatLng> flat,
+List<List<T>> _linesBetween<T>(
+  List<T> flat,
   List<int> owner,
   int from,
   int to,
 ) {
-  final out = <List<LatLng>>[];
+  final out = <List<T>>[];
   var start = from;
   for (var i = from + 1; i <= to; i++) {
     if (owner[i] != owner[i - 1]) {
