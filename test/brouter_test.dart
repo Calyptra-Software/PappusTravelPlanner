@@ -118,6 +118,28 @@ void main() {
       },
     );
 
+    test('from a browser, asks without naming itself', () async {
+      late http.Request sent;
+      final engine = BrouterRouteEngine(
+        sendUserAgent: false,
+        httpClient: MockClient((request) async {
+          sent = request;
+          return http.Response(
+            _fixture('brouter_hiking_mountain.json'),
+            200,
+            headers: _jsonUtf8,
+          );
+        }),
+      );
+
+      await engine.route(waypoints: waypoints, profile: RouteProfile.foot);
+
+      expect(
+        sent.headers.keys.map((k) => k.toLowerCase()),
+        isNot(contains('user-agent')),
+      );
+    });
+
     test('names every profile a stock BRouter profile', () {
       expect({
         for (final profile in RouteProfile.values) brouterProfileFor(profile),

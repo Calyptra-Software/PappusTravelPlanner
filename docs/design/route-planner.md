@@ -30,6 +30,12 @@ yet** (next section): that has to happen before a release carrying this.
   kept for a server behind a proxy. The planner names BRouter beside the map's own
   sources, and so do the settings' data sources, with OpenStreetMap, whose data the
   routes are computed on.
+- **The web build sends no `User-Agent` to the router**
+  (`BrouterRouteEngine.sendUserAgent`). brouter.de answers with
+  `Access-Control-Allow-Origin: *`, but its answer to a preflight allows no headers
+  (checked 2026-11-18), and setting `User-Agent` makes Firefox send one, so every request
+  would fail there. The rule the tiles follow (`basemapTileHeaders`); the `Referer` names
+  the page instead.
 - **It is somebody else's server, so the connection search's rules apply**: the
   `User-Agent` from `buildUserAgent`, `retry: noAutomaticRetry` on every provider that
   calls it, and a request per waypoint *set*, never while one is dragged. One request
@@ -210,7 +216,6 @@ yet** (next section): that has to happen before a release carrying this.
 
 - The door from the overview, for a route planned before there is a trip: where it is
   saved (a trip picked as for a connection, or a new routine) is still to decide.
-- Whether `brouter.de` sends the CORS header the web build needs (unverified).
 - A walking-time model with the user's own pace in place of the router's duration.
 - *Edit route* from the map.
 - Timetabled sections inside a tour, through the connection search.

@@ -228,7 +228,8 @@ that can be built.
 
 **The route planner tells the router the points of the route.** The coordinates of
 the points you set on its map and the way of travel you chose go to `brouter.de`, or to
-the BRouter server set in the settings instead, with the same `User-Agent`. Nothing is sent before the second point is set, and nothing for
+the BRouter server set in the settings instead, with the same `User-Agent` (except
+from the web build, see below). Nothing is sent before the second point is set, and nothing for
 a section drawn as a straight line. The server's
 [privacy policy](https://brouter.de/privacypolicy.html) says it logs the address a
 request came from, the user agent and the requested coordinates, and keeps the logs
@@ -246,9 +247,9 @@ something only your device knows.
 
 **In a browser, the app is identified by the page instead.** A web page cannot
 reliably name itself in a `User-Agent`: Chrome replaces it with its own, and the
-tile server refuses a request that sets one. So the web build sends no
-`User-Agent` with tiles, and one with a connection search only where the browser
-lets it through (Firefox does). Both policies accept the page's `Referer` in its
+tile server and the route planner's server refuse a request that sets one. So the web
+build sends no `User-Agent` with tiles or a route, and one with a connection search
+only where the browser lets it through (Firefox does). Both policies accept the page's `Referer` in its
 place, which means the servers see the address the app is served from.
 
 **The web build fetches fonts from Google when text needs them.** A browser

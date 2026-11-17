@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_info.dart';
@@ -17,6 +18,8 @@ final routeEngineProvider = Provider<RouteEngine>((ref) {
   final engine = BrouterRouteEngine(
     baseUrl: ref.watch(routingServerProvider),
     userAgent: buildUserAgent(ref.watch(appVersionProvider)),
+    // Not from the web build: see [BrouterRouteEngine.sendUserAgent].
+    sendUserAgent: !kIsWeb,
   );
   ref.onDispose(engine.close);
   return engine;

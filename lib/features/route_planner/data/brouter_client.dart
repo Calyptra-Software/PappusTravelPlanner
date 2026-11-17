@@ -31,14 +31,25 @@ String brouterProfileFor(RouteProfile profile) => switch (profile) {
 /// and the [userAgent] names the app to a server somebody else runs (see
 /// [buildUserAgent]).
 class BrouterRouteEngine implements RouteEngine {
-  BrouterRouteEngine({http.Client? httpClient, Uri? baseUrl, String? userAgent})
-    : _http = httpClient ?? http.Client(),
-      _baseUrl = baseUrl ?? kBrouterBaseUrl,
-      userAgent = userAgent ?? buildUserAgent('dev');
+  BrouterRouteEngine({
+    http.Client? httpClient,
+    Uri? baseUrl,
+    String? userAgent,
+    this.sendUserAgent = true,
+  }) : _http = httpClient ?? http.Client(),
+       _baseUrl = baseUrl ?? kBrouterBaseUrl,
+       userAgent = userAgent ?? buildUserAgent('dev');
 
   final http.Client _http;
   final Uri _baseUrl;
   final String userAgent;
+
+  /// Whether [userAgent] goes out as a header. Not from a browser: setting it
+  /// makes Firefox ask the server first (a CORS preflight), and brouter.de
+  /// answers that without allowing the header, so every request would fail.
+  /// The browser sends the page's `Referer` instead, as it does for the tiles
+  /// (`basemapTileHeaders`). Chrome would drop the header anyway.
+  final bool sendUserAgent;
 
   @override
   Future<RoutedPath> route({
@@ -64,7 +75,7 @@ class BrouterRouteEngine implements RouteEngine {
     final http.Response response;
     try {
       response = await _http
-          .get(uri, headers: {'User-Agent': userAgent})
+          .get(uri, headers: {if (sendUserAgent) 'User-Agent': userAgent})
           .timeout(const Duration(seconds: 30));
     } on TimeoutException {
       throw const RouteEngineException('Routing timed out');
