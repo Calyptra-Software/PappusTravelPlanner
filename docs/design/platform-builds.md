@@ -19,10 +19,12 @@ result.
 ## Vendored native code
 
 - **The Android half of `geolocator` is a copy in this repository, without Google
-  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with four
+  Play Services.** `third_party/geolocator_android` is the published 5.0.3 with five
   edits — the `com.google.android.gms:play-services-location` dependency, `FusedLocationClient`,
   and the branch in `GeolocationManager` that chose between them, plus the foreground
-  notification's channel importance (above) — and `dependency_overrides`
+  notification's channel importance (above), and upstream's own later fix that makes
+  `AndroidPosition` forward `hasAltitude` and the other presence flags, without which no
+  Android position ever had a height — and `dependency_overrides`
   in `pubspec.yaml` puts it in place of the pub.dev package for **every** build, not for a
   variant: there is no Play Store listing to keep GMS for, and one artifact per release is
   what leaves the door open to reproducible builds later. The reason is F-Droid, which

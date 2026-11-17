@@ -59,6 +59,7 @@ Future<bool> startTrackImport(
     preselected: preselected,
     lines: [for (final track in read) track.points],
     times: [for (final track in read) track.times],
+    elevations: [for (final track in read) track.elevations],
     name: read.map((t) => t.name).nonNulls.firstOrNull,
     source: TrackSource.imported,
   );
@@ -97,6 +98,7 @@ Future<bool> fileRecording(
     tripId: tripId,
     lines: [for (final line in read) line.points],
     times: [for (final line in read) line.times],
+    elevations: [for (final line in read) line.elevations],
     // A recording has no name of its own, and inventing one ("Recording of
     // 1 May") would be a label nobody gave it.
     name: null,
@@ -116,6 +118,7 @@ Future<bool> _divideAcross(
   List<int> preselected = const [],
   required List<List<LatLng>> lines,
   required List<List<DateTime>?> times,
+  required List<List<double>?> elevations,
   required String? name,
   Duration? offset,
   required TrackSource source,
@@ -147,6 +150,7 @@ Future<bool> _divideAcross(
     context,
     lines: lines,
     times: times,
+    elevations: elevations,
     name: name,
     selection: selection,
     // A routine's entries sit on a sort origin, not on a day anybody

@@ -43,9 +43,13 @@ final class FixReading {
     required this.position,
     required this.accuracyMeters,
     required this.at,
+    this.altitude,
   });
 
   final LatLng position;
+
+  /// The height reported with the fix, in meters, or null when none was.
+  final double? altitude;
 
   /// The platform's 68 % confidence radius, in meters.
   final double accuracyMeters;
@@ -88,9 +92,14 @@ bool acceptFix(FixReading? last, FixReading candidate) {
   return step >= max(accuracy, kMinRecordingStepMeters);
 }
 
-/// One stretch of a recording, as the track import takes it: the points, and
-/// when each was taken, as UTC instants and parallel to them.
-typedef RecordedLine = ({List<LatLng> points, List<DateTime> times});
+/// One stretch of a recording, as the track import takes it: the points, when
+/// each was taken (as UTC instants), and the height of each, all parallel. The
+/// heights are null when a fix of the stretch came without one.
+typedef RecordedLine = ({
+  List<LatLng> points,
+  List<DateTime> times,
+  List<double>? elevations,
+});
 
 /// The stored [fixes] of one recording as the lines the import divides — one
 /// per segment, in the order they were taken.
@@ -107,12 +116,18 @@ List<RecordedLine> recordedLines(List<RecordingFix> fixes) {
   final lines = <RecordedLine>[];
   var points = <LatLng>[];
   var times = <DateTime>[];
+  // Null once a fix of the line came without a height: heights are kept all
+  // or nothing per line, the rule every stored line follows.
+  List<double>? heights = <double>[];
   int? segment;
 
   void close() {
-    if (points.length >= 2) lines.add((points: points, times: times));
+    if (points.length >= 2) {
+      lines.add((points: points, times: times, elevations: heights));
+    }
     points = <LatLng>[];
     times = <DateTime>[];
+    heights = <double>[];
   }
 
   for (final fix in fixes) {
@@ -124,6 +139,8 @@ List<RecordedLine> recordedLines(List<RecordingFix> fixes) {
     if (times.isNotEmpty && !at.isAfter(times.last)) continue;
     points.add(LatLng(fix.lat, fix.lon));
     times.add(at);
+    final altitude = fix.altitude;
+    heights = altitude == null ? null : (heights?..add(altitude));
   }
   close();
   return lines;

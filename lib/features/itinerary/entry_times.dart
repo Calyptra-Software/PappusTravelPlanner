@@ -156,3 +156,45 @@ extension ItemEntryTimes on ItineraryItem {
     actualEndMinutes: actualEndMinutes,
   );
 }
+
+/// The latest time the day already has: where the last entry with a time
+/// ends, or starts when it has no end, as minutes on [day]'s own clock.
+///
+/// [entries] are the day's live entries in their order, [continuations] what
+/// runs into the day from an earlier one, as `(item, daysAfter)`. An entry is
+/// placed through [entryTimes]; a time that falls on another day (an end past
+/// midnight) is not one of this day's and is passed over. Null when the day
+/// has no time at all.
+///
+/// What a new stretch appended to the day can start from: the route planner
+/// opens its start-time picker there.
+int? lastTimeOfDay(
+  List<ItineraryItem> entries, {
+  List<({ItineraryItem item, int daysAfter})> continuations = const [],
+}) {
+  int? onThisDay(int? minutes, int daysAfter) {
+    if (minutes == null) return null;
+    final local = minutes - daysAfter * kMinutesPerDay;
+    return local >= 0 && local < kMinutesPerDay ? local : null;
+  }
+
+  int? of(ItineraryItem item, int daysAfter) {
+    final times = entryTimes(
+      startMinutes: item.startMinutes,
+      endMinutes: item.endMinutes,
+      endDayOffset: item.endDayOffset,
+    );
+    return onThisDay(times.plannedEnd, daysAfter) ??
+        onThisDay(times.plannedStart, daysAfter);
+  }
+
+  for (final item in entries.reversed) {
+    final minutes = of(item, 0);
+    if (minutes != null) return minutes;
+  }
+  for (final continuation in continuations.reversed) {
+    final minutes = of(continuation.item, continuation.daysAfter);
+    if (minutes != null) return minutes;
+  }
+  return null;
+}

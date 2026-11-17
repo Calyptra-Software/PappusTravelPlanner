@@ -2194,7 +2194,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dataSourcesNote =>
-      'Connection search uses openly licensed timetable and map data:';
+      'Connection search and route planning use openly licensed timetable and map data:';
 
   @override
   String linkOpenFailed(String url) {
@@ -2802,4 +2802,139 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photosTitle => 'Photos';
+
+  @override
+  String get routePlanTitle => 'Plan route';
+
+  @override
+  String get routePlanHintStart => 'Tap the map to set the start.';
+
+  @override
+  String get routePlanHintNext => 'Tap the map to set the next point.';
+
+  @override
+  String get routePlanStraightHint =>
+      'Drawn as a straight line between your points.';
+
+  @override
+  String get routePlanRouting => 'Finding the route…';
+
+  @override
+  String get routePlanStartTime => 'Start time';
+
+  @override
+  String routePlanStartsAt(String time) {
+    return 'Start $time';
+  }
+
+  @override
+  String get routeProfileFoot => 'On foot';
+
+  @override
+  String get routeProfileBike => 'Bike';
+
+  @override
+  String get routeProfileRoadBike => 'Road bike';
+
+  @override
+  String get routeProfileGravelBike => 'Gravel bike';
+
+  @override
+  String get routeProfileMountainBike => 'Mountain bike';
+
+  @override
+  String get routeProfileCar => 'Car';
+
+  @override
+  String get routeModeSki => 'Ski';
+
+  @override
+  String get routeModeStraight => 'Straight line';
+
+  @override
+  String get routeFailureUnreachable => 'Couldn\'t reach the routing service.';
+
+  @override
+  String get routeFailureNoRoute => 'No route found between these points.';
+
+  @override
+  String get routeFailureFailed =>
+      'The routing service answered with an error.';
+
+  @override
+  String get routeWaypointTitle => 'Waypoint';
+
+  @override
+  String get routeWaypointName => 'Name';
+
+  @override
+  String get routeWaypointAsPlace => 'Add to the plan as a place';
+
+  @override
+  String get routeWaypointRemove => 'Remove point';
+
+  @override
+  String get routeWaypointMove => 'Move point';
+
+  @override
+  String get routePlanMoveHint => 'Tap the map where the point should go.';
+
+  @override
+  String get routeSectionTitle => 'Section';
+
+  @override
+  String get routeSectionAddPoint => 'Add a point here';
+
+  @override
+  String get routePlanPoints => 'Points';
+
+  @override
+  String get routePlanPointsHint => 'Drag a point to change the order.';
+
+  @override
+  String get routePointStart => 'Start';
+
+  @override
+  String get routeEdit => 'Edit route';
+
+  @override
+  String get elevationProfile => 'Elevation profile';
+
+  @override
+  String get routeEditUnavailable =>
+      'This route can\'t be opened in the planner. It may have been planned with a newer version of the app.';
+
+  @override
+  String get trackSourceDrawn => 'Drawn by hand';
+
+  @override
+  String get attributionBrouter => 'Routes by BRouter';
+
+  @override
+  String get routePlannerSection => 'Route planner';
+
+  @override
+  String get routingServer => 'Routing server';
+
+  @override
+  String get routingServerAddress => 'Address';
+
+  @override
+  String get routingServerHint =>
+      'A BRouter server, e.g. https://brouter.example.org/brouter';
+
+  @override
+  String routingServerDefault(String url) {
+    return '$url (default)';
+  }
+
+  @override
+  String get routingServerInvalid =>
+      'That isn\'t the address of a server. It starts with https:// or http://.';
+
+  @override
+  String get routingServerReset => 'Use the default server';
+
+  @override
+  String get routePlanUseMyLocation => 'Next point at my position';
 }

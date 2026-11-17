@@ -37,13 +37,18 @@ class FakeGeolocator extends GeolocatorPlatform
     required double longitude,
     required double accuracy,
     DateTime? timestamp,
+    double? altitude,
   }) => _positions.add(
     Position(
       latitude: latitude,
       longitude: longitude,
       timestamp: timestamp ?? DateTime.utc(2026, 8, 19, 9),
       accuracy: accuracy,
-      altitude: 0,
+      // No height unless one is given: a platform without one reports 0.0
+      // and says it has none, which is what the recorder must not take as
+      // sea level.
+      altitude: altitude ?? 0,
+      hasAltitude: altitude != null,
       altitudeAccuracy: 0,
       heading: 0,
       headingAccuracy: 0,

@@ -79,9 +79,8 @@ void main() {
     expect(buildTripGpx(bundle: bundleWith()), isNull);
   });
 
-  test('a recording is a track, a computed route is a route', () {
-    // The distinction GPX itself draws — where something went, against how it
-    // could go — which is the one `TrackSource` draws and the map dashes.
+  test('a computed route is a track too, saying where it came from', () {
+    // Read by other apps, which analyze tracks only.
     final doc = parse(
       buildTripGpx(
         bundle: bundleWith(
@@ -99,29 +98,56 @@ void main() {
       ),
     );
 
-    expect(doc.findAllElements('trk'), hasLength(1));
-    expect(doc.findAllElements('rte'), hasLength(1));
-    expect(doc.findAllElements('trkpt'), hasLength(2));
-    expect(doc.findAllElements('rtept'), hasLength(2));
-    // A track's points live in a segment, a route's directly in the route.
-    expect(doc.findAllElements('trkseg'), hasLength(1));
+    // Both as tracks, which is what other apps analyze; where each came from
+    // is said in its <src>.
+    expect(doc.findAllElements('rte'), isEmpty);
+    final tracks = doc.findAllElements('trk').toList();
+    expect(tracks, hasLength(2));
+    expect(tracks.map((t) => t.getElement('src')!.innerText), [
+      'routed',
+      'imported',
+    ]);
+    expect(doc.findAllElements('trkseg'), hasLength(2));
+    expect(doc.findAllElements('trkpt'), hasLength(4));
   });
 
-  test('routes are written before tracks, as the schema demands', () {
-    // Not in the plan's order: a strict reader rejects a file that orders the
-    // two by anything else.
-    final gpx = buildTripGpx(
-      bundle: bundleWith(
-        items: [
-          leg(1, tracks: [track(walked)]),
-          leg(2, tracks: [track(computed, source: TrackSource.routed)]),
-        ],
-      ),
-      exportedAt: exportedAt,
-    )!;
+  test(
+    'lines are written in the plan\'s order, children as GPX orders them',
+    () {
+      final gpx = buildTripGpx(
+        bundle: bundleWith(
+          items: [
+            leg(1, tracks: [track(walked)]),
+            leg(2, tracks: [track(computed, source: TrackSource.routed)]),
+          ],
+        ),
+        exportedAt: exportedAt,
+      )!;
+      final tracks = parse(gpx).findAllElements('trk').toList();
 
-    expect(gpx.indexOf('<rte>'), lessThan(gpx.indexOf('<trk>')));
-  });
+      expect(tracks.map((t) => t.getElement('src')!.innerText), [
+        'imported',
+        'routed',
+      ]);
+      // name, desc, src, type, trkseg: the order GPX 1.1 fixes.
+      final order = [
+        for (final child in tracks.first.childElements) child.name.local,
+      ];
+      final fixed = [
+        'name',
+        'cmt',
+        'desc',
+        'src',
+        'link',
+        'number',
+        'type',
+        'trkseg',
+      ];
+      final positions = [for (final name in order) fixed.indexOf(name)];
+      expect(positions.every((p) => p >= 0), isTrue, reason: '$order');
+      expect(positions, orderedEquals([...positions]..sort()));
+    },
+  );
 
   test('the road not taken does not leave the app', () {
     // The rule the PDF and the calendar already follow.
@@ -334,7 +360,7 @@ void main() {
     );
   });
 
-  test("the app reads back what it writes, and keeps the two kinds apart", () {
+  test("the app reads back what it writes", () {
     // `parseGpx` is the reader on the other side of this, so a file that only
     // some other tool could open would be a strange thing to have written.
     final gpx = buildTripGpx(
@@ -356,16 +382,15 @@ void main() {
     final read = parseGpx(gpx);
     expect(read, hasLength(2));
     expect(read.map((t) => t.points.length), [2, 2]);
-    // Both come back as lines carrying their names — the reader takes tracks
-    // first and routes after, which is its own order and not the file's.
+    // Both come back as lines carrying their names, in the plan's order.
     expect(read.map((t) => t.name), [
-      'To the station · alster.gpx',
       'To the station',
+      'To the station · alster.gpx',
     ]);
     // And the geometry survives the trip out and back, to the metre the column
     // stores.
-    expect(read.first.points.first.latitude, closeTo(53.5511, 1e-5));
-    expect(read.first.points.last.longitude, closeTo(10.0100, 1e-5));
+    expect(read.last.points.first.latitude, closeTo(53.5511, 1e-5));
+    expect(read.last.points.last.longitude, closeTo(10.0100, 1e-5));
   });
 
   test('the document says what it is and who wrote it', () {

@@ -7,15 +7,46 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   format every mapping tool reads, so a dense recording costs a fraction of its point count
   and can leave the app without a decoder being written first. A recorded walk, an imported
   route and a path a router computes later are the same row wearing different `TrackSource`
-  values, which is why the enum names all three though only the first can be made today: a
-  table that could not say "this one was actually walked" would have to be migrated to say
-  it. Elevation and the file's markup are dropped on the way in (`parseGpx`), each for a
-  stated reason — the app has no reading for a profile, and the file remains where those
-  live. Timestamps are *read* but never stored: the import uses them once (below) and they
+  values (a fourth, `drawn`, is a line drawn by hand in the route planner, see
+  `route-planner.md`), which is why the enum named all three from the start, though only
+  the first could be made then: a table that could not say "this one was actually walked" would have to be migrated to say
+  it. The file's markup is dropped on the way in (`parseGpx`); its heights are kept (see
+  the note on heights below). Timestamps are *read* but never stored: the import uses them once (below) and they
   leave with the file. `<trkseg>`s are **not** joined: a break is where the recording stopped, so they
   arrive as separate rows under one name, which is the same rule the map already follows
   between two places. A `<wpt>` is ignored outright — a waypoint is a place, and inventing a
   dozen untimed entries from a route file is an import of a different kind.
+- **A line may carry a height for every point, in a column of its own** (`Tracks.elevations`,
+  v43, packed by `encodeTrackElevations`). This overturns the rule that elevation is
+  dropped because "the app has no reading for a profile": the route planner gave it one.
+  A second column and not a third number in `points`, which stays the encoded polyline
+  every mapping tool reads, and so that "no heights" is a null and not a run of zeros.
+  **One per point or nothing**: every reader goes through `trackElevationsOrNull`, which
+  refuses a count that does not match and a string that will not decode, since a profile
+  drawn from heights that belong to other points is a picture of nothing. Climb is
+  counted in one place, `climbOf` (`features/map/elevation.dart`), with a threshold,
+  because a plain sum counts an elevation model's noise as climbing; the planner's totals
+  and a stored line's row both read it, so one line cannot have two figures. The heights
+  go where the points go: `copyItemTracks` (turned round with the points for the reversed
+  routine), the `.tpt` (key `elevations`, written only when present, no version bump) and
+  the `.gpx` export (`<ele>`). **All three sources carry them**: the planner's routed
+  line, a GPX file's `<ele>` (`GpxTrack.elevations`, all or nothing per line, on a `<rte>`
+  too, since a height says where the ground is and not when anybody was there), and a
+  recording, whose fixes keep the height the receiver reported (`RecordingFixes.altitude`,
+  v44, only where `Position.hasAltitude`: without one the platform reports 0.0, which
+  would read as sea level). That flag reached Dart on Android only after a backport into
+  the vendored plugin (edit 5 in `third_party/geolocator_android/README.md`): 5.0.3
+  rebuilt every position without it, so it read false on every fix and the first
+  recordings made with heights on a phone had none. The import divides the heights with the points by **one**
+  function (`splitElevationsAt` runs the generic `_splitAt` that `splitTracksAt` runs), so
+  the two cannot come apart, and a piece made partly of a line without heights has none.
+  A recording on Android asks for heights **above sea level** (`useMSLAltitude` in
+  `positionSettingsFor`), read from the receiver's NMEA sentences or, from Android 14, the
+  platform; a device offering neither still reports the height above the WGS84 ellipsoid
+  (some 40 to 50 m more in central Europe) and the app cannot tell which it got. Climb is
+  unaffected by that offset. A GPS height is far noisier than a router's elevation model,
+  and the threshold in `climbOf` was set on the latter: the climb of a recording is not
+  checked against anything yet.
 - **The codec does its arithmetic with `*` and `~/`, never with shifts and masks**, and that
   is a platform fact rather than a style: on the web an `int` is a JavaScript number and the
   bitwise operators truncate to **32 bits, unsigned**, so `~n` answers `2^32 - n - 1` where

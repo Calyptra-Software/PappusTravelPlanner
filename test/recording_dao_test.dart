@@ -12,8 +12,14 @@ void main() {
   tearDown(() => db.close());
 
   final start = DateTime.utc(2026, 5, 1, 12);
-  ({LatLng position, DateTime at}) fix(int minute, double lat) =>
-      (position: LatLng(lat, 9.9), at: start.add(Duration(minutes: minute)));
+  ({LatLng position, DateTime at, double? altitude}) fix(
+    int minute,
+    double lat,
+  ) => (
+    position: LatLng(lat, 9.9),
+    at: start.add(Duration(minutes: minute)),
+    altitude: null,
+  );
 
   Future<int> makeTrip() => db
       .into(db.trips)
@@ -47,7 +53,7 @@ void main() {
       utcOffset: Duration.zero,
     );
     await db.recordingDao.addFixes(id, 0, [
-      (position: const LatLng(53.5, 9.9), at: start.toLocal()),
+      (position: const LatLng(53.5, 9.9), at: start.toLocal(), altitude: null),
     ]);
 
     final recording = (await db.recordingDao.unfiledRecordings()).single;

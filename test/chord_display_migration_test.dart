@@ -52,6 +52,9 @@ void main() {
 
     final raw = sqlite3.open(path);
     raw.execute('ALTER TABLE itinerary_items DROP COLUMN chord_display');
+    // A later version's column on another table, so the file is a v38 one:
+    // the migration that adds it does not look first.
+    raw.execute('ALTER TABLE tracks DROP COLUMN elevations');
     raw.execute('PRAGMA user_version = 38');
     raw.close();
     return legId;

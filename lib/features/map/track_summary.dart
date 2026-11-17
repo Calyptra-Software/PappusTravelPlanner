@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import '../../data/database/app_database.dart';
 import '../../data/database/tables.dart';
 import '../../data/database/track_points.dart';
+import 'elevation.dart';
 import 'map_features.dart';
 
 /// One stored line, as the form that lists it needs to read it: what it is, and
@@ -22,7 +23,15 @@ final class TrackSummary {
     required this.meters,
     this.display = TrackDisplay.auto,
     this.drawn = true,
+    this.climb,
+    this.profile = LaidProfile.empty,
   });
+
+  /// What the line climbs and descends, when it was stored with heights.
+  final Climb? climb;
+
+  /// The line's heights along its length; empty when it has none.
+  final LaidProfile profile;
 
   final int id;
   final TrackSource source;
@@ -62,26 +71,36 @@ List<TrackSummary> summarizeTracks(List<Track> rows) {
       (id: row.id, source: row.source, display: row.display),
   ]);
   return [
-    for (final row in rows)
-      TrackSummary(
-        id: row.id,
-        source: row.source,
-        name: row.name,
-        meters: _lengthOf(row.points),
-        display: row.display,
-        drawn: drawn.contains(row.id),
-      ),
+    for (final row in rows) _summaryOf(row, drawn: drawn.contains(row.id)),
   ];
 }
 
-double? _lengthOf(String packed) {
+TrackSummary _summaryOf(Track row, {required bool drawn}) {
+  List<LatLng>? points;
   try {
-    final points = decodeTrackPoints(packed);
-    if (points.length < 2) return null;
-    return lineLength(points);
+    points = decodeTrackPoints(row.points);
   } on FormatException {
-    return null;
+    points = null;
   }
+  if (points != null && points.length < 2) points = null;
+  final meters = points == null ? null : lineLength(points);
+  final heights = points == null
+      ? null
+      : trackElevationsOrNull(row.elevations, points.length);
+  return TrackSummary(
+    id: row.id,
+    source: row.source,
+    name: row.name,
+    meters: meters,
+    display: row.display,
+    drawn: drawn,
+    climb: heights == null ? null : climbOf(heights),
+    profile: points == null || heights == null || meters == null
+        ? LaidProfile.empty
+        : layProfiles([
+            (profile: elevationProfile(points, heights), meters: meters),
+          ]),
+  );
 }
 
 /// The straight segment between a leg's ends, read the way [TrackSummary] reads

@@ -16,7 +16,9 @@ import '../../../core/providers.dart';
 import '../../../data/database/app_database.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../map/map_features.dart';
 import '../../map/track_import_flow.dart';
+import '../../route_planner/presentation/route_planner_screen.dart';
 import '../../attachments/widgets/trip_attachments_section.dart';
 import '../../attachments/widgets/trip_photo_strip.dart';
 import '../../checklist/presentation/trip_checklists_section.dart';
@@ -850,6 +852,16 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                           // to search a real one and rebase what it finds — and
                           // the day itself is picked as an ordinal.
                           intoRoutine: trip.kind == TripKind.routine,
+                        ),
+                    onPlanRoute: (day, latestTime, {alternativeId}) =>
+                        planRoute(
+                          context,
+                          tripId: tripId,
+                          day: day,
+                          latestTime: latestTime,
+                          alternativeId: alternativeId,
+                          color: accent,
+                          nearby: itemPositions(items),
                         ),
                     onTapCost: (cost) => showCostFormSheet(
                       context,

@@ -133,4 +133,49 @@ void main() {
     expect(summaries.map((s) => s.id), [1, 2]);
     expect(summaries.every((s) => s.meters == null), isTrue);
   });
+
+  group('a line stored with heights', () {
+    Track withHeights(List<double>? heights) => Track(
+      id: 1,
+      itemId: 7,
+      source: TrackSource.routed,
+      name: null,
+      points: encodeTrackPoints(const [
+        LatLng(47, 11),
+        LatLng(47.01, 11),
+        LatLng(47.02, 11),
+      ]),
+      elevations: heights == null ? null : encodeTrackElevations(heights),
+      display: TrackDisplay.auto,
+      sortOrder: 0,
+    );
+
+    test('says what it climbs and has a profile', () {
+      final summary = summarizeTracks([
+        withHeights(const [500, 620, 560]),
+      ]).single;
+
+      expect(summary.climb, (ascent: 120.0, descent: 60.0));
+      expect(summary.profile.stretches.single, hasLength(3));
+      expect(summary.profile.range, (low: 500.0, high: 620.0));
+    });
+
+    test('says neither without heights', () {
+      final summary = summarizeTracks([withHeights(null)]).single;
+
+      expect(summary.climb, isNull);
+      expect(summary.profile.isEmpty, isTrue);
+    });
+
+    test('says neither when the heights do not number the points', () {
+      final summary = summarizeTracks([
+        withHeights(const [500, 620]),
+      ]).single;
+
+      expect(summary.climb, isNull);
+      expect(summary.profile.isEmpty, isTrue);
+      // The line itself is still a line.
+      expect(summary.meters, isNotNull);
+    });
+  });
 }

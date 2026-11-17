@@ -2551,6 +2551,17 @@ class $ItineraryItemsTable extends ItineraryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _routePlanMeta = const VerificationMeta(
+    'routePlan',
+  );
+  @override
+  late final GeneratedColumn<String> routePlan = GeneratedColumn<String>(
+    'route_plan',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2584,6 +2595,7 @@ class $ItineraryItemsTable extends ItineraryItems
     toPlaceId,
     stopovers,
     runStops,
+    routePlan,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2796,6 +2808,12 @@ class $ItineraryItemsTable extends ItineraryItems
         runStops.isAcceptableOrUnknown(data['run_stops']!, _runStopsMeta),
       );
     }
+    if (data.containsKey('route_plan')) {
+      context.handle(
+        _routePlanMeta,
+        routePlan.isAcceptableOrUnknown(data['route_plan']!, _routePlanMeta),
+      );
+    }
     return context;
   }
 
@@ -2932,6 +2950,10 @@ class $ItineraryItemsTable extends ItineraryItems
       runStops: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}run_stops'],
+      ),
+      routePlan: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}route_plan'],
       ),
     );
   }
@@ -3098,6 +3120,12 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
   /// view. A separate column rather than more [stopovers], which an older app
   /// would read as stops between the ends (see `RunStops`).
   final String? runStops;
+
+  /// What the route planner made this entry from, encoded by `encodeRoutePlan`:
+  /// the tour it belongs to and, on a leg, the waypoints and the way of travel
+  /// the router was asked with. It is what lets the planner be opened on a
+  /// saved tour again. Null on every entry the planner did not make.
+  final String? routePlan;
   const ItineraryItem({
     required this.id,
     required this.tripId,
@@ -3130,6 +3158,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     this.toPlaceId,
     this.stopovers,
     this.runStops,
+    this.routePlan,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -3221,6 +3250,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     if (!nullToAbsent || runStops != null) {
       map['run_stops'] = Variable<String>(runStops);
     }
+    if (!nullToAbsent || routePlan != null) {
+      map['route_plan'] = Variable<String>(routePlan);
+    }
     return map;
   }
 
@@ -3299,6 +3331,9 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       runStops: runStops == null && nullToAbsent
           ? const Value.absent()
           : Value(runStops),
+      routePlan: routePlan == null && nullToAbsent
+          ? const Value.absent()
+          : Value(routePlan),
     );
   }
 
@@ -3343,6 +3378,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       toPlaceId: serializer.fromJson<String?>(json['toPlaceId']),
       stopovers: serializer.fromJson<String?>(json['stopovers']),
       runStops: serializer.fromJson<String?>(json['runStops']),
+      routePlan: serializer.fromJson<String?>(json['routePlan']),
     );
   }
   @override
@@ -3384,6 +3420,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       'toPlaceId': serializer.toJson<String?>(toPlaceId),
       'stopovers': serializer.toJson<String?>(stopovers),
       'runStops': serializer.toJson<String?>(runStops),
+      'routePlan': serializer.toJson<String?>(routePlan),
     };
   }
 
@@ -3419,6 +3456,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     Value<String?> toPlaceId = const Value.absent(),
     Value<String?> stopovers = const Value.absent(),
     Value<String?> runStops = const Value.absent(),
+    Value<String?> routePlan = const Value.absent(),
   }) => ItineraryItem(
     id: id ?? this.id,
     tripId: tripId ?? this.tripId,
@@ -3457,6 +3495,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     toPlaceId: toPlaceId.present ? toPlaceId.value : this.toPlaceId,
     stopovers: stopovers.present ? stopovers.value : this.stopovers,
     runStops: runStops.present ? runStops.value : this.runStops,
+    routePlan: routePlan.present ? routePlan.value : this.routePlan,
   );
   ItineraryItem copyWithCompanion(ItineraryItemsCompanion data) {
     return ItineraryItem(
@@ -3515,6 +3554,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
       toPlaceId: data.toPlaceId.present ? data.toPlaceId.value : this.toPlaceId,
       stopovers: data.stopovers.present ? data.stopovers.value : this.stopovers,
       runStops: data.runStops.present ? data.runStops.value : this.runStops,
+      routePlan: data.routePlan.present ? data.routePlan.value : this.routePlan,
     );
   }
 
@@ -3551,7 +3591,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           ..write('fromPlaceId: $fromPlaceId, ')
           ..write('toPlaceId: $toPlaceId, ')
           ..write('stopovers: $stopovers, ')
-          ..write('runStops: $runStops')
+          ..write('runStops: $runStops, ')
+          ..write('routePlan: $routePlan')
           ..write(')'))
         .toString();
   }
@@ -3589,6 +3630,7 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
     toPlaceId,
     stopovers,
     runStops,
+    routePlan,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -3624,7 +3666,8 @@ class ItineraryItem extends DataClass implements Insertable<ItineraryItem> {
           other.fromPlaceId == this.fromPlaceId &&
           other.toPlaceId == this.toPlaceId &&
           other.stopovers == this.stopovers &&
-          other.runStops == this.runStops);
+          other.runStops == this.runStops &&
+          other.routePlan == this.routePlan);
 }
 
 class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
@@ -3659,6 +3702,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
   final Value<String?> toPlaceId;
   final Value<String?> stopovers;
   final Value<String?> runStops;
+  final Value<String?> routePlan;
   const ItineraryItemsCompanion({
     this.id = const Value.absent(),
     this.tripId = const Value.absent(),
@@ -3691,6 +3735,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.toPlaceId = const Value.absent(),
     this.stopovers = const Value.absent(),
     this.runStops = const Value.absent(),
+    this.routePlan = const Value.absent(),
   });
   ItineraryItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -3724,6 +3769,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     this.toPlaceId = const Value.absent(),
     this.stopovers = const Value.absent(),
     this.runStops = const Value.absent(),
+    this.routePlan = const Value.absent(),
   }) : tripId = Value(tripId),
        date = Value(date),
        kind = Value(kind);
@@ -3759,6 +3805,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Expression<String>? toPlaceId,
     Expression<String>? stopovers,
     Expression<String>? runStops,
+    Expression<String>? routePlan,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3793,6 +3840,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       if (toPlaceId != null) 'to_place_id': toPlaceId,
       if (stopovers != null) 'stopovers': stopovers,
       if (runStops != null) 'run_stops': runStops,
+      if (routePlan != null) 'route_plan': routePlan,
     });
   }
 
@@ -3828,6 +3876,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     Value<String?>? toPlaceId,
     Value<String?>? stopovers,
     Value<String?>? runStops,
+    Value<String?>? routePlan,
   }) {
     return ItineraryItemsCompanion(
       id: id ?? this.id,
@@ -3861,6 +3910,7 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
       toPlaceId: toPlaceId ?? this.toPlaceId,
       stopovers: stopovers ?? this.stopovers,
       runStops: runStops ?? this.runStops,
+      routePlan: routePlan ?? this.routePlan,
     );
   }
 
@@ -3964,6 +4014,9 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
     if (runStops.present) {
       map['run_stops'] = Variable<String>(runStops.value);
     }
+    if (routePlan.present) {
+      map['route_plan'] = Variable<String>(routePlan.value);
+    }
     return map;
   }
 
@@ -4000,7 +4053,8 @@ class ItineraryItemsCompanion extends UpdateCompanion<ItineraryItem> {
           ..write('fromPlaceId: $fromPlaceId, ')
           ..write('toPlaceId: $toPlaceId, ')
           ..write('stopovers: $stopovers, ')
-          ..write('runStops: $runStops')
+          ..write('runStops: $runStops, ')
+          ..write('routePlan: $routePlan')
           ..write(')'))
         .toString();
   }
@@ -7765,6 +7819,17 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     requiredDuringInsert: false,
     defaultValue: const Constant(0),
   );
+  static const VerificationMeta _elevationsMeta = const VerificationMeta(
+    'elevations',
+  );
+  @override
+  late final GeneratedColumn<String> elevations = GeneratedColumn<String>(
+    'elevations',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7774,6 +7839,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     points,
     display,
     sortOrder,
+    elevations,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7818,6 +7884,12 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         sortOrder.isAcceptableOrUnknown(data['sort_order']!, _sortOrderMeta),
       );
     }
+    if (data.containsKey('elevations')) {
+      context.handle(
+        _elevationsMeta,
+        elevations.isAcceptableOrUnknown(data['elevations']!, _elevationsMeta),
+      );
+    }
     return context;
   }
 
@@ -7859,6 +7931,10 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         DriftSqlType.int,
         data['${effectivePrefix}sort_order'],
       )!,
+      elevations: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}elevations'],
+      ),
     );
   }
 
@@ -7898,6 +7974,12 @@ class Track extends DataClass implements Insertable<Track> {
   /// Manual ordering among the tracks of one item, appended at the end — a leg
   /// can carry the walk out of the station and the walk into the next one.
   final int sortOrder;
+
+  /// The height of each point of [points] in meters, packed by
+  /// `encodeTrackElevations`, or null when the line came with none. One per
+  /// point or nothing: readers go through `trackElevationsOrNull`, which
+  /// refuses a count that does not match.
+  final String? elevations;
   const Track({
     required this.id,
     required this.itemId,
@@ -7906,6 +7988,7 @@ class Track extends DataClass implements Insertable<Track> {
     required this.points,
     required this.display,
     required this.sortOrder,
+    this.elevations,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7927,6 +8010,9 @@ class Track extends DataClass implements Insertable<Track> {
       );
     }
     map['sort_order'] = Variable<int>(sortOrder);
+    if (!nullToAbsent || elevations != null) {
+      map['elevations'] = Variable<String>(elevations);
+    }
     return map;
   }
 
@@ -7939,6 +8025,9 @@ class Track extends DataClass implements Insertable<Track> {
       points: Value(points),
       display: Value(display),
       sortOrder: Value(sortOrder),
+      elevations: elevations == null && nullToAbsent
+          ? const Value.absent()
+          : Value(elevations),
     );
   }
 
@@ -7959,6 +8048,7 @@ class Track extends DataClass implements Insertable<Track> {
         serializer.fromJson<int>(json['display']),
       ),
       sortOrder: serializer.fromJson<int>(json['sortOrder']),
+      elevations: serializer.fromJson<String?>(json['elevations']),
     );
   }
   @override
@@ -7976,6 +8066,7 @@ class Track extends DataClass implements Insertable<Track> {
         $TracksTable.$converterdisplay.toJson(display),
       ),
       'sortOrder': serializer.toJson<int>(sortOrder),
+      'elevations': serializer.toJson<String?>(elevations),
     };
   }
 
@@ -7987,6 +8078,7 @@ class Track extends DataClass implements Insertable<Track> {
     String? points,
     TrackDisplay? display,
     int? sortOrder,
+    Value<String?> elevations = const Value.absent(),
   }) => Track(
     id: id ?? this.id,
     itemId: itemId ?? this.itemId,
@@ -7995,6 +8087,7 @@ class Track extends DataClass implements Insertable<Track> {
     points: points ?? this.points,
     display: display ?? this.display,
     sortOrder: sortOrder ?? this.sortOrder,
+    elevations: elevations.present ? elevations.value : this.elevations,
   );
   Track copyWithCompanion(TracksCompanion data) {
     return Track(
@@ -8005,6 +8098,9 @@ class Track extends DataClass implements Insertable<Track> {
       points: data.points.present ? data.points.value : this.points,
       display: data.display.present ? data.display.value : this.display,
       sortOrder: data.sortOrder.present ? data.sortOrder.value : this.sortOrder,
+      elevations: data.elevations.present
+          ? data.elevations.value
+          : this.elevations,
     );
   }
 
@@ -8017,14 +8113,23 @@ class Track extends DataClass implements Insertable<Track> {
           ..write('name: $name, ')
           ..write('points: $points, ')
           ..write('display: $display, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('elevations: $elevations')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, itemId, source, name, points, display, sortOrder);
+  int get hashCode => Object.hash(
+    id,
+    itemId,
+    source,
+    name,
+    points,
+    display,
+    sortOrder,
+    elevations,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -8035,7 +8140,8 @@ class Track extends DataClass implements Insertable<Track> {
           other.name == this.name &&
           other.points == this.points &&
           other.display == this.display &&
-          other.sortOrder == this.sortOrder);
+          other.sortOrder == this.sortOrder &&
+          other.elevations == this.elevations);
 }
 
 class TracksCompanion extends UpdateCompanion<Track> {
@@ -8046,6 +8152,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
   final Value<String> points;
   final Value<TrackDisplay> display;
   final Value<int> sortOrder;
+  final Value<String?> elevations;
   const TracksCompanion({
     this.id = const Value.absent(),
     this.itemId = const Value.absent(),
@@ -8054,6 +8161,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.points = const Value.absent(),
     this.display = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.elevations = const Value.absent(),
   });
   TracksCompanion.insert({
     this.id = const Value.absent(),
@@ -8063,6 +8171,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     required String points,
     this.display = const Value.absent(),
     this.sortOrder = const Value.absent(),
+    this.elevations = const Value.absent(),
   }) : itemId = Value(itemId),
        points = Value(points);
   static Insertable<Track> custom({
@@ -8073,6 +8182,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Expression<String>? points,
     Expression<int>? display,
     Expression<int>? sortOrder,
+    Expression<String>? elevations,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -8082,6 +8192,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       if (points != null) 'points': points,
       if (display != null) 'display': display,
       if (sortOrder != null) 'sort_order': sortOrder,
+      if (elevations != null) 'elevations': elevations,
     });
   }
 
@@ -8093,6 +8204,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Value<String>? points,
     Value<TrackDisplay>? display,
     Value<int>? sortOrder,
+    Value<String?>? elevations,
   }) {
     return TracksCompanion(
       id: id ?? this.id,
@@ -8102,6 +8214,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       points: points ?? this.points,
       display: display ?? this.display,
       sortOrder: sortOrder ?? this.sortOrder,
+      elevations: elevations ?? this.elevations,
     );
   }
 
@@ -8133,6 +8246,9 @@ class TracksCompanion extends UpdateCompanion<Track> {
     if (sortOrder.present) {
       map['sort_order'] = Variable<int>(sortOrder.value);
     }
+    if (elevations.present) {
+      map['elevations'] = Variable<String>(elevations.value);
+    }
     return map;
   }
 
@@ -8145,7 +8261,8 @@ class TracksCompanion extends UpdateCompanion<Track> {
           ..write('name: $name, ')
           ..write('points: $points, ')
           ..write('display: $display, ')
-          ..write('sortOrder: $sortOrder')
+          ..write('sortOrder: $sortOrder, ')
+          ..write('elevations: $elevations')
           ..write(')'))
         .toString();
   }
@@ -9973,6 +10090,17 @@ class $RecordingFixesTable extends RecordingFixes
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _altitudeMeta = const VerificationMeta(
+    'altitude',
+  );
+  @override
+  late final GeneratedColumn<double> altitude = GeneratedColumn<double>(
+    'altitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -9981,6 +10109,7 @@ class $RecordingFixesTable extends RecordingFixes
     lat,
     lon,
     recordedAt,
+    altitude,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -10038,6 +10167,12 @@ class $RecordingFixesTable extends RecordingFixes
     } else if (isInserting) {
       context.missing(_recordedAtMeta);
     }
+    if (data.containsKey('altitude')) {
+      context.handle(
+        _altitudeMeta,
+        altitude.isAcceptableOrUnknown(data['altitude']!, _altitudeMeta),
+      );
+    }
     return context;
   }
 
@@ -10071,6 +10206,10 @@ class $RecordingFixesTable extends RecordingFixes
         DriftSqlType.int,
         data['${effectivePrefix}recorded_at'],
       )!,
+      altitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}altitude'],
+      ),
     );
   }
 
@@ -10094,6 +10233,11 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
 
   /// When the fix was taken, in milliseconds since the epoch (UTC).
   final int recordedAt;
+
+  /// The height the receiver reported with the fix, in meters, or null when
+  /// it reported none. Above sea level where the platform says so (see
+  /// `positionSettingsFor`); filed onto the line as `Tracks.elevations`.
+  final double? altitude;
   const RecordingFix({
     required this.id,
     required this.recordingId,
@@ -10101,6 +10245,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     required this.lat,
     required this.lon,
     required this.recordedAt,
+    this.altitude,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -10111,6 +10256,9 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     map['lat'] = Variable<double>(lat);
     map['lon'] = Variable<double>(lon);
     map['recorded_at'] = Variable<int>(recordedAt);
+    if (!nullToAbsent || altitude != null) {
+      map['altitude'] = Variable<double>(altitude);
+    }
     return map;
   }
 
@@ -10122,6 +10270,9 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       lat: Value(lat),
       lon: Value(lon),
       recordedAt: Value(recordedAt),
+      altitude: altitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(altitude),
     );
   }
 
@@ -10137,6 +10288,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       lat: serializer.fromJson<double>(json['lat']),
       lon: serializer.fromJson<double>(json['lon']),
       recordedAt: serializer.fromJson<int>(json['recordedAt']),
+      altitude: serializer.fromJson<double?>(json['altitude']),
     );
   }
   @override
@@ -10149,6 +10301,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       'lat': serializer.toJson<double>(lat),
       'lon': serializer.toJson<double>(lon),
       'recordedAt': serializer.toJson<int>(recordedAt),
+      'altitude': serializer.toJson<double?>(altitude),
     };
   }
 
@@ -10159,6 +10312,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     double? lat,
     double? lon,
     int? recordedAt,
+    Value<double?> altitude = const Value.absent(),
   }) => RecordingFix(
     id: id ?? this.id,
     recordingId: recordingId ?? this.recordingId,
@@ -10166,6 +10320,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
     lat: lat ?? this.lat,
     lon: lon ?? this.lon,
     recordedAt: recordedAt ?? this.recordedAt,
+    altitude: altitude.present ? altitude.value : this.altitude,
   );
   RecordingFix copyWithCompanion(RecordingFixesCompanion data) {
     return RecordingFix(
@@ -10179,6 +10334,7 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
       recordedAt: data.recordedAt.present
           ? data.recordedAt.value
           : this.recordedAt,
+      altitude: data.altitude.present ? data.altitude.value : this.altitude,
     );
   }
 
@@ -10190,14 +10346,15 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
           ..write('segment: $segment, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
-          ..write('recordedAt: $recordedAt')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('altitude: $altitude')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, recordingId, segment, lat, lon, recordedAt);
+      Object.hash(id, recordingId, segment, lat, lon, recordedAt, altitude);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -10207,7 +10364,8 @@ class RecordingFix extends DataClass implements Insertable<RecordingFix> {
           other.segment == this.segment &&
           other.lat == this.lat &&
           other.lon == this.lon &&
-          other.recordedAt == this.recordedAt);
+          other.recordedAt == this.recordedAt &&
+          other.altitude == this.altitude);
 }
 
 class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
@@ -10217,6 +10375,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
   final Value<double> lat;
   final Value<double> lon;
   final Value<int> recordedAt;
+  final Value<double?> altitude;
   const RecordingFixesCompanion({
     this.id = const Value.absent(),
     this.recordingId = const Value.absent(),
@@ -10224,6 +10383,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     this.lat = const Value.absent(),
     this.lon = const Value.absent(),
     this.recordedAt = const Value.absent(),
+    this.altitude = const Value.absent(),
   });
   RecordingFixesCompanion.insert({
     this.id = const Value.absent(),
@@ -10232,6 +10392,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     required double lat,
     required double lon,
     required int recordedAt,
+    this.altitude = const Value.absent(),
   }) : recordingId = Value(recordingId),
        lat = Value(lat),
        lon = Value(lon),
@@ -10243,6 +10404,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     Expression<double>? lat,
     Expression<double>? lon,
     Expression<int>? recordedAt,
+    Expression<double>? altitude,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -10251,6 +10413,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
       if (lat != null) 'lat': lat,
       if (lon != null) 'lon': lon,
       if (recordedAt != null) 'recorded_at': recordedAt,
+      if (altitude != null) 'altitude': altitude,
     });
   }
 
@@ -10261,6 +10424,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     Value<double>? lat,
     Value<double>? lon,
     Value<int>? recordedAt,
+    Value<double?>? altitude,
   }) {
     return RecordingFixesCompanion(
       id: id ?? this.id,
@@ -10269,6 +10433,7 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
       lat: lat ?? this.lat,
       lon: lon ?? this.lon,
       recordedAt: recordedAt ?? this.recordedAt,
+      altitude: altitude ?? this.altitude,
     );
   }
 
@@ -10293,6 +10458,9 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
     if (recordedAt.present) {
       map['recorded_at'] = Variable<int>(recordedAt.value);
     }
+    if (altitude.present) {
+      map['altitude'] = Variable<double>(altitude.value);
+    }
     return map;
   }
 
@@ -10304,7 +10472,8 @@ class RecordingFixesCompanion extends UpdateCompanion<RecordingFix> {
           ..write('segment: $segment, ')
           ..write('lat: $lat, ')
           ..write('lon: $lon, ')
-          ..write('recordedAt: $recordedAt')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('altitude: $altitude')
           ..write(')'))
         .toString();
   }
@@ -13725,6 +13894,7 @@ typedef $$ItineraryItemsTableCreateCompanionBuilder =
       Value<String?> toPlaceId,
       Value<String?> stopovers,
       Value<String?> runStops,
+      Value<String?> routePlan,
     });
 typedef $$ItineraryItemsTableUpdateCompanionBuilder =
     ItineraryItemsCompanion Function({
@@ -13759,6 +13929,7 @@ typedef $$ItineraryItemsTableUpdateCompanionBuilder =
       Value<String?> toPlaceId,
       Value<String?> stopovers,
       Value<String?> runStops,
+      Value<String?> routePlan,
     });
 
 final class $$ItineraryItemsTableReferences
@@ -14038,6 +14209,11 @@ class $$ItineraryItemsTableFilterComposer
 
   ColumnFilters<String> get runStops => $composableBuilder(
     column: $table.runStops,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get routePlan => $composableBuilder(
+    column: $table.routePlan,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14353,6 +14529,11 @@ class $$ItineraryItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get routePlan => $composableBuilder(
+    column: $table.routePlan,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$TripsTableOrderingComposer get tripId {
     final $$TripsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -14558,6 +14739,9 @@ class $$ItineraryItemsTableAnnotationComposer
 
   GeneratedColumn<String> get runStops =>
       $composableBuilder(column: $table.runStops, builder: (column) => column);
+
+  GeneratedColumn<String> get routePlan =>
+      $composableBuilder(column: $table.routePlan, builder: (column) => column);
 
   $$TripsTableAnnotationComposer get tripId {
     final $$TripsTableAnnotationComposer composer = $composerBuilder(
@@ -14796,6 +14980,7 @@ class $$ItineraryItemsTableTableManager
                 Value<String?> toPlaceId = const Value.absent(),
                 Value<String?> stopovers = const Value.absent(),
                 Value<String?> runStops = const Value.absent(),
+                Value<String?> routePlan = const Value.absent(),
               }) => ItineraryItemsCompanion(
                 id: id,
                 tripId: tripId,
@@ -14828,6 +15013,7 @@ class $$ItineraryItemsTableTableManager
                 toPlaceId: toPlaceId,
                 stopovers: stopovers,
                 runStops: runStops,
+                routePlan: routePlan,
               ),
           createCompanionCallback:
               ({
@@ -14862,6 +15048,7 @@ class $$ItineraryItemsTableTableManager
                 Value<String?> toPlaceId = const Value.absent(),
                 Value<String?> stopovers = const Value.absent(),
                 Value<String?> runStops = const Value.absent(),
+                Value<String?> routePlan = const Value.absent(),
               }) => ItineraryItemsCompanion.insert(
                 id: id,
                 tripId: tripId,
@@ -14894,6 +15081,7 @@ class $$ItineraryItemsTableTableManager
                 toPlaceId: toPlaceId,
                 stopovers: stopovers,
                 runStops: runStops,
+                routePlan: routePlan,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -19132,6 +19320,7 @@ typedef $$TracksTableCreateCompanionBuilder =
       required String points,
       Value<TrackDisplay> display,
       Value<int> sortOrder,
+      Value<String?> elevations,
     });
 typedef $$TracksTableUpdateCompanionBuilder =
     TracksCompanion Function({
@@ -19142,6 +19331,7 @@ typedef $$TracksTableUpdateCompanionBuilder =
       Value<String> points,
       Value<TrackDisplay> display,
       Value<int> sortOrder,
+      Value<String?> elevations,
     });
 
 final class $$TracksTableReferences
@@ -19204,6 +19394,11 @@ class $$TracksTableFilterComposer
 
   ColumnFilters<int> get sortOrder => $composableBuilder(
     column: $table.sortOrder,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get elevations => $composableBuilder(
+    column: $table.elevations,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -19270,6 +19465,11 @@ class $$TracksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get elevations => $composableBuilder(
+    column: $table.elevations,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ItineraryItemsTableOrderingComposer get itemId {
     final $$ItineraryItemsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -19320,6 +19520,11 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumn<int> get sortOrder =>
       $composableBuilder(column: $table.sortOrder, builder: (column) => column);
+
+  GeneratedColumn<String> get elevations => $composableBuilder(
+    column: $table.elevations,
+    builder: (column) => column,
+  );
 
   $$ItineraryItemsTableAnnotationComposer get itemId {
     final $$ItineraryItemsTableAnnotationComposer composer = $composerBuilder(
@@ -19380,6 +19585,7 @@ class $$TracksTableTableManager
                 Value<String> points = const Value.absent(),
                 Value<TrackDisplay> display = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<String?> elevations = const Value.absent(),
               }) => TracksCompanion(
                 id: id,
                 itemId: itemId,
@@ -19388,6 +19594,7 @@ class $$TracksTableTableManager
                 points: points,
                 display: display,
                 sortOrder: sortOrder,
+                elevations: elevations,
               ),
           createCompanionCallback:
               ({
@@ -19398,6 +19605,7 @@ class $$TracksTableTableManager
                 required String points,
                 Value<TrackDisplay> display = const Value.absent(),
                 Value<int> sortOrder = const Value.absent(),
+                Value<String?> elevations = const Value.absent(),
               }) => TracksCompanion.insert(
                 id: id,
                 itemId: itemId,
@@ -19406,6 +19614,7 @@ class $$TracksTableTableManager
                 points: points,
                 display: display,
                 sortOrder: sortOrder,
+                elevations: elevations,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -21129,6 +21338,7 @@ typedef $$RecordingFixesTableCreateCompanionBuilder =
       required double lat,
       required double lon,
       required int recordedAt,
+      Value<double?> altitude,
     });
 typedef $$RecordingFixesTableUpdateCompanionBuilder =
     RecordingFixesCompanion Function({
@@ -21138,6 +21348,7 @@ typedef $$RecordingFixesTableUpdateCompanionBuilder =
       Value<double> lat,
       Value<double> lon,
       Value<int> recordedAt,
+      Value<double?> altitude,
     });
 
 final class $$RecordingFixesTableReferences
@@ -21200,6 +21411,11 @@ class $$RecordingFixesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get altitude => $composableBuilder(
+    column: $table.altitude,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$RecordingsTableFilterComposer get recordingId {
     final $$RecordingsTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -21258,6 +21474,11 @@ class $$RecordingFixesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get altitude => $composableBuilder(
+    column: $table.altitude,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$RecordingsTableOrderingComposer get recordingId {
     final $$RecordingsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -21307,6 +21528,9 @@ class $$RecordingFixesTableAnnotationComposer
     column: $table.recordedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<double> get altitude =>
+      $composableBuilder(column: $table.altitude, builder: (column) => column);
 
   $$RecordingsTableAnnotationComposer get recordingId {
     final $$RecordingsTableAnnotationComposer composer = $composerBuilder(
@@ -21368,6 +21592,7 @@ class $$RecordingFixesTableTableManager
                 Value<double> lat = const Value.absent(),
                 Value<double> lon = const Value.absent(),
                 Value<int> recordedAt = const Value.absent(),
+                Value<double?> altitude = const Value.absent(),
               }) => RecordingFixesCompanion(
                 id: id,
                 recordingId: recordingId,
@@ -21375,6 +21600,7 @@ class $$RecordingFixesTableTableManager
                 lat: lat,
                 lon: lon,
                 recordedAt: recordedAt,
+                altitude: altitude,
               ),
           createCompanionCallback:
               ({
@@ -21384,6 +21610,7 @@ class $$RecordingFixesTableTableManager
                 required double lat,
                 required double lon,
                 required int recordedAt,
+                Value<double?> altitude = const Value.absent(),
               }) => RecordingFixesCompanion.insert(
                 id: id,
                 recordingId: recordingId,
@@ -21391,6 +21618,7 @@ class $$RecordingFixesTableTableManager
                 lat: lat,
                 lon: lon,
                 recordedAt: recordedAt,
+                altitude: altitude,
               ),
           withReferenceMapper: (p0) => p0
               .map(

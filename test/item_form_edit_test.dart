@@ -6,11 +6,13 @@ import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/route_plan.dart';
 import 'package:travelplanner/data/database/stopovers.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
@@ -715,6 +717,70 @@ void main() {
       final saved = await reread(leg.id);
       expect(saved.endMinutes, isNull);
       expect(saved.endDayOffset, 0);
+    });
+  });
+
+  group('an entry the route planner made', () {
+    final plan = encodeRoutePlan(
+      const RoutePlan(
+        tour: 't1',
+        profile: 'foot',
+        waypoints: [
+          RoutePlanPoint(lat: 47.4, lon: 11, name: 'Car park'),
+          RoutePlanPoint(lat: 47.45, lon: 11.05, name: 'Summit'),
+        ],
+        seconds: 4800,
+        meters: 5000,
+      ),
+    );
+
+    Future<ItineraryItem> plannedLeg() async {
+      final id = await db.itineraryDao.addItem(
+        ItineraryItemsCompanion.insert(
+          tripId: 1,
+          date: day,
+          kind: ItemKind.transport,
+          mode: const Value(1),
+          fromLocation: const Value('Car park'),
+          toLocation: const Value('Summit'),
+          fromLat: const Value(47.4),
+          fromLon: const Value(11),
+          toLat: const Value(47.45),
+          toLon: const Value(11.05),
+          routePlan: Value(plan),
+        ),
+      );
+      await repo.addTracks(id, [
+        (
+          points: const [
+            LatLng(47.4, 11),
+            LatLng(47.42, 11.03),
+            LatLng(47.45, 11.05),
+          ],
+          name: null,
+        ),
+      ]);
+      await (db.update(db.tracks)..where((t) => t.itemId.equals(id))).write(
+        const TracksCompanion(source: Value(TrackSource.routed)),
+      );
+      return reread(id);
+    }
+
+    testWidgets('keeps its route plan through an edit in the form', (
+      tester,
+    ) async {
+      final leg = await plannedLeg();
+
+      await tester.pumpWidget(
+        wrap(
+          ItemFormSheet(tripId: 1, kind: ItemKind.transport, existing: leg),
+          items: [leg],
+        ),
+      );
+      await tester.pump();
+      await save(tester);
+
+      expect((await reread(leg.id)).routePlan, plan);
     });
   });
 }

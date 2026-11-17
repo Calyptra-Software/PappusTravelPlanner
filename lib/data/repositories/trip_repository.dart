@@ -44,7 +44,18 @@ class TripRepository {
   /// A shape that will not decode costs its own leg a line and nothing else: the
   /// rest of the journey is perfectly good. So does one of fewer than two points,
   /// which is not a line.
-  Future<void> _writeRoutedShapes(List<int> ids, List<String?> shapes) async {
+  ///
+  /// [elevations] runs parallel to [shapes]: the height of each point of a
+  /// shape, for a router that gives them. The connection search gives none.
+  /// [sources] does too, for a shape that was not computed: the route
+  /// planner's lines drawn by hand are [TrackSource.drawn]. Routed where it
+  /// says nothing.
+  Future<void> _writeRoutedShapes(
+    List<int> ids,
+    List<String?> shapes, [
+    List<List<double>?> elevations = const [],
+    List<TrackSource> sources = const [],
+  ]) async {
     for (final (index, shape) in shapes.indexed) {
       if (shape == null || index >= ids.length) continue;
       final List<LatLng> points;
@@ -54,11 +65,16 @@ class TripRepository {
         continue;
       }
       if (points.length < 2) continue;
-      await _db.trackDao.addTracks(ids[index], [
-        // No name: it is the leg's own route, and "ICE 1081" is already written
-        // above it. A name here would only repeat the label the entry carries.
-        (points: points, name: null),
-      ], source: TrackSource.routed);
+      await _db.trackDao.addTracks(
+        ids[index],
+        [
+          // No name: it is the leg's own route, and "ICE 1081" is already written
+          // above it. A name here would only repeat the label the entry carries.
+          (points: points, name: null),
+        ],
+        source: index < sources.length ? sources[index] : TrackSource.routed,
+        elevations: [index < elevations.length ? elevations[index] : null],
+      );
     }
   }
 
@@ -113,6 +129,7 @@ class TripRepository {
     required List<ItineraryItemsCompanion> legs,
     int? groupId,
     List<String?> shapes = const [],
+    List<List<double>?> elevations = const [],
   }) async {
     final ids = await _db.routineDao.replaceJourneyLegs(
       tripId,
@@ -120,7 +137,33 @@ class TripRepository {
       legs: legs,
       groupId: groupId,
     );
-    await _writeRoutedShapes(ids, shapes);
+    await _writeRoutedShapes(ids, shapes, elevations);
+    return ids;
+  }
+
+  /// Writes a route the planner saved again over its old entries, keeping the
+  /// rows that stayed the same entry — see [RoutineDao.rewriteRoute]. A kept
+  /// leg's computed line is replaced by the new one ([shapes], parallel to
+  /// [entries], with [elevations]); a recording or an import on it stays.
+  Future<List<int>> rewriteRoute(
+    int tripId, {
+    required List<int> oldIds,
+    required List<({int? keepId, ItineraryItemsCompanion row})> entries,
+    int? groupId,
+    List<String?> shapes = const [],
+    List<List<double>?> elevations = const [],
+    List<TrackSource> sources = const [],
+  }) async {
+    final ids = await _db.routineDao.rewriteRoute(
+      tripId,
+      oldIds: oldIds,
+      entries: entries,
+      groupId: groupId,
+    );
+    await _db.trackDao.deleteProposedTracksOf([
+      for (final entry in entries) ?entry.keepId,
+    ]);
+    await _writeRoutedShapes(ids, shapes, elevations, sources);
     return ids;
   }
 
@@ -193,6 +236,11 @@ class TripRepository {
     List<({List<LatLng> points, String? name})> lines,
   ) => _db.trackDao.addTracks(itemId, lines);
 
+  /// The stored lines of [itemIds], read once: what opening a saved tour in
+  /// the planner needs, with nothing to watch.
+  Future<List<Track>> tracksOfItems(Iterable<int> itemIds) =>
+      _db.trackDao.tracksOfItems(itemIds);
+
   /// Whether the map draws one stored line — the user overruling the default,
   /// or putting it back. See [TrackDisplay].
   Future<void> setTrackDisplay(int id, TrackDisplay display) =>
@@ -211,7 +259,8 @@ class TripRepository {
   /// came from a file or from this app's own recorder.
   Future<void> importTrackAcross({
     required String? name,
-    required List<({int itemId, List<LatLng> points})> pieces,
+    required List<({int itemId, List<LatLng> points, List<double>? elevations})>
+    pieces,
     required List<({int itemId, TrackEnd end, LatLng at})> ends,
     List<({int itemId, TrackEnd end, int minutes})> times = const [],
     TrackSource source = TrackSource.imported,
@@ -239,7 +288,7 @@ class TripRepository {
   Future<void> addRecordingFixes(
     int recordingId,
     int segment,
-    List<({LatLng position, DateTime at})> fixes,
+    List<({LatLng position, DateTime at, double? altitude})> fixes,
   ) => _db.recordingDao.addFixes(recordingId, segment, fixes);
 
   Future<void> stopRecording(int id, DateTime at) =>
@@ -420,13 +469,15 @@ class TripRepository {
     bool group = true,
     int? alternativeId,
     List<String?> shapes = const [],
+    List<List<double>?> elevations = const [],
+    List<TrackSource> sources = const [],
   }) async {
     final ids = await _db.itineraryDao.insertJourneyLegs(
       tripId,
       legs,
       alternativeId: alternativeId,
     );
-    await _writeRoutedShapes(ids, shapes);
+    await _writeRoutedShapes(ids, shapes, elevations, sources);
     if (group) {
       var i = 0;
       while (i < legs.length) {

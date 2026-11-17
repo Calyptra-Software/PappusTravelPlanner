@@ -18,6 +18,7 @@ import 'alternative_card.dart';
 import 'now_line.dart';
 import 'put_down_chip.dart';
 import 'timeline_tile.dart';
+import '../../route_planner/presentation/saved_route.dart';
 
 /// Renders a trip's itinerary as day sections. A day is a reorderable list of
 /// **blocks**: single place/transport tiles, and decisions — a set of competing
@@ -35,6 +36,7 @@ class ItineraryTimeline extends StatefulWidget {
     required this.onAddPlace,
     required this.onQuickAddPlace,
     required this.onAddTransport,
+    this.onPlanRoute,
     required this.onReorder,
     required this.onReorderBranch,
     required this.onReorderRun,
@@ -126,6 +128,12 @@ class ItineraryTimeline extends StatefulWidget {
   /// leaves you — pre-filled into the "from" field, or null if there is none.
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
+
+  /// Opens the tour planner for [day], with the latest time the day already
+  /// has ([lastTimeOfDay]) as where its start time is picked from. Null leaves
+  /// the offer out.
+  final void Function(DateTime day, int? latestTime, {int? alternativeId})?
+  onPlanRoute;
   final Map<int, List<Cost>> costsByItem;
   final String localeName;
   final ValueChanged<Cost> onTapCost;
@@ -225,6 +233,7 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
         onAddPlace: widget.onAddPlace,
         onQuickAddPlace: widget.onQuickAddPlace,
         onAddTransport: widget.onAddTransport,
+        onPlanRoute: widget.onPlanRoute,
         onReorder: widget.onReorder,
         onReorderBranch: widget.onReorderBranch,
         onReorderRun: widget.onReorderRun,
@@ -269,6 +278,7 @@ class _ItineraryTimelineState extends State<ItineraryTimeline> {
             onAddPlace: widget.onAddPlace,
             onQuickAddPlace: widget.onQuickAddPlace,
             onAddTransport: widget.onAddTransport,
+            onPlanRoute: widget.onPlanRoute,
             onReorder: widget.onReorder,
             onReorderBranch: widget.onReorderBranch,
             onReorderRun: widget.onReorderRun,
@@ -339,6 +349,7 @@ class _DaySection extends ConsumerWidget {
     required this.onAddPlace,
     required this.onQuickAddPlace,
     required this.onAddTransport,
+    this.onPlanRoute,
     required this.onReorder,
     required this.onReorderBranch,
     required this.onReorderRun,
@@ -399,6 +410,8 @@ class _DaySection extends ConsumerWidget {
   onQuickAddPlace;
   final void Function(DateTime day, String? fromDefault, {int? alternativeId})
   onAddTransport;
+  final void Function(DateTime day, int? latestTime, {int? alternativeId})?
+  onPlanRoute;
   final void Function(List<DayBlock>, int, int) onReorder;
   final void Function(List<DayBlock>, int, int) onReorderBranch;
   final void Function(List<ItineraryItem>, int, int) onReorderRun;
@@ -541,14 +554,14 @@ class _DaySection extends ConsumerWidget {
           curve: Curves.easeInOut,
           alignment: Alignment.topCenter,
           child: expanded
-              ? _buildBody(context, theme)
+              ? _buildBody(context, ref, theme)
               : const SizedBox(width: double.infinity),
         ),
       ],
     );
   }
 
-  Widget _buildBody(BuildContext context, ThemeData theme) {
+  Widget _buildBody(BuildContext context, WidgetRef ref, ThemeData theme) {
     final l10n = AppLocalizations.of(context);
     final live = _liveItems;
     // Where the day leaves you is where its last entry does — or, on a morning
@@ -635,6 +648,7 @@ class _DaySection extends ConsumerWidget {
               );
               return switch (block) {
                 ItemBlock(:final item) => _itemTile(
+                  ref: ref,
                   context: context,
                   item: item,
                   dragHandle: dragHandle,
@@ -661,6 +675,10 @@ class _DaySection extends ConsumerWidget {
                           groupId: groupId,
                         )
                       : null,
+                  onEditRoute: switch (items.where(isPlannedLeg).firstOrNull) {
+                    final leg? => () => editSavedRoute(context, ref, leg),
+                    null => null,
+                  },
                   dragHandle: dragHandle,
                   isNow: index == happeningIndex,
                   nowMinutes: isToday ? nowMinutes : null,
@@ -688,6 +706,14 @@ class _DaySection extends ConsumerWidget {
                   ),
                   onQuickAddPlace: (branchId, location) =>
                       onQuickAddPlace(day, location, alternativeId: branchId),
+                  onPlanRoute: switch (onPlanRoute) {
+                    final plan? => (branchId, latestTime) => plan(
+                      day,
+                      latestTime,
+                      alternativeId: branchId,
+                    ),
+                    null => null,
+                  },
                   onReorderBranch: onReorderBranch,
                   onReorderRun: onReorderRun,
                   dragHandle: dragHandle,
@@ -727,6 +753,21 @@ class _DaySection extends ConsumerWidget {
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: Text(l10n.addTransport),
               ),
+              if (onPlanRoute case final onPlanRoute?)
+                TextButton.icon(
+                  onPressed: () => onPlanRoute(
+                    day,
+                    lastTimeOfDay(
+                      live,
+                      continuations: [
+                        for (final c in continuations)
+                          (item: c.item, daysAfter: c.daysAfter),
+                      ],
+                    ),
+                  ),
+                  icon: const Icon(Icons.polyline_outlined, size: 18),
+                  label: Text(l10n.routePlanTitle),
+                ),
               // Where something new goes is where a held entry can go too, so
               // the offer sits in the row already used for "put something here"
               // — and disappears entirely when nothing is held.
@@ -743,6 +784,7 @@ class _DaySection extends ConsumerWidget {
   /// block, and [GroupRunTile] hands it its row.
   Widget _itemTile({
     required BuildContext context,
+    required WidgetRef ref,
     required ItineraryItem item,
     required Widget dragHandle,
     required bool isNow,
@@ -754,6 +796,9 @@ class _DaySection extends ConsumerWidget {
       // journey sheet; inside one the run's label carries it.
       onShowJourney: hasStandaloneJourney(item)
           ? () => openJourney(context, tripId: item.tripId, itemId: item.id)
+          : null,
+      onEditRoute: item.groupId == null && isPlannedLeg(item)
+          ? () => editSavedRoute(context, ref, item)
           : null,
       item: item,
       accent: accent,

@@ -6,10 +6,11 @@ piece does, and, where the behavior is a decision rather than an obvious default
 works that way. The [README](../README.md) has the same list in a sentence each.
 
 Everything described here happens on your device, against a single SQLite file that
-belongs to you. Two things reach outside it: the connection search, which asks a routing
-service about real timetables and writes the answer into your local plan, and the map,
-which fetches its background tiles while you look at them. Neither sends anything about
-your trip anywhere.
+belongs to you. Three things reach outside it: the connection search, which asks a routing
+service about real timetables and writes the answer into your local plan, the route
+planner, which sends the points you set to a routing server, and the map, which fetches
+its background tiles while you look at them. None of them sends anything else about your
+trip anywhere.
 
 ---
 
@@ -260,7 +261,7 @@ shows up here either.
 
 ## Connections from a real timetable
 
-This is the app's one online feature. It asks [Transitous](https://transitous.org), a
+It asks [Transitous](https://transitous.org), a
 community-run MOTIS instance built on OpenStreetMap and open timetable data from operators
 around the world — local public transport, long-distance trains, buses, and more. No
 account, no API key, and nothing to sign up for.
@@ -351,6 +352,54 @@ A duplicated trip, or one whose entries moved with a new start date, is offered 
 Declining it, finding nothing, or having no signal all leave the copied plan standing. A
 journey for which nothing was found says so, with the same way into the search. And
 "no train" is never reported when it was "no network".
+
+---
+
+## Planning a route
+
+*Plan route* under a day opens a map. Tap the start, then each further point: the app asks
+a routing server for the way between them and shows the length, the climb and descent, and
+how long it takes.
+
+The chips under the map choose the way of travel for the **next** section: on foot, by
+bike (also road, gravel and mountain bike) or by car. Choosing another before a tap changes
+it at that point, so a drive to the car park and the walk from there are one route. *Ski*
+and *Straight line* draw a straight line between your points, since no routing server
+knows pistes and lifts.
+
+The locate button sets the next point at your position, or puts the point you are moving
+there, and centers the map on it. *Plan route* is also under each option of a decision,
+and plans the route into that option.
+
+Tap a point to name it, to add it to the plan as a place of its own, to move it (the next
+tap on the map says where to) or to remove it. Tap a line to travel that section another
+way, or to add a point there. The points are numbered in the order of the route; the list
+button under the map shows them in that order, where dragging one changes it and the bin
+on a point removes it. A point moved this way is still reached the way it was. *Start time* gives the entries times,
+running on from the durations.
+
+*Add to day* writes one leg per way of travel, split at named points, each with its line.
+Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
+it; a line of a *Ski* or *Straight line* section is listed as drawn by hand.
+
+The chart button under the map shows the route's **elevation profile** over the bottom of
+the map. Move the pointer over it, or draw a finger across it, and a line marks that
+distance with its height, and a dot shows where it is on the map. A leg drawn as a
+straight line has no heights and is left as a gap. A saved leg lists its line with its
+climb and profile too, and the GPX export writes the heights.
+
+*Edit route* on the route's label, beside *Show journey* (or on the leg itself, for a
+route of one leg), opens the whole route in the planner again, as it was saved. Saving
+there keeps every entry that is still part of the route, with its notes, actual times,
+photos, costs and recordings: a place for as long as its point is there, however moved or
+renamed, and a leg for as long as it runs between the same two points. Without a start
+time the entries keep their times. An entry the route no longer has is removed, and its
+costs and files move to the route's group.
+
+The routes come from the [BRouter](https://brouter.de) server at brouter.de, which
+receives the points you set. **Settings → Route planner** takes the address of another
+BRouter server instead, your own for example; clearing the field, or the reset button,
+goes back to brouter.de.
 
 ---
 
@@ -455,6 +504,11 @@ can throw away the detour and keep the walk. *Remove all* is there from two line
 line that cannot be drawn is listed too, with nothing where its length would be, which is
 how you get rid of it.
 
+A line that came with **heights** (a planned route, a GPX file with elevations, or a
+recording on a device that reports them) shows its climb and descent in its row, with
+its elevation profile underneath. The heights of a recording are the receiver's own and
+noisier than those of a planned route.
+
 Each row also says whether that line is **on the map**, and the eye beside it switches that:
 by default a recording (or an import) is drawn and a route the search computed is not, and
 you can overrule it either way. Hide every line of a leg and the map draws the straight segment
@@ -504,13 +558,13 @@ routine, share the trip, and it comes along. A `.tpt` bundle carries it, which i
 that export lossless.
 
 **Getting the lines out again:** the trip's ⋮ menu has *Export lines (GPX)…*, which writes every
-line the trip's entries carry into one `.gpx` — recordings as tracks, the routes the connection
-search computed as routes. A line you have hidden is exported too: hiding is about the map, and this is
-the record.
+line the trip's entries carry into one `.gpx`, each as a track, so other apps can analyze them;
+whether a line was recorded, imported or computed is noted in it. A line you have hidden is
+exported too: hiding is about the map, and this is the record.
 
-It is **not the file you imported**. Elevation and timestamps are dropped when a GPX comes in and
-cannot be invented on the way out, so what you get is the geometry (to about a metre), the day
-and the mode — keep your original if you want the rest. Routines can be exported as well, without
+It is **not the file you imported**. Timestamps are dropped when a GPX comes in and cannot be
+invented on the way out, so what you get is the geometry (to about a metre) with its heights
+where it has them, the day and the mode — keep your original if you want the rest. Routines can be exported as well, without
 a day, since their entries have none.
 
 ### Which countries you have been to
@@ -818,6 +872,7 @@ asks the routing service for its results in the app's language too.
 with the same planned-time-plus-delay marks the timeline uses. Tapping a row opens that
 entry.
 
-**Offline-first.** No account, no server, no network required. The connection search and the
-map's background tiles are the only things that reach the network, and what the search
-brings back becomes part of your local plan like anything else.
+**Offline-first.** No account, no server, no network required. The connection search, the
+route planner and the map's background tiles are the only things that reach the network,
+and what a search or the planner brings back becomes part of your local plan like anything
+else.

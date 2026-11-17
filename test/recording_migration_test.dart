@@ -42,6 +42,9 @@ void main() {
     final raw = sqlite3.open(path);
     raw.execute('DROP TABLE recording_fixes');
     raw.execute('DROP TABLE recordings');
+    // A later version's column on another table, so the file is a v40 one:
+    // the migration that adds it does not look first.
+    raw.execute('ALTER TABLE tracks DROP COLUMN elevations');
     raw.execute('PRAGMA user_version = 40');
     raw.close();
     return tripId;
@@ -61,7 +64,11 @@ void main() {
       utcOffset: const Duration(hours: 2),
     );
     await db.recordingDao.addFixes(id, 0, [
-      (position: const LatLng(53.5, 9.9), at: DateTime.utc(2026, 5, 1, 12)),
+      (
+        position: const LatLng(53.5, 9.9),
+        at: DateTime.utc(2026, 5, 1, 12),
+        altitude: null,
+      ),
     ]);
     expect(await db.recordingDao.fixesOf(id), hasLength(1));
 

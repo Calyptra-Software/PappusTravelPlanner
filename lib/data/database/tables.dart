@@ -437,6 +437,12 @@ class ItineraryItems extends Table {
   /// view. A separate column rather than more [stopovers], which an older app
   /// would read as stops between the ends (see `RunStops`).
   TextColumn get runStops => text().nullable()();
+
+  /// What the route planner made this entry from, encoded by `encodeRoutePlan`:
+  /// the tour it belongs to and, on a leg, the waypoints and the way of travel
+  /// the router was asked with. It is what lets the planner be opened on a
+  /// saved tour again. Null on every entry the planner did not make.
+  TextColumn get routePlan => text().nullable()();
 }
 
 /// A single cost. Attached to exactly one of: a single itinerary item (via
@@ -601,6 +607,20 @@ enum TrackSource {
   /// Computed by a router: the road or path between two ends, rather than a
   /// record of anyone travelling it.
   routed,
+
+  /// Drawn by hand in the route planner: straight from point to point where no
+  /// router was asked (a ski descent, a glacier, a section off the paths). A
+  /// proposal like [routed], but nobody computed it.
+  drawn,
+}
+
+/// What follows from a line's [TrackSource].
+extension TrackSourceKind on TrackSource {
+  /// Whether the line is a plan, not a record: computed by a router or drawn
+  /// by hand. The map draws such a line dashed and puts it away when the entry
+  /// carries a recording or an import.
+  bool get isProposal =>
+      this == TrackSource.routed || this == TrackSource.drawn;
 }
 
 /// Whether a stored line is drawn on the map, when the default is not what the
@@ -681,6 +701,12 @@ class Tracks extends Table {
   /// Manual ordering among the tracks of one item, appended at the end — a leg
   /// can carry the walk out of the station and the walk into the next one.
   IntColumn get sortOrder => integer().withDefault(const Constant(0))();
+
+  /// The height of each point of [points] in meters, packed by
+  /// `encodeTrackElevations`, or null when the line came with none. One per
+  /// point or nothing: readers go through `trackElevationsOrNull`, which
+  /// refuses a count that does not match.
+  TextColumn get elevations => text().nullable()();
 }
 
 /// A recording the app is making, or has made and not yet filed onto a plan.
@@ -760,6 +786,11 @@ class RecordingFixes extends Table {
 
   /// When the fix was taken, in milliseconds since the epoch (UTC).
   IntColumn get recordedAt => integer()();
+
+  /// The height the receiver reported with the fix, in meters, or null when
+  /// it reported none. Above sea level where the platform says so (see
+  /// `positionSettingsFor`); filed onto the line as `Tracks.elevations`.
+  RealColumn get altitude => real().nullable()();
 }
 
 /// The modes of transport a leg can use, managed in settings and reused in the

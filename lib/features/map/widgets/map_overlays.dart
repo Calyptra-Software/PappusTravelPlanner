@@ -290,10 +290,16 @@ class MapAttributionBar extends StatelessWidget {
     super.key,
     required this.basemap,
     this.overlays = const [],
+    this.extra = const [],
   });
 
   final Basemap basemap;
   final List<MapOverlay> overlays;
+
+  /// Sources of what is drawn over the map rather than of the map itself,
+  /// such as the router behind a planned route. Each is named once, beside
+  /// the map's own.
+  final List<MapAttribution> extra;
 
   @override
   Widget build(BuildContext context) {
@@ -314,7 +320,10 @@ class MapAttributionBar extends StatelessWidget {
         alignment: WrapAlignment.end,
         spacing: 12,
         children: [
-          for (final source in combinedAttributions(basemap, overlays))
+          for (final source in {
+            ...combinedAttributions(basemap, overlays),
+            ...extra,
+          })
             InkWell(
               onTap: () => openExternalLink(context, source.url),
               child: Text(

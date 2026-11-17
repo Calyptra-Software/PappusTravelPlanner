@@ -21,6 +21,8 @@ import 'now_line.dart';
 import 'put_down_chip.dart';
 import 'timeline_rail.dart';
 import 'timeline_tile.dart';
+import '../../route_planner/presentation/saved_route.dart';
+import '../entry_times.dart';
 
 /// An option's name: its own label, or its position spelled as a letter
 /// ("Option B") when it has none. Top-level so anything that has to name an
@@ -57,6 +59,7 @@ class AlternativeCard extends ConsumerStatefulWidget {
     required this.onTapCost,
     required this.onAddPlace,
     required this.onAddTransport,
+    this.onPlanRoute,
     required this.onQuickAddPlace,
     required this.onReorderBranch,
     required this.onReorderRun,
@@ -85,6 +88,10 @@ class AlternativeCard extends ConsumerStatefulWidget {
   /// Adds an entry to the branch with the given id (the one on screen).
   final void Function(int alternativeId) onAddPlace;
   final void Function(int alternativeId) onAddTransport;
+
+  /// Opens the route planner for one option, with the latest time the option
+  /// already has. Null leaves the offer out.
+  final void Function(int alternativeId, int? latestTime)? onPlanRoute;
 
   /// Adds a place named after where the branch's last leg leaves you, with no
   /// form step — the "you just arrived here" chip, as on the day itself.
@@ -586,6 +593,9 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                           itemId: item.id,
                         )
                       : null,
+                  onEditRoute: item.groupId == null && isPlannedLeg(item)
+                      ? () => editSavedRoute(context, ref, item)
+                      : null,
                   item: item,
                   accent: widget.accent,
                   onTap: () => widget.onTapItem(item),
@@ -617,6 +627,10 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                           groupId: groupId,
                         )
                       : null,
+                  onEditRoute: switch (items.where(isPlannedLeg).firstOrNull) {
+                    final leg? => () => editSavedRoute(context, ref, leg),
+                    null => null,
+                  },
                   dragHandle: dragHandle,
                   isNow: i == nowIndex,
                   // Only the chosen option can be under way, which [marker] has
@@ -657,6 +671,12 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                 icon: const Icon(Icons.alt_route, size: 18),
                 label: Text(l10n.addTransport),
               ),
+              if (widget.onPlanRoute case final onPlanRoute?)
+                TextButton.icon(
+                  onPressed: () => onPlanRoute(branch.id, lastTimeOfDay(items)),
+                  icon: const Icon(Icons.polyline_outlined, size: 18),
+                  label: Text(l10n.routePlanTitle),
+                ),
               // The option's own add-row, so the entry lands in the option you
               // swiped to — the ambiguity a drop *onto* the card would have.
               if (widget.held case final held?)

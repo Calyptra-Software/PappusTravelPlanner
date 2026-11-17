@@ -52,7 +52,7 @@ void main() {
   });
 
   group('in settings, where they outlive the sheet', () {
-    testWidgets('both sources are rows carrying their address', (tester) async {
+    testWidgets('every source is a row carrying its address', (tester) async {
       await pump(tester, const DataSourcesSettings());
 
       // The URL is on the row itself: an imported connection stays in the
@@ -60,7 +60,9 @@ void main() {
       // the attribution has to be reachable when no search is open.
       expect(find.text(kOsmCopyrightUrl), findsOneWidget);
       expect(find.text(kTransitousSourcesUrl), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new), findsNWidgets(2));
+      // The route planner's router too.
+      expect(find.text(kBrouterUrl), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new), findsNWidgets(3));
     });
 
     testWidgets('under a line saying what the data is for', (tester) async {
@@ -76,7 +78,7 @@ void main() {
       await pump(tester, const DataSourcesSettings());
 
       final tiles = tester.widgetList<ListTile>(find.byType(ListTile));
-      expect(tiles, hasLength(2));
+      expect(tiles, hasLength(3));
       for (final tile in tiles) {
         expect(tile.onTap, isNotNull);
       }

@@ -42,6 +42,7 @@ class TimelineTile extends StatelessWidget {
     required this.localeName,
     required this.onTapCost,
     this.onShowJourney,
+    this.onEditRoute,
     this.dragHandle,
     this.isNow = false,
     this.nowLineMinutes,
@@ -59,6 +60,10 @@ class TimelineTile extends StatelessWidget {
   /// when there is no journey to read — and always null for a leg inside a run,
   /// whose journey is the run's and opens from the band above it.
   final VoidCallback? onShowJourney;
+
+  /// Opens the route this leg was planned as, in the route planner, for a
+  /// planned leg standing on its own. Inside a run the run's label has it.
+  final VoidCallback? onEditRoute;
   final Widget? dragHandle;
 
   /// Whether this entry is under way right now.
@@ -93,6 +98,7 @@ class TimelineTile extends StatelessWidget {
             costsSection: costsSection,
             isNow: isNow,
             onShowJourney: onShowJourney,
+            onEditRoute: onEditRoute,
           )
         : _PlaceRow(
             item: item,
@@ -143,6 +149,7 @@ class GroupRunTile extends StatelessWidget {
     required this.onReorder,
     required this.held,
     this.onShowJourney,
+    this.onEditRoute,
     this.dragHandle,
     this.isNow = false,
     this.nowMinutes,
@@ -176,6 +183,11 @@ class GroupRunTile extends StatelessWidget {
   /// Opens the run's journey, when it has one. It belongs on the label, which is
   /// what names the run.
   final VoidCallback? onShowJourney;
+
+  /// Opens the run in the route planner, when the planner made it. On the
+  /// label for the reason the journey is: a route is the whole run, not one of
+  /// its legs.
+  final VoidCallback? onEditRoute;
 
   /// The run's handle in the list *it* is a block of.
   final Widget? dragHandle;
@@ -269,6 +281,15 @@ class GroupRunTile extends StatelessWidget {
                       icon: const Icon(Icons.route),
                       color: accent,
                       onPressed: show,
+                    ),
+                  if (onEditRoute case final edit?)
+                    IconButton(
+                      tooltip: l10n.routeEdit,
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      icon: const Icon(Icons.polyline_outlined),
+                      color: accent,
+                      onPressed: edit,
                     ),
                   // What is done to the run as a whole belongs on the run's own
                   // label, not inside one member's edit form: a shared-ticket
@@ -1025,6 +1046,7 @@ class _TransportRow extends ConsumerWidget {
     required this.costsSection,
     required this.isNow,
     required this.onShowJourney,
+    required this.onEditRoute,
   });
 
   final ItineraryItem item;
@@ -1033,6 +1055,7 @@ class _TransportRow extends ConsumerWidget {
   final Widget costsSection;
   final bool isNow;
   final VoidCallback? onShowJourney;
+  final VoidCallback? onEditRoute;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1159,6 +1182,14 @@ class _TransportRow extends ConsumerWidget {
                         iconSize: 18,
                         icon: const Icon(Icons.route),
                         onPressed: show,
+                      ),
+                    if (onEditRoute case final edit?)
+                      IconButton(
+                        tooltip: l10n.routeEdit,
+                        visualDensity: VisualDensity.compact,
+                        iconSize: 18,
+                        icon: const Icon(Icons.polyline_outlined),
+                        onPressed: edit,
                       ),
                     // An imported leg (one with a routing trip id) can pull its
                     // live times; a walk transfer or hand-entered leg cannot.

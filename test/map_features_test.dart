@@ -457,6 +457,19 @@ void main() {
       expect(drawnTrackIds([line(1, TrackSource.routed)]), {1});
     });
 
+    test('a line drawn by hand is a proposal like a routed one', () {
+      expect(drawnTrackIds([line(1, TrackSource.drawn)]), {1});
+      expect(
+        drawnTrackIds([
+          line(1, TrackSource.drawn),
+          line(2, TrackSource.recorded),
+        ]),
+        {2},
+      );
+      expect(TrackSource.drawn.isProposal, isTrue);
+      expect(TrackSource.recorded.isProposal, isFalse);
+    });
+
     test('hiding the recording brings the computed route forward', () {
       // The case the override exists for: the trace is wrong in the tunnel, so
       // it is put away — and nothing has to be deleted to see the route.

@@ -24,6 +24,7 @@ import '../../itinerary/application/transport_mode_providers.dart';
 import '../../itinerary/presentation/transport_modes_settings.dart';
 import '../application/database_providers.dart';
 import 'about_settings.dart';
+import '../../route_planner/presentation/routing_server_settings.dart';
 
 /// Where the database is, and what it weighs.
 ///
@@ -200,6 +201,9 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _export(context, ref),
             ),
           ],
+          const Divider(),
+          _SectionHeader(title: l10n.routePlannerSection),
+          const RoutingServerSettings(),
           const Divider(),
           // Attribution belongs where it outlives the search sheet: an imported
           // connection stays in the trip long after the search that found it.

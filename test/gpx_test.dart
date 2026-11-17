@@ -188,4 +188,60 @@ void main() {
       expect(parseGpx(walk).every((t) => t.times == null), isTrue);
     });
   });
+
+  group('heights are read, all or nothing per line', () {
+    test('every point with an <ele> gives the line its heights', () {
+      final tracks = parseGpx('''
+<gpx version="1.1"><trk><trkseg>
+  <trkpt lat="47.0" lon="11.0"><ele>1848.5</ele></trkpt>
+  <trkpt lat="47.1" lon="11.0"><ele> 1171 </ele></trkpt>
+</trkseg></trk></gpx>
+''');
+
+      expect(tracks.single.elevations, [1848.5, 1171]);
+    });
+
+    test('one point without one leaves the line without heights', () {
+      final tracks = parseGpx('''
+<gpx version="1.1"><trk>
+  <trkseg>
+    <trkpt lat="47.0" lon="11.0"><ele>1848</ele></trkpt>
+    <trkpt lat="47.1" lon="11.0"/>
+  </trkseg>
+  <trkseg>
+    <trkpt lat="47.2" lon="11.0"><ele>900</ele></trkpt>
+    <trkpt lat="47.3" lon="11.0"><ele>910</ele></trkpt>
+  </trkseg>
+</trk></gpx>
+''');
+
+      expect(tracks.map((t) => t.elevations), [
+        null,
+        [900, 910],
+      ]);
+    });
+
+    test('an <ele> that is not a number is no height', () {
+      final tracks = parseGpx('''
+<gpx version="1.1"><trk><trkseg>
+  <trkpt lat="47.0" lon="11.0"><ele>high</ele></trkpt>
+  <trkpt lat="47.1" lon="11.0"><ele>1171</ele></trkpt>
+</trkseg></trk></gpx>
+''');
+
+      expect(tracks.single.elevations, isNull);
+    });
+
+    test('a route keeps its heights, unlike its times', () {
+      final tracks = parseGpx('''
+<gpx version="1.1"><rte>
+  <rtept lat="47.0" lon="11.0"><ele>500</ele><time>2026-05-01T12:00:00Z</time></rtept>
+  <rtept lat="47.1" lon="11.0"><ele>600</ele><time>2026-05-01T13:00:00Z</time></rtept>
+</rte></gpx>
+''');
+
+      expect(tracks.single.elevations, [500, 600]);
+      expect(tracks.single.times, isNull);
+    });
+  });
 }

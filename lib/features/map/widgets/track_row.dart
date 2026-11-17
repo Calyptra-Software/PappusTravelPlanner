@@ -4,6 +4,7 @@ import '../../../core/format/distance_format.dart';
 import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../track_summary.dart';
+import 'elevation_profile_chart.dart';
 
 /// One stored line, as both places that list one read it.
 ///
@@ -58,23 +59,46 @@ class TrackRow extends StatelessWidget {
       TrackSource.recorded => l10n.trackSourceRecorded,
       TrackSource.imported => l10n.trackSourceImported,
       TrackSource.routed => l10n.trackSourceRouted,
+      TrackSource.drawn => l10n.trackSourceDrawn,
     };
     final length = track.meters == null
         ? l10n.trackNotDrawable
         : formatDistance(track.meters!);
+    // The climb, for a line stored with heights, written as the planner
+    // writes it; and its profile underneath.
+    final climb = track.climb == null
+        ? null
+        : '↑ ${track.climb!.ascent.round()} m ↓ ${track.climb!.descent.round()} m';
 
-    return _LineRow(
+    final row = _LineRow(
       icon: switch (track.source) {
-        // A computed route is the one of the three the map draws differently,
-        // so it is the one that reads differently here.
+        // A proposal is what the map draws differently, so it is what reads
+        // differently here: computed, or drawn by hand.
         TrackSource.routed => Icons.alt_route,
+        TrackSource.drawn => Icons.gesture,
         _ => Icons.timeline,
       },
-      text: [?track.name, source, length].join(' · '),
+      text: [?track.name, source, length, ?climb].join(' · '),
       drawn: track.drawn,
       onSetDisplay: onSetDisplay,
       onRemove: onRemove,
       highlighted: highlighted,
+    );
+    if (track.profile.isEmpty) return row;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        row,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+          child: ElevationProfileChart(
+            profile: track.profile,
+            color: Theme.of(context).colorScheme.primary,
+            height: 64,
+          ),
+        ),
+      ],
     );
   }
 }

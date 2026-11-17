@@ -189,4 +189,86 @@ void main() {
       isNull,
     );
   });
+
+  group('splitElevationsAt', () {
+    // Two segments of a recording: four points, then three.
+    const first = [
+      LatLng(50, 8),
+      LatLng(50.1, 8),
+      LatLng(50.2, 8),
+      LatLng(50.3, 8),
+    ];
+    const second = [LatLng(50.5, 8), LatLng(50.6, 8), LatLng(50.7, 8)];
+    const lines = [first, second];
+    const heights = [
+      [100.0, 110.0, 120.0, 130.0],
+      [200.0, 210.0, 220.0],
+    ];
+
+    test('divides the heights piece for piece with the points', () {
+      // Cuts at the third point of the first segment and the second of the
+      // second, counted along both.
+      const cuts = [2, 5];
+      final points = splitTracksAt(lines, cuts);
+      final divided = splitElevationsAt(lines, heights, cuts);
+
+      expect(divided, hasLength(points.length));
+      for (var stretch = 0; stretch < points.length; stretch++) {
+        expect(divided[stretch], hasLength(points[stretch].length));
+        for (var piece = 0; piece < points[stretch].length; piece++) {
+          expect(
+            divided[stretch][piece],
+            hasLength(points[stretch][piece].length),
+          );
+        }
+      }
+      expect(divided, [
+        [
+          [100, 110, 120],
+        ],
+        [
+          [120, 130],
+          [200, 210],
+        ],
+        [
+          [210, 220],
+        ],
+      ]);
+    });
+
+    test('a piece of a line without heights has none', () {
+      final divided = splitElevationsAt(lines, [heights.first, null], [2]);
+
+      expect(divided, [
+        [
+          [100, 110, 120],
+        ],
+        [
+          [120, 130],
+          null,
+        ],
+      ]);
+    });
+
+    test('heights that do not number their line count as none', () {
+      final divided = splitElevationsAt(lines, [
+        const [100, 110],
+        heights.last,
+      ], []);
+
+      expect(divided, [
+        [
+          null,
+          [200, 210, 220],
+        ],
+      ]);
+    });
+
+    test('no heights given is no heights anywhere', () {
+      expect(splitElevationsAt(lines, const [], [2]), [
+        [null],
+        [null, null],
+      ]);
+    });
+  });
 }

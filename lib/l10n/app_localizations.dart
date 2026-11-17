@@ -3727,7 +3727,7 @@ abstract class AppLocalizations {
   /// No description provided for @dataSourcesNote.
   ///
   /// In en, this message translates to:
-  /// **'Connection search uses openly licensed timetable and map data:'**
+  /// **'Connection search and route planning use openly licensed timetable and map data:'**
   String get dataSourcesNote;
 
   /// No description provided for @linkOpenFailed.
@@ -4641,6 +4641,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Photos'**
   String get photosTitle;
+
+  /// No description provided for @routePlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan route'**
+  String get routePlanTitle;
+
+  /// No description provided for @routePlanHintStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to set the start.'**
+  String get routePlanHintStart;
+
+  /// No description provided for @routePlanHintNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map to set the next point.'**
+  String get routePlanHintNext;
+
+  /// No description provided for @routePlanStraightHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawn as a straight line between your points.'**
+  String get routePlanStraightHint;
+
+  /// No description provided for @routePlanRouting.
+  ///
+  /// In en, this message translates to:
+  /// **'Finding the route…'**
+  String get routePlanRouting;
+
+  /// No description provided for @routePlanStartTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get routePlanStartTime;
+
+  /// No description provided for @routePlanStartsAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Start {time}'**
+  String routePlanStartsAt(String time);
+
+  /// No description provided for @routeProfileFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'On foot'**
+  String get routeProfileFoot;
+
+  /// No description provided for @routeProfileBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Bike'**
+  String get routeProfileBike;
+
+  /// No description provided for @routeProfileRoadBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Road bike'**
+  String get routeProfileRoadBike;
+
+  /// No description provided for @routeProfileGravelBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Gravel bike'**
+  String get routeProfileGravelBike;
+
+  /// No description provided for @routeProfileMountainBike.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain bike'**
+  String get routeProfileMountainBike;
+
+  /// No description provided for @routeProfileCar.
+  ///
+  /// In en, this message translates to:
+  /// **'Car'**
+  String get routeProfileCar;
+
+  /// No description provided for @routeModeSki.
+  ///
+  /// In en, this message translates to:
+  /// **'Ski'**
+  String get routeModeSki;
+
+  /// No description provided for @routeModeStraight.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight line'**
+  String get routeModeStraight;
+
+  /// No description provided for @routeFailureUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach the routing service.'**
+  String get routeFailureUnreachable;
+
+  /// No description provided for @routeFailureNoRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'No route found between these points.'**
+  String get routeFailureNoRoute;
+
+  /// No description provided for @routeFailureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The routing service answered with an error.'**
+  String get routeFailureFailed;
+
+  /// No description provided for @routeWaypointTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Waypoint'**
+  String get routeWaypointTitle;
+
+  /// No description provided for @routeWaypointName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get routeWaypointName;
+
+  /// No description provided for @routeWaypointAsPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to the plan as a place'**
+  String get routeWaypointAsPlace;
+
+  /// No description provided for @routeWaypointRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove point'**
+  String get routeWaypointRemove;
+
+  /// No description provided for @routeWaypointMove.
+  ///
+  /// In en, this message translates to:
+  /// **'Move point'**
+  String get routeWaypointMove;
+
+  /// No description provided for @routePlanMoveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the map where the point should go.'**
+  String get routePlanMoveHint;
+
+  /// No description provided for @routeSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Section'**
+  String get routeSectionTitle;
+
+  /// No description provided for @routeSectionAddPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a point here'**
+  String get routeSectionAddPoint;
+
+  /// No description provided for @routePlanPoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Points'**
+  String get routePlanPoints;
+
+  /// No description provided for @routePlanPointsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag a point to change the order.'**
+  String get routePlanPointsHint;
+
+  /// No description provided for @routePointStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get routePointStart;
+
+  /// No description provided for @routeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit route'**
+  String get routeEdit;
+
+  /// No description provided for @elevationProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Elevation profile'**
+  String get elevationProfile;
+
+  /// No description provided for @routeEditUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This route can\'t be opened in the planner. It may have been planned with a newer version of the app.'**
+  String get routeEditUnavailable;
+
+  /// No description provided for @trackSourceDrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Drawn by hand'**
+  String get trackSourceDrawn;
+
+  /// No description provided for @attributionBrouter.
+  ///
+  /// In en, this message translates to:
+  /// **'Routes by BRouter'**
+  String get attributionBrouter;
+
+  /// No description provided for @routePlannerSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Route planner'**
+  String get routePlannerSection;
+
+  /// No description provided for @routingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Routing server'**
+  String get routingServer;
+
+  /// No description provided for @routingServerAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get routingServerAddress;
+
+  /// No description provided for @routingServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A BRouter server, e.g. https://brouter.example.org/brouter'**
+  String get routingServerHint;
+
+  /// No description provided for @routingServerDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'{url} (default)'**
+  String routingServerDefault(String url);
+
+  /// No description provided for @routingServerInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That isn\'t the address of a server. It starts with https:// or http://.'**
+  String get routingServerInvalid;
+
+  /// No description provided for @routingServerReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the default server'**
+  String get routingServerReset;
+
+  /// No description provided for @routePlanUseMyLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Next point at my position'**
+  String get routePlanUseMyLocation;
 }
 
 class _AppLocalizationsDelegate

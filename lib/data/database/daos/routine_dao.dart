@@ -6,6 +6,7 @@ import '../../../core/format/civil_date.dart';
 import '../../../features/itinerary/entry_times.dart';
 import '../app_database.dart';
 import '../item_copy.dart';
+import '../route_plan.dart';
 import '../tables.dart';
 
 part 'routine_dao.g.dart';
@@ -288,6 +289,146 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
               tripId: const Value(null),
               groupId: Value(home),
               itemId: Value(home == null ? ids.first : null),
+            ),
+          );
+        }
+      }
+      return ids;
+    });
+  }
+
+  /// Writes a route the planner saved again over the entries it was read
+  /// from ([oldIds]), keeping the rows that stayed the same entry.
+  ///
+  /// [entries] is the route in plan order. One with a `keepId` among [oldIds]
+  /// **updates** that row with the columns its companion carries and leaves
+  /// the rest alone, so what the user hung on it stays: its notes, actual
+  /// times, title, color, costs, files and recordings. One without is
+  /// inserted. The old rows no entry keeps are deleted, with the rescue
+  /// [replaceJourneyLegs] gives a replaced run: their costs and files move to
+  /// the route's group, or its first entry.
+  ///
+  /// Everything lands in the slot the old entries held, in [entries] order,
+  /// in [groupId] when the route has one (a new one is opened for two entries
+  /// or more otherwise), inside the option the old ones were in. A route is
+  /// written on one day. Returns the ids in [entries] order.
+  Future<List<int>> rewriteRoute(
+    int tripId, {
+    required List<int> oldIds,
+    required List<({int? keepId, ItineraryItemsCompanion row})> entries,
+    int? groupId,
+  }) {
+    return transaction(() async {
+      final old = await (select(
+        itineraryItems,
+      )..where((i) => i.id.isIn(oldIds))).get();
+      if (old.isEmpty) {
+        throw ArgumentError.value(oldIds, 'oldIds', 'no such entries');
+      }
+      final day = old.first.date;
+      final branchId = old.first.alternativeId;
+      final base = old.map((i) => i.sortOrder).reduce((a, b) => a < b ? a : b);
+      final last = old.map((i) => i.sortOrder).reduce((a, b) => a > b ? a : b);
+      final colors = old.map((i) => i.colorValue).toSet();
+      final keptColor = colors.length == 1 ? colors.first : null;
+
+      final keep = {
+        for (final entry in entries)
+          if (entry.keepId case final id? when oldIds.contains(id)) id,
+      };
+      final doomed = [
+        for (final id in oldIds)
+          if (!keep.contains(id)) id,
+      ];
+
+      final rescued = await (select(
+        costs,
+      )..where((c) => c.itemId.isIn(doomed))).get();
+      if (rescued.isNotEmpty) {
+        await (update(costs)..where((c) => c.itemId.isIn(doomed))).write(
+          CostsCompanion(itemId: const Value(null), tripId: Value(tripId)),
+        );
+      }
+      final parkedFiles = doomed.isEmpty || entries.isEmpty
+          ? const <int>[]
+          : await attachedDatabase.attachmentDao.parkAttachmentsOf(doomed);
+      // Straight through the table, for the reason [replaceJourneyLegs] gives:
+      // the group is being kept.
+      for (final id in doomed) {
+        await (delete(itineraryItems)..where((i) => i.id.equals(id))).go();
+      }
+
+      final grew = entries.length - old.length;
+      if (grew > 0) {
+        await _shiftAfter(
+          tripId,
+          day: day,
+          after: last,
+          by: grew,
+          branchId: branchId,
+        );
+      }
+
+      final group =
+          groupId ??
+          (entries.length > 1
+              ? await into(
+                  itemGroups,
+                ).insert(ItemGroupsCompanion.insert(tripId: tripId))
+              : null);
+
+      final ids = <int>[];
+      for (final (i, entry) in entries.indexed) {
+        final keepId = entry.keepId;
+        if (keepId != null && keep.contains(keepId)) {
+          await (update(
+            itineraryItems,
+          )..where((item) => item.id.equals(keepId))).write(
+            entry.row.copyWith(
+              // Where a row stands, and in what, is the route's to say; the
+              // row's own identity and what hangs on it are not touched.
+              id: const Value.absent(),
+              tripId: const Value.absent(),
+              date: Value(day),
+              sortOrder: Value(base + i),
+              alternativeId: Value(branchId),
+              groupId: Value(group),
+            ),
+          );
+          ids.add(keepId);
+        } else {
+          ids.add(
+            await into(itineraryItems).insert(
+              entry.row.copyWith(
+                date: Value(day),
+                sortOrder: Value(base + i),
+                alternativeId: Value(branchId),
+                groupId: Value(group),
+                colorValue: Value(keptColor),
+              ),
+            ),
+          );
+        }
+      }
+
+      await attachedDatabase.tripDao.widenToCover(tripId, [
+        for (final entry in entries) ...companionDays(entry.row),
+      ]);
+
+      if (parkedFiles.isNotEmpty && ids.isNotEmpty) {
+        await attachedDatabase.attachmentDao.rehomeAttachments(
+          parkedFiles,
+          groupId: group,
+          itemId: group == null ? ids.first : null,
+        );
+      }
+      if (rescued.isNotEmpty && ids.isNotEmpty) {
+        for (final cost in rescued) {
+          await (update(costs)..where((c) => c.id.equals(cost.id))).write(
+            CostsCompanion(
+              tripId: const Value(null),
+              groupId: Value(group),
+              itemId: Value(group == null ? ids.first : null),
             ),
           );
         }
@@ -668,6 +809,9 @@ class RoutineDao extends DatabaseAccessor<AppDatabase> with _$RoutineDaoMixin {
             stopovers: const Value(null),
             runStops: const Value(null),
             sourceTripId: const Value(null),
+            // The way back is the way out, led through the same waypoints in
+            // the other order, as its line is its line turned round.
+            routePlan: Value(reversedRoutePlan(item.routePlan)),
           ),
         );
         // The line *does* travel, where the times did not: a path from A to B is

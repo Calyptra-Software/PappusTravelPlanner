@@ -69,6 +69,9 @@ ItineraryItemsCompanion copyItemPlan(
   toPlaceId: Value(item.toPlaceId),
   stopovers: Value(item.stopovers),
   runStops: Value(item.runStops),
+  // What the route planner made the entry from. Plan like the rest: the copy
+  // is the same route on another day, and can be opened in the planner too.
+  routePlan: Value(item.routePlan),
 );
 
 /// The days an entry about to be written spans: from its date through the day

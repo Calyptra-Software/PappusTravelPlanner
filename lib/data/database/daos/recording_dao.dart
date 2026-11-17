@@ -38,7 +38,7 @@ class RecordingDao extends DatabaseAccessor<AppDatabase>
   Future<void> addFixes(
     int recordingId,
     int segment,
-    List<({LatLng position, DateTime at})> fixes,
+    List<({LatLng position, DateTime at, double? altitude})> fixes,
   ) async {
     if (fixes.isEmpty) return;
     await batch((b) {
@@ -51,6 +51,7 @@ class RecordingDao extends DatabaseAccessor<AppDatabase>
             lat: fix.position.latitude,
             lon: fix.position.longitude,
             recordedAt: fix.at.toUtc().millisecondsSinceEpoch,
+            altitude: Value(fix.altitude),
           ),
         );
       }

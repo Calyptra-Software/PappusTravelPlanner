@@ -60,12 +60,18 @@ void main() {
       c.read(trackRecorderProvider);
 
   /// A fix [north] × 0.001° (about 111 m) up the line, [seconds] in.
-  Future<void> walk(double north, int seconds, {double accuracy = 5}) async {
+  Future<void> walk(
+    double north,
+    int seconds, {
+    double accuracy = 5,
+    double? altitude,
+  }) async {
     platform.emit(
       latitude: 53.5 + north * 0.001,
       longitude: 9.9,
       accuracy: accuracy,
       timestamp: clock.add(Duration(seconds: seconds)),
+      altitude: altitude,
     );
     await pumpEventQueue();
   }
@@ -167,6 +173,17 @@ void main() {
     expect((await db.select(db.recordings).getSingle()).stoppedAt, isNull);
   });
 
+  test('a fix keeps the height reported with it, and none it lacks', () async {
+    final (_, recorder) = open();
+    await recorder.start(tripId: null);
+
+    await walk(0, 0, altitude: 512.5);
+    await walk(1, 60);
+    await walk(2, 120, altitude: 530);
+
+    expect([for (final f in await stored()) f.altitude], [512.5, null, 530]);
+  });
+
   test('a recording the app was stopped in can be continued', () async {
     // What a fresh start finds: a recording with fixes and no stop.
     final id = await db.recordingDao.startRecording(
@@ -174,8 +191,12 @@ void main() {
       utcOffset: const Duration(hours: 2),
     );
     await db.recordingDao.addFixes(id, 0, [
-      (position: const LatLng(53.5, 9.9), at: clock),
-      (position: const LatLng(53.501, 9.9), at: clock.add(_minute)),
+      (position: const LatLng(53.5, 9.9), at: clock, altitude: null),
+      (
+        position: const LatLng(53.501, 9.9),
+        at: clock.add(_minute),
+        altitude: null,
+      ),
     ]);
 
     final (container, recorder) = open();
@@ -205,8 +226,12 @@ void main() {
         utcOffset: const Duration(hours: 2),
       );
       await db.recordingDao.addFixes(id, 0, [
-        (position: const LatLng(53.5, 9.9), at: clock),
-        (position: const LatLng(53.501, 9.9), at: clock.add(_minute)),
+        (position: const LatLng(53.5, 9.9), at: clock, altitude: null),
+        (
+          position: const LatLng(53.501, 9.9),
+          at: clock.add(_minute),
+          altitude: null,
+        ),
       ]);
       if (stopped) await db.recordingDao.stopRecording(id, clock.add(_minute));
       return id;

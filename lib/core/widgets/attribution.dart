@@ -21,6 +21,9 @@ const String kOsmCopyrightUrl = 'https://www.openstreetmap.org/copyright';
 /// asks applications to link.
 const String kTransitousSourcesUrl = 'https://transitous.org/sources/';
 
+/// BRouter, which computes the route planner's routes on OpenStreetMap data.
+const String kBrouterUrl = 'https://brouter.de/';
+
 /// The one-line attribution shown under the connection search: both sources,
 /// both tappable.
 class AttributionFooter extends StatelessWidget {
@@ -80,7 +83,7 @@ class _AttributionLink extends StatelessWidget {
   }
 }
 
-/// The same two sources as settings rows, where they stay reachable whether or
+/// The same sources as settings rows, the route planner's router among them, where they stay reachable whether or
 /// not a search is open.
 class DataSourcesSettings extends StatelessWidget {
   const DataSourcesSettings({super.key});
@@ -120,6 +123,13 @@ class DataSourcesSettings extends StatelessWidget {
           ),
           trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () => openExternalLink(context, kTransitousSourcesUrl),
+        ),
+        ListTile(
+          leading: const Icon(Icons.alt_route),
+          title: Text(l10n.attributionBrouter),
+          subtitle: Text(kBrouterUrl, style: theme.textTheme.bodySmall),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => openExternalLink(context, kBrouterUrl),
         ),
       ],
     );
