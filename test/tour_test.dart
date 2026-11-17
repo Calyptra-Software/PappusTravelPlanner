@@ -328,4 +328,29 @@ void main() {
       expect(tourTotals(const []).duration, isNull);
     });
   });
+
+  test('two sections traveled the same way are equal, and hash alike', () {
+    const a = RoutedMode(RouteProfile.foot);
+    const b = RoutedMode(RouteProfile.foot);
+    final c = StraightMode(TransportMode.ski);
+    final d = StraightMode(TransportMode.ski);
+
+    expect(a, b);
+    expect(a.hashCode, b.hashCode);
+    expect(c, d);
+    expect(c.hashCode, d.hashCode);
+    expect(c, isNot(const StraightMode()));
+    expect({
+      ...<SectionMode>[a, b, c, d],
+    }, hasLength(2));
+  });
+
+  test('an empty tour has no waypoints and no sections', () {
+    // Not a const: the constructor as code that runs.
+    // ignore: prefer_const_constructors
+    final empty = Tour.empty();
+
+    expect(empty.waypoints, isEmpty);
+    expect(empty.modes, isEmpty);
+  });
 }

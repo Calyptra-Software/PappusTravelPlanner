@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/features/attachments/attachment_import.dart';
 import 'package:travelplanner/data/database/route_plan.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/database/track_points.dart';
@@ -270,6 +273,35 @@ void main() {
       expect(await open((await items()).first), isNull);
     });
 
+    test(
+      'a place moved away from its leg\'s end parts the tour there',
+      () async {
+        final ids = await saveTour();
+        // The summit moved in the entry's form: it no longer stands where the
+        // walk ends, so nothing ties the descent to the walk any more.
+        await (db.update(db.itineraryItems)..where((i) => i.id.equals(ids[2])))
+            .write(const ItineraryItemsCompanion(lat: Value(46.5)));
+        final all = await items();
+
+        expect(tourItemsAround(all, all.first).map((i) => i.id), ids.take(2));
+        expect(tourItemsAround(all, all[2]).map((i) => i.id), [ids[2]]);
+        expect(tourItemsAround(all, all[3]).map((i) => i.id), [ids[3]]);
+      },
+    );
+
+    test('a line that will not decode is asked about again', () async {
+      final ids = await saveTour();
+      await (db.update(db.tracks)..where((t) => t.itemId.equals(ids[1]))).write(
+        const TracksCompanion(points: Value('\u0001')),
+      );
+
+      final saved = (await open((await items()).first))!;
+      final runs = tourRuns(saved.tour);
+
+      expect(saved.paths.containsKey(runKey(saved.tour, runs[0])), isTrue);
+      expect(saved.paths.containsKey(runKey(saved.tour, runs[1])), isFalse);
+    });
+
     test('a leg whose line was removed is asked about again', () async {
       final ids = await saveTour();
       await repo.deleteTracksForItem(ids.first);
@@ -492,6 +524,193 @@ void main() {
         expect(cost.groupId, (await items()).first.groupId);
       },
     );
+
+    test(
+      'a point added at the end is a new entry, and what follows moves down',
+      () async {
+        final ids = await saveTour();
+        final dinner = await repo.addItem(
+          ItineraryItemsCompanion.insert(
+            tripId: tripId,
+            date: _day,
+            kind: ItemKind.place,
+            title: const Value('Dinner'),
+            sortOrder: Value(await repo.nextSortOrder(tripId, _day)),
+          ),
+        );
+        final saved = await openInPlanner();
+        final planner = container.read(tourPlannerProvider(saved).notifier);
+
+        planner
+          ..selectMode(const RoutedMode(RouteProfile.car))
+          ..addWaypoint(_home);
+        await Future<void>.delayed(Duration.zero);
+        final newIds = await planner.save(tripId: tripId, date: _day);
+
+        expect(newIds!.take(4), ids, reason: 'the four that were there stay');
+        expect(newIds, hasLength(5));
+        final after = await items();
+        expect(after.map((i) => i.id), [...newIds, dinner]);
+        expect(after[4].kind, ItemKind.transport);
+        expect(after[4].groupId, after.first.groupId);
+      },
+    );
+
+    test('a route of one leg that grows gets a group of its own', () async {
+      final legIds = await repo.insertJourney(
+        tripId,
+        tourToItems(
+          [
+            TourLeg(
+              from: const TourWaypoint(_home),
+              to: const TourWaypoint(_carPark),
+              mode: _car,
+              path: _answer(const [_home, _carPark], minutes: 10),
+              waypoints: const [TourWaypoint(_home), TourWaypoint(_carPark)],
+            ),
+          ],
+          tripId: tripId,
+          date: _day,
+          resolveMode: (_) => null,
+          tourId: 'solo',
+        ).items,
+        shapes: [null],
+      );
+      expect((await items()).single.groupId, isNull);
+      final saved = (await open((await items()).single))!;
+      engine = _CountingEngine();
+      container = ProviderContainer(
+        overrides: [
+          routeEngineProvider.overrideWithValue(engine),
+          databaseProvider.overrideWithValue(db),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(tourPlannerProvider(saved), (_, _) {});
+      final planner = container.read(tourPlannerProvider(saved).notifier);
+      await Future<void>.delayed(Duration.zero);
+
+      planner
+        ..updateWaypoint(
+          1,
+          TourWaypoint(
+            _carPark,
+            name: 'Car park',
+            key: saved.tour.waypoints[1].key,
+          ),
+        )
+        ..selectMode(_foot)
+        ..addWaypoint(_summit);
+      await Future<void>.delayed(Duration.zero);
+      final ids = await planner.save(tripId: tripId, date: _day);
+
+      expect(ids!.first, legIds.single);
+      final group = (await items()).map((i) => i.groupId).toSet();
+      expect(group, hasLength(1));
+      expect(group.single, isNotNull);
+    });
+
+    test(
+      'a file on an entry the route no longer has moves to its group',
+      () async {
+        final ids = await saveTour();
+        await db.attachmentDao.addAttachment(
+          PreparedAttachment(
+            kind: AttachmentKind.document,
+            mimeType: 'application/pdf',
+            bytes: Uint8List.fromList(List.filled(16, 7)),
+            name: 'lift-pass.pdf',
+          ),
+          itemId: ids.last,
+        );
+        final saved = await openInPlanner();
+        final planner = container.read(tourPlannerProvider(saved).notifier);
+
+        planner.removeWaypoint(4);
+        await planner.save(tripId: tripId, date: _day);
+
+        final group = (await items()).first.groupId!;
+        final files = await db.attachmentDao
+            .watchAttachmentsForGroup(group)
+            .first;
+        expect(files.single.name, 'lift-pass.pdf');
+      },
+    );
+
+    test('a route of one leg that becomes another keeps its files', () async {
+      // A single leg, so no group to move a file to.
+      final ids = await repo.insertJourney(
+        tripId,
+        tourToItems(
+          [
+            TourLeg(
+              from: const TourWaypoint(_home),
+              to: const TourWaypoint(_carPark),
+              mode: const StraightMode(),
+              path: straightPath(const [_home, _carPark]),
+              waypoints: const [TourWaypoint(_home), TourWaypoint(_carPark)],
+            ),
+          ],
+          tripId: tripId,
+          date: _day,
+          resolveMode: (_) => null,
+          tourId: 'solo',
+        ).items,
+      );
+      await db.attachmentDao.addAttachment(
+        PreparedAttachment(
+          kind: AttachmentKind.document,
+          mimeType: 'application/pdf',
+          bytes: Uint8List.fromList(List.filled(16, 7)),
+          name: 'map.pdf',
+        ),
+        itemId: ids.single,
+      );
+      final saved = (await open((await items()).single))!;
+      engine = _CountingEngine();
+      container = ProviderContainer(
+        overrides: [
+          routeEngineProvider.overrideWithValue(engine),
+          databaseProvider.overrideWithValue(db),
+        ],
+      );
+      addTearDown(container.dispose);
+      container.listen(tourPlannerProvider(saved), (_, _) {});
+      final planner = container.read(tourPlannerProvider(saved).notifier);
+
+      // Started somewhere else: a leg that is not the old one.
+      planner
+        ..removeWaypoint(0)
+        ..selectMode(const StraightMode())
+        ..addWaypoint(_summit);
+      final newIds = await planner.save(tripId: tripId, date: _day);
+
+      expect(newIds!.single, isNot(ids.single));
+      final files = await db.attachmentDao
+          .watchAttachmentsForItem(newIds.single)
+          .first;
+      expect(files.single.name, 'map.pdf');
+    });
+
+    test('rewriting entries that are not there is refused', () async {
+      await expectLater(
+        repo.rewriteRoute(
+          tripId,
+          oldIds: const [999],
+          entries: [
+            (
+              keepId: null,
+              row: ItineraryItemsCompanion.insert(
+                tripId: tripId,
+                date: _day,
+                kind: ItemKind.transport,
+              ),
+            ),
+          ],
+        ),
+        throwsArgumentError,
+      );
+    });
 
     test(
       'a name changed in the entry form is what the planner shows',

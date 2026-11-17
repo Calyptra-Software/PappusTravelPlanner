@@ -236,4 +236,15 @@ void main() {
       LatLng(47.01, 11),
     ]);
   });
+
+  test('a stretch of one point answers with that point', () {
+    const laid = LaidProfile(
+      stretches: [
+        [(meters: 0, elevation: 500, position: LatLng(47, 11))],
+      ],
+      meters: 0,
+    );
+
+    expect(laid.at(0)!.elevation, 500);
+  });
 }

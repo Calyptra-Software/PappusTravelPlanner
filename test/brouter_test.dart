@@ -198,6 +198,13 @@ void main() {
       );
     });
 
+    test('a refusal names itself when printed', () {
+      expect(
+        const RouteEngineException('Routing timed out').toString(),
+        'RouteEngineException: Routing timed out',
+      );
+    });
+
     test('refuses a single waypoint without asking', () {
       final engine = BrouterRouteEngine(
         httpClient: MockClient((_) async => fail('must not ask')),

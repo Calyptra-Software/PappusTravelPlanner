@@ -968,6 +968,77 @@ void main() {
     });
   });
 
+  testWidgets('a point being moved can be put down on a line', (tester) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-200, 0));
+    await tapMap(tester, const Offset(200, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('waypoint-0')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Move point'));
+    await tester.pumpAndSettle();
+
+    // On the line between the two: the point goes there, no sheet opens.
+    await tapMap(tester, Offset.zero);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsNothing);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RoutePlannerScreen)),
+    );
+    final tour = container.read(tourPlannerProvider(null)).tour;
+    expect(tour.waypoints, hasLength(2));
+    expect(
+      tester.getCenter(find.byKey(const ValueKey('waypoint-0'))).dx,
+      closeTo(tester.getCenter(find.byType(FlutterMap)).dx, 25),
+    );
+  });
+
+  testWidgets('without a time of the day, the start time opens on now', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await tester.tap(find.text('Start time'));
+    await tester.pumpAndSettle();
+    expect(find.text('OK'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Start time'), findsOneWidget);
+  });
+
+  testWidgets('an error from the router is said as one', (tester) async {
+    engine.refusal = const RouteEngineException('boom', statusCode: 500);
+    await open(tester);
+
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('The routing service answered with an error.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a named point is listed by its name', (tester) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('waypoint-1')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '  Summit ');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Points'));
+    await tester.pumpAndSettle();
+
+    expect(inSheet(find.text('Summit')), findsOneWidget);
+  });
+
   testWidgets('the map keeps its size whatever the panel says', (tester) async {
     await open(tester);
     Size map() => tester.getSize(find.byType(FlutterMap));

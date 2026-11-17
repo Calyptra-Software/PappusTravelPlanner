@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
+import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
 import 'package:travelplanner/features/route_planner/application/routing_server_provider.dart';
 import 'package:travelplanner/features/route_planner/data/brouter_client.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
@@ -97,6 +98,28 @@ void main() {
       expect(container().read(routingServerProvider), kBrouterBaseUrl);
     });
 
+    test(
+      'the planner\'s router is built for it, and anew when it changes',
+      () async {
+        final c = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            appVersionProvider.overrideWithValue('1.2.3'),
+          ],
+        );
+        final first = c.read(routeEngineProvider);
+        expect(first, isA<BrouterRouteEngine>());
+
+        await c
+            .read(routingServerProvider.notifier)
+            .set(Uri.parse('https://routing.example.org/brouter'));
+
+        expect(identical(c.read(routeEngineProvider), first), isFalse);
+        // Closing the container closes the client the router holds.
+        c.dispose();
+      },
+    );
+
     test('is where the router sends its requests', () async {
       late Uri asked;
       final engine = BrouterRouteEngine(
@@ -177,6 +200,19 @@ void main() {
       await tester.tap(find.byTooltip('Use the default server'));
       await tester.pumpAndSettle();
       expect(find.text('https://brouter.de/brouter (default)'), findsOneWidget);
+    });
+
+    testWidgets('a cleared field goes back to the default', (tester) async {
+      await prefs.setString(
+        'route_planner_server',
+        'https://routing.example.org/brouter',
+      );
+      await pump(tester);
+
+      await enter(tester, '');
+
+      expect(find.text('https://brouter.de/brouter (default)'), findsOneWidget);
+      expect(prefs.getString('route_planner_server'), isNull);
     });
 
     testWidgets('says so when what was typed is not an address', (

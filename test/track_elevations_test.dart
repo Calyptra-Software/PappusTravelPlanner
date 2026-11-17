@@ -183,6 +183,30 @@ void main() {
     );
   });
 
+  test(
+    'heights that will not decode are not turned round with a line',
+    () async {
+      final routineId = await makeTrip(kind: TripKind.routine);
+      final legId = await makeLeg(routineId, date: kRoutineAnchorDay);
+      await db.trackDao.addTracks(legId, [(points: line, name: null)]);
+      // A string from somebody else's bundle that is not one of ours.
+      await (db.update(db.tracks)..where((t) => t.itemId.equals(legId))).write(
+        const TracksCompanion(elevations: Value('\u0001')),
+      );
+
+      final backId = await db.routineDao.duplicateReversed(
+        routineId,
+        title: 'Back',
+      );
+
+      final back =
+          (await db.itineraryDao.watchItemsForTrip(backId).first).single;
+      final track = (await tracksOf(back.id)).single;
+      expect(decodeTrackPoints(track.points).first, line.last);
+      expect(track.elevations, isNull);
+    },
+  );
+
   group('the bundle', () {
     test(
       'carries the heights and the route plan, and reads them back',

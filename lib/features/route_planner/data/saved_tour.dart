@@ -100,9 +100,10 @@ List<ItineraryItem> tourItemsAround(
       chains.add([item]);
     }
   }
+  // [opened] is among the candidates (it shares its own day, group, option
+  // and tour), so one chain holds it.
   return chains.firstWhere(
     (chain) => chain.any((item) => item.id == opened.id),
-    orElse: () => const [],
   );
 }
 
