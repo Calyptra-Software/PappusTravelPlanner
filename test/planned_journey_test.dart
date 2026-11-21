@@ -572,8 +572,11 @@ void main() {
         row(11, 'other', null),
         row(12, 'ski', null),
         row(13, null, 'Skitour'), // the user's own
+        row(14, 'gondola', null), // the timetable lists gondolas
+        row(15, 'chairLift', null),
+        row(16, 'dragLift', 'Schlepper'),
       ]);
-      expect(ids, {4, 10, 12});
+      expect(ids, {4, 10, 12, 15, 16});
     });
   });
 

@@ -1613,5 +1613,8 @@
   },
   "routingServerInvalid": "That isn't the address of a server. It starts with https:// or http://.",
   "routingServerReset": "Use the default server",
-  "routePlanUseMyLocation": "Next point at my position"
+  "routePlanUseMyLocation": "Next point at my position",
+  "modeGondola": "Gondola / cable car",
+  "modeChairLift": "Chairlift",
+  "modeDragLift": "Drag lift"
 }

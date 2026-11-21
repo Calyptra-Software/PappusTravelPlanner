@@ -202,3 +202,17 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   to repoint legacy legs. CRUD lives in `TransportModeDao`; the sharing bundle denormalizes a
   leg's mode to its portable key (built-in key or custom name), carrying custom icons in
   `TripBundle.modeIcons`.
+- **Lifts are three built-ins** (v45: `gondola`, `chairLift`, `dragLift`, appended to the
+  enum), told apart the way OpenStreetMap's `aerialway` values are, by how one rides: a cabin
+  (gondolas and aerial tramways together), a chair, or being pulled along the snow. They wear
+  the TransportGlyphs lift icons. A database from before v45 may already hold a mode the user
+  made for a lift; the migration **adopts** it rather than adding a twin
+  (`TransportModeDao.adoptOrAddBuiltins`): a custom mode wearing a lift glyph gains that
+  built-in's `builtinKey` and keeps its id, name and icon, so every leg filed under it is filed
+  under the built-in without being touched. Of several with the same glyph the one most legs
+  use is taken. Identity is read off the icon only because these three icons name exactly one
+  built-in each; a name is never read. A built-in nothing stands for is appended at the end of
+  the list. An older app importing a `.tpt` that names one of the three takes the key for a
+  custom mode's name, so it shows "gondola" rather than failing. The connection search files a
+  timetable's lifts (gondola, aerial lift) under the gondola built-in and its funiculars under
+  train, where both used to import with no mode.

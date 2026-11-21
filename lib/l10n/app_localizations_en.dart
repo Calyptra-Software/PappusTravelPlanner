@@ -2937,4 +2937,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get routePlanUseMyLocation => 'Next point at my position';
+
+  @override
+  String get modeGondola => 'Gondola / cable car';
+
+  @override
+  String get modeChairLift => 'Chairlift';
+
+  @override
+  String get modeDragLift => 'Drag lift';
 }

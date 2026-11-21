@@ -2955,4 +2955,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get routePlanUseMyLocation => 'Nächster Punkt an meiner Position';
+
+  @override
+  String get modeGondola => 'Gondel/Seilbahn';
+
+  @override
+  String get modeChairLift => 'Sessellift';
+
+  @override
+  String get modeDragLift => 'Schlepplift';
 }

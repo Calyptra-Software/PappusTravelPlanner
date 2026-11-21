@@ -13,6 +13,9 @@ const List<TransportMode> kTransportModeOrder = [
   TransportMode.walk,
   TransportMode.bike,
   TransportMode.ski,
+  TransportMode.gondola,
+  TransportMode.chairLift,
+  TransportMode.dragLift,
   TransportMode.car,
   TransportMode.taxi,
   TransportMode.bus,
@@ -141,6 +144,12 @@ extension TransportModeUi on TransportMode {
         return Icons.more_horiz;
       case TransportMode.ski:
         return Icons.downhill_skiing;
+      case TransportMode.gondola:
+        return kGondolaGlyph;
+      case TransportMode.chairLift:
+        return kChairliftGlyph;
+      case TransportMode.dragLift:
+        return kTbarGlyph;
     }
   }
 
@@ -170,6 +179,12 @@ extension TransportModeUi on TransportMode {
         return l10n.modeOther;
       case TransportMode.ski:
         return l10n.modeSki;
+      case TransportMode.gondola:
+        return l10n.modeGondola;
+      case TransportMode.chairLift:
+        return l10n.modeChairLift;
+      case TransportMode.dragLift:
+        return l10n.modeDragLift;
     }
   }
 }

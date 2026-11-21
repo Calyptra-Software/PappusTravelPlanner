@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **Lifts are transport modes.** Gondolas and cable cars, chairlifts and drag lifts are
+  built-in modes now. A mode you made for a lift with one of the lift icons becomes that mode,
+  keeping its name and its legs. Lifts and funiculars from the connection search get a mode
+  too.
 - **Groups fold away.** Tapping a group's label hides its entries behind one line with
   their number and time, the way a day folds.
 - **Plan a route on the map.** *Plan route* on a day opens a map: tap the points of a walk,

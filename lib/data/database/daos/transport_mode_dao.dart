@@ -13,6 +13,9 @@ const List<TransportMode> _seedOrder = [
   TransportMode.walk,
   TransportMode.bike,
   TransportMode.ski,
+  TransportMode.gondola,
+  TransportMode.chairLift,
+  TransportMode.dragLift,
   TransportMode.car,
   TransportMode.taxi,
   TransportMode.bus,
@@ -24,11 +27,21 @@ const List<TransportMode> _seedOrder = [
   TransportMode.other,
 ];
 
+/// The lift built-ins and the curated icon a custom mode for each wears: keys of
+/// `kTransportModeIcons` (the TransportGlyphs gondola, chairlift and T-bar),
+/// repeated here because the database layer does not import the UI. A test
+/// holds the two together.
+const Map<TransportMode, int> kLiftModeIconIds = {
+  TransportMode.gondola: 30,
+  TransportMode.chairLift: 31,
+  TransportMode.dragLift: 32,
+};
+
 /// Manages the reusable list of transport modes: the built-ins the database is
 /// seeded with plus any the user adds, and the add/rename/re-icon/reorder/delete
 /// operations behind the settings screen. The transport counterpart to the
 /// reason management in [CostDao].
-@DriftAccessor(tables: [TransportModes])
+@DriftAccessor(tables: [TransportModes, ItineraryItems])
 class TransportModeDao extends DatabaseAccessor<AppDatabase>
     with _$TransportModeDaoMixin {
   TransportModeDao(super.db);
@@ -127,6 +140,55 @@ class TransportModeDao extends DatabaseAccessor<AppDatabase>
       ),
       mode: InsertMode.insertOrIgnore,
     );
+  }
+
+  /// Gives this database the built-ins in [byIconId] that it lacks, each
+  /// keyed by the curated icon a custom mode for it would wear.
+  ///
+  /// A custom mode wearing that icon **becomes** the built-in rather than
+  /// standing beside a new one: the row gains the `builtinKey`, and keeps its
+  /// id, its name and its icon, so every leg already filed under it is filed
+  /// under the built-in and nothing has to be moved or merged. Of several
+  /// wearing the same icon, the one most legs use is taken (the first in the
+  /// list on a tie); the others stay custom. A built-in no custom mode stands
+  /// for is appended at the end of the list, as [restoreBuiltinMode] does. One
+  /// already present is left alone.
+  ///
+  /// Reading identity off an icon is an inference, made only for icons that
+  /// name exactly one built-in (the lift glyphs); a name is never read.
+  Future<void> adoptOrAddBuiltins(Map<TransportMode, int> byIconId) async {
+    for (final MapEntry(key: mode, value: iconId) in byIconId.entries) {
+      final present = await (select(
+        transportModes,
+      )..where((m) => m.builtinKey.equals(mode.name))).getSingleOrNull();
+      if (present != null) continue;
+      final candidates =
+          await (select(transportModes)
+                ..where((m) => m.builtinKey.isNull() & m.iconId.equals(iconId))
+                ..orderBy([(m) => OrderingTerm(expression: m.sortOrder)]))
+              .get();
+      TransportModeRow? chosen;
+      var mostLegs = -1;
+      for (final candidate in candidates) {
+        final legs = itineraryItems.id.count();
+        final row =
+            await (selectOnly(itineraryItems)
+                  ..addColumns([legs])
+                  ..where(itineraryItems.mode.equals(candidate.id)))
+                .getSingle();
+        final count = row.read(legs) ?? 0;
+        if (count > mostLegs) {
+          mostLegs = count;
+          chosen = candidate;
+        }
+      }
+      if (chosen == null) {
+        await restoreBuiltinMode(mode);
+        continue;
+      }
+      await (update(transportModes)..where((m) => m.id.equals(chosen!.id)))
+          .write(TransportModesCompanion(builtinKey: Value(mode.name)));
+    }
   }
 
   Future<int> _nextSortOrder() async {

@@ -166,7 +166,9 @@ entry without a time still has a place in the order.
 
 The transport modes are not a fixed list. Add, rename, re-icon, reorder, or remove them
 under **Settings → Transport modes**; the built-ins are only the starting set, and a mode
-you delete leaves its legs intact.
+you delete leaves its legs intact. Lifts have three: gondola or cable car, chairlift and drag
+lift. A mode you made yourself for a lift, with one of the lift icons, became that lift mode
+when the app was updated, keeping its name and its legs.
 
 ### One ticket, several legs
 

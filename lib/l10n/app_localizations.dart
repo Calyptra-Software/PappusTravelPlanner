@@ -4893,6 +4893,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next point at my position'**
   String get routePlanUseMyLocation;
+
+  /// No description provided for @modeGondola.
+  ///
+  /// In en, this message translates to:
+  /// **'Gondola / cable car'**
+  String get modeGondola;
+
+  /// No description provided for @modeChairLift.
+  ///
+  /// In en, this message translates to:
+  /// **'Chairlift'**
+  String get modeChairLift;
+
+  /// No description provided for @modeDragLift.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag lift'**
+  String get modeDragLift;
 }
 
 class _AppLocalizationsDelegate

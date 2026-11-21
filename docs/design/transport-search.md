@@ -136,8 +136,9 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   third condition in `plannedJourneys`). Taking an offer replaces the whole run, first end to
   last, so a run holding a leg the router never returns would lose it: a train grouped with a
   ski descent came back as a train and a bus, and a flight would become a train. The set is
-  `unroutedTransportModeIds`: ski, flight and taxi, the built-ins `builtinTransportModeFor`
-  never produces (a lift imports with no mode). Resolved from the table by `builtinKey`, like
+  `unroutedTransportModeIds`: ski, flight, taxi, chairlift and drag lift, the built-ins
+  `builtinTransportModeFor` never produces (a timetable's lift imports as a gondola, its
+  funicular as a train). Resolved from the table by `builtinKey`, like
   the street set. A null mode, `other` and a custom mode do not hold a run back, by the same
   "only what is positively known" rule. `plannedJourneyOf` again stays open, so such a run can
   still be looked up deliberately from its sheet.

@@ -1008,5 +1008,8 @@
   },
   "routingServerInvalid": "Das ist keine Server-Adresse. Sie beginnt mit https:// oder http://.",
   "routingServerReset": "Standard-Server verwenden",
-  "routePlanUseMyLocation": "Nächster Punkt an meiner Position"
+  "routePlanUseMyLocation": "Nächster Punkt an meiner Position",
+  "modeGondola": "Gondel/Seilbahn",
+  "modeChairLift": "Sessellift",
+  "modeDragLift": "Schlepplift"
 }
