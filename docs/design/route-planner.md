@@ -49,8 +49,8 @@ yet** (next section): that has to happen before a release carrying this.
   counted again over the joined heights, so it is what one request would give.
   BRouter routes a request through via points section by section too: on 2026-11-21 a
   hike near Garmisch through one via point gave the same 399 points, 7426 m and 6345 s
-  as its two sections asked apart (one route checked). A saved tour's stored line is the whole run's
-  (`runKey`) and is used while the run is unchanged; changing it asks about every
+  as its two sections asked apart (one route checked). A saved tour's stored line is the
+  whole run's (`runKey`) and is used while the run is unchanged; changing it asks about every
   section of that run once.
 - **A profile is not a transport mode.** `RouteProfile` is the question put to the router
   (road bike, gravel, mountain bike); several land on one built-in `TransportMode`, which

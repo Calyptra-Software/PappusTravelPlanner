@@ -205,7 +205,7 @@ lib/
     trips/                  # overview, calendar, create/edit, detail, participants, tags, routines
     itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
-    route_planner/          # planning a route on the map (BRouter; ski runs over Overpass data)
+    route_planner/          # planning a route on the map (BRouter; ski runs: Overpass)
     map/                    # trip map: pure feature building + the basemap and its screen
     attachments/            # photos and files on an entry, a group, or the trip; gallery
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies
