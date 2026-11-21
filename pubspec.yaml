@@ -31,7 +31,7 @@ dependencies:
   go_router: ^18.1.4
 
   # Persistence: a single portable SQLite file (WasmDatabase in browser storage on web).
-  drift: ^2.35.3
+  drift: ^2.35.4
   drift_flutter: ^0.3.1
   sqlite3_flutter_libs: ^0.6.0+eol
   shared_preferences: ^2.5.6
@@ -102,11 +102,15 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^6.0.0
-  sqlite3: ^3.7.0 # used by tests to build an old-schema DB for migration checks
+  # Used by tests to build an old-schema DB for migration checks. Held below 3.8,
+  # whose build hook links libm on Linux: built on glibc 2.38 or newer, the
+  # library then needs fmod@GLIBC_2.38, above the Linux bundle's glibc floor
+  # (docs/design/platform-builds.md). The cap binds the app's sqlite3 too.
+  sqlite3: ">=3.7.0 <3.8.0"
 
   # Code generation: `dart run build_runner build --delete-conflicting-outputs`.
   build_runner: ^2.17.1
-  drift_dev: ^2.35.2
+  drift_dev: ^2.35.3
   riverpod_generator: ^4.0.4
 
   # Launcher icons: `dart run flutter_launcher_icons` (see flutter_launcher_icons.yaml).

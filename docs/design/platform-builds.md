@@ -226,6 +226,13 @@ result.
   a build on Ubuntu 24.04 (glibc 2.39) measured GLIBC_2.34, which is why CI builds on
   `ubuntu-latest` and not on an older runner. A new plugin can raise the floor without
   anything else noticing, and raising it on purpose means editing that line and the README.
+  `package:sqlite3` 3.8.0 did exactly that: its build hook started linking libm on Linux,
+  so the compiled library now carries a versioned reference to `fmod`, which on a glibc
+  2.38 build machine is `fmod@GLIBC_2.38` (measured: the same `sqlite3.c` compiled with
+  3.7's flags references at most GLIBC_2.34, with 3.8's GLIBC_2.38). Built on
+  `ubuntu-latest`, that would drop Ubuntu 22.04 and Debian 12, so `pubspec.yaml` holds
+  `sqlite3` below 3.8 and `dependabot.yml` ignores 3.8 and later. Lifting that cap needs a
+  hook that stops pinning `fmod` to 2.38, or a decision to raise the floor.
   appimagetool and its type2 runtime are pinned by version **and** digest. Unpinned, the
   tool fetches the runtime from a rolling release at build time, and that runtime is
   embedded in every AppImage handed out. The runtime is static, so users need no `libfuse2`.
