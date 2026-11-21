@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
@@ -16,9 +17,14 @@ import 'package:travelplanner/features/route_planner/data/tour_mapper.dart';
 import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
+import 'package:travelplanner/features/route_planner/presentation/route_planner_screen.dart';
 import 'package:travelplanner/features/route_planner/tour_entries.dart';
+import 'package:travelplanner/l10n/app_localizations.dart';
 
 const _ski = SkiMode(PisteDifficulty.intermediate);
+
+String _english(PisteDifficulty difficulty) =>
+    pisteColorName(lookupAppLocalizations(const Locale('en')), difficulty);
 
 LatLng _p(int i) => LatLng(47 + i / 100, 11);
 
@@ -62,6 +68,9 @@ RoutedPath _day({
       fromName: 'Berg',
       lengthMeters: 2000,
       duration: Duration(minutes: 12),
+      pistes: [
+        PisteStretch(name: 'Piste 1', difficulty: PisteDifficulty.intermediate),
+      ],
     ),
     const PathSegment(
       start: 4,
@@ -79,6 +88,9 @@ RoutedPath _day({
       name: secondPiste,
       lengthMeters: 1000,
       duration: const Duration(minutes: 10),
+      pistes: [
+        PisteStretch(name: secondPiste, difficulty: PisteDifficulty.easy),
+      ],
     ),
   ],
   waypointIndices: reached,
@@ -136,6 +148,7 @@ class _FakeSkiRouter implements SkiRouter {
     toName: segment.toName,
     lengthMeters: segment.lengthMeters,
     duration: minutes == null ? segment.duration : Duration(minutes: minutes),
+    pistes: segment.pistes,
   );
 
   @override
@@ -251,6 +264,7 @@ void main() {
         resolveMode: builtinModeResolver(await repo.transportModes()),
         tourId: 't1',
         startMinutes: 9 * 60,
+        pisteColor: _english,
       );
       return repo.insertJourney(
         tripId,
@@ -304,6 +318,8 @@ void main() {
       ]);
       // Timed one after the other from nine.
       expect(rows.map((r) => r.startMinutes), [540, 550, 562, 570]);
+      // A descent's notes say how hard it is.
+      expect(rows.map((r) => r.notes), [null, 'Red', null, 'Blue']);
       final plans = [for (final r in rows) decodeRoutePlan(r.routePlan)!];
       expect(plans.map((p) => p.ski).toSet(), {'intermediate'});
       expect(plans.map((p) => p.part), [
@@ -436,6 +452,30 @@ void main() {
         expect(newIds.last, isNot(ids.last));
         expect((await items()).last.title, 'Umfahrung');
       });
+
+      test(
+        'a kept descent keeps its notes, a new one is told its grade',
+        () async {
+          await save();
+          final second = (await items())[1];
+          await (db.update(db.itineraryItems)
+                ..where((i) => i.id.equals(second.id)))
+              .write(const ItineraryItemsCompanion(notes: Value('Wax first')));
+          final (_, planner) = await openInPlanner();
+          router.secondPiste = 'Umfahrung';
+
+          planner.moveWaypoint(2, const LatLng(47.0601, 11));
+          await Future<void>.delayed(Duration.zero);
+          await planner.save(tripId: tripId, date: day, pisteColor: _english);
+
+          expect((await items()).map((r) => r.notes), [
+            null,
+            'Wax first',
+            null,
+            'Blue',
+          ]);
+        },
+      );
     });
   });
 

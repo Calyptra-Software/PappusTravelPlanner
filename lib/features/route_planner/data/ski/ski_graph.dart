@@ -501,6 +501,7 @@ class SkiGraph {
           name: part.name,
           fromName: part.fromName,
           toName: part.toName,
+          pistes: part.kind == SegmentKind.descent ? part.pistes : const [],
         ),
       );
     }
@@ -585,7 +586,8 @@ class _Part {
       points = [...edge.points],
       meters = edge.meters,
       seconds = edge.seconds,
-      _names = [?edge.way?.name];
+      _names = [?edge.way?.name],
+      pistes = [?_stretchOf(edge)];
 
   _Part.walk(LatLng from, LatLng to, {this.fromName, this.toName})
     : kind = SegmentKind.walk,
@@ -593,7 +595,8 @@ class _Part {
       points = [from, to],
       meters = _meters(from, to),
       seconds = _meters(from, to) / kSkiWalkSpeed,
-      _names = [];
+      _names = [],
+      pistes = [];
 
   final SegmentKind kind;
   final SkiWay? way;
@@ -604,12 +607,25 @@ class _Part {
   String? toName;
   final List<String> _names;
 
+  /// The pistes skied down, in order ([PathSegment.pistes]).
+  final List<PisteStretch> pistes;
+
+  /// The stretch of piste [edge] is, if it is one.
+  static PisteStretch? _stretchOf(_Edge edge) =>
+      edge.kind == SegmentKind.descent
+      ? PisteStretch(name: edge.way?.name, difficulty: edge.way?.difficulty)
+      : null;
+
   void add(_Edge edge) {
     points.addAll(edge.points.skip(1));
     meters += edge.meters;
     seconds += edge.seconds;
     if (edge.way?.name case final name? when _names.lastOrNull != name) {
       _names.add(name);
+    }
+    if (_stretchOf(edge) case final stretch?
+        when pistes.lastOrNull != stretch) {
+      pistes.add(stretch);
     }
   }
 
@@ -624,6 +640,10 @@ class _Part {
     for (final name in other._names) {
       if (_names.lastOrNull != name) _names.add(name);
     }
+    final joined = joinStretches(pistes, other.pistes);
+    pistes
+      ..clear()
+      ..addAll(joined);
     toName = other.toName;
   }
 
@@ -634,6 +654,10 @@ class _Part {
     seconds += other.seconds;
     if (kind == SegmentKind.lift) return;
     _names.insertAll(0, other._names);
+    final joined = joinStretches(other.pistes, pistes);
+    pistes
+      ..clear()
+      ..addAll(joined);
     fromName = other.fromName;
   }
 

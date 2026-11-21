@@ -139,6 +139,15 @@ yet** (next section): that has to happen before a release carrying this.
   the path passes one there, else one the router chose (`TourWaypoint.byRouter`), named
   after its station when the data names one. All of a ski day's legs land in one group,
   saved expanded like every group; folding it is the user's choice.
+- **A descent's notes name its grades as colors.** `PathSegment.pistes` keeps each stretch
+  of a descent with its name and grade, and `pisteNote` writes them into the notes when the
+  leg is saved: the color alone where every graded stretch shows one, else each run of one
+  color after its pistes' names; stretches without a grade are left out. The colors are
+  the Alps' (`pisteColorName`: advanced and expert both black, freeride yellow), not North
+  America's, where `easy` is green. Plain text, not a styled line: notes are the user's,
+  editable, and go into the PDF, the calendar and the widget as they are. An entry kept on
+  saving again keeps its notes; only a new descent is written one. The plan keeps no grades,
+  so a run rebuilt from its legs has none until it is routed again.
 - **It is read back from its legs.** Each leg's `RoutePlan` keeps the grade (`ski`), what
   the leg is (`part`: `descent`, `walk` or the lift's mode) and which of its points the
   router chose (`router`). `savedTourOf` leaves those points out, so the legs join into

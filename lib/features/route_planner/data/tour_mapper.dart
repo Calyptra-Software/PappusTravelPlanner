@@ -4,6 +4,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
+import '../domain/piste_note.dart';
 import '../domain/routed_path.dart';
 import '../domain/tour.dart';
 import '../tour_entries.dart';
@@ -45,6 +46,10 @@ class MappedTour {
 /// drawn by hand) and at midnight: what comes after is left untimed, since a
 /// time behind an unknown stretch would be invented. A leg reaching past
 /// midnight keeps its arrival through `endDayOffset`.
+///
+/// With [pisteColor] a descent's notes name the colors of its pistes
+/// ([pisteNote]). Where there is nothing to say the notes are absent, not
+/// null, as the title is.
 MappedTour tourToItems(
   List<TourEntry> entries, {
   required int tripId,
@@ -52,6 +57,7 @@ MappedTour tourToItems(
   required int? Function(TransportMode mode) resolveMode,
   required String tourId,
   int? startMinutes,
+  PisteColorName? pisteColor,
 }) {
   final items = <ItineraryItemsCompanion>[];
   final shapes = <String?>[];
@@ -92,6 +98,10 @@ MappedTour tourToItems(
             : (path.duration!.inSeconds / 60).ceil();
         final end = start == null || minutes == null ? null : start + minutes;
         final builtin = entry.transportMode;
+        final segment = entry.part?.segment;
+        final notes = pisteColor == null || segment == null
+            ? null
+            : pisteNote(segment.pistes, pisteColor);
         items.add(
           ItineraryItemsCompanion.insert(
             tripId: tripId,
@@ -100,6 +110,7 @@ MappedTour tourToItems(
             // Absent rather than null: a leg saved again keeps the title
             // somebody gave it.
             title: title == null ? const Value.absent() : Value(title),
+            notes: notes == null ? const Value.absent() : Value(notes),
             mode: Value(builtin == null ? null : resolveMode(builtin)),
             fromLocation: Value(_name(from)),
             toLocation: Value(_name(to)),

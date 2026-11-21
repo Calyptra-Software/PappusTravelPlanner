@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 
 LatLng _p(double i) => LatLng(47 + i / 100, 11);
@@ -13,6 +14,7 @@ PathSegment _segment(
   String? from,
   String? to,
   int minutes = 5,
+  List<PisteStretch> pistes = const [],
 }) => PathSegment(
   start: start,
   end: end,
@@ -23,6 +25,7 @@ PathSegment _segment(
   toName: to,
   lengthMeters: 1000,
   duration: Duration(minutes: minutes),
+  pistes: pistes,
 );
 
 void main() {
@@ -117,6 +120,35 @@ void main() {
     expect(descent.duration, const Duration(minutes: 10));
     expect(descent.lengthMeters, 2000);
     expect(joined.waypointIndices, [0, 2, 5]);
+  });
+
+  test('a descent across the joint runs down the pistes of both', () {
+    const red = PisteStretch(
+      name: 'Rot',
+      difficulty: PisteDifficulty.intermediate,
+    );
+    const black = PisteStretch(
+      name: 'Schwarz',
+      difficulty: PisteDifficulty.advanced,
+    );
+    final joined = joinPaths([
+      RoutedPath(
+        points: [_p(0), _p(1)],
+        lengthMeters: 1000,
+        segments: [
+          _segment(0, 1, SegmentKind.descent, pistes: [red]),
+        ],
+      ),
+      RoutedPath(
+        points: [_p(1), _p(2)],
+        lengthMeters: 1000,
+        segments: [
+          _segment(0, 1, SegmentKind.descent, pistes: [red, black]),
+        ],
+      ),
+    ]);
+
+    expect(joined.segments!.single.pistes, [red, black]);
   });
 
   test('where the ends do not meet, the first segment takes in the gap', () {

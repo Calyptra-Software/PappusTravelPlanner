@@ -111,6 +111,12 @@ class _FakeSkiRouter implements SkiRouter {
           fromName: 'Bergstation',
           lengthMeters: 2000,
           duration: Duration(minutes: 12),
+          pistes: [
+            PisteStretch(
+              name: 'Talabfahrt',
+              difficulty: PisteDifficulty.intermediate,
+            ),
+          ],
         ),
       ],
       waypointIndices: [0, 2],
@@ -344,6 +350,7 @@ void main() {
     expect(items.map(modeOf), ['chairLift', 'ski']);
     expect(items.first.toLocation, 'Bergstation');
     expect(items.last.fromLocation, 'Bergstation');
+    expect(items.map((i) => i.notes), [null, 'Red']);
     expect(items.map((i) => i.groupId).toSet(), hasLength(1));
   });
 

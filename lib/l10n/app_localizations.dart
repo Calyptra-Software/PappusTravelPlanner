@@ -4786,6 +4786,42 @@ abstract class AppLocalizations {
   /// **'Reload pistes and lifts'**
   String get routeSkiReload;
 
+  /// No description provided for @routePisteGreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get routePisteGreen;
+
+  /// A piste's color as the trail map shows it, written into a descent's notes alone or after the piste's name ("Kandahar: Red").
+  ///
+  /// In en, this message translates to:
+  /// **'Blue'**
+  String get routePisteBlue;
+
+  /// No description provided for @routePisteRed.
+  ///
+  /// In en, this message translates to:
+  /// **'Red'**
+  String get routePisteRed;
+
+  /// No description provided for @routePisteBlack.
+  ///
+  /// In en, this message translates to:
+  /// **'Black'**
+  String get routePisteBlack;
+
+  /// No description provided for @routePisteYellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get routePisteYellow;
+
+  /// No description provided for @routePisteExtreme.
+  ///
+  /// In en, this message translates to:
+  /// **'Extreme'**
+  String get routePisteExtreme;
+
   /// No description provided for @routeFailureUnreachable.
   ///
   /// In en, this message translates to:

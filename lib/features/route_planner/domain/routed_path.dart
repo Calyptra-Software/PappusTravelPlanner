@@ -2,6 +2,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../data/database/tables.dart';
 import '../../map/elevation.dart';
+import 'piste_difficulty.dart';
 
 /// What a router answered for one stretch: the line, and what it measured
 /// along it.
@@ -123,6 +124,7 @@ RoutedPath joinPaths(List<RoutedPath> paths) {
           name: segment.name,
           fromName: segment.fromName,
           toName: segment.toName,
+          pistes: segment.pistes,
         );
         final last = segments.lastOrNull;
         if (index == 0 &&
@@ -181,6 +183,7 @@ PathSegment _merged(PathSegment a, PathSegment b) {
     name: names.isEmpty ? null : names.join(', '),
     fromName: a.fromName,
     toName: b.toName,
+    pistes: joinStretches(a.pistes, b.pistes),
   );
 }
 
@@ -210,6 +213,7 @@ class PathSegment {
     this.name,
     this.fromName,
     this.toName,
+    this.pistes = const [],
   }) : assert(end > start),
        assert((kind == SegmentKind.lift) == (liftMode != null));
 
@@ -232,4 +236,35 @@ class PathSegment {
   /// them.
   final String? fromName;
   final String? toName;
+
+  /// The pistes a [SegmentKind.descent] runs down, in order, each stretch of
+  /// one name and grade once ([joinStretches]). Empty on any other segment.
+  final List<PisteStretch> pistes;
+}
+
+/// A stretch of a descent down one piste, as the map data names and grades
+/// it; either may be missing.
+class PisteStretch {
+  const PisteStretch({this.name, this.difficulty});
+
+  final String? name;
+  final PisteDifficulty? difficulty;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PisteStretch &&
+      other.name == name &&
+      other.difficulty == difficulty;
+
+  @override
+  int get hashCode => Object.hash(name, difficulty);
+}
+
+/// [a] followed by [b], a stretch that continues the one before it taken in.
+List<PisteStretch> joinStretches(List<PisteStretch> a, List<PisteStretch> b) {
+  final joined = [...a];
+  for (final stretch in b) {
+    if (joined.lastOrNull != stretch) joined.add(stretch);
+  }
+  return joined;
 }

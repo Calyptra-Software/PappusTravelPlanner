@@ -375,7 +375,8 @@ and on foot for a few steps where a piste ends beside a lift. *Pistes:* under th
 sets the hardest grade the whole route takes, all pistes unless you choose otherwise;
 freeride routes only when chosen. Each lift ride and each descent becomes a leg of its
 own, named after the lift or the pistes, under the gondola, chairlift, drag lift or ski
-mode. The pistes and lifts of the area are loaded the first time a ski section is routed
+mode. A descent's notes give the color of its pistes: the color alone if they all share
+one, else each piste with its color. The pistes and lifts of the area are loaded the first time a ski section is routed
 there and kept for a month; *Reload pistes and lifts* on a ski section loads them
 afresh.
 

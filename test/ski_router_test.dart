@@ -230,6 +230,45 @@ void main() {
       );
     });
 
+    test('a descent keeps the grade of each piste it runs down', () {
+      final graph = _graph([
+        _way(1, [(1, 0, 0), (2, 10, 0)], {'aerialway': 'chair_lift'}),
+        // One piste in two ways, as the map data often has it.
+        _way(
+          2,
+          [(2, 10, 0), (3, 6, 1)],
+          {
+            'piste:type': 'downhill',
+            'name': 'Oben',
+            'piste:difficulty': 'intermediate',
+          },
+        ),
+        _way(
+          3,
+          [(3, 6, 1), (4, 3, 1)],
+          {
+            'piste:type': 'downhill',
+            'name': 'Oben',
+            'piste:difficulty': 'intermediate',
+          },
+        ),
+        _way(
+          4,
+          [(4, 3, 1), (1, 0, 0)],
+          {'piste:type': 'downhill', 'piste:difficulty': 'advanced'},
+        ),
+      ]);
+
+      final path = graph.route([_at(0, 0), _at(10, 0), _at(0, 0)]);
+
+      final [ride, descent] = path.segments!;
+      expect(ride.pistes, isEmpty);
+      expect(descent.pistes, const [
+        PisteStretch(name: 'Oben', difficulty: PisteDifficulty.intermediate),
+        PisteStretch(difficulty: PisteDifficulty.advanced),
+      ]);
+    });
+
     test('a ride takes its tagged time and the time to get on', () {
       final graph = _graph(valleyAndTop(liftTags: {'aerialway:duration': '6'}));
 

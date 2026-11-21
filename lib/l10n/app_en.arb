@@ -1593,6 +1593,15 @@
   "routeSkiAllPistes": "all",
   "routeSkiWithFreeride": "all, and freeride routes",
   "routeSkiReload": "Reload pistes and lifts",
+  "routePisteGreen": "Green",
+  "routePisteBlue": "Blue",
+  "@routePisteBlue": {
+    "description": "A piste's color as the trail map shows it, written into a descent's notes alone or after the piste's name (\"Kandahar: Red\")."
+  },
+  "routePisteRed": "Red",
+  "routePisteBlack": "Black",
+  "routePisteYellow": "Yellow",
+  "routePisteExtreme": "Extreme",
   "routeFailureUnreachable": "Couldn't reach the routing service.",
   "routeFailureNoRoute": "No route found between these points.",
   "routeFailureFailed": "The routing service answered with an error.",

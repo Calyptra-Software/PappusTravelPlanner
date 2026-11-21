@@ -8,6 +8,7 @@ import '../../../core/providers.dart';
 import '../data/saved_tour.dart';
 import '../data/tour_mapper.dart';
 import '../domain/piste_difficulty.dart';
+import '../domain/piste_note.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
 import '../domain/tour.dart';
@@ -356,6 +357,9 @@ class TourPlannerController extends Notifier<TourPlannerState> {
   /// one the tour no longer has is removed, its costs and files moved to the
   /// tour's group.
   ///
+  /// [pisteColor] names the colors a new descent's notes give its pistes; an
+  /// entry kept keeps the notes it has, whatever they say.
+  ///
   /// The modes are read once from the repository, not from the autoDispose
   /// provider, for the reason `TransportSearchController._modes` gives.
   Future<List<int>?> save({
@@ -363,6 +367,7 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     required DateTime date,
     int? startMinutes,
     int? alternativeId,
+    PisteColorName? pisteColor,
   }) async {
     final entries = state.entries;
     if (entries == null) return null;
@@ -375,6 +380,7 @@ class TourPlannerController extends Notifier<TourPlannerState> {
       resolveMode: builtinModeResolver(await repository.transportModes()),
       tourId: saved?.tourId ?? _newTourId(),
       startMinutes: startMinutes,
+      pisteColor: pisteColor,
     );
     if (saved != null) {
       final kept = keptEntryIds(entries, saved);
@@ -385,15 +391,19 @@ class TourPlannerController extends Notifier<TourPlannerState> {
           for (final (index, row) in mapped.items.indexed)
             (
               keepId: kept[index],
-              // Without a start time the tour says nothing about when, so an
-              // entry it keeps keeps the times it has.
-              row: kept[index] != null && startMinutes == null
-                  ? row.copyWith(
-                      startMinutes: const Value.absent(),
-                      endMinutes: const Value.absent(),
-                      endDayOffset: const Value.absent(),
-                    )
-                  : row,
+              // An entry kept keeps its notes, which are the user's once
+              // written; and without a start time the tour says nothing
+              // about when, so it keeps the times it has too.
+              row: switch (kept[index]) {
+                null => row,
+                _ when startMinutes == null => row.copyWith(
+                  notes: const Value.absent(),
+                  startMinutes: const Value.absent(),
+                  endMinutes: const Value.absent(),
+                  endDayOffset: const Value.absent(),
+                ),
+                _ => row.copyWith(notes: const Value.absent()),
+              },
             ),
         ],
         groupId: saved.groupId,

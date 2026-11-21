@@ -2879,6 +2879,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeSkiReload => 'Reload pistes and lifts';
 
   @override
+  String get routePisteGreen => 'Green';
+
+  @override
+  String get routePisteBlue => 'Blue';
+
+  @override
+  String get routePisteRed => 'Red';
+
+  @override
+  String get routePisteBlack => 'Black';
+
+  @override
+  String get routePisteYellow => 'Yellow';
+
+  @override
+  String get routePisteExtreme => 'Extreme';
+
+  @override
   String get routeFailureUnreachable => 'Couldn\'t reach the routing service.';
 
   @override

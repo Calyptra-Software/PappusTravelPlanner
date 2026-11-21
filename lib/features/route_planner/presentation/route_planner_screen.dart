@@ -97,6 +97,20 @@ const List<PisteDifficulty> kPlannerSkiDifficulties = [
   PisteDifficulty.extreme,
 ];
 
+/// The color a trail map in the Alps marks [difficulty] with. OSM's grades
+/// are not colors (`PisteDifficulty`); this is the European reading, which
+/// North America does not share.
+String pisteColorName(AppLocalizations l10n, PisteDifficulty difficulty) =>
+    switch (difficulty) {
+      PisteDifficulty.novice => l10n.routePisteGreen,
+      PisteDifficulty.easy => l10n.routePisteBlue,
+      PisteDifficulty.intermediate => l10n.routePisteRed,
+      PisteDifficulty.advanced ||
+      PisteDifficulty.expert => l10n.routePisteBlack,
+      PisteDifficulty.freeride => l10n.routePisteYellow,
+      PisteDifficulty.extreme => l10n.routePisteExtreme,
+    };
+
 /// Planning a tour by tapping the map.
 ///
 /// A tap sets the next waypoint, reached by the mode selected below the map;
@@ -291,6 +305,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    // Read now: the names are asked for after the save's first await.
+    final l10n = AppLocalizations.of(context);
     final ids = await ref
         .read(_planner.notifier)
         .save(
@@ -298,6 +314,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
           date: widget.day,
           startMinutes: _startMinutes,
           alternativeId: widget.alternativeId,
+          pisteColor: (difficulty) => pisteColorName(l10n, difficulty),
         );
     if (!mounted) return;
     if (ids == null) {

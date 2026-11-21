@@ -2894,6 +2894,24 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routeSkiReload => 'Pisten und Lifte neu laden';
 
   @override
+  String get routePisteGreen => 'Grün';
+
+  @override
+  String get routePisteBlue => 'Blau';
+
+  @override
+  String get routePisteRed => 'Rot';
+
+  @override
+  String get routePisteBlack => 'Schwarz';
+
+  @override
+  String get routePisteYellow => 'Gelb';
+
+  @override
+  String get routePisteExtreme => 'Extrem';
+
+  @override
   String get routeFailureUnreachable =>
       'Der Routing-Dienst ist nicht erreichbar.';
 
