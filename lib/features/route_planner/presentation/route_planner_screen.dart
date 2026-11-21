@@ -282,11 +282,12 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     }
   }
 
-  /// The line a run is drawn as: the router's, or straight through its
-  /// waypoints while there is none.
-  List<LatLng> _linePoints(TourPlannerState state, TourRun run) =>
-      state.pathOf(run)?.points ??
-      [for (final waypoint in run.waypointsOf(state.tour)) waypoint.position];
+  /// The line a run is drawn as: the router's, with a straight line for each
+  /// section still waiting for its answer.
+  List<LatLng> _linePoints(TourPlannerState state, TourRun run) => [
+    for (final (index, line) in state.linesOf(run).indexed)
+      ...index == 0 ? line.points : line.points.skip(1),
+  ];
 
   Future<void> _save() async {
     setState(() => _saving = true);
@@ -424,7 +425,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           minimumHitbox: kLineHitbox,
                           polylines: [
                             for (final (index, run) in state.runs.indexed)
-                              _lineOf(
+                              ..._linesOf(
                                 state,
                                 run,
                                 index,
@@ -585,27 +586,28 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   }
 
   /// One run's line. Dashed like every line that is a proposal and not a
-  /// record; a routed run still waiting for its answer is a thin dotted chord,
-  /// so it reads as "not known yet" rather than as the way.
-  Polyline<int> _lineOf(
+  /// record; a section still waiting for its answer is a thin dotted chord,
+  /// so it reads as "not known yet" rather than as the way, beside the
+  /// sections of the run that are known.
+  List<Polyline<int>> _linesOf(
     TourPlannerState state,
     TourRun run,
     int index,
     Color casing,
-  ) {
-    final known = state.pathOf(run) != null || run.mode is StraightMode;
-    return Polyline<int>(
-      points: _linePoints(state, run),
-      hitValue: index,
-      strokeWidth: known ? 3.5 : 2,
-      pattern: known
-          ? StrokePattern.dashed(segments: const [7, 5])
-          : const StrokePattern.dotted(),
-      color: known ? widget.color : const Color(0xFF5F6368),
-      borderStrokeWidth: known ? 2 : 0,
-      borderColor: casing,
-    );
-  }
+  ) => [
+    for (final (:points, :known) in state.linesOf(run))
+      Polyline<int>(
+        points: points,
+        hitValue: index,
+        strokeWidth: known ? 3.5 : 2,
+        pattern: known
+            ? StrokePattern.dashed(segments: const [7, 5])
+            : const StrokePattern.dotted(),
+        color: known ? widget.color : const Color(0xFF5F6368),
+        borderStrokeWidth: known ? 2 : 0,
+        borderColor: casing,
+      ),
+  ];
 }
 
 /// A waypoint: its number in the tour on a ringed disc in map colors. The ring

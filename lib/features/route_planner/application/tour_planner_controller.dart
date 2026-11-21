@@ -32,22 +32,79 @@ class TourPlannerState {
   /// changes nothing already planned.
   final SectionMode mode;
 
-  /// The router's answers, by [runKey]. An answer stays after its run is gone,
-  /// so taking a waypoint back and setting it again asks nothing twice.
+  /// The router's answers, by [sectionKey], and by [runKey] where a whole run
+  /// was answered at once (a saved tour's stored line). An answer stays after
+  /// its section is gone, so taking a waypoint back and setting it again asks
+  /// nothing twice.
   final Map<String, RoutedPath> paths;
 
-  /// The runs asked about and not answered yet, by [runKey].
+  /// The sections asked about and not answered yet, by [sectionKey].
   final Set<String> loading;
 
-  /// The runs the router refused, by [runKey]. Kept until [TourPlannerController
-  /// .retry], so a refusal is not asked again by itself.
+  /// The sections the router refused, by [sectionKey]. Kept until
+  /// [TourPlannerController.retry], so a refusal is not asked again by itself.
   final Map<String, RouteEngineFailure> failures;
 
   List<TourRun> get runs => tourRuns(tour);
 
-  /// The router's answer for [run], or null while there is none. Always null
-  /// for a straight run, which has no answer to wait for.
-  RoutedPath? pathOf(TourRun run) => paths[runKey(tour, run)];
+  /// The keys of [run]'s sections, in order; empty for a straight run.
+  List<String> sectionKeysOf(TourRun run) => [
+    for (var section = run.first; section < run.last; section++)
+      ?sectionKey(tour, section),
+  ];
+
+  /// The router's answer for [run]: the run's own, or its sections' joined
+  /// (`joinPaths`), or null while one of them has none. Always null for a
+  /// straight run, which has no answer to wait for.
+  RoutedPath? pathOf(TourRun run) {
+    final key = runKey(tour, run);
+    if (key == null) return null;
+    final joined = _joined[this] ??= {};
+    if (joined.containsKey(key)) return joined[key];
+    final whole = paths[key];
+    if (whole != null) return joined[key] = whole;
+    final parts = <RoutedPath>[];
+    for (final section in sectionKeysOf(run)) {
+      final path = paths[section];
+      if (path == null) return joined[key] = null;
+      parts.add(path);
+    }
+    return joined[key] = joinPaths(parts);
+  }
+
+  /// The answers already joined, per state: the map, the panel and the
+  /// entries all ask for the same run within one frame.
+  static final _joined = Expando<Map<String, RoutedPath?>>();
+
+  /// [run]'s line as far as it is known: its answer, or for each section the
+  /// answer it has, or the straight line between its two waypoints while it
+  /// has none. With whether each piece is an answer, for drawing them apart.
+  List<({List<LatLng> points, bool known})> linesOf(TourRun run) {
+    final whole = pathOf(run);
+    if (whole != null || run.mode is StraightMode) {
+      return [
+        (
+          points:
+              whole?.points ??
+              [for (final waypoint in run.waypointsOf(tour)) waypoint.position],
+          known: true,
+        ),
+      ];
+    }
+    return [
+      for (var section = run.first; section < run.last; section++)
+        switch (paths[sectionKey(tour, section)]) {
+          final path? => (points: path.points, known: true),
+          null => (
+            points: [
+              tour.waypoints[section].position,
+              tour.waypoints[section + 1].position,
+            ],
+            known: false,
+          ),
+        },
+    ];
+  }
 
   /// The tour as the entries it would be saved as, or null while it has fewer
   /// than two waypoints or a routed run is unanswered.
@@ -61,13 +118,16 @@ class TourPlannerState {
     return tourEntries(tour, answered);
   }
 
-  bool get routing => runs.any((run) => loading.contains(runKey(tour, run)));
+  bool get routing => runs.any(_waiting);
 
   /// Whether a ski run is among those being routed: the wait may then be for
   /// a ski area's map data, which takes longer than a route.
-  bool get routingSki => runs.any(
-    (run) => run.mode is SkiMode && loading.contains(runKey(tour, run)),
-  );
+  bool get routingSki =>
+      runs.any((run) => run.mode is SkiMode && _waiting(run));
+
+  /// Whether [run] has no answer yet and one of its sections is asked about.
+  bool _waiting(TourRun run) =>
+      pathOf(run) == null && sectionKeysOf(run).any(loading.contains);
 
   /// The hardest piste the tour's ski runs take: the selected mode's, else
   /// the tour's first ski section's, else [PisteDifficulty.standard].
@@ -79,11 +139,15 @@ class TourPlannerState {
     return PisteDifficulty.standard;
   }
 
-  /// Why the first refused run of the tour was refused, or null when none was.
+  /// Why the first refused section of the tour was refused, or null when none
+  /// was.
   RouteEngineFailure? get failure {
     for (final run in runs) {
-      final failure = failures[runKey(tour, run)];
-      if (failure != null) return failure;
+      if (pathOf(run) != null) continue;
+      for (final key in sectionKeysOf(run)) {
+        final failure = failures[key];
+        if (failure != null) return failure;
+      }
     }
     return null;
   }
@@ -103,11 +167,11 @@ class TourPlannerState {
   );
 }
 
-/// Holds a tour being planned and asks the router for each run once.
+/// Holds a tour being planned and asks the router for each section once.
 ///
-/// The router is somebody else's server: a run is asked about when a waypoint
-/// is set, never on a timer and never again after a refusal unless [retry] is
-/// pressed, and one request covers a whole run.
+/// The router is somebody else's server: a section is asked about when a
+/// waypoint is set, never on a timer and never again after a refusal unless
+/// [retry] is pressed.
 class TourPlannerController extends Notifier<TourPlannerState> {
   TourPlannerController(this.saved);
 
@@ -226,34 +290,42 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     _route();
   }
 
+  /// Asks about each section of a run without an answer that is neither
+  /// answered, asked nor refused. A section at a time, not the run: a point
+  /// set at the end asks only about the section it adds, and the run's line
+  /// up to it stays as it was.
   void _route() {
     final tour = state.tour;
     for (final run in state.runs) {
-      final key = runKey(tour, run);
-      if (key == null ||
-          state.paths.containsKey(key) ||
-          state.loading.contains(key) ||
-          state.failures.containsKey(key)) {
-        continue;
+      if (state.pathOf(run) != null) continue;
+      for (var section = run.first; section < run.last; section++) {
+        final key = sectionKey(tour, section);
+        if (key == null ||
+            state.paths.containsKey(key) ||
+            state.loading.contains(key) ||
+            state.failures.containsKey(key)) {
+          continue;
+        }
+        final waypoints = [
+          tour.waypoints[section].position,
+          tour.waypoints[section + 1].position,
+        ];
+        final Future<RoutedPath> Function()? ask = switch (run.mode) {
+          RoutedMode(:final profile) =>
+            () => ref
+                .read(routeEngineProvider)
+                .route(waypoints: waypoints, profile: profile),
+          SkiMode(:final maxDifficulty) =>
+            () => ref
+                .read(skiRouterProvider)
+                .route(waypoints: waypoints, maxDifficulty: maxDifficulty),
+          // Drawn by hand: nothing to ask, and no key either.
+          StraightMode() => null,
+        };
+        if (ask == null) continue;
+        state = state.copyWith(loading: {...state.loading, key});
+        unawaited(_ask(key, ask));
       }
-      final waypoints = [
-        for (final waypoint in run.waypointsOf(tour)) waypoint.position,
-      ];
-      final Future<RoutedPath> Function()? ask = switch (run.mode) {
-        RoutedMode(:final profile) =>
-          () => ref
-              .read(routeEngineProvider)
-              .route(waypoints: waypoints, profile: profile),
-        SkiMode(:final maxDifficulty) =>
-          () => ref
-              .read(skiRouterProvider)
-              .route(waypoints: waypoints, maxDifficulty: maxDifficulty),
-        // Drawn by hand: nothing to ask, and no key either.
-        StraightMode() => null,
-      };
-      if (ask == null) continue;
-      state = state.copyWith(loading: {...state.loading, key});
-      unawaited(_ask(key, ask));
     }
   }
 

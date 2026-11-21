@@ -39,8 +39,19 @@ yet** (next section): that has to happen before a release carrying this.
   the page instead.
 - **It is somebody else's server, so the connection search's rules apply**: the
   `User-Agent` from `buildUserAgent`, `retry: noAutomaticRetry` on every provider that
-  calls it, and a request per waypoint *set*, never while one is dragged. One request
-  covers a whole run (below) rather than each section.
+  calls it, and a request per waypoint *set*, never while one is dragged.
+- **The router is asked section by section, and a run is its sections' answers joined**
+  (`sectionKey`, `joinPaths`). It was one request per run at first, to ask less; but
+  then a point added at the end asked again for the whole run, which grew with every
+  point, and the line already known fell back to a dotted chord until the answer came.
+  Now a new point asks about the one section it adds, a moved one about the two beside
+  it, and the known sections stay drawn. Lengths and durations add up; the climb is
+  counted again over the joined heights, so it is what one request would give.
+  BRouter routes a request through via points section by section too: on 2026-11-21 a
+  hike near Garmisch through one via point gave the same 399 points, 7426 m and 6345 s
+  as its two sections asked apart (one route checked). A saved tour's stored line is the whole run's
+  (`runKey`) and is used while the run is unchanged; changing it asks about every
+  section of that run once.
 - **A profile is not a transport mode.** `RouteProfile` is the question put to the router
   (road bike, gravel, mountain bike); several land on one built-in `TransportMode`, which
   is what the leg is filed under. Hiking is `foot`: the stock foot profile already prefers
@@ -109,7 +120,9 @@ yet** (next section): that has to happen before a release carrying this.
   **down** weighs three times too: from the Osterfelderkopf to the Kreuzeckbahn the
   fastest way rides the Alpspitzbahn down, and a skier came to ski. A waypoint is taken
   to mean every node within `kSnapRadiusMeters` (100 m), weighed by the walk there, or the
-  nearest within 500 m; the next section starts from the node the last one reached.
+  nearest within 500 m. Each section is routed on its own, so a section starts from
+  around its waypoint, not from the node the one before arrived at; `joinPaths` makes a
+  descent running across a waypoint one again.
 - **The grade is the tour's, not a section's.** `SkiMode.maxDifficulty` (the OSM grade,
   `PisteDifficulty`) is set under the chips and applies to every ski section
   (`setSkiDifficulty`): it is one skier's ability, and a grade that changed only the next

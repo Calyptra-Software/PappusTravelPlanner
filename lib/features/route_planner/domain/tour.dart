@@ -197,8 +197,8 @@ class TourRun {
 /// Divides [tour] into the runs its legs are made of, in order.
 ///
 /// A run ends where the mode changes or at a waypoint that [TourWaypoint
-/// .splitsLeg]. One router request then covers a whole run rather than each
-/// section, and moving a waypoint asks again for its own run only.
+/// .splitsLeg]. The router is asked section by section ([sectionKey]); a run
+/// is the line its sections' answers join into.
 List<TourRun> tourRuns(Tour tour) {
   final runs = <TourRun>[];
   var first = 0;
@@ -217,8 +217,19 @@ List<TourRun> tourRuns(Tour tour) {
 
 /// What a routed run is asked as: its profile and its waypoints. Two runs with
 /// the same key get the same answer. Null for a run nobody routes.
-String? runKey(Tour tour, TourRun run) {
-  final asked = switch (run.mode) {
+///
+/// The planner asks section by section ([sectionKey]); a run's own key is what
+/// a saved tour hands its stored lines over by, and where a line kept for a
+/// point set into it is filed.
+String? runKey(Tour tour, TourRun run) => _key(run.mode, run.waypointsOf(tour));
+
+/// What the section from waypoint [section] to the next is asked as, the way
+/// [runKey] keys a run. Null for a section nobody routes.
+String? sectionKey(Tour tour, int section) =>
+    _key(tour.modes[section], tour.waypoints.sublist(section, section + 2));
+
+String? _key(SectionMode mode, List<TourWaypoint> waypoints) {
+  final asked = switch (mode) {
     StraightMode() => null,
     RoutedMode(:final profile) => profile.name,
     SkiMode(:final maxDifficulty) => 'ski:${maxDifficulty.name}',
@@ -226,7 +237,7 @@ String? runKey(Tour tour, TourRun run) {
   if (asked == null) return null;
   return [
     asked,
-    for (final waypoint in run.waypointsOf(tour))
+    for (final waypoint in waypoints)
       '${waypoint.position.latitude.toStringAsFixed(6)},'
           '${waypoint.position.longitude.toStringAsFixed(6)}',
   ].join('|');

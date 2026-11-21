@@ -84,7 +84,8 @@ RoutedPath _day({
   waypointIndices: reached,
 );
 
-/// Answers every run with [_day].
+/// Answers a section with its part of [_day]: up and down to the bend, or on
+/// from the bend over the drag lift to wherever the section ends.
 class _FakeSkiRouter implements SkiRouter {
   final asked = <List<LatLng>>[];
   String secondPiste = 'Piste 2';
@@ -95,8 +96,47 @@ class _FakeSkiRouter implements SkiRouter {
     required PisteDifficulty maxDifficulty,
   }) async {
     asked.add(waypoints);
-    return _day(secondPiste: secondPiste);
+    final day = _day(secondPiste: secondPiste);
+    final [ride, descent, drag, last] = day.segments!;
+    if (waypoints.first == _p(0)) {
+      return RoutedPath(
+        points: day.points.sublist(0, 4),
+        lengthMeters: 3000,
+        duration: const Duration(minutes: 16),
+        segments: [ride, _cut(descent, end: 3, minutes: 6)],
+        waypointIndices: const [0, 3],
+      );
+    }
+    return RoutedPath(
+      points: [...day.points.sublist(3, 6), waypoints.last],
+      lengthMeters: 3000,
+      duration: const Duration(minutes: 24),
+      segments: [
+        _cut(descent, start: 0, end: 1, minutes: 6),
+        _cut(drag, start: 1, end: 2),
+        _cut(last, start: 2, end: 3),
+      ],
+      waypointIndices: const [0, 3],
+    );
   }
+
+  /// [segment] with other ends, and other minutes where given.
+  static PathSegment _cut(
+    PathSegment segment, {
+    int? start,
+    required int end,
+    int? minutes,
+  }) => PathSegment(
+    start: start ?? segment.start,
+    end: end,
+    kind: segment.kind,
+    liftMode: segment.liftMode,
+    name: segment.name,
+    fromName: segment.fromName,
+    toName: segment.toName,
+    lengthMeters: segment.lengthMeters,
+    duration: minutes == null ? segment.duration : Duration(minutes: minutes),
+  );
 
   @override
   Future<void> forget() async {}
@@ -389,7 +429,9 @@ void main() {
         await Future<void>.delayed(Duration.zero);
         final newIds = (await planner.save(tripId: tripId, date: day))!;
 
-        expect(router.asked, hasLength(1));
+        // A saved run's line is the run's, not its sections': moving a
+        // point asks about every section of the run.
+        expect(router.asked, hasLength(2));
         expect(newIds.take(3), ids.take(3));
         expect(newIds.last, isNot(ids.last));
         expect((await items()).last.title, 'Umfahrung');

@@ -72,6 +72,118 @@ class RoutedPath {
   final List<int>? waypointIndices;
 }
 
+/// [paths], one after the other, as one path: the sections of a run, each
+/// asked about on its own, joined into the run's line.
+///
+/// A point shared by two of them is kept once. Lengths and durations add up
+/// (no duration where one has none), heights are kept only when every path
+/// has them, and the climb is counted again over the whole, as for every line
+/// with heights. Where every path has [RoutedPath.segments], so does the
+/// result, and a descent or a walk running across the joint is one.
+RoutedPath joinPaths(List<RoutedPath> paths) {
+  if (paths.length == 1) return paths.single;
+  final points = <LatLng>[];
+  final elevations = <double>[];
+  final withHeights = paths.every((path) => path.elevations != null);
+  final withSegments = paths.every((path) => path.segments != null);
+  final segments = <PathSegment>[];
+  final reached = <int>[0];
+  var seconds = 0;
+  var timed = true;
+  var meters = 0.0;
+  for (final path in paths) {
+    // Where the path's first point lands, and the first point its first
+    // segment takes in: the joint itself, even where the two ends differ.
+    final int base;
+    final int from;
+    if (points.isEmpty) {
+      base = 0;
+      from = 0;
+      points.addAll(path.points);
+      if (withHeights) elevations.addAll(path.elevations!);
+    } else {
+      final joint = points.length - 1;
+      final same = _closeTo(points.last, path.points.first);
+      base = same ? joint : joint + 1;
+      from = joint;
+      points.addAll(same ? path.points.skip(1) : path.points);
+      if (withHeights) {
+        elevations.addAll(same ? path.elevations!.skip(1) : path.elevations!);
+      }
+    }
+    if (withSegments) {
+      for (final (index, segment) in path.segments!.indexed) {
+        final shifted = PathSegment(
+          start: index == 0 ? from : segment.start + base,
+          end: segment.end + base,
+          kind: segment.kind,
+          lengthMeters: segment.lengthMeters,
+          duration: segment.duration,
+          liftMode: segment.liftMode,
+          name: segment.name,
+          fromName: segment.fromName,
+          toName: segment.toName,
+        );
+        final last = segments.lastOrNull;
+        if (index == 0 &&
+            last != null &&
+            last.kind == shifted.kind &&
+            last.kind != SegmentKind.lift) {
+          segments.last = _merged(last, shifted);
+        } else {
+          segments.add(shifted);
+        }
+      }
+    }
+    reached.add(points.length - 1);
+    meters += path.lengthMeters;
+    if (path.duration == null) timed = false;
+    seconds += path.duration?.inSeconds ?? 0;
+  }
+  final measured = RoutedPath.measured(
+    points: points,
+    lengthMeters: meters,
+    elevations: withHeights ? elevations : null,
+    duration: timed ? Duration(seconds: seconds) : null,
+  );
+  return RoutedPath(
+    points: measured.points,
+    lengthMeters: measured.lengthMeters,
+    elevations: measured.elevations,
+    ascentMeters: measured.ascentMeters,
+    descentMeters: measured.descentMeters,
+    duration: measured.duration,
+    segments: withSegments ? segments : null,
+    waypointIndices: withSegments ? reached : null,
+  );
+}
+
+/// Within about a meter.
+bool _closeTo(LatLng a, LatLng b) =>
+    (a.latitude - b.latitude).abs() < 1e-5 &&
+    (a.longitude - b.longitude).abs() < 1e-5;
+
+/// Two segments of one kind that meet, as one: a descent down the pistes of
+/// both, each named once.
+PathSegment _merged(PathSegment a, PathSegment b) {
+  final names = <String>[];
+  for (final name in [a.name, b.name]) {
+    for (final part in name?.split(', ') ?? const <String>[]) {
+      if (!names.contains(part)) names.add(part);
+    }
+  }
+  return PathSegment(
+    start: a.start,
+    end: b.end,
+    kind: a.kind,
+    lengthMeters: a.lengthMeters + b.lengthMeters,
+    duration: a.duration + b.duration,
+    name: names.isEmpty ? null : names.join(', '),
+    fromName: a.fromName,
+    toName: b.toName,
+  );
+}
+
 /// How a [PathSegment] is traveled.
 enum SegmentKind {
   /// Skied down one or more pistes.
