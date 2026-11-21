@@ -198,6 +198,7 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
         ItemGroupsCompanion.insert(
           tripId: source.tripId,
           label: Value(source.label),
+          collapsed: Value(source.collapsed),
         ),
       );
       for (var i = 0; i < members.length; i++) {

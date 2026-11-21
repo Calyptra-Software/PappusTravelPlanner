@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **Groups fold away.** Tapping a group's label hides its entries behind one line with
+  their number and time, the way a day folds.
 - **Plan a route on the map.** *Plan route* on a day opens a map: tap the points of a walk,
   ride or drive and the app finds the way between them, with its length, climb and
   duration. The way of travel can change from point to point, and the route is added to

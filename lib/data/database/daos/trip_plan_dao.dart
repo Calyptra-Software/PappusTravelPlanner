@@ -142,6 +142,10 @@ class TripPlanDao extends DatabaseAccessor<AppDatabase>
             ItemGroupsCompanion.insert(
               tripId: toTripId,
               label: Value(group.label),
+              // How the run is shown travels with it like its name: a
+              // routine's commute folded away stays folded on every day
+              // stamped out of it.
+              collapsed: Value(group.collapsed),
             ),
           );
           groupMap[sourceGroup] = newGroupId;
