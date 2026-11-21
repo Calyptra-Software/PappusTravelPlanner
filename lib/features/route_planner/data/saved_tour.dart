@@ -324,8 +324,7 @@ int? _keptPart(TourLegPart part, SavedTour saved) {
   final old = saved.runParts[(from, to)];
   if (old == null || part.index >= old.length) return null;
   final same = old[part.index];
-  return same.part == routePlanPartOf(part.segment) &&
-          same.title == part.segment.name
+  return same.part == routePlanPartOf(part.segment) && same.title == part.title
       ? same.id
       : null;
 }

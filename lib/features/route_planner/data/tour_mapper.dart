@@ -101,7 +101,12 @@ MappedTour tourToItems(
         final segment = entry.part?.segment;
         final notes = pisteColor == null || segment == null
             ? null
-            : pisteNote(segment.pistes, pisteColor);
+            : pisteNote(
+                segment.pistes,
+                pisteColor,
+                // A title naming only some pistes leaves the rest to the notes.
+                named: title != segment.name,
+              );
         items.add(
           ItineraryItemsCompanion.insert(
             tripId: tripId,

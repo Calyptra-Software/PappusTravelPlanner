@@ -82,4 +82,49 @@ void main() {
       ['Grün', 'Blau', 'Rot', 'Schwarz', 'Schwarz', 'Gelb', 'Extrem'],
     );
   });
+
+  group('a descent titled with only some of its pistes', () {
+    test('is titled with the first two and how many more', () {
+      expect(descentTitle('A, B, C, D'), 'A, B +2');
+      expect(descentTitle('A, B'), 'A, B');
+      expect(descentTitle('A'), 'A');
+      expect(descentTitle(null), isNull);
+      // A title read back from its entry stays as it is.
+      expect(descentTitle('A, B +2'), 'A, B +2');
+    });
+
+    String? named(List<PisteStretch> pistes) => pisteNote(
+      pistes,
+      (difficulty) => pisteColorName(
+        lookupAppLocalizations(const Locale('en')),
+        difficulty,
+      ),
+      named: true,
+    );
+
+    test('names them all in its notes, even in one color', () {
+      expect(
+        named([
+          _piste('A', PisteDifficulty.intermediate),
+          _piste('B', PisteDifficulty.intermediate),
+          _piste('C', PisteDifficulty.intermediate),
+        ]),
+        'A, B, C: Red',
+      );
+    });
+
+    test('names a piste without a grade by its name alone', () {
+      expect(
+        named([
+          _piste('A', PisteDifficulty.intermediate),
+          _piste('Ziehweg', null),
+          _piste(null, null),
+          _piste('B', PisteDifficulty.easy),
+        ]),
+        'A: Red · Ziehweg · B: Blue',
+      );
+      expect(named([_piste('Ziehweg', null)]), 'Ziehweg');
+      expect(named([_piste(null, null)]), isNull);
+    });
+  });
 }

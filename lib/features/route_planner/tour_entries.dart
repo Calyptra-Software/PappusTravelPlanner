@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import '../../data/database/tables.dart';
 import '../map/elevation.dart';
 import '../map/map_features.dart';
+import 'domain/piste_note.dart';
 import 'domain/routed_path.dart';
 import 'domain/tour.dart';
 
@@ -38,7 +39,7 @@ class TourLeg extends TourEntry {
   };
 
   /// What the leg is called: a lift's name, or the pistes of a descent.
-  String? get title => part?.segment.name;
+  String? get title => part?.title;
 
   /// Every waypoint the leg is led through, ends included: what the router was
   /// asked with, kept so the tour can be opened again. Empty where a leg was
@@ -65,6 +66,12 @@ class TourLegPart {
 
   /// The part of the run's path the leg is.
   final PathSegment segment;
+
+  /// What the leg is called: a lift's name, or the first pistes of a descent
+  /// ([descentTitle]).
+  String? get title => segment.kind == SegmentKind.descent
+      ? descentTitle(segment.name)
+      : segment.name;
 
   /// The ends of the run the leg belongs to: what tells the legs of one run
   /// from another's when the tour is saved again.

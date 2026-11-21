@@ -89,7 +89,8 @@ RoutedPath _day({
       lengthMeters: 1000,
       duration: const Duration(minutes: 10),
       pistes: [
-        PisteStretch(name: secondPiste, difficulty: PisteDifficulty.easy),
+        for (final name in secondPiste.split(', '))
+          PisteStretch(name: name, difficulty: PisteDifficulty.easy),
       ],
     ),
   ],
@@ -256,9 +257,9 @@ void main() {
     });
     tearDown(() => db.close());
 
-    Future<List<int>> save() async {
+    Future<List<int>> save({String secondPiste = 'Piste 2'}) async {
       final mapped = tourToItems(
-        tourEntries(_tour(), {0: _day()})!,
+        tourEntries(_tour(), {0: _day(secondPiste: secondPiste)})!,
         tripId: tripId,
         date: day,
         resolveMode: builtinModeResolver(await repo.transportModes()),
@@ -420,6 +421,23 @@ void main() {
         );
         expect(await planner.save(tripId: tripId, date: day), ids);
         expect((await items()).map((r) => r.id), ids);
+      });
+
+      test('a descent down many pistes is titled with two of them', () async {
+        final ids = await save(secondPiste: 'Piste 2, Piste 3, Piste 4');
+        final last = (await items()).last;
+        expect(last.title, 'Piste 2, Piste 3 +1');
+        expect(last.notes, 'Piste 2, Piste 3, Piste 4: Blue');
+
+        // Asked again, the router names all three: still the descent saved
+        // under the shorter title.
+        final (_, planner) = await openInPlanner();
+        router.secondPiste = 'Piste 2, Piste 3, Piste 4';
+        planner.moveWaypoint(2, const LatLng(47.0601, 11));
+        await Future<void>.delayed(Duration.zero);
+        expect(router.asked, isNotEmpty);
+        expect(await planner.save(tripId: tripId, date: day), ids);
+        expect((await items()).last.title, 'Piste 2, Piste 3 +1');
       });
 
       test('a section on foot keeps the tour\'s grade for the next', () async {

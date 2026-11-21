@@ -148,6 +148,13 @@ yet** (next section): that has to happen before a release carrying this.
   editable, and go into the PDF, the calendar and the widget as they are. An entry kept on
   saving again keeps its notes; only a new descent is written one. The plan keeps no grades,
   so a run rebuilt from its legs has none until it is routed again.
+- **A descent's title names two pistes at most.** Real descents run down many (the
+  Hörnligrat in Arosa took seven names), which buried the times on the itinerary.
+  `TourLegPart.title` (`descentTitle`) keeps the first `kTitledPistes` and counts the rest
+  ("A, B +5"); the notes then name every piste in order, also in one color
+  (`pisteNote(named: true)`). `_keptPart` compares the saved title with that title, not
+  with the segment's full name, or a descent routed again would never be kept. A title
+  read back from its entry is already short and stays as it is.
 - **It is read back from its legs.** Each leg's `RoutePlan` keeps the grade (`ski`), what
   the leg is (`part`: `descent`, `walk` or the lift's mode) and which of its points the
   router chose (`router`). `savedTourOf` leaves those points out, so the legs join into
