@@ -157,8 +157,10 @@ yet** (next section): that has to happen before a release carrying this.
   or descent at the same place in it (`TourLegPart.index`, part and title). An older app
   reads `ski` as no profile it knows and declines to open the tour, as for any profile it
   does not know.
-- **Ski tour is the hand-drawn ski line.** Off the pistes nothing is routed, so *Ski
-  tour* is the `StraightMode` ski line the planner had before, under its own chip.
+- **Off the pistes there is only *Straight line*.** A *Ski tour* chip, a straight line
+  filed under ski, was dropped before release: beside *Ski* it read as a second way to
+  route skiing, and it did nothing *Straight line* does not, the mode being one tap on the
+  entry. `StraightMode.transportMode` still reads a leg a development build saved so.
 
 ## The tour
 
@@ -316,9 +318,11 @@ yet** (next section): that has to happen before a release carrying this.
   is saved into that option (`insertJourney`'s `alternativeId`); its start time is
   picked from the option's own last time. A route opened again keeps the place it has.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
-- **Ski is routed, *Ski tour* is a straight line** filed under the ski mode;
-  *Straight line* is the same with no mode. The *Pistes:* line takes the place of the
-  straight-line hint while *Ski* is selected, at the same height.
+- **A straight line leaves the entry's mode alone.** `tourToItems` writes no mode for a
+  `StraightMode` leg without one, so the mode a user gives the entry afterwards (ski, for
+  a ski tour) survives saving the tour again, as its notes do.
+- **The *Pistes:* line takes the place of the straight-line hint** while *Ski* is
+  selected, at the same height.
 
 ## Not built yet
 

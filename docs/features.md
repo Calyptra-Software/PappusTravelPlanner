@@ -367,8 +367,10 @@ how long it takes.
 
 The chips under the map choose the way of travel for the **next** section: on foot, by
 bike (also road, gravel and mountain bike) or by car. Choosing another before a tap changes
-it at that point, so a drive to the car park and the walk from there are one route. *Ski
-tour* and *Straight line* draw a straight line between your points.
+it at that point, so a drive to the car park and the walk from there are one route.
+*Straight line* draws a straight line between your points and leaves the way of travel to
+you: set it on the entry, for a ski tour for instance, and it stays when the route is
+edited again.
 
 *Ski* finds the way over the pistes and lifts of a ski area: up by lift, down by piste,
 and on foot for a few steps where a piste ends beside a lift. *Pistes:* under the chips
@@ -393,7 +395,7 @@ running on from the durations.
 
 *Add to day* writes one leg per way of travel, split at named points, each with its line.
 Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
-it; a line of a *Ski tour* or *Straight line* section is listed as drawn by hand.
+it; a line of a *Straight line* section is listed as drawn by hand.
 
 The chart button under the map shows the route's **elevation profile** over the bottom of
 the map. Move the pointer over it, or draw a finger across it, and a line marks that

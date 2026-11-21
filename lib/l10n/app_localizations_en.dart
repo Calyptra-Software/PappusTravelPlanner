@@ -2852,9 +2852,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeModeStraight => 'Straight line';
 
   @override
-  String get routeModeSkiTour => 'Ski tour';
-
-  @override
   String get routePlanLoadingPistes => 'Loading pistes and lifts…';
 
   @override

@@ -111,7 +111,14 @@ MappedTour tourToItems(
             // somebody gave it.
             title: title == null ? const Value.absent() : Value(title),
             notes: notes == null ? const Value.absent() : Value(notes),
-            mode: Value(builtin == null ? null : resolveMode(builtin)),
+            // A straight line says nothing about how it is traveled, so it
+            // leaves the mode alone: unset on a new entry, and on a kept one
+            // whatever the user set since.
+            mode: switch (builtin) {
+              null when mode is StraightMode => const Value.absent(),
+              null => const Value(null),
+              _ => Value(resolveMode(builtin)),
+            },
             fromLocation: Value(_name(from)),
             toLocation: Value(_name(to)),
             fromLat: Value(from.position.latitude),

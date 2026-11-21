@@ -8,7 +8,6 @@ import '../../../core/format/distance_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/attribution.dart';
-import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/basemap.dart' show osmAttribution;
 import '../../map/basemap_provider.dart';
@@ -73,8 +72,8 @@ const List<SectionMode> kPlannerModes = [
   RoutedMode(RouteProfile.car),
   // Over pistes and lifts; its grade is the tour's (see [plannerModeOf]).
   SkiMode(),
-  // Off the pistes nothing is routed: a ski tour is drawn by hand.
-  StraightMode(TransportMode.ski),
+  // Off the paths and pistes nothing is routed: a ski tour, a glacier or a
+  // crossing is drawn by hand, and its entries are given their mode after.
   StraightMode(),
 ];
 
@@ -964,7 +963,6 @@ String plannerModeLabel(SectionMode mode, AppLocalizations l10n) =>
         RouteProfile.car => l10n.routeProfileCar,
       },
       SkiMode() => l10n.routeModeSki,
-      StraightMode(transportMode: TransportMode.ski) => l10n.routeModeSkiTour,
       StraightMode() => l10n.routeModeStraight,
     };
 
@@ -989,7 +987,6 @@ IconData plannerModeIcon(SectionMode mode) => switch (mode) {
     RouteProfile.car => Icons.directions_car,
   },
   SkiMode() => Icons.downhill_skiing,
-  StraightMode(transportMode: TransportMode.ski) => Icons.snowshoeing,
   StraightMode() => Icons.show_chart,
 };
 

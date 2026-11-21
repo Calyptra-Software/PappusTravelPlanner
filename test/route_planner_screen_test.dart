@@ -272,10 +272,10 @@ void main() {
     expect(addButton(tester).onPressed, isNotNull);
   });
 
-  testWidgets('a ski tour is a straight line and asks nobody', (tester) async {
+  testWidgets('a straight line asks nobody', (tester) async {
     await open(tester);
 
-    await choose(tester, 'Ski tour');
+    await choose(tester, 'Straight line');
     expect(
       find.text('Drawn as a straight line between your points.'),
       findsOneWidget,
@@ -519,7 +519,7 @@ void main() {
     tester,
   ) async {
     await open(tester);
-    await choose(tester, 'Ski tour');
+    await choose(tester, 'Straight line');
     await tapMap(tester, const Offset(-200, 0));
     await tapMap(tester, const Offset(200, 0));
     await tester.pumpAndSettle();
@@ -534,7 +534,7 @@ void main() {
     expect(
       tester
           .widget<ChoiceChip>(
-            inSheet(find.widgetWithText(ChoiceChip, 'Ski tour')),
+            inSheet(find.widgetWithText(ChoiceChip, 'Straight line')),
           )
           .selected,
       isTrue,
@@ -852,7 +852,7 @@ void main() {
 
     testWidgets('is not offered for a tour without heights', (tester) async {
       await open(tester);
-      await choose(tester, 'Ski tour');
+      await choose(tester, 'Straight line');
       await tapMap(tester, const Offset(-150, -100));
       await tapMap(tester, const Offset(150, 100));
       await tester.pumpAndSettle();
@@ -1183,7 +1183,7 @@ void main() {
     expect(map(), size);
 
     // The line under a straight mode.
-    await choose(tester, 'Ski tour');
+    await choose(tester, 'Straight line');
     expect(map(), size);
 
     // A point waiting to be put down.

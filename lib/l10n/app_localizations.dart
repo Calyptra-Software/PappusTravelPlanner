@@ -4732,12 +4732,6 @@ abstract class AppLocalizations {
   /// **'Straight line'**
   String get routeModeStraight;
 
-  /// No description provided for @routeModeSkiTour.
-  ///
-  /// In en, this message translates to:
-  /// **'Ski tour'**
-  String get routeModeSkiTour;
-
   /// No description provided for @routePlanLoadingPistes.
   ///
   /// In en, this message translates to:
