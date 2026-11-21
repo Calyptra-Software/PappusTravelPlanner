@@ -611,6 +611,13 @@ class _AlternativeCardState extends ConsumerState<AlternativeCard> {
                   key: ValueKey('group-$groupId'),
                   groupId: groupId,
                   label: widget.groups[groupId]?.label,
+                  collapsed: widget.groups[groupId]?.collapsed ?? false,
+                  onToggleCollapsed: () => ref
+                      .read(repositoryProvider)
+                      .setGroupCollapsed(
+                        groupId,
+                        !(widget.groups[groupId]?.collapsed ?? false),
+                      ),
                   items: items,
                   accent: widget.accent,
                   costsByItem: widget.costsByItem,

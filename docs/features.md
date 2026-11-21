@@ -173,6 +173,8 @@ you delete leaves its legs intact.
 Adjacent entries can be **grouped** — the three trains of one journey, sharing one ticket.
 A group is a single thing to the plan: it drags as a unit, it is priced once, and the
 label above it is where the whole run is named, moved, copied, ungrouped, or deleted.
+Tapping the label folds the group away to one line saying how many entries it holds and
+when, and tapping it again opens it; a folded group stays folded, also in copies of it.
 
 ### Alternatives
 

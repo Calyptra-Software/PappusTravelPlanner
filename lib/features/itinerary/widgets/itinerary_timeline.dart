@@ -19,6 +19,7 @@ import 'now_line.dart';
 import 'put_down_chip.dart';
 import 'timeline_tile.dart';
 import '../../route_planner/presentation/saved_route.dart';
+import '../../../core/providers.dart';
 
 /// Renders a trip's itinerary as day sections. A day is a reorderable list of
 /// **blocks**: single place/transport tiles, and decisions — a set of competing
@@ -659,6 +660,13 @@ class _DaySection extends ConsumerWidget {
                   key: ValueKey('group-$groupId'),
                   groupId: groupId,
                   label: groups[groupId]?.label,
+                  collapsed: groups[groupId]?.collapsed ?? false,
+                  onToggleCollapsed: () => ref
+                      .read(repositoryProvider)
+                      .setGroupCollapsed(
+                        groupId,
+                        !(groups[groupId]?.collapsed ?? false),
+                      ),
                   items: items,
                   accent: accent,
                   costsByItem: costsByItem,

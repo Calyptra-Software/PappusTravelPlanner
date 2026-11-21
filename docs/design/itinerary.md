@@ -91,6 +91,19 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   each member's own costs by cascade, the shared one with the group — since a ticket is not
   still paid for once every leg it covered is gone. Destructive, so it asks first, and the
   question says that ungrouping is the way to keep the entries.
+- **A run folds under its label** (`ItemGroups.collapsed`, `GroupRunTile.collapsed`), the
+  way a day folds under its header: a tap on the label hides the members behind one line
+  with how many there are and when they are planned (`runSpan`, the earliest planned start
+  to the latest planned end, placed through `entry_times.dart` so a run into the night ends
+  on its next day). What is said about the run as a whole stays on the band: its shared
+  ticket, its buttons, and its now-badge, since a folded run must not hide that the traveler
+  is in it. The column existed from the grouping feature on, carried by the `.tpt`, and was
+  never drawn; folding long runs (a ski day of twenty lifts) is what gave it a use. It is
+  how the run is shown, so it travels with the run the way its label does: `copyGroup`,
+  `duplicateAlternative` and the trip copies (`TripPlanDao`, routines included) take it,
+  and a routine's folded commute stays folded on every day stamped out of it. New runs
+  start open, the planner's included, so a run never hides itself before anyone looked at
+  it.
 - **Duplicating an *option* is in-place, not clipboard** (`AlternativeDao.duplicateAlternative`,
   the decision card's ⋮ menu): the "same as B, but…" third option. It adds an **unchosen** copy
   of the option on screen (the set already has its one chosen), cloning the option's internal

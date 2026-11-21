@@ -25,6 +25,7 @@ import 'live_refresh_button.dart';
 import 'now_line.dart';
 import 'timeline_rail.dart';
 import 'transport_mode.dart';
+import '../run_span.dart';
 
 /// A single row in the itinerary timeline. Renders as a place stop or, for
 /// transport items, as a lighter connector between stops.
@@ -154,9 +155,19 @@ class GroupRunTile extends StatelessWidget {
     this.isNow = false,
     this.nowMinutes,
     this.nowLineMinutes,
+    this.collapsed = false,
+    this.onToggleCollapsed,
   });
 
   final int groupId;
+
+  /// Whether the run shows only its label, with how many entries it holds and
+  /// when it takes place, rather than its members. Its shared costs stay.
+  final bool collapsed;
+
+  /// Folds the run away or opens it again, from a tap on its label. Null
+  /// leaves the label inert.
+  final VoidCallback? onToggleCollapsed;
 
   /// The group's name, or null/empty for the default label.
   final String? label;
@@ -250,14 +261,59 @@ class GroupRunTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
+                  // The label folds the run, the way a day's header folds the
+                  // day; the buttons beside it stay buttons.
                   Expanded(
-                    child: Text(
-                      (label != null && label!.isNotEmpty)
-                          ? label!
-                          : l10n.groupDefaultLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: accent,
-                        fontWeight: FontWeight.w700,
+                    child: InkWell(
+                      key: ValueKey('group-label-$groupId'),
+                      onTap: onToggleCollapsed,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    (label != null && label!.isNotEmpty)
+                                        ? label!
+                                        : l10n.groupDefaultLabel,
+                                    style: theme.textTheme.labelLarge?.copyWith(
+                                      color: accent,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  if (collapsed)
+                                    Text(
+                                      _summary(l10n),
+                                      style: theme.textTheme.labelSmall
+                                          ?.copyWith(
+                                            color: theme
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (onToggleCollapsed != null)
+                              Icon(
+                                collapsed
+                                    ? Icons.expand_more
+                                    : Icons.expand_less,
+                                size: 20,
+                                color: theme.colorScheme.onSurfaceVariant,
+                                semanticLabel: collapsed
+                                    ? l10n.showEntries
+                                    : l10n.hideEntries,
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -305,42 +361,16 @@ class GroupRunTile extends StatelessWidget {
                 ],
               ),
             ),
-            ReorderableListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              buildDefaultDragHandles: false,
-              itemCount: items.length,
-              onReorderItem: (oldIndex, newIndex) =>
-                  onReorder(items, oldIndex, newIndex),
-              itemBuilder: (context, i) {
-                final item = items[i];
-                return TimelineTile(
-                  key: ValueKey('item-${item.id}'),
-                  item: item,
-                  accent: accent,
-                  onTap: () => onTapItem(item),
-                  costs: costsByItem[item.id] ?? const [],
-                  localeName: localeName,
-                  onTapCost: onTapCost,
-                  isNow: i == happeningIndex,
-                  nowLineMinutes: i == lineIndex ? now : null,
-                  held: isHeldItem(held, item),
-                  dragHandle: ReorderableDragStartListener(
-                    index: i,
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        Icons.drag_indicator,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                );
-              },
+            // The members fold away under the label; the run's own ticket,
+            // being the run's, stays.
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              alignment: Alignment.topCenter,
+              child: collapsed
+                  ? const SizedBox(width: double.infinity, height: 8)
+                  : _members(theme, now, happeningIndex, lineIndex),
             ),
-            // Everything in the run is behind us: the line closes it off rather
-            // than being dropped, the same way an option's does.
-            if (lineIndex == items.length) NowLine(minutes: now!),
             if (groupCosts.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(48, 0, 8, 10),
@@ -365,6 +395,66 @@ class GroupRunTile extends StatelessWidget {
       ],
     );
   }
+
+  /// What a folded run still says: how many entries it holds and when it is
+  /// planned to take place, when it has a time at all.
+  String _summary(AppLocalizations l10n) {
+    final span = runSpan(items);
+    return [
+      l10n.entries(items.length),
+      if (span != null)
+        formatTimeRange(span.start, span.end, endDayOffset: span.endDayOffset),
+    ].join(' · ');
+  }
+
+  /// The run's members, reorderable within it, with the now-line between two
+  /// of them while the run is under way.
+  Widget _members(
+    ThemeData theme,
+    int? now,
+    int happeningIndex,
+    int lineIndex,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ReorderableListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        itemCount: items.length,
+        onReorderItem: (oldIndex, newIndex) =>
+            onReorder(items, oldIndex, newIndex),
+        itemBuilder: (context, i) {
+          final item = items[i];
+          return TimelineTile(
+            key: ValueKey('item-${item.id}'),
+            item: item,
+            accent: accent,
+            onTap: () => onTapItem(item),
+            costs: costsByItem[item.id] ?? const [],
+            localeName: localeName,
+            onTapCost: onTapCost,
+            isNow: i == happeningIndex,
+            nowLineMinutes: i == lineIndex ? now : null,
+            held: isHeldItem(held, item),
+            dragHandle: ReorderableDragStartListener(
+              index: i,
+              child: Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Icon(
+                  Icons.drag_indicator,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+      // Everything in the run is behind us: the line closes it off rather
+      // than being dropped, the same way an option's does.
+      if (lineIndex == items.length) NowLine(minutes: now!),
+    ],
+  );
 }
 
 /// What can be done to a whole group, on the group's own label.

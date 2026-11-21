@@ -192,6 +192,7 @@ class AlternativeDao extends DatabaseAccessor<AppDatabase>
               ItemGroupsCompanion.insert(
                 tripId: group.tripId,
                 label: Value(group.label),
+                collapsed: Value(group.collapsed),
               ),
             );
             groupMap[sourceGroup] = newGroup;
