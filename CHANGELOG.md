@@ -31,6 +31,8 @@ exact commits.
   tracks, so apps such as OsmAnd can analyze them.
 - **Screens are animated again.** Since 1.10.0, opening and leaving a screen switched
   without the platform's transition.
+- **Long titles on transport entries fit.** A title too long for its line wraps onto two
+  lines instead of running off the screen, and the times stay visible below it.
 
 ## 1.16.0 — 2026-11-14
 

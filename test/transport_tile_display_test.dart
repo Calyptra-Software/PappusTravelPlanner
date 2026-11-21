@@ -3,6 +3,7 @@ import 'package:cupertino_ui/cupertino_ui.dart'
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:travelplanner/data/database/app_database.dart';
@@ -55,6 +56,8 @@ ItineraryItem leg({
   String? fromLocation,
   String? toLocation,
   String? sourceTripId,
+  int? startMinutes,
+  int? endMinutes,
 }) => ItineraryItem(
   id: 1,
   tripId: 1,
@@ -68,6 +71,8 @@ ItineraryItem leg({
   fromLocation: fromLocation,
   toLocation: toLocation,
   sourceTripId: sourceTripId,
+  startMinutes: startMinutes,
+  endMinutes: endMinutes,
 );
 
 void main() {
@@ -106,5 +111,51 @@ void main() {
     // A hand-entered / walk leg (no trip id) does not.
     await pumpTile(tester, leg(fromLocation: 'A'));
     expect(find.byIcon(Icons.sync), findsNothing);
+  });
+
+  testWidgets('a long title wraps, and leaves the times whole', (tester) async {
+    const title =
+        'Hintere Piste oberer Teil, Hintere Piste, Mittlere Piste, '
+        'Herrenbächli - Hundschopf - Alpenblick, Klempen - Alpentobel';
+    await pumpTile(
+      tester,
+      leg(
+        title: title,
+        fromLocation: 'Hörnligrat',
+        toLocation: 'Innerarosa',
+        startMinutes: 10 * 60 + 5,
+        endMinutes: 10 * 60 + 19,
+      ),
+    );
+
+    final tile = tester.getRect(find.byType(TimelineTile));
+    final header = find.textContaining('Hintere Piste oberer Teil');
+    final times = find.text('10:05 – 10:19', findRichText: true);
+    expect(tester.getRect(header).right, lessThanOrEqualTo(tile.right));
+    // On one line, inside the tile.
+    expect(
+      tester.getSize(times).height,
+      lessThan(
+        2 * tester.getSize(find.text('Hörnligrat  →  Innerarosa')).height,
+      ),
+    );
+    expect(tester.getRect(times).right, lessThanOrEqualTo(tile.right));
+    // At most two lines of title: the whole of it is a tap away.
+    final paragraph = tester.renderObject<RenderParagraph>(header);
+    expect(paragraph.didExceedMaxLines, isTrue);
+  });
+
+  testWidgets('a short title keeps the times beside it', (tester) async {
+    await pumpTile(
+      tester,
+      leg(title: 'S1', startMinutes: 9 * 60, endMinutes: 10 * 60),
+    );
+
+    final header = tester.getRect(find.textContaining('S1'));
+    final times = tester.getRect(
+      find.text('09:00 – 10:00', findRichText: true),
+    );
+    expect(times.left, greaterThan(header.right));
+    expect(times.center.dy, moreOrLessEquals(header.center.dy, epsilon: 2));
   });
 }

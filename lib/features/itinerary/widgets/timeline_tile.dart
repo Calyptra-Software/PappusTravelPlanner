@@ -1211,32 +1211,30 @@ class _TransportRow extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            // A Wrap, not a Row: a title too long for the
+                            // line takes up to two lines of its own and the
+                            // times move below it, whole, rather than being
+                            // squeezed to nothing beside it.
+                            Wrap(
+                              spacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 Text(
                                   header,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.labelLarge?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                                if (hasTimes) ...[
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: ItemTimes(
-                                      item: item,
-                                      style: theme.textTheme.labelSmall
-                                          ?.copyWith(
-                                            color: theme
-                                                .colorScheme
-                                                .onSurfaceVariant,
-                                          ),
+                                if (hasTimes)
+                                  ItemTimes(
+                                    item: item,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                ],
-                                if (isNow) ...[
-                                  const SizedBox(width: 8),
-                                  const NowBadge(),
-                                ],
+                                if (isNow) const NowBadge(),
                               ],
                             ),
                             if (route.isNotEmpty)
