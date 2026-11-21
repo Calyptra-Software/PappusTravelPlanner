@@ -40,6 +40,11 @@ updates:
       pub-minor-and-patch:
         patterns: ['*']
         update-types: [minor, patch]
+    # sqlite3 3.8 raises the Linux bundle's glibc floor to 2.38 (see the
+    # comment on its constraint in pubspec.yaml).
+    ignore:
+      - dependency-name: sqlite3
+        versions: ['>=3.8.0']
 
   # Gradle plugins declared in android/settings.gradle.kts.
   - package-ecosystem: gradle
