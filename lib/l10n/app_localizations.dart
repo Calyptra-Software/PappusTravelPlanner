@@ -4732,6 +4732,60 @@ abstract class AppLocalizations {
   /// **'Straight line'**
   String get routeModeStraight;
 
+  /// No description provided for @routeModeSkiTour.
+  ///
+  /// In en, this message translates to:
+  /// **'Ski tour'**
+  String get routeModeSkiTour;
+
+  /// No description provided for @routePlanLoadingPistes.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pistes and lifts…'**
+  String get routePlanLoadingPistes;
+
+  /// No description provided for @routeSkiDifficulty.
+  ///
+  /// In en, this message translates to:
+  /// **'Pistes:'**
+  String get routeSkiDifficulty;
+
+  /// No description provided for @routeSkiUpToEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'easy only'**
+  String get routeSkiUpToEasy;
+
+  /// No description provided for @routeSkiUpToIntermediate.
+  ///
+  /// In en, this message translates to:
+  /// **'up to intermediate'**
+  String get routeSkiUpToIntermediate;
+
+  /// No description provided for @routeSkiUpToAdvanced.
+  ///
+  /// In en, this message translates to:
+  /// **'up to difficult'**
+  String get routeSkiUpToAdvanced;
+
+  /// No description provided for @routeSkiAllPistes.
+  ///
+  /// In en, this message translates to:
+  /// **'all'**
+  String get routeSkiAllPistes;
+
+  /// No description provided for @routeSkiWithFreeride.
+  ///
+  /// In en, this message translates to:
+  /// **'all, and freeride routes'**
+  String get routeSkiWithFreeride;
+
+  /// No description provided for @routeSkiReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload pistes and lifts'**
+  String get routeSkiReload;
+
   /// No description provided for @routeFailureUnreachable.
   ///
   /// In en, this message translates to:
@@ -4749,6 +4803,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The routing service answered with an error.'**
   String get routeFailureFailed;
+
+  /// No description provided for @routeFailureBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'The service is busy. Try again in a few minutes.'**
+  String get routeFailureBusy;
+
+  /// No description provided for @routeFailureTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This ski section spans too large an area. Name a waypoint along it to split it.'**
+  String get routeFailureTooLarge;
 
   /// No description provided for @routeWaypointTitle.
   ///
@@ -4846,6 +4912,12 @@ abstract class AppLocalizations {
   /// **'Routes by BRouter'**
   String get attributionBrouter;
 
+  /// No description provided for @attributionOverpass.
+  ///
+  /// In en, this message translates to:
+  /// **'Pistes and lifts via the Overpass API'**
+  String get attributionOverpass;
+
   /// No description provided for @routePlannerSection.
   ///
   /// In en, this message translates to:
@@ -4887,6 +4959,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use the default server'**
   String get routingServerReset;
+
+  /// No description provided for @overpassServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Piste and lift data'**
+  String get overpassServer;
+
+  /// No description provided for @overpassServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'An Overpass API server, e.g. https://overpass.example.org/api/interpreter'**
+  String get overpassServerHint;
 
   /// No description provided for @routePlanUseMyLocation.
   ///

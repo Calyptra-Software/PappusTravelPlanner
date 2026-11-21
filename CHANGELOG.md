@@ -17,6 +17,11 @@ exact commits.
   the day or to an option of a decision with its line, and a point can be set at your
   position. The route is computed by the BRouter server at brouter.de, which receives the
   points you set; another BRouter server can be set in the settings.
+- **Ski days on pistes and lifts.** *Ski* in the route planner now finds the way over the
+  pistes and lifts of a ski area, up to the grade you choose, and adds each lift ride and
+  descent under its name. The pistes and lifts come from the Overpass API at
+  overpass-api.de and are kept on the device for a month; another Overpass server can be
+  set in the settings.
 - **A planned route can be edited again.** *Edit route* on the route's label opens it in
   the planner as it was saved.
 - **Elevation profiles.** Planned routes, imported GPX files and recorded tracks keep their

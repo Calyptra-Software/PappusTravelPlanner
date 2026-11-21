@@ -15,6 +15,8 @@ import 'package:travelplanner/core/settings/locale_provider.dart'
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
 import 'package:travelplanner/features/route_planner/application/routing_server_provider.dart';
 import 'package:travelplanner/features/route_planner/data/brouter_client.dart';
+import 'package:travelplanner/features/route_planner/data/ski/overpass_client.dart';
+import 'package:travelplanner/features/route_planner/data/ski/overpass_ski_router.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/presentation/routing_server_settings.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -55,6 +57,55 @@ void main() {
       ]) {
         expect(parseRoutingServer(text), isNull, reason: text);
       }
+    });
+  });
+
+  group('the Overpass server', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    });
+
+    test('an address without a path asks the API\'s own', () {
+      expect(
+        parseServer('https://overpass.example.org', defaultPath: kOverpassPath),
+        Uri.parse('https://overpass.example.org/api/interpreter'),
+      );
+    });
+
+    test('the ski router is built for it, and anew when it changes', () async {
+      final c = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          appVersionProvider.overrideWithValue('1.2.3'),
+        ],
+      );
+      final first = c.read(skiRouterProvider);
+      expect(first, isA<OverpassSkiRouter>());
+
+      await c
+          .read(overpassServerProvider.notifier)
+          .set(Uri.parse('https://overpass.example.org/api/interpreter'));
+
+      expect(identical(c.read(skiRouterProvider), first), isFalse);
+      c.dispose();
+    });
+
+    test('is overpass-api.de until another is set, kept apart', () async {
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(overpassServerProvider), kOverpassUrl);
+
+      final own = Uri.parse('https://overpass.example.org/api/interpreter');
+      await c.read(overpassServerProvider.notifier).set(own);
+
+      expect(c.read(overpassServerProvider), own);
+      expect(c.read(routingServerProvider), kBrouterBaseUrl);
+      expect(prefs.getString('ski_overpass_server'), own.toString());
     });
   });
 

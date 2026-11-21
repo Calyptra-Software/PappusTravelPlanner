@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/providers.dart';
 import '../data/saved_tour.dart';
 import '../data/tour_mapper.dart';
+import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
 import '../domain/tour.dart';
@@ -61,6 +62,22 @@ class TourPlannerState {
   }
 
   bool get routing => runs.any((run) => loading.contains(runKey(tour, run)));
+
+  /// Whether a ski run is among those being routed: the wait may then be for
+  /// a ski area's map data, which takes longer than a route.
+  bool get routingSki => runs.any(
+    (run) => run.mode is SkiMode && loading.contains(runKey(tour, run)),
+  );
+
+  /// The hardest piste the tour's ski runs take: the selected mode's, else
+  /// the tour's first ski section's, else [PisteDifficulty.standard].
+  PisteDifficulty get skiDifficulty {
+    if (mode case SkiMode(:final maxDifficulty)) return maxDifficulty;
+    for (final mode in tour.modes) {
+      if (mode case SkiMode(:final maxDifficulty)) return maxDifficulty;
+    }
+    return PisteDifficulty.standard;
+  }
 
   /// Why the first refused run of the tour was refused, or null when none was.
   RouteEngineFailure? get failure {
@@ -169,6 +186,35 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     _setTour(after);
   }
 
+  /// Routes every ski run of the tour, and the next one, with no piste harder
+  /// than [difficulty]. For the whole tour, not one section: it is one
+  /// skier's ability, and a grade that changed only the next section would
+  /// look as if it changed nothing.
+  void setSkiDifficulty(PisteDifficulty difficulty) {
+    final ski = SkiMode(difficulty);
+    final tour = state.tour;
+    state = state.copyWith(mode: state.mode is SkiMode ? ski : null);
+    _setTour(
+      Tour(
+        waypoints: tour.waypoints,
+        modes: [for (final mode in tour.modes) mode is SkiMode ? ski : mode],
+      ),
+    );
+  }
+
+  /// Loads the map data of the tour's ski runs afresh and routes them again:
+  /// for pistes that changed since the area was loaded.
+  Future<void> reloadSki() async {
+    await ref.read(skiRouterProvider).forget();
+    if (!ref.mounted) return;
+    bool isSki(String key) => key.startsWith('ski:');
+    state = state.copyWith(
+      paths: {...state.paths}..removeWhere((key, _) => isSki(key)),
+      failures: {...state.failures}..removeWhere((key, _) => isSki(key)),
+    );
+    _route();
+  }
+
   /// Asks again about every run the router refused.
   void retry() {
     state = state.copyWith(failures: const {});
@@ -183,34 +229,39 @@ class TourPlannerController extends Notifier<TourPlannerState> {
   void _route() {
     final tour = state.tour;
     for (final run in state.runs) {
-      final mode = run.mode;
       final key = runKey(tour, run);
-      if (mode is! RoutedMode || key == null) continue;
-      if (state.paths.containsKey(key) ||
+      if (key == null ||
+          state.paths.containsKey(key) ||
           state.loading.contains(key) ||
           state.failures.containsKey(key)) {
         continue;
       }
+      final waypoints = [
+        for (final waypoint in run.waypointsOf(tour)) waypoint.position,
+      ];
+      final Future<RoutedPath> Function()? ask = switch (run.mode) {
+        RoutedMode(:final profile) =>
+          () => ref
+              .read(routeEngineProvider)
+              .route(waypoints: waypoints, profile: profile),
+        SkiMode(:final maxDifficulty) =>
+          () => ref
+              .read(skiRouterProvider)
+              .route(waypoints: waypoints, maxDifficulty: maxDifficulty),
+        // Drawn by hand: nothing to ask, and no key either.
+        StraightMode() => null,
+      };
+      if (ask == null) continue;
       state = state.copyWith(loading: {...state.loading, key});
-      unawaited(
-        _ask(key, [
-          for (final waypoint in run.waypointsOf(tour)) waypoint.position,
-        ], mode.profile),
-      );
+      unawaited(_ask(key, ask));
     }
   }
 
-  Future<void> _ask(
-    String key,
-    List<LatLng> waypoints,
-    RouteProfile profile,
-  ) async {
+  Future<void> _ask(String key, Future<RoutedPath> Function() ask) async {
     RoutedPath? path;
     RouteEngineFailure? failure;
     try {
-      path = await ref
-          .read(routeEngineProvider)
-          .route(waypoints: waypoints, profile: profile);
+      path = await ask();
     } on RouteEngineException catch (e) {
       failure = e.failure;
     }

@@ -4,6 +4,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
+import '../domain/routed_path.dart';
 import '../domain/tour.dart';
 import '../tour_entries.dart';
 
@@ -78,18 +79,27 @@ MappedTour tourToItems(
         shapes.add(null);
         elevations.add(null);
         sources.add(TrackSource.routed);
-      case TourLeg(:final from, :final to, :final mode, :final path):
+      case TourLeg(
+        :final from,
+        :final to,
+        :final mode,
+        :final path,
+        :final title,
+      ):
         final start = clock;
         final minutes = path.duration == null
             ? null
             : (path.duration!.inSeconds / 60).ceil();
         final end = start == null || minutes == null ? null : start + minutes;
-        final builtin = mode.transportMode;
+        final builtin = entry.transportMode;
         items.add(
           ItineraryItemsCompanion.insert(
             tripId: tripId,
             date: date,
             kind: ItemKind.transport,
+            // Absent rather than null: a leg saved again keeps the title
+            // somebody gave it.
+            title: title == null ? const Value.absent() : Value(title),
             mode: Value(builtin == null ? null : resolveMode(builtin)),
             fromLocation: Value(_name(from)),
             toLocation: Value(_name(to)),
@@ -135,6 +145,11 @@ RoutePlan _planOf(TourLeg leg, String tourId) {
     profile: mode is RoutedMode ? mode.profile.name : null,
     straight: mode is StraightMode,
     straightMode: mode is StraightMode ? mode.transportMode?.name : null,
+    ski: mode is SkiMode ? mode.maxDifficulty.name : null,
+    part: switch (leg.part) {
+      final part? => routePlanPartOf(part.segment),
+      null => null,
+    },
     waypoints: [
       for (final waypoint in waypoints)
         RoutePlanPoint(
@@ -142,12 +157,20 @@ RoutePlan _planOf(TourLeg leg, String tourId) {
           lon: waypoint.position.longitude,
           name: _name(waypoint),
           isPlace: waypoint.isPlace,
+          byRouter: waypoint.byRouter,
         ),
     ],
     seconds: leg.path.duration?.inSeconds,
     meters: leg.path.lengthMeters,
   );
 }
+
+/// What [RoutePlan.part] calls a leg made of [segment]: the lift's transport
+/// mode for a ride, else the kind of segment.
+String routePlanPartOf(PathSegment segment) => switch (segment) {
+  PathSegment(kind: SegmentKind.lift, :final liftMode) => liftMode!.name,
+  PathSegment(:final kind) => kind.name,
+};
 
 /// Resolves a built-in mode to the user's row for it by `builtinKey`, as
 /// `modeResolver` does for a connection: a renamed built-in still resolves, a

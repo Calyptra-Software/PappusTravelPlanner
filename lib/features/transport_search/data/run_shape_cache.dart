@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import '../../../core/format/civil_date.dart';
-import 'run_shape_files.dart';
+import '../../../core/cache_files.dart';
 
 /// How many days after its last travel day a run's route is kept. A few, not
 /// none: a journey is looked at again on the way back, or the day after, and a
@@ -13,7 +13,7 @@ const int kRunShapeKeepDays = 3;
 /// again, about 50 KB a run, and only wanted while somebody is looking at it.
 ///
 /// Two levels. Memory, for as long as the app runs, on every platform; and,
-/// where there is one, the app's cache directory ([RunShapeFiles]), so a route
+/// where there is one, the app's cache directory ([CacheFiles]), so a route
 /// once fetched is there after a restart and offline on the train. The system
 /// may empty that directory whenever it likes, which costs one request the
 /// next time the run is asked for. Entries are dropped [kRunShapeKeepDays]
@@ -28,7 +28,7 @@ class RunShapeCache {
   RunShapeCache(this._files, {DateTime Function()? today})
     : _today = today ?? DateTime.now;
 
-  final Future<RunShapeFiles?> _files;
+  final Future<CacheFiles?> _files;
   final DateTime Function() _today;
   final Map<String, String> _memory = {};
   Future<void>? _pruned;
@@ -64,7 +64,7 @@ class RunShapeCache {
     );
   }
 
-  Future<RunShapeFiles?> _ready() async {
+  Future<CacheFiles?> _ready() async {
     final files = await _files;
     if (files != null) await (_pruned ??= _prune(files));
     return files;
@@ -72,7 +72,7 @@ class RunShapeCache {
 
   /// Drops every kept route whose run is more than [kRunShapeKeepDays] past,
   /// and every file that does not read as one of ours.
-  Future<void> _prune(RunShapeFiles files) async {
+  Future<void> _prune(CacheFiles files) async {
     final now = _today();
     final today = DateTime(now.year, now.month, now.day);
     for (final key in await files.keys()) {

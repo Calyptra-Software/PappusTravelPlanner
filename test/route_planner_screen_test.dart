@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cupertino_ui/cupertino_ui.dart'
     show GlobalCupertinoLocalizations;
+import 'package:drift/drift.dart' show OrderingTerm;
 import 'package:drift/native.dart';
 import 'package:flutter_localizations/flutter_localizations.dart'
     show GlobalWidgetsLocalizations;
@@ -20,10 +21,12 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/route_planner/application/route_engine.dart';
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
+import 'package:travelplanner/features/route_planner/application/ski_router.dart';
 import 'package:travelplanner/features/map/widgets/elevation_profile_chart.dart';
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
 import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
+import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
@@ -64,10 +67,65 @@ class _FakeEngine implements RouteEngine {
   }
 }
 
+/// A ski router that answers each run with a ride up and a descent, and
+/// holds its answers back while [hold] is set.
+class _FakeSkiRouter implements SkiRouter {
+  final asked = <(List<LatLng>, PisteDifficulty)>[];
+  Completer<void>? hold;
+  var forgotten = 0;
+
+  @override
+  Future<RoutedPath> route({
+    required List<LatLng> waypoints,
+    required PisteDifficulty maxDifficulty,
+  }) async {
+    asked.add((waypoints, maxDifficulty));
+    await hold?.future;
+    final first = waypoints.first;
+    final last = waypoints.last;
+    // On the straight line between the two, so a tap on it finds the run.
+    final top = LatLng(
+      (first.latitude + last.latitude) / 2,
+      (first.longitude + last.longitude) / 2,
+    );
+    return RoutedPath(
+      points: [first, top, last],
+      lengthMeters: 3000,
+      duration: const Duration(minutes: 20),
+      segments: const [
+        PathSegment(
+          start: 0,
+          end: 1,
+          kind: SegmentKind.lift,
+          liftMode: TransportMode.chairLift,
+          name: 'Sonnenbahn',
+          toName: 'Bergstation',
+          lengthMeters: 1000,
+          duration: Duration(minutes: 8),
+        ),
+        PathSegment(
+          start: 1,
+          end: 2,
+          kind: SegmentKind.descent,
+          name: 'Talabfahrt',
+          fromName: 'Bergstation',
+          lengthMeters: 2000,
+          duration: Duration(minutes: 12),
+        ),
+      ],
+      waypointIndices: [0, 2],
+    );
+  }
+
+  @override
+  Future<void> forget() async => forgotten++;
+}
+
 void main() {
   late AppDatabase db;
   late SharedPreferences prefs;
   late _FakeEngine engine;
+  late _FakeSkiRouter skiRouter;
   final day = DateTime(2026, 3, 14);
 
   setUp(() async {
@@ -75,6 +133,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     prefs = await SharedPreferences.getInstance();
     engine = _FakeEngine();
+    skiRouter = _FakeSkiRouter();
   });
   tearDown(() => db.close());
 
@@ -99,6 +158,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           databaseProvider.overrideWithValue(db),
           routeEngineProvider.overrideWithValue(engine),
+          skiRouterProvider.overrideWithValue(skiRouter),
         ],
         child: MaterialApp(
           localizationsDelegates: const [
@@ -206,12 +266,10 @@ void main() {
     expect(addButton(tester).onPressed, isNotNull);
   });
 
-  testWidgets('a ski section is a straight line and asks nobody', (
-    tester,
-  ) async {
+  testWidgets('a ski tour is a straight line and asks nobody', (tester) async {
     await open(tester);
 
-    await choose(tester, 'Ski');
+    await choose(tester, 'Ski tour');
     expect(
       find.text('Drawn as a straight line between your points.'),
       findsOneWidget,
@@ -223,6 +281,70 @@ void main() {
 
     expect(engine.asked, isEmpty);
     expect(addButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('a ski run is routed over the pistes, to the grade chosen', (
+    tester,
+  ) async {
+    await open(tester);
+    await choose(tester, 'Ski');
+    expect(find.text('Pistes:'), findsOneWidget);
+    expect(find.text('all'), findsOneWidget);
+
+    skiRouter.hold = Completer();
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pump();
+    expect(find.text('Loading pistes and lifts…'), findsOneWidget);
+    skiRouter.hold!.complete();
+    skiRouter.hold = null;
+    await tester.pumpAndSettle();
+
+    expect(engine.asked, isEmpty);
+    expect(skiRouter.asked.single.$2, PisteDifficulty.standard);
+    expect(addButton(tester).onPressed, isNotNull);
+
+    await tester.tap(find.text('all'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('up to intermediate').last);
+    await tester.pumpAndSettle();
+
+    // The run already planned is asked about again, held to the new grade.
+    expect(skiRouter.asked.last.$2, PisteDifficulty.intermediate);
+    expect(find.text('up to intermediate'), findsOneWidget);
+  });
+
+  testWidgets('a ski run is saved as a leg per ride and per descent', (
+    tester,
+  ) async {
+    final tripId = await tester.runAsync(
+      () => db.tripDao.createTrip(TripsCompanion.insert(title: 'Ski day')),
+    );
+    await open(tester, tripId: tripId!);
+    await choose(tester, 'Ski');
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Add to day'));
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pumpAndSettle();
+
+    final items = await tester.runAsync(
+      () => (db.select(
+        db.itineraryItems,
+      )..orderBy([(i) => OrderingTerm(expression: i.sortOrder)])).get(),
+    );
+    final modes = await tester.runAsync(() => db.transportModeDao.modes());
+    String? modeOf(ItineraryItem item) =>
+        modes!.where((m) => m.id == item.mode).firstOrNull?.builtinKey;
+    expect(items!.map((i) => i.title), ['Sonnenbahn', 'Talabfahrt']);
+    expect(items.map(modeOf), ['chairLift', 'ski']);
+    expect(items.first.toLocation, 'Bergstation');
+    expect(items.last.fromLocation, 'Bergstation');
+    expect(items.map((i) => i.groupId).toSet(), hasLength(1));
   });
 
   testWidgets('the mode chosen before a tap is the one that section takes', (
@@ -390,7 +512,7 @@ void main() {
     tester,
   ) async {
     await open(tester);
-    await choose(tester, 'Ski');
+    await choose(tester, 'Ski tour');
     await tapMap(tester, const Offset(-200, 0));
     await tapMap(tester, const Offset(200, 0));
     await tester.pumpAndSettle();
@@ -404,7 +526,9 @@ void main() {
     expect(waypointCount(tester), 2, reason: 'a tap on the line adds nothing');
     expect(
       tester
-          .widget<ChoiceChip>(inSheet(find.widgetWithText(ChoiceChip, 'Ski')))
+          .widget<ChoiceChip>(
+            inSheet(find.widgetWithText(ChoiceChip, 'Ski tour')),
+          )
           .selected,
       isTrue,
     );
@@ -721,7 +845,7 @@ void main() {
 
     testWidgets('is not offered for a tour without heights', (tester) async {
       await open(tester);
-      await choose(tester, 'Ski');
+      await choose(tester, 'Ski tour');
       await tapMap(tester, const Offset(-150, -100));
       await tapMap(tester, const Offset(150, 100));
       await tester.pumpAndSettle();
@@ -1052,7 +1176,7 @@ void main() {
     expect(map(), size);
 
     // The line under a straight mode.
-    await choose(tester, 'Ski');
+    await choose(tester, 'Ski tour');
     expect(map(), size);
 
     // A point waiting to be put down.
@@ -1061,6 +1185,26 @@ void main() {
     await tester.tap(find.text('Move point'));
     await tester.pumpAndSettle();
     expect(map(), size);
+  });
+
+  testWidgets('a ski section can have its pistes and lifts loaded again', (
+    tester,
+  ) async {
+    await open(tester);
+    await choose(tester, 'Ski');
+    await tapMap(tester, const Offset(-200, 0));
+    await tapMap(tester, const Offset(200, 0));
+    await tester.pumpAndSettle();
+    expect(skiRouter.asked, hasLength(1));
+
+    // The descent's half of the line.
+    await tapMap(tester, const Offset(100, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(inSheet(find.text('Reload pistes and lifts')));
+    await tester.pumpAndSettle();
+
+    expect(skiRouter.forgotten, 1);
+    expect(skiRouter.asked, hasLength(2));
   });
 
   testWidgets('Add to day writes the tour and closes the planner', (

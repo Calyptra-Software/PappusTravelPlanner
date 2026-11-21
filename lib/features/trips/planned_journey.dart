@@ -305,8 +305,8 @@ Set<int> streetTransportModeIds(List<TransportModeRow> modes) {
 /// leg onto walk, bike, car, bus, tram, subway, train, ferry or gondola (any
 /// lift the timetable lists), or onto no mode at all for anything it does not
 /// know (`builtinTransportModeFor` in `journey_mapper.dart`), which makes this
-/// set read off the router's vocabulary rather than a matter of taste. `other` is left out: it is a user's own choice, and may well name a
-/// service.
+/// set read off the router's vocabulary rather than a matter of taste. `other`
+/// is left out: it is a user's own choice, and may well name a service.
 ///
 /// Read off [TransportModeRow.builtinKey] like [streetTransportModeIds], so a
 /// renamed built-in is still recognized and a custom mode is not one of these.

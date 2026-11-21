@@ -367,9 +367,17 @@ how long it takes.
 
 The chips under the map choose the way of travel for the **next** section: on foot, by
 bike (also road, gravel and mountain bike) or by car. Choosing another before a tap changes
-it at that point, so a drive to the car park and the walk from there are one route. *Ski*
-and *Straight line* draw a straight line between your points, since no routing server
-knows pistes and lifts.
+it at that point, so a drive to the car park and the walk from there are one route. *Ski
+tour* and *Straight line* draw a straight line between your points.
+
+*Ski* finds the way over the pistes and lifts of a ski area: up by lift, down by piste,
+and on foot for a few steps where a piste ends beside a lift. *Pistes:* under the chips
+sets the hardest grade the whole route takes, all pistes unless you choose otherwise;
+freeride routes only when chosen. Each lift ride and each descent becomes a leg of its
+own, named after the lift or the pistes, under the gondola, chairlift, drag lift or ski
+mode. The pistes and lifts of the area are loaded the first time a ski section is routed
+there and kept for a month; *Reload pistes and lifts* on a ski section loads them
+afresh.
 
 The locate button sets the next point at your position, or puts the point you are moving
 there, and centers the map on it. *Plan route* is also under each option of a decision,
@@ -384,7 +392,7 @@ running on from the durations.
 
 *Add to day* writes one leg per way of travel, split at named points, each with its line.
 Like every computed line it is drawn **dashed**, until a recording or a GPX file replaces
-it; a line of a *Ski* or *Straight line* section is listed as drawn by hand.
+it; a line of a *Ski tour* or *Straight line* section is listed as drawn by hand.
 
 The chart button under the map shows the route's **elevation profile** over the bottom of
 the map. Move the pointer over it, or draw a finger across it, and a line marks that
@@ -403,7 +411,10 @@ costs and files move to the route's group.
 The routes come from the [BRouter](https://brouter.de) server at brouter.de, which
 receives the points you set. **Settings → Route planner** takes the address of another
 BRouter server instead, your own for example; clearing the field, or the reset button,
-goes back to brouter.de.
+goes back to brouter.de. Pistes and lifts come from the
+[Overpass API](https://overpass-api.de) at overpass-api.de, which receives the area
+around the points; *Piste and lift data* in the same section takes another Overpass
+server.
 
 ---
 

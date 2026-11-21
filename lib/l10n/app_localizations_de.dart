@@ -2867,6 +2867,33 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routeModeStraight => 'Gerade Linie';
 
   @override
+  String get routeModeSkiTour => 'Skitour';
+
+  @override
+  String get routePlanLoadingPistes => 'Pisten und Lifte werden geladen …';
+
+  @override
+  String get routeSkiDifficulty => 'Pisten:';
+
+  @override
+  String get routeSkiUpToEasy => 'nur leichte';
+
+  @override
+  String get routeSkiUpToIntermediate => 'bis mittelschwer';
+
+  @override
+  String get routeSkiUpToAdvanced => 'bis schwer';
+
+  @override
+  String get routeSkiAllPistes => 'alle';
+
+  @override
+  String get routeSkiWithFreeride => 'alle, auch Freeride-Routen';
+
+  @override
+  String get routeSkiReload => 'Pisten und Lifte neu laden';
+
+  @override
   String get routeFailureUnreachable =>
       'Der Routing-Dienst ist nicht erreichbar.';
 
@@ -2877,6 +2904,14 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get routeFailureFailed =>
       'Der Routing-Dienst hat mit einem Fehler geantwortet.';
+
+  @override
+  String get routeFailureBusy =>
+      'Der Dienst ist gerade ausgelastet. Versuch es in ein paar Minuten noch einmal.';
+
+  @override
+  String get routeFailureTooLarge =>
+      'Dieser Ski-Abschnitt reicht über ein zu großes Gebiet. Benenne einen Wegpunkt darauf, um ihn zu teilen.';
 
   @override
   String get routeWaypointTitle => 'Wegpunkt';
@@ -2929,6 +2964,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attributionBrouter => 'Routen von BRouter';
 
   @override
+  String get attributionOverpass => 'Pisten und Lifte über die Overpass API';
+
+  @override
   String get routePlannerSection => 'Routenplaner';
 
   @override
@@ -2952,6 +2990,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get routingServerReset => 'Standard-Server verwenden';
+
+  @override
+  String get overpassServer => 'Pisten- und Liftdaten';
+
+  @override
+  String get overpassServerHint =>
+      'Ein Overpass-API-Server, z. B. https://overpass.example.org/api/interpreter';
 
   @override
   String get routePlanUseMyLocation => 'Nächster Punkt an meiner Position';
