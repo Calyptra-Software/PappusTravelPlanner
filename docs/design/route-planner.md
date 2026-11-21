@@ -133,6 +133,14 @@ yet** (next section): that has to happen before a release carrying this.
   `kFoldWalkMeters` (200 m) or a descent shorter than `kFoldDescentMeters` (50 m) is
   folded into the descent (else the ride) beside it, so no one gets a leg for the thirty
   meters to the lift. A ride that takes in such a piece keeps its name and stations.
+  A descent shorter than `kFoldTransferMeters` (150 m) between two rides is the way to
+  the next lift and goes into that ride (`foldTransfers`), so the ride before keeps its
+  arrival. It runs on the finished segments, once per section and again in `joinPaths`,
+  since a waypoint set at the transfer splits it between two sections. Measured
+  2026-11-21: in Arosa Lenzerheide each such descent up to 131 m joined two lifts at one
+  station; from about 150 m on, in Garmisch too, they include short runs of their own.
+  A transfer with one station name at both ends could be folded farther (Motta, 284 m),
+  but that would lean on how the map names stations.
   `tourEntries` lays each segment out as a `TourLeg` with a `TourLegPart`: a lift leg is
   filed under its lift mode and titled with the lift's name, a descent under ski and
   titled with its pistes' names. Where two legs meet, the point is the user's waypoint if
@@ -336,6 +344,8 @@ yet** (next section): that has to happen before a release carrying this.
 - The door from the overview, for a route planned before there is a trip: where it is
   saved (a trip picked as for a connection, or a new routine) is still to decide.
 - A walking-time model with the user's own pace in place of the router's duration.
+- Routing parameters the user sets: speeds, and for ski runs `kBoardingTime` (now a flat
+  2 min per ride, short for a cable car running to a timetable).
 - *Edit route* from the map.
 - Timetabled sections inside a tour, through the connection search.
 - Heights for ski runs: Overpass data has none. The source is still to decide (no

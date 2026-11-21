@@ -14,6 +14,7 @@ PathSegment _segment(
   String? from,
   String? to,
   int minutes = 5,
+  double meters = 1000,
   List<PisteStretch> pistes = const [],
 }) => PathSegment(
   start: start,
@@ -23,7 +24,7 @@ PathSegment _segment(
   name: name,
   fromName: from,
   toName: to,
-  lengthMeters: 1000,
+  lengthMeters: meters,
   duration: Duration(minutes: minutes),
   pistes: pistes,
 );
@@ -166,5 +167,83 @@ void main() {
     ]);
 
     expect(joined.segments!.map((s) => (s.start, s.end)), [(0, 1), (1, 3)]);
+  });
+
+  group('foldTransfers', () {
+    test('takes the way from one lift to the next into the next', () {
+      final [first, second] = foldTransfers([
+        _segment(0, 2, SegmentKind.lift, name: 'Sessel', to: 'Fürggli'),
+        _segment(2, 3, SegmentKind.descent, meters: 96, minutes: 1),
+        _segment(3, 6, SegmentKind.lift, name: 'Bahn', from: 'Fürggli'),
+      ]);
+
+      expect((first.start, first.end, first.name), (0, 2, 'Sessel'));
+      expect((second.start, second.end), (2, 6));
+      expect(second.kind, SegmentKind.lift);
+      expect(second.liftMode, TransportMode.chairLift);
+      expect((second.name, second.fromName), ('Bahn', 'Fürggli'));
+      expect(second.lengthMeters, 1096);
+      expect(second.duration, const Duration(minutes: 6));
+    });
+
+    test('leaves a run, and a descent not between two rides', () {
+      List<SegmentKind> kinds(List<PathSegment> segments) => [
+        for (final segment in foldTransfers(segments)) segment.kind,
+      ];
+
+      // As long as the limit: a run of its own.
+      expect(
+        kinds([
+          _segment(0, 1, SegmentKind.lift),
+          _segment(1, 2, SegmentKind.descent, meters: kFoldTransferMeters),
+          _segment(2, 3, SegmentKind.lift),
+        ]),
+        [SegmentKind.lift, SegmentKind.descent, SegmentKind.lift],
+      );
+      // At the start and at the end of the day.
+      expect(
+        kinds([
+          _segment(0, 1, SegmentKind.descent, meters: 90),
+          _segment(1, 2, SegmentKind.lift),
+          _segment(2, 3, SegmentKind.descent, meters: 90),
+        ]),
+        [SegmentKind.descent, SegmentKind.lift, SegmentKind.descent],
+      );
+      // Between a ride and a walk.
+      expect(
+        kinds([
+          _segment(0, 1, SegmentKind.lift),
+          _segment(1, 2, SegmentKind.descent, meters: 90),
+          _segment(2, 3, SegmentKind.walk),
+        ]),
+        [SegmentKind.lift, SegmentKind.descent, SegmentKind.walk],
+      );
+    });
+
+    test('folds a transfer a waypoint split in two, once joined', () {
+      final joined = joinPaths([
+        RoutedPath(
+          points: [_p(0), _p(1), _p(2)],
+          lengthMeters: 1050,
+          segments: [
+            _segment(0, 1, SegmentKind.lift),
+            _segment(1, 2, SegmentKind.descent, meters: 50),
+          ],
+        ),
+        RoutedPath(
+          points: [_p(2), _p(3), _p(4)],
+          lengthMeters: 1040,
+          segments: [
+            _segment(0, 1, SegmentKind.descent, meters: 40),
+            _segment(1, 2, SegmentKind.lift),
+          ],
+        ),
+      ]);
+
+      expect(joined.segments!.map((s) => (s.kind, s.start, s.end)), [
+        (SegmentKind.lift, 0, 1),
+        (SegmentKind.lift, 1, 4),
+      ]);
+    });
   });
 }

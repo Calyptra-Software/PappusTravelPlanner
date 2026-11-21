@@ -269,6 +269,34 @@ void main() {
       ]);
     });
 
+    test('the way from one lift to the next is part of the next ride', () {
+      final graph = _graph([
+        _way(1, [(1, 0, 0), (2, 10, 0)], {'aerialway': 'chair_lift'}),
+        // About 100 m of piste from the top station to the next lift.
+        _way(2, [(2, 10, 0), (3, 9.5, 1)], {'piste:type': 'downhill'}),
+        _way(
+          3,
+          [(3, 9.5, 1), (4, 20, 1)],
+          {'aerialway': 'gondola', 'name': 'Bahn'},
+        ),
+        _station(3, 9.5, 1, 'Fürggli'),
+      ]);
+
+      final path = graph.route([_at(0, 0), _at(20, 1)]);
+
+      expect(_kinds(path), [SegmentKind.lift, SegmentKind.lift]);
+      final [chair, gondola] = path.segments!;
+      expect(gondola.start, chair.end);
+      expect(path.points[gondola.start], _at(10, 0));
+      expect((gondola.name, gondola.fromName), ('Bahn', 'Fürggli'));
+      expect(
+        path.duration,
+        Duration(
+          seconds: chair.duration.inSeconds + gondola.duration.inSeconds,
+        ),
+      );
+    });
+
     test('a ride takes its tagged time and the time to get on', () {
       final graph = _graph(valleyAndTop(liftTags: {'aerialway:duration': '6'}));
 

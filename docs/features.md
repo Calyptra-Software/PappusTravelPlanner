@@ -373,7 +373,8 @@ you: set it on the entry, for a ski tour for instance, and it stays when the rou
 edited again.
 
 *Ski* finds the way over the pistes and lifts of a ski area: up by lift, down by piste,
-and on foot for a few steps where a piste ends beside a lift. *Pistes:* under the chips
+and on foot for a few steps where a piste ends beside a lift; the few meters of piste
+from one lift to the next count as part of the next ride. *Pistes:* under the chips
 sets the hardest grade the whole route takes, all pistes unless you choose otherwise;
 freeride routes only when chosen. Each lift ride and each descent becomes a leg of its
 own, named after the lift or the pistes, under the gondola, chairlift, drag lift or ski

@@ -446,8 +446,9 @@ class SkiGraph {
   }
 
   /// Lays [steps] out as one line with its segments: consecutive descents are
-  /// one descent, each lift ride is one, and a short walk is folded into the
-  /// descent or ride beside it ([kFoldWalkMeters]).
+  /// one descent, each lift ride is one, a short walk is folded into the
+  /// descent or ride beside it ([kFoldWalkMeters]), and the way from one lift
+  /// to the next into the next ([foldTransfers]).
   RoutedPath _assemble(
     List<LatLng> waypoints,
     List<_Edge> steps,
@@ -511,7 +512,7 @@ class SkiGraph {
       duration: Duration(
         seconds: segments.fold(0, (sum, s) => sum + s.duration.inSeconds),
       ),
-      segments: segments,
+      segments: foldTransfers(segments),
       waypointIndices: _waypointIndices(points, reached),
     );
   }

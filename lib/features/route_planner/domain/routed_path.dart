@@ -80,7 +80,8 @@ class RoutedPath {
 /// (no duration where one has none), heights are kept only when every path
 /// has them, and the climb is counted again over the whole, as for every line
 /// with heights. Where every path has [RoutedPath.segments], so does the
-/// result, and a descent or a walk running across the joint is one.
+/// result, and a descent or a walk running across the joint is one; a
+/// transfer that only the joining makes whole is folded ([foldTransfers]).
 RoutedPath joinPaths(List<RoutedPath> paths) {
   if (paths.length == 1) return paths.single;
   final points = <LatLng>[];
@@ -155,9 +156,53 @@ RoutedPath joinPaths(List<RoutedPath> paths) {
     ascentMeters: measured.ascentMeters,
     descentMeters: measured.descentMeters,
     duration: measured.duration,
-    segments: withSegments ? segments : null,
+    segments: withSegments ? foldTransfers(segments) : null,
     waypointIndices: withSegments ? reached : null,
   );
+}
+
+/// A descent between two lift rides shorter than this is no run but the way
+/// from one lift to the next, and is folded into the ride after it
+/// ([foldTransfers]). In Arosa Lenzerheide every such descent up to 131 m
+/// joined two lifts at one station (often under one station name at both
+/// ends); from about 150 m on they include short runs a beginner may well
+/// want to see, such as those from Garmisch's Kinderland to its lifts.
+const double kFoldTransferMeters = 150;
+
+/// [segments] with each descent shorter than [kFoldTransferMeters] between two
+/// lift rides taken into the ride after it, which starts that much earlier,
+/// along the piste, under its own name and stations: the way to a lift
+/// belongs to boarding it, and the ride before keeps its arrival.
+List<PathSegment> foldTransfers(List<PathSegment> segments) {
+  final folded = <PathSegment>[];
+  for (var i = 0; i < segments.length; i++) {
+    final segment = segments[i];
+    final next = i + 1 < segments.length ? segments[i + 1] : null;
+    final isTransfer =
+        segment.kind == SegmentKind.descent &&
+        segment.lengthMeters < kFoldTransferMeters &&
+        folded.lastOrNull?.kind == SegmentKind.lift &&
+        next?.kind == SegmentKind.lift;
+    if (!isTransfer) {
+      folded.add(segment);
+      continue;
+    }
+    folded.add(
+      PathSegment(
+        start: segment.start,
+        end: next!.end,
+        kind: SegmentKind.lift,
+        liftMode: next.liftMode,
+        name: next.name,
+        fromName: next.fromName,
+        toName: next.toName,
+        lengthMeters: segment.lengthMeters + next.lengthMeters,
+        duration: segment.duration + next.duration,
+      ),
+    );
+    i++;
+  }
+  return folded;
 }
 
 /// Within about a meter.
