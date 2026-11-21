@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:travelplanner/features/transport_search/data/run_shape_cache.dart';
-import 'package:travelplanner/features/transport_search/data/run_shape_files_io.dart';
+import 'package:travelplanner/core/cache_files_io.dart';
 
 /// The routes of whole runs, kept outside the database: in memory for the
 /// session, and in a cache directory between launches, until a few days after
@@ -20,7 +20,7 @@ void main() {
   });
 
   RunShapeCache cacheOn(Directory dir, {DateTime? today}) => RunShapeCache(
-    Future.value(DirectoryRunShapeFiles(dir)),
+    Future.value(DirectoryCacheFiles(dir)),
     today: () => today ?? DateTime(2026, 11, 15),
   );
 

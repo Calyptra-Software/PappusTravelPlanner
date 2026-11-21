@@ -5,6 +5,10 @@ exact commits.
 
 ## Unreleased
 
+- **Lifts are transport modes.** Gondolas and cable cars, chairlifts and drag lifts are
+  built-in modes now. A mode you made for a lift with one of the lift icons becomes that mode,
+  keeping its name and its legs. Lifts and funiculars from the connection search get a mode
+  too.
 - **Groups fold away.** Tapping a group's label hides its entries behind one line with
   their number and time, the way a day folds.
 - **Plan a route on the map.** *Plan route* on a day opens a map: tap the points of a walk,
@@ -13,6 +17,11 @@ exact commits.
   the day or to an option of a decision with its line, and a point can be set at your
   position. The route is computed by the BRouter server at brouter.de, which receives the
   points you set; another BRouter server can be set in the settings.
+- **Ski days on pistes and lifts.** *Ski* in the route planner now finds the way over the
+  pistes and lifts of a ski area, up to the grade you choose, and adds each lift ride and
+  descent under its name, a descent with the colors of its pistes in its notes. The pistes
+  and lifts come from the Overpass API at overpass-api.de and are kept on the device for a
+  month; another Overpass server can be set in the settings.
 - **A planned route can be edited again.** *Edit route* on the route's label opens it in
   the planner as it was saved.
 - **Elevation profiles.** Planned routes, imported GPX files and recorded tracks keep their

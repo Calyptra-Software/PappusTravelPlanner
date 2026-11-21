@@ -66,6 +66,13 @@ enum TransportMode {
   flight,
   other,
   ski,
+
+  /// Lifts, told apart by how one rides them, as OpenStreetMap's `aerialway`
+  /// values do: a cabin (a gondola, or an aerial tramway), a chair, or being
+  /// pulled along the snow (a drag lift, T-bar, platter, rope tow).
+  gondola,
+  chairLift,
+  dragLift,
 }
 
 /// Whether a [Trips] row is a trip or the template for one.

@@ -87,7 +87,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 44;
+  int get schemaVersion => 45;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -488,6 +488,14 @@ class AppDatabase extends _$AppDatabase {
       if (from < 44 && from >= 41) {
         await m.addColumn(recordingFixes, recordingFixes.altitude);
       }
+      // v45 adds three built-in modes for lifts. A custom mode the user made
+      // for one, recognized by the lift glyph it wears, becomes that built-in
+      // and keeps its legs, its name and its icon; the others are appended.
+      // Below v20 the modes table is created and seeded above, with these
+      // three already in it.
+      if (from < 45 && from >= 20 && await _hasTable('transport_modes')) {
+        await transportModeDao.adoptOrAddBuiltins(kLiftModeIconIds);
+      }
     },
     beforeOpen: (details) async {
       // Enforce ON DELETE CASCADE for itinerary items and costs.
@@ -561,6 +569,13 @@ class AppDatabase extends _$AppDatabase {
   /// each gets id = its old enum index + 1), then repoint every leg's `mode`
   /// from that old index onto its new row and recreate the table so its foreign
   /// key to `transport_modes` takes effect.
+  /// Whether this database has a table called [name]: a test database built by
+  /// hand for one version, or one the v21 self-heal has yet to repair, may not.
+  Future<bool> _hasTable(String name) async => (await customSelect(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+    variables: [Variable.withString(name)],
+  ).get()).isNotEmpty;
+
   /// Adds each of [columns] to itinerary_items unless it is already there.
   /// A database coming from below v20 is recreated by the transport-modes
   /// migration, whose TableMigration builds the table from the *current* schema

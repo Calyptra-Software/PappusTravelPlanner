@@ -51,12 +51,14 @@ change is not written at all.
 
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
 without touching it: which hosts are contacted (`api.transitous.org` for a connection
-search, `brouter.de` for the route planner unless another server is set, the tile servers of the map styles and overlays in `basemap.dart` while a map is open, and nothing else), which permissions
-the app asks for and which its libraries merge in, that there is no telemetry of any kind,
-and the list of foreign files the app parses. A third host, a new permission, an analytics
-or crash-reporting dependency, or another format read from outside all turn a sentence
-there into a false claim about what the app does with someone's data. Correct it in the
-same commit; a security policy that has drifted is worse than none, because people rely
+search, `brouter.de` for the route planner unless another server is set, `overpass-api.de`
+for a ski section's pistes and lifts unless another server is set, the tile servers of the
+map styles and overlays in `basemap.dart` while a map is open, and nothing else), which
+permissions the app asks for and which its libraries merge in, that there is no telemetry of
+any kind, and the list of foreign files the app parses. A third host, a new permission, an
+analytics or crash-reporting dependency, or another format read from outside all turn a
+sentence there into a false claim about what the app does with someone's data. Correct it in
+the same commit; a security policy that has drifted is worse than none, because people rely
 on it.
 
 Both facts have drifted before, and the permission count is read off the **built APK**, never
@@ -173,7 +175,7 @@ Each one is explained in the design note named after it.
 - Everything hangs off `Trips` and cascades on delete (`ItineraryItems`, `Costs`, checklists,
   participant/beneficiary links). Cascades rely on `PRAGMA foreign_keys = ON`, set in
   `AppDatabase.migration`'s `beforeOpen`.
-- Bump `AppDatabase.schemaVersion` (currently 44) and add an `onUpgrade` branch for **any**
+- Bump `AppDatabase.schemaVersion` (currently 45) and add an `onUpgrade` branch for **any**
   table/column change — real user databases are migrated in place, not recreated.
 
 ## Testing essentials

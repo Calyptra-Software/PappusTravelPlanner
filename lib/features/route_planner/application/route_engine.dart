@@ -32,7 +32,16 @@ class RouteEngineException implements Exception {
     this.message, {
     this.statusCode,
     this.serverMessage,
-  });
+  }) : _failure = null;
+
+  /// A failure of a router that runs on the device: no server was asked, so
+  /// there is no status to read the [failure] from.
+  const RouteEngineException.local(this.message, RouteEngineFailure failure)
+    : _failure = failure,
+      statusCode = null,
+      serverMessage = null;
+
+  final RouteEngineFailure? _failure;
 
   final String message;
 
@@ -44,6 +53,13 @@ class RouteEngineException implements Exception {
 
   /// Which of the failures a user is told apart this one is.
   RouteEngineFailure get failure {
+    if (_failure case final failure?) return failure;
+    if (statusCode == 429 ||
+        statusCode == 502 ||
+        statusCode == 503 ||
+        statusCode == 504) {
+      return RouteEngineFailure.busy;
+    }
     if (statusCode == null) return RouteEngineFailure.unreachable;
     if (statusCode == 400) return RouteEngineFailure.noRoute;
     return RouteEngineFailure.failed;
@@ -62,6 +78,14 @@ enum RouteEngineFailure {
   /// lies where it has no data or no path within reach.
   noRoute,
 
+  /// The server is overloaded or asks to slow down (429, 502, 503, 504):
+  /// trying again later may well work.
+  busy,
+
   /// The router answered with an error that says nothing about the points.
   failed,
+
+  /// The points lie too far apart to be routed in one go: a ski run reaching
+  /// beyond the area the ski router loads at once (`kMaxSkiAreaMeters`).
+  tooLarge,
 }

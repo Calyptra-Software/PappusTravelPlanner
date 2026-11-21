@@ -692,6 +692,48 @@ void main() {
       expect(files.single.name, 'map.pdf');
     });
 
+    test('a straight leg keeps the mode given to its entry', () async {
+      final ids = await repo.insertJourney(
+        tripId,
+        tourToItems(
+          [
+            TourLeg(
+              from: const TourWaypoint(_carPark),
+              to: const TourWaypoint(_summit),
+              mode: const StraightMode(),
+              path: straightPath(const [_carPark, _summit]),
+              waypoints: const [TourWaypoint(_carPark), TourWaypoint(_summit)],
+            ),
+          ],
+          tripId: tripId,
+          date: _day,
+          resolveMode: (_) => fail('a straight line resolves no mode'),
+          tourId: 'tour',
+        ).items,
+      );
+      expect((await items()).single.mode, isNull);
+      final ski = (await repo.transportModes())
+          .firstWhere((mode) => mode.builtinKey == 'ski')
+          .id;
+      // Set in the entry form: it was a ski tour.
+      await (db.update(db.itineraryItems)
+            ..where((i) => i.id.equals(ids.single)))
+          .write(ItineraryItemsCompanion(mode: Value(ski)));
+      final saved = (await open((await items()).single))!;
+      container = ProviderContainer(
+        overrides: [databaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
+      container.listen(tourPlannerProvider(saved), (_, _) {});
+
+      final newIds = await container
+          .read(tourPlannerProvider(saved).notifier)
+          .save(tripId: tripId, date: _day);
+
+      expect(newIds, ids);
+      expect((await items()).single.mode, ski);
+    });
+
     test('rewriting entries that are not there is refused', () async {
       await expectLater(
         repo.rewriteRoute(

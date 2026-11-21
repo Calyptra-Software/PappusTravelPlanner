@@ -401,9 +401,14 @@ TransportMode? builtinTransportModeFor(TransitMode mode) {
       return TransportMode.train;
     case TransitMode.ferry:
       return TransportMode.ferry;
+    // A funicular runs on rails up a slope: a train in all but its grade.
     case TransitMode.funicular:
+      return TransportMode.train;
+    // A cabin on a cable, whether a gondola or an aerial tramway: the
+    // timetable does not tell chairs and drags apart, and lists none.
     case TransitMode.gondola:
     case TransitMode.aerialLift:
+      return TransportMode.gondola;
     case TransitMode.other:
       return null;
   }

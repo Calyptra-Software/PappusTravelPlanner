@@ -3,28 +3,28 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
-import 'run_shape_files.dart';
+import 'cache_files.dart';
 
-/// The run routes' directory, `<cache>/run_shapes/`: the app's own cache, per
-/// application id, which the system may empty whenever it needs the space. That
-/// is the right home for something the app can always ask for again, and the
-/// wrong one for anything else.
-Future<RunShapeFiles?> openRunShapeFiles() async {
+/// The directory `<cache>/<folder>/`: the app's own cache, per application id,
+/// which the system may empty whenever it needs the space. That is the right
+/// home for something the app can always ask for again, and the wrong one for
+/// anything else.
+Future<CacheFiles?> openCacheFiles(String folder) async {
   try {
     final base = await getApplicationCacheDirectory();
-    final dir = Directory(p.join(base.path, 'run_shapes'));
+    final dir = Directory(p.join(base.path, folder));
     await dir.create(recursive: true);
-    return DirectoryRunShapeFiles(dir);
+    return DirectoryCacheFiles(dir);
   } on Object {
     // No cache directory on this platform, or none we may write to.
     return null;
   }
 }
 
-/// [RunShapeFiles] as one file per key in [dir]. Public so a test can point it
+/// [CacheFiles] as one file per key in [dir]. Public so a test can point it
 /// at a temporary directory.
-class DirectoryRunShapeFiles implements RunShapeFiles {
-  DirectoryRunShapeFiles(this.dir);
+class DirectoryCacheFiles implements CacheFiles {
+  DirectoryCacheFiles(this.dir);
 
   final Directory dir;
 

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/tables.dart';
 
 /// Verifies the v19 -> v20 migration that turned the fixed `TransportMode` enum
 /// into a user-managed `transport_modes` table. Real user databases are migrated
@@ -120,9 +121,9 @@ void main() {
     final db = AppDatabase.forTesting(NativeDatabase(File(path)));
     addTearDown(db.close);
 
-    // All twelve built-ins are seeded, each carrying its enum key.
+    // Every built-in is seeded, each carrying its enum key.
     final modes = await db.transportModeDao.watchModes().first;
-    expect(modes, hasLength(12));
+    expect(modes, hasLength(TransportMode.values.length));
     final byId = {for (final m in modes) m.id: m};
     final keyOf = {for (final m in modes) m.builtinKey: m.id};
     expect(keyOf.keys, containsAll(['walk', 'train', 'flight', 'ski']));
@@ -150,7 +151,7 @@ void main() {
     addTearDown(db.close);
 
     final modes = await db.transportModeDao.watchModes().first;
-    expect(modes, hasLength(12));
+    expect(modes, hasLength(TransportMode.values.length));
     final byId = {for (final m in modes) m.id: m};
 
     final items = await db.itineraryDao.watchItemsForTrip(1).first;

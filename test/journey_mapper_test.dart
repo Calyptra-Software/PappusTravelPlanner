@@ -335,10 +335,22 @@ void main() {
     });
 
     test('modes with no sensible built-in map to null, not other', () {
-      expect(builtinTransportModeFor(TransitMode.funicular), isNull);
-      expect(builtinTransportModeFor(TransitMode.gondola), isNull);
-      expect(builtinTransportModeFor(TransitMode.aerialLift), isNull);
       expect(builtinTransportModeFor(TransitMode.other), isNull);
+    });
+
+    test('a lift is a gondola and a funicular a train', () {
+      expect(
+        builtinTransportModeFor(TransitMode.gondola),
+        TransportMode.gondola,
+      );
+      expect(
+        builtinTransportModeFor(TransitMode.aerialLift),
+        TransportMode.gondola,
+      );
+      expect(
+        builtinTransportModeFor(TransitMode.funicular),
+        TransportMode.train,
+      );
     });
   });
 

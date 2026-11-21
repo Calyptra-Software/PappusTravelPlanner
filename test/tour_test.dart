@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
@@ -340,6 +341,12 @@ void main() {
     expect(c, d);
     expect(c.hashCode, d.hashCode);
     expect(c, isNot(const StraightMode()));
+    expect(const SkiMode(), const SkiMode(PisteDifficulty.standard));
+    expect(
+      const SkiMode().hashCode,
+      const SkiMode(PisteDifficulty.standard).hashCode,
+    );
+    expect(const SkiMode(), isNot(const SkiMode(PisteDifficulty.easy)));
     expect({
       ...<SectionMode>[a, b, c, d],
     }, hasLength(2));

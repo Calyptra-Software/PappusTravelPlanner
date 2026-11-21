@@ -7,10 +7,16 @@ class RoutePlanPoint {
     required this.lon,
     this.name,
     this.isPlace = false,
+    this.byRouter = false,
   });
 
   final double lat;
   final double lon;
+
+  /// Whether the router chose the point rather than the user: where a ski run
+  /// is laid out as several legs, the lift station one leg ends and the next
+  /// begins at. Not a waypoint of the tour, so opening it again leaves it out.
+  final bool byRouter;
 
   /// What the point was called, when it was given a name.
   final String? name;
@@ -44,6 +50,8 @@ class RoutePlan {
     this.waypoints = const [],
     this.seconds,
     this.meters,
+    this.ski,
+    this.part,
   });
 
   /// Shared by the entries one tour was saved as.
@@ -65,6 +73,15 @@ class RoutePlan {
   final int? seconds;
   final double? meters;
 
+  /// For a leg of a ski run, the name of the hardest piste grade the run was
+  /// routed with; null on every other leg.
+  final String? ski;
+
+  /// For a leg of a ski run, which part of the day it is: `descent`, `walk`,
+  /// or the name of the lift's transport mode (`gondola`, `chairLift`,
+  /// `dragLift`).
+  final String? part;
+
   bool get isLeg => waypoints.length >= 2;
 
   /// The plan of the same leg traveled the other way.
@@ -76,6 +93,8 @@ class RoutePlan {
     waypoints: waypoints.reversed.toList(),
     seconds: seconds,
     meters: meters,
+    ski: ski,
+    part: part,
   );
 }
 
@@ -92,10 +111,13 @@ String encodeRoutePlan(RoutePlan plan) => jsonEncode({
           'lon': point.lon,
           'name': ?point.name,
           if (point.isPlace) 'place': true,
+          if (point.byRouter) 'router': true,
         },
     ],
   'seconds': ?plan.seconds,
   'meters': ?plan.meters,
+  'ski': ?plan.ski,
+  'part': ?plan.part,
 });
 
 /// Reads back what [encodeRoutePlan] wrote, or null for anything else: an
@@ -129,6 +151,7 @@ RoutePlan? decodeRoutePlan(String? encoded) {
           lon: lon.toDouble(),
           name: name is String ? name : null,
           isPlace: point['place'] == true,
+          byRouter: point['router'] == true,
         ),
       );
     }
@@ -137,6 +160,8 @@ RoutePlan? decodeRoutePlan(String? encoded) {
   final mode = json['mode'];
   final seconds = json['seconds'];
   final meters = json['meters'];
+  final ski = json['ski'];
+  final part = json['part'];
   return RoutePlan(
     tour: tour,
     profile: profile is String ? profile : null,
@@ -145,6 +170,8 @@ RoutePlan? decodeRoutePlan(String? encoded) {
     waypoints: waypoints,
     seconds: seconds is num ? seconds.round() : null,
     meters: meters is num ? meters.toDouble() : null,
+    ski: ski is String ? ski : null,
+    part: part is String ? part : null,
   );
 }
 

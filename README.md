@@ -136,7 +136,9 @@ donated MOTIS instance serving [public-transport open data](https://transitous.o
 on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
 
 The route planner asks the [BRouter](https://brouter.de) server at brouter.de, which routes
-on OpenStreetMap data.
+on OpenStreetMap data. For a ski section it loads the pistes and lifts of the area from the
+[Overpass API](https://overpass-api.de) at overpass-api.de. Both servers can be replaced by
+others in the settings.
 
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles from the
 OpenStreetMap Foundation's own servers. Their
@@ -203,7 +205,7 @@ lib/
     trips/                  # overview, calendar, create/edit, detail, participants, tags, routines
     itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
-    route_planner/          # planning a route on the map (BRouter)
+    route_planner/          # planning a route on the map (BRouter; ski runs: Overpass)
     map/                    # trip map: pure feature building + the basemap and its screen
     attachments/            # photos and files on an entry, a group, or the trip; gallery
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies

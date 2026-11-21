@@ -29,7 +29,6 @@ void main() {
   test('a routing mode with no built-in resolves to null', () async {
     final modes = await db.transportModeDao.watchModes().first;
     final resolve = modeResolver(modes);
-    expect(resolve(TransitMode.funicular), isNull);
     expect(resolve(TransitMode.other), isNull);
   });
 

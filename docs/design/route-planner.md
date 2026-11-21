@@ -6,7 +6,8 @@ becomes itinerary entries. The connection search is a separate feature
 ([`tracks.md`](tracks.md)).
 
 **Status: a first planner screen exists, reached from *Plan route* under a day.** The app
-therefore contacts `brouter.de`, which `SECURITY.md` says. **The operator has not been asked
+therefore contacts `brouter.de`, and `overpass-api.de` for ski sections, which
+`SECURITY.md` says. **The operator has not been asked
 yet** (next section): that has to happen before a release carrying this.
 
 ## The engine
@@ -38,8 +39,19 @@ yet** (next section): that has to happen before a release carrying this.
   the page instead.
 - **It is somebody else's server, so the connection search's rules apply**: the
   `User-Agent` from `buildUserAgent`, `retry: noAutomaticRetry` on every provider that
-  calls it, and a request per waypoint *set*, never while one is dragged. One request
-  covers a whole run (below) rather than each section.
+  calls it, and a request per waypoint *set*, never while one is dragged.
+- **The router is asked section by section, and a run is its sections' answers joined**
+  (`sectionKey`, `joinPaths`). It was one request per run at first, to ask less; but
+  then a point added at the end asked again for the whole run, which grew with every
+  point, and the line already known fell back to a dotted chord until the answer came.
+  Now a new point asks about the one section it adds, a moved one about the two beside
+  it, and the known sections stay drawn. Lengths and durations add up; the climb is
+  counted again over the joined heights, so it is what one request would give.
+  BRouter routes a request through via points section by section too: on 2026-11-21 a
+  hike near Garmisch through one via point gave the same 399 points, 7426 m and 6345 s
+  as its two sections asked apart (one route checked). A saved tour's stored line is the
+  whole run's (`runKey`) and is used while the run is unchanged; changing it asks about every
+  section of that run once.
 - **A profile is not a transport mode.** `RouteProfile` is the question put to the router
   (road bike, gravel, mountain bike); several land on one built-in `TransportMode`, which
   is what the leg is filed under. Hiking is `foot`: the stock foot profile already prefers
@@ -47,11 +59,123 @@ yet** (next section): that has to happen before a release carrying this.
   is free.
 - **No public engine routes pistes and lifts.** BRouter's tag table has no `aerialway` key
   and its import keeps only ways with a highway, railway, waterway or route tag (read from
-  its repository, not checked against the server's data). Until the app routes those
-  itself, such a section is a `StraightMode` line drawn by hand.
+  its repository, not checked against the server's data). So the app routes them itself
+  (*Ski runs*, below).
 - **A refusal is told apart by its status**: none is unreachable, 400 is "no way between
-  these points" with the server's words kept, anything else is failed. Only one 400 text
+  these points" with the server's words kept, 429, 502, 503 and 504 say the server is busy
+  (try again later), anything else is failed. Only one 400 text
   ("datafile … not found") was observed; the others are assumed to be 400 too.
+
+## Ski runs
+
+- **Pistes and lifts are routed on the device, over data from Overpass.** `SkiMode` is a
+  section mode of its own, beside `RoutedMode`, because no `RouteProfile` server answers
+  it. `SkiRouter` (`application/ski_router.dart`) is its interface; `OverpassSkiRouter`
+  (`data/ski/`) loads an area's pistes, lifts and lift stations with one Overpass query
+  (`skiNetworkQuery`, `out body geom`: node ids say where ways meet, coordinates come in
+  the same answer) and routes with Dijkstra over `SkiGraph`. Only the area goes to the
+  server, never the points.
+- **An area is loaded when a ski run needs it, never ahead.** The run's points plus
+  `kSkiNeededMargin` (1 km) must lie inside a loaded area; if none holds them, the points
+  plus `kSkiLoadMargin` (3 km), rounded out to hundredths of a degree, are loaded, so the
+  next point a few pistes on needs no second request. A run whose box, rounded as it
+  would be loaded (which adds up to a kilometer), is wider than `kMaxSkiAreaMeters`
+  (30 km) is refused as `tooLarge`; nearer the limit the margin shrinks to fit. Naming a
+  waypoint splits such a run into runs loaded each on its own. Areas stay in memory for
+  the session and, where there is a cache directory (`core/cache_files.dart`, shared with
+  the run shapes), on disk for 30
+  days under `<box>_<yyyymmdd>`; the system may clear that directory, which costs one
+  request. *Reload pistes and lifts* on a ski section forgets them all. Parsing and
+  building the graph run in `compute`: a large area is megabytes of JSON.
+- **Overpass is a donated server too**: guidance of about 10,000 queries and 1 GB a day
+  for all of an app's users. No retry by itself; the busy failure tells the user to try
+  later. On 2026-11-21 four of nine requests came back 502 ("at capacity") or timed
+  out, so this is a real path, not a corner case. A 200 with a `remark` containing
+  `error` is a query cut short with partial data and is treated as busy, never routed
+  over. The server is a setting (`overpassServerProvider`, Settings → Route planner, an
+  address without a path gets `/api/interpreter`). It answers `Access-Control-Allow-Origin:
+  *`, and the query is a form field, so a browser sends it without a preflight; the web
+  build sends no `User-Agent`, as for BRouter.
+- **What the graph takes from OSM** (`SkiGraph.build`):
+  - A downhill piste (`piste:type=downhill`) is drawn downhill and skied that way;
+    `oneway=no` makes it both ways, `-1` turns it. A connection (`piste:type=connection`)
+    likewise. Pistes drawn as areas (`area=yes`) are left out.
+  - A lift is ridden from each stop to every stop above it: its two ends always, and a
+    station node (`aerialway=station`) on it unless `aerialway:access` forbids getting on
+    (`exit`) or off (`entry`) there, or both (`no`). A gondola or cable car also goes
+    down unless `oneway=yes`, a chairlift only with `oneway=no`, a drag lift never.
+    Garmisch-Classic shows why the ends always count: some lifts have no station nodes at
+    all, others have them a node short of the end.
+  - The lifts ridden are `kRiddenAerialways`; `mixed_lift` is filed as a gondola,
+    everything dragged or conveyed as a drag lift. Zip lines and goods lifts are left out.
+  - The map data often stops a piste a few meters short of its lift (13 of 21 lifts in
+    Garmisch share a node with a piste at the bottom), so each end of a piste and each
+    lift stop gets a **walk** to the nearest node of every other way within
+    `kMaxWalkMeters` (150 m). Farther, the router finds no way rather than send somebody
+    across a slope it knows nothing about.
+- **What it weighs.** Minutes, estimated: 18 km/h down a piste, 11 km/h on a connection,
+  3 km/h on foot, a lift's `aerialway:duration` (minutes, `mm:ss` or `hh:mm:ss`) or a
+  typical speed for its kind, plus `kBoardingTime` (2 min) per ride. A walk weighs three
+  times its minutes, so it is used only where skiing or a lift would not do. A ride
+  **down** weighs three times too: from the Osterfelderkopf to the Kreuzeckbahn the
+  fastest way rides the Alpspitzbahn down, and a skier came to ski. A waypoint is taken
+  to mean every node within `kSnapRadiusMeters` (100 m), weighed by the walk there, or the
+  nearest within 500 m. Each section is routed on its own, so a section starts from
+  around its waypoint, not from the node the one before arrived at; `joinPaths` makes a
+  descent running across a waypoint one again.
+- **The grade is the tour's, not a section's.** `SkiMode.maxDifficulty` (the OSM grade,
+  `PisteDifficulty`) is set under the chips and applies to every ski section
+  (`setSkiDifficulty`): it is one skier's ability, and a grade that changed only the next
+  section would look as if it changed nothing. The default takes every piste up to
+  `expert` but no `freeride` route. A piste without a grade is taken.
+- **A ski run is a leg per ride and per descent.** The router's path carries
+  `PathSegment`s: consecutive descents are one, each ride is one, and a walk shorter than
+  `kFoldWalkMeters` (200 m) or a descent shorter than `kFoldDescentMeters` (50 m) is
+  folded into the descent (else the ride) beside it, so no one gets a leg for the thirty
+  meters to the lift. A ride that takes in such a piece keeps its name and stations.
+  A descent shorter than `kFoldTransferMeters` (150 m) between two rides is the way to
+  the next lift and goes into that ride (`foldTransfers`), so the ride before keeps its
+  arrival. It runs on the finished segments, once per section and again in `joinPaths`,
+  since a waypoint set at the transfer splits it between two sections. Measured
+  2026-11-21: in Arosa Lenzerheide each such descent up to 131 m joined two lifts at one
+  station; from about 150 m on, in Garmisch too, they include short runs of their own.
+  A transfer with one station name at both ends could be folded farther (Motta, 284 m),
+  but that would lean on how the map names stations.
+  `tourEntries` lays each segment out as a `TourLeg` with a `TourLegPart`: a lift leg is
+  filed under its lift mode and titled with the lift's name, a descent under ski and
+  titled with its pistes' names. Where two legs meet, the point is the user's waypoint if
+  the path passes one there, else one the router chose (`TourWaypoint.byRouter`), named
+  after its station when the data names one. All of a ski day's legs land in one group,
+  saved expanded like every group; folding it is the user's choice.
+- **A descent's notes name its grades as colors.** `PathSegment.pistes` keeps each stretch
+  of a descent with its name and grade, and `pisteNote` writes them into the notes when the
+  leg is saved: the color alone where every graded stretch shows one, else each run of one
+  color after its pistes' names; stretches without a grade are left out. The colors are
+  the Alps' (`pisteColorName`: advanced and expert both black, freeride yellow), not North
+  America's, where `easy` is green. Plain text, not a styled line: notes are the user's,
+  editable, and go into the PDF, the calendar and the widget as they are. An entry kept on
+  saving again keeps its notes; only a new descent is written one. The plan keeps no grades,
+  so a run rebuilt from its legs has none until it is routed again.
+- **A descent's title names two pistes at most.** Real descents run down many (the
+  Hörnligrat in Arosa took seven names), which buried the times on the itinerary.
+  `TourLegPart.title` (`descentTitle`) keeps the first `kTitledPistes` and counts the rest
+  ("A, B +5"); the notes then name every piste in order, also in one color
+  (`pisteNote(named: true)`). `_keptPart` compares the saved title with that title, not
+  with the segment's full name, or a descent routed again would never be kept. A title
+  read back from its entry is already short and stays as it is.
+- **It is read back from its legs.** Each leg's `RoutePlan` keeps the grade (`ski`), what
+  the leg is (`part`: `descent`, `walk` or the lift's mode) and which of its points the
+  router chose (`router`). `savedTourOf` leaves those points out, so the legs join into
+  one run again, and rebuilds the run's path and segments from the legs' lines (a leg of
+  two points stores none: its ends are its line), titles and stations. A leg is kept on
+  saving again while its run runs between the same two waypoints and it is the same ride
+  or descent at the same place in it (`TourLegPart.index`, part and title). An older app
+  reads `ski` as no profile it knows and declines to open the tour, as for any profile it
+  does not know.
+- **Off the pistes there is only *Straight line*.** A *Ski tour* chip, a straight line
+  filed under ski, was dropped before release: beside *Ski* it read as a second way to
+  route skiing, and it did nothing *Straight line* does not, the mode being one tap on the
+  entry. `StraightMode.transportMode` still reads a leg a development build saved so.
 
 ## The tour
 
@@ -209,16 +333,24 @@ yet** (next section): that has to happen before a release carrying this.
   is saved into that option (`insertJourney`'s `alternativeId`); its start time is
   picked from the option's own last time. A route opened again keeps the place it has.
 - **The tour lives with the screen** (`autoDispose`): one not added to a day is not kept.
-- **Ski is a straight line under its own chip**, filed under the ski mode; *Straight line*
-  is the same with no mode.
+- **A straight line leaves the entry's mode alone.** `tourToItems` writes no mode for a
+  `StraightMode` leg without one, so the mode a user gives the entry afterwards (ski, for
+  a ski tour) survives saving the tour again, as its notes do.
+- **The *Pistes:* line takes the place of the straight-line hint** while *Ski* is
+  selected, at the same height.
 
 ## Not built yet
 
 - The door from the overview, for a route planned before there is a trip: where it is
   saved (a trip picked as for a connection, or a new routine) is still to decide.
 - A walking-time model with the user's own pace in place of the router's duration.
+- Routing parameters the user sets: speeds, and for ski runs `kBoardingTime` (now a flat
+  2 min per ride, short for a cable car running to a timetable).
 - *Edit route* from the map.
 - Timetabled sections inside a tour, through the connection search.
-- Pistes and lifts, including a short walk between the end of a piste and a lift.
+- Heights for ski runs: Overpass data has none. The source is still to decide (no
+  dependency on Amazon's terrain tiles).
+- Piste names from route relations (`route=piste`): a piste named only on its relation is
+  an unnamed descent. Pistes drawn as areas are not routed over.
 - A run made by the planner must be kept out of the unattended connection lookup
   (`plannedJourneys`), or a hike grouped with a train is replaced by the router's walk.

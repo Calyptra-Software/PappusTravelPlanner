@@ -8,7 +8,6 @@ import '../../../core/format/distance_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/attribution.dart';
-import '../../../data/database/tables.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/basemap.dart' show osmAttribution;
 import '../../map/basemap_provider.dart';
@@ -24,6 +23,7 @@ import '../../transport_search/presentation/journey_formats.dart';
 import '../application/route_engine.dart';
 import '../application/tour_planner_controller.dart';
 import '../data/saved_tour.dart';
+import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
 import '../domain/tour.dart';
 import '../tour_entries.dart';
@@ -70,10 +70,45 @@ const List<SectionMode> kPlannerModes = [
   RoutedMode(RouteProfile.gravelBike),
   RoutedMode(RouteProfile.mountainBike),
   RoutedMode(RouteProfile.car),
-  // No router knows pistes and lifts, so a ski section is drawn by hand.
-  StraightMode(TransportMode.ski),
+  // Over pistes and lifts; its grade is the tour's (see [plannerModeOf]).
+  SkiMode(),
+  // Off the paths and pistes nothing is routed: a ski tour, a glacier or a
+  // crossing is drawn by hand, and its entries are given their mode after.
   StraightMode(),
 ];
+
+/// Whether [a] and [b] are one choice among [kPlannerModes]: equal, or both
+/// ski runs, whatever their grade.
+bool samePlannerMode(SectionMode a, SectionMode b) =>
+    a == b || (a is SkiMode && b is SkiMode);
+
+/// [choice], one of [kPlannerModes], as the tour in [state] takes it: a ski
+/// run with the tour's grade.
+SectionMode plannerModeOf(SectionMode choice, TourPlannerState state) =>
+    choice is SkiMode ? SkiMode(state.skiDifficulty) : choice;
+
+/// The grades a ski run can be held to, gentlest first.
+const List<PisteDifficulty> kPlannerSkiDifficulties = [
+  PisteDifficulty.easy,
+  PisteDifficulty.intermediate,
+  PisteDifficulty.advanced,
+  PisteDifficulty.expert,
+  PisteDifficulty.extreme,
+];
+
+/// The color a trail map in the Alps marks [difficulty] with. OSM's grades
+/// are not colors (`PisteDifficulty`); this is the European reading, which
+/// North America does not share.
+String pisteColorName(AppLocalizations l10n, PisteDifficulty difficulty) =>
+    switch (difficulty) {
+      PisteDifficulty.novice => l10n.routePisteGreen,
+      PisteDifficulty.easy => l10n.routePisteBlue,
+      PisteDifficulty.intermediate => l10n.routePisteRed,
+      PisteDifficulty.advanced ||
+      PisteDifficulty.expert => l10n.routePisteBlack,
+      PisteDifficulty.freeride => l10n.routePisteYellow,
+      PisteDifficulty.extreme => l10n.routePisteExtreme,
+    };
 
 /// Planning a tour by tapping the map.
 ///
@@ -251,18 +286,26 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
       case _InsertPoint():
         planner.insertWaypoint(location.section, location.point);
       case _SetSectionMode(:final mode):
-        planner.setSectionMode(location.section, mode);
+        planner.setSectionMode(
+          location.section,
+          plannerModeOf(mode, ref.read(_planner)),
+        );
+      case _ReloadSki():
+        await planner.reloadSki();
     }
   }
 
-  /// The line a run is drawn as: the router's, or straight through its
-  /// waypoints while there is none.
-  List<LatLng> _linePoints(TourPlannerState state, TourRun run) =>
-      state.pathOf(run)?.points ??
-      [for (final waypoint in run.waypointsOf(state.tour)) waypoint.position];
+  /// The line a run is drawn as: the router's, with a straight line for each
+  /// section still waiting for its answer.
+  List<LatLng> _linePoints(TourPlannerState state, TourRun run) => [
+    for (final (index, line) in state.linesOf(run).indexed)
+      ...index == 0 ? line.points : line.points.skip(1),
+  ];
 
   Future<void> _save() async {
     setState(() => _saving = true);
+    // Read now: the names are asked for after the save's first await.
+    final l10n = AppLocalizations.of(context);
     final ids = await ref
         .read(_planner.notifier)
         .save(
@@ -270,6 +313,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
           date: widget.day,
           startMinutes: _startMinutes,
           alternativeId: widget.alternativeId,
+          pisteColor: (difficulty) => pisteColorName(l10n, difficulty),
         );
     if (!mounted) return;
     if (ids == null) {
@@ -397,7 +441,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           minimumHitbox: kLineHitbox,
                           polylines: [
                             for (final (index, run) in state.runs.indexed)
-                              _lineOf(
+                              ..._linesOf(
                                 state,
                                 run,
                                 index,
@@ -530,7 +574,9 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
           _PlannerPanel(
             state: state,
             startMinutes: _startMinutes,
-            onSelectMode: planner.selectMode,
+            onSelectMode: (mode) =>
+                planner.selectMode(plannerModeOf(mode, ref.read(_planner))),
+            onSkiDifficulty: planner.setSkiDifficulty,
             onRetry: planner.retry,
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
@@ -556,27 +602,28 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
   }
 
   /// One run's line. Dashed like every line that is a proposal and not a
-  /// record; a routed run still waiting for its answer is a thin dotted chord,
-  /// so it reads as "not known yet" rather than as the way.
-  Polyline<int> _lineOf(
+  /// record; a section still waiting for its answer is a thin dotted chord,
+  /// so it reads as "not known yet" rather than as the way, beside the
+  /// sections of the run that are known.
+  List<Polyline<int>> _linesOf(
     TourPlannerState state,
     TourRun run,
     int index,
     Color casing,
-  ) {
-    final known = state.pathOf(run) != null || run.mode is StraightMode;
-    return Polyline<int>(
-      points: _linePoints(state, run),
-      hitValue: index,
-      strokeWidth: known ? 3.5 : 2,
-      pattern: known
-          ? StrokePattern.dashed(segments: const [7, 5])
-          : const StrokePattern.dotted(),
-      color: known ? widget.color : const Color(0xFF5F6368),
-      borderStrokeWidth: known ? 2 : 0,
-      borderColor: casing,
-    );
-  }
+  ) => [
+    for (final (:points, :known) in state.linesOf(run))
+      Polyline<int>(
+        points: points,
+        hitValue: index,
+        strokeWidth: known ? 3.5 : 2,
+        pattern: known
+            ? StrokePattern.dashed(segments: const [7, 5])
+            : const StrokePattern.dotted(),
+        color: known ? widget.color : const Color(0xFF5F6368),
+        borderStrokeWidth: known ? 2 : 0,
+        borderColor: casing,
+      ),
+  ];
 }
 
 /// A waypoint: its number in the tour on a ringed disc in map colors. The ring
@@ -648,6 +695,7 @@ class _PlannerPanel extends StatelessWidget {
     required this.state,
     required this.startMinutes,
     required this.onSelectMode,
+    required this.onSkiDifficulty,
     required this.onRetry,
     required this.onPickStartTime,
     required this.moving,
@@ -675,6 +723,7 @@ class _PlannerPanel extends StatelessWidget {
   final TourPlannerState state;
   final int? startMinutes;
   final ValueChanged<SectionMode> onSelectMode;
+  final ValueChanged<PisteDifficulty> onSkiDifficulty;
   final VoidCallback onRetry;
   final VoidCallback onPickStartTime;
 
@@ -706,7 +755,7 @@ class _PlannerPanel extends StatelessWidget {
                         child: ChoiceChip(
                           avatar: Icon(plannerModeIcon(mode), size: 18),
                           label: Text(plannerModeLabel(mode, l10n)),
-                          selected: mode == state.mode,
+                          selected: samePlannerMode(mode, state.mode),
                           onSelected: moving ? null : (_) => onSelectMode(mode),
                         ),
                       ),
@@ -728,10 +777,18 @@ class _PlannerPanel extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  state.mode is StraightMode ? l10n.routePlanStraightHint : '',
-                  style: muted,
-                ),
+                child: switch (state.mode) {
+                  SkiMode(:final maxDifficulty) => _skiDifficulty(
+                    l10n,
+                    muted,
+                    maxDifficulty,
+                  ),
+                  StraightMode() => Text(
+                    l10n.routePlanStraightHint,
+                    style: muted,
+                  ),
+                  RoutedMode() => Text('', style: muted),
+                },
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -778,6 +835,42 @@ class _PlannerPanel extends StatelessWidget {
     );
   }
 
+  /// The grade the tour's ski runs are held to, to change in place: a line no
+  /// taller than the hint it stands in for.
+  Widget _skiDifficulty(
+    AppLocalizations l10n,
+    TextStyle? style,
+    PisteDifficulty selected,
+  ) => Row(
+    children: [
+      Text(l10n.routeSkiDifficulty, style: style),
+      const SizedBox(width: 4),
+      PopupMenuButton<PisteDifficulty>(
+        enabled: !moving,
+        initialValue: selected,
+        onSelected: onSkiDifficulty,
+        tooltip: l10n.routeSkiDifficulty,
+        itemBuilder: (_) => [
+          for (final difficulty in kPlannerSkiDifficulties)
+            PopupMenuItem(
+              value: difficulty,
+              child: Text(skiDifficultyLabel(difficulty, l10n)),
+            ),
+        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              skiDifficultyLabel(selected, l10n),
+              style: style?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Icon(Icons.arrow_drop_down, size: 16, color: style?.color),
+          ],
+        ),
+      ),
+    ],
+  );
+
   /// One line saying where the tour stands: refused, being routed, complete
   /// with its totals, or what to do next.
   Widget _status(BuildContext context, AppLocalizations l10n, ThemeData theme) {
@@ -804,7 +897,13 @@ class _PlannerPanel extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
           const SizedBox(width: 12),
-          Flexible(child: Text(l10n.routePlanRouting)),
+          Flexible(
+            child: Text(
+              state.routingSki
+                  ? l10n.routePlanLoadingPistes
+                  : l10n.routePlanRouting,
+            ),
+          ),
         ],
       );
     }
@@ -863,8 +962,19 @@ String plannerModeLabel(SectionMode mode, AppLocalizations l10n) =>
         RouteProfile.mountainBike => l10n.routeProfileMountainBike,
         RouteProfile.car => l10n.routeProfileCar,
       },
-      StraightMode(transportMode: TransportMode.ski) => l10n.routeModeSki,
+      SkiMode() => l10n.routeModeSki,
       StraightMode() => l10n.routeModeStraight,
+    };
+
+/// What the planner calls a grade a ski run is held to.
+String skiDifficultyLabel(PisteDifficulty difficulty, AppLocalizations l10n) =>
+    switch (difficulty) {
+      PisteDifficulty.novice || PisteDifficulty.easy => l10n.routeSkiUpToEasy,
+      PisteDifficulty.intermediate => l10n.routeSkiUpToIntermediate,
+      PisteDifficulty.advanced => l10n.routeSkiUpToAdvanced,
+      PisteDifficulty.expert => l10n.routeSkiAllPistes,
+      PisteDifficulty.freeride ||
+      PisteDifficulty.extreme => l10n.routeSkiWithFreeride,
     };
 
 IconData plannerModeIcon(SectionMode mode) => switch (mode) {
@@ -876,7 +986,7 @@ IconData plannerModeIcon(SectionMode mode) => switch (mode) {
     RouteProfile.mountainBike => Icons.terrain,
     RouteProfile.car => Icons.directions_car,
   },
-  StraightMode(transportMode: TransportMode.ski) => Icons.downhill_skiing,
+  SkiMode() => Icons.downhill_skiing,
   StraightMode() => Icons.show_chart,
 };
 
@@ -884,6 +994,8 @@ String routeFailureText(RouteEngineFailure failure, AppLocalizations l10n) =>
     switch (failure) {
       RouteEngineFailure.unreachable => l10n.routeFailureUnreachable,
       RouteEngineFailure.noRoute => l10n.routeFailureNoRoute,
+      RouteEngineFailure.busy => l10n.routeFailureBusy,
+      RouteEngineFailure.tooLarge => l10n.routeFailureTooLarge,
       RouteEngineFailure.failed => l10n.routeFailureFailed,
     };
 
@@ -1022,6 +1134,10 @@ class _SetSectionMode extends _SectionEdit {
   final SectionMode mode;
 }
 
+class _ReloadSki extends _SectionEdit {
+  const _ReloadSki();
+}
+
 /// One section of the tour: how it is traveled, and setting a point into it
 /// where the line was tapped.
 class _SectionSheet extends StatelessWidget {
@@ -1053,7 +1169,7 @@ class _SectionSheet extends StatelessWidget {
                 ChoiceChip(
                   avatar: Icon(plannerModeIcon(option), size: 18),
                   label: Text(plannerModeLabel(option, l10n)),
-                  selected: option == mode,
+                  selected: samePlannerMode(option, mode),
                   onSelected: (_) =>
                       Navigator.of(context).pop(_SetSectionMode(option)),
                 ),
@@ -1065,6 +1181,12 @@ class _SectionSheet extends StatelessWidget {
             icon: const Icon(Icons.add_location_alt_outlined, size: 18),
             label: Text(l10n.routeSectionAddPoint),
           ),
+          if (mode is SkiMode)
+            TextButton.icon(
+              onPressed: () => Navigator.of(context).pop(const _ReloadSki()),
+              icon: const Icon(Icons.refresh, size: 18),
+              label: Text(l10n.routeSkiReload),
+            ),
         ],
       ),
     );

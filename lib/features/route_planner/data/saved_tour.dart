@@ -6,10 +6,12 @@ import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
 import '../../map/map_features.dart';
+import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
 import '../domain/tour.dart';
 import '../tour_entries.dart';
+import 'tour_mapper.dart';
 
 /// A tour the planner saved, read back from the entries it was saved as.
 class SavedTour {
@@ -22,7 +24,13 @@ class SavedTour {
     this.startMinutes,
     this.legItems = const {},
     this.placeItems = const {},
+    this.runParts = const {},
   });
+
+  /// The legs a ski run was laid out as, in order, by the keys of the run's
+  /// two ends: what each leg is ([RoutePlan.part]), what it was called, and
+  /// its entry. What saving the tour again keeps of a ski run.
+  final Map<(int, int), List<({String? part, String? title, int id})>> runParts;
 
   /// The leg entry that runs between two of [tour]'s waypoints, by their
   /// `TourWaypoint.key`s, and the place entry that stands at one. What saving
@@ -126,29 +134,46 @@ SavedTour? savedTourOf(
 
   final waypoints = <TourWaypoint>[];
   final modes = <SectionMode>[];
-  // The waypoint indices each leg runs between, to find its run again.
+  // The waypoint indices each leg runs between, to find its run again. A leg
+  // of a ski run may start or end at a point the router chose, which is no
+  // waypoint: it is placed at the waypoint before it, and on a ski run only
+  // its start counts.
   final spans = <({int first, int last})>[];
+  // Where each leg's ends stand in [waypoints], where they are waypoints.
+  final ends = <({int? from, int? to})>[];
   for (final (item: _, :plan) in legs) {
     final mode = _modeOf(plan);
     if (mode == null) return null;
-    final points = [for (final point in plan.waypoints) _waypoint(point)];
     final first = waypoints.isEmpty ? 0 : waypoints.length - 1;
     // The leg's first waypoint is the one the leg before it ended on.
-    waypoints.addAll(waypoints.isEmpty ? points : points.skip(1));
-    modes.addAll(List.filled(points.length - 1, mode));
+    final points = waypoints.isEmpty ? plan.waypoints : plan.waypoints.skip(1);
+    for (final point in points) {
+      if (point.byRouter) continue;
+      waypoints.add(_waypoint(point));
+      if (waypoints.length > 1) modes.add(mode);
+    }
     spans.add((first: first, last: waypoints.length - 1));
+    ends.add((
+      from: plan.waypoints.first.byRouter ? null : first,
+      to: plan.waypoints.last.byRouter ? null : waypoints.length - 1,
+    ));
   }
+  if (waypoints.length < 2) return null;
   // Each waypoint is keyed by where it stands in the tour as saved, and named
   // as the entries now name it: an end renamed in the entry's form since, or
   // a place retitled, is what the planner shows and saves back, rather than
   // the name the plan was written with.
   final names = <int, String>{};
   final legItems = <(int, int), int>{};
-  for (final (index, (:item, plan: _)) in legs.indexed) {
+  for (final (index, (:item, :plan)) in legs.indexed) {
     final span = spans[index];
-    legItems[(span.first, span.last)] = item.id;
-    if (_nonEmpty(item.fromLocation) case final from?) names[span.first] = from;
-    if (_nonEmpty(item.toLocation) case final to?) names[span.last] = to;
+    if (plan.ski == null) legItems[(span.first, span.last)] = item.id;
+    if (ends[index].from case final from?) {
+      if (_nonEmpty(item.fromLocation) case final name?) names[from] = name;
+    }
+    if (ends[index].to case final to?) {
+      if (_nonEmpty(item.toLocation) case final name?) names[to] = name;
+    }
   }
   // The places in plan order stand at the waypoints marked as places, in the
   // same order: both were written from one walk along the tour.
@@ -183,8 +208,18 @@ SavedTour? savedTourOf(
 
   final paths = <String, RoutedPath>{};
   final runs = tourRuns(tour);
+  // The legs of each ski run, in order, by the run's index.
+  final skiLegs = <int, List<int>>{};
   for (final (index, (:item, :plan)) in legs.indexed) {
     final span = spans[index];
+    if (plan.ski != null) {
+      final run = runs.indexWhere(
+        (run) => run.first <= span.first && span.first < run.last,
+      );
+      if (run < 0) return null;
+      (skiLegs[run] ??= []).add(index);
+      continue;
+    }
     final run = runs
         .where((run) => run.first == span.first && run.last == span.last)
         .firstOrNull;
@@ -192,6 +227,23 @@ SavedTour? savedTourOf(
     if (key == null) continue;
     final path = _storedPath(tracksOf(item.id), plan);
     if (path != null) paths[key] = path;
+  }
+  final runParts =
+      <(int, int), List<({String? part, String? title, int id})>>{};
+  for (final MapEntry(key: runIndex, value: legIndices) in skiLegs.entries) {
+    final run = runs[runIndex];
+    final parts = [for (final index in legIndices) legs[index]];
+    final path = _storedSkiRun(
+      parts,
+      tracksOf,
+      keyed.sublist(run.first, run.last + 1),
+    );
+    final key = runKey(tour, run);
+    if (path != null && key != null) paths[key] = path;
+    runParts[(run.first, run.last)] = [
+      for (final (:item, :plan) in parts)
+        (part: plan.part, title: _nonEmpty(item.title), id: item.id),
+    ];
   }
 
   final groups = {for (final item in members) item.groupId};
@@ -204,6 +256,7 @@ SavedTour? savedTourOf(
     startMinutes: members.first.startMinutes,
     legItems: legItems,
     placeItems: placeItems,
+    runParts: runParts,
   );
 }
 
@@ -232,6 +285,7 @@ List<int?> keptEntryIds(List<TourEntry> entries, SavedTour saved) {
   for (final (index, entry) in entries.indexed) {
     kept[index] = switch (entry) {
       TourPlace(:final waypoint) => claim(saved.placeItems[waypoint.key]),
+      TourLeg(:final part?) => claim(_keptPart(part, saved)),
       TourLeg(:final from, :final to) when from.key != null && to.key != null =>
         claim(saved.legItems[(from.key!, to.key!)]),
       TourLeg() => null,
@@ -242,7 +296,9 @@ List<int?> keptEntryIds(List<TourEntry> entries, SavedTour saved) {
   // being the saved order) or was set since. A leg that merely starts at the
   // same point after a reorder is not a half of anything.
   for (final (index, entry) in entries.indexed) {
-    if (kept[index] != null || entry is! TourLeg) continue;
+    if (kept[index] != null || entry is! TourLeg || entry.part != null) {
+      continue;
+    }
     final from = entry.from.key;
     final to = entry.to.key;
     if (from == null) continue;
@@ -256,6 +312,21 @@ List<int?> keptEntryIds(List<TourEntry> entries, SavedTour saved) {
     }
   }
   return kept;
+}
+
+/// The entry a leg of a ski run was saved as, if it is the same entry: its
+/// run runs between the same two waypoints, and the leg is the same ride or
+/// descent at the same place in it, by what it is and what it is called.
+int? _keptPart(TourLegPart part, SavedTour saved) {
+  final from = part.runFrom.key;
+  final to = part.runTo.key;
+  if (from == null || to == null) return null;
+  final old = saved.runParts[(from, to)];
+  if (old == null || part.index >= old.length) return null;
+  final same = old[part.index];
+  return same.part == routePlanPartOf(part.segment) && same.title == part.title
+      ? same.id
+      : null;
 }
 
 /// The line the router gave for a leg, as the leg still holds it: its routed
@@ -282,6 +353,10 @@ RoutedPath? _storedPath(List<Track> tracks, RoutePlan plan) {
 }
 
 SectionMode? _modeOf(RoutePlan plan) {
+  if (plan.ski case final ski?) {
+    final difficulty = PisteDifficulty.byName(ski);
+    return difficulty == null ? null : SkiMode(difficulty);
+  }
   if (plan.straight) {
     return StraightMode(
       TransportMode.values
@@ -291,6 +366,83 @@ SectionMode? _modeOf(RoutePlan plan) {
   }
   final profile = RouteProfile.byName(plan.profile);
   return profile == null ? null : RoutedMode(profile);
+}
+
+/// The path of a ski run as its legs [parts] still hold it: their lines one
+/// after the other, each a segment, with what each plan kept beside it. A leg
+/// without a stored line was two points, its ends. [waypoints] are the run's,
+/// placed where they lie along the path again.
+RoutedPath? _storedSkiRun(
+  List<({ItineraryItem item, RoutePlan plan})> parts,
+  List<Track> Function(int itemId) tracksOf,
+  List<TourWaypoint> waypoints,
+) {
+  final points = <LatLng>[];
+  final segments = <PathSegment>[];
+  for (final (:item, :plan) in parts) {
+    final kind = switch (plan.part) {
+      'descent' => SegmentKind.descent,
+      'walk' => SegmentKind.walk,
+      _ => SegmentKind.lift,
+    };
+    final liftMode = kind == SegmentKind.lift
+        ? TransportMode.values.where((m) => m.name == plan.part).firstOrNull
+        : null;
+    if (kind == SegmentKind.lift && liftMode == null) return null;
+    final line =
+        _storedPath(tracksOf(item.id), plan)?.points ??
+        [
+          for (final point in [plan.waypoints.first, plan.waypoints.last])
+            LatLng(point.lat, point.lon),
+        ];
+    final start = points.isEmpty ? 0 : points.length - 1;
+    points.addAll(points.isEmpty ? line : line.skip(1));
+    segments.add(
+      PathSegment(
+        start: start,
+        end: points.length - 1,
+        kind: kind,
+        liftMode: liftMode,
+        lengthMeters: plan.meters ?? lineLength(line),
+        duration: Duration(seconds: plan.seconds ?? 0),
+        name: _nonEmpty(item.title),
+        fromName: _nonEmpty(item.fromLocation),
+        toName: _nonEmpty(item.toLocation),
+      ),
+    );
+  }
+  if (points.length < 2) return null;
+  // Each waypoint at the point nearest it, never before the one before it.
+  final reached = <int>[];
+  for (final (index, waypoint) in waypoints.indexed) {
+    if (index == 0) {
+      reached.add(0);
+      continue;
+    }
+    if (index == waypoints.length - 1) {
+      reached.add(points.length - 1);
+      continue;
+    }
+    var best = reached.last;
+    var bestMeters = double.infinity;
+    for (var i = reached.last; i < points.length; i++) {
+      final meters = lineLength([points[i], waypoint.position]);
+      if (meters < bestMeters) {
+        best = i;
+        bestMeters = meters;
+      }
+    }
+    reached.add(best);
+  }
+  return RoutedPath(
+    points: points,
+    lengthMeters: segments.fold(0, (sum, s) => sum + s.lengthMeters),
+    duration: Duration(
+      seconds: segments.fold(0, (sum, s) => sum + s.duration.inSeconds),
+    ),
+    segments: segments,
+    waypointIndices: reached,
+  );
 }
 
 TourWaypoint _waypoint(RoutePlanPoint point) => TourWaypoint(

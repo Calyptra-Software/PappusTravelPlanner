@@ -60,9 +60,10 @@ void main() {
       // the attribution has to be reachable when no search is open.
       expect(find.text(kOsmCopyrightUrl), findsOneWidget);
       expect(find.text(kTransitousSourcesUrl), findsOneWidget);
-      // The route planner's router too.
+      // The route planner's router, and where its pistes come from, too.
       expect(find.text(kBrouterUrl), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new), findsNWidgets(3));
+      expect(find.text(kOverpassSiteUrl), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new), findsNWidgets(4));
     });
 
     testWidgets('under a line saying what the data is for', (tester) async {
@@ -78,7 +79,7 @@ void main() {
       await pump(tester, const DataSourcesSettings());
 
       final tiles = tester.widgetList<ListTile>(find.byType(ListTile));
-      expect(tiles, hasLength(3));
+      expect(tiles, hasLength(4));
       for (final tile in tiles) {
         expect(tile.onTap, isNotNull);
       }

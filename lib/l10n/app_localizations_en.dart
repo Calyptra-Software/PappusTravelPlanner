@@ -2852,6 +2852,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routeModeStraight => 'Straight line';
 
   @override
+  String get routePlanLoadingPistes => 'Loading pistes and lifts…';
+
+  @override
+  String get routeSkiDifficulty => 'Pistes:';
+
+  @override
+  String get routeSkiUpToEasy => 'easy only';
+
+  @override
+  String get routeSkiUpToIntermediate => 'up to intermediate';
+
+  @override
+  String get routeSkiUpToAdvanced => 'up to difficult';
+
+  @override
+  String get routeSkiAllPistes => 'all';
+
+  @override
+  String get routeSkiWithFreeride => 'all, and freeride routes';
+
+  @override
+  String get routeSkiReload => 'Reload pistes and lifts';
+
+  @override
+  String get routePisteGreen => 'Green';
+
+  @override
+  String get routePisteBlue => 'Blue';
+
+  @override
+  String get routePisteRed => 'Red';
+
+  @override
+  String get routePisteBlack => 'Black';
+
+  @override
+  String get routePisteYellow => 'Yellow';
+
+  @override
+  String get routePisteExtreme => 'Extreme';
+
+  @override
   String get routeFailureUnreachable => 'Couldn\'t reach the routing service.';
 
   @override
@@ -2860,6 +2902,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get routeFailureFailed =>
       'The routing service answered with an error.';
+
+  @override
+  String get routeFailureBusy =>
+      'The service is busy. Try again in a few minutes.';
+
+  @override
+  String get routeFailureTooLarge =>
+      'This ski section spans too large an area. Name a waypoint along it to split it.';
 
   @override
   String get routeWaypointTitle => 'Waypoint';
@@ -2911,6 +2961,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attributionBrouter => 'Routes by BRouter';
 
   @override
+  String get attributionOverpass => 'Pistes and lifts via the Overpass API';
+
+  @override
   String get routePlannerSection => 'Route planner';
 
   @override
@@ -2936,5 +2989,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routingServerReset => 'Use the default server';
 
   @override
+  String get overpassServer => 'Piste and lift data';
+
+  @override
+  String get overpassServerHint =>
+      'An Overpass API server, e.g. https://overpass.example.org/api/interpreter';
+
+  @override
   String get routePlanUseMyLocation => 'Next point at my position';
+
+  @override
+  String get modeGondola => 'Gondola / cable car';
+
+  @override
+  String get modeChairLift => 'Chairlift';
+
+  @override
+  String get modeDragLift => 'Drag lift';
 }

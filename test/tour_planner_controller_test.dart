@@ -106,14 +106,25 @@ void main() {
     expect(leg.path.points, [_a, _b]);
   });
 
-  test('a third waypoint in the same mode asks for the whole run', () async {
+  test('a third waypoint asks only for the section it adds', () async {
     planner()
       ..addWaypoint(_a)
       ..addWaypoint(_b);
     await engine.answer();
     planner().addWaypoint(_c);
 
-    expect(engine.asked.last.$1, [_a, _b, _c]);
+    expect(engine.asked.last.$1, [_b, _c]);
+    // The run's line up to the new point stays the router's while it waits.
+    final lines = state().linesOf(state().runs.single);
+    expect(lines.map((line) => line.known), [true, false]);
+    expect(state().routing, isTrue);
+
+    await engine.answer();
+    expect(state().routing, isFalse);
+    final leg = state().entries!.single as TourLeg;
+    expect(leg.path.points, [_a, _b, _c]);
+    expect(leg.path.lengthMeters, 2000);
+    expect(leg.path.duration, const Duration(minutes: 40));
   });
 
   test('a change of mode asks only for the new run', () async {
@@ -177,27 +188,21 @@ void main() {
     expect(state().entries, isNotNull);
   });
 
-  test(
-    'naming a waypoint inside a run asks only for the half that is new',
-    () async {
-      planner()
-        ..addWaypoint(_a)
-        ..addWaypoint(_b)
-        ..addWaypoint(_c);
-      await engine.answer();
-      await engine.answer();
-      final before = engine.asked.length;
+  test('naming a waypoint inside a run asks nothing', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_b)
+      ..addWaypoint(_c);
+    await engine.answer();
+    await engine.answer();
+    final before = engine.asked.length;
 
-      planner().updateWaypoint(1, const TourWaypoint(_b, name: 'Hut'));
+    planner().updateWaypoint(1, const TourWaypoint(_b, name: 'Hut'));
 
-      // From a to b was answered when b was the tour's end.
-      expect(engine.asked.skip(before).map((request) => request.$1), [
-        [_b, _c],
-      ]);
-      await engine.answer();
-      expect(state().entries, hasLength(2));
-    },
-  );
+    // Each half is a section answered on its own already.
+    expect(engine.asked, hasLength(before));
+    expect(state().entries, hasLength(2));
+  });
 
   test('moving a waypoint asks for its run again and keeps its name', () async {
     planner()
@@ -261,7 +266,10 @@ void main() {
 
     planner().insertWaypoint(0, _b);
 
-    expect(engine.asked.last.$1, [_a, _b, _c]);
+    expect(engine.asked.skip(1).map((request) => request.$1), [
+      [_a, _b],
+      [_b, _c],
+    ]);
   });
 
   test('a new order asks only for the runs it made', () async {
@@ -314,7 +322,8 @@ void main() {
     expect(ids, hasLength(1));
     final item = await db.select(db.itineraryItems).getSingle();
     expect(item.kind, ItemKind.transport);
-    expect((item.startMinutes, item.endMinutes), (480, 500));
+    // Two sections of twenty minutes each.
+    expect((item.startMinutes, item.endMinutes), (480, 520));
     expect((await db.select(db.tracks).getSingle()).source, TrackSource.routed);
   });
 

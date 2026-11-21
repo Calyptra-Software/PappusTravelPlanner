@@ -24,6 +24,9 @@ const String kTransitousSourcesUrl = 'https://transitous.org/sources/';
 /// BRouter, which computes the route planner's routes on OpenStreetMap data.
 const String kBrouterUrl = 'https://brouter.de/';
 
+/// The Overpass API, which the route planner loads pistes and lifts from.
+const String kOverpassSiteUrl = 'https://overpass-api.de/';
+
 /// The one-line attribution shown under the connection search: both sources,
 /// both tappable.
 class AttributionFooter extends StatelessWidget {
@@ -130,6 +133,13 @@ class DataSourcesSettings extends StatelessWidget {
           subtitle: Text(kBrouterUrl, style: theme.textTheme.bodySmall),
           trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () => openExternalLink(context, kBrouterUrl),
+        ),
+        ListTile(
+          leading: const Icon(Icons.downhill_skiing),
+          title: Text(l10n.attributionOverpass),
+          subtitle: Text(kOverpassSiteUrl, style: theme.textTheme.bodySmall),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => openExternalLink(context, kOverpassSiteUrl),
         ),
       ],
     );
