@@ -561,7 +561,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           // data, whichever style the map is drawn in, as are a
                           // ski run's pistes; a wrong way is often wrong data,
                           // and overpass-api.de's terms ask for a way to report
-                          // it.
+                          // it. The heights of a ski run or a straight line are
+                          // Mapterhorn's, whose sources ask to be credited.
                           extra: [
                             osmAttribution,
                             (label: l10n.attributionBrouter, url: kBrouterUrl),
@@ -569,6 +570,13 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                               label: l10n.attributionFixTheMap,
                               url: kOsmFixTheMapUrl,
                             ),
+                            if (state.tour.modes.any(
+                              (m) => m is SkiMode || m is StraightMode,
+                            ))
+                              (
+                                label: l10n.attributionMapterhorn,
+                                url: kMapterhornAttributionUrl,
+                              ),
                           ],
                         ),
                       ],

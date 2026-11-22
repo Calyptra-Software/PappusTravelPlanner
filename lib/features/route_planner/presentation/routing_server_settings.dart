@@ -38,6 +38,22 @@ class OverpassServerSettings extends StatelessWidget {
   }
 }
 
+/// The settings row for the server ski runs take their heights from.
+class TerrainServerSettings extends StatelessWidget {
+  const TerrainServerSettings({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return ServerSettings(
+      provider: terrainServerProvider,
+      icon: Icons.terrain_outlined,
+      title: l10n.terrainServer,
+      hint: l10n.terrainServerHint,
+    );
+  }
+}
+
 /// A settings row for a server the planner asks: the address it uses, a tap
 /// to set another, and a way back to the default.
 class ServerSettings extends ConsumerWidget {

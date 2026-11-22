@@ -205,6 +205,7 @@ class SettingsScreen extends ConsumerWidget {
           _SectionHeader(title: l10n.routePlannerSection),
           const RoutingServerSettings(),
           const OverpassServerSettings(),
+          const TerrainServerSettings(),
           const Divider(),
           // Attribution belongs where it outlives the search sheet: an imported
           // connection stays in the trip long after the search that found it.

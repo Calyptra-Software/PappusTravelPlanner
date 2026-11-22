@@ -7,13 +7,17 @@ import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/providers.dart';
 import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
+import 'package:travelplanner/features/map/elevation.dart';
+import 'package:travelplanner/features/map/map_features.dart' show lineLength;
 import 'package:travelplanner/features/route_planner/application/route_engine.dart';
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
+import 'package:travelplanner/features/route_planner/application/terrain_heights.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/tour_entries.dart';
+import 'support/terrain_overrides.dart';
 
 /// A router that records what it was asked and answers when told to.
 class _FakeEngine implements RouteEngine {
@@ -52,6 +56,31 @@ class _FakeEngine implements RouteEngine {
   }
 }
 
+/// Terrain heights that record what they were asked and answer when told
+/// to.
+class _FakeHeights implements TerrainHeights {
+  final asked = <List<LatLng>>[];
+  final _pending = <Completer<List<double>?>>[];
+
+  @override
+  Future<List<double>?> at(List<LatLng> points) {
+    asked.add(points);
+    final completer = Completer<List<double>?>();
+    _pending.add(completer);
+    return completer.future;
+  }
+
+  /// Answers the oldest open request with [height] at each point, or with
+  /// none.
+  Future<void> answer(double Function(LatLng point)? height) async {
+    final points = asked[asked.length - _pending.length];
+    _pending
+        .removeAt(0)
+        .complete(height == null ? null : [for (final p in points) height(p)]);
+    await Future<void>.delayed(Duration.zero);
+  }
+}
+
 const _a = LatLng(47, 11);
 const _b = LatLng(47.1, 11);
 const _c = LatLng(47.2, 11);
@@ -67,6 +96,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         routeEngineProvider.overrideWithValue(engine),
+        noTerrainHeights,
         databaseProvider.overrideWithValue(db),
       ],
     );
@@ -150,6 +180,99 @@ void main() {
 
     expect(engine.asked, isEmpty);
     expect(state().entries, hasLength(1));
+  });
+
+  group('the heights of a straight line', () {
+    late _FakeHeights heights;
+    late ProviderContainer withHeights;
+
+    setUp(() {
+      heights = _FakeHeights();
+      withHeights = ProviderContainer(
+        overrides: [
+          routeEngineProvider.overrideWithValue(engine),
+          terrainHeightsProvider.overrideWithValue(heights),
+          databaseProvider.overrideWithValue(db),
+        ],
+      );
+      withHeights.listen(tourPlannerProvider(null), (_, _) {});
+    });
+    tearDown(() => withHeights.dispose());
+
+    TourPlannerController planner() =>
+        withHeights.read(tourPlannerProvider(null).notifier);
+    TourPlannerState state() => withHeights.read(tourPlannerProvider(null));
+
+    test('are asked for along the line, which waits for nothing', () async {
+      planner()
+        ..selectMode(const StraightMode())
+        ..addWaypoint(_a)
+        ..addWaypoint(_b);
+
+      expect(state().routing, isFalse);
+      expect(state().entries, hasLength(1));
+      final asked = heights.asked.single;
+      expect(asked.first, _a);
+      expect(asked.last, _b);
+      // 11 km in steps of no more than 20 m.
+      expect(asked.length, greaterThan(500));
+
+      await heights.answer((point) => 1000 + (point.latitude - 47) * 10000);
+
+      final leg = state().entries!.single as TourLeg;
+      expect(leg.path.points, asked);
+      expect(leg.path.elevations!.first, closeTo(1000, 1e-6));
+      expect(leg.path.elevations!.last, closeTo(2000, 1e-6));
+      // Counted past the threshold, so the last few meters may not count.
+      expect(leg.path.ascentMeters, closeTo(1000, kClimbThresholdMeters));
+      expect(leg.path.lengthMeters, closeTo(lineLength([_a, _b]), 1e-6));
+      expect(engine.asked, isEmpty);
+    });
+
+    test('each section on its own, joined into the run', () async {
+      planner()
+        ..selectMode(const StraightMode())
+        ..addWaypoint(_a)
+        ..addWaypoint(_b);
+      await heights.answer((_) => 500);
+      planner().addWaypoint(_c);
+
+      expect(heights.asked, hasLength(2));
+      expect(heights.asked.last.first, _b);
+      expect(state().entries!.single, isA<TourLeg>());
+      expect((state().entries!.single as TourLeg).path.elevations, isNull);
+
+      await heights.answer((_) => 600);
+
+      final leg = state().entries!.single as TourLeg;
+      expect(leg.path.points.first, _a);
+      expect(leg.path.points.last, _c);
+      expect(leg.path.elevations!.first, 500);
+      expect(leg.path.elevations!.last, 600);
+    });
+
+    test(
+      'that do not come leave the line as it is, asked again on retry',
+      () async {
+        planner()
+          ..selectMode(const StraightMode())
+          ..addWaypoint(_a)
+          ..addWaypoint(_b);
+
+        await heights.answer(null);
+
+        expect(state().failure, isNull, reason: 'nothing to tell the user');
+        final leg = state().entries!.single as TourLeg;
+        expect(leg.path.points, [_a, _b]);
+        expect(leg.path.elevations, isNull);
+        planner().selectMode(const RoutedMode(RouteProfile.foot));
+        expect(heights.asked, hasLength(1));
+
+        planner().retry();
+
+        expect(heights.asked, hasLength(2));
+      },
+    );
   });
 
   test(

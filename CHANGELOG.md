@@ -22,6 +22,9 @@ exact commits.
   descent under its name, a descent with the colors of its pistes in its notes. The pistes
   and lifts come from the Overpass API at overpass-api.de and are kept on the device for a
   month; another Overpass server can be set in the settings.
+- **Heights for ski days and straight lines.** A ski route and a line drawn by hand show
+  their climb and elevation profile, with heights from Mapterhorn's terrain data at
+  tiles.mapterhorn.com; another server can be set in the settings.
 - **A planned route can be edited again.** *Edit route* on the route's label opens it in
   the planner as it was saved.
 - **Elevation profiles.** Planned routes, imported GPX files and recorded tracks keep their

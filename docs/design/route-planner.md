@@ -6,9 +6,9 @@ becomes itinerary entries. The connection search is a separate feature
 ([`tracks.md`](tracks.md)).
 
 **Status: a first planner screen exists, reached from *Plan route* under a day.** The app
-therefore contacts `brouter.de`, and `overpass-api.de` for ski sections, which
-`SECURITY.md` says. **Neither operator has been asked yet** (next section, and *Ski
-runs*): that has to happen before a release carrying this.
+therefore contacts `brouter.de`, and `overpass-api.de` and `tiles.mapterhorn.com` for ski
+sections, which `SECURITY.md` says. **None of the three operators has been asked yet**
+(next section, and *Ski runs*): that has to happen before a release carrying this.
 
 ## The engine
 
@@ -180,11 +180,50 @@ runs*): that has to happen before a release carrying this.
   the leg is (`part`: `descent`, `walk` or the lift's mode) and which of its points the
   router chose (`router`). `savedTourOf` leaves those points out, so the legs join into
   one run again, and rebuilds the run's path and segments from the legs' lines (a leg of
-  two points stores none: its ends are its line), titles and stations. A leg is kept on
+  two points stores none unless it has heights: its ends are its line), their heights
+  where every leg kept some, titles and stations. Both were missed once: a lift of two
+  points lost its heights on saving, and the run was read back without any, though each
+  leg showed its own. A leg is kept on
   saving again while its run runs between the same two waypoints and it is the same ride
   or descent at the same place in it (`TourLegPart.index`, part and title). An older app
   reads `ski` as no profile it knows and declines to open the tour, as for any profile it
   does not know.
+- **Heights come from Mapterhorn's terrain tiles**, since Overpass data has none. Compared
+  on 2026-11-22: AWS Terrain Tiles (tilezen/joerd) are frozen since 2017 at 30 m in the
+  Alps (EU-DEM), and their maintainer advises against calling the bucket from a product
+  and points to Mapterhorn (joerd #219, #228). Mapterhorn has 2 m in Switzerland, 1 m in
+  Austria, 2 to 10 m in Italy, 30 m elsewhere; one maintainer, Cloudflare hosting, no
+  published usage policy. Point services fall short for paths of thousands of points:
+  Open-Meteo is 90 m and non-commercial, OpenTopoData allows 1,000 calls a day for all
+  users together, and FOSSGIS asks apps not to hard-code its Valhalla `/height`.
+  **Mapterhorn has not been asked yet**: that has to happen before a release.
+- **A path's tiles are fetched after it is routed, never ahead.** `TerrainTileHeights`
+  loads the tiles of `kTerrainZoom` (12, about 13 m a pixel in the Alps at 512 px) that
+  the path crosses, a few per ski day, and keeps them 30 days on disk as fetched (base64:
+  `CacheFiles` holds text) and `kTerrainTilesInMemory` decoded. A height is blended from
+  the four pixels around it; a point within half a pixel of a tile's edge takes the tile
+  beyond as well (`tilesFor`). Only the PNG and WebP decoders see the bytes. The server
+  is a setting (`terrainServerProvider`), an address the tiles lie under as
+  `{z}/{x}/{y}.webp`: a template with braces does not survive `Uri`.
+- **A ride runs straight from stop to stop.** The ground under a cable drops between
+  pylons, which would draw a ride climbing and falling and count it as climb.
+  `SkiGraph.find` flags the points of a ride between its stops (`SkiRoute.aloft`) and
+  `levelAloft` runs their heights straight by distance. Checked once, on 2026-11-22: the
+  Weisshornbahn in Arosa comes out at 1750, 2009 and 2631 m at its stations, each
+  section rising straight.
+- **Heights are worth less than the way.** A path whose tiles cannot be had comes
+  without heights, and nothing asks again by itself; the next change to the run does.
+- **A line drawn by hand gets heights too, and waits for none.** `_askHeights` asks
+  `terrainHeightsProvider` (shared with the ski router, so one tile cache) for each
+  straight section, with points set every `kStraightHeightStep` (20 m) along it
+  (`densify`): two heights from end to end would draw a ramp over whatever lies between.
+  The answer is kept under `lineKey`, never `sectionKey`, so a straight run stays
+  complete without it: `routing` and the failure line read only the router's keys, and
+  a tour saved before the heights came is saved without them. No heights is filed as a
+  failure under the same key, not told to anyone, and asked again on retry. A straight
+  leg saved with heights stores its densified line (`TrackSource.drawn`) and is read back
+  under `lineRunKey`; one saved without them stores none, as before, and is asked
+  again when opened.
 - **Off the pistes there is only *Straight line*.** A *Ski tour* chip, a straight line
   filed under ski, was dropped before release: beside *Ski* it read as a second way to
   route skiing, and it did nothing *Straight line* does not, the mode being one tap on the
@@ -219,8 +258,8 @@ runs*): that has to happen before a release carrying this.
   at first, which made the entry's row say "computed route" and the GPX `<src>routed`
   about a line nobody computed. It is a proposal like a routed one
   (`TrackSourceKind.isProposal`): drawn dashed, put away by a recording, and replaced when
-  the tour is saved again. A straight line of two points is not stored at all, since the
-  leg's chord is the same line.
+  the tour is saved again. A line of two points without heights is not stored at all,
+  since the leg's chord is the same line; with heights it is, for them.
 - **A routed line is stored with its heights** (`Tracks.elevations`, see `tracks.md`),
   and its climb is counted from them by `climbOf`, not read from the router's own
   "filtered ascend". The stored line is counted again wherever it is shown, and the
@@ -361,8 +400,6 @@ runs*): that has to happen before a release carrying this.
   2 min per ride, short for a cable car running to a timetable).
 - *Edit route* from the map.
 - Timetabled sections inside a tour, through the connection search.
-- Heights for ski runs: Overpass data has none. The source is still to decide (no
-  dependency on Amazon's terrain tiles).
 - Piste names from route relations (`route=piste`): a piste named only on its relation is
   an unnamed descent. Pistes drawn as areas are not routed over.
 - A run made by the planner must be kept out of the unattended connection lookup

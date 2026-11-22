@@ -2909,6 +2909,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get attributionOverpass => 'Pistes and lifts via the Overpass API';
 
   @override
+  String get attributionMapterhorn => 'Heights from Mapterhorn';
+
+  @override
   String get attributionFixTheMap => 'Report a map error';
 
   @override
@@ -2942,6 +2945,13 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get overpassServerHint =>
       'An Overpass API server, e.g. https://overpass.example.org/api/interpreter';
+
+  @override
+  String get terrainServer => 'Height data';
+
+  @override
+  String get terrainServerHint =>
+      'A server with terrain tiles laid out like Mapterhorn\'s, e.g. https://tiles.example.org';
 
   @override
   String get routePlanUseMyLocation => 'Next point at my position';

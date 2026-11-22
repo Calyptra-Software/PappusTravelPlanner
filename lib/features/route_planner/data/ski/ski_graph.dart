@@ -105,6 +105,16 @@ class _Edge {
   };
 }
 
+/// A way [SkiGraph.find] found: the path, and for each of its points whether
+/// it hangs on a lift's cable. A lift's line runs over its pylons, where the
+/// ground is no height of the ride's (`levelAloft`).
+class SkiRoute {
+  SkiRoute(this.path, this.aloft) : assert(aloft.length == path.points.length);
+
+  final RoutedPath path;
+  final List<bool> aloft;
+}
+
 /// The pistes and lifts of an area as a graph a ski day is routed through.
 ///
 /// A node is an OSM node on a piste, or a station of a lift: its two ends and
@@ -340,6 +350,12 @@ class SkiGraph {
   RoutedPath route(
     List<LatLng> waypoints, {
     PisteDifficulty maxDifficulty = PisteDifficulty.standard,
+  }) => find(waypoints, maxDifficulty: maxDifficulty).path;
+
+  /// [route], with which points of the path hang on a lift's cable.
+  SkiRoute find(
+    List<LatLng> waypoints, {
+    PisteDifficulty maxDifficulty = PisteDifficulty.standard,
   }) {
     if (waypoints.length < 2) {
       throw ArgumentError.value(waypoints, 'waypoints', 'needs two or more');
@@ -449,7 +465,7 @@ class SkiGraph {
   /// one descent, each lift ride is one, a short walk is folded into the
   /// descent or ride beside it ([kFoldWalkMeters]), and the way from one lift
   /// to the next into the next ([foldTransfers]).
-  RoutedPath _assemble(
+  SkiRoute _assemble(
     List<LatLng> waypoints,
     List<_Edge> steps,
     List<int> reached,
@@ -486,11 +502,13 @@ class SkiGraph {
     _foldWalks(parts);
 
     final points = <LatLng>[];
+    final aloft = <bool>[];
     final segments = <PathSegment>[];
     // Where each step's end lies along [points], to find the waypoints again.
     for (final part in parts) {
       final start = points.isEmpty ? 0 : points.length - 1;
       points.addAll(points.isEmpty ? part.points : part.points.skip(1));
+      aloft.addAll(aloft.isEmpty ? part.aloft : part.aloft.skip(1));
       segments.add(
         PathSegment(
           start: start,
@@ -506,7 +524,7 @@ class SkiGraph {
         ),
       );
     }
-    return RoutedPath(
+    final path = RoutedPath(
       points: points,
       lengthMeters: segments.fold(0, (sum, s) => sum + s.lengthMeters),
       duration: Duration(
@@ -515,6 +533,7 @@ class SkiGraph {
       segments: foldTransfers(segments),
       waypointIndices: _waypointIndices(points, reached),
     );
+    return SkiRoute(path, aloft);
   }
 
   /// Where along [points] each node of [reached] is passed, in order.
@@ -585,6 +604,7 @@ class _Part {
     : kind = edge.kind,
       way = edge.way,
       points = [...edge.points],
+      aloft = _aloftOf(edge),
       meters = edge.meters,
       seconds = edge.seconds,
       _names = [?edge.way?.name],
@@ -594,6 +614,7 @@ class _Part {
     : kind = SegmentKind.walk,
       way = null,
       points = [from, to],
+      aloft = [false, false],
       meters = _meters(from, to),
       seconds = _meters(from, to) / kSkiWalkSpeed,
       _names = [],
@@ -602,6 +623,9 @@ class _Part {
   final SegmentKind kind;
   final SkiWay? way;
   final List<LatLng> points;
+
+  /// Whether each of [points] hangs on a lift's cable ([SkiRoute.aloft]).
+  final List<bool> aloft;
   double meters;
   double seconds;
   String? fromName;
@@ -617,8 +641,16 @@ class _Part {
       ? PisteStretch(name: edge.way?.name, difficulty: edge.way?.difficulty)
       : null;
 
+  /// What [SkiRoute.aloft] says about the points of [edge]: on a ride, every
+  /// point between its two stops, which are on the ground.
+  static List<bool> _aloftOf(_Edge edge) => [
+    for (var i = 0; i < edge.points.length; i++)
+      edge.kind == SegmentKind.lift && i > 0 && i < edge.points.length - 1,
+  ];
+
   void add(_Edge edge) {
     points.addAll(edge.points.skip(1));
+    aloft.addAll(_aloftOf(edge).skip(1));
     meters += edge.meters;
     seconds += edge.seconds;
     if (edge.way?.name case final name? when _names.lastOrNull != name) {
@@ -635,6 +667,7 @@ class _Part {
   /// between its stations; a descent takes the names of what it took in.
   void append(_Part other) {
     points.addAll(other.points.skip(1));
+    aloft.addAll(other.aloft.skip(1));
     meters += other.meters;
     seconds += other.seconds;
     if (kind == SegmentKind.lift) return;
@@ -651,6 +684,7 @@ class _Part {
   /// Takes [other], which comes before this part, into it; see [append].
   void prepend(_Part other) {
     points.insertAll(0, other.points.take(other.points.length - 1));
+    aloft.insertAll(0, other.aloft.take(other.aloft.length - 1));
     meters += other.meters;
     seconds += other.seconds;
     if (kind == SegmentKind.lift) return;

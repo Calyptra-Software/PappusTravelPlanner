@@ -4948,6 +4948,12 @@ abstract class AppLocalizations {
   /// **'Pistes and lifts via the Overpass API'**
   String get attributionOverpass;
 
+  /// Credit for the terrain data ski runs take their heights from; links to the list of its sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Heights from Mapterhorn'**
+  String get attributionMapterhorn;
+
   /// Link to OpenStreetMap's page for reporting a wrong piste, lift or anything else in the map data.
   ///
   /// In en, this message translates to:
@@ -5007,6 +5013,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'An Overpass API server, e.g. https://overpass.example.org/api/interpreter'**
   String get overpassServerHint;
+
+  /// No description provided for @terrainServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Height data'**
+  String get terrainServer;
+
+  /// No description provided for @terrainServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A server with terrain tiles laid out like Mapterhorn\'s, e.g. https://tiles.example.org'**
+  String get terrainServerHint;
 
   /// No description provided for @routePlanUseMyLocation.
   ///

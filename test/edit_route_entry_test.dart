@@ -30,6 +30,7 @@ import 'package:travelplanner/features/route_planner/tour_entries.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'support/attachment_overrides.dart';
+import 'support/terrain_overrides.dart';
 
 /// *Edit route* is offered on the run's label, beside *Show journey*, and on a
 /// planned leg standing alone: a route is the whole run, not one of its legs.
@@ -59,6 +60,7 @@ void main() {
       sharedPreferencesProvider.overrideWithValue(prefs),
       appVersionProvider.overrideWithValue('0.0.0-test'),
       routeEngineProvider.overrideWithValue(_NoRouter()),
+      noTerrainHeights,
       transportModesProvider.overrideWith((ref) => Stream.value(const [])),
       ...attachmentTestOverrides,
     ],

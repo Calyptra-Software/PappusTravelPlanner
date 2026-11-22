@@ -4,6 +4,7 @@ import '../../../core/settings/locale_provider.dart'
     show sharedPreferencesProvider;
 import '../data/brouter_client.dart';
 import '../data/ski/overpass_client.dart';
+import '../data/terrain_tiles.dart';
 
 /// The BRouter server the route planner asks, remembered across launches.
 ///
@@ -27,6 +28,17 @@ final overpassServerProvider = NotifierProvider<ServerSettingController, Uri>(
     key: 'ski_overpass_server',
     fallback: kOverpassUrl,
     defaultPath: kOverpassPath,
+  ),
+);
+
+/// The server ski runs take their heights from, remembered across launches:
+/// [kTerrainTilesUrl] unless the user set another (a mirror, or their own copy
+/// of the tiles), for the reasons [routingServerProvider] gives.
+final terrainServerProvider = NotifierProvider<ServerSettingController, Uri>(
+  () => ServerSettingController(
+    key: 'ski_terrain_server',
+    fallback: kTerrainTilesUrl,
+    defaultPath: '',
   ),
 );
 

@@ -137,8 +137,9 @@ MappedTour tourToItems(
           ),
         );
         // Two points are the chord the leg draws anyway; a stored line would
-        // only repeat it.
-        final stored = path.points.length > 2;
+        // only repeat it, unless it carries the heights of its ends (a lift
+        // drawn from station to station).
+        final stored = path.points.length > 2 || path.elevations != null;
         shapes.add(
           stored
               ? encodeTrackPoints(path.points, precision: kRoutedShapePrecision)

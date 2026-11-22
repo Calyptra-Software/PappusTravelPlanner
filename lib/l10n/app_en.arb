@@ -1623,6 +1623,10 @@
   "trackSourceDrawn": "Drawn by hand",
   "attributionBrouter": "Routes by BRouter",
   "attributionOverpass": "Pistes and lifts via the Overpass API",
+  "attributionMapterhorn": "Heights from Mapterhorn",
+  "@attributionMapterhorn": {
+    "description": "Credit for the terrain data ski runs take their heights from; links to the list of its sources."
+  },
   "attributionFixTheMap": "Report a map error",
   "@attributionFixTheMap": {
     "description": "Link to OpenStreetMap's page for reporting a wrong piste, lift or anything else in the map data."
@@ -1639,6 +1643,8 @@
   "routingServerReset": "Use the default server",
   "overpassServer": "Piste and lift data",
   "overpassServerHint": "An Overpass API server, e.g. https://overpass.example.org/api/interpreter",
+  "terrainServer": "Height data",
+  "terrainServerHint": "A server with terrain tiles laid out like Mapterhorn's, e.g. https://tiles.example.org",
   "routePlanUseMyLocation": "Next point at my position",
   "modeGondola": "Gondola / cable car",
   "modeChairLift": "Chairlift",

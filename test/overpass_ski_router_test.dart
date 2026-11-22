@@ -8,6 +8,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/cache_files.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/route_planner/application/route_engine.dart';
+import 'package:travelplanner/features/route_planner/application/terrain_heights.dart';
 import 'package:travelplanner/features/route_planner/data/ski/overpass_client.dart';
 import 'package:travelplanner/features/route_planner/data/ski/overpass_ski_router.dart';
 import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
@@ -28,6 +29,21 @@ class _MemoryFiles implements CacheFiles {
 
   @override
   Future<void> delete(String key) async => files.remove(key);
+}
+
+/// [TerrainHeights] from a function of the point, or none at all.
+class _FakeHeights implements TerrainHeights {
+  _FakeHeights(this.height);
+
+  final double Function(LatLng point)? height;
+  final asked = <List<LatLng>>[];
+
+  @override
+  Future<List<double>?> at(List<LatLng> points) async {
+    asked.add(points);
+    final height = this.height;
+    return height == null ? null : [for (final p in points) height(p)];
+  }
 }
 
 // Recorded once on 2026-11-21. Map data © OpenStreetMap contributors, ODbL.
@@ -58,17 +74,19 @@ void main() {
     now = DateTime(2026, 11, 21);
   });
 
-  OverpassSkiRouter router({bool withFiles = true}) => OverpassSkiRouter(
-    OverpassClient(
-      httpClient: MockClient((request) async {
-        requests.add(request);
-        return answer(request);
-      }),
-      userAgent: 'Test/1.0',
-    ),
-    files: Future.value(withFiles ? files : null),
-    now: () => now,
-  );
+  OverpassSkiRouter router({bool withFiles = true, TerrainHeights? heights}) =>
+      OverpassSkiRouter(
+        OverpassClient(
+          httpClient: MockClient((request) async {
+            requests.add(request);
+            return answer(request);
+          }),
+          userAgent: 'Test/1.0',
+        ),
+        heights: heights,
+        files: Future.value(withFiles ? files : null),
+        now: () => now,
+      );
 
   Future<RoutedPath> route(OverpassSkiRouter router) => router.route(
     waypoints: const [_kreuzeckValley, _hausbergValley],
@@ -121,6 +139,48 @@ void main() {
   });
 
   group('OverpassSkiRouter', () {
+    test(
+      'a path gets heights, a ride straight from station to station',
+      () async {
+        final heights = _FakeHeights(
+          (point) => 700 + (point.latitude - 47.4) * 10000,
+        );
+
+        final path = await route(router(heights: heights));
+
+        final elevations = path.elevations!;
+        expect(heights.asked.single, path.points);
+        final ride = path.segments!.first;
+        expect(ride.kind, SegmentKind.lift);
+        // Off the ride, and at its ends, the heights are the ground's; between
+        // its stops they are lifted off it (`levelAloft`, tested on its own).
+        double ground(int i) => 700 + (path.points[i].latitude - 47.4) * 10000;
+        expect(elevations.first, ground(0));
+        expect(elevations.last, ground(elevations.length - 1));
+        expect(elevations[ride.end], ground(ride.end));
+        final lifted = [
+          for (var i = ride.start; i <= ride.end; i++)
+            if ((elevations[i] - ground(i)).abs() > 0.01) i,
+        ];
+        expect(lifted, isNotEmpty, reason: 'the ride runs over pylons');
+        for (var i = 0; i < elevations.length; i++) {
+          if (i < ride.start || i > ride.end) {
+            expect(elevations[i], closeTo(ground(i), 0.01));
+          }
+        }
+        expect(path.ascentMeters, isNotNull);
+        expect(path.descentMeters, isNotNull);
+      },
+    );
+
+    test('without heights the path comes all the same', () async {
+      final path = await route(router(heights: _FakeHeights(null)));
+
+      expect(path.segments, isNotEmpty);
+      expect(path.elevations, isNull);
+      expect(path.ascentMeters, isNull);
+    });
+
     test('routes over the area it loaded, the ride under its name', () async {
       final path = await route(router());
 

@@ -5,6 +5,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
+import '../../map/elevation.dart';
 import '../../map/map_features.dart';
 import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
@@ -52,7 +53,8 @@ class SavedTour {
 
   /// The router's answers the entries still hold, by `runKey`: each leg's
   /// stored line with its heights. Opening a tour therefore asks the router
-  /// nothing, except about a leg whose line was removed since.
+  /// nothing, except about a leg whose line was removed since. A line drawn by
+  /// hand is here by `lineRunKey` where it was saved with heights.
   final Map<String, RoutedPath> paths;
 
   /// When the first entry starts, if it was given a time.
@@ -223,10 +225,14 @@ SavedTour? savedTourOf(
     final run = runs
         .where((run) => run.first == span.first && run.last == span.last)
         .firstOrNull;
-    final key = run == null ? null : runKey(tour, run);
+    final key = run == null ? null : runKey(tour, run) ?? lineRunKey(tour, run);
     if (key == null) continue;
     final path = _storedPath(tracksOf(item.id), plan);
-    if (path != null) paths[key] = path;
+    // A line drawn by hand is kept for its heights; without them the planner
+    // draws it from its waypoints and asks for them.
+    if (path != null && (!plan.straight || path.elevations != null)) {
+      paths[key] = path;
+    }
   }
   final runParts =
       <(int, int), List<({String? part, String? title, int id})>>{};
@@ -378,6 +384,9 @@ RoutedPath? _storedSkiRun(
   List<TourWaypoint> waypoints,
 ) {
   final points = <LatLng>[];
+  // Heights only where every leg kept its own, as `RoutedPath.elevations`
+  // is all or nothing.
+  List<double>? elevations = [];
   final segments = <PathSegment>[];
   for (final (:item, :plan) in parts) {
     final kind = switch (plan.part) {
@@ -389,13 +398,18 @@ RoutedPath? _storedSkiRun(
         ? TransportMode.values.where((m) => m.name == plan.part).firstOrNull
         : null;
     if (kind == SegmentKind.lift && liftMode == null) return null;
+    final stored = _storedPath(tracksOf(item.id), plan);
     final line =
-        _storedPath(tracksOf(item.id), plan)?.points ??
+        stored?.points ??
         [
           for (final point in [plan.waypoints.first, plan.waypoints.last])
             LatLng(point.lat, point.lon),
         ];
     final start = points.isEmpty ? 0 : points.length - 1;
+    final heights = stored?.elevations;
+    elevations = heights == null || elevations == null
+        ? null
+        : [...elevations, ...(points.isEmpty ? heights : heights.skip(1))];
     points.addAll(points.isEmpty ? line : line.skip(1));
     segments.add(
       PathSegment(
@@ -434,9 +448,13 @@ RoutedPath? _storedSkiRun(
     }
     reached.add(best);
   }
+  final climb = elevations == null ? null : climbOf(elevations);
   return RoutedPath(
     points: points,
     lengthMeters: segments.fold(0, (sum, s) => sum + s.lengthMeters),
+    elevations: elevations,
+    ascentMeters: climb?.ascent,
+    descentMeters: climb?.descent,
     duration: Duration(
       seconds: segments.fold(0, (sum, s) => sum + s.duration.inSeconds),
     ),

@@ -17,10 +17,14 @@ import 'package:travelplanner/features/route_planner/application/route_planner_p
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
 import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
 import 'package:travelplanner/features/route_planner/data/tour_mapper.dart';
+import 'package:travelplanner/features/map/map_features.dart' show lineLength;
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
+import 'package:travelplanner/features/route_planner/domain/terrain.dart'
+    show densify;
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/tour_entries.dart';
+import 'support/terrain_overrides.dart';
 
 const _car = RoutedMode(RouteProfile.car);
 const _foot = RoutedMode(RouteProfile.foot);
@@ -324,6 +328,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
+          noTerrainHeights,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -582,6 +587,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
+          noTerrainHeights,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -671,6 +677,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
+          noTerrainHeights,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -690,6 +697,45 @@ void main() {
           .watchAttachmentsForItem(newIds.single)
           .first;
       expect(files.single.name, 'map.pdf');
+    });
+
+    test('a straight leg saved with heights is opened with them', () async {
+      final line = densify(const [_carPark, _summit]);
+      final withHeights = RoutedPath.measured(
+        points: line,
+        elevations: [for (var i = 0; i < line.length; i++) 900.0 + i],
+        lengthMeters: lineLength(const [_carPark, _summit]),
+      );
+      final plain = Tour(
+        waypoints: const [TourWaypoint(_carPark), TourWaypoint(_summit)],
+        modes: const [StraightMode()],
+      );
+      Future<SavedTour> saveAndOpen(RoutedPath? path) async {
+        await (db.delete(db.itineraryItems)).go();
+        final mapped = tourToItems(
+          tourEntries(plain, {0: ?path})!,
+          tripId: tripId,
+          date: _day,
+          resolveMode: (_) => null,
+          tourId: 'line',
+        );
+        await repo.insertJourney(
+          tripId,
+          mapped.items,
+          shapes: mapped.shapes,
+          elevations: mapped.elevations,
+        );
+        return (await open((await items()).single))!;
+      }
+
+      final saved = await saveAndOpen(withHeights);
+      final key = lineRunKey(saved.tour, tourRuns(saved.tour).single)!;
+      expect(saved.paths[key]!.elevations, hasLength(line.length));
+      expect(saved.paths[key]!.points.length, line.length);
+
+      // Saved before its heights came: nothing kept, so the planner asks.
+      final bare = await saveAndOpen(null);
+      expect(bare.paths, isEmpty);
     });
 
     test('a straight leg keeps the mode given to its entry', () async {
@@ -721,7 +767,7 @@ void main() {
           .write(ItineraryItemsCompanion(mode: Value(ski)));
       final saved = (await open((await items()).single))!;
       container = ProviderContainer(
-        overrides: [databaseProvider.overrideWithValue(db)],
+        overrides: [databaseProvider.overrideWithValue(db), noTerrainHeights],
       );
       addTearDown(container.dispose);
       container.listen(tourPlannerProvider(saved), (_, _) {});

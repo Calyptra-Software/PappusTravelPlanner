@@ -35,6 +35,7 @@ import 'package:travelplanner/features/route_planner/tour_entries.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'location_fixture.dart';
+import 'support/terrain_overrides.dart';
 
 /// A router that answers at once, or refuses while [refusal] is set, and holds
 /// its answers back while [hold] is.
@@ -164,6 +165,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           databaseProvider.overrideWithValue(db),
           routeEngineProvider.overrideWithValue(engine),
+          noTerrainHeights,
           skiRouterProvider.overrideWithValue(skiRouter),
         ],
         child: MaterialApp(
