@@ -383,7 +383,8 @@ more. A descent's notes give the color of its pistes: the color alone if they al
 one, else each piste with its color, and every piste by name when the title names only
 some. The pistes and lifts of the area are loaded the first time a ski section is routed
 there and kept for a month; *Reload pistes and lifts* on a ski section loads them
-afresh.
+afresh. The heights of a ski route come from Mapterhorn's terrain data, a ride running
+straight from station to station.
 
 The locate button sets the next point at your position, or puts the point you are moving
 there, and centers the map on it. *Plan route* is also under each option of a decision,
@@ -420,7 +421,9 @@ BRouter server instead, your own for example; clearing the field, or the reset b
 goes back to brouter.de. Pistes and lifts come from the
 [Overpass API](https://overpass-api.de) at overpass-api.de, which receives the area
 around the points; *Piste and lift data* in the same section takes another Overpass
-server.
+server. The heights of a ski route come from [Mapterhorn](https://mapterhorn.com) at
+tiles.mapterhorn.com, which receives the map tiles the route crosses; *Height data* takes
+another server.
 
 ---
 

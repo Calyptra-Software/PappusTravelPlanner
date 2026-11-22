@@ -137,8 +137,9 @@ on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
 
 The route planner asks the [BRouter](https://brouter.de) server at brouter.de, which routes
 on OpenStreetMap data. For a ski section it loads the pistes and lifts of the area from the
-[Overpass API](https://overpass-api.de) at overpass-api.de. Both servers can be replaced by
-others in the settings.
+[Overpass API](https://overpass-api.de) at overpass-api.de, and the heights from the terrain
+tiles of [Mapterhorn](https://mapterhorn.com) at tiles.mapterhorn.com. All three servers can
+be replaced by others in the settings.
 
 The map draws [OpenStreetMap](https://www.openstreetmap.org/copyright) tiles from the
 OpenStreetMap Foundation's own servers. Their
