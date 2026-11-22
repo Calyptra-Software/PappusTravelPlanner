@@ -68,6 +68,9 @@ class MotisTransportSearch implements TransportSearch {
   final http.Client _http;
   final Uri _baseUrl;
 
+  /// The server asked.
+  Uri get baseUrl => _baseUrl;
+
   /// How this client names itself to the service: application, version, and a
   /// way of contact, which is exactly what the Transitous usage policy asks
   /// every request to carry.

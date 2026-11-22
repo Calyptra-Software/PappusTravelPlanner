@@ -4960,6 +4960,30 @@ abstract class AppLocalizations {
   /// **'Report a map error'**
   String get attributionFixTheMap;
 
+  /// No description provided for @connectionSearchSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection search'**
+  String get connectionSearchSection;
+
+  /// No description provided for @transitServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection server'**
+  String get transitServer;
+
+  /// No description provided for @transitServerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A MOTIS server, e.g. https://motis.example.org'**
+  String get transitServerHint;
+
+  /// No description provided for @serverOffLimits.
+  ///
+  /// In en, this message translates to:
+  /// **'Its operator doesn\'t allow apps to use that server.'**
+  String get serverOffLimits;
+
   /// No description provided for @routePlannerSection.
   ///
   /// In en, this message translates to:
