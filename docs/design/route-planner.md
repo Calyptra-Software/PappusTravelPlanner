@@ -241,6 +241,37 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
 - **A waypoint marked as a place becomes an entry of its own** between the leg that
   reaches it and the one that leaves it (`tourEntries`). A name alone does not: a car park
   names the ends of two legs without being a stop in the plan.
+- **A pace changes how long a way takes, never which way it is** (`domain/pace.dart`). One
+  per way of travel and tour, by `paceKeyOf` (a profile's name, or `ski`), for the reason
+  the piste grade is one: it is one person's. A factor on the standard speeds: five
+  presets from 0.7 to 1.4, or one's own from 0.5 to 2 (`Pace.of`), typed as the figure it
+  is thought of in, km/h on foot and on skis, min/km running, percent by bike
+  (`paceFromInput`), since a fast walker went past the top preset. Set under the chips
+  like *Pistes:* and remembered on the device as the next tour's start
+  (`rememberedPacesProvider`), stored as the factor. It is applied only
+  where times come out, `TourLeg.durationAt` for `tourTotals` and `tourToItems`, never to
+  the router's answers: those stay as answered, so changing a pace asks nobody, and a
+  pace in a section key would have asked the router again for every section. On foot the
+  time is DIN 33466's hiking time from the length and the climb, in place of the
+  router's: BRouter gave 103 min for 6.4 km with 800 m down, the formula about 170 (one
+  route). Running (`RouteProfile.run`) is timed by Scarf's equivalence, a meter of climb
+  as 7.92 on the flat at 10 km/h (Scarf 2007, checked on fell running times), the
+  descent counted neither way: the hiking formula scaled to a runner's flat speed would
+  give 750 m an hour up. A run takes the walker's way (`routedAs`, the same BRouter
+  profile and the same section key, so switching between the two asks nothing) and is
+  filed under walking, as a hike is; a mode of its own would need a built-in mode and a
+  migration. By bike the router's estimate is divided by the factor; whether BRouter's bike
+  times are realistic is not known, so they are not replaced. On skis only a descent
+  takes it, after routing, so the graph's weights and with them the way stay as they are;
+  a lift, its boarding and a walk in ski boots are not the skier's speed. A drive keeps
+  the router's time, which follows the speed limits, and a straight line has none.
+- **A leg's plan keeps the router's duration, and the pace beside it** (`RoutePlan.pace`,
+  the factor, absent for `average`). Opening a tour applies the pace once to the stored
+  duration; a plan holding the paced one would be paced again. `SavedTour.paces` gives
+  each way of travel in the tour its saved pace, `average` where a plan names none, so a
+  tour opens with the times it was saved with whatever was set since; other ways of travel
+  start at the remembered paces. An older app ignores the field, so the `.tpt` version is
+  not bumped.
 - **A total is given only when every leg has a figure** (`tourTotals`). A duration that
   left out the hand-drawn descent would read as the whole tour's.
 
@@ -407,9 +438,17 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
 
 - The door from the overview, for a route planned before there is a trip: where it is
   saved (a trip picked as for a connection, or a new routine) is still to decide.
-- A walking-time model with the user's own pace in place of the router's duration.
-- Routing parameters the user sets: speeds, and for ski runs `kBoardingTime` (now a flat
-  2 min per ride, short for a cable car running to a timetable).
+- The boarding time a user sets, in place of `kBoardingTime` (a flat 2 min per ride, short
+  for a cable car running to a timetable).
+- A descent slower at the skier's own limit (a piste of the grade set under *Pistes:*), or
+  by its steepness. The first moves an edge's time from `SkiGraph.build` into the search,
+  where the grade is known; the second needs the heights of the whole area before routing.
+  Neither changes what a saved tour stores.
+- The surface and kind of way along a route, as Komoot shows them: BRouter answers each
+  stretch's OSM tags in `messages` (`WayTags`: highway, surface, sac_scale), unread so far.
+  Whether it gives every tag or only those its profile reads is not checked. To keep after
+  reopening it has to be stored per leg. As a factor on the pace only with measured times
+  behind it (recordings against the hiking time per SAC grade).
 - *Edit route* from the map.
 - Piste names from route relations (`route=piste`): a piste named only on its relation is
   an unnamed descent. Pistes drawn as areas are not routed over.

@@ -4738,6 +4738,120 @@ abstract class AppLocalizations {
   /// **'Loading pistes and lifts…'**
   String get routePlanLoadingPistes;
 
+  /// No description provided for @routePace.
+  ///
+  /// In en, this message translates to:
+  /// **'Pace:'**
+  String get routePace;
+
+  /// No description provided for @routePaceLeisurely.
+  ///
+  /// In en, this message translates to:
+  /// **'leisurely'**
+  String get routePaceLeisurely;
+
+  /// No description provided for @routePaceEasy.
+  ///
+  /// In en, this message translates to:
+  /// **'easy'**
+  String get routePaceEasy;
+
+  /// No description provided for @routePaceAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'average'**
+  String get routePaceAverage;
+
+  /// No description provided for @routePaceBrisk.
+  ///
+  /// In en, this message translates to:
+  /// **'brisk'**
+  String get routePaceBrisk;
+
+  /// No description provided for @routePaceFast.
+  ///
+  /// In en, this message translates to:
+  /// **'fast'**
+  String get routePaceFast;
+
+  /// What a pace means on foot: the walking speed on the flat and the meters climbed an hour.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed} km/h, {ascent} m up an hour'**
+  String routePaceFoot(String speed, int ascent);
+
+  /// No description provided for @routePaceSki.
+  ///
+  /// In en, this message translates to:
+  /// **'descents at {speed} km/h'**
+  String routePaceSki(String speed);
+
+  /// What a pace means on a bike: the share of the speed the router estimates.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} % of the estimated speed'**
+  String routePaceShare(int percent);
+
+  /// No description provided for @routeProfileRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get routeProfileRun;
+
+  /// No description provided for @routePaceKmh.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed} km/h'**
+  String routePaceKmh(String speed);
+
+  /// A running pace, minutes and seconds a kilometer, e.g. 5:30 min/km.
+  ///
+  /// In en, this message translates to:
+  /// **'{pace} min/km'**
+  String routePaceMinPerKm(String pace);
+
+  /// No description provided for @routePacePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String routePacePercent(int percent);
+
+  /// No description provided for @routePaceOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Own pace…'**
+  String get routePaceOwn;
+
+  /// No description provided for @routePaceOwnFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking speed on the flat'**
+  String get routePaceOwnFoot;
+
+  /// No description provided for @routePaceOwnRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Pace on the flat'**
+  String get routePaceOwnRun;
+
+  /// No description provided for @routePaceOwnSki.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed on descents'**
+  String get routePaceOwnSki;
+
+  /// No description provided for @routePaceOwnShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of the estimated speed'**
+  String get routePaceOwnShare;
+
+  /// No description provided for @routePaceOutOfRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a pace between {low} and {high}.'**
+  String routePaceOutOfRange(String low, String high);
+
   /// No description provided for @routeSkiDifficulty.
   ///
   /// In en, this message translates to:

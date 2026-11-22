@@ -26,6 +26,9 @@ Future<String?> showTextPromptDialog(
   String? initial,
   String? confirmLabel,
   TextCapitalization textCapitalization = TextCapitalization.sentences,
+  TextInputType? keyboardType,
+  String? helper,
+  String? suffix,
 }) {
   return showDialog<String>(
     context: context,
@@ -36,6 +39,9 @@ Future<String?> showTextPromptDialog(
       initial: initial,
       confirmLabel: confirmLabel,
       textCapitalization: textCapitalization,
+      keyboardType: keyboardType,
+      helper: helper,
+      suffix: suffix,
     ),
   );
 }
@@ -48,6 +54,9 @@ class _TextPromptDialog extends StatefulWidget {
     this.initial,
     this.confirmLabel,
     required this.textCapitalization,
+    this.keyboardType,
+    this.helper,
+    this.suffix,
   });
 
   final String title;
@@ -56,6 +65,14 @@ class _TextPromptDialog extends StatefulWidget {
   final String? initial;
   final String? confirmLabel;
   final TextCapitalization textCapitalization;
+  final TextInputType? keyboardType;
+
+  /// What the field asks for, under it and wrapping, where a [label] would be
+  /// cut at the field's width.
+  final String? helper;
+
+  /// The unit after what is typed.
+  final String? suffix;
 
   @override
   State<_TextPromptDialog> createState() => _TextPromptDialogState();
@@ -83,9 +100,13 @@ class _TextPromptDialogState extends State<_TextPromptDialog> {
         controller: _controller,
         autofocus: true,
         textCapitalization: widget.textCapitalization,
+        keyboardType: widget.keyboardType,
         decoration: InputDecoration(
           labelText: widget.label,
           hintText: widget.hint,
+          helperText: widget.helper,
+          helperMaxLines: 3,
+          suffixText: widget.suffix,
         ),
         onSubmitted: (_) => _submit(),
       ),

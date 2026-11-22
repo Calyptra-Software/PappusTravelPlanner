@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
+import 'package:travelplanner/features/route_planner/domain/pace.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
@@ -9,6 +10,7 @@ import 'package:travelplanner/features/route_planner/tour_entries.dart';
 
 const _car = RoutedMode(RouteProfile.car);
 const _foot = RoutedMode(RouteProfile.foot);
+const _bike = RoutedMode(RouteProfile.bike);
 const _ski = StraightMode(TransportMode.ski);
 
 TourWaypoint _at(double lat, {String? name, bool isPlace = false}) =>
@@ -277,8 +279,9 @@ void main() {
   });
 
   group('tourTotals', () {
-    TourLeg leg(RoutedPath path) =>
-        TourLeg(from: _at(47), to: _at(47.1), mode: _foot, path: path);
+    // By bike, which at the average pace takes the router's estimate as it is.
+    TourLeg leg(RoutedPath path, {SectionMode mode = _bike}) =>
+        TourLeg(from: _at(47), to: _at(47.1), mode: mode, path: path);
 
     test('adds the legs up', () {
       final totals = tourTotals([
@@ -322,6 +325,25 @@ void main() {
       expect(totals.lengthMeters, 1500);
       expect(totals.ascentMeters, isNull);
       expect(totals.duration, isNull);
+    });
+
+    test('times each leg at the pace of its way of travel', () {
+      final entries = [
+        leg(_path(47, 47.1, length: 8000), mode: _foot),
+        leg(_path(47.1, 47.2, duration: const Duration(minutes: 60))),
+      ];
+
+      // On foot the hiking time, 8 km at 4 km/h; by bike the router's hour.
+      expect(tourTotals(entries).duration, const Duration(hours: 3));
+      // Brisk on foot, leisurely by bike: 8 km at 4.8 km/h, and the hour
+      // at 0.7 of the speed.
+      expect(
+        tourTotals(
+          entries,
+          paces: {'foot': Pace.brisk, 'bike': Pace.leisurely},
+        ).duration,
+        const Duration(minutes: 100) + Duration(seconds: (3600 / 0.7).round()),
+      );
     });
 
     test('an empty tour has no length', () {

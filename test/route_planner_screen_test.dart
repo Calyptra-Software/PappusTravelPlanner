@@ -26,6 +26,7 @@ import 'package:travelplanner/features/map/widgets/elevation_profile_chart.dart'
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
 import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
+import 'package:travelplanner/features/route_planner/domain/pace.dart';
 import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
@@ -166,6 +167,7 @@ void main() {
           databaseProvider.overrideWithValue(db),
           routeEngineProvider.overrideWithValue(engine),
           noTerrainHeights,
+          noRememberedPaces,
           skiRouterProvider.overrideWithValue(skiRouter),
         ],
         child: MaterialApp(
@@ -253,9 +255,142 @@ void main() {
       find.textContaining('4.2 km · ↑ 300 m · ↓ 120 m · '),
       findsOneWidget,
     );
-    expect(find.textContaining('1 h 35 min'), findsOneWidget);
+    // The hiking time for 4.2 km, 300 m up and 120 m down, not the router's
+    // 95 minutes.
+    expect(find.textContaining('1 h 46 min'), findsOneWidget);
     expect(find.byIcon(Icons.schedule), findsNWidgets(2));
     expect(addButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('the pace of the way of travel times the tour at once', (
+    tester,
+  ) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+    expect(find.text('Pace:'), findsOneWidget);
+    expect(find.textContaining('1 h 46 min'), findsOneWidget);
+
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    // Each pace says what it means on foot.
+    expect(find.text('4.8 km/h, 360 m up an hour'), findsOneWidget);
+    await tester.tap(find.text('brisk').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('brisk'), findsOneWidget);
+    expect(find.textContaining('1 h 29 min'), findsOneWidget);
+    expect(engine.asked, hasLength(1));
+  });
+
+  testWidgets('a pace of one\'s own is typed as a speed, and checked', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Own pace…'));
+    await tester.pumpAndSettle();
+    // Under the field, where it wraps, with the unit behind the figure.
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration!.helperText, 'Walking speed on the flat');
+    expect(field.decoration!.helperMaxLines, greaterThan(1));
+    expect(field.decoration!.labelText, isNull);
+    expect(field.decoration!.suffixText, 'km/h');
+    await tester.enterText(find.byType(TextField), '6,2');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('6.2 km/h'), findsOneWidget);
+
+    await tester.tap(find.text('6.2 km/h'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Own pace…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '20');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Choose a pace between 2.0 km/h and 8.0 km/h.'),
+      findsOneWidget,
+    );
+    expect(find.text('6.2 km/h'), findsOneWidget);
+  });
+
+  testWidgets('running is timed by the minute a kilometer', (tester) async {
+    await open(tester);
+    await choose(tester, 'Run');
+
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    expect(find.text('6:00 min/km'), findsOneWidget);
+    await tester.tap(find.text('Own pace…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '5:30');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('5:30 min/km'), findsOneWidget);
+  });
+
+  group('paceFromInput', () {
+    const foot = RoutedMode(RouteProfile.foot);
+    const run = RoutedMode(RouteProfile.run);
+    const bike = RoutedMode(RouteProfile.bike);
+
+    test('reads km/h on foot and on skis, a comma as the point', () {
+      expect(paceFromInput(foot, '6'), const Pace(1.5));
+      expect(paceFromInput(foot, ' 4,8 '), Pace.brisk);
+      expect(paceFromInput(const SkiMode(), '27'), const Pace(1.5));
+    });
+
+    test('reads min/km running, as m:ss or in minutes', () {
+      expect(paceFromInput(run, '6:00'), Pace.average);
+      expect(paceFromInput(run, '5'), Pace.brisk);
+      expect(paceFromInput(run, '7:30'), const Pace(0.8));
+      expect(paceFromInput(run, '5:5'), isNull);
+      expect(paceFromInput(run, '5:75'), isNull);
+      expect(paceFromInput(run, '0'), isNull);
+    });
+
+    test('reads percent by bike', () {
+      expect(paceFromInput(bike, '120'), Pace.brisk);
+    });
+
+    test('refuses what is no figure, or out of range', () {
+      expect(paceFromInput(foot, 'fast'), isNull);
+      expect(paceFromInput(foot, '1'), isNull);
+      expect(paceFromInput(bike, '250'), isNull);
+    });
+
+    test('shows a pace the way it is typed back', () {
+      for (final mode in [foot, run, bike, const SkiMode()]) {
+        expect(
+          paceFromInput(mode, paceInput(mode, const Pace(1.3))),
+          const Pace(1.3),
+          reason: '$mode',
+        );
+      }
+    });
+  });
+
+  testWidgets('a drive has no pace, a ski run its grade and its pace', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await choose(tester, 'Car');
+    expect(find.text('Pace:'), findsNothing);
+
+    await choose(tester, 'Ski');
+    expect(find.text('Pistes:'), findsOneWidget);
+    expect(find.text('Pace:'), findsOneWidget);
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    expect(find.text('descents at 18.0 km/h'), findsOneWidget);
   });
 
   testWidgets('says it is routing while the answer is out', (tester) async {
@@ -897,7 +1032,9 @@ void main() {
       expect(find.byKey(const ValueKey('waypoint-0')), findsOneWidget);
       expect(find.byKey(const ValueKey('waypoint-1')), findsOneWidget);
       expect(find.textContaining('5 km'), findsOneWidget);
-      expect(find.textContaining('1 h 20 min'), findsOneWidget);
+      // 5 km on foot by the hiking time; the plan's 80 minutes are the
+      // router's.
+      expect(find.textContaining('1 h 15 min'), findsOneWidget);
       // The time its first entry has.
       expect(find.text('Start 07:30'), findsOneWidget);
     });

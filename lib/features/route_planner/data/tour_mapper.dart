@@ -4,6 +4,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
+import '../domain/pace.dart';
 import '../domain/piste_note.dart';
 import '../domain/routed_path.dart';
 import '../domain/tour.dart';
@@ -41,8 +42,9 @@ class MappedTour {
 /// the way of travel it was planned with (`RoutePlan`), which is what lets the
 /// planner be opened on the saved tour again.
 ///
-/// With [startMinutes] the entries are timed one after the other from the
-/// router's durations. The chain stops at the first leg without one (a line
+/// With [startMinutes] the entries are timed one after the other, each leg at
+/// the pace set for its way of travel among [paces] ([TourLeg.durationAt]);
+/// the plan keeps the router's duration and the pace beside it. The chain stops at the first leg without one (a line
 /// drawn by hand) and at midnight: what comes after is left untimed, since a
 /// time behind an unknown stretch would be invented. A leg reaching past
 /// midnight keeps its arrival through `endDayOffset`.
@@ -58,6 +60,7 @@ MappedTour tourToItems(
   required String tourId,
   int? startMinutes,
   PisteColorName? pisteColor,
+  Map<String, Pace> paces = const {},
 }) {
   final items = <ItineraryItemsCompanion>[];
   final shapes = <String?>[];
@@ -93,9 +96,10 @@ MappedTour tourToItems(
         :final title,
       ):
         final start = clock;
-        final minutes = path.duration == null
+        final duration = entry.durationAt(paces);
+        final minutes = duration == null
             ? null
-            : (path.duration!.inSeconds / 60).ceil();
+            : (duration.inSeconds / 60).ceil();
         final end = start == null || minutes == null ? null : start + minutes;
         final builtin = entry.transportMode;
         final segment = entry.part?.segment;
@@ -133,7 +137,7 @@ MappedTour tourToItems(
             startMinutes: Value(start),
             endMinutes: Value(end == null ? null : end % _minutesPerDay),
             endDayOffset: Value(end == null ? 0 : end ~/ _minutesPerDay),
-            routePlan: Value(encodeRoutePlan(_planOf(entry, tourId))),
+            routePlan: Value(encodeRoutePlan(_planOf(entry, tourId, paces))),
           ),
         );
         // Two points are the chord the leg draws anyway; a stored line would
@@ -161,8 +165,9 @@ MappedTour tourToItems(
 }
 
 /// What a leg was planned with, as its row keeps it.
-RoutePlan _planOf(TourLeg leg, String tourId) {
+RoutePlan _planOf(TourLeg leg, String tourId, Map<String, Pace> paces) {
   final mode = leg.mode;
+  final pace = paces[paceKeyOf(mode)];
   final waypoints = leg.waypoints.isEmpty ? [leg.from, leg.to] : leg.waypoints;
   return RoutePlan(
     tour: tourId,
@@ -185,6 +190,7 @@ RoutePlan _planOf(TourLeg leg, String tourId) {
         ),
     ],
     seconds: leg.path.duration?.inSeconds,
+    pace: pace == null || pace == Pace.average ? null : pace.factor,
     meters: leg.path.lengthMeters,
   );
 }

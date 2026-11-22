@@ -2870,6 +2870,77 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routePlanLoadingPistes => 'Pisten und Lifte werden geladen …';
 
   @override
+  String get routePace => 'Tempo:';
+
+  @override
+  String get routePaceLeisurely => 'gemütlich';
+
+  @override
+  String get routePaceEasy => 'entspannt';
+
+  @override
+  String get routePaceAverage => 'normal';
+
+  @override
+  String get routePaceBrisk => 'zügig';
+
+  @override
+  String get routePaceFast => 'sehr zügig';
+
+  @override
+  String routePaceFoot(String speed, int ascent) {
+    return '$speed km/h, $ascent Hm pro Stunde bergauf';
+  }
+
+  @override
+  String routePaceSki(String speed) {
+    return 'Abfahrten mit $speed km/h';
+  }
+
+  @override
+  String routePaceShare(int percent) {
+    return '$percent % der geschätzten Geschwindigkeit';
+  }
+
+  @override
+  String get routeProfileRun => 'Laufen';
+
+  @override
+  String routePaceKmh(String speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String routePaceMinPerKm(String pace) {
+    return '$pace min/km';
+  }
+
+  @override
+  String routePacePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get routePaceOwn => 'Eigenes Tempo …';
+
+  @override
+  String get routePaceOwnFoot => 'Gehgeschwindigkeit in der Ebene';
+
+  @override
+  String get routePaceOwnRun => 'Tempo in der Ebene';
+
+  @override
+  String get routePaceOwnSki => 'Geschwindigkeit bei Abfahrten';
+
+  @override
+  String get routePaceOwnShare => 'Anteil der geschätzten Geschwindigkeit';
+
+  @override
+  String routePaceOutOfRange(String low, String high) {
+    return 'Wähle ein Tempo zwischen $low und $high.';
+  }
+
+  @override
   String get routeSkiDifficulty => 'Pisten:';
 
   @override

@@ -20,6 +20,7 @@ import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/presentation/route_planner_screen.dart';
 import 'package:travelplanner/features/route_planner/tour_entries.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+import 'support/terrain_overrides.dart';
 
 const _ski = SkiMode(PisteDifficulty.intermediate);
 
@@ -426,6 +427,7 @@ void main() {
         container = ProviderContainer(
           overrides: [
             skiRouterProvider.overrideWithValue(router),
+            noRememberedPaces,
             databaseProvider.overrideWithValue(db),
           ],
         );

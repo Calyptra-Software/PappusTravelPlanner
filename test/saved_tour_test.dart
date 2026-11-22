@@ -18,6 +18,7 @@ import 'package:travelplanner/features/route_planner/application/tour_planner_co
 import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
 import 'package:travelplanner/features/route_planner/data/tour_mapper.dart';
 import 'package:travelplanner/features/map/map_features.dart' show lineLength;
+import 'package:travelplanner/features/route_planner/domain/pace.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/terrain.dart'
@@ -103,7 +104,11 @@ void main() {
   tearDown(() => db.close());
 
   /// Saves [_tour] the way the planner does and returns the new rows' ids.
-  Future<List<int>> saveTour({String tourId = 't1', int? startMinutes}) async {
+  Future<List<int>> saveTour({
+    String tourId = 't1',
+    int? startMinutes,
+    Map<String, Pace> paces = const {},
+  }) async {
     final entries = tourEntries(_tour, {
       0: _answer(const [_home, _carPark], minutes: 45),
       1: _answer(const [_carPark, _bend, _summit], minutes: 120),
@@ -115,6 +120,7 @@ void main() {
       resolveMode: builtinModeResolver(await repo.transportModes()),
       tourId: tourId,
       startMinutes: startMinutes,
+      paces: paces,
     );
     return repo.insertJourney(
       tripId,
@@ -177,6 +183,40 @@ void main() {
   });
 
   group('reading a tour back', () {
+    test('a way of travel saved at the average pace opens at it', () async {
+      await saveTour(startMinutes: 8 * 60);
+
+      final saved = (await open((await items()).first))!;
+
+      expect(saved.paces, {'foot': Pace.average});
+    });
+
+    test('gives each way of travel the pace it was timed at', () async {
+      await saveTour(startMinutes: 8 * 60, paces: {'foot': Pace.brisk});
+
+      final saved = (await open((await items()).first))!;
+
+      // A drive has no pace, nor has the descent, a line drawn by hand.
+      expect(saved.paces, {'foot': Pace.brisk});
+      // The walk was timed at the brisk pace, and the plan keeps the router's
+      // two hours.
+      final walk = (await items()).firstWhere(
+        (item) => decodeRoutePlan(item.routePlan)?.profile == 'foot',
+      );
+      expect(decodeRoutePlan(walk.routePlan)!.seconds, 7200);
+      final opened = tourEntries(saved.tour, {
+        for (final (index, run) in tourRuns(saved.tour).indexed)
+          index: ?saved.paths[runKey(saved.tour, run)],
+      })!;
+      final walkLeg = opened.whereType<TourLeg>().firstWhere(
+        (leg) => leg.mode == _foot,
+      );
+      expect(
+        walk.endMinutes! - walk.startMinutes!,
+        (walkLeg.durationAt(saved.paces)!.inSeconds / 60).ceil(),
+      );
+    });
+
     test('gives the tour that was saved, from any of its entries', () async {
       await saveTour(startMinutes: 8 * 60);
 
@@ -329,6 +369,7 @@ void main() {
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
           noTerrainHeights,
+          noRememberedPaces,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -588,6 +629,7 @@ void main() {
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
           noTerrainHeights,
+          noRememberedPaces,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -678,6 +720,7 @@ void main() {
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
           noTerrainHeights,
+          noRememberedPaces,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -767,7 +810,11 @@ void main() {
           .write(ItineraryItemsCompanion(mode: Value(ski)));
       final saved = (await open((await items()).single))!;
       container = ProviderContainer(
-        overrides: [databaseProvider.overrideWithValue(db), noTerrainHeights],
+        overrides: [
+          databaseProvider.overrideWithValue(db),
+          noTerrainHeights,
+          noRememberedPaces,
+        ],
       );
       addTearDown(container.dispose);
       container.listen(tourPlannerProvider(saved), (_, _) {});

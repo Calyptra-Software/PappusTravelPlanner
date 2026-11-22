@@ -1585,6 +1585,65 @@
   "routeModeSki": "Ski",
   "routeModeStraight": "Straight line",
   "routePlanLoadingPistes": "Loading pistes and lifts…",
+  "routePace": "Pace:",
+  "routePaceLeisurely": "leisurely",
+  "routePaceEasy": "easy",
+  "routePaceAverage": "average",
+  "routePaceBrisk": "brisk",
+  "routePaceFast": "fast",
+  "routePaceFoot": "{speed} km/h, {ascent} m up an hour",
+  "@routePaceFoot": {
+    "description": "What a pace means on foot: the walking speed on the flat and the meters climbed an hour.",
+    "placeholders": {
+      "speed": {"type": "String"},
+      "ascent": {"type": "int"}
+    }
+  },
+  "routePaceSki": "descents at {speed} km/h",
+  "@routePaceSki": {
+    "placeholders": {
+      "speed": {"type": "String"}
+    }
+  },
+  "routePaceShare": "{percent} % of the estimated speed",
+  "@routePaceShare": {
+    "description": "What a pace means on a bike: the share of the speed the router estimates.",
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "routeProfileRun": "Run",
+  "routePaceKmh": "{speed} km/h",
+  "@routePaceKmh": {
+    "placeholders": {
+      "speed": {"type": "String"}
+    }
+  },
+  "routePaceMinPerKm": "{pace} min/km",
+  "@routePaceMinPerKm": {
+    "description": "A running pace, minutes and seconds a kilometer, e.g. 5:30 min/km.",
+    "placeholders": {
+      "pace": {"type": "String"}
+    }
+  },
+  "routePacePercent": "{percent} %",
+  "@routePacePercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "routePaceOwn": "Own pace…",
+  "routePaceOwnFoot": "Walking speed on the flat",
+  "routePaceOwnRun": "Pace on the flat",
+  "routePaceOwnSki": "Speed on descents",
+  "routePaceOwnShare": "Share of the estimated speed",
+  "routePaceOutOfRange": "Choose a pace between {low} and {high}.",
+  "@routePaceOutOfRange": {
+    "placeholders": {
+      "low": {"type": "String"},
+      "high": {"type": "String"}
+    }
+  },
   "routeSkiDifficulty": "Pistes:",
   "routeSkiUpToEasy": "easy only",
   "routeSkiUpToIntermediate": "up to intermediate",

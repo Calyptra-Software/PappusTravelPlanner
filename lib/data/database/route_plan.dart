@@ -52,6 +52,7 @@ class RoutePlan {
     this.meters,
     this.ski,
     this.part,
+    this.pace,
   });
 
   /// Shared by the entries one tour was saved as.
@@ -69,7 +70,9 @@ class RoutePlan {
   final List<RoutePlanPoint> waypoints;
 
   /// What the router said the leg takes and how long it is, kept so that
-  /// opening the tour again shows what it showed without asking again.
+  /// opening the tour again shows what it showed without asking again. The
+  /// router's estimate, not the leg's time at [pace], so that opening it
+  /// applies the pace once.
   final int? seconds;
   final double? meters;
 
@@ -81,6 +84,11 @@ class RoutePlan {
   /// or the name of the lift's transport mode (`gondola`, `chairLift`,
   /// `dragLift`).
   final String? part;
+
+  /// The factor of the pace the tour timed the leg's way of travel at, where
+  /// it was not the average one (`Pace` in the route planner). An older app
+  /// ignores it.
+  final double? pace;
 
   bool get isLeg => waypoints.length >= 2;
 
@@ -95,6 +103,7 @@ class RoutePlan {
     meters: meters,
     ski: ski,
     part: part,
+    pace: pace,
   );
 }
 
@@ -118,6 +127,7 @@ String encodeRoutePlan(RoutePlan plan) => jsonEncode({
   'meters': ?plan.meters,
   'ski': ?plan.ski,
   'part': ?plan.part,
+  'pace': ?plan.pace,
 });
 
 /// Reads back what [encodeRoutePlan] wrote, or null for anything else: an
@@ -162,6 +172,7 @@ RoutePlan? decodeRoutePlan(String? encoded) {
   final meters = json['meters'];
   final ski = json['ski'];
   final part = json['part'];
+  final pace = json['pace'];
   return RoutePlan(
     tour: tour,
     profile: profile is String ? profile : null,
@@ -172,6 +183,7 @@ RoutePlan? decodeRoutePlan(String? encoded) {
     meters: meters is num ? meters.toDouble() : null,
     ski: ski is String ? ski : null,
     part: part is String ? part : null,
+    pace: pace is num ? pace.toDouble() : null,
   );
 }
 

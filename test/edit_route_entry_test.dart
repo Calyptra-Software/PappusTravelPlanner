@@ -61,6 +61,7 @@ void main() {
       appVersionProvider.overrideWithValue('0.0.0-test'),
       routeEngineProvider.overrideWithValue(_NoRouter()),
       noTerrainHeights,
+      noRememberedPaces,
       transportModesProvider.overrideWith((ref) => Stream.value(const [])),
       ...attachmentTestOverrides,
     ],

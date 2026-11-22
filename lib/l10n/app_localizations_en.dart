@@ -2855,6 +2855,77 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routePlanLoadingPistes => 'Loading pistes and lifts…';
 
   @override
+  String get routePace => 'Pace:';
+
+  @override
+  String get routePaceLeisurely => 'leisurely';
+
+  @override
+  String get routePaceEasy => 'easy';
+
+  @override
+  String get routePaceAverage => 'average';
+
+  @override
+  String get routePaceBrisk => 'brisk';
+
+  @override
+  String get routePaceFast => 'fast';
+
+  @override
+  String routePaceFoot(String speed, int ascent) {
+    return '$speed km/h, $ascent m up an hour';
+  }
+
+  @override
+  String routePaceSki(String speed) {
+    return 'descents at $speed km/h';
+  }
+
+  @override
+  String routePaceShare(int percent) {
+    return '$percent % of the estimated speed';
+  }
+
+  @override
+  String get routeProfileRun => 'Run';
+
+  @override
+  String routePaceKmh(String speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String routePaceMinPerKm(String pace) {
+    return '$pace min/km';
+  }
+
+  @override
+  String routePacePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get routePaceOwn => 'Own pace…';
+
+  @override
+  String get routePaceOwnFoot => 'Walking speed on the flat';
+
+  @override
+  String get routePaceOwnRun => 'Pace on the flat';
+
+  @override
+  String get routePaceOwnSki => 'Speed on descents';
+
+  @override
+  String get routePaceOwnShare => 'Share of the estimated speed';
+
+  @override
+  String routePaceOutOfRange(String low, String high) {
+    return 'Choose a pace between $low and $high.';
+  }
+
+  @override
   String get routeSkiDifficulty => 'Pistes:';
 
   @override

@@ -17,7 +17,9 @@ final Uri kBrouterBaseUrl = Uri.parse('https://brouter.de/brouter');
 /// The stock profile each [RouteProfile] is routed with: the file names in
 /// BRouter's `misc/profiles2`, which the public server serves.
 String brouterProfileFor(RouteProfile profile) => switch (profile) {
-  RouteProfile.foot => 'hiking-mountain',
+  // A runner takes the same paths as a walker ([RouteProfile.routedAs]);
+  // only the time differs.
+  RouteProfile.foot || RouteProfile.run => 'hiking-mountain',
   RouteProfile.bike => 'trekking',
   RouteProfile.roadBike => 'fastbike',
   RouteProfile.gravelBike => 'gravel',
