@@ -34,6 +34,7 @@ import 'package:travelplanner/l10n/app_localizations.dart';
 
 import 'currency_fixture.dart';
 import 'support/attachment_overrides.dart';
+import 'support/terrain_overrides.dart';
 
 /// Where the trip screen offers the route planner: *Plan route* under a day and
 /// under an option of a decision, and *Edit route* on a planned run's label or
@@ -157,6 +158,7 @@ void main() {
           sharedPreferencesProvider.overrideWithValue(prefs),
           appVersionProvider.overrideWithValue('0.0.0-test'),
           routeEngineProvider.overrideWithValue(_NoRouter()),
+          noTerrainHeights,
           tripProvider(tripId).overrideWith((ref) => Stream.value(data.trip)),
           itineraryProvider(
             tripId,

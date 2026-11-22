@@ -10,7 +10,9 @@ import 'package:image/image.dart' as img;
 import 'package:latlong2/latlong.dart';
 import 'package:travelplanner/core/cache_files.dart';
 import 'package:travelplanner/features/route_planner/data/terrain_tiles.dart';
+import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/terrain.dart';
+import 'package:travelplanner/features/route_planner/domain/tour.dart';
 
 /// [CacheFiles] in memory.
 class _MemoryFiles implements CacheFiles {
@@ -160,6 +162,57 @@ void main() {
       final [height] = heightsAt([_pointAt(11, 20.5)], tiles);
 
       expect(height, closeTo(3.5, 1e-6));
+    });
+  });
+
+  group('densify', () {
+    test('sets points evenly between the ends, none farther apart', () {
+      const from = LatLng(47, 11);
+      const to = LatLng(47.001, 11); // About 111 m.
+
+      final dense = densify(const [from, to]);
+
+      expect(dense.first, from);
+      expect(dense.last, to);
+      expect(dense, hasLength(7)); // Six steps of about 18.5 m.
+      const distance = Distance(calculator: Haversine());
+      for (var i = 1; i < dense.length; i++) {
+        expect(
+          distance.distance(dense[i - 1], dense[i]),
+          lessThanOrEqualTo(kStraightHeightStep),
+        );
+      }
+    });
+
+    test('leaves a line already that fine as it is', () {
+      const line = [LatLng(47, 11), LatLng(47.0001, 11)];
+
+      expect(densify(line), line);
+    });
+  });
+
+  group('lineKey', () {
+    final tour = Tour(
+      waypoints: const [
+        TourWaypoint(LatLng(47, 11)),
+        TourWaypoint(LatLng(47.1, 11)),
+        TourWaypoint(LatLng(47.2, 11)),
+      ],
+      modes: const [StraightMode(), RoutedMode(RouteProfile.foot)],
+    );
+
+    test('keys a straight section, never one the router is asked', () {
+      expect(lineKey(tour, 0), startsWith('line|'));
+      expect(lineKey(tour, 1), isNull);
+      expect(sectionKey(tour, 0), isNull);
+      expect(lineKey(tour, 0), isNot(sectionKey(tour, 1)));
+    });
+
+    test('a straight run is keyed by its waypoints', () {
+      final [straight, routed] = tourRuns(tour);
+
+      expect(lineRunKey(tour, straight), lineKey(tour, 0));
+      expect(lineRunKey(tour, routed), isNull);
     });
   });
 

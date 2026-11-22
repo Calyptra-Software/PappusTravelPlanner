@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/providers.dart';
+import '../../map/map_features.dart' show lineLength;
 import '../data/saved_tour.dart';
 import '../data/tour_mapper.dart';
 import '../domain/piste_difficulty.dart';
 import '../domain/piste_note.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
+import '../domain/terrain.dart' show densify;
 import '../domain/tour.dart';
 import '../tour_entries.dart';
 import 'route_engine.dart';
@@ -37,12 +39,17 @@ class TourPlannerState {
   /// was answered at once (a saved tour's stored line). An answer stays after
   /// its section is gone, so taking a waypoint back and setting it again asks
   /// nothing twice.
+  ///
+  /// Beside them, by [lineKey] and [lineRunKey], the lines drawn by hand that
+  /// have heights: the straight line with points set along it for them.
   final Map<String, RoutedPath> paths;
 
-  /// The sections asked about and not answered yet, by [sectionKey].
+  /// The sections asked about and not answered yet, by [sectionKey], and the
+  /// straight ones whose heights are asked for, by [lineKey].
   final Set<String> loading;
 
-  /// The sections the router refused, by [sectionKey]. Kept until
+  /// The sections the router refused, by [sectionKey], and the straight ones
+  /// that got no heights, by [lineKey]. Kept until
   /// [TourPlannerController.retry], so a refusal is not asked again by itself.
   final Map<String, RouteEngineFailure> failures;
 
@@ -55,17 +62,25 @@ class TourPlannerState {
   ];
 
   /// The router's answer for [run]: the run's own, or its sections' joined
-  /// (`joinPaths`), or null while one of them has none. Always null for a
-  /// straight run, which has no answer to wait for.
+  /// (`joinPaths`), or null while one of them has none. For a straight run,
+  /// which has no answer to wait for, the line with its heights once every
+  /// section has them, and null until then.
   RoutedPath? pathOf(TourRun run) {
-    final key = runKey(tour, run);
+    final straight = run.mode is StraightMode;
+    final key = straight ? lineRunKey(tour, run) : runKey(tour, run);
     if (key == null) return null;
     final joined = _joined[this] ??= {};
     if (joined.containsKey(key)) return joined[key];
     final whole = paths[key];
     if (whole != null) return joined[key] = whole;
     final parts = <RoutedPath>[];
-    for (final section in sectionKeysOf(run)) {
+    final sections = straight
+        ? [
+            for (var section = run.first; section < run.last; section++)
+              ?lineKey(tour, section),
+          ]
+        : sectionKeysOf(run);
+    for (final section in sections) {
       final path = paths[section];
       if (path == null) return joined[key] = null;
       parts.add(path);
@@ -299,6 +314,10 @@ class TourPlannerController extends Notifier<TourPlannerState> {
     final tour = state.tour;
     for (final run in state.runs) {
       if (state.pathOf(run) != null) continue;
+      if (run.mode is StraightMode) {
+        _askHeights(run);
+        continue;
+      }
       for (var section = run.first; section < run.last; section++) {
         final key = sectionKey(tour, section);
         if (key == null ||
@@ -320,13 +339,49 @@ class TourPlannerController extends Notifier<TourPlannerState> {
             () => ref
                 .read(skiRouterProvider)
                 .route(waypoints: waypoints, maxDifficulty: maxDifficulty),
-          // Drawn by hand: nothing to ask, and no key either.
+          // Drawn by hand: nothing to ask the router (see _askHeights).
           StraightMode() => null,
         };
         if (ask == null) continue;
         state = state.copyWith(loading: {...state.loading, key});
         unawaited(_ask(key, ask));
       }
+    }
+  }
+
+  /// Asks for the heights of each straight section of [run] that has none and
+  /// was neither asked nor refused. Nothing waits for them: the line is the
+  /// run's way whether or not they come, and a tour saved before they do is
+  /// saved without them.
+  void _askHeights(TourRun run) {
+    final tour = state.tour;
+    for (var section = run.first; section < run.last; section++) {
+      final key = lineKey(tour, section);
+      if (key == null ||
+          state.paths.containsKey(key) ||
+          state.loading.contains(key) ||
+          state.failures.containsKey(key)) {
+        continue;
+      }
+      final ends = [
+        tour.waypoints[section].position,
+        tour.waypoints[section + 1].position,
+      ];
+      state = state.copyWith(loading: {...state.loading, key});
+      unawaited(
+        _ask(key, () async {
+          final points = densify(ends);
+          final heights = await ref.read(terrainHeightsProvider).at(points);
+          if (heights == null) {
+            throw const RouteEngineException('No heights for the line');
+          }
+          return RoutedPath.measured(
+            points: points,
+            elevations: heights,
+            lengthMeters: lineLength(ends),
+          );
+        }),
+      );
     }
   }
 

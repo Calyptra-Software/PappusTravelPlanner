@@ -94,8 +94,9 @@ RoutedPath straightPath(List<LatLng> points) =>
 /// Lays [tour] out as the entries it is saved as.
 ///
 /// [paths] holds the router's answer per run, by index into `tourRuns(tour)`;
-/// a [StraightMode] run needs none. Returns null while a routed run has no
-/// answer yet: a tour with a leg missing is not one to save.
+/// a [StraightMode] run needs none, and takes the line with its heights from
+/// there where it has them. Returns null while a routed run has no answer
+/// yet: a tour with a leg missing is not one to save.
 ///
 /// A place stands between the leg that reaches it and the one that leaves it;
 /// the tour's first and last waypoints are places too when marked.
@@ -108,7 +109,8 @@ List<TourEntry>? tourEntries(Tour tour, Map<int, RoutedPath> paths) {
   for (final (index, run) in runs.indexed) {
     final waypoints = run.waypointsOf(tour);
     final path = switch (run.mode) {
-      StraightMode() => straightPath([for (final w in waypoints) w.position]),
+      StraightMode() =>
+        paths[index] ?? straightPath([for (final w in waypoints) w.position]),
       RoutedMode() || SkiMode() => paths[index],
     };
     if (path == null) return null;

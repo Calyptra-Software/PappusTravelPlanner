@@ -52,7 +52,8 @@ class SavedTour {
 
   /// The router's answers the entries still hold, by `runKey`: each leg's
   /// stored line with its heights. Opening a tour therefore asks the router
-  /// nothing, except about a leg whose line was removed since.
+  /// nothing, except about a leg whose line was removed since. A line drawn by
+  /// hand is here by `lineRunKey` where it was saved with heights.
   final Map<String, RoutedPath> paths;
 
   /// When the first entry starts, if it was given a time.
@@ -223,10 +224,14 @@ SavedTour? savedTourOf(
     final run = runs
         .where((run) => run.first == span.first && run.last == span.last)
         .firstOrNull;
-    final key = run == null ? null : runKey(tour, run);
+    final key = run == null ? null : runKey(tour, run) ?? lineRunKey(tour, run);
     if (key == null) continue;
     final path = _storedPath(tracksOf(item.id), plan);
-    if (path != null) paths[key] = path;
+    // A line drawn by hand is kept for its heights; without them the planner
+    // draws it from its waypoints and asks for them.
+    if (path != null && (!plan.straight || path.elevations != null)) {
+      paths[key] = path;
+    }
   }
   final runParts =
       <(int, int), List<({String? part, String? title, int id})>>{};

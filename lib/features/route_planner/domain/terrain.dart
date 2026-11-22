@@ -8,6 +8,37 @@ import 'package:latlong2/latlong.dart';
 /// for a 512 px tile, finer than a piste is drawn in the map data.
 const int kTerrainZoom = 12;
 
+/// How far apart a line drawn by hand is given points for its heights: about
+/// a pixel and a half of a tile at [kTerrainZoom], so the line follows the
+/// ground rather than jumping from one end's height to the other's.
+const double kStraightHeightStep = 20;
+
+/// [points] with points set in between, evenly, so that no two are more than
+/// [step] meters apart. Straight in degrees between two points, which over
+/// the length of a hand-drawn section is the line the map draws.
+List<LatLng> densify(List<LatLng> points, {double step = kStraightHeightStep}) {
+  const distance = Distance(calculator: Haversine());
+  final dense = <LatLng>[];
+  for (var i = 0; i < points.length; i++) {
+    final point = points[i];
+    if (i > 0) {
+      final from = points[i - 1];
+      final pieces = (distance.distance(from, point) / step).ceil();
+      for (var k = 1; k < pieces; k++) {
+        final share = k / pieces;
+        dense.add(
+          LatLng(
+            from.latitude + (point.latitude - from.latitude) * share,
+            from.longitude + (point.longitude - from.longitude) * share,
+          ),
+        );
+      }
+    }
+    dense.add(point);
+  }
+  return dense;
+}
+
 /// One terrain tile on the Web Mercator grid, by zoom, column and row.
 typedef TileKey = ({int z, int x, int y});
 

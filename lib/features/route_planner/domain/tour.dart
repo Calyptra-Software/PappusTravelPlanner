@@ -228,17 +228,30 @@ String? runKey(Tour tour, TourRun run) => _key(run.mode, run.waypointsOf(tour));
 String? sectionKey(Tour tour, int section) =>
     _key(tour.modes[section], tour.waypoints.sublist(section, section + 2));
 
+/// What the heights of a straight run are kept under, the way [runKey] keys a
+/// routed one: nobody routes the line, but its heights are asked for. Null
+/// for a routed run.
+String? lineRunKey(Tour tour, TourRun run) =>
+    run.mode is StraightMode ? _joined('line', run.waypointsOf(tour)) : null;
+
+/// [lineRunKey] for the straight section from waypoint [section] to the
+/// next.
+String? lineKey(Tour tour, int section) => tour.modes[section] is StraightMode
+    ? _joined('line', tour.waypoints.sublist(section, section + 2))
+    : null;
+
 String? _key(SectionMode mode, List<TourWaypoint> waypoints) {
   final asked = switch (mode) {
     StraightMode() => null,
     RoutedMode(:final profile) => profile.name,
     SkiMode(:final maxDifficulty) => 'ski:${maxDifficulty.name}',
   };
-  if (asked == null) return null;
-  return [
-    asked,
-    for (final waypoint in waypoints)
-      '${waypoint.position.latitude.toStringAsFixed(6)},'
-          '${waypoint.position.longitude.toStringAsFixed(6)}',
-  ].join('|');
+  return asked == null ? null : _joined(asked, waypoints);
 }
+
+String _joined(String asked, List<TourWaypoint> waypoints) => [
+  asked,
+  for (final waypoint in waypoints)
+    '${waypoint.position.latitude.toStringAsFixed(6)},'
+        '${waypoint.position.longitude.toStringAsFixed(6)}',
+].join('|');
