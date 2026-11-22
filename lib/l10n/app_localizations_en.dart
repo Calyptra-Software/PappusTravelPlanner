@@ -2909,16 +2909,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get routePaceOwn => 'Own pace…';
 
   @override
-  String get routePaceOwnFoot => 'Walking speed on the flat, in km/h';
+  String get routePaceOwnFoot => 'Walking speed on the flat';
 
   @override
-  String get routePaceOwnRun => 'Pace on the flat, in min/km';
+  String get routePaceOwnRun => 'Pace on the flat';
 
   @override
-  String get routePaceOwnSki => 'Speed on descents, in km/h';
+  String get routePaceOwnSki => 'Speed on descents';
 
   @override
-  String get routePaceOwnShare => 'Share of the estimated speed, in %';
+  String get routePaceOwnShare => 'Share of the estimated speed';
 
   @override
   String routePaceOutOfRange(String low, String high) {

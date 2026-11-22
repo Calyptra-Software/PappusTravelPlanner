@@ -354,7 +354,8 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     final typed = await showTextPromptDialog(
       context,
       title: l10n.routePaceOwn,
-      label: paceInputLabel(mode, l10n),
+      helper: paceInputLabel(mode, l10n),
+      suffix: paceUnit(mode),
       initial: paceInput(mode, current),
       confirmLabel: l10n.save,
       keyboardType: TextInputType.text,
@@ -1129,6 +1130,13 @@ String paceInputLabel(SectionMode mode, AppLocalizations l10n) =>
       SkiMode() => l10n.routePaceOwnSki,
       _ => l10n.routePaceOwnShare,
     };
+
+/// The unit a pace of one's own is typed in for [mode] ([paceFromInput]).
+String paceUnit(SectionMode mode) => switch (mode) {
+  RoutedMode(profile: RouteProfile.foot) || SkiMode() => 'km/h',
+  RoutedMode(profile: RouteProfile.run) => 'min/km',
+  _ => '%',
+};
 
 /// [pace] as the field for one's own shows it: the figure without its unit.
 String paceInput(SectionMode mode, Pace pace) => switch (mode) {

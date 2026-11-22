@@ -1633,10 +1633,10 @@
     }
   },
   "routePaceOwn": "Own pace…",
-  "routePaceOwnFoot": "Walking speed on the flat, in km/h",
-  "routePaceOwnRun": "Pace on the flat, in min/km",
-  "routePaceOwnSki": "Speed on descents, in km/h",
-  "routePaceOwnShare": "Share of the estimated speed, in %",
+  "routePaceOwnFoot": "Walking speed on the flat",
+  "routePaceOwnRun": "Pace on the flat",
+  "routePaceOwnSki": "Speed on descents",
+  "routePaceOwnShare": "Share of the estimated speed",
   "routePaceOutOfRange": "Choose a pace between {low} and {high}.",
   "@routePaceOutOfRange": {
     "placeholders": {

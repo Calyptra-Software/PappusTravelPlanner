@@ -4825,25 +4825,25 @@ abstract class AppLocalizations {
   /// No description provided for @routePaceOwnFoot.
   ///
   /// In en, this message translates to:
-  /// **'Walking speed on the flat, in km/h'**
+  /// **'Walking speed on the flat'**
   String get routePaceOwnFoot;
 
   /// No description provided for @routePaceOwnRun.
   ///
   /// In en, this message translates to:
-  /// **'Pace on the flat, in min/km'**
+  /// **'Pace on the flat'**
   String get routePaceOwnRun;
 
   /// No description provided for @routePaceOwnSki.
   ///
   /// In en, this message translates to:
-  /// **'Speed on descents, in km/h'**
+  /// **'Speed on descents'**
   String get routePaceOwnSki;
 
   /// No description provided for @routePaceOwnShare.
   ///
   /// In en, this message translates to:
-  /// **'Share of the estimated speed, in %'**
+  /// **'Share of the estimated speed'**
   String get routePaceOwnShare;
 
   /// No description provided for @routePaceOutOfRange.

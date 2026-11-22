@@ -293,7 +293,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Own pace…'));
     await tester.pumpAndSettle();
-    expect(find.text('Walking speed on the flat, in km/h'), findsOneWidget);
+    // Under the field, where it wraps, with the unit behind the figure.
+    final field = tester.widget<TextField>(find.byType(TextField));
+    expect(field.decoration!.helperText, 'Walking speed on the flat');
+    expect(field.decoration!.helperMaxLines, greaterThan(1));
+    expect(field.decoration!.labelText, isNull);
+    expect(field.decoration!.suffixText, 'km/h');
     await tester.enterText(find.byType(TextField), '6,2');
     await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();

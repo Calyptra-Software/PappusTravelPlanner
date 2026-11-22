@@ -2924,17 +2924,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routePaceOwn => 'Eigenes Tempo …';
 
   @override
-  String get routePaceOwnFoot => 'Gehgeschwindigkeit in der Ebene, in km/h';
+  String get routePaceOwnFoot => 'Gehgeschwindigkeit in der Ebene';
 
   @override
-  String get routePaceOwnRun => 'Tempo in der Ebene, in min/km';
+  String get routePaceOwnRun => 'Tempo in der Ebene';
 
   @override
-  String get routePaceOwnSki => 'Geschwindigkeit bei Abfahrten, in km/h';
+  String get routePaceOwnSki => 'Geschwindigkeit bei Abfahrten';
 
   @override
-  String get routePaceOwnShare =>
-      'Anteil der geschätzten Geschwindigkeit, in %';
+  String get routePaceOwnShare => 'Anteil der geschätzten Geschwindigkeit';
 
   @override
   String routePaceOutOfRange(String low, String high) {
