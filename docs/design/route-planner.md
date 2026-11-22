@@ -7,8 +7,8 @@ becomes itinerary entries. The connection search is a separate feature
 
 **Status: a first planner screen exists, reached from *Plan route* under a day.** The app
 therefore contacts `brouter.de`, and `overpass-api.de` for ski sections, which
-`SECURITY.md` says. **The operator has not been asked
-yet** (next section): that has to happen before a release carrying this.
+`SECURITY.md` says. **Neither operator has been asked yet** (next section, and *Ski
+runs*): that has to happen before a release carrying this.
 
 ## The engine
 
@@ -87,15 +87,28 @@ yet** (next section): that has to happen before a release carrying this.
   days under `<box>_<yyyymmdd>`; the system may clear that directory, which costs one
   request. *Reload pistes and lifts* on a ski section forgets them all. Parsing and
   building the graph run in `compute`: a large area is megabytes of JSON.
-- **Overpass is a donated server too**: guidance of about 10,000 queries and 1 GB a day
-  for all of an app's users. No retry by itself; the busy failure tells the user to try
-  later. On 2026-11-21 four of nine requests came back 502 ("at capacity") or timed
-  out, so this is a real path, not a corner case. A 200 with a `remark` containing
-  `error` is a query cut short with partial data and is treated as busy, never routed
-  over. The server is a setting (`overpassServerProvider`, Settings → Route planner, an
-  address without a path gets `/api/interpreter`). It answers `Access-Control-Allow-Origin:
-  *`, and the query is a form field, so a browser sends it without a preflight; the web
-  build sends no `User-Agent`, as for BRouter.
+- **Overpass is a donated server too, and an app is the case its manual warns about.** The
+  10,000 queries and 1 GB a day often quoted are for one-off use: the OSM wiki divides
+  them by 100 for anything that asks regularly (about 100 queries and 10 MB a day),
+  counted over all of an app's users together, and the Overpass manual
+  (`overpass-doc/en/preface/commons.html`) lists "setting up an app for more than just OSM
+  mappers and relying on the public instances as backend" among the problematic uses, for
+  which only an instance of one's own serves. overpass-api.de is FOSSGIS's and under its
+  terms (`fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen`): an identifying
+  `User-Agent`, at most two connections, the OSM credit, a link to
+  `openstreetmap.org/fixthemap` (*Report a map error* in the planner's credits, for every
+  route since BRouter's are OSM data too, and in the data sources), an e-mail address on
+  the app's site and store entries, and the recommendation not to hard-code the server.
+  Read on 2026-11-22; **FOSSGIS has not been asked yet** whether this app's use is fine
+  with them. An area loaded once and kept for 30 days asks little per user, but a whole
+  ski area is megabytes: 10 MB a day lasts a handful of users. No retry by itself; the
+  busy failure tells the user to try later. On 2026-11-21 four of nine requests came back
+  502 ("at capacity") or timed out, so this is a real path, not a corner case. A 200 with
+  a `remark` containing `error` is a query cut short with partial data and is treated as
+  busy, never routed over. The server is a setting (`overpassServerProvider`, Settings →
+  Route planner, an address without a path gets `/api/interpreter`). It answers
+  `Access-Control-Allow-Origin: *`, and the query is a form field, so a browser sends it
+  without a preflight; the web build sends no `User-Agent`, as for BRouter.
 - **What the graph takes from OSM** (`SkiGraph.build`):
   - A downhill piste (`piste:type=downhill`) is drawn downhill and skied that way;
     `oneway=no` makes it both ways, `-1` turns it. A connection (`piste:type=connection`)

@@ -1015,6 +1015,7 @@
   "trackSourceDrawn": "Von Hand gezeichnet",
   "attributionBrouter": "Routen von BRouter",
   "attributionOverpass": "Pisten und Lifte über die Overpass API",
+  "attributionFixTheMap": "Kartenfehler melden",
   "routePlannerSection": "Routenplaner",
   "routingServer": "Routing-Server",
   "routingServerAddress": "Adresse",

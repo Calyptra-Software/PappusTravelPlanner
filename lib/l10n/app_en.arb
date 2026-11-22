@@ -1623,6 +1623,10 @@
   "trackSourceDrawn": "Drawn by hand",
   "attributionBrouter": "Routes by BRouter",
   "attributionOverpass": "Pistes and lifts via the Overpass API",
+  "attributionFixTheMap": "Report a map error",
+  "@attributionFixTheMap": {
+    "description": "Link to OpenStreetMap's page for reporting a wrong piste, lift or anything else in the map data."
+  },
   "routePlannerSection": "Route planner",
   "routingServer": "Routing server",
   "routingServerAddress": "Address",

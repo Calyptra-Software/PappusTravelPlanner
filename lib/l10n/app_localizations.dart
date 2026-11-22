@@ -4948,6 +4948,12 @@ abstract class AppLocalizations {
   /// **'Pistes and lifts via the Overpass API'**
   String get attributionOverpass;
 
+  /// Link to OpenStreetMap's page for reporting a wrong piste, lift or anything else in the map data.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a map error'**
+  String get attributionFixTheMap;
+
   /// No description provided for @routePlannerSection.
   ///
   /// In en, this message translates to:

@@ -2982,6 +2982,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attributionOverpass => 'Pisten und Lifte über die Overpass API';
 
   @override
+  String get attributionFixTheMap => 'Kartenfehler melden';
+
+  @override
   String get routePlannerSection => 'Routenplaner';
 
   @override

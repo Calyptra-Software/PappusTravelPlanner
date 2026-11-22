@@ -1023,6 +1023,11 @@ void main() {
       find.descendant(of: bar, matching: find.text('© OpenStreetMap')),
       findsOneWidget,
     );
+    // A wrong way is often wrong data; overpass-api.de's terms ask for this.
+    expect(
+      find.descendant(of: bar, matching: find.text('Report a map error')),
+      findsOneWidget,
+    );
   });
 
   group('my position', () {
