@@ -4,10 +4,13 @@ import 'dart:math' as math;
 import 'package:latlong2/latlong.dart';
 
 import '../../../../core/cache_files.dart';
+import '../../../map/elevation.dart';
 import '../../application/route_engine.dart';
 import '../../application/ski_router.dart';
+import '../../application/terrain_heights.dart';
 import '../../domain/piste_difficulty.dart';
 import '../../domain/routed_path.dart';
+import '../../domain/terrain.dart';
 import 'overpass_client.dart';
 import 'ski_graph.dart';
 import 'ski_network.dart';
@@ -151,9 +154,15 @@ SkiGraph buildSkiGraph(String answer) {
 /// cache directory ([CacheFiles]) for [kSkiAreaMaxAge] on disk, so a ski day
 /// planned at home is routed again on the mountain without a connection.
 /// Routing itself never leaves the device.
+///
+/// The map data has no heights; a path gets them from [TerrainHeights], each
+/// ride straight from station to station ([levelAloft]). Without them, from a
+/// server that cannot be reached, the path comes without heights: they are
+/// worth less than the way.
 class OverpassSkiRouter implements SkiRouter {
   OverpassSkiRouter(
     this._client, {
+    this._heights,
     Future<CacheFiles?>? files,
     DateTime Function()? now,
     Future<SkiGraph> Function(String answer)? build,
@@ -162,6 +171,7 @@ class OverpassSkiRouter implements SkiRouter {
        _build = build ?? ((answer) async => buildSkiGraph(answer));
 
   final OverpassClient _client;
+  final TerrainHeights? _heights;
   final Future<CacheFiles?> _files;
   final DateTime Function() _now;
   final Future<SkiGraph> Function(String answer) _build;
@@ -176,7 +186,22 @@ class OverpassSkiRouter implements SkiRouter {
     required PisteDifficulty maxDifficulty,
   }) async {
     final graph = await _graphFor(waypoints);
-    return graph.route(waypoints, maxDifficulty: maxDifficulty);
+    final found = graph.find(waypoints, maxDifficulty: maxDifficulty);
+    final path = found.path;
+    final heights = await _heights?.at(path.points);
+    if (heights == null) return path;
+    final elevations = levelAloft(path.points, heights, found.aloft);
+    final climb = climbOf(elevations);
+    return RoutedPath(
+      points: path.points,
+      lengthMeters: path.lengthMeters,
+      elevations: elevations,
+      ascentMeters: climb.ascent,
+      descentMeters: climb.descent,
+      duration: path.duration,
+      segments: path.segments,
+      waypointIndices: path.waypointIndices,
+    );
   }
 
   @override

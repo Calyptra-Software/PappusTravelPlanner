@@ -207,6 +207,34 @@ void main() {
       _station(2, 10, 0, 'Berg'),
     ];
 
+    test('a ride hangs on its cable between its stops, nothing else', () {
+      final graph = _graph([
+        _way(
+          1,
+          [(1, 0, 0), (9, 5, 0), (2, 10, 0)],
+          {'aerialway': 'gondola', 'name': 'Bahn'},
+        ),
+        _way(
+          2,
+          [(2, 10, 0), (3, 5, 2), (1, 0, 0)],
+          {'piste:type': 'downhill', 'name': 'Talabfahrt'},
+        ),
+        _station(1, 0, 0, 'Tal'),
+        _station(2, 10, 0, 'Berg'),
+      ]);
+
+      final found = graph.find([_at(0, 0), _at(10, 0), _at(0, 0)]);
+
+      expect(found.path.points, [
+        _at(0, 0),
+        _at(5, 0),
+        _at(10, 0),
+        _at(5, 2),
+        _at(0, 0),
+      ]);
+      expect(found.aloft, [false, true, false, false, false]);
+    });
+
     test('rides up and skis down, each a segment of its own', () {
       final graph = _graph(valleyAndTop());
 
