@@ -558,10 +558,17 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           basemap: basemap,
                           overlays: overlays,
                           // The routes are BRouter's, computed on OpenStreetMap
-                          // data, whichever style the map is drawn in.
+                          // data, whichever style the map is drawn in, as are a
+                          // ski run's pistes; a wrong way is often wrong data,
+                          // and overpass-api.de's terms ask for a way to report
+                          // it.
                           extra: [
                             osmAttribution,
                             (label: l10n.attributionBrouter, url: kBrouterUrl),
+                            (
+                              label: l10n.attributionFixTheMap,
+                              url: kOsmFixTheMapUrl,
+                            ),
                           ],
                         ),
                       ],

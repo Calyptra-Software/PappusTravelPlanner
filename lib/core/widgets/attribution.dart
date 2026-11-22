@@ -27,6 +27,11 @@ const String kBrouterUrl = 'https://brouter.de/';
 /// The Overpass API, which the route planner loads pistes and lifts from.
 const String kOverpassSiteUrl = 'https://overpass-api.de/';
 
+/// OpenStreetMap's page for reporting an error in the map data. The terms of
+/// overpass-api.de ask apps using it to link there, so that someone who finds
+/// a piste or lift wrong can have it put right.
+const String kOsmFixTheMapUrl = 'https://www.openstreetmap.org/fixthemap';
+
 /// The one-line attribution shown under the connection search: both sources,
 /// both tappable.
 class AttributionFooter extends StatelessWidget {
@@ -140,6 +145,13 @@ class DataSourcesSettings extends StatelessWidget {
           subtitle: Text(kOverpassSiteUrl, style: theme.textTheme.bodySmall),
           trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () => openExternalLink(context, kOverpassSiteUrl),
+        ),
+        ListTile(
+          leading: const Icon(Icons.edit_location_alt_outlined),
+          title: Text(l10n.attributionFixTheMap),
+          subtitle: Text(kOsmFixTheMapUrl, style: theme.textTheme.bodySmall),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => openExternalLink(context, kOsmFixTheMapUrl),
         ),
       ],
     );
