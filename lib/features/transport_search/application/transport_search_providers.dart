@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_info.dart';
 import '../../../core/cache_files.dart';
 import '../../../core/providers.dart';
+import '../../../core/settings/server_setting.dart';
 import '../data/motis_client.dart';
 import '../data/run_shape_cache.dart';
 import '../domain/journey.dart';
@@ -12,6 +13,28 @@ import '../domain/transport_place.dart';
 import '../domain/via_stop.dart';
 import 'search_language_provider.dart';
 import 'transport_search.dart';
+
+/// The MOTIS server the connection search asks, remembered across launches:
+/// [kTransitousBaseUrl] unless the user set another, their own for example, so
+/// that no search goes to Transitous. A setting of the device like the route
+/// planner's servers, so it stays out of the database and out of a `.tpt`.
+final transitServerProvider = NotifierProvider<ServerSettingController, Uri>(
+  () => ServerSettingController(
+    key: 'transit_server',
+    fallback: kTransitousBaseUrl,
+    defaultPath: '',
+    refused: isOffLimitsMotisServer,
+  ),
+);
+
+/// Whether [server] is one the app must never ask, whoever sets it: Transitous'
+/// staging instance and the MOTIS project's own hosts, which their operators
+/// keep for development and demonstration rather than for apps.
+bool isOffLimitsMotisServer(Uri server) {
+  final host = server.host.toLowerCase();
+  return host == 'staging.api.transitous.org' ||
+      host.split('.').contains('motis-project');
+}
 
 /// The connection-search backend (MOTIS via Transitous by default). It holds an
 /// HTTP client, so it lives for the app session and is closed on dispose. A
@@ -27,6 +50,7 @@ import 'transport_search.dart';
 /// running app knows the latter.
 final transportSearchProvider = Provider<TransportSearch>((ref) {
   final client = MotisTransportSearch(
+    baseUrl: ref.watch(transitServerProvider),
     language: ref.watch(searchLanguageProvider),
     userAgent: buildUserAgent(ref.watch(appVersionProvider)),
   );

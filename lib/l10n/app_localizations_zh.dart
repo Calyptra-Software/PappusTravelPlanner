@@ -2915,6 +2915,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get attributionFixTheMap => 'Report a map error';
 
   @override
+  String get connectionSearchSection => 'Connection search';
+
+  @override
+  String get transitServer => 'Connection server';
+
+  @override
+  String get transitServerHint =>
+      'A MOTIS server, e.g. https://motis.example.org';
+
+  @override
+  String get serverOffLimits =>
+      'Its operator doesn\'t allow apps to use that server.';
+
+  @override
   String get routePlannerSection => 'Route planner';
 
   @override

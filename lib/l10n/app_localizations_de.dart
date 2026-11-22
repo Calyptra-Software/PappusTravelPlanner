@@ -2988,6 +2988,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attributionFixTheMap => 'Kartenfehler melden';
 
   @override
+  String get connectionSearchSection => 'Verbindungssuche';
+
+  @override
+  String get transitServer => 'Verbindungsserver';
+
+  @override
+  String get transitServerHint =>
+      'Ein MOTIS-Server, z. B. https://motis.example.org';
+
+  @override
+  String get serverOffLimits =>
+      'Der Betreiber erlaubt Apps nicht, diesen Server zu nutzen.';
+
+  @override
   String get routePlannerSection => 'Routenplaner';
 
   @override

@@ -122,6 +122,7 @@ boundary.
 
 **It parses replies from five network services.** The connection search talks to
 `https://api.transitous.org` (`lib/features/transport_search/data/motis_client.dart`),
+or instead to a MOTIS server you set in its settings,
 the route planner to `https://brouter.de` (`lib/features/route_planner/data/brouter_client.dart`),
 or instead to a BRouter server you set in its settings,
 and for a ski section to `https://overpass-api.de`
@@ -227,7 +228,8 @@ that section is ticked, and it is off until someone ticks it.
 nothing held anywhere but on your device.
 
 **The connection search tells Transitous what it must.** A place query, a date,
-and a time go to the routing service, along with a `User-Agent` naming the app
+and a time go to the routing service, or to the MOTIS server set in the settings
+instead, along with a `User-Agent` naming the app
 and linking this repository — its
 [usage policy](https://transitous.org/api/) asks for exactly that. Searching a
 connection without telling anyone where and when you want to go is not a thing

@@ -268,7 +268,8 @@ shows up here either.
 It asks [Transitous](https://transitous.org), a
 community-run MOTIS instance built on OpenStreetMap and open timetable data from operators
 around the world — local public transport, long-distance trains, buses, and more. No
-account, no API key, and nothing to sign up for.
+account, no API key, and nothing to sign up for. **Settings → Connection search** takes the
+address of another MOTIS server instead, your own for example.
 
 ### Searching
 

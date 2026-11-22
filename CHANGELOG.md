@@ -5,6 +5,8 @@ exact commits.
 
 ## Unreleased
 
+- **Your own connection server.** The connection search can ask another MOTIS server instead
+  of Transitous, set under Settings → Connection search.
 - **Lifts are transport modes.** Gondolas and cable cars, chairlifts and drag lifts are
   built-in modes now. A mode you made for a lift with one of the lift icons becomes that mode,
   keeping its name and its legs. Lifts and funiculars from the connection search get a mode

@@ -1631,6 +1631,10 @@
   "@attributionFixTheMap": {
     "description": "Link to OpenStreetMap's page for reporting a wrong piste, lift or anything else in the map data."
   },
+  "connectionSearchSection": "Connection search",
+  "transitServer": "Connection server",
+  "transitServerHint": "A MOTIS server, e.g. https://motis.example.org",
+  "serverOffLimits": "Its operator doesn't allow apps to use that server.",
   "routePlannerSection": "Route planner",
   "routingServer": "Routing server",
   "routingServerAddress": "Address",

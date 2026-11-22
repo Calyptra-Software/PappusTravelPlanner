@@ -25,6 +25,7 @@ import '../../itinerary/presentation/transport_modes_settings.dart';
 import '../application/database_providers.dart';
 import 'about_settings.dart';
 import '../../route_planner/presentation/routing_server_settings.dart';
+import '../../transport_search/presentation/transit_server_settings.dart';
 
 /// Where the database is, and what it weighs.
 ///
@@ -201,6 +202,9 @@ class SettingsScreen extends ConsumerWidget {
               onTap: () => _export(context, ref),
             ),
           ],
+          const Divider(),
+          _SectionHeader(title: l10n.connectionSearchSection),
+          const TransitServerSettings(),
           const Divider(),
           _SectionHeader(title: l10n.routePlannerSection),
           const RoutingServerSettings(),

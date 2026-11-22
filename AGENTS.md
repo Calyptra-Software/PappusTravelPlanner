@@ -51,15 +51,15 @@ change is not written at all.
 
 **`SECURITY.md` states facts, not intentions**, and a change can make one of them false
 without touching it: which hosts are contacted (`api.transitous.org` for a connection
-search, `brouter.de` for the route planner unless another server is set, `overpass-api.de`
-for a ski section's pistes and lifts and `tiles.mapterhorn.com` for heights, each unless
-another server is set, the tile servers of the map styles and overlays in `basemap.dart`
-while a map is open, and nothing else), which permissions the app asks for and which its
-libraries merge in, that there is no telemetry of any kind, and the list of foreign files
-the app parses. A third host, a new permission, an analytics or crash-reporting dependency,
-or another format read from outside all turn a sentence there into a false claim about what
-the app does with someone's data. Correct it in the same commit; a security policy that has
-drifted is worse than none, because people rely on it.
+search, `brouter.de` for the route planner, `overpass-api.de` for a ski section's pistes and
+lifts and `tiles.mapterhorn.com` for heights, each unless another server is set, the tile
+servers of the map styles and overlays in `basemap.dart` while a map is open, and nothing
+else), which permissions the app asks for and which its libraries merge in, that there is no
+telemetry of any kind, and the list of foreign files the app parses. A third host, a new
+permission, an analytics or crash-reporting dependency, or another format read from outside
+all turn a sentence there into a false claim about what the app does with someone's data.
+Correct it in the same commit; a security policy that has drifted is worse than none,
+because people rely on it.
 
 Both facts have drifted before, and the permission count is read off the **built APK**, never
 off `AndroidManifest.xml` (`docs/design/platform-builds.md` says how).
@@ -143,8 +143,8 @@ Each one is explained in the design note named after it.
   elsewhere. (`attachments.md`)
 - **The router is a donated server**: its usage policy is part of the feature, every
   provider that calls the network carries `retry: noAutomaticRetry`, and
-  `staging.api.transitous.org` and `*.motis-project.*` are off limits.
-  (`transport-search.md`)
+  `staging.api.transitous.org` and `*.motis-project.*` are off limits, also as a server
+  set in the settings. (`transport-search.md`)
 - **Bitwise ops are 32-bit on the web**: codec arithmetic uses `*` and `~/`. (`tracks.md`)
 - **Every modal sheet is opened by `showAppSheet`**, and a snackbar raised from inside a
   sheet is drawn *behind* it. (`ui-conventions.md`, `map.md`)

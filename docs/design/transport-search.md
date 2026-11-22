@@ -234,6 +234,21 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   that talks to the network needs the same line. `staging.api.transitous.org`
   and the `*.motis-project.*` hosts are off limits outright. Being an open-source,
   non-commercial app is a *condition* of using the API, not a coincidence.
+- **The MOTIS server is a setting, Transitous unless another is set**
+  (`transitServerProvider`, Settings → Connection search, stored like the route planner's
+  servers, `core/settings/server_setting.dart`). F-Droid's TetheredNet anti-feature is not
+  applied where a simple option points the app at another instance of a self-hostable
+  service, and MOTIS is one. Every rule above applies to any server alike, so there is one
+  way the app asks; the hosts off limits are refused as a setting too
+  (`isOffLimitsMotisServer`: `staging.api.transitous.org` and any host with a
+  `motis-project` label), also when one is found stored. The client asks `/api/v1/geocode`
+  and `/api/v6/plan`, `/trip` and `/stoptimes`, so a server must speak those. A leg
+  imported from one server carries its stop and trip ids (`fromPlaceId`, `sourceTripId`),
+  which another server need not know: a stop it does not know is a 404 `Could not find
+  timetable location`, read as `unknownLocation`, which says so on the form and has the
+  end picked again, and a trip id it does not know falls back to the departure board as
+  for a rotated one. Checked against Transitous on 2026-11-22 with a made-up stop id. The
+  Transitous sources stay linked, since connections imported before were found there.
 - **A journey is read the same way before and after it is imported.** A connection found by
   the search and a run of legs the trip already holds are both mapped onto one
   `JourneyView` (`features/transport_search/journey_view.dart`, pure — plus the DB-side
