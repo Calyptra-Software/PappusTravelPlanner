@@ -1585,6 +1585,33 @@
   "routeModeSki": "Ski",
   "routeModeStraight": "Straight line",
   "routePlanLoadingPistes": "Loading pistes and lifts…",
+  "routePace": "Pace:",
+  "routePaceLeisurely": "leisurely",
+  "routePaceEasy": "easy",
+  "routePaceAverage": "average",
+  "routePaceBrisk": "brisk",
+  "routePaceFast": "fast",
+  "routePaceFoot": "{speed} km/h, {ascent} m up an hour",
+  "@routePaceFoot": {
+    "description": "What a pace means on foot: the walking speed on the flat and the meters climbed an hour.",
+    "placeholders": {
+      "speed": {"type": "String"},
+      "ascent": {"type": "int"}
+    }
+  },
+  "routePaceSki": "descents at {speed} km/h",
+  "@routePaceSki": {
+    "placeholders": {
+      "speed": {"type": "String"}
+    }
+  },
+  "routePaceShare": "{percent} % of the estimated speed",
+  "@routePaceShare": {
+    "description": "What a pace means on a bike: the share of the speed the router estimates.",
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
   "routeSkiDifficulty": "Pistes:",
   "routeSkiUpToEasy": "easy only",
   "routeSkiUpToIntermediate": "up to intermediate",

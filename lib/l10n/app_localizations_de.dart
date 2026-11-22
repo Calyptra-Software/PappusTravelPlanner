@@ -2870,6 +2870,39 @@ class AppLocalizationsDe extends AppLocalizations {
   String get routePlanLoadingPistes => 'Pisten und Lifte werden geladen …';
 
   @override
+  String get routePace => 'Tempo:';
+
+  @override
+  String get routePaceLeisurely => 'gemütlich';
+
+  @override
+  String get routePaceEasy => 'entspannt';
+
+  @override
+  String get routePaceAverage => 'normal';
+
+  @override
+  String get routePaceBrisk => 'zügig';
+
+  @override
+  String get routePaceFast => 'sehr zügig';
+
+  @override
+  String routePaceFoot(String speed, int ascent) {
+    return '$speed km/h, $ascent Hm pro Stunde bergauf';
+  }
+
+  @override
+  String routePaceSki(String speed) {
+    return 'Abfahrten mit $speed km/h';
+  }
+
+  @override
+  String routePaceShare(int percent) {
+    return '$percent % der geschätzten Geschwindigkeit';
+  }
+
+  @override
   String get routeSkiDifficulty => 'Pisten:';
 
   @override

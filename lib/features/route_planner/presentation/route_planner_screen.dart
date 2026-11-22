@@ -23,6 +23,8 @@ import '../../transport_search/presentation/journey_formats.dart';
 import '../application/route_engine.dart';
 import '../application/tour_planner_controller.dart';
 import '../data/saved_tour.dart';
+import '../data/ski/ski_graph.dart' show kDescentSpeed;
+import '../domain/pace.dart';
 import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
 import '../domain/tour.dart';
@@ -592,6 +594,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
             onSelectMode: (mode) =>
                 planner.selectMode(plannerModeOf(mode, ref.read(_planner))),
             onSkiDifficulty: planner.setSkiDifficulty,
+            onPace: (pace) => planner.setPace(ref.read(_planner).mode, pace),
             onRetry: planner.retry,
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
@@ -711,6 +714,7 @@ class _PlannerPanel extends StatelessWidget {
     required this.startMinutes,
     required this.onSelectMode,
     required this.onSkiDifficulty,
+    required this.onPace,
     required this.onRetry,
     required this.onPickStartTime,
     required this.moving,
@@ -739,6 +743,9 @@ class _PlannerPanel extends StatelessWidget {
   final int? startMinutes;
   final ValueChanged<SectionMode> onSelectMode;
   final ValueChanged<PisteDifficulty> onSkiDifficulty;
+
+  /// Sets the pace of the selected way of travel, for the whole tour.
+  final ValueChanged<Pace> onPace;
   final VoidCallback onRetry;
   final VoidCallback onPickStartTime;
 
@@ -792,17 +799,20 @@ class _PlannerPanel extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: switch (state.mode) {
-                  SkiMode(:final maxDifficulty) => _skiDifficulty(
-                    l10n,
-                    muted,
-                    maxDifficulty,
+                child: switch ((state.mode, state.paceOf(state.mode))) {
+                  (SkiMode(:final maxDifficulty), final pace?) => Row(
+                    children: [
+                      _skiDifficulty(l10n, muted, maxDifficulty),
+                      const SizedBox(width: 16),
+                      _pace(l10n, muted, state.mode, pace),
+                    ],
                   ),
-                  StraightMode() => Text(
+                  (StraightMode(), _) => Text(
                     l10n.routePlanStraightHint,
                     style: muted,
                   ),
-                  RoutedMode() => Text('', style: muted),
+                  (_, final pace?) => _pace(l10n, muted, state.mode, pace),
+                  _ => Text('', style: muted),
                 },
               ),
               Padding(
@@ -886,6 +896,46 @@ class _PlannerPanel extends StatelessWidget {
     ],
   );
 
+  Widget _pace(
+    AppLocalizations l10n,
+    TextStyle? style,
+    SectionMode mode,
+    Pace selected,
+  ) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(l10n.routePace, style: style),
+      const SizedBox(width: 4),
+      PopupMenuButton<Pace>(
+        enabled: !moving,
+        initialValue: selected,
+        onSelected: onPace,
+        tooltip: l10n.routePace,
+        itemBuilder: (_) => [
+          for (final pace in Pace.values)
+            PopupMenuItem(
+              value: pace,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(paceLabel(pace, l10n)),
+                subtitle: Text(paceDetail(mode, pace, l10n)),
+              ),
+            ),
+        ],
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              paceLabel(selected, l10n),
+              style: style?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            Icon(Icons.arrow_drop_down, size: 16, color: style?.color),
+          ],
+        ),
+      ),
+    ],
+  );
+
   /// One line saying where the tour stands: refused, being routed, complete
   /// with its totals, or what to do next.
   Widget _status(BuildContext context, AppLocalizations l10n, ThemeData theme) {
@@ -924,7 +974,7 @@ class _PlannerPanel extends StatelessWidget {
     }
     final entries = state.entries;
     if (entries != null) {
-      final totals = tourTotals(entries);
+      final totals = tourTotals(entries, paces: state.paces);
       final style = theme.textTheme.titleMedium?.copyWith(
         fontFeatures: const [FontFeature.tabularFigures()],
       );
@@ -980,6 +1030,29 @@ String plannerModeLabel(SectionMode mode, AppLocalizations l10n) =>
       SkiMode() => l10n.routeModeSki,
       StraightMode() => l10n.routeModeStraight,
     };
+
+/// What the planner calls a pace.
+String paceLabel(Pace pace, AppLocalizations l10n) => switch (pace) {
+  Pace.leisurely => l10n.routePaceLeisurely,
+  Pace.easy => l10n.routePaceEasy,
+  Pace.average => l10n.routePaceAverage,
+  Pace.brisk => l10n.routePaceBrisk,
+  Pace.fast => l10n.routePaceFast,
+};
+
+/// What [pace] means for [mode], in figures: the speeds on foot, the descent
+/// speed on skis, the share of the router's estimate on a bike.
+String paceDetail(SectionMode mode, Pace pace, AppLocalizations l10n) {
+  String kmh(double value) => value.toStringAsFixed(1);
+  return switch (mode) {
+    RoutedMode(profile: RouteProfile.foot) => l10n.routePaceFoot(
+      kmh(kHikingSpeed * pace.factor),
+      (kHikingAscentPerHour * pace.factor).round(),
+    ),
+    SkiMode() => l10n.routePaceSki(kmh(kDescentSpeed * 3.6 * pace.factor)),
+    _ => l10n.routePaceShare((pace.factor * 100).round()),
+  };
+}
 
 /// What the planner calls a grade a ski run is held to.
 String skiDifficultyLabel(PisteDifficulty difficulty, AppLocalizations l10n) =>

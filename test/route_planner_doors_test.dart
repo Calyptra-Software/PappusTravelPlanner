@@ -159,6 +159,7 @@ void main() {
           appVersionProvider.overrideWithValue('0.0.0-test'),
           routeEngineProvider.overrideWithValue(_NoRouter()),
           noTerrainHeights,
+          noRememberedPaces,
           tripProvider(tripId).overrideWith((ref) => Stream.value(data.trip)),
           itineraryProvider(
             tripId,

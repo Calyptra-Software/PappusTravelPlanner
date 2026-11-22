@@ -2800,6 +2800,39 @@ class AppLocalizationsZh extends AppLocalizations {
   String get routePlanLoadingPistes => 'Loading pistes and lifts…';
 
   @override
+  String get routePace => 'Pace:';
+
+  @override
+  String get routePaceLeisurely => 'leisurely';
+
+  @override
+  String get routePaceEasy => 'easy';
+
+  @override
+  String get routePaceAverage => 'average';
+
+  @override
+  String get routePaceBrisk => 'brisk';
+
+  @override
+  String get routePaceFast => 'fast';
+
+  @override
+  String routePaceFoot(String speed, int ascent) {
+    return '$speed km/h, $ascent m up an hour';
+  }
+
+  @override
+  String routePaceSki(String speed) {
+    return 'descents at $speed km/h';
+  }
+
+  @override
+  String routePaceShare(int percent) {
+    return '$percent % of the estimated speed';
+  }
+
+  @override
   String get routeSkiDifficulty => 'Pistes:';
 
   @override

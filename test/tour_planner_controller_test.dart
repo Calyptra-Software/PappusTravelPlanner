@@ -13,6 +13,8 @@ import 'package:travelplanner/features/route_planner/application/route_engine.da
 import 'package:travelplanner/features/route_planner/application/route_planner_providers.dart';
 import 'package:travelplanner/features/route_planner/application/terrain_heights.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
+import 'package:travelplanner/features/route_planner/application/route_pace_provider.dart';
+import 'package:travelplanner/features/route_planner/domain/pace.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
@@ -97,6 +99,7 @@ void main() {
       overrides: [
         routeEngineProvider.overrideWithValue(engine),
         noTerrainHeights,
+        noRememberedPaces,
         databaseProvider.overrideWithValue(db),
       ],
     );
@@ -192,6 +195,7 @@ void main() {
         overrides: [
           routeEngineProvider.overrideWithValue(engine),
           terrainHeightsProvider.overrideWithValue(heights),
+          noRememberedPaces,
           databaseProvider.overrideWithValue(db),
         ],
       );
@@ -420,6 +424,43 @@ void main() {
     ]);
   });
 
+  group('the pace', () {
+    test('times the tour at once, asks nobody, and is remembered', () async {
+      planner()
+        ..addWaypoint(_a)
+        ..addWaypoint(_b);
+      await engine.answer();
+      // 1 km on foot without heights: 15 minutes by the hiking time.
+      expect(
+        tourTotals(state().entries!).duration,
+        const Duration(minutes: 15),
+      );
+
+      planner().setPace(const RoutedMode(RouteProfile.foot), Pace.leisurely);
+
+      expect(
+        state().paceOf(const RoutedMode(RouteProfile.foot)),
+        Pace.leisurely,
+      );
+      expect(
+        tourTotals(state().entries!, paces: state().paces).duration,
+        Duration(seconds: (900 / 0.7).round()),
+      );
+      expect(engine.asked, hasLength(1));
+      expect(container.read(rememberedPacesProvider), {'foot': Pace.leisurely});
+    });
+
+    test('is one per way of travel, and none for a drive', () {
+      planner().setPace(const RoutedMode(RouteProfile.bike), Pace.fast);
+      planner().setPace(const RoutedMode(RouteProfile.car), Pace.fast);
+
+      expect(state().paceOf(const RoutedMode(RouteProfile.bike)), Pace.fast);
+      expect(state().paceOf(const RoutedMode(RouteProfile.foot)), Pace.average);
+      expect(state().paceOf(const RoutedMode(RouteProfile.car)), isNull);
+      expect(state().paces.keys, ['bike']);
+    });
+  });
+
   test('save writes the tour into the trip', () async {
     final tripId = await db.tripDao.createTrip(
       TripsCompanion.insert(title: 'Hike'),
@@ -445,8 +486,9 @@ void main() {
     expect(ids, hasLength(1));
     final item = await db.select(db.itineraryItems).getSingle();
     expect(item.kind, ItemKind.transport);
-    // Two sections of twenty minutes each.
-    expect((item.startMinutes, item.endMinutes), (480, 520));
+    // Two kilometers on foot, without heights: half an hour by the hiking
+    // time, whatever the router estimated.
+    expect((item.startMinutes, item.endMinutes), (480, 510));
     expect((await db.select(db.tracks).getSingle()).source, TrackSource.routed);
   });
 

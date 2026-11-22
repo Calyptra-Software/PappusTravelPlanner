@@ -166,6 +166,7 @@ void main() {
           databaseProvider.overrideWithValue(db),
           routeEngineProvider.overrideWithValue(engine),
           noTerrainHeights,
+          noRememberedPaces,
           skiRouterProvider.overrideWithValue(skiRouter),
         ],
         child: MaterialApp(
@@ -253,9 +254,49 @@ void main() {
       find.textContaining('4.2 km · ↑ 300 m · ↓ 120 m · '),
       findsOneWidget,
     );
-    expect(find.textContaining('1 h 35 min'), findsOneWidget);
+    // The hiking time for 4.2 km, 300 m up and 120 m down, not the router's
+    // 95 minutes.
+    expect(find.textContaining('1 h 46 min'), findsOneWidget);
     expect(find.byIcon(Icons.schedule), findsNWidgets(2));
     expect(addButton(tester).onPressed, isNotNull);
+  });
+
+  testWidgets('the pace of the way of travel times the tour at once', (
+    tester,
+  ) async {
+    await open(tester);
+    await tapMap(tester, const Offset(-150, -100));
+    await tapMap(tester, const Offset(150, 100));
+    await tester.pumpAndSettle();
+    expect(find.text('Pace:'), findsOneWidget);
+    expect(find.textContaining('1 h 46 min'), findsOneWidget);
+
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    // Each pace says what it means on foot.
+    expect(find.text('4.8 km/h, 360 m up an hour'), findsOneWidget);
+    await tester.tap(find.text('brisk').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('brisk'), findsOneWidget);
+    expect(find.textContaining('1 h 29 min'), findsOneWidget);
+    expect(engine.asked, hasLength(1));
+  });
+
+  testWidgets('a drive has no pace, a ski run its grade and its pace', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await choose(tester, 'Car');
+    expect(find.text('Pace:'), findsNothing);
+
+    await choose(tester, 'Ski');
+    expect(find.text('Pistes:'), findsOneWidget);
+    expect(find.text('Pace:'), findsOneWidget);
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    expect(find.text('descents at 18.0 km/h'), findsOneWidget);
   });
 
   testWidgets('says it is routing while the answer is out', (tester) async {
@@ -897,7 +938,9 @@ void main() {
       expect(find.byKey(const ValueKey('waypoint-0')), findsOneWidget);
       expect(find.byKey(const ValueKey('waypoint-1')), findsOneWidget);
       expect(find.textContaining('5 km'), findsOneWidget);
-      expect(find.textContaining('1 h 20 min'), findsOneWidget);
+      // 5 km on foot by the hiking time; the plan's 80 minutes are the
+      // router's.
+      expect(find.textContaining('1 h 15 min'), findsOneWidget);
       // The time its first entry has.
       expect(find.text('Start 07:30'), findsOneWidget);
     });

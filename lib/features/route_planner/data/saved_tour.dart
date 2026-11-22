@@ -7,6 +7,7 @@ import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
 import '../../map/elevation.dart';
 import '../../map/map_features.dart';
+import '../domain/pace.dart';
 import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
 import '../domain/routed_path.dart';
@@ -26,7 +27,13 @@ class SavedTour {
     this.legItems = const {},
     this.placeItems = const {},
     this.runParts = const {},
+    this.paces = const {},
   });
+
+  /// The pace each way of travel in the tour was timed at, by `paceKeyOf`:
+  /// [Pace.average] where a leg's plan names none, so the tour opens with the
+  /// times it was saved with, whatever pace was set since.
+  final Map<String, Pace> paces;
 
   /// The legs a ski run was laid out as, in order, by the keys of the run's
   /// two ends: what each leg is ([RoutePlan.part]), what it was called, and
@@ -136,6 +143,7 @@ SavedTour? savedTourOf(
 
   final waypoints = <TourWaypoint>[];
   final modes = <SectionMode>[];
+  final paces = <String, Pace>{};
   // The waypoint indices each leg runs between, to find its run again. A leg
   // of a ski run may start or end at a point the router chose, which is no
   // waypoint: it is placed at the waypoint before it, and on a ski run only
@@ -146,6 +154,9 @@ SavedTour? savedTourOf(
   for (final (item: _, :plan) in legs) {
     final mode = _modeOf(plan);
     if (mode == null) return null;
+    if (paceKeyOf(mode) case final key?) {
+      paces[key] = Pace.byName(plan.pace) ?? Pace.average;
+    }
     final first = waypoints.isEmpty ? 0 : waypoints.length - 1;
     // The leg's first waypoint is the one the leg before it ended on.
     final points = waypoints.isEmpty ? plan.waypoints : plan.waypoints.skip(1);
@@ -263,6 +274,7 @@ SavedTour? savedTourOf(
     legItems: legItems,
     placeItems: placeItems,
     runParts: runParts,
+    paces: paces,
   );
 }
 

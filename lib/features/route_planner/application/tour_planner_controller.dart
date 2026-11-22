@@ -8,6 +8,7 @@ import '../../../core/providers.dart';
 import '../../map/map_features.dart' show lineLength;
 import '../data/saved_tour.dart';
 import '../data/tour_mapper.dart';
+import '../domain/pace.dart';
 import '../domain/piste_difficulty.dart';
 import '../domain/piste_note.dart';
 import '../domain/route_profile.dart';
@@ -16,6 +17,7 @@ import '../domain/terrain.dart' show densify;
 import '../domain/tour.dart';
 import '../tour_entries.dart';
 import 'route_engine.dart';
+import 'route_pace_provider.dart';
 import 'route_planner_providers.dart';
 
 /// A tour while it is being planned: the waypoints set so far, the mode the
@@ -27,9 +29,20 @@ class TourPlannerState {
     this.paths = const {},
     this.loading = const {},
     this.failures = const {},
+    this.paces = const {},
   });
 
   final Tour tour;
+
+  /// The pace each way of travel is timed at, by `paceKeyOf`; [Pace.average]
+  /// where none is set. One per way of travel for the whole tour.
+  final Map<String, Pace> paces;
+
+  /// The pace [mode] is timed at, or null for one no pace applies to.
+  Pace? paceOf(SectionMode mode) => switch (paceKeyOf(mode)) {
+    null => null,
+    final key => paces[key] ?? Pace.average,
+  };
 
   /// How the section to the **next** waypoint is traveled. Choosing another
   /// changes nothing already planned.
@@ -174,12 +187,14 @@ class TourPlannerState {
     Map<String, RoutedPath>? paths,
     Set<String>? loading,
     Map<String, RouteEngineFailure>? failures,
+    Map<String, Pace>? paces,
   }) => TourPlannerState(
     tour: tour ?? this.tour,
     mode: mode ?? this.mode,
     paths: paths ?? this.paths,
     loading: loading ?? this.loading,
     failures: failures ?? this.failures,
+    paces: paces ?? this.paces,
   );
 }
 
@@ -197,7 +212,10 @@ class TourPlannerController extends Notifier<TourPlannerState> {
   @override
   TourPlannerState build() {
     final saved = this.saved;
-    if (saved == null) return const TourPlannerState();
+    // A new tour starts at the paces last set; a saved one at its own, for the
+    // ways of travel it has.
+    final paces = {...ref.read(rememberedPacesProvider), ...?saved?.paces};
+    if (saved == null) return TourPlannerState(paces: paces);
     // A leg whose stored line was removed since has no answer among the saved
     // ones and is asked about once the state stands; the rest ask nothing.
     Future.microtask(() {
@@ -208,10 +226,21 @@ class TourPlannerController extends Notifier<TourPlannerState> {
       // The next section goes on as the tour ended.
       mode: saved.tour.modes.lastOrNull ?? const RoutedMode(RouteProfile.foot),
       paths: saved.paths,
+      paces: paces,
     );
   }
 
   void selectMode(SectionMode mode) => state = state.copyWith(mode: mode);
+
+  /// Times the way of travel [mode] stands for at [pace], throughout the tour,
+  /// and makes it what the next tour starts with. Asks nobody: a pace changes
+  /// how long a way takes, never which way it is.
+  void setPace(SectionMode mode, Pace pace) {
+    final key = paceKeyOf(mode);
+    if (key == null) return;
+    state = state.copyWith(paces: {...state.paces, key: pace});
+    unawaited(ref.read(rememberedPacesProvider.notifier).remember(key, pace));
+  }
 
   /// Adds a waypoint at the end, reached by the selected mode.
   void addWaypoint(LatLng position) =>
@@ -436,6 +465,7 @@ class TourPlannerController extends Notifier<TourPlannerState> {
       tourId: saved?.tourId ?? _newTourId(),
       startMinutes: startMinutes,
       pisteColor: pisteColor,
+      paces: state.paces,
     );
     if (saved != null) {
       final kept = keptEntryIds(entries, saved);

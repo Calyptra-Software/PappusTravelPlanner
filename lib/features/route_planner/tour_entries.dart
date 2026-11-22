@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import '../../data/database/tables.dart';
 import '../map/elevation.dart';
 import '../map/map_features.dart';
+import 'domain/pace.dart';
 import 'domain/piste_note.dart';
 import 'domain/routed_path.dart';
 import 'domain/tour.dart';
@@ -40,6 +41,17 @@ class TourLeg extends TourEntry {
 
   /// What the leg is called: a lift's name, or the pistes of a descent.
   String? get title => part?.title;
+
+  /// How long the leg takes at the pace set for its way of travel among
+  /// [paces] ([Pace.average] where none is): what its times and the tour's
+  /// total are counted from. [path] keeps the router's own estimate, which is
+  /// what a saved leg stores, so that a pace is applied once.
+  Duration? durationAt(Map<String, Pace> paces) => pacedDuration(
+    mode,
+    path,
+    paces[paceKeyOf(mode)] ?? Pace.average,
+    segment: part?.segment,
+  );
 
   /// Every waypoint the leg is led through, ends included: what the router was
   /// asked with, kept so the tour can be opened again. Empty where a leg was
@@ -238,24 +250,28 @@ class TourTotals {
   final Duration? duration;
 }
 
-/// Sums the legs of [entries].
-TourTotals tourTotals(List<TourEntry> entries) {
+/// Sums the legs of [entries], each timed at its pace among [paces]
+/// ([TourLeg.durationAt]).
+TourTotals tourTotals(
+  List<TourEntry> entries, {
+  Map<String, Pace> paces = const {},
+}) {
   final legs = entries.whereType<TourLeg>().toList();
-  double? sum(double? Function(RoutedPath path) of) {
+  double? sum(double? Function(TourLeg leg) of) {
     var total = 0.0;
     for (final leg in legs) {
-      final value = of(leg.path);
+      final value = of(leg);
       if (value == null) return null;
       total += value;
     }
     return legs.isEmpty ? null : total;
   }
 
-  final seconds = sum((path) => path.duration?.inSeconds.toDouble());
+  final seconds = sum((leg) => leg.durationAt(paces)?.inSeconds.toDouble());
   return TourTotals(
-    lengthMeters: sum((path) => path.lengthMeters) ?? 0,
-    ascentMeters: sum((path) => path.ascentMeters),
-    descentMeters: sum((path) => path.descentMeters),
+    lengthMeters: sum((leg) => leg.path.lengthMeters) ?? 0,
+    ascentMeters: sum((leg) => leg.path.ascentMeters),
+    descentMeters: sum((leg) => leg.path.descentMeters),
     duration: seconds == null ? null : Duration(seconds: seconds.round()),
   );
 }

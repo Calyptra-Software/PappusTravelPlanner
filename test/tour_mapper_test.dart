@@ -6,7 +6,9 @@ import 'package:travelplanner/data/database/app_database.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/data/database/track_points.dart';
 import 'package:travelplanner/data/repositories/trip_repository.dart';
+import 'package:travelplanner/data/database/route_plan.dart';
 import 'package:travelplanner/features/route_planner/data/tour_mapper.dart';
+import 'package:travelplanner/features/route_planner/domain/pace.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/domain/routed_path.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
@@ -14,6 +16,7 @@ import 'package:travelplanner/features/route_planner/tour_entries.dart';
 
 const _car = RoutedMode(RouteProfile.car);
 const _foot = RoutedMode(RouteProfile.foot);
+const _bike = RoutedMode(RouteProfile.bike);
 const _ski = StraightMode(TransportMode.ski);
 
 final _day = DateTime(2026, 3, 14);
@@ -140,9 +143,9 @@ void main() {
         [
           _leg(_car, [47, 47.1], duration: const Duration(minutes: 45)),
           // 30 s over the half hour: an arrival is not rounded early.
-          _leg(_foot, [47.1, 47.2], duration: const Duration(seconds: 1830)),
+          _leg(_bike, [47.1, 47.2], duration: const Duration(seconds: 1830)),
           TourPlace(_at(47.2, name: 'Summit', isPlace: true)),
-          _leg(_foot, [47.2, 47.1], duration: const Duration(minutes: 20)),
+          _leg(_bike, [47.2, 47.1], duration: const Duration(minutes: 20)),
         ],
         tripId: 7,
         date: _day,
@@ -165,7 +168,7 @@ void main() {
     test('nothing is timed behind a leg of unknown duration', () {
       final mapped = tourToItems(
         [
-          _leg(_foot, [47, 47.1], duration: const Duration(minutes: 60)),
+          _leg(_bike, [47, 47.1], duration: const Duration(minutes: 60)),
           _leg(_ski, [47.1, 47]),
           _leg(_car, [47, 46.9], duration: const Duration(minutes: 30)),
         ],
@@ -181,6 +184,36 @@ void main() {
       expect((ski.startMinutes.value, ski.endMinutes.value), (600, null));
       expect((drive.startMinutes.value, drive.endMinutes.value), (null, null));
     });
+
+    test(
+      'times a leg at its pace, and keeps the router\'s time in its plan',
+      () {
+        final mapped = tourToItems(
+          [
+            // 1 km on foot: 15 min by the hiking time, whatever the router said.
+            _leg(_foot, [47, 47.1], duration: const Duration(minutes: 5)),
+            _leg(_bike, [47.1, 47.2], duration: const Duration(minutes: 60)),
+          ],
+          tripId: 7,
+          date: _day,
+          resolveMode: _resolve,
+          tourId: 't1',
+          startMinutes: 9 * 60,
+          paces: {'bike': Pace.brisk},
+        );
+
+        final [walk, ride] = mapped.items;
+        expect((walk.startMinutes.value, walk.endMinutes.value), (540, 555));
+        // An hour at 1.2 times the speed: 50 minutes.
+        expect((ride.startMinutes.value, ride.endMinutes.value), (555, 605));
+        final [walkPlan, ridePlan] = [
+          for (final item in mapped.items)
+            decodeRoutePlan(item.routePlan.value)!,
+        ];
+        expect((walkPlan.seconds, walkPlan.pace), (300, null));
+        expect((ridePlan.seconds, ridePlan.pace), (3600, 'brisk'));
+      },
+    );
 
     test('a leg past midnight arrives a day on and ends the timing', () {
       final mapped = tourToItems(
