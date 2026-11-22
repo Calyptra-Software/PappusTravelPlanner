@@ -369,6 +369,11 @@ how long it takes.
 The chips under the map choose the way of travel for the **next** section: on foot, by
 bike (also road, gravel and mountain bike) or by car. Choosing another before a tap changes
 it at that point, so a drive to the car park and the walk from there are one route.
+*Pace:* under the chips sets how fast you go that way, from *leisurely* to *fast*, for the
+whole route; the next route starts with the pace you set last. On foot the time follows the
+hiking time of DIN 33466 (4 km/h on the flat, 300 m up and 500 m down an hour at *average*),
+by bike it is the router's estimate at your pace, and on skis the descents take it while
+lifts keep their own time. A drive has no pace.
 *Straight line* draws a straight line between your points and leaves the way of travel to
 you: set it on the entry, for a ski tour for instance, and it stays when the route is
 edited again.
