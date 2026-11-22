@@ -243,26 +243,35 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
   names the ends of two legs without being a stop in the plan.
 - **A pace changes how long a way takes, never which way it is** (`domain/pace.dart`). One
   per way of travel and tour, by `paceKeyOf` (a profile's name, or `ski`), for the reason
-  the piste grade is one: it is one person's. Five steps from 0.7 to 1.4 times the
-  standard speeds, set under the chips like *Pistes:* and remembered on the device as
-  the next tour's start (`rememberedPacesProvider`), stored by name. It is applied only
+  the piste grade is one: it is one person's. A factor on the standard speeds: five
+  presets from 0.7 to 1.4, or one's own from 0.5 to 2 (`Pace.of`), typed as the figure it
+  is thought of in, km/h on foot and on skis, min/km running, percent by bike
+  (`paceFromInput`), since a fast walker went past the top preset. Set under the chips
+  like *Pistes:* and remembered on the device as the next tour's start
+  (`rememberedPacesProvider`), stored as the factor. It is applied only
   where times come out, `TourLeg.durationAt` for `tourTotals` and `tourToItems`, never to
   the router's answers: those stay as answered, so changing a pace asks nobody, and a
   pace in a section key would have asked the router again for every section. On foot the
   time is DIN 33466's hiking time from the length and the climb, in place of the
   router's: BRouter gave 103 min for 6.4 km with 800 m down, the formula about 170 (one
-  route). By bike the router's estimate is divided by the factor; whether BRouter's bike
+  route). Running (`RouteProfile.run`) is timed by Scarf's equivalence, a meter of climb
+  as 7.92 on the flat at 10 km/h (Scarf 2007, checked on fell running times), the
+  descent counted neither way: the hiking formula scaled to a runner's flat speed would
+  give 750 m an hour up. A run takes the walker's way (`routedAs`, the same BRouter
+  profile and the same section key, so switching between the two asks nothing) and is
+  filed under walking, as a hike is; a mode of its own would need a built-in mode and a
+  migration. By bike the router's estimate is divided by the factor; whether BRouter's bike
   times are realistic is not known, so they are not replaced. On skis only a descent
   takes it, after routing, so the graph's weights and with them the way stay as they are;
   a lift, its boarding and a walk in ski boots are not the skier's speed. A drive keeps
   the router's time, which follows the speed limits, and a straight line has none.
 - **A leg's plan keeps the router's duration, and the pace beside it** (`RoutePlan.pace`,
-  absent for `average`). Opening a tour applies the pace once to the stored duration; a
-  plan holding the paced one would be paced again. `SavedTour.paces` gives each way of
-  travel in the tour its saved pace, `average` where a plan names none, so a tour opens
-  with the times it was saved with whatever was set since; other ways of travel start at
-  the remembered paces. An older app ignores the field, so the `.tpt` version is not
-  bumped.
+  the factor, absent for `average`). Opening a tour applies the pace once to the stored
+  duration; a plan holding the paced one would be paced again. `SavedTour.paces` gives
+  each way of travel in the tour its saved pace, `average` where a plan names none, so a
+  tour opens with the times it was saved with whatever was set since; other ways of travel
+  start at the remembered paces. An older app ignores the field, so the `.tpt` version is
+  not bumped.
 - **A total is given only when every leg has a figure** (`tourTotals`). A duration that
   left out the hand-drawn descent would read as the whole tour's.
 
