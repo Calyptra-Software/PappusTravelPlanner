@@ -204,10 +204,10 @@ and that budget is shared by every user of the app. Both are treated like Transi
 identifying `User-Agent` (except from the web build), no automatic retry, and no request
 while a point is being moved. An area's pistes and lifts are kept on the device for 30
 days rather than fetched per route, and both servers can be replaced by another, your own
-for example, in the settings (`docs/design/route-planner.md`). A ski route's heights come
-from the terrain tiles of [Mapterhorn](https://mapterhorn.com), fetched for the tiles the
-route crosses, under the same rules, kept for 30 days, and from a server that can be set
-as well.
+for example, in the settings (`docs/design/route-planner.md`). The heights of a ski route
+or a straight line come from the terrain tiles of [Mapterhorn](https://mapterhorn.com),
+fetched for the tiles the line crosses, under the same rules, kept for 30 days, and from a
+server that can be set as well.
 
 Please do not add anything that increases request volume — polling, prefetching, a search
 that fires while typing — without discussing it in an issue first. The policy asks that

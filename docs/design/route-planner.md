@@ -197,6 +197,17 @@ yet** (next section): that has to happen before a release carrying this.
   section rising straight.
 - **Heights are worth less than the way.** A path whose tiles cannot be had comes
   without heights, and nothing asks again by itself; the next change to the run does.
+- **A line drawn by hand gets heights too, and waits for none.** `_askHeights` asks
+  `terrainHeightsProvider` (shared with the ski router, so one tile cache) for each
+  straight section, with points set every `kStraightHeightStep` (20 m) along it
+  (`densify`): two heights from end to end would draw a ramp over whatever lies between.
+  The answer is kept under `lineKey`, never `sectionKey`, so a straight run stays
+  complete without it: `routing` and the failure line read only the router's keys, and
+  a tour saved before the heights came is saved without them. No heights is filed as a
+  failure under the same key, not told to anyone, and asked again on retry. A straight
+  leg saved with heights stores its densified line (`TrackSource.drawn`) and is read back
+  under `lineRunKey`; one saved without them stores none, as before, and is asked
+  again when opened.
 - **Off the pistes there is only *Straight line*.** A *Ski tour* chip, a straight line
   filed under ski, was dropped before release: beside *Ski* it read as a second way to
   route skiing, and it did nothing *Straight line* does not, the mode being one tap on the
@@ -373,7 +384,6 @@ yet** (next section): that has to happen before a release carrying this.
   2 min per ride, short for a cable car running to a timetable).
 - *Edit route* from the map.
 - Timetabled sections inside a tour, through the connection search.
-- Heights for sections drawn as straight lines, from the same terrain tiles.
 - Piste names from route relations (`route=piste`): a piste named only on its relation is
   an unnamed descent. Pistes drawn as areas are not routed over.
 - A run made by the planner must be kept out of the unattended connection lookup

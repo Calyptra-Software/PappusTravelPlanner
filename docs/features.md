@@ -404,7 +404,8 @@ it; a line of a *Straight line* section is listed as drawn by hand.
 The chart button under the map shows the route's **elevation profile** over the bottom of
 the map. Move the pointer over it, or draw a finger across it, and a line marks that
 distance with its height, and a dot shows where it is on the map. A leg drawn as a
-straight line has no heights and is left as a gap. A saved leg lists its line with its
+straight line gets its heights from Mapterhorn's terrain data, like a ski route; until they
+come, or where they cannot be had, it is left as a gap. A saved leg lists its line with its
 climb and profile too, and the GPX export writes the heights.
 
 *Edit route* on the route's label, beside *Show journey* (or on the leg itself, for a
@@ -421,9 +422,9 @@ BRouter server instead, your own for example; clearing the field, or the reset b
 goes back to brouter.de. Pistes and lifts come from the
 [Overpass API](https://overpass-api.de) at overpass-api.de, which receives the area
 around the points; *Piste and lift data* in the same section takes another Overpass
-server. The heights of a ski route come from [Mapterhorn](https://mapterhorn.com) at
-tiles.mapterhorn.com, which receives the map tiles the route crosses; *Height data* takes
-another server.
+server. The heights of a ski route and of a straight line come from
+[Mapterhorn](https://mapterhorn.com) at tiles.mapterhorn.com, which receives the map tiles
+they cross; *Height data* takes another server.
 
 ---
 

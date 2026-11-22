@@ -127,7 +127,7 @@ or instead to a BRouter server you set in its settings,
 and for a ski section to `https://overpass-api.de`
 (`lib/features/route_planner/data/ski/overpass_client.dart`), or an Overpass server
 you set instead, whose answer is also kept in the app's cache directory and read again
-from there. A ski section's heights come as terrain tile images from
+from there. The heights of a ski section or a straight line come as terrain tile images from
 `https://tiles.mapterhorn.com` (`lib/features/route_planner/data/terrain_tiles.dart`), or
 a server you set instead, decoded by the `image` package's PNG and WebP decoders only
 (`lib/features/route_planner/domain/terrain.dart`) and kept in the cache directory as
@@ -250,15 +250,14 @@ in the settings instead, with the same `User-Agent` (except from the web build, 
 below). The points themselves are not sent. The area's data is kept on the device for 30
 days, so routing in it again asks nothing.
 
-**A ski section's heights tell Mapterhorn which terrain tiles the way crosses.** Once
-a ski section is routed, the tiles under its way, squares about seven kilometers wide
-in the Alps, are fetched from `tiles.mapterhorn.com`, or the server set in the settings
-instead, with the same `User-Agent` (except from the web build, see below). The way
-itself is not sent, but the squares narrow down where it runs. Each tile is kept on the
-device for 30 days. Mapterhorn is served by Cloudflare, and its
-[privacy policy](https://mapterhorn.com/privacy-policy/) says it stores the address a
-request came from, the user agent, the referrer and the requested tile for up to 30
-days.
+**Heights tell Mapterhorn which terrain tiles a line crosses.** Once a ski section is
+routed, or a section is drawn as a straight line, the tiles under it, squares about seven
+kilometers wide in the Alps, are fetched from `tiles.mapterhorn.com`, or the server set in
+the settings instead, with the same `User-Agent` (except from the web build, see below).
+The line itself is not sent, but the squares narrow down where it runs. Each tile is kept
+on the device for 30 days. Mapterhorn is served by Cloudflare, and its [privacy
+policy](https://mapterhorn.com/privacy-policy/) says it stores the address a request came
+from, the user agent, the referrer and the requested tile for up to 30 days.
 
 **The map tells its tile server which tiles it is looking at.** Opening a trip's
 map requests the image tiles covering it, which means the server of the chosen
@@ -273,7 +272,7 @@ something only your device knows.
 **In a browser, the app is identified by the page instead.** A web page cannot reliably
 name itself in a `User-Agent`: Chrome replaces it with its own, and the tile server and
 the route planner's server refuse a request that sets one. So the web build sends no
-`User-Agent` with tiles, a route, a ski area or its heights, and one with a connection
+`User-Agent` with tiles, a route, a ski area or heights, and one with a connection
 search only where the browser lets it through (Firefox does). Both policies accept the
 page's `Referer` in its place, which means the servers see the address the app is served
 from.
