@@ -420,7 +420,8 @@ BRouter server instead, your own for example; clearing the field, or the reset b
 goes back to brouter.de. Pistes and lifts come from the
 [Overpass API](https://overpass-api.de) at overpass-api.de, which receives the area
 around the points; *Piste and lift data* in the same section takes another Overpass
-server.
+server. *Report a map error*, in the credits under the map, leads to OpenStreetMap's page
+for having wrong data put right.
 
 ---
 

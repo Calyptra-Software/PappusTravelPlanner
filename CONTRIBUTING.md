@@ -198,13 +198,16 @@ with terms of their own, noted on each entry.
 The route planner relies on two more donated servers. [BRouter](https://brouter.de) at
 brouter.de publishes no usage policy for third-party apps. The
 [Overpass API](https://overpass-api.de), which supplies a ski section's pistes and lifts,
-asks for no more than about 10,000 queries and 1 GB a day
+asks anything that queries it regularly for no more than about 100 queries and 10 MB a day
 ([public instances](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances)),
-and that budget is shared by every user of the app. Both are treated like Transitous: the
-identifying `User-Agent` (except from the web build), no automatic retry, and no request
-while a point is being moved. An area's pistes and lifts are kept on the device for 30
-days rather than fetched per route, and both servers can be replaced by another, your own
-for example, in the settings (`docs/design/route-planner.md`).
+and that budget is shared by every user of the app. overpass-api.de is run by FOSSGIS
+under its
+[terms of use](https://www.fossgis.de/arbeitsgruppen/osm-server/nutzungsbedingungen/),
+which also ask for a link to report errors in the map data. Both servers are treated like
+Transitous: the identifying `User-Agent` (except from the web build), no automatic retry,
+and no request while a point is being moved. An area's pistes and lifts are kept on the
+device for 30 days rather than fetched per route, and both servers can be replaced by
+another, your own for example, in the settings (`docs/design/route-planner.md`).
 
 Please do not add anything that increases request volume — polling, prefetching, a search
 that fires while typing — without discussing it in an issue first. The policy asks that
