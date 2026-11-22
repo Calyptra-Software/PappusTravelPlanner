@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:travelplanner/data/database/app_database.dart';
+import 'package:travelplanner/data/database/route_plan.dart';
 import 'package:travelplanner/data/database/tables.dart';
 import 'package:travelplanner/features/trips/planned_journey.dart';
 
@@ -31,9 +33,11 @@ void main() {
     double? toLat,
     double? toLon,
     int? mode,
+    String? routePlan,
   }) => ItineraryItem(
     id: nextId++,
     mode: mode,
+    routePlan: routePlan,
     tripId: 1,
     date: date ?? DateTime(2026, 8, 3),
     sortOrder: sortOrder,
@@ -152,6 +156,100 @@ void main() {
       ),
       isEmpty,
     );
+  });
+
+  group('a run the route planner laid out', () {
+    /// A plan as the planner saves it: the tour, and the waypoints the leg
+    /// was led through.
+    String plan({bool straight = false}) => encodeRoutePlan(
+      RoutePlan(
+        tour: 't1',
+        profile: straight ? null : 'foot',
+        straight: straight,
+        waypoints: const [
+          RoutePlanPoint(lat: 47.4, lon: 11),
+          RoutePlanPoint(lat: 47.5, lon: 11.1),
+        ],
+      ),
+    );
+
+    ItineraryItem drawn({
+      int? groupId,
+      int sortOrder = 0,
+      int? mode,
+      bool straight = false,
+    }) => leg(
+      groupId: groupId,
+      sortOrder: sortOrder,
+      start: 540,
+      fromLat: 47.4,
+      fromLon: 11,
+      toLat: 47.5,
+      toLon: 11.1,
+      mode: mode,
+      routePlan: plan(straight: straight),
+    );
+
+    test('is not looked up, though a line drawn without a mode would be', () {
+      final straight = drawn(straight: true);
+
+      expect(
+        plannedJourneys(
+          [straight],
+          streetModeIds: _streetModes,
+          unroutedModeIds: _unroutedModes,
+        ),
+        isEmpty,
+      );
+      // The same leg without its plan is a service by the rule for a null
+      // mode: what the planner's mark is there to stop.
+      expect(
+        plannedJourneys(
+          [straight.copyWith(routePlan: const Value(null))],
+          streetModeIds: _streetModes,
+          unroutedModeIds: _unroutedModes,
+        ),
+        hasLength(1),
+      );
+    });
+
+    test('keeps a train grouped with a hike out too', () {
+      final items = [
+        drawn(groupId: 3, mode: 1),
+        leg(
+          groupId: 3,
+          sortOrder: 1,
+          start: 600,
+          fromPlaceId: 'stop:a',
+          toPlaceId: 'stop:b',
+          mode: 8,
+        ),
+      ];
+
+      expect(
+        plannedJourneys(
+          items,
+          streetModeIds: _streetModes,
+          unroutedModeIds: _unroutedModes,
+        ),
+        isEmpty,
+      );
+      // Asked about on purpose, it is still there to be looked up.
+      expect(plannedJourneyOf(items)!.legs, hasLength(2));
+    });
+
+    test('a plan that does not read is no plan', () {
+      final item = drawn().copyWith(routePlan: const Value('not json'));
+
+      expect(
+        plannedJourneys(
+          [item],
+          streetModeIds: _streetModes,
+          unroutedModeIds: _unroutedModes,
+        ),
+        hasLength(1),
+      );
+    });
   });
 
   test('journeys come back in day order, then by departure', () {
