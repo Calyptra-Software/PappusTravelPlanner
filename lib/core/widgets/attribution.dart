@@ -31,6 +31,11 @@ const String kOverpassSiteUrl = 'https://overpass-api.de/';
 /// heights from, which their licenses require to be credited.
 const String kMapterhornAttributionUrl = 'https://mapterhorn.com/attribution';
 
+/// OpenStreetMap's page for reporting an error in the map data. The terms of
+/// overpass-api.de ask apps using it to link there, so that someone who finds
+/// a piste or lift wrong can have it put right.
+const String kOsmFixTheMapUrl = 'https://www.openstreetmap.org/fixthemap';
+
 /// The one-line attribution shown under the connection search: both sources,
 /// both tappable.
 class AttributionFooter extends StatelessWidget {
@@ -154,6 +159,13 @@ class DataSourcesSettings extends StatelessWidget {
           ),
           trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () => openExternalLink(context, kMapterhornAttributionUrl),
+        ),
+        ListTile(
+          leading: const Icon(Icons.edit_location_alt_outlined),
+          title: Text(l10n.attributionFixTheMap),
+          subtitle: Text(kOsmFixTheMapUrl, style: theme.textTheme.bodySmall),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => openExternalLink(context, kOsmFixTheMapUrl),
         ),
       ],
     );

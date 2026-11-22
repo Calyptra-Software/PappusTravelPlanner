@@ -424,7 +424,8 @@ goes back to brouter.de. Pistes and lifts come from the
 around the points; *Piste and lift data* in the same section takes another Overpass
 server. The heights of a ski route and of a straight line come from
 [Mapterhorn](https://mapterhorn.com) at tiles.mapterhorn.com, which receives the map tiles
-they cross; *Height data* takes another server.
+they cross; *Height data* takes another server. *Report a map error*, in the credits under
+the map, leads to OpenStreetMap's page for having wrong data put right.
 
 ---
 

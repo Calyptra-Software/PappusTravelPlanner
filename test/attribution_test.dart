@@ -65,7 +65,9 @@ void main() {
       expect(find.text(kBrouterUrl), findsOneWidget);
       expect(find.text(kOverpassSiteUrl), findsOneWidget);
       expect(find.text(kMapterhornAttributionUrl), findsOneWidget);
-      expect(find.byIcon(Icons.open_in_new), findsNWidgets(5));
+      // Overpass's terms ask for a way to report an error in the data.
+      expect(find.text(kOsmFixTheMapUrl), findsOneWidget);
+      expect(find.byIcon(Icons.open_in_new), findsNWidgets(6));
     });
 
     testWidgets('under a line saying what the data is for', (tester) async {
@@ -81,7 +83,7 @@ void main() {
       await pump(tester, const DataSourcesSettings());
 
       final tiles = tester.widgetList<ListTile>(find.byType(ListTile));
-      expect(tiles, hasLength(5));
+      expect(tiles, hasLength(6));
       for (final tile in tiles) {
         expect(tile.onTap, isNotNull);
       }

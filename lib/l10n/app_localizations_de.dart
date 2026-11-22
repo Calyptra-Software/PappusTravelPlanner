@@ -2985,6 +2985,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get attributionMapterhorn => 'Höhen von Mapterhorn';
 
   @override
+  String get attributionFixTheMap => 'Kartenfehler melden';
+
+  @override
   String get routePlannerSection => 'Routenplaner';
 
   @override
