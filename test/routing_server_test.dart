@@ -17,6 +17,7 @@ import 'package:travelplanner/features/route_planner/application/routing_server_
 import 'package:travelplanner/features/route_planner/data/brouter_client.dart';
 import 'package:travelplanner/features/route_planner/data/ski/overpass_client.dart';
 import 'package:travelplanner/features/route_planner/data/ski/overpass_ski_router.dart';
+import 'package:travelplanner/features/route_planner/data/terrain_tiles.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
 import 'package:travelplanner/features/route_planner/presentation/routing_server_settings.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
@@ -106,6 +107,62 @@ void main() {
       expect(c.read(overpassServerProvider), own);
       expect(c.read(routingServerProvider), kBrouterBaseUrl);
       expect(prefs.getString('ski_overpass_server'), own.toString());
+    });
+  });
+
+  group('the terrain server', () {
+    late SharedPreferences prefs;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      prefs = await SharedPreferences.getInstance();
+    });
+
+    test('is Mapterhorn until another is set, kept apart', () async {
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      expect(c.read(terrainServerProvider), kTerrainTilesUrl);
+
+      final own = Uri.parse('https://tiles.example.org/terrain');
+      await c.read(terrainServerProvider.notifier).set(own);
+
+      expect(c.read(terrainServerProvider), own);
+      expect(c.read(overpassServerProvider), kOverpassUrl);
+      expect(prefs.getString('ski_terrain_server'), own.toString());
+    });
+
+    test('typing the default address back is the default', () async {
+      final c = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
+      addTearDown(c.dispose);
+      final controller = c.read(terrainServerProvider.notifier);
+
+      await controller.set(
+        parseServer('https://tiles.mapterhorn.com/', defaultPath: ''),
+      );
+
+      expect(controller.isDefault, isTrue);
+      expect(prefs.getString('ski_terrain_server'), isNull);
+    });
+
+    test('the ski router is built anew when it changes', () async {
+      final c = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          appVersionProvider.overrideWithValue('1.2.3'),
+        ],
+      );
+      addTearDown(c.dispose);
+      final first = c.read(skiRouterProvider);
+
+      await c
+          .read(terrainServerProvider.notifier)
+          .set(Uri.parse('https://tiles.example.org'));
+
+      expect(identical(c.read(skiRouterProvider), first), isFalse);
     });
   });
 

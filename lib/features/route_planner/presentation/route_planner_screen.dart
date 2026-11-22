@@ -558,10 +558,17 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                           basemap: basemap,
                           overlays: overlays,
                           // The routes are BRouter's, computed on OpenStreetMap
-                          // data, whichever style the map is drawn in.
+                          // data, whichever style the map is drawn in; a ski
+                          // run's heights are Mapterhorn's, whose sources ask
+                          // to be credited.
                           extra: [
                             osmAttribution,
                             (label: l10n.attributionBrouter, url: kBrouterUrl),
+                            if (state.tour.modes.any((m) => m is SkiMode))
+                              (
+                                label: l10n.attributionMapterhorn,
+                                url: kMapterhornAttributionUrl,
+                              ),
                           ],
                         ),
                       ],

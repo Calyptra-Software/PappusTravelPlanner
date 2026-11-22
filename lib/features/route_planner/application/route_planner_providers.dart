@@ -7,6 +7,8 @@ import '../../../core/providers.dart';
 import '../data/brouter_client.dart';
 import '../data/ski/overpass_client.dart';
 import '../data/ski/overpass_ski_router.dart';
+import '../data/terrain_tiles.dart';
+import '../domain/terrain.dart';
 import 'route_engine.dart';
 import 'routing_server_provider.dart';
 import 'ski_router.dart';
@@ -35,16 +37,28 @@ final routeEngineProvider = Provider<RouteEngine>((ref) {
 /// while the app runs.
 ///
 /// Reading an area's answer (a few megabytes of JSON for a large one) and
-/// building its graph runs off the main isolate, where there is another one.
+/// building its graph runs off the main isolate, where there is another one,
+/// and so does decoding a terrain tile.
 final skiRouterProvider = Provider<SkiRouter>((ref) {
   final client = OverpassClient(
     url: ref.watch(overpassServerProvider),
     userAgent: buildUserAgent(ref.watch(appVersionProvider)),
     sendUserAgent: !kIsWeb,
   );
+  final tiles = TerrainTileClient(
+    server: ref.watch(terrainServerProvider),
+    userAgent: buildUserAgent(ref.watch(appVersionProvider)),
+    sendUserAgent: !kIsWeb,
+  );
   ref.onDispose(client.close);
+  ref.onDispose(tiles.close);
   return OverpassSkiRouter(
     client,
+    heights: TerrainTileHeights(
+      tiles,
+      files: openCacheFiles('terrain_tiles'),
+      decode: (bytes) => compute(decodeTerrainTile, bytes),
+    ),
     files: openCacheFiles('ski_areas'),
     build: (answer) => compute(buildSkiGraph, answer),
   );

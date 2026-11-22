@@ -27,6 +27,10 @@ const String kBrouterUrl = 'https://brouter.de/';
 /// The Overpass API, which the route planner loads pistes and lifts from.
 const String kOverpassSiteUrl = 'https://overpass-api.de/';
 
+/// The page naming the sources of the terrain data ski runs take their
+/// heights from, which their licenses require to be credited.
+const String kMapterhornAttributionUrl = 'https://mapterhorn.com/attribution';
+
 /// The one-line attribution shown under the connection search: both sources,
 /// both tappable.
 class AttributionFooter extends StatelessWidget {
@@ -140,6 +144,16 @@ class DataSourcesSettings extends StatelessWidget {
           subtitle: Text(kOverpassSiteUrl, style: theme.textTheme.bodySmall),
           trailing: const Icon(Icons.open_in_new, size: 18),
           onTap: () => openExternalLink(context, kOverpassSiteUrl),
+        ),
+        ListTile(
+          leading: const Icon(Icons.terrain_outlined),
+          title: Text(l10n.attributionMapterhorn),
+          subtitle: Text(
+            kMapterhornAttributionUrl,
+            style: theme.textTheme.bodySmall,
+          ),
+          trailing: const Icon(Icons.open_in_new, size: 18),
+          onTap: () => openExternalLink(context, kMapterhornAttributionUrl),
         ),
       ],
     );
