@@ -9,7 +9,7 @@ import '../domain/pace.dart';
 /// The pace last set for each way of travel, by `paceKeyOf`: what a new tour
 /// starts with, so nobody sets how fast they walk every time. A setting of the
 /// device like the planner's servers, so it stays out of the database; a tour
-/// keeps the paces it was saved with in its plans.
+/// keeps the paces it was saved with in its plans. Stored as the factor.
 final rememberedPacesProvider =
     NotifierProvider<RememberedPaces, Map<String, Pace>>(RememberedPaces.new);
 
@@ -22,7 +22,7 @@ class RememberedPaces extends Notifier<Map<String, Pace>> {
     return {
       for (final key in prefs.getKeys())
         if (key.startsWith(_prefix))
-          key.substring(_prefix.length): ?Pace.byName(prefs.getString(key)),
+          key.substring(_prefix.length): ?_read(prefs.getString(key)),
     };
   }
 
@@ -34,7 +34,12 @@ class RememberedPaces extends Notifier<Map<String, Pace>> {
     if (pace == Pace.average) {
       await prefs.remove('$_prefix$key');
     } else {
-      await prefs.setString('$_prefix$key', pace.name);
+      await prefs.setString('$_prefix$key', '${pace.factor}');
     }
+  }
+
+  static Pace? _read(String? stored) {
+    final factor = stored == null ? null : double.tryParse(stored);
+    return factor == null ? null : Pace.of(factor);
   }
 }

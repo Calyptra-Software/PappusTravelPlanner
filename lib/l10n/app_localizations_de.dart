@@ -2903,6 +2903,45 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get routeProfileRun => 'Laufen';
+
+  @override
+  String routePaceKmh(String speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String routePaceMinPerKm(String pace) {
+    return '$pace min/km';
+  }
+
+  @override
+  String routePacePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get routePaceOwn => 'Eigenes Tempo …';
+
+  @override
+  String get routePaceOwnFoot => 'Gehgeschwindigkeit in der Ebene, in km/h';
+
+  @override
+  String get routePaceOwnRun => 'Tempo in der Ebene, in min/km';
+
+  @override
+  String get routePaceOwnSki => 'Geschwindigkeit bei Abfahrten, in km/h';
+
+  @override
+  String get routePaceOwnShare =>
+      'Anteil der geschätzten Geschwindigkeit, in %';
+
+  @override
+  String routePaceOutOfRange(String low, String high) {
+    return 'Wähle ein Tempo zwischen $low und $high.';
+  }
+
+  @override
   String get routeSkiDifficulty => 'Pisten:';
 
   @override

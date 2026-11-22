@@ -190,7 +190,7 @@ RoutePlan _planOf(TourLeg leg, String tourId, Map<String, Pace> paces) {
         ),
     ],
     seconds: leg.path.duration?.inSeconds,
-    pace: pace == null || pace == Pace.average ? null : pace.name,
+    pace: pace == null || pace == Pace.average ? null : pace.factor,
     meters: leg.path.lengthMeters,
   );
 }

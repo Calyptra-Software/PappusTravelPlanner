@@ -141,9 +141,15 @@ void main() {
     });
 
     test('names every profile a stock BRouter profile', () {
-      expect({
+      // Running takes the walker's paths; every other profile has its own.
+      final asked = {
         for (final profile in RouteProfile.values) brouterProfileFor(profile),
-      }, hasLength(RouteProfile.values.length));
+      };
+      expect(asked, hasLength(RouteProfile.values.length - 1));
+      expect(
+        brouterProfileFor(RouteProfile.run),
+        brouterProfileFor(RouteProfile.foot),
+      );
     });
 
     test('reports a point the router has no way to as no route', () async {

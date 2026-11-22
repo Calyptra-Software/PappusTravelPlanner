@@ -155,7 +155,7 @@ SavedTour? savedTourOf(
     final mode = _modeOf(plan);
     if (mode == null) return null;
     if (paceKeyOf(mode) case final key?) {
-      paces[key] = Pace.byName(plan.pace) ?? Pace.average;
+      paces[key] = Pace.of(plan.pace ?? 1) ?? Pace.average;
     }
     final first = waypoints.isEmpty ? 0 : waypoints.length - 1;
     // The leg's first waypoint is the one the leg before it ended on.

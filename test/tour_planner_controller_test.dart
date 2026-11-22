@@ -424,6 +424,21 @@ void main() {
     ]);
   });
 
+  test('a section switched between walking and running asks nothing', () async {
+    planner()
+      ..addWaypoint(_a)
+      ..addWaypoint(_b);
+    await engine.answer();
+
+    planner().setSectionMode(0, const RoutedMode(RouteProfile.run));
+
+    expect(engine.asked, hasLength(1));
+    final leg = state().entries!.single as TourLeg;
+    expect(leg.mode, const RoutedMode(RouteProfile.run));
+    // 1 km run at 10 km/h, not the 15 minutes it takes on foot.
+    expect(tourTotals(state().entries!).duration, const Duration(minutes: 6));
+  });
+
   group('the pace', () {
     test('times the tour at once, asks nobody, and is remembered', () async {
       planner()

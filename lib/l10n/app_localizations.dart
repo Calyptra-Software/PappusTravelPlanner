@@ -4792,6 +4792,66 @@ abstract class AppLocalizations {
   /// **'{percent} % of the estimated speed'**
   String routePaceShare(int percent);
 
+  /// No description provided for @routeProfileRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run'**
+  String get routeProfileRun;
+
+  /// No description provided for @routePaceKmh.
+  ///
+  /// In en, this message translates to:
+  /// **'{speed} km/h'**
+  String routePaceKmh(String speed);
+
+  /// A running pace, minutes and seconds a kilometer, e.g. 5:30 min/km.
+  ///
+  /// In en, this message translates to:
+  /// **'{pace} min/km'**
+  String routePaceMinPerKm(String pace);
+
+  /// No description provided for @routePacePercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent} %'**
+  String routePacePercent(int percent);
+
+  /// No description provided for @routePaceOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Own pace…'**
+  String get routePaceOwn;
+
+  /// No description provided for @routePaceOwnFoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Walking speed on the flat, in km/h'**
+  String get routePaceOwnFoot;
+
+  /// No description provided for @routePaceOwnRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Pace on the flat, in min/km'**
+  String get routePaceOwnRun;
+
+  /// No description provided for @routePaceOwnSki.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed on descents, in km/h'**
+  String get routePaceOwnSki;
+
+  /// No description provided for @routePaceOwnShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share of the estimated speed, in %'**
+  String get routePaceOwnShare;
+
+  /// No description provided for @routePaceOutOfRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a pace between {low} and {high}.'**
+  String routePaceOutOfRange(String low, String high);
+
   /// No description provided for @routeSkiDifficulty.
   ///
   /// In en, this message translates to:

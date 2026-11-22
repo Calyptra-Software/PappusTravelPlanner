@@ -1612,6 +1612,38 @@
       "percent": {"type": "int"}
     }
   },
+  "routeProfileRun": "Run",
+  "routePaceKmh": "{speed} km/h",
+  "@routePaceKmh": {
+    "placeholders": {
+      "speed": {"type": "String"}
+    }
+  },
+  "routePaceMinPerKm": "{pace} min/km",
+  "@routePaceMinPerKm": {
+    "description": "A running pace, minutes and seconds a kilometer, e.g. 5:30 min/km.",
+    "placeholders": {
+      "pace": {"type": "String"}
+    }
+  },
+  "routePacePercent": "{percent} %",
+  "@routePacePercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "routePaceOwn": "Own pace…",
+  "routePaceOwnFoot": "Walking speed on the flat, in km/h",
+  "routePaceOwnRun": "Pace on the flat, in min/km",
+  "routePaceOwnSki": "Speed on descents, in km/h",
+  "routePaceOwnShare": "Share of the estimated speed, in %",
+  "routePaceOutOfRange": "Choose a pace between {low} and {high}.",
+  "@routePaceOutOfRange": {
+    "placeholders": {
+      "low": {"type": "String"},
+      "high": {"type": "String"}
+    }
+  },
   "routeSkiDifficulty": "Pistes:",
   "routeSkiUpToEasy": "easy only",
   "routeSkiUpToIntermediate": "up to intermediate",

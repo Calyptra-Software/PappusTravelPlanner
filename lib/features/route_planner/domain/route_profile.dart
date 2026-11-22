@@ -12,6 +12,10 @@ import '../../../data/database/tables.dart';
 /// index, so the order here is free.
 enum RouteProfile {
   foot(TransportMode.walk),
+
+  /// Running: routed as [foot], over the same paths, and filed under walking
+  /// as a hike is; only its time is reckoned differently (`runningDuration`).
+  run(TransportMode.walk),
   bike(TransportMode.bike),
   roadBike(TransportMode.bike),
   gravelBike(TransportMode.bike),
@@ -25,6 +29,10 @@ enum RouteProfile {
   /// imported connection: a built-in the user deleted leaves the leg without a
   /// mode.
   final TransportMode transportMode;
+
+  /// The profile whose way this one takes: running asks the router what
+  /// walking does, so a section switched between the two asks nothing again.
+  RouteProfile get routedAs => this == run ? foot : this;
 
   /// Reads back what [name] wrote, or null for a name this version does not
   /// know (a plan written by a newer one).

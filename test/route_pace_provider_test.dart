@@ -50,7 +50,7 @@ void main() {
           .remember('foot', Pace.brisk);
 
       expect(container().read(rememberedPacesProvider), {'foot': Pace.brisk});
-      expect(prefs.getString('route_pace_foot'), 'brisk');
+      expect(prefs.getString('route_pace_foot'), '1.2');
 
       await container()
           .read(rememberedPacesProvider.notifier)
@@ -61,8 +61,9 @@ void main() {
     },
   );
 
-  test('a stored name this version does not know is no pace', () async {
+  test('a stored value that is no pace in range is none', () async {
     await prefs.setString('route_pace_foot', 'sprint');
+    await prefs.setString('route_pace_bike', '7');
     await prefs.setString('ski_overpass_server', 'https://example.org');
 
     expect(container().read(rememberedPacesProvider), isEmpty);
@@ -71,8 +72,8 @@ void main() {
   test(
     'a new tour starts at the paces last set, a saved one at its own',
     () async {
-      await prefs.setString('route_pace_foot', 'brisk');
-      await prefs.setString('route_pace_bike', 'easy');
+      await prefs.setString('route_pace_foot', '1.2');
+      await prefs.setString('route_pace_bike', '0.85');
       final c = container();
       final tour = Tour(
         waypoints: const [

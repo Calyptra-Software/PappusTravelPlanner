@@ -133,9 +133,38 @@ void main() {
     expect(paceKeyOf(const StraightMode()), isNull);
   });
 
-  test('a pace is read back by its name, and nothing else', () {
-    expect(Pace.byName('brisk'), Pace.brisk);
-    expect(Pace.byName('sprint'), isNull);
-    expect(Pace.byName(null), isNull);
+  test('a pace of one\'s own stays within its range, to hundredths', () {
+    expect(Pace.of(1.5), const Pace(1.5));
+    expect(Pace.of(1.2), Pace.brisk);
+    expect(Pace.of(1.234), const Pace(1.23));
+    expect(Pace.of(Pace.min), isNotNull);
+    expect(Pace.of(Pace.max), isNotNull);
+    expect(Pace.of(0.4), isNull);
+    expect(Pace.of(2.5), isNull);
+    expect(Pace.of(double.nan), isNull);
+    expect(const Pace(1.5).isPreset, isFalse);
+    expect(Pace.fast.isPreset, isTrue);
+  });
+
+  group('runningDuration', () {
+    test('on the flat is the run at 10 km/h', () {
+      expect(runningDuration(lengthMeters: 10000), const Duration(hours: 1));
+    });
+
+    test('counts a meter of climb as 7.92 on the flat, the descent not', () {
+      // 100 m up are 792 m on the flat: 10.792 km at 10 km/h.
+      expect(
+        runningDuration(lengthMeters: 10000, ascentMeters: 100),
+        Duration(seconds: (10.792 / 10 * 3600).round()),
+      );
+      expect(
+        pacedDuration(
+          const RoutedMode(RouteProfile.run),
+          _path(length: 10000, ascent: 100, descent: 500),
+          const Pace(1.2),
+        ),
+        Duration(seconds: (10.792 / 12 * 3600).round()),
+      );
+    });
   });
 }

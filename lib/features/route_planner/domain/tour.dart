@@ -215,8 +215,9 @@ List<TourRun> tourRuns(Tour tour) {
   return runs;
 }
 
-/// What a routed run is asked as: its profile and its waypoints. Two runs with
-/// the same key get the same answer. Null for a run nobody routes.
+/// What a routed run is asked as: its profile as the router is asked it
+/// ([RouteProfile.routedAs]) and its waypoints. Two runs with the same key get
+/// the same answer. Null for a run nobody routes.
 ///
 /// The planner asks section by section ([sectionKey]); a run's own key is what
 /// a saved tour hands its stored lines over by, and where a line kept for a
@@ -243,7 +244,7 @@ String? lineKey(Tour tour, int section) => tour.modes[section] is StraightMode
 String? _key(SectionMode mode, List<TourWaypoint> waypoints) {
   final asked = switch (mode) {
     StraightMode() => null,
-    RoutedMode(:final profile) => profile.name,
+    RoutedMode(:final profile) => profile.routedAs.name,
     SkiMode(:final maxDifficulty) => 'ski:${maxDifficulty.name}',
   };
   return asked == null ? null : _joined(asked, waypoints);

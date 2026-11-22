@@ -2833,6 +2833,44 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get routeProfileRun => 'Run';
+
+  @override
+  String routePaceKmh(String speed) {
+    return '$speed km/h';
+  }
+
+  @override
+  String routePaceMinPerKm(String pace) {
+    return '$pace min/km';
+  }
+
+  @override
+  String routePacePercent(int percent) {
+    return '$percent %';
+  }
+
+  @override
+  String get routePaceOwn => 'Own pace…';
+
+  @override
+  String get routePaceOwnFoot => 'Walking speed on the flat, in km/h';
+
+  @override
+  String get routePaceOwnRun => 'Pace on the flat, in min/km';
+
+  @override
+  String get routePaceOwnSki => 'Speed on descents, in km/h';
+
+  @override
+  String get routePaceOwnShare => 'Share of the estimated speed, in %';
+
+  @override
+  String routePaceOutOfRange(String low, String high) {
+    return 'Choose a pace between $low and $high.';
+  }
+
+  @override
   String get routeSkiDifficulty => 'Pistes:';
 
   @override

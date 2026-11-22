@@ -26,6 +26,7 @@ Future<String?> showTextPromptDialog(
   String? initial,
   String? confirmLabel,
   TextCapitalization textCapitalization = TextCapitalization.sentences,
+  TextInputType? keyboardType,
 }) {
   return showDialog<String>(
     context: context,
@@ -36,6 +37,7 @@ Future<String?> showTextPromptDialog(
       initial: initial,
       confirmLabel: confirmLabel,
       textCapitalization: textCapitalization,
+      keyboardType: keyboardType,
     ),
   );
 }
@@ -48,6 +50,7 @@ class _TextPromptDialog extends StatefulWidget {
     this.initial,
     this.confirmLabel,
     required this.textCapitalization,
+    this.keyboardType,
   });
 
   final String title;
@@ -56,6 +59,7 @@ class _TextPromptDialog extends StatefulWidget {
   final String? initial;
   final String? confirmLabel;
   final TextCapitalization textCapitalization;
+  final TextInputType? keyboardType;
 
   @override
   State<_TextPromptDialog> createState() => _TextPromptDialogState();
@@ -83,6 +87,7 @@ class _TextPromptDialogState extends State<_TextPromptDialog> {
         controller: _controller,
         autofocus: true,
         textCapitalization: widget.textCapitalization,
+        keyboardType: widget.keyboardType,
         decoration: InputDecoration(
           labelText: widget.label,
           hintText: widget.hint,

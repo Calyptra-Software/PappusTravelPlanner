@@ -26,6 +26,7 @@ import 'package:travelplanner/features/map/widgets/elevation_profile_chart.dart'
 import 'package:travelplanner/features/map/widgets/map_overlays.dart';
 import 'package:travelplanner/features/route_planner/application/tour_planner_controller.dart';
 import 'package:travelplanner/features/route_planner/data/saved_tour.dart';
+import 'package:travelplanner/features/route_planner/domain/pace.dart';
 import 'package:travelplanner/features/route_planner/domain/piste_difficulty.dart';
 import 'package:travelplanner/features/route_planner/domain/tour.dart';
 import 'package:travelplanner/features/route_planner/domain/route_profile.dart';
@@ -281,6 +282,94 @@ void main() {
     expect(find.text('brisk'), findsOneWidget);
     expect(find.textContaining('1 h 29 min'), findsOneWidget);
     expect(engine.asked, hasLength(1));
+  });
+
+  testWidgets('a pace of one\'s own is typed as a speed, and checked', (
+    tester,
+  ) async {
+    await open(tester);
+
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Own pace…'));
+    await tester.pumpAndSettle();
+    expect(find.text('Walking speed on the flat, in km/h'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '6,2');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('6.2 km/h'), findsOneWidget);
+
+    await tester.tap(find.text('6.2 km/h'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Own pace…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '20');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Choose a pace between 2.0 km/h and 8.0 km/h.'),
+      findsOneWidget,
+    );
+    expect(find.text('6.2 km/h'), findsOneWidget);
+  });
+
+  testWidgets('running is timed by the minute a kilometer', (tester) async {
+    await open(tester);
+    await choose(tester, 'Run');
+
+    await tester.tap(find.text('average'));
+    await tester.pumpAndSettle();
+    expect(find.text('6:00 min/km'), findsOneWidget);
+    await tester.tap(find.text('Own pace…'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '5:30');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('5:30 min/km'), findsOneWidget);
+  });
+
+  group('paceFromInput', () {
+    const foot = RoutedMode(RouteProfile.foot);
+    const run = RoutedMode(RouteProfile.run);
+    const bike = RoutedMode(RouteProfile.bike);
+
+    test('reads km/h on foot and on skis, a comma as the point', () {
+      expect(paceFromInput(foot, '6'), const Pace(1.5));
+      expect(paceFromInput(foot, ' 4,8 '), Pace.brisk);
+      expect(paceFromInput(const SkiMode(), '27'), const Pace(1.5));
+    });
+
+    test('reads min/km running, as m:ss or in minutes', () {
+      expect(paceFromInput(run, '6:00'), Pace.average);
+      expect(paceFromInput(run, '5'), Pace.brisk);
+      expect(paceFromInput(run, '7:30'), const Pace(0.8));
+      expect(paceFromInput(run, '5:5'), isNull);
+      expect(paceFromInput(run, '5:75'), isNull);
+      expect(paceFromInput(run, '0'), isNull);
+    });
+
+    test('reads percent by bike', () {
+      expect(paceFromInput(bike, '120'), Pace.brisk);
+    });
+
+    test('refuses what is no figure, or out of range', () {
+      expect(paceFromInput(foot, 'fast'), isNull);
+      expect(paceFromInput(foot, '1'), isNull);
+      expect(paceFromInput(bike, '250'), isNull);
+    });
+
+    test('shows a pace the way it is typed back', () {
+      for (final mode in [foot, run, bike, const SkiMode()]) {
+        expect(
+          paceFromInput(mode, paceInput(mode, const Pace(1.3))),
+          const Pace(1.3),
+          reason: '$mode',
+        );
+      }
+    });
   });
 
   testWidgets('a drive has no pace, a ski run its grade and its pace', (

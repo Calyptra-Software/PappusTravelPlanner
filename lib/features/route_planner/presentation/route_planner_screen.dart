@@ -8,6 +8,7 @@ import '../../../core/format/distance_format.dart';
 import '../../../core/providers.dart';
 import '../../../core/widgets/app_sheet.dart';
 import '../../../core/widgets/attribution.dart';
+import '../../../core/widgets/text_prompt_dialog.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../map/basemap.dart' show osmAttribution;
 import '../../map/basemap_provider.dart';
@@ -67,6 +68,7 @@ Future<bool> planRoute(
 /// The modes a section can be given, in the order the chips offer them.
 const List<SectionMode> kPlannerModes = [
   RoutedMode(RouteProfile.foot),
+  RoutedMode(RouteProfile.run),
   RoutedMode(RouteProfile.bike),
   RoutedMode(RouteProfile.roadBike),
   RoutedMode(RouteProfile.gravelBike),
@@ -340,6 +342,41 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
     setState(() => _startMinutes = picked.hour * 60 + picked.minute);
   }
 
+  /// Asks for a pace of one's own for the selected way of travel, as the
+  /// figure it is thought of in ([paceFromInput]), and sets it.
+  Future<void> _askOwnPace() async {
+    final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final state = ref.read(_planner);
+    final mode = state.mode;
+    final current = state.paceOf(mode);
+    if (current == null) return;
+    final typed = await showTextPromptDialog(
+      context,
+      title: l10n.routePaceOwn,
+      label: paceInputLabel(mode, l10n),
+      initial: paceInput(mode, current),
+      confirmLabel: l10n.save,
+      keyboardType: TextInputType.text,
+    );
+    if (typed == null || !mounted) return;
+    final pace = paceFromInput(mode, typed);
+    if (pace == null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            l10n.routePaceOutOfRange(
+              paceFigure(mode, const Pace(Pace.min), l10n),
+              paceFigure(mode, const Pace(Pace.max), l10n),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
+    ref.read(_planner.notifier).setPace(mode, pace);
+  }
+
   Future<void> _editWaypoint(int index) async {
     final planner = ref.read(_planner.notifier);
     final waypoint = ref.read(_planner).tour.waypoints[index];
@@ -595,6 +632,7 @@ class _RoutePlannerScreenState extends ConsumerState<RoutePlannerScreen> {
                 planner.selectMode(plannerModeOf(mode, ref.read(_planner))),
             onSkiDifficulty: planner.setSkiDifficulty,
             onPace: (pace) => planner.setPace(ref.read(_planner).mode, pace),
+            onOwnPace: _askOwnPace,
             onRetry: planner.retry,
             onPickStartTime: _pickStartTime,
             moving: _moving != null,
@@ -715,6 +753,7 @@ class _PlannerPanel extends StatelessWidget {
     required this.onSelectMode,
     required this.onSkiDifficulty,
     required this.onPace,
+    required this.onOwnPace,
     required this.onRetry,
     required this.onPickStartTime,
     required this.moving,
@@ -746,6 +785,9 @@ class _PlannerPanel extends StatelessWidget {
 
   /// Sets the pace of the selected way of travel, for the whole tour.
   final ValueChanged<Pace> onPace;
+
+  /// Asks for a pace of one's own, as a speed for the selected way of travel.
+  final VoidCallback onOwnPace;
   final VoidCallback onRetry;
   final VoidCallback onPickStartTime;
 
@@ -908,25 +950,28 @@ class _PlannerPanel extends StatelessWidget {
       const SizedBox(width: 4),
       PopupMenuButton<Pace>(
         enabled: !moving,
-        initialValue: selected,
-        onSelected: onPace,
+        initialValue: selected.isPreset ? selected : null,
+        onSelected: (pace) =>
+            identical(pace, _ownPace) ? onOwnPace() : onPace(pace),
         tooltip: l10n.routePace,
         itemBuilder: (_) => [
-          for (final pace in Pace.values)
+          for (final pace in Pace.presets)
             PopupMenuItem(
               value: pace,
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(paceLabel(pace, l10n)),
+                title: Text(paceLabel(mode, pace, l10n)),
                 subtitle: Text(paceDetail(mode, pace, l10n)),
               ),
             ),
+          const PopupMenuDivider(),
+          PopupMenuItem(value: _ownPace, child: Text(l10n.routePaceOwn)),
         ],
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              paceLabel(selected, l10n),
+              paceLabel(mode, selected, l10n),
               style: style?.copyWith(fontWeight: FontWeight.w600),
             ),
             Icon(Icons.arrow_drop_down, size: 16, color: style?.color),
@@ -1021,6 +1066,7 @@ String plannerModeLabel(SectionMode mode, AppLocalizations l10n) =>
     switch (mode) {
       RoutedMode(:final profile) => switch (profile) {
         RouteProfile.foot => l10n.routeProfileFoot,
+        RouteProfile.run => l10n.routeProfileRun,
         RouteProfile.bike => l10n.routeProfileBike,
         RouteProfile.roadBike => l10n.routeProfileRoadBike,
         RouteProfile.gravelBike => l10n.routeProfileGravelBike,
@@ -1031,27 +1077,110 @@ String plannerModeLabel(SectionMode mode, AppLocalizations l10n) =>
       StraightMode() => l10n.routeModeStraight,
     };
 
-/// What the planner calls a pace.
-String paceLabel(Pace pace, AppLocalizations l10n) => switch (pace) {
-  Pace.leisurely => l10n.routePaceLeisurely,
-  Pace.easy => l10n.routePaceEasy,
-  Pace.average => l10n.routePaceAverage,
-  Pace.brisk => l10n.routePaceBrisk,
-  Pace.fast => l10n.routePaceFast,
+/// The menu entry that asks for a pace of one's own: no pace a user can
+/// pick, so it cannot be mistaken for one.
+const Pace _ownPace = Pace(0);
+
+/// What the planner calls a pace: a preset's name, or one's own as its figure
+/// ([paceFigure]).
+String paceLabel(SectionMode mode, Pace pace, AppLocalizations l10n) =>
+    switch (pace) {
+      Pace.leisurely => l10n.routePaceLeisurely,
+      Pace.easy => l10n.routePaceEasy,
+      Pace.average => l10n.routePaceAverage,
+      Pace.brisk => l10n.routePaceBrisk,
+      Pace.fast => l10n.routePaceFast,
+      _ => paceFigure(mode, pace, l10n),
+    };
+
+/// The figure [pace] is thought of in for [mode]: a walking speed or a
+/// descent speed in km/h, a running pace in min/km, a share of the router's
+/// estimate in percent.
+String paceFigure(SectionMode mode, Pace pace, AppLocalizations l10n) =>
+    switch (mode) {
+      RoutedMode(profile: RouteProfile.foot) => l10n.routePaceKmh(
+        _kmh(kHikingSpeed * pace.factor),
+      ),
+      RoutedMode(profile: RouteProfile.run) => l10n.routePaceMinPerKm(
+        _minPerKm(kRunningSpeed * pace.factor),
+      ),
+      SkiMode() => l10n.routePaceKmh(_kmh(kDescentSpeed * 3.6 * pace.factor)),
+      _ => l10n.routePacePercent((pace.factor * 100).round()),
+    };
+
+/// What [pace] means for [mode], in figures, under its name in the menu: on
+/// foot the climb too, on skis that it is the descents.
+String paceDetail(SectionMode mode, Pace pace, AppLocalizations l10n) =>
+    switch (mode) {
+      RoutedMode(profile: RouteProfile.foot) => l10n.routePaceFoot(
+        _kmh(kHikingSpeed * pace.factor),
+        (kHikingAscentPerHour * pace.factor).round(),
+      ),
+      SkiMode() => l10n.routePaceSki(_kmh(kDescentSpeed * 3.6 * pace.factor)),
+      RoutedMode(profile: RouteProfile.run) => paceFigure(mode, pace, l10n),
+      _ => l10n.routePaceShare((pace.factor * 100).round()),
+    };
+
+/// What the field for a pace of one's own asks for.
+String paceInputLabel(SectionMode mode, AppLocalizations l10n) =>
+    switch (mode) {
+      RoutedMode(profile: RouteProfile.foot) => l10n.routePaceOwnFoot,
+      RoutedMode(profile: RouteProfile.run) => l10n.routePaceOwnRun,
+      SkiMode() => l10n.routePaceOwnSki,
+      _ => l10n.routePaceOwnShare,
+    };
+
+/// [pace] as the field for one's own shows it: the figure without its unit.
+String paceInput(SectionMode mode, Pace pace) => switch (mode) {
+  RoutedMode(profile: RouteProfile.foot) => _kmh(kHikingSpeed * pace.factor),
+  RoutedMode(profile: RouteProfile.run) => _minPerKm(
+    kRunningSpeed * pace.factor,
+  ),
+  SkiMode() => _kmh(kDescentSpeed * 3.6 * pace.factor),
+  _ => '${(pace.factor * 100).round()}',
 };
 
-/// What [pace] means for [mode], in figures: the speeds on foot, the descent
-/// speed on skis, the share of the router's estimate on a bike.
-String paceDetail(SectionMode mode, Pace pace, AppLocalizations l10n) {
-  String kmh(double value) => value.toStringAsFixed(1);
-  return switch (mode) {
-    RoutedMode(profile: RouteProfile.foot) => l10n.routePaceFoot(
-      kmh(kHikingSpeed * pace.factor),
-      (kHikingAscentPerHour * pace.factor).round(),
-    ),
-    SkiMode() => l10n.routePaceSki(kmh(kDescentSpeed * 3.6 * pace.factor)),
-    _ => l10n.routePaceShare((pace.factor * 100).round()),
-  };
+/// Reads what was typed as a pace of one's own for [mode]: km/h on foot and
+/// on skis, min/km running (`5:30` or `5.5`), percent by bike; a comma for
+/// the decimal point too. Null for what is no figure, or one outside
+/// [Pace.min] to [Pace.max].
+Pace? paceFromInput(SectionMode mode, String text) {
+  final value = text.trim().replaceAll(',', '.');
+  final double? factor;
+  if (mode case RoutedMode(profile: RouteProfile.run)) {
+    final minutes = _minutes(value);
+    factor = minutes == null || minutes <= 0
+        ? null
+        : 60 / minutes / kRunningSpeed;
+  } else {
+    final number = double.tryParse(value);
+    final standard = switch (mode) {
+      RoutedMode(profile: RouteProfile.foot) => kHikingSpeed,
+      SkiMode() => kDescentSpeed * 3.6,
+      _ => 100.0,
+    };
+    factor = number == null ? null : number / standard;
+  }
+  return factor == null ? null : Pace.of(factor);
+}
+
+/// Minutes a kilometer from `5:30` or `5.5`; null for anything else.
+double? _minutes(String value) {
+  final parts = value.split(':');
+  if (parts.length == 1) return double.tryParse(value);
+  if (parts.length != 2 || parts[1].length != 2) return null;
+  final minutes = int.tryParse(parts[0]);
+  final seconds = int.tryParse(parts[1]);
+  if (minutes == null || seconds == null || seconds >= 60) return null;
+  return minutes + seconds / 60;
+}
+
+String _kmh(double value) => value.toStringAsFixed(1);
+
+/// A running speed in km/h as minutes and seconds a kilometer.
+String _minPerKm(double kmh) {
+  final seconds = (3600 / kmh).round();
+  return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
 }
 
 /// What the planner calls a grade a ski run is held to.
@@ -1068,6 +1197,7 @@ String skiDifficultyLabel(PisteDifficulty difficulty, AppLocalizations l10n) =>
 IconData plannerModeIcon(SectionMode mode) => switch (mode) {
   RoutedMode(:final profile) => switch (profile) {
     RouteProfile.foot => Icons.directions_walk,
+    RouteProfile.run => Icons.directions_run,
     RouteProfile.bike => Icons.directions_bike,
     RouteProfile.roadBike => Icons.pedal_bike,
     RouteProfile.gravelBike => Icons.pedal_bike,

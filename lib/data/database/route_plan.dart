@@ -85,10 +85,10 @@ class RoutePlan {
   /// `dragLift`).
   final String? part;
 
-  /// The name of the pace the tour timed the leg's way of travel at, where it
-  /// was not the average one (`Pace` in the route planner). An older app
+  /// The factor of the pace the tour timed the leg's way of travel at, where
+  /// it was not the average one (`Pace` in the route planner). An older app
   /// ignores it.
-  final String? pace;
+  final double? pace;
 
   bool get isLeg => waypoints.length >= 2;
 
@@ -183,7 +183,7 @@ RoutePlan? decodeRoutePlan(String? encoded) {
     meters: meters is num ? meters.toDouble() : null,
     ski: ski is String ? ski : null,
     part: part is String ? part : null,
-    pace: pace is String ? pace : null,
+    pace: pace is num ? pace.toDouble() : null,
   );
 }
 

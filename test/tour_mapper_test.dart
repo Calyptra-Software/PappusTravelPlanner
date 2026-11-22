@@ -211,7 +211,7 @@ void main() {
             decodeRoutePlan(item.routePlan.value)!,
         ];
         expect((walkPlan.seconds, walkPlan.pace), (300, null));
-        expect((ridePlan.seconds, ridePlan.pace), (3600, 'brisk'));
+        expect((ridePlan.seconds, ridePlan.pace), (3600, 1.2));
       },
     );
 
