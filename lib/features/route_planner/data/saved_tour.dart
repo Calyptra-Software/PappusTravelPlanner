@@ -5,6 +5,7 @@ import '../../../data/database/app_database.dart';
 import '../../../data/database/route_plan.dart';
 import '../../../data/database/tables.dart';
 import '../../../data/database/track_points.dart';
+import '../../map/elevation.dart';
 import '../../map/map_features.dart';
 import '../domain/piste_difficulty.dart';
 import '../domain/route_profile.dart';
@@ -383,6 +384,9 @@ RoutedPath? _storedSkiRun(
   List<TourWaypoint> waypoints,
 ) {
   final points = <LatLng>[];
+  // Heights only where every leg kept its own, as `RoutedPath.elevations`
+  // is all or nothing.
+  List<double>? elevations = [];
   final segments = <PathSegment>[];
   for (final (:item, :plan) in parts) {
     final kind = switch (plan.part) {
@@ -394,13 +398,18 @@ RoutedPath? _storedSkiRun(
         ? TransportMode.values.where((m) => m.name == plan.part).firstOrNull
         : null;
     if (kind == SegmentKind.lift && liftMode == null) return null;
+    final stored = _storedPath(tracksOf(item.id), plan);
     final line =
-        _storedPath(tracksOf(item.id), plan)?.points ??
+        stored?.points ??
         [
           for (final point in [plan.waypoints.first, plan.waypoints.last])
             LatLng(point.lat, point.lon),
         ];
     final start = points.isEmpty ? 0 : points.length - 1;
+    final heights = stored?.elevations;
+    elevations = heights == null || elevations == null
+        ? null
+        : [...elevations, ...(points.isEmpty ? heights : heights.skip(1))];
     points.addAll(points.isEmpty ? line : line.skip(1));
     segments.add(
       PathSegment(
@@ -439,9 +448,13 @@ RoutedPath? _storedSkiRun(
     }
     reached.add(best);
   }
+  final climb = elevations == null ? null : climbOf(elevations);
   return RoutedPath(
     points: points,
     lengthMeters: segments.fold(0, (sum, s) => sum + s.lengthMeters),
+    elevations: elevations,
+    ascentMeters: climb?.ascent,
+    descentMeters: climb?.descent,
     duration: Duration(
       seconds: segments.fold(0, (sum, s) => sum + s.duration.inSeconds),
     ),

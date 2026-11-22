@@ -44,8 +44,10 @@ Tour _tour({int bend = 3}) => Tour(
 RoutedPath _day({
   List<int> reached = const [0, 3, 6],
   String secondPiste = 'Piste 2',
+  List<double>? elevations,
 }) => RoutedPath(
   points: [for (var i = 0; i <= 6; i++) _p(i)],
+  elevations: elevations,
   lengthMeters: 6000,
   duration: const Duration(minutes: 40),
   segments: [
@@ -257,9 +259,14 @@ void main() {
     });
     tearDown(() => db.close());
 
-    Future<List<int>> save({String secondPiste = 'Piste 2'}) async {
+    Future<List<int>> save({
+      String secondPiste = 'Piste 2',
+      List<double>? elevations,
+    }) async {
       final mapped = tourToItems(
-        tourEntries(_tour(), {0: _day(secondPiste: secondPiste)})!,
+        tourEntries(_tour(), {
+          0: _day(secondPiste: secondPiste, elevations: elevations),
+        })!,
         tripId: tripId,
         date: day,
         resolveMode: builtinModeResolver(await repo.transportModes()),
@@ -365,6 +372,24 @@ void main() {
       ]);
       expect(legs[1].from.name, 'Berg');
       expect(path.duration, const Duration(minutes: 40));
+    });
+
+    test('reads back with its heights, a lift of two points too', () async {
+      const heights = [1000.0, 1300.0, 1600.0, 1400.0, 1200.0, 1500.0, 1100.0];
+      await save(elevations: heights);
+
+      // The drag lift is two points, kept for the heights of its ends.
+      final tracks = await db.select(db.tracks).get();
+      expect(tracks, hasLength(4));
+      final saved = (await open())!;
+      final path =
+          saved.paths[runKey(saved.tour, tourRuns(saved.tour).single)]!;
+
+      expect(path.elevations, heights);
+      expect(path.ascentMeters, 900);
+      expect(path.descentMeters, 800);
+      final legs = tourEntries(saved.tour, {0: path})!.cast<TourLeg>();
+      expect(legs[2].path.elevations, [1200, 1500]);
     });
 
     test('a grade this version does not know cannot be opened', () async {

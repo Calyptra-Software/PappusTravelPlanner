@@ -180,7 +180,10 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
   the leg is (`part`: `descent`, `walk` or the lift's mode) and which of its points the
   router chose (`router`). `savedTourOf` leaves those points out, so the legs join into
   one run again, and rebuilds the run's path and segments from the legs' lines (a leg of
-  two points stores none: its ends are its line), titles and stations. A leg is kept on
+  two points stores none unless it has heights: its ends are its line), their heights
+  where every leg kept some, titles and stations. Both were missed once: a lift of two
+  points lost its heights on saving, and the run was read back without any, though each
+  leg showed its own. A leg is kept on
   saving again while its run runs between the same two waypoints and it is the same ride
   or descent at the same place in it (`TourLegPart.index`, part and title). An older app
   reads `ski` as no profile it knows and declines to open the tour, as for any profile it
@@ -255,8 +258,8 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
   at first, which made the entry's row say "computed route" and the GPX `<src>routed`
   about a line nobody computed. It is a proposal like a routed one
   (`TrackSourceKind.isProposal`): drawn dashed, put away by a recording, and replaced when
-  the tour is saved again. A straight line of two points is not stored at all, since the
-  leg's chord is the same line.
+  the tour is saved again. A line of two points without heights is not stored at all,
+  since the leg's chord is the same line; with heights it is, for them.
 - **A routed line is stored with its heights** (`Tracks.elevations`, see `tracks.md`),
   and its climb is counted from them by `climbOf`, not read from the router's own
   "filtered ascend". The stored line is counted again wherever it is shown, and the
