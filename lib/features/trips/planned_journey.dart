@@ -1,5 +1,6 @@
 import '../../core/format/civil_date.dart';
 import '../../data/database/app_database.dart';
+import '../../data/database/route_plan.dart';
 import '../../data/database/tables.dart';
 import '../itinerary/entry_times.dart';
 import '../transport_search/domain/transport_place.dart';
@@ -119,6 +120,20 @@ class PlannedJourney {
   bool routerCanReplace(Set<int> unroutedModeIds) => legs.every(
     (leg) => leg.mode == null || !unroutedModeIds.contains(leg.mode),
   );
+
+  /// Whether a leg of this run was laid out by the route planner: a hike, a
+  /// ride, a ski day or a line drawn by hand, saved with its plan
+  /// (`ItineraryItems.routePlan`).
+  ///
+  /// Such a run is the user's own way over the ground, with the line the
+  /// planner found or they drew. A timetable answer for its ends would replace
+  /// that line with the router's walk, and a leg drawn without a mode (which
+  /// [carriesService] counts as a service, by its rule) would even make the
+  /// run look worth asking about. So the unattended lookup leaves it alone,
+  /// whatever else the group holds; [plannedJourneyOf] still offers it to a
+  /// user who asks.
+  bool get laidOutByPlanner =>
+      legs.any((leg) => decodeRoutePlan(leg.routePlan)?.isLeg ?? false);
 
   /// Whether this run holds enough to be searched **unattended**: both endpoints
   /// as the router addresses them, and a departure time to search around.
@@ -255,7 +270,7 @@ PlannedJourney? plannedJourneyOf(List<ItineraryItem> items) {
 
 /// The journeys in [items] worth looking up again, in day order.
 ///
-/// Three conditions, deliberately separate. A run must be **addressable** — its
+/// Four conditions, deliberately separate. A run must be **addressable** — its
 /// ends reachable by the id the search used, or failing that by the coordinates
 /// the leg carries ([PlannedJourney.canLookUp]) — and it must be a journey a
 /// timetable can answer for at all ([PlannedJourney.carriesService]). The first
@@ -264,7 +279,9 @@ PlannedJourney? plannedJourneyOf(List<ItineraryItem> items) {
 /// time a routine was stamped out, simply because both its ends had been given
 /// coordinates. The third asks whether an answer could replace the run at all
 /// ([PlannedJourney.routerCanReplace]): a run holding a ski descent, a flight or
-/// a taxi was offered a connection that would have dropped or replaced it.
+/// a taxi was offered a connection that would have dropped or replaced it. The
+/// fourth leaves out a run the route planner laid out
+/// ([PlannedJourney.laidOutByPlanner]), whose line an answer would replace.
 ///
 /// Grouping is as the import left it. Items in an option that was not chosen are
 /// skipped by the caller, not here: this only answers what the plan *holds*.
@@ -276,7 +293,8 @@ List<PlannedJourney> plannedJourneys(
   for (final journey in _runs(items))
     if (journey.canLookUp &&
         journey.carriesService(streetModeIds) &&
-        journey.routerCanReplace(unroutedModeIds))
+        journey.routerCanReplace(unroutedModeIds) &&
+        !journey.laidOutByPlanner)
       journey,
 ];
 

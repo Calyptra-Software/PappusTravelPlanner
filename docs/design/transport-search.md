@@ -142,6 +142,13 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   the street set. A null mode, `other` and a custom mode do not hold a run back, by the same
   "only what is positively known" rule. `plannedJourneyOf` again stays open, so such a run can
   still be looked up deliberately from its sheet.
+- **A run the route planner laid out is not offered either** (`laidOutByPlanner`, the
+  fourth condition): any leg with a readable `routePlan` keeps its whole group out. Its
+  line is the planner's, or drawn by hand, and an answer would replace it with the
+  router's walk; worse, a line drawn without a mode passed `carriesService` by the null-mode
+  rule, so a hike drawn by hand in a routine was searched every morning. The group goes
+  as a whole, a train in it included, since a replacement replaces the run from end to
+  end. `plannedJourneyOf` still offers it from its sheet.
 - **A run with no addressable ends is a question for the form, not a dead end.** What the
   routine flow may not do — invent an endpoint for a query nobody is watching — the user may
   do deliberately, so a **hand-entered** run is offered the search too: the form shows the
