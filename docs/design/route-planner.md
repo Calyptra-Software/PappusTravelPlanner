@@ -253,6 +253,9 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
 - **Times run on from a start time and stop where nothing is known**: behind a leg
   without a duration, and at midnight. A leg reaching past midnight keeps its arrival in
   `endDayOffset`; entries after it stay untimed and on the tour's day.
+- **A tour's legs stay out of the unattended connection lookup.** A leg saved with a
+  `routePlan` keeps its group out of `plannedJourneys` (`laidOutByPlanner`, see
+  `transport-search.md`), or a routine's hike would be swapped for the router's walk.
 - **A hand-drawn line is stored as `TrackSource.drawn`** (appended to the enum, and by
   name in a `.tpt`, which an older app reads as an import). It was stored as `routed`
   at first, which made the entry's row say "computed route" and the GPX `<src>routed`
@@ -391,6 +394,15 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
 - **The *Pistes:* line takes the place of the straight-line hint** while *Ski* is
   selected, at the same height.
 
+## Not built, on purpose
+
+- **Timetabled sections inside a tour** (decided 2026-11-22). A connection depends on the
+  hour and is picked from several, where every other section has one answer the planner
+  asks for by itself, and the router's usage policy allows a search only on a button. A
+  route planned up to the stop and saved, and the connection then searched on the
+  timeline, does the same with the tools that exist, without a second time model in the
+  planner.
+
 ## Not built yet
 
 - The door from the overview, for a route planned before there is a trip: where it is
@@ -399,8 +411,5 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
 - Routing parameters the user sets: speeds, and for ski runs `kBoardingTime` (now a flat
   2 min per ride, short for a cable car running to a timetable).
 - *Edit route* from the map.
-- Timetabled sections inside a tour, through the connection search.
 - Piste names from route relations (`route=piste`): a piste named only on its relation is
   an unnamed descent. Pistes drawn as areas are not routed over.
-- A run made by the planner must be kept out of the unattended connection lookup
-  (`plannedJourneys`), or a hike grouped with a train is replaced by the router's walk.
