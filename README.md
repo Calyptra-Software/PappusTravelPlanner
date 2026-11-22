@@ -133,7 +133,8 @@ the plan, and only the `.tpt` bundle can be imported back.
 
 The connection search talks to [Transitous](https://transitous.org), a community-run,
 donated MOTIS instance serving [public-transport open data](https://transitous.org/sources/)
-on top of [OpenStreetMap](https://www.openstreetmap.org/copyright).
+on top of [OpenStreetMap](https://www.openstreetmap.org/copyright). Another MOTIS server,
+your own for example, can be set in the settings.
 
 The route planner asks the [BRouter](https://brouter.de) server at brouter.de, which routes
 on OpenStreetMap data. For a ski section it loads the pistes and lifts of the area from the

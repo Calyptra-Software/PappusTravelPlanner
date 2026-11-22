@@ -182,7 +182,9 @@ instance donated for free and open-source, non-commercial use. Its
 footnote: requests carry a `User-Agent` naming the app, its version, and a contact
 (`lib/core/app_info.dart`); the data sources are linked wherever the data is shown
 (`lib/core/widgets/attribution.dart`); journeys are searched on an explicit button and
-never on a timer; and the staging and `motis-project` hosts are off limits.
+never on a timer; and the staging and `motis-project` hosts are off limits, which the
+server setting enforces (`isOffLimitsMotisServer`). The same rules apply to a MOTIS server
+set there instead, so that there is one way the app asks.
 
 The map stands on the same kind of ground: its default tiles come from the OpenStreetMap
 Foundation's servers, whose
