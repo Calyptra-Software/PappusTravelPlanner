@@ -3,7 +3,7 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
-## Unreleased
+## 1.17.0 — 2026-11-23
 
 - **Your own connection server.** The connection search can ask another MOTIS server instead
   of Transitous, set under Settings → Connection search.
