@@ -7,8 +7,9 @@ becomes itinerary entries. The connection search is a separate feature
 
 **Status: a first planner screen exists, reached from *Plan route* under a day.** The app
 therefore contacts `brouter.de`, and `overpass-api.de` and `tiles.mapterhorn.com` for ski
-sections, which `SECURITY.md` says. **None of the three operators has been asked yet**
-(next section, and *Ski runs*): that has to happen before a release carrying this.
+sections, which `SECURITY.md` says. **BRouter's operator has not been asked yet** (next
+section): that has to happen before a release carrying this. FOSSGIS and Mapterhorn have
+answered (*Ski runs*).
 
 ## The engine
 
@@ -99,14 +100,16 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
   `openstreetmap.org/fixthemap` (*Report a map error* in the planner's credits, for every
   route since BRouter's are OSM data too, and in the data sources), an e-mail address on
   the app's site and store entries, and the recommendation not to hard-code the server.
-  Read on 2026-11-22; **FOSSGIS has not been asked yet** whether this app's use is fine
-  with them. An area loaded once and kept for 30 days asks little per user, but a whole
-  ski area is megabytes: 10 MB a day lasts a handful of users. No retry by itself; the
-  busy failure tells the user to try later. On 2026-11-21 four of nine requests came back
-  502 ("at capacity") or timed out, so this is a real path, not a corner case. A 200 with
-  a `remark` containing `error` is a query cut short with partial data and is treated as
-  busy, never routed over. The server is a setting (`overpassServerProvider`, Settings →
-  Route planner, an address without a path gets `/api/interpreter`). It answers
+  Read on 2026-11-22. Asked, FOSSGIS replied on 2026-11-23 that it cannot check single
+  uses and that apps are to judge themselves against the terms; checked so, the app keeps
+  them, the hard-coded default server being the one recommendation it follows only in part
+  (it can be set). An area loaded once and kept for 30 days asks little per user, but a
+  whole ski area is megabytes: 10 MB a day lasts a handful of users. No retry by itself;
+  the busy failure tells the user to try later. On 2026-11-21 four of nine requests came
+  back 502 ("at capacity") or timed out, so this is a real path, not a corner case. A 200
+  with a `remark` containing `error` is a query cut short with partial data and is treated
+  as busy, never routed over. The server is a setting (`overpassServerProvider`, Settings
+  → Route planner, an address without a path gets `/api/interpreter`). It answers
   `Access-Control-Allow-Origin: *`, and the query is a form field, so a browser sends it
   without a preflight; the web build sends no `User-Agent`, as for BRouter.
 - **What the graph takes from OSM** (`SkiGraph.build`):
@@ -196,7 +199,10 @@ sections, which `SECURITY.md` says. **None of the three operators has been asked
   published usage policy. Point services fall short for paths of thousands of points:
   Open-Meteo is 90 m and non-commercial, OpenTopoData allows 1,000 calls a day for all
   users together, and FOSSGIS asks apps not to hard-code its Valhalla `/height`.
-  **Mapterhorn has not been asked yet**: that has to happen before a release.
+  Asked in mapterhorn/mapterhorn#373, the maintainer pointed to the FAQ
+  (`mapterhorn.com/faq`, 2026-11-23): the endpoint may be used by apps, caching and
+  offline storage are fine, there is no rate limit, and a link to the attribution page
+  is the credit asked for.
 - **A path's tiles are fetched after it is routed, never ahead.** `TerrainTileHeights`
   loads the tiles of `kTerrainZoom` (12, about 13 m a pixel in the Alps at 512 px) that
   the path crosses, a few per ski day, and keeps them 30 days on disk as fetched (base64:
