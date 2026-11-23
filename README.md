@@ -14,9 +14,9 @@ Plan a trip day by day — where you go, how you get there, and what it costs, b
 category and by person — and keep the whole database in **one portable SQLite file that belongs to
 you**. No account, no server, nothing uploaded. The app works with the network switched
 off; the exceptions are an optional connection search that looks up real timetables and
-writes the answer into your local plan, the route planner, which asks a routing server for
-the way between the points you set, and the map, whose background tiles are fetched
-while you look at them.
+writes the answer into your local plan, the route planner, which asks online servers for
+the way between the points you set and, for a ski day or a straight line, for pistes, lifts
+and heights, and the map, whose background tiles are fetched while you look at them.
 
 You can plan all kinds of trips: an afternoon out, the daily commute, and two weeks abroad
 are planned the same way, and differ only in their dates. The primary target is
@@ -82,10 +82,12 @@ For macOS and iOS, which have no release builds, or to build any of the four you
   own screen shows its route on a map and where each train is estimated to be.
 - **Route planning** — tap the points of a walk, ride or drive on a map and the app finds
   the way between them, changing the way of travel from point to point, and adds it to the
-  day with its line.
+  day with its line, climb and elevation profile. A ski day is routed over the pistes and
+  lifts of a ski area.
 - **A map** — a trip's places and legs on an OpenStreetMap background, with the entry that
   is under way marked as the timeline marks it. Record a **track** from the map, or import a
-  **GPX** file, and the map draws the line you actually followed instead of the straight one.
+  **GPX** file, and the map draws the line you actually followed instead of the straight one,
+  with its climb and elevation profile.
 - **Photos and files on the plan** — attach a photograph or a document to an entry, to a
   group, or to the trip itself. They live inside the database, so a copy of that one file
   is a copy of everything. A photo carrying a position shows up on the map, and one of them
@@ -207,7 +209,7 @@ lib/
     trips/                  # overview, calendar, create/edit, detail, participants, tags, routines
     itinerary/              # timeline, day blocks, alternatives, item form, now marker, modes
     transport_search/       # online connection search (Transitous/MOTIS) + live-times refresh
-    route_planner/          # planning a route on the map (BRouter; ski runs: Overpass)
+    route_planner/          # planning a route on the map (BRouter, Overpass, Mapterhorn)
     map/                    # trip map: pure feature building + the basemap and its screen
     attachments/            # photos and files on an entry, a group, or the trip; gallery
     costs/                  # cost form, splitting/stats, settlements, reasons, currencies
@@ -215,7 +217,7 @@ lib/
     sharing/                # portable trip bundles (.tpt), plus PDF and .ics export
     settings/               # language, theme, categories, currencies, modes, people, database
     home_widget/            # Android widget payload + sync
-  l10n/                     # app_en.arb, app_de.arb + generated classes
+  l10n/                     # app_en.arb, app_de.arb, app_zh.arb + generated classes
 android/ ios/ linux/ ...    # per-platform host projects
 web/                        # web host page + prebuilt sqlite3.wasm / drift_worker.js
 tool/                       # dev-only scripts (e.g. a live smoke test for the routing client)
