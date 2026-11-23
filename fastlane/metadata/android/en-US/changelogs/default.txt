@@ -1,7 +1,7 @@
-1.16.0:
-• A journey opens on its own screen with a map of its route and stops
-• Estimated train positions on the line and on the map
-• A train's whole route, before you board and after you get off
-• Duplicate a trip onto new dates, or move its entries with the start date
-• More map styles and overlays, including ÖPNVKarte for public transport
-• Large trip files open from a file manager without crashing
+1.17.0:
+• Plan a route on the map, with its length, climb and duration
+• Ski days routed over the pistes and lifts of a ski area
+• Elevation profiles for routes, GPX files and recorded tracks
+• Lifts are built-in transport modes
+• Groups fold away under their label
+• The connection search can ask your own MOTIS server
