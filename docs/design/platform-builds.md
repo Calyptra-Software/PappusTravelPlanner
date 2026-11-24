@@ -122,11 +122,21 @@ result.
   while `0x7109871A` (signature scheme v2) and `0x42726577` (verity padding) are the two
   that belong there.
 - **The three per-ABI APKs are numbered by this repository, not by Flutter.** `abiCodes`
-  in `android/app/build.gradle.kts` overrides each split's `versionCodeOverride` to
+  in `android/app/build.gradle.kts` sets each split's versionCode to
   `build number × 10 + 1|2|3` (armeabi-v7a, arm64-v8a, x86_64), which is the scheme F-Droid
   asks Flutter apps for and which `VercodeOperation: 10 * %c + N` in the recipe mirrors.
-  Flutter's own scheme is `1|2|4 × 1000 + build number`; ours wins because this block runs
-  after the plugin's, which was measured rather than assumed. Two things about it are sharp.
+  Flutter's own scheme is `1|2|4 × 1000 + build number`, set in an `onVariants` block of
+  the plugin's; ours is an `onVariants` block registered after it, and wins. Its base is
+  `flutter.versionCode`, never a number read off the variant. The override used to be
+  written with the old `applicationVariants` API and multiplied `variant.versionCode`;
+  Flutter 3.50 moved its offset to the new API, that value became Flutter's armeabi code
+  1410, and **1.17.0 was released as 14101–14103** instead of
+  4101–4103. Nothing in the build or the tests noticed; F-Droid's build did, because its
+  recipe expected the documented numbers. Since then `tool/check_apk_version_codes.py`
+  reads the codes back off the APKs in both workflows, and the build number jumped from
+  410 to **1411**, the first value leaving all three above the published 1.17.0, since
+  phones that installed it would refuse anything lower. Two things about the scheme are
+  sharp.
   It **counts smaller** than what it replaced — at build 15 it gives 151/152/153 where the
   released APKs are 1015/2015/4015 — and Android refuses an update whose number is lower, so
   the switch cost a jump of the build number to **402**, the first value leaving all three
