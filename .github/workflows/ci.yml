@@ -131,6 +131,13 @@ jobs:
       - name: Check the native libraries were built with that NDK
         run: python3 tool/check_apk_ndk.py --expect "$PAPPUS_NDK_VERSION" build/app/outputs/flutter-apk/app-*-release.apk
 
+      # The versionCode is what F-Droid's recipe and every installed copy hold
+      # the APKs to, and nothing else in the build looks at it: Flutter 3.50
+      # moved its own per-ABI codes and 1.17.0 went out numbered 1410x, which
+      # only F-Droid noticed (docs/design/platform-builds.md).
+      - name: Check the per-ABI versionCodes
+        run: python3 tool/check_apk_version_codes.py build/app/outputs/flutter-apk/app-*-release.apk
+
       # The one fact about this build that nothing else would notice going
       # wrong. `third_party/geolocator_android` exists so that no Google Play
       # Services code is linked in (docs/design/platform-builds.md, and SECURITY.md states it as a

@@ -137,6 +137,13 @@ jobs:
       - name: Check the native libraries were built with that NDK
         run: python3 tool/check_apk_ndk.py --expect "$PAPPUS_NDK_VERSION" build/app/outputs/flutter-apk/app-*-release.apk
 
+      # The versionCode is what F-Droid's recipe and every installed copy hold
+      # the APKs to, and nothing else in the build looks at it: Flutter 3.50
+      # moved its own per-ABI codes and 1.17.0 went out numbered 1410x, which
+      # only F-Droid noticed (docs/design/platform-builds.md).
+      - name: Check the per-ABI versionCodes
+        run: python3 tool/check_apk_version_codes.py build/app/outputs/flutter-apk/app-*-release.apk
+
       # What a release is easiest to get wrong about is which key signed it,
       # and the answer is invisible in the file name. Printing it puts it in
       # the job summary, where it can be compared against the fingerprint the
