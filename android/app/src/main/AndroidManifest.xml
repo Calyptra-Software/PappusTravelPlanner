@@ -173,6 +173,17 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Stated rather than left to the Flutter tool, which injects it when
+             its `enable-hcpp` flag is on: off on stable, on for any Flutter it
+             cannot place on a channel, such as F-Droid's tag checkout. Injecting
+             also re-serializes the merged manifest, so the two builds would
+             differ and F-Droid's could not be verified against the release.
+             With a value here the tool leaves the manifest untouched
+             (docs/fdroid.md). False is what stable builds without it. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableHcpp"
+            android:value="false" />
+
         <!-- Home-screen widget -->
         <receiver
             android:name=".PappusWidgetProvider"
