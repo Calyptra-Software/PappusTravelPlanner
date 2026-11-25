@@ -75,7 +75,7 @@ That was measured before it was promised. Against the published 1.11.1, all thre
 accept the published signature on the locally rebuilt APK. The first version F-Droid
 published, 1.13.2, is byte for byte the same three files as the GitHub release.
 
-Four things have to be true for that, and all four are load-bearing rather than incidental:
+Five things have to be true for that, and all five are load-bearing rather than incidental:
 
 - **No GNU build ID in `libdartjni.so`.** `android/build.gradle.kts` passes
   `-Wl,--build-id=none` to `jni`'s CMake. Without it the two builds differ in exactly 20
@@ -97,10 +97,17 @@ Four things have to be true for that, and all four are load-bearing rather than 
   r28c. Both workflows now run `tool/pin_ndk.sh` before building, which sets it to
   `flutter.ndkVersion`, and `tool/check_apk_ndk.py` fails the job if a library compiled here
   names a different NDK. The recipe's `ndk:` must name that same release.
+- **`EnableHcpp` stated in the manifest.** Since 3.50 the Flutter tool adds
+  `io.flutter.embedding.android.EnableHcpp=true` to the merged manifest when its
+  `enable-hcpp` flag is on, which is off on stable but on for a Flutter it cannot place on
+  a channel, and the recipe's tag checkout is one. Adding it also re-serializes the
+  manifest, so 1.17.0 differed from the release in `AndroidManifest.xml` alone. The app's
+  manifest now sets it to `false` itself, and the tool leaves a manifest that states it
+  untouched: with the flag forced on, the APK is byte-identical to a stable build.
 
 The cost of this arrangement is worth stating: if a release ever fails to reproduce,
 F-Droid publishes **nothing** for it rather than falling back to signing its own — and
 dropping `binary:` later would change the signature for everyone who installed from
-F-Droid, which is the same forced reinstall 1.11.0 imposed once. So the four points above
+F-Droid, which is the same forced reinstall 1.11.0 imposed once. So the five points above
 are not tidiness; they are what has to keep holding.
 
