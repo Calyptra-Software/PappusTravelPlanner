@@ -1,4 +1,4 @@
-1.17.1:
+1.17.0:
 • Plan a route on the map, with its length, climb and duration
 • Ski days routed over the pistes and lifts of a ski area
 • Elevation profiles for routes, GPX files and recorded tracks

@@ -1,4 +1,4 @@
-1.17.1:
+1.17.0:
 • Routen auf der Karte planen, mit Länge, Höhenmetern und Dauer
 • Skitage über die Pisten und Lifte eines Skigebiets planen
 • Höhenprofile für Routen, GPX-Dateien und aufgezeichnete Tracks
