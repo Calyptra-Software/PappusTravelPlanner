@@ -3,6 +3,11 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## 1.17.1 — 2026-11-25
+
+- **Back on F-Droid.** 1.17.0 never reached F-Droid because F-Droid's build of it differed
+  from the published one. This release brings its changes there.
+
 ## 1.17.0 — 2026-11-23
 
 - **Your own connection server.** The connection search can ask another MOTIS server instead
