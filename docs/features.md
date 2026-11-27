@@ -415,6 +415,11 @@ straight line gets its heights from Mapterhorn's terrain data, like a ski route;
 come, or where they cannot be had, it is left as a gap. A saved leg lists its line with its
 climb and profile too, and the GPX export writes the heights.
 
+*Show journey* on the route's label (or on the leg itself, for a route of one leg) shows the
+route on a map with where the plan has you now, slower uphill as the times were reckoned.
+With your location on, it says whether you are ahead of the plan or behind and when that
+has you arrive, or that you are off the route.
+
 *Edit route* on the route's label, beside *Show journey* (or on the leg itself, for a
 route of one leg), opens the whole route in the planner again, as it was saved. Saving
 there keeps every entry that is still part of the route, with its notes, actual times,

@@ -466,16 +466,18 @@ Design notes moved out of [`AGENTS.md`](../../AGENTS.md) so they are read when t
   timer.** The journey screen places each leg's vehicle on its line in the panel and on the
   map (`vehicle_progress.dart`), as the Transitous map estimates its vehicles between two
   answers: it stands at a stop from its arrival to its departure (the departure less the
-  stored dwell) and moves between two stops in proportion to the time, at an even pace
-  along the route. The times are the plan moved by the delays the last live-times refresh
-  wrote, the leg's ends by their actual times; nothing is fetched to place a vehicle, and a
-  clock ticking once a second (`secondClockProvider`) moves it while the screen is open.
-  Each time is made an instant in **its own stop's zone**; the leg's ends store none and take
-  the nearest stop's, else the device's (`legCalls`). Times that run backwards (a delay known
-  at one stop and not the next) hold the vehicle rather than moving it back. A skipped stop
-  does not time it, since it does not stand there. A vehicle is shown from the first call the
-  trip knows until it leaves the last, so on a leg whose run is not stored it appears at
-  boarding and goes at the arrival.
+  stored dwell) and moves between two stops in proportion to the time, at an even pace along
+  the route. The times are the plan moved by the delays the last live-times refresh wrote,
+  the leg's ends by their actual times; nothing is fetched to place a vehicle, and a clock
+  ticking once a second (`secondClockProvider`) moves it while the screen is open. Each time
+  is made an instant in **its own stop's zone**; the leg's ends store none and take the
+  nearest stop's, else the device's (`legCalls`). Times that run backwards (a delay known at
+  one stop and not the next) hold the vehicle rather than moving it back. A skipped stop
+  does not time it, since it does not stand there. A vehicle is shown from the first call
+  the trip knows until it leaves the last, so on a leg whose run is not stored it appears at
+  boarding and goes at the arrival. A leg the route planner laid out is placed the same way,
+  as where the plan has its traveler, with its time spread by effort rather than evenly
+  (`route-planner.md`, *Under way*).
 - **A vehicle is placed only on what the screen shows, and only on a route.** In the panel it
   moves between the stops listed (`progressAt` with `include`): with the stops between the
   ends folded away it crosses the fold in proportion to the time, a folded run is one dot
