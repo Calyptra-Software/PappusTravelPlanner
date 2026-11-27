@@ -28,6 +28,8 @@ import 'package:travelplanner/features/route_planner/presentation/route_planner_
 import 'package:travelplanner/features/route_planner/presentation/saved_route.dart';
 import 'package:travelplanner/features/route_planner/tour_entries.dart';
 import 'package:travelplanner/l10n/app_localizations.dart';
+import 'package:travelplanner/features/itinerary/widgets/itinerary_timeline.dart'
+    show offersOwnJourney;
 
 import 'support/attachment_overrides.dart';
 import 'support/terrain_overrides.dart';
@@ -206,6 +208,17 @@ void main() {
       expect(opened, 1);
     });
   });
+
+  test(
+    'a route of one leg offers its journey on its tile, as an import does',
+    () {
+      expect(offersOwnJourney(item(routePlan: legPlan)), isTrue);
+      // In a group the run's label offers it.
+      expect(offersOwnJourney(item(routePlan: legPlan, groupId: 3)), isFalse);
+      // A leg typed in by hand has nothing a journey would add.
+      expect(offersOwnJourney(item()), isFalse);
+    },
+  );
 
   group('editSavedRoute', () {
     /// Saves a walk of two legs split at a named hut, as the planner does,
