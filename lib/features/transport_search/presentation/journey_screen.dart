@@ -25,6 +25,7 @@ import 'journey_destination.dart';
 import 'journey_map.dart';
 import 'journey_sheet.dart';
 import 'run_button.dart';
+import '../../route_planner/presentation/plan_status.dart';
 
 /// Opens a journey the trip already holds on its own screen: the run of legs
 /// bundled as [groupId], or the lone leg [itemId].
@@ -271,6 +272,10 @@ class _JourneyScreenState extends ConsumerState<JourneyScreen> {
             ),
             panel: [
               JourneyHeader(view: journeyViewFromItems(journey, modesById)),
+              // A route the planner laid out says where its traveler stands
+              // against the plan.
+              if (clock != null)
+                PlanStatus(tripId: tripId, legs: journey, clock: clock),
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),

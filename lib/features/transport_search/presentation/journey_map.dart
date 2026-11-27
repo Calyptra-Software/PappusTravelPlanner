@@ -18,10 +18,12 @@ import '../../map/map_features.dart';
 import '../../map/widgets/device_location_overlay.dart';
 import '../../map/widgets/map_overlays.dart';
 import '../../map/widgets/map_style_button.dart';
-import '../../../data/database/tables.dart' show TrackSource;
 import '../journey_map_features.dart';
 import '../vehicle_progress.dart';
 import 'journey_timeline.dart';
+import '../../../data/database/route_plan.dart';
+import '../../route_planner/domain/pace.dart' show effortAlong;
+import '../../route_planner/domain/route_profile.dart';
 
 /// The quiet color of what lies outside the traveler's legs: the run before
 /// boarding and after getting off, and its stops. A map color, not a theme
@@ -228,7 +230,7 @@ class _JourneyMapState extends ConsumerState<JourneyMap> {
             for (final leg in widget.legs)
               ?_Vehicle.of(
                 leg,
-                legShape: _drawnRoute(tracks?[leg.id] ?? const []),
+                legLine: drawnRouteLine(tracks?[leg.id] ?? const []),
                 runShape: widget.shownRuns.contains(leg.id)
                     ? widget.runShapes[leg.id]
                     : null,
@@ -364,7 +366,9 @@ class _JourneyMapState extends ConsumerState<JourneyMap> {
                           child: GestureDetector(
                             onTap: () => _startFollowing(legId),
                             child: Semantics(
-                              label: l10n.journeyVehicleEstimated,
+                              label: placed.planned
+                                  ? l10n.journeyPlanPosition
+                                  : l10n.journeyVehicleEstimated,
                               button: true,
                               child: VehicleBadge(
                                 icon: placed.icon,
@@ -480,33 +484,17 @@ class _ModeBadge extends StatelessWidget {
   }
 }
 
-/// The route a leg's vehicle is placed on when its run is not shown: the
-/// line the map draws for it, the router's where that is drawn (the route the
-/// vehicle runs), else a recording. Null when the map draws no line but the
-/// chord, on which nothing is placed.
-List<LatLng>? _drawnRoute(List<TrackLine> lines) {
-  final drawn = drawnTrackIds([
-    for (final line in lines)
-      (id: line.id, source: line.source, display: line.display),
-  ]);
-  final shown = [
-    for (final line in lines)
-      if (drawn.contains(line.id) && line.points.length > 1) line,
-  ];
-  if (shown.isEmpty) return null;
-  return shown
-      .firstWhere(
-        (line) => line.source == TrackSource.routed,
-        orElse: () => shown.first,
-      )
-      .points;
-}
-
 /// A vehicle placed on the map: where, in what color, with which icon.
 ///
 /// [left] is whether the traveler has already got off it: it is on its run
 /// beyond the leg.
-typedef _Placed = ({LatLng point, Color color, IconData icon, bool left});
+typedef _Placed = ({
+  LatLng point,
+  Color color,
+  IconData icon,
+  bool left,
+  bool planned,
+});
 
 /// One leg's vehicle, with what placing it needs read off the leg once per
 /// build rather than on every tick.
@@ -514,6 +502,7 @@ class _Vehicle {
   _Vehicle._({
     required this.legId,
     required this.calls,
+    required this.planned,
     required this.legRoute,
     required this.runRoute,
     required this.runShown,
@@ -526,7 +515,7 @@ class _Vehicle {
   /// without times, or one the map draws no route for at all.
   static _Vehicle? of(
     ItineraryItem leg, {
-    required List<LatLng>? legShape,
+    required TrackLine? legLine,
     required List<LatLng>? runShape,
     required bool runShown,
     required bool happening,
@@ -534,14 +523,31 @@ class _Vehicle {
     required IconData icon,
   }) {
     final calls = legCalls(leg);
+    final legShape = legLine?.points;
     if (calls.isEmpty || (legShape == null && runShape == null)) return null;
+    // A walk or a run the planner laid out takes its time where the climb
+    // is, as its duration was reckoned.
+    final plan = decodeRoutePlan(leg.routePlan);
+    final planned = plan != null && plan.isLeg;
     return _Vehicle._(
       legId: leg.id,
       calls: calls,
+      planned: planned,
       // The leg's own line reaches its own stops only.
       legRoute: legShape == null
           ? null
-          : VehicleRoute(calls, legShape, covers: (call) => call.part.onLeg),
+          : VehicleRoute(
+              calls,
+              legShape,
+              covers: (call) => call.part.onLeg,
+              measure: planned
+                  ? effortAlong(
+                      RouteProfile.byName(plan.profile),
+                      legShape,
+                      legLine!.elevations,
+                    )
+                  : null,
+            ),
       runRoute: runShape == null ? null : VehicleRoute(calls, runShape),
       runShown: runShown,
       happening: happening,
@@ -552,6 +558,10 @@ class _Vehicle {
 
   final int legId;
   final List<RunCall> calls;
+
+  /// Whether the leg is one the route planner laid out: where the plan has
+  /// its traveler, not a vehicle's estimated place.
+  final bool planned;
   final VehicleRoute? legRoute;
   final VehicleRoute? runRoute;
   final bool runShown;
@@ -584,6 +594,7 @@ class _Vehicle {
           : legColor,
       icon: icon,
       left: progressPastLeg(calls, progress),
+      planned: planned,
     );
   }
 }

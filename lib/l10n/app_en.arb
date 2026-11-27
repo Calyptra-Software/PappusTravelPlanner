@@ -1367,6 +1367,30 @@
       "count": { "type": "int" }
     }
   },
+  "journeyPlanPosition": "Where the plan has you now",
+  "routeProgressOnPlan": "On plan",
+  "routeProgressAhead": "{duration} ahead of the plan",
+  "@routeProgressAhead": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "routeProgressBehind": "{duration} behind the plan",
+  "@routeProgressBehind": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "routeProgressArrival": "{status} · arriving about {time}",
+  "@routeProgressArrival": {
+    "description": "Where the traveler stands against a planned route, and when they would arrive at its end.",
+    "placeholders": {
+      "status": {"type": "String"},
+      "time": {"type": "String"}
+    }
+  },
+  "routeProgressOffRoute": "Not on the planned route",
+  "routeProgressNoLocation": "Switch on your location on the map to see whether you're on plan.",
   "journeyVehicleEstimated": "Estimated position of the vehicle",
   "@journeyVehicleEstimated": {
     "description": "Accessibility label of the vehicle icon placed on a journey's line and map, estimated from its timetable and last known delays."

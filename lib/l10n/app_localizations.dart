@@ -3856,6 +3856,48 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{On its way, 1 stop away} other{On its way, {count} stops away}}'**
   String journeyVehicleComing(int count);
 
+  /// No description provided for @journeyPlanPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the plan has you now'**
+  String get journeyPlanPosition;
+
+  /// No description provided for @routeProgressOnPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'On plan'**
+  String get routeProgressOnPlan;
+
+  /// No description provided for @routeProgressAhead.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} ahead of the plan'**
+  String routeProgressAhead(String duration);
+
+  /// No description provided for @routeProgressBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} behind the plan'**
+  String routeProgressBehind(String duration);
+
+  /// Where the traveler stands against a planned route, and when they would arrive at its end.
+  ///
+  /// In en, this message translates to:
+  /// **'{status} · arriving about {time}'**
+  String routeProgressArrival(String status, String time);
+
+  /// No description provided for @routeProgressOffRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'Not on the planned route'**
+  String get routeProgressOffRoute;
+
+  /// No description provided for @routeProgressNoLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch on your location on the map to see whether you\'re on plan.'**
+  String get routeProgressNoLocation;
+
   /// Accessibility label of the vehicle icon placed on a journey's line and map, estimated from its timetable and last known delays.
   ///
   /// In en, this message translates to:

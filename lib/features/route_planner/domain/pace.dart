@@ -1,3 +1,5 @@
+import 'package:latlong2/latlong.dart';
+
 import 'route_profile.dart';
 import 'routed_path.dart';
 import 'tour.dart';
@@ -155,3 +157,42 @@ Duration? pacedDuration(
 
 Duration _divided(Duration duration, double factor) =>
     Duration(seconds: (duration.inSeconds / factor).round());
+
+/// How a leg's time spreads along its line, for placing where the plan has
+/// its traveler: for each of [points], the effort of the way up to it, in
+/// hours at the average pace. Only the shares matter, so the pace does not.
+///
+/// On foot each stretch counts its flat time and its climb and descent as
+/// [hikingDuration] does, added rather than combined, since a share of the
+/// formula's maximum is no share of the way; running counts as
+/// [runningDuration] does. Without [elevations], and for every other way of
+/// travel, the effort is the distance: an even pace along the line.
+List<double> effortAlong(
+  RouteProfile? profile,
+  List<LatLng> points,
+  List<double>? elevations,
+) {
+  const distance = Distance(calculator: Haversine());
+  final heights = elevations != null && elevations.length == points.length
+      ? elevations
+      : null;
+  final effort = <double>[if (points.isNotEmpty) 0];
+  for (var i = 1; i < points.length; i++) {
+    final meters = distance.distance(points[i - 1], points[i]);
+    final rise = heights == null ? 0.0 : heights[i] - heights[i - 1];
+    final up = rise > 0 ? rise : 0.0;
+    final down = rise < 0 ? -rise : 0.0;
+    final step = switch (profile) {
+      _ when heights == null => meters / 1000 / kHikingSpeed,
+      RouteProfile.foot =>
+        meters / 1000 / kHikingSpeed +
+            up / kHikingAscentPerHour +
+            down / kHikingDescentPerHour,
+      RouteProfile.run =>
+        (meters + kClimbEquivalence * up) / 1000 / kRunningSpeed,
+      _ => meters / 1000 / kHikingSpeed,
+    };
+    effort.add(effort.last + step);
+  }
+  return effort;
+}

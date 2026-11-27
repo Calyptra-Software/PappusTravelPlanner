@@ -2328,6 +2328,34 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get journeyPlanPosition => 'Wo du laut Plan jetzt bist';
+
+  @override
+  String get routeProgressOnPlan => 'Im Plan';
+
+  @override
+  String routeProgressAhead(String duration) {
+    return '$duration vor dem Plan';
+  }
+
+  @override
+  String routeProgressBehind(String duration) {
+    return '$duration hinter dem Plan';
+  }
+
+  @override
+  String routeProgressArrival(String status, String time) {
+    return '$status · Ankunft etwa $time';
+  }
+
+  @override
+  String get routeProgressOffRoute => 'Nicht auf der geplanten Route';
+
+  @override
+  String get routeProgressNoLocation =>
+      'Schalte auf der Karte deinen Standort ein, um zu sehen, ob du im Plan liegst.';
+
+  @override
   String get journeyVehicleEstimated => 'Geschätzte Position des Fahrzeugs';
 
   @override

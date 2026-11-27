@@ -393,11 +393,17 @@ int? stopsUntilBoarding(List<RunCall> calls, VehicleProgress progress) {
 /// read in the order it is traveled. A call is placed only where [covers]
 /// says the route reaches it: a leg's own route does not reach the stops of
 /// its run before and after.
+///
+/// Between two calls the vehicle moves at an even pace along the route, unless
+/// [measure] says how the time spreads: for each point of [shape], how much of
+/// the way's effort lies before it (`effortAlong`), so that a walker is placed
+/// slower uphill.
 class VehicleRoute {
   factory VehicleRoute(
     List<RunCall> calls,
     List<LatLng> shape, {
     bool Function(RunCall call)? covers,
+    List<double>? measure,
   }) {
     final at = List<int?>.filled(calls.length, null);
     var from = 0;
@@ -408,6 +414,9 @@ class VehicleRoute {
         from = nearestShapeIndex(shape, point, from: from);
         at[i] = from;
       }
+    }
+    if (measure != null && measure.length == shape.length) {
+      return VehicleRoute._(shape, at, measure);
     }
     final along = List<double>.filled(shape.length, 0);
     for (var i = 1; i < shape.length; i++) {
@@ -425,7 +434,8 @@ class VehicleRoute {
   final List<int?> _at;
 
   /// How far along the route each of its points is, in an equirectangular
-  /// measure: only ever compared within one stretch of the route.
+  /// measure or in the effort it was given: only ever compared within one
+  /// stretch of the route.
   final List<double> _along;
 
   /// Whether the call [index] has a place on the route: what to count when

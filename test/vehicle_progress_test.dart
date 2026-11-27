@@ -355,6 +355,33 @@ void main() {
     const hannover = LatLng(52.377, 9.741);
     late final calls = legCalls(_leg(run: null));
 
+    test('spreads the time by a measure where it is given one', () {
+      // Due south in two halves of one length, the second three times the
+      // effort of the first (a climb): the first half takes a quarter of the
+      // time, the second three quarters.
+      const middle = LatLng(53.4765, 10.007);
+      final route = VehicleRoute(
+        calls,
+        const [hamburg, middle, bend],
+        measure: const [0, 1, 4],
+      );
+
+      final quarter = route.pointOf(const BetweenCalls(0, 1, 0.25))!;
+      expect(quarter.latitude, closeTo(middle.latitude, 1e-9));
+      // Half the time in, a third of the way up the second half.
+      final half = route.pointOf(const BetweenCalls(0, 1, 0.5))!;
+      expect(
+        half.latitude,
+        closeTo(middle.latitude + (bend.latitude - middle.latitude) / 3, 1e-9),
+      );
+      // Without the measure, half the time is halfway.
+      final even = VehicleRoute(calls, const [hamburg, middle, bend]);
+      expect(
+        even.pointOf(const BetweenCalls(0, 1, 0.5))!.latitude,
+        closeTo(middle.latitude, 1e-9),
+      );
+    });
+
     test('places a waiting vehicle on its stop', () {
       final route = VehicleRoute(calls, const [hamburg, bend, lueneburg]);
       expect(route.pointOf(const AtCall(1)), lueneburg);
