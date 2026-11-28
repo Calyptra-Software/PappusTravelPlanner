@@ -431,6 +431,26 @@ answered (*Ski runs*).
 - **The *Pistes:* line takes the place of the straight-line hint** while *Ski* is
   selected, at the same height.
 
+## Under way
+
+- **A saved route shows where its plan has its traveler, on the journey screen.** A route
+  of one leg offers *Show journey* on its tile (`offersOwnJourney`), as a route of several
+  does on its label. The map places the traveler the plan expects the way it places a
+  vehicle (`vehicle_progress.dart`), but a leg the planner laid out spreads its time by
+  `effortAlong` (`VehicleRoute.measure`): on foot the hiking time's flat, climb and
+  descent added stretch by stretch, running Scarf's rule, so the plan's walker is slower
+  uphill. The marker is labeled as the plan's, not a vehicle's.
+- **Where the traveler stands against it is the device's fix put on the planned line**
+  (`domain/route_progress.dart`, `PlanStatus` under the journey's header): the nearest
+  point of every stretch within `kOnRouteMeters` (150 m) plus the fix's accuracy, and of
+  those the one the plan reaches nearest to now, since a path walked out and back passes
+  every point twice and only the time tells the two apart. Behind is the time from when
+  the plan had them there to now; the arrival is the planned end moved by as much. Nothing is said
+  before the route starts or once arrived; off every line it says so while the route is
+  under way, and without a fix it says where to switch one on. The fix is the map's
+  (`deviceLocationProvider`): read, never asked for, and never stored or sent. The
+  projection is a function of its own, for a navigation mode to build on.
+
 ## Not built, on purpose
 
 - **Timetabled sections inside a tour** (decided 2026-11-22). A connection depends on the
@@ -441,6 +461,11 @@ answered (*Ski runs*).
   planner.
 
 ## Not built yet
+
+- A navigation mode on top of `progressAgainstPlan`: turn instructions (BRouter answers
+  them only when asked, as `voicehints`, and a saved route stores none), the camera
+  following the traveler, a foreground service to go on with the screen off (a permission
+  for `SECURITY.md`), and asking the router again once off the route.
 
 - The door from the overview, for a route planned before there is a trip: where it is
   saved (a trip picked as for a connection, or a new routine) is still to decide.

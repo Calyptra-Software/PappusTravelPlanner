@@ -23,6 +23,7 @@ import 'package:latlong2/latlong.dart';
 import '../../data/database/app_database.dart';
 import '../attachments/trip_gallery.dart';
 import '../../data/database/tables.dart';
+import '../../data/database/track_points.dart';
 
 /// A place the trip visits, at a position it actually carries.
 final class MapPin {
@@ -59,6 +60,7 @@ final class TrackLine {
     required this.points,
     required this.source,
     this.display = TrackDisplay.auto,
+    this.encodedElevations,
   });
 
   /// The row this was decoded from — what a tap on the line names. An entry
@@ -73,6 +75,14 @@ final class TrackLine {
   /// What the user has said about drawing this one, if anything — see
   /// [drawnTrackIds], which is the only thing that reads it.
   final TrackDisplay display;
+
+  /// The row's heights as stored, decoded only by [elevations]: most readers
+  /// of a line never ask for them.
+  final String? encodedElevations;
+
+  /// The height of each of [points], or null where the row has none that fit.
+  List<double>? get elevations =>
+      trackElevationsOrNull(encodedElevations, points.length);
 }
 
 final class MapPath {

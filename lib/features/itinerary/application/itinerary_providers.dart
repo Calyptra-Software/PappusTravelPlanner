@@ -97,6 +97,7 @@ Map<int, List<TrackLine>> groupTrackPoints(List<Track> rows) {
             points: points,
             source: row.source,
             display: row.display,
+            encodedElevations: row.elevations,
           ),
         );
   }

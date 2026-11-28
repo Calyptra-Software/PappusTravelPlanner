@@ -3,6 +3,13 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **Where the plan has you on a route.** *Show journey* on a planned route marks where the
+  plan expects you, slower uphill as its times were reckoned, and with your location on says
+  whether you are ahead of the plan or behind and when you will arrive. A route of one leg
+  now offers *Show journey* too.
+
 ## 1.17.0 — 2026-11-23
 
 - **Your own connection server.** The connection search can ask another MOTIS server instead

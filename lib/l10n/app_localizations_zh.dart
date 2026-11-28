@@ -2276,6 +2276,34 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get journeyPlanPosition => 'Where the plan has you now';
+
+  @override
+  String get routeProgressOnPlan => 'On plan';
+
+  @override
+  String routeProgressAhead(String duration) {
+    return '$duration ahead of the plan';
+  }
+
+  @override
+  String routeProgressBehind(String duration) {
+    return '$duration behind the plan';
+  }
+
+  @override
+  String routeProgressArrival(String status, String time) {
+    return '$status · arriving about $time';
+  }
+
+  @override
+  String get routeProgressOffRoute => 'Not on the planned route';
+
+  @override
+  String get routeProgressNoLocation =>
+      'Switch on your location on the map to see whether you\'re on plan.';
+
+  @override
   String get journeyVehicleEstimated => 'Estimated position of the vehicle';
 
   @override

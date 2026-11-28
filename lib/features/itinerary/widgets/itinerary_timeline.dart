@@ -800,9 +800,7 @@ class _DaySection extends ConsumerWidget {
   }) {
     return TimelineTile(
       key: ValueKey('item-${item.id}'),
-      // An imported leg standing outside a group carries its own way into the
-      // journey sheet; inside one the run's label carries it.
-      onShowJourney: hasStandaloneJourney(item)
+      onShowJourney: offersOwnJourney(item)
           ? () => openJourney(context, tripId: item.tripId, itemId: item.id)
           : null,
       onEditRoute: item.groupId == null && isPlannedLeg(item)
@@ -834,3 +832,10 @@ class _DaySection extends ConsumerWidget {
     return (location == null || location.isEmpty) ? null : location;
   }
 }
+
+/// Whether [item]'s own tile offers its journey, rather than its run's label:
+/// an imported leg standing outside a group, and a route of one leg, which a
+/// route of several gets on its label. The journey screen is where a route
+/// shows where the plan has its traveler.
+bool offersOwnJourney(ItineraryItem item) =>
+    hasStandaloneJourney(item) || (item.groupId == null && isPlannedLeg(item));

@@ -4,6 +4,8 @@ import 'package:latlong2/latlong.dart';
 
 import '../../data/database/app_database.dart';
 import '../../data/database/stopovers.dart';
+import '../../data/database/tables.dart';
+import '../map/map_features.dart';
 
 /// What the journey screen's map draws besides the legs' own lines: a dot for
 /// every stop it knows the position of, and, for a leg whose run has been asked
@@ -180,4 +182,24 @@ int nearestShapeIndex(List<LatLng> points, LatLng to, {required int from}) {
     }
   }
   return best;
+}
+
+/// The route a leg's vehicle, or a planned leg's traveler, is placed on when
+/// its run is not shown: the line the map draws for it, the router's where that is drawn (the route the
+/// vehicle runs), else a recording. Null when the map draws no line but the
+/// chord, on which nothing is placed.
+TrackLine? drawnRouteLine(List<TrackLine> lines) {
+  final drawn = drawnTrackIds([
+    for (final line in lines)
+      (id: line.id, source: line.source, display: line.display),
+  ]);
+  final shown = [
+    for (final line in lines)
+      if (drawn.contains(line.id) && line.points.length > 1) line,
+  ];
+  if (shown.isEmpty) return null;
+  return shown.firstWhere(
+    (line) => line.source == TrackSource.routed,
+    orElse: () => shown.first,
+  );
 }
