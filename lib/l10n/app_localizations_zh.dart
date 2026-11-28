@@ -1073,60 +1073,58 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trackSourceRouted => '计算轨迹';
 
   @override
-  String get recordingNotificationTitle => 'Recording a track';
+  String get recordingNotificationTitle => '正在记录轨迹';
 
   @override
-  String get recordingNotificationText =>
-      'Pappus is recording your position. Stop it in the app.';
+  String get recordingNotificationText => 'Pappus 正在记录你的位置。请在应用内停止。';
 
   @override
-  String get recordingNotificationChannel => 'Track recording';
+  String get recordingNotificationChannel => '轨迹记录';
 
   @override
-  String get mapRecordStart => 'Record a track';
+  String get mapRecordStart => '记录轨迹';
 
   @override
-  String get mapRecordStop => 'Stop recording';
+  String get mapRecordStop => '停止记录';
 
   @override
   String mapRecordElsewhere(String trip) {
-    return 'A recording from “$trip” has not been filed yet. File or discard it there first.';
+    return '「$trip」中有一段记录尚未附加到条目。请先在那里附加或丢弃它。';
   }
 
   @override
   String recordingRunning(String distance, String time) {
-    return 'Recording · $distance · since $time';
+    return '记录中 · $distance · 开始于 $time';
   }
 
   @override
   String recordingStopped(String distance) {
-    return 'Recording stopped · $distance';
+    return '记录已停止 · $distance';
   }
 
   @override
   String recordingInterrupted(String distance) {
-    return 'Recording interrupted · $distance';
+    return '记录已中断 · $distance';
   }
 
   @override
-  String get recordingContinue => 'Continue';
+  String get recordingContinue => '继续';
 
   @override
-  String get recordingFile => 'Attach to entries…';
+  String get recordingFile => '附加到条目…';
 
   @override
-  String get recordingDiscard => 'Discard recording';
+  String get recordingDiscard => '丢弃记录';
 
   @override
-  String get recordingDiscardQuestion =>
-      'Discard this recording? What was recorded is lost.';
+  String get recordingDiscardQuestion => '丢弃此记录？已记录的内容将丢失。';
 
   @override
-  String get recordingEmpty => 'Nothing was recorded that could be drawn yet';
+  String get recordingEmpty => '尚未记录到可绘制的内容';
 
   @override
   String get trackRecordingZoneHintRecorded =>
-      'The recording stores UTC. It is shown in the zone the phone was in when it started; pick another if the entries\' times are in a different one.';
+      '记录以 UTC 时间存储。默认显示为开始记录时手机所处的时区；如果条目所用的时区不同，请另行选择。';
 
   @override
   String get trackNotDrawable => '无可绘制内容';

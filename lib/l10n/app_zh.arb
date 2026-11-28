@@ -497,6 +497,89 @@
   "@trackSourceRouted": {
     "description": "A line a router worked out between two ends, which the map draws dashed because nobody is known to have followed it."
   },
+  "recordingNotificationTitle": "正在记录轨迹",
+  "@recordingNotificationTitle": {
+    "description": "Title of the Android notification shown while the app records the device's position as a track."
+  },
+  "recordingNotificationText": "Pappus 正在记录你的位置。请在应用内停止。",
+  "@recordingNotificationText": {
+    "description": "Body of the Android notification shown while a track is being recorded."
+  },
+  "recordingNotificationChannel": "轨迹记录",
+  "@recordingNotificationChannel": {
+    "description": "Name of the Android notification channel for the notification shown while a track is recorded; users see it in the system's notification settings."
+  },
+  "mapRecordStart": "记录轨迹",
+  "@mapRecordStart": {
+    "description": "Tooltip of the map button that starts recording the device's position as a track."
+  },
+  "mapRecordStop": "停止记录",
+  "@mapRecordStop": {
+    "description": "Tooltip of the map button while a track is being recorded."
+  },
+  "mapRecordElsewhere": "「{trip}」中有一段记录尚未附加到条目。请先在那里附加或丢弃它。",
+  "@mapRecordElsewhere": {
+    "description": "Shown when the record button is pressed while another trip holds a recording that was not yet attached to entries or thrown away. {trip} is that trip's title.",
+    "placeholders": {
+      "trip": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingRunning": "记录中 · {distance} · 开始于 {time}",
+  "@recordingRunning": {
+    "description": "Band over the map while a track is recorded. {distance} is how far it runs so far, e.g. \"1.2 km\"; {time} is when it started, e.g. \"14:05\".",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingStopped": "记录已停止 · {distance}",
+  "@recordingStopped": {
+    "description": "Band over the map for a recording that was stopped and not yet attached to entries.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingInterrupted": "记录已中断 · {distance}",
+  "@recordingInterrupted": {
+    "description": "Band over the map for a recording that was still running when the app was closed or stopped by the system.",
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingContinue": "继续",
+  "@recordingContinue": {
+    "description": "Button on the recording band: record further, into the same recording."
+  },
+  "recordingFile": "附加到条目…",
+  "@recordingFile": {
+    "description": "Button on the recording band: divide the recorded line among the trip's entries, the same way an imported GPX file is."
+  },
+  "recordingDiscard": "丢弃记录",
+  "@recordingDiscard": {
+    "description": "Button (and dialog confirm) that throws a recording away."
+  },
+  "recordingDiscardQuestion": "丢弃此记录？已记录的内容将丢失。",
+  "@recordingDiscardQuestion": {
+    "description": "Confirmation before throwing a recording away."
+  },
+  "recordingEmpty": "尚未记录到可绘制的内容",
+  "@recordingEmpty": {
+    "description": "Shown when a recording holds fewer than two positions and so cannot be attached to entries."
+  },
+  "trackRecordingZoneHintRecorded": "记录以 UTC 时间存储。默认显示为开始记录时手机所处的时区；如果条目所用的时区不同，请另行选择。",
+  "@trackRecordingZoneHintRecorded": {
+    "description": "Explanation in the time-zone picker of the track import, for a recording made by the app itself."
+  },
   "trackNotDrawable": "无可绘制内容",
   "@trackNotDrawable": {
     "description": "Stands where a line's length would, when the stored line cannot be read or holds fewer than two points — the map draws nothing for it either way."
