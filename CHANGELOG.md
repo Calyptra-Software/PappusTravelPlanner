@@ -3,6 +3,13 @@
 Notable changes per release. Dates are release dates; the git tags carry the
 exact commits.
 
+## Unreleased
+
+- **Where the plan has you on a route.** *Show journey* on a planned route marks where the
+  plan expects you, slower uphill as its times were reckoned, and with your location on says
+  whether you are ahead of the plan or behind and when you will arrive. A route of one leg
+  now offers *Show journey* too.
+
 ## 1.17.0 — 2026-11-23
 
 - **Your own connection server.** The connection search can ask another MOTIS server instead
@@ -17,10 +24,9 @@ exact commits.
   ride or drive and the app finds the way between them, with its length, climb and duration.
   The way of travel can change from point to point, and the route is added to the day or to
   an option of a decision with its line, and a point can be set at your position. Walking,
-  running, cycling and skiing are timed at a pace you set for each, and *Show journey* on a
-  route says whether you are ahead of the plan or behind. The route is computed by the
-  BRouter server at brouter.de, which receives the points you set; another BRouter server
-  can be set in the settings.
+  running, cycling and skiing are timed at a pace you set for each. The route is computed by
+  the BRouter server at brouter.de, which receives the points you set; another BRouter
+  server can be set in the settings.
 - **Ski days on pistes and lifts.** *Ski* in the route planner now finds the way over the
   pistes and lifts of a ski area, up to the grade you choose, and adds each lift ride and
   descent under its name, a descent with the colors of its pistes in its notes. The pistes
